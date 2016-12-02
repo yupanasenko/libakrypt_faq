@@ -294,7 +294,7 @@ int ak_mpzn_set_ui( ak_uint64 *x, const size_t size, ak_uint64 value )
     @param size Размер вычетов в машинных словах - значение, задаваемое
     константой \ref ak_mpzn256_size или \ref ak_mpzn512_size
     @return Функция возвращает 1, если левый аргумент больше чем правый, -1 если левый аргумент
-            меньше, чем правый и 0 если оба аргумента функции совпадают. */
+            меньше, чем правый и 0 если оба аргумента функции совпадают.                           */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mpzn_cmp( ak_uint64 *x, ak_uint64 *y, const size_t size )
 {
@@ -305,6 +305,26 @@ int ak_mpzn_set_ui( ak_uint64 *x, const size_t size, ak_uint64 value )
   if( cy ) return -1;
   do{ if( z[i] ) return 1; } while( ++i < size );
   return 0;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция сравнивает вычет x со значением value.  В случае равенства значений возвращается
+   \ref ak_true. В противном случае, возвращается \ref ak_false.
+
+   @param x Заданный вычет
+   @param size Размер вычетов в машинных словах - значение, задаваемое константой
+   \ref ak_mpzn256_size или \ref ak_mpzn512_size
+   @param value Значение, с которым происходит сравнение.
+   @return Функция возвращает \ref ak_true в случае равенства значений.
+   В противном случае, возвращается \ref ak_false.                                                 */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_mpzn_cmp_ui( ak_uint64 *x, const size_t size, const ak_uint64 value )
+{
+  size_t i = 0;
+  if( x[0] != value ) return ak_false;
+  if( size > 1 )
+    for( i = 1; i < size; i++ ) if( x[i] != 0 ) return ak_false;
+ return ak_true;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -369,91 +389,6 @@ int ak_mpzn_set_ui( ak_uint64 *x, const size_t size, ak_uint64 value )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_monty_create( ak_monty ctx, const char *hexstr, const size_t size, const ak_uint64 n )
-{
-  int error_code = ak_error_ok;
-  if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to struct monty", __func__ );
-    return ak_error_null_pointer;
-  }
-  if( !size ) {
-    ak_error_message( ak_error_zero_length, "using a zero legth of input data", __func__ );
-    return ak_error_zero_length;
-  }
-  if( hexstr == NULL ) {
-    ak_error_message( ak_error_null_pointer,
-                                         "using a null pointer to hexademal string", __func__ );
-    return ak_error_null_pointer;
-  }
-
-  ctx->n = n;
-  ctx->size = size;
-  if(( ctx->p = malloc( size*sizeof( ak_uint64 ))) == NULL ) {
-    ak_error_message( ak_error_out_of_memory,
-                                        "wrong memory allocation for context data", __func__ );
-    return ak_error_out_of_memory;
-  }
-  if(( error_code = ak_mpzn_set_hexstr( ctx->p, size, hexstr )) != ak_error_ok ) {
-    free( ctx->p );
-    ak_error_message( error_code, "wrong hexstr convertation", __func__ );
-    return error_code;
-
-  }
- return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция создает указатель на структуру struct monty, устанавливает поля этой структуры
-    в заданные значения и возвращает указатель на созданную структуру.
-
-    @param hexstr Шестнадцатеричная запись числа, помещаемого в структуру
-    @param size Размер помещаемого числа, измеряемый в 64х битных словах. Данная переменная
-    может принимать значения \ref ak_mpzn256_size и \ref ak_mpzn512_size.
-    @param n Вспомогательное значение
-    @return Если указатель успешно создан, то он и возвращается. В случае возникновения ошибки
-    возвращается NULL.                                                                             */
-/* ----------------------------------------------------------------------------------------------- */
- ak_monty ak_monty_new( const char *hexstr, const size_t size, const ak_uint64 n )
-{
-  ak_monty ctx = ( ak_monty ) malloc( sizeof( struct monty ));
-  if( ctx != NULL ) ak_monty_create( ctx, hexstr, size, n );
-   else ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
-  return ctx;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
- int ak_monty_destroy( ak_monty ctx )
-{
-  if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "destroing a null pointer to struct monty", __func__ );
-    return ak_error_null_pointer;
-  }
-  ctx->size = ctx->n = 0;
-  if( ctx->p != NULL ) {
-    free( ctx->p );
-    return ak_error_ok;
-  }
-  ak_error_message( ak_error_null_pointer, "unexpected NULL pointer to internal data", __func__ );
- return ak_error_null_pointer;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция очищает все внутренние поля, уничтожает структуру struct monty
-    и возвращает значение NULL.
-
-    @param ctx указатель на struct monty
-    @return Всегда возвращается NULL.                                                              */
-/* ----------------------------------------------------------------------------------------------- */
- ak_pointer ak_monty_delete( ak_pointer ctx )
-{
-  if( ctx != NULL ) {
-    ak_monty_destroy( ctx );
-    free( ctx );
-  } else ak_error_message( ak_error_null_pointer, "use a null pointer to struct monty", __func__ );
- return NULL;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
 /* Операции Монтгомери:                                                                            */
 /* реализованы операции сложения и умножения вычетов по материалам статьи                          */
 /* C. Koc, T.Acar, B. Kaliski Analyzing and Comparing Montgomery Multiplication Algorithms         */
@@ -499,34 +434,6 @@ int ak_mpzn_set_ui( ak_uint64 *x, const size_t size, ak_uint64 value )
   if( t[size] != cy ) memcpy( z, t, size*sizeof( ak_uint64 ));
 }
 
-/* ----------------------------------------------------------------------------------------------- */
- void ak_mpzn_add_montgomery2( ak_uint64 *z, ak_uint64 *x, ak_uint64 *y, const ak_monty monty )
-{
-  size_t i = 0, size = monty->size;
-  ak_uint64 av = 0, bv = 0, cy = 0, *pt = monty->p;
-  ak_mpznmax t = ak_mpznmax_zero;
-
- // сначала складываем: (x + y) -> t
-  for( i = 0; i < size; i++ ) {
-     av = x[i]; bv = y[i];
-     bv += cy;
-     cy = bv < cy;
-     bv += av;
-     cy += bv < av;
-     t[i] = bv;
-  }
-  t[size] = cy; cy = 0;
- // потом вычитаем: (t - p) -> z
-  for( i = 0; i < size; i++, pt++ ) {
-     av = t[i];
-     bv = av - cy;
-     cy = bv > av;
-     av = bv - *pt;
-     cy += av > bv;
-     z[i] = av;
-  }
-  if( t[size] != cy ) memcpy( z, t, size*sizeof( ak_uint64 ));
-}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция умножает два вычета x и y в представлении Моонтгомери, после чего приводит полученное
@@ -544,7 +451,7 @@ int ak_mpzn_set_ui( ak_uint64 *x, const size_t size, ak_uint64 value )
     удовлетворяющего равенству \f$ rs - np = 1\f$.
     @param size Размер модуля в словах (значение константы ak_mpzn256_size или ak_mpzn512_size )   */
 /* ----------------------------------------------------------------------------------------------- */
- void ak_mpzn_mul_montgomery( ak_uint64 *z, ak_uint64 *x, ak_uint64 *y,
+ inline void ak_mpzn_mul_montgomery( ak_uint64 *z, ak_uint64 *x, ak_uint64 *y,
                                                ak_uint64 *p, ak_uint64 n0, const size_t size )
 {
   size_t i = 0, j = 0, ij = 0;
@@ -596,64 +503,6 @@ int ak_mpzn_set_ui( ak_uint64 *x, const size_t size, ak_uint64 value )
      bv = av - cy;
      cy = bv > av;
      av = bv - p[i];
-     cy += av > bv;
-     z[i] = av;
-  }
-  if( cy == 1 ) memcpy( z, t+size, size*sizeof( ak_uint64 ));
-}
-
-/* ----------------------------------------------------------------------------------------------- */
- void ak_mpzn_mul_montgomery2( ak_uint64 *z, ak_uint64 *x, ak_uint64 *y, const ak_monty monty )
-{
-  size_t i = 0, j = 0, ij = 0, size = monty->size;
-  ak_uint64 av = 0, bv = 0, cy = 0, *mp = monty->p;
-  ak_mpznmax t = ak_mpznmax_zero;
-
- // ak_mpzn_mul( t, x, y, size );
-  for( i = 0; i < size; i++ ) {
-     ak_uint64 c = 0, m = x[i];
-     for( j = 0, ij = i; j < size; j++ , ij++ ) {
-        ak_uint64 w1, w0, cy;
-        umul_ppmm( w1, w0, m, y[j] );
-        t[ij] += c;
-        cy = t[ij] < c;
-
-        t[ij] += w0;
-        cy += t[ij] < w0;
-        c = w1 + cy;
-     }
-     t[ij] = c;
-  }
-
- //  ak_mpzn_mul( u, t, n, size );
- //  ak_mpzn_mul( u, u, p, size );
- //  ak_mpzn_add( u, u, t, (size<<1));
-  for( i = 0; i < size; i++ ) {
-     ak_uint64 c = 0, m = t[i]*monty->n, cy;
-     for( j = 0, ij = i; j < size; j++ , ij++ ) {
-        ak_uint64 w1, w0;
-        umul_ppmm( w1, w0, m, monty->p[j] );
-        t[ij] += c;
-        cy = t[ij] < c;
-
-        t[ij] += w0;
-        cy += t[ij] < w0;
-        c = w1 + cy;
-     }
-     cy = c;
-     do {
-         t[ij] += cy;
-         cy = t[ij] < cy;
-         ij++;
-     } while( cy != 0 );
-  }
-
- // вычитаем из результата модуль p
-  for( i = 0, j = size; i < size; i++, j++, mp++ ) {
-     av = t[j];
-     bv = av - cy;
-     cy = bv > av;
-     av = bv - *mp;
      cy += av > bv;
      z[i] = av;
   }

@@ -126,8 +126,9 @@
   "8000000000000000000000000000000150FE8A1892976154C59CFC193ACCF5B3", // q
   "2",                                                                // px
   "8E2A8A0E65147D4BD6316030E16D19C85C97F0A9CA267122B96ABBCEA7E8FC8",  // py
+  "3801E89E6B5CCF172480D5C54EF89A9A1FF85D86528CC3A36DFCA8EAC41D976D", // r1
   "464584",                                                           // r2
-  0xdbf951d5883b2b2fLL,                                               // n
+  0xDBF951D5883B2B2FLL,                                               // n
   1                                                                   // d
 };
 

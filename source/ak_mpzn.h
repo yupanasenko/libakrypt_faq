@@ -42,6 +42,7 @@
  #define ak_mpzn512_zero  { 0, 0, 0, 0, 0, 0, 0, 0 }
  #define ak_mpzn512_one   { 1, 0, 0, 0, 0, 0, 0, 0 }
  #define ak_mpznmax_zero  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+ #define ak_mpznmax_one   { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Элемент кольца вычетов по модулю \f$2^{256}\f$ */
@@ -70,45 +71,19 @@ typedef ak_uint64 ak_mpznmax[ ak_mpznmax_size ];
  ak_uint64 ak_mpzn_sub( ak_uint64 *, ak_uint64 *, ak_uint64 *, const size_t );
 /*! \brief Сравнение двух вычетов */
  int ak_mpzn_cmp( ak_uint64 *, ak_uint64 *, const size_t );
+/*! \brief Сравнение вычета с беззнаковым целым числом (типа ak_uint64) */
+ ak_bool ak_mpzn_cmp_ui( ak_uint64 *, const size_t , const ak_uint64 );
 /*! \brief Умножение вычета на беззнаковое целое */
  ak_uint64 ak_mpzn_mul_ui( ak_uint64 *, ak_uint64 *, const size_t, const ak_uint64 );
 /*! \brief Умножение двух вычетов как целых чисел */
  void ak_mpzn_mul( ak_uint64 *, ak_uint64 *, ak_uint64 *, const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Структура для реализации операций с большими числами в представлении Монтгомери */
- struct monty
-{
- /*! \brief Простое число, порождающее конечное простое поле */
- ak_uint64 *p;
- /*! \brief Размер простого числа (в словах по 64 бита) */
- size_t size;
- /*! \brief Вспомогательный множитель для арифметики Монтгомери */
- ak_uint64 n;
-};
-/*! \brief Контекст стуктуры struct monty */
- typedef struct monty *ak_monty;
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание структуры struct monty */
- int ak_monty_create( ak_monty , const char *, const size_t , const ak_uint64 );
-/*! \brief Создание контекста структуры struct monty */
- ak_monty ak_monty_new( const char *, const size_t , const ak_uint64 );
-/*! \brief Уничтожение данных, хранящиеся в полях структуры struct monty */
- int ak_monty_destroy( ak_monty );
-/*! \brief Уничтожение структуры ak_monty */
- ak_pointer ak_monty_delete( ak_pointer );
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Сложение двух вычетов в представлении Монтгомери */
  void ak_mpzn_add_montgomery( ak_uint64 *, ak_uint64 *, ak_uint64 *, ak_uint64 *, const size_t );
-/*! \brief Сложение двух вычетов в представлении Монтгомери */
- void ak_mpzn_add_montgomery2( ak_uint64 *, ak_uint64 *, ak_uint64 *, const ak_monty );
 /*! \brief Умножение двух вычетов в представлении Монтгомери */
  void ak_mpzn_mul_montgomery( ak_uint64 *, ak_uint64 *, ak_uint64 *,
                                                           ak_uint64 *, ak_uint64, const size_t );
-/*! \brief Умножение двух вычетов в представлении Монтгомери */
- void ak_mpzn_mul_montgomery2( ak_uint64 *, ak_uint64 *, ak_uint64 *, const ak_monty );
 #endif
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_mpzn.h  */

@@ -56,31 +56,67 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
   ec->size = params->size;
   ec->n = params->cn;
   ec->d = params->cd;
-  /* инициализируем коэффициент a */
-  if((ec->a = ak_buffer_new_hexstr_str( params->ca, bytelen, ak_true )) == NULL ) {
+  ec->a = ec->b = ec->p = ec->q = ec->r1 = ec->r2 = NULL;
+
+ /* инициализируем коэффициент a */
+  if(( ec->a = malloc( bytelen )) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, "wrong coefficient A memory allocation", __func__ );
+    goto wrong_label;
+  }
+  if(( local_error = ak_mpzn_set_hexstr( ec->a, ec->size, params->ca )) != ak_error_ok ) {
     ak_error_message( local_error, "wrong coefficient A convertation", __func__ );
     goto wrong_label;
   }
-  /* инициализируем коэффициент a */
-  if((ec->b = ak_buffer_new_hexstr_str( params->cb, bytelen, ak_true )) == NULL ) {
+
+ /* инициализируем коэффициент b */
+  if(( ec->b = malloc( bytelen )) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, "wrong coefficient B memory allocation", __func__ );
+    goto wrong_label;
+  }
+  if(( local_error = ak_mpzn_set_hexstr( ec->b, ec->size, params->cb )) != ak_error_ok ) {
     ak_error_message( local_error, "wrong coefficient B convertation", __func__ );
     goto wrong_label;
   }
-  /* инициализируем модуль кривой */
-  if((ec->p = ak_buffer_new_hexstr_str( params->cp, bytelen, ak_true )) == NULL ) {
-    ak_error_message( local_error, "wrong prime P convertation", __func__ );
+ /* инициализируем модуль p */
+  if(( ec->p = malloc( bytelen )) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, "wrong modulo P memory allocation", __func__ );
     goto wrong_label;
   }
-  /* инициализируем порядок подгруппы группы точек эллиптической кривой */
-  if((ec->q = ak_buffer_new_hexstr_str( params->cq, bytelen, ak_true )) == NULL ) {
-    ak_error_message( local_error, "wrong subgroup order Q convertation", __func__ );
+  if(( local_error = ak_mpzn_set_hexstr( ec->p, ec->size, params->cp )) != ak_error_ok ) {
+    ak_error_message( local_error, "wrong modulo P convertation", __func__ );
     goto wrong_label;
   }
-  /* инициализируем вспомогательные переменные */
-  if((ec->r2 = ak_buffer_new_hexstr_str( params->cr2, bytelen, ak_true )) == NULL ) {
-    ak_error_message( local_error, "wrong additional variable R2 convertation", __func__ );
+ /* инициализируем порядок q */
+  if(( ec->q = malloc( bytelen )) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, "wrong order Q memory allocation", __func__ );
     goto wrong_label;
   }
+  if(( local_error = ak_mpzn_set_hexstr( ec->q, ec->size, params->cq )) != ak_error_ok ) {
+    ak_error_message( local_error, "wrong order Q convertation", __func__ );
+    goto wrong_label;
+  }
+ /* инициализируем константу r1 */
+  if(( ec->r1 = malloc( bytelen )) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, "wrong constant R1 memory allocation", __func__ );
+    goto wrong_label;
+  }
+  if(( local_error = ak_mpzn_set_hexstr( ec->r1, ec->size, params->cr1 )) != ak_error_ok ) {
+    ak_error_message( local_error, "wrong constant R1 convertation", __func__ );
+    goto wrong_label;
+  }
+ /* инициализируем константу r2 */
+  if(( ec->r2 = malloc( bytelen )) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, "wrong constant R2 memory allocation", __func__ );
+    goto wrong_label;
+  }
+  if(( local_error = ak_mpzn_set_hexstr( ec->r2, ec->size, params->cr2 )) != ak_error_ok ) {
+    ak_error_message( local_error, "wrong constant R2 convertation", __func__ );
+    goto wrong_label;
+  }
+
+ /* предвычисление констант (переводим а, b в представление Монтгомери */
+  ak_mpzn_mul_montgomery( ec->a, ec->a, ec->r2, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( ec->b, ec->b, ec->r2, ec->p, ec->n, ec->size );
 
  /* завершение и очистка памяти */
  return ak_error_ok;
@@ -91,27 +127,92 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ ak_wcurve ak_wcurve_new( ak_wcurve_params params )
+{
+  ak_wcurve ec = ( ak_wcurve ) malloc( sizeof( struct wcurve ));
+  if( ec != NULL ) ak_wcurve_create( ec, params );
+   else ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+  return ec;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int ak_wcurve_destroy( ak_wcurve ec )
 {
   int destroy_error = ak_error_ok;
-  if( ec == NULL ) {
-     ak_error_message( ak_error_null_pointer,
+  if( ec == NULL ) { ak_error_message( ak_error_null_pointer,
                                      "destroing null pointer to elliptic curve context", __func__ );
-      return ak_error_null_pointer;
+    return ak_error_null_pointer;
   }
   ec->size = ec->d = ec->n = 0;
-  ec->a = ak_buffer_delete( ec->a );
-   destroy_error = ak_error_get_value();
-  ec->b = ak_buffer_delete( ec->a );
-   destroy_error = ak_error_get_value();
-  ec->p = ak_buffer_delete( ec->a );
-   destroy_error = ak_error_get_value();
-  ec->q = ak_buffer_delete( ec->a );
-   destroy_error = ak_error_get_value();
-  ec->r2 = ak_buffer_delete( ec->a );
-   destroy_error = ak_error_get_value();
-
+  if( ec->a != NULL ) free( ec->a );
+   else ak_error_message( destroy_error = ak_error_undefined_value,
+                               "destroing null pointer to elliptic curve coefficient A", __func__ );
+  if( ec->b != NULL ) free( ec->b );
+   else ak_error_message( destroy_error = ak_error_undefined_value,
+                               "destroing null pointer to elliptic curve coefficient B", __func__ );
+  if( ec->p != NULL ) free( ec->p );
+   else ak_error_message( destroy_error = ak_error_undefined_value,
+                                      "destroing null pointer to elliptic curve modulo", __func__ );
+  if( ec->q != NULL ) free( ec->q );
+   else ak_error_message( destroy_error = ak_error_undefined_value,
+                                       "destroing null pointer to elliptic curve order", __func__ );
+  if( ec->r1 != NULL ) free( ec->r1 );
+   else ak_error_message( destroy_error = ak_error_undefined_value,
+                                 "destroing null pointer to elliptic curve constant R1", __func__ );
+  if( ec->r2 != NULL ) free( ec->r2 );
+   else ak_error_message( destroy_error = ak_error_undefined_value,
+                                 "destroing null pointer to elliptic curve constant R2", __func__ );
  return destroy_error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_wcurve_delete( ak_pointer ec )
+{
+  if( ec != NULL ) {
+    ak_wcurve_destroy( ec );
+    free( ec );
+  } else ak_error_message( ak_error_null_pointer,
+                                  "deleting a null pointer to elliptic curve context", __func__ );
+  return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_mpzn_set_wcurve_discriminant( ak_uint64 *d, ak_wcurve ec )
+{
+  ak_mpznmax s, one = ak_mpznmax_one;
+
+ /* определяем константы 4 и 27 в представлении Монтгомери */
+  ak_mpzn_set_ui( d, ec->size, 4 );
+  ak_mpzn_set_ui( s, ak_mpznmax_size, 27 );
+  ak_mpzn_mul_montgomery( d, d, ec->r2, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( s, s, ec->r2, ec->p, ec->n, ec->size );
+
+ /* вычисляем 4a^3 (mod p) значение в представлении Монтгомери */
+  ak_mpzn_mul_montgomery( d, d, ec->a, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( d, d, ec->a, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( d, d, ec->a, ec->p, ec->n, ec->size );
+
+ /* вычисляем значение 4a^3 + 27b^2 (mod p) в представлении Монтгомери */
+  ak_mpzn_mul_montgomery( s, s, ec->b, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( s, s, ec->b, ec->p, ec->n, ec->size );
+  ak_mpzn_add_montgomery( d, d, s, ec->p, ec->size );
+
+ /* возвращаем результат (в обычном представлении) */
+  ak_mpzn_mul_montgomery( d, d, one, ec->p, ec->n, ec->size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_wcurve_is_ok( ak_wcurve ec )
+{
+  ak_mpznmax d;
+
+  if( ec == NULL ) {
+    ak_error_message( ak_error_null_pointer,
+                                "using a null pointer to elliptic curve context", __func__ );
+    return ak_false;
+  }
+  ak_mpzn_set_wcurve_discriminant( d, ec );
+ return !ak_mpzn_cmp_ui( d, ec->size, 0 );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
