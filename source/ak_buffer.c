@@ -1,0 +1,596 @@
+/* ----------------------------------------------------------------------------------------------- */
+/*   Copyright (c) 2014, 2015, 2016 by Axel Kenzo, axelkenzo@mail.ru                               */
+/*   All rights reserved.                                                                          */
+/*                                                                                                 */
+/*   Redistribution and use in source and binary forms, with or without modification, are          */
+/*   permitted provided that the following conditions are met:                                     */
+/*                                                                                                 */
+/*   1. Redistributions of source code must retain the above copyright notice, this list of        */
+/*      conditions and the following disclaimer.                                                   */
+/*   2. Redistributions in binary form must reproduce the above copyright notice, this list of     */
+/*      conditions and the following disclaimer in the documentation and/or other materials        */
+/*      provided with the distribution.                                                            */
+/*   3. Neither the name of the copyright holder nor the names of its contributors may be used     */
+/*      to endorse or promote products derived from this software without specific prior written   */
+/*      permission.                                                                                */
+/*                                                                                                 */
+/*   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS   */
+/*   OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF               */
+/*   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL        */
+/*   THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, */
+/*   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE */
+/*   GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED    */
+/*   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING     */
+/*   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED  */
+/*   OF THE POSSIBILITY OF SUCH DAMAGE.                                                            */
+/*                                                                                                 */
+/*   ak_buffer.c                                                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ #include <ak_buffer.h>
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция устанавливает значение полей структуры struct buffer в значения по-умолчанию.
+
+    @param buffer указатель на структуру struct buffer
+    @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_buffer_create( ak_buffer buff )
+{
+  if( buff == NULL ) {
+      ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+      return ak_error_null_pointer;
+  }
+  buff->data = NULL; buff->size = 0; buff->flag = ak_false;
+  buff->alloc = malloc; /* по-умолчанию, используются обычные функции */
+  buff->free = free;    /* выделения/перераспределения/освобождения памяти */
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает указатель на структуру struct buffer, устанавливает поля этой структуры
+    в значения по-умолчанию и возвращает указатель на созданную структуру.
+    @return Если указатель успешно создан, то он и возвращается. В случае возникновения ошибки
+    возвращается NULL.                                                                             */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_buffer_new( void )
+{
+  ak_buffer buff = ( ak_buffer ) malloc( sizeof( struct buffer ));
+  if( buff != NULL ) ak_buffer_create( buff );
+   else ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+  return buff;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param alloc указатель на функцию выделения памяти
+    @param free указатель на функцию освобождения памяти
+    @param realloc указатель на функцию перераспределения памяти
+    @param size размер выделяемой под буффер памяти (в байтах)
+    @return Функция возвращает указатель на созданный буффер. Если произошла ошибка,
+    то возвращается NULL                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_buffer_new_function_size( ak_function_alloc *alloc,
+                                                          ak_function_free *free, const size_t size )
+{
+  ak_buffer buff = ( ak_buffer ) malloc( sizeof( struct buffer ));
+  if( buff != NULL ) {
+       ak_buffer_create( buff );
+       buff->free = free; buff->alloc = alloc;
+  } else ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+
+  if( ak_buffer_alloc( buff, size ) == ak_error_ok ) return buff;
+  return ( buff = ak_buffer_delete( buff ));
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param ptr указатель на данные, помещаемые в буффер. Если указатель не определен, то
+    возвращается код ошибки.
+    @param size размер помещаемых в буффер данных. Если size равен нулю, то
+    возвращается код ошибки.
+    @param cflag флаг владения данными. Если он истинен, то данные копируются в область памяти,
+    которой владеет буфер. Если флаг ложен, то буфер просто содержит указатель на данные,
+    которыми он не владеет.
+    @return Функция возвращает указатель на созданный буффер. Если произошла ошибка,
+    то возвращается NULL                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_buffer_new_ptr( const ak_pointer ptr, const size_t size, const ak_bool flag )
+{
+  ak_buffer buff = NULL;
+  if( ptr == NULL ) { /* присвоение не существующих данных */
+   ak_error_message( ak_error_null_pointer, "use a null pointer to a data", __func__ );
+   return NULL;
+  }
+  if( size <= 0 ) { /* присвоение данных неопределенной длины */
+   ak_error_message( ak_error_zero_length, "use a data with non positive length", __func__ );
+   return NULL;
+  }
+  if( ak_buffer_set_ptr( buff = ak_buffer_new(), ptr, size, flag ) == ak_error_ok ) return buff;
+ return ( buff = ak_buffer_delete( buff ));
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Размер создаваемого буффера определяется длиной строки символов.
+
+   @param hexstr указатель на строку символов, содержащую шестнадцатеричную форму записи данных
+   @return Функция возвращает указатель на созданный буффер. Если произошла ошибка,
+   то возвращается NULL                                                                            */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_buffer_new_hexstr( const char *hexstr )
+{
+  ak_buffer buff = NULL;
+  if( hexstr == NULL ) {
+   ak_error_message( ak_error_null_pointer, "use a null pointer to a hex string", __func__ );
+   return NULL;
+  }
+  if( ak_buffer_set_hexstr( buff = ak_buffer_new(), hexstr ) == ak_error_ok ) return buff;
+  return ( buff = ak_buffer_delete( buff ));
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Перед конвертацией данных, функция создает массив фиксированной длины. Если
+    данные превышают указанный размер, то возвращается ошибка.
+
+   @param hexstr указатель на строку символов, содержащую шестнадцатеричную форму записи данных
+   @param size Размер создаваемого буффера (в байтах).
+   Если исходная строка требует больший размер, то возбуждается ошибка.
+   @param reverse Последовательность считывания байт в память. Если reverse равно \ref ak_false
+   то первые байты строки (с младшими индексами) помещаются в младшие адреса, а старшие байты -
+   в старшие адреса памяти. Если reverse равно \ref ak_true, то производится разворот,
+   то есть обратное преобразование при котором элементы строки со старшиси номерами помещаются
+   в младшие разряды памяти (такое представление используется при считывании больших целых чисел).
+
+   @return Функция возвращает указатель на созданный буффер. Если произошла ошибка,
+   то возвращается NULL, код ошибки может быть получен с помощью вызова ak_error_get_value()       */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_buffer_new_hexstr_str( const char *hexstr , const size_t size, const ak_bool reverse )
+{
+  ak_buffer buff = NULL;
+  if( hexstr == NULL ) {
+   ak_error_message( ak_error_null_pointer, "use a null pointer to a hex string", __func__ );
+   return NULL;
+  }
+  if( size == 0 ) {
+    ak_error_message( ak_error_zero_length, "using zero value for length of buffer", __func__ );
+    return NULL;
+  }
+  if(( buff = ak_buffer_new_size( size )) == NULL ) {
+    ak_error_message( ak_error_get_value(), "wrong creation of a new buffer", __func__ );
+    return NULL;
+  }
+
+  if( ak_hexstr_to_ptr( hexstr, ak_buffer_get_ptr( buff ), size, reverse ) != ak_error_ok ) {
+    ak_error_message( ak_error_get_value(), "wrong convertaion of hex string", __func__ );
+    return( buff = ak_buffer_delete( buff ));
+  }
+ return buff;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param str указатель на строку символов
+    @return Функция возвращает указатель на созданный буффер. Если произошла ошибка,
+    то возвращается NULL                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_buffer_new_str( const char *str )
+{
+  ak_buffer buff = NULL;
+  if( str == NULL ) {
+   ak_error_message( ak_error_null_pointer, "use a null pointer to a string", __func__ );
+   return NULL;
+  }
+  if( ak_buffer_set_str( buff = ak_buffer_new(), str ) == ak_error_ok ) return buff;
+  return ( buff = ak_buffer_delete( buff ));
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param size размер выделяемой памяти в байтах
+    @return Функция возвращает указатель на созданный буффер. Если произошла ошибка,
+    то возвращается NULL                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_buffer_new_size( const size_t size )
+{
+  ak_buffer buff = NULL;
+  if( size <= 0 ) {
+    ak_error_message( ak_error_wrong_length, "create a buffer with non positive length", __func__ );
+    return NULL;
+  }
+  if( ak_buffer_alloc( buff = ak_buffer_new(), size ) == ak_error_ok ) return buff;
+  return ( buff = ak_buffer_delete( buff ));
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param buff указатель на структуру struct buffer для которого освобождается память.
+    @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_buffer_free( ak_buffer buff )
+{
+  if( buff == NULL ) {
+   ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+   return ak_error_null_pointer;
+  }
+  if( buff->flag == ak_true ) {
+    memset( buff->data, 0, buff->size );
+    buff->free( buff->data );
+  }
+  buff->data = NULL; buff->size = 0; buff->flag = ak_false;
+  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param buff указатель на структуру struct buffer, в которой выделяется память
+    @param size размер выделяемой памяти в байтах
+    @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_buffer_alloc( ak_buffer buff, const size_t size )
+{
+  ak_uint8 *ptr = NULL;
+  if( size > 0 ) {
+    if(( ptr = buff->alloc( size )) == NULL ) {
+     ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+     return ak_error_out_of_memory;
+    }
+    memset( ptr, 0, size );
+  }
+  if( ak_buffer_free( buff ) != ak_error_ok ) {
+    int local_error = ak_error_get_value();
+    ak_error_message( local_error, "incorrect memory cleaning", __func__ );
+    return local_error;
+  }
+  buff->data = ptr;
+  buff->flag = ak_true;
+  if( size > 0 ) buff->size = size;
+    else buff->size = 0;
+  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param buff указатель на структуру struct buffer
+    @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_buffer_destroy( ak_buffer buff )
+{
+  if( buff == NULL ) {
+   ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+   return ak_error_null_pointer;
+  }
+  ak_buffer_free( buff );
+  buff->alloc = NULL; buff->free = NULL;
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция очищает все внутренние поля, уничтожает буфер (структуру struct buffer)
+    присваивает указателю значение NULL.
+
+    @param buff указатель на ak_buffer (двойной указатель на структуру struct buffer)
+    @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_buffer_delete( ak_pointer buff )
+{
+  if( buff != NULL ) {
+   ak_buffer_destroy( buff );
+   free( buff );
+  } else ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+  return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция помещает в буффер данные на которые указывает указатель ptr. Размер данных, в байтах,
+    передается в переменной size.
+    Если cflag ложен (ak_false), то физического копирования данных не происходит: буфер лишь
+    указывает на размещенные в другом месте данные, но не владеет ими.
+    Если cflag истиннен (ak_true), то происходит выделение памяти и копирование данных
+    в эту память (размножение данных).
+
+    Простейший пример помещения данных в буфер без копирования
+ \code
+    const ak_uint8 data[8] = { 'w', 'e', 'l', 'c', 'o', 'm', 'e', 0 };
+    ak_buffer buffer = ak_buffer_new();
+    ak_buffer_set_ptr( buffer, data, 8, ak_false );
+    buffer = ak_buffer_delete( buffer ); // в этот момент удаление массива данных data не происходит
+                                     // однако указатель buffer уничтожается и приравнивается к NULL
+ \endcode
+
+    @param ptr указатель на данные, помещаемые в буффер. Если указатель не определен, то
+    возвращается код ошибки.
+    @param ptr_size размер помещаемых в буффер данных. Если ptr_size равен нулю, то
+    возвращается код ошибки.
+    @param cflag флаг владения данными. Если он истинен, то данные копируются в область памяти,
+    которой владеет буфер.
+    @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_buffer_set_ptr( ak_buffer buff, const ak_pointer ptr, const size_t size, const ak_bool cflag )
+{
+  if( buff == NULL ) {
+   ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+   return ak_error_null_pointer;
+  }
+  if( ptr == NULL ) {
+   ak_error_message( ak_error_null_pointer, "use a null pointer to a data", __func__ );
+   return ak_error_null_pointer;
+  }
+  if( size <= 0 ) {
+   ak_error_message( ak_error_zero_length, "use a data with zero or negative length", __func__ );
+   return ak_error_zero_length;
+  }
+  if( cflag == ak_false ) {
+        ak_buffer_free( buff );
+        buff->data = ( ak_uint8 *) ptr;
+        buff->size = size;
+        buff->flag = ak_false;
+  } else {
+           if( ak_buffer_alloc( buff, size )) {
+             ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+             return ak_error_out_of_memory;
+           }
+           memcpy( buff->data, ptr, size );
+         }
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция выделяет память под строку на которую указывает str, и копирует
+    строку в память буфера. Размер стоки опредляется с помощью вызова strlen().
+
+    @param buff буфер, в который происходит копирование
+    @param str копируемая строка
+    @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_buffer_set_str( ak_buffer buff, const char *str )
+{
+  size_t len = 0;
+  if( buff == NULL ) {
+   ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+   return ak_error_null_pointer;
+  }
+  if( str == NULL ) {
+   ak_error_message( ak_error_null_pointer, "use a null pointer to a string", __func__ );
+   return ak_error_null_pointer;
+  }
+
+  len = strlen( (char *)str );
+  if( ak_buffer_alloc( buff, 1+len )) {
+   ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+   return ak_error_out_of_memory;
+  }
+  memcpy( buff->data, str, len );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Конвертация символа в целочисленное значение                                           + */
+/* ----------------------------------------------------------------------------------------------- */
+ inline static ak_uint32 ak_xconvert( const char c )
+{
+    switch( c )
+   {
+      case 'a' :
+      case 'A' : return 10;
+      case 'b' :
+      case 'B' : return 11;
+      case 'c' :
+      case 'C' : return 12;
+      case 'd' :
+      case 'D' : return 13;
+      case 'e' :
+      case 'E' : return 14;
+      case 'f' :
+      case 'F' : return 15;
+      case '0' : return 0;
+      case '1' : return 1;
+      case '2' : return 2;
+      case '3' : return 3;
+      case '4' : return 4;
+      case '5' : return 5;
+      case '6' : return 6;
+      case '7' : return 7;
+      case '8' : return 8;
+      case '9' : return 9;
+      default : ak_error_set_value( ak_error_undefined_value ); return 0;
+  }
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция интерпретирует входную строку символов hexstr как шестнадцатеричную запись
+    последовательности байт. Функция выделяет необходимую память и присваивает буфферу
+    двоичные данные, содержащиеся в строке hexstr. Если строка содержит символы, отличные от
+    0, 1, .. 9, a, .. f, то соответствующий символу байт заменяется нулем, и выставляется
+    код ошибки, равный ak_error_undefined_value.
+
+    @param buff буфер, к который происходит присовение
+    @param str строка в шестнадцатеричной записи
+    @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_buffer_set_hexstr( ak_buffer buff, const char *hexstr )
+{
+  ak_uint8 *bdata = NULL;
+  size_t len = 0, i = 0;
+
+  if( buff == NULL ) {
+   ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+   return ak_error_null_pointer;
+  }
+  if( hexstr == NULL ) {
+   ak_error_message( ak_error_null_pointer, "use a null pointer to a hex string", __func__ );
+   return ak_error_null_pointer;
+  }
+
+  len = strlen( (char *)hexstr );
+  if( len&1 ) len++;
+  len >>= 1;
+  if( ak_buffer_alloc( buff, len )) {
+    ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+    return ak_error_out_of_memory;
+  }
+
+   ak_error_set_value( ak_error_ok );
+   bdata = (ak_uint8 *) buff->data; /* представляем данные в виде массива байт */
+   for( i = 0; i < strlen( hexstr ); i += 2 ) {
+     bdata[i>>1] = (ak_xconvert( hexstr[i] ) << 4);
+     if( i < strlen( hexstr )-1) bdata[i>>1] += ak_xconvert( hexstr[i+1] );
+   }
+ return ak_error_get_value();
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция преобразует содержимое буффера в строку символов и возвращает эту строку.
+    Под строку выделяется память, которая должна быть удалена пользователем самостоятельно.
+    @param buff буффер, преобразование которого производится.
+    @return указатель на область памяти, в которой хранится выделенная строка, либо NULL.
+    Если при преобразовании произошла ошибка, ее код содержится в переменной ak_errno.             */
+/* ----------------------------------------------------------------------------------------------- */
+ char *ak_buffer_to_hexstr( const ak_buffer buff )
+{
+  if( buff == NULL ) {
+   ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+   return ak_null_string;
+  }
+  return ak_ptr_to_hexstr( buff->data, buff->size, ak_false );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param buff Указатель на  буффер
+    @return Указатель на данные, помещенные в буффер. Если указатель buff не определен,
+    возвращается NULL, а в переменную ak_errno помещается код ошибки.                               */
+/* ----------------------------------------------------------------------------------------------- */
+ const char *ak_buffer_get_str( ak_buffer buff )
+{
+  if( buff == NULL ) {
+   ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+   return ak_null_string;
+  }
+  return (const char *) buff->data;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param buff Указатель на  буффер
+    @return Указатель на данные, помещенные в буффер. Если указатель buff не определен,
+    возвращается NULL,  в переменную ak_errno помещается код ошибки.                               */
+/* ----------------------------------------------------------------------------------------------- */
+ const ak_pointer ak_buffer_get_ptr( ak_buffer buff )
+{
+  if( buff == NULL ) {
+   ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+   return ak_null_string;
+  }
+  return buff->data;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param buff Указатель на  буффер
+    @return Размер буффера в байтах. Если указатель buff не определен,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ const size_t ak_buffer_get_size( ak_buffer buff )
+{
+  if( buff == NULL ) {
+    ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+    return ak_error_null_pointer;
+  }
+  return buff->size;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция сравнивает данные, хранящиеся в буфферах, то есть выполняет
+    проверкку равенства left == right.
+
+    @param left Буффер, участвующий в сравнении слева.
+    @param right Буффер, участвующий в сравнении справа.
+    @return если данные идентичны, возвращается
+    ak_error_ok (ноль). В противном случае, возвращается вод ошибки.                               */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_buffer_is_equal( const ak_buffer left, const ak_buffer right )
+{
+  if( left == NULL ) {
+    ak_error_message( ak_error_null_pointer, "use a null pointer to a left buffer", __func__ );
+    return ak_error_null_pointer;
+  }
+  if( right == NULL ) {
+    ak_error_message( ak_error_null_pointer, "use a null pointer to a right buffer", __func__ );
+    return ak_error_null_pointer;
+  }
+  if( left->size != right->size ) return ak_false;
+  if( memcmp( left->data, right->data, left->size ) == 0 ) return ak_true;
+ return ak_false;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция заполняет буффер случайными данными, выработанными заданным генератором псевдослучайных
+    чисел. При этом, новые (случайные) данные не уничтожаются.
+
+    @param buff Буффер, данные которого уничтожаются
+    @param right Генератор псевдо случайных чисел, используемый для генерации случайного мусора.
+    @return Функция возвращает ak_error_ok  случае успешного уничтожения данных. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_buffer_wipe( ak_buffer buff, ak_random generator )
+{
+  size_t idx = 0;
+  ak_uint8 *ptr = NULL;
+  int result = ak_error_ok;
+
+  if( buff == NULL ) {
+    ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+    return ak_error_null_pointer;
+  }
+  if( generator == NULL ) {
+    ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+    return ak_error_null_pointer;
+  }
+  if( ak_random_ptr( generator, buff->data, buff->size ) != ak_error_ok ) {
+    ak_error_message( ak_error_write_data, "incorrect wiping a buffer data", __func__ );
+    memset( buff->data, 0, buff->size );
+    result = ak_error_write_data;
+  }
+  /* запись в память при чтении => необходим вызов функции чтения данных из buff->data */
+  ptr = (ak_uint8 *) buff->data;
+  for( idx = 0; idx < buff->size; idx++ ) ptr[idx] += ptr[buff->size - 1 - idx];
+  return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает новый буффер заданного размера size и заполняет его псевдо-случайными значениями,
+    выработанными с помощью заданного генератора generator.
+
+    @param generator Генератор псевдослучайных чисел, используемый для выработки случайного
+    заполнения буффера
+    @param size Размер создаваемого буффера в байтах.
+
+    @return Функция возвращает указатель на созданный буффер. В случае возникновения ошибки
+    возвращается NULL. Код ошибки может быть получен с помощью вызова ak_error_get_value().        */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_buffer_new_random( ak_random generator, const size_t size )
+{
+  ak_buffer buff = NULL;
+  if( generator == NULL ) { /* использование NULL-генератора */
+    ak_error_message( ak_error_null_pointer, "using a null pointer to random generator", __func__ );
+    return NULL;
+  }
+  if( size <= 0 ) { /* присвоение данных неопределенной длины */
+    ak_error_message( ak_error_zero_length, "using a data with non positive length", __func__ );
+    return NULL;
+  }
+
+  /* создаем буффер */
+  if(( buff = ak_buffer_new_size( size )) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+    return NULL;
+  }
+  if( ak_random_ptr( generator, buff->data, buff->size ) != ak_error_ok ) {
+    ak_error_message( ak_error_get_value(), "incorrect random data generation", __func__ );
+    return ( buff = ak_buffer_delete( buff ));
+  }
+ return buff;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \example example-buffer.c                                                                      */
+/* ----------------------------------------------------------------------------------------------- */
+/*                                                                                    ak_buffer.c  */
+/* ----------------------------------------------------------------------------------------------- */
