@@ -1,3 +1,4 @@
+ #include <stdio.h>
  #include <libakrypt.h>
  #include <ak_mpzn.h>
  #include <ak_curves.h>
@@ -372,6 +373,82 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/* тест для операции возведения в степень */
+ void modpow_montgomery_test( size_t count )
+{
+   size_t i = 0, errors_gmp = 0, val = 0;
+   mpz_t xm, ym, zm, tm, pm, rm, gm, sm, um, nm;
+   ak_mpzn256 x, y, n, p, r;
+   ak_mpzn512 z;
+   ak_random generator = ak_random_new_lcg();
+   char *str = NULL;
+   clock_t tmr;
+   ak_wcurve ec = ak_wcurve_new(( const ak_wcurve_params) &wcurve_GOST );
+   count /= 10;
+
+   mpz_init(xm);
+   mpz_init(ym);
+   mpz_init(zm);
+   mpz_init(tm);
+   mpz_init(pm);
+   mpz_init(rm);
+   mpz_init(gm);
+   mpz_init(sm);
+   mpz_init(um);
+   mpz_init(nm);
+
+   ak_mpzn_to_mpz( ec->p, ec->size, pm );
+   printf(" p   = "); mpz_out_str( stdout, 16, pm ); printf("\n");
+
+   ak_mpzn_set_ui( y, ec->size, 1 );
+   printf(" please wait: "); fflush( stdout );
+
+   for( i = 0; i < count; i++ ) {
+     ak_mpzn_set_random_modulo( x, ec->p, ec->size, generator );
+     ak_mpzn_to_mpz( x, ec->size, xm );
+     ak_mpzn_set_random_modulo( n, ec->p, ec->size, generator );
+     ak_mpzn_to_mpz( n, ec->size, nm );
+
+     // тест для mpz
+     mpz_powm( xm, xm, nm, pm );
+
+     // тест для mpzn
+     ak_mpzn_mul_montgomery( x, x, ec->r2, ec->p, ec->n, ec->size );
+     ak_mpzn_modpow_montgomery( x, x, n, ec->p, ec->n, ec->size );
+     ak_mpzn_mul_montgomery( x, x, y, ec->p, ec->n, ec->size );
+
+     ak_mpzn_to_mpz( x, ec->size, um );
+     if( mpz_cmp( um, xm ) == 0 ) val++;
+     if( i%(count/50) == 0 ) { printf("."); fflush(stdout); }
+   }
+   printf("\n correct modular exponentiation in montgomery form: %ld from %ld\n", val, count );
+
+   printf(" speed test: "); fflush( stdout );
+   tmr = clock();
+   for( i = 0; i < count; i++ ) ak_mpzn_modpow_montgomery( x, x, n, ec->p, ec->n, ec->size );
+   tmr = clock() - tmr;
+   printf(" mpzn time: %.3fs, ", ((double) tmr) / ((double) CLOCKS_PER_SEC));
+
+   tmr = clock();
+   for( i = 0; i < count; i++ ) mpz_powm( xm, xm, nm, pm );
+   tmr = clock() - tmr;
+   printf(" gmp time:  %.3fs\n\n", ((double) tmr) / ((double) CLOCKS_PER_SEC));
+
+   mpz_clear(nm);
+   mpz_clear(gm);
+   mpz_clear(sm);
+   mpz_clear(um);
+   mpz_clear(rm);
+   mpz_clear(pm);
+   mpz_clear(tm);
+   mpz_clear(zm);
+   mpz_clear(ym);
+   mpz_clear(xm);
+   ec = ak_wcurve_delete( ec );
+   generator = ak_random_delete( generator );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  void print_wcurve( ak_wcurve ec )
 {
   int i = 0;
@@ -381,30 +458,34 @@
   // A
   printf(" a = %s [reverse byte array]\n a = ",
      str = ak_ptr_to_hexstr( ec->a, ec->size*sizeof(ak_uint64), ak_true )); free(str);
-  for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->a[i]); printf("[ak_uint64 array]\n\n");
+  for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->a[i]);
+  printf("[ak_uint64 array]\n\n");
   // B
   printf(" b = %s [reverse byte array]\n b = ",
      str = ak_ptr_to_hexstr( ec->b, ec->size*sizeof(ak_uint64), ak_true )); free(str);
-  for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->b[i]); printf("[ak_uint64 array]\n\n");
+  for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->b[i]);
+  printf("[ak_uint64 array]\n\n");
   // P
   printf(" p = %s [reverse byte array]\n p = ",
      str = ak_ptr_to_hexstr( ec->p, ec->size*sizeof(ak_uint64), ak_true )); free(str);
-  for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->p[i]); printf("[ak_uint64 array]\n\n");
+  for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->p[i]);
+  printf("[ak_uint64 array]\n\n");
   // Q
   printf(" q = %s [reverse byte array]\n q = ",
      str = ak_ptr_to_hexstr( ec->q, ec->size*sizeof(ak_uint64), ak_true )); free(str);
-  for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->q[i]); printf("[ak_uint64 array]\n\n");
+  for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->q[i]);
+  printf("[ak_uint64 array]\n\n");
   // R1
   printf("r1 = %s [reverse byte array]\nr1 = ",
      str = ak_ptr_to_hexstr( ec->r1, ec->size*sizeof(ak_uint64), ak_true )); free(str);
-  for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->r1[i]); printf("[ak_uint64 array]\n\n");
+  for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->r1[i]);
+  printf("[ak_uint64 array]\n\n");
   // R2
   printf("r2 = %s [reverse byte array]\nr2 = ",
      str = ak_ptr_to_hexstr( ec->r2, ec->size*sizeof(ak_uint64), ak_true )); free(str);
-  for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->r2[i]); printf("[ak_uint64 array]\n\n");
-
+  for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->r2[i]);
+  printf("[ak_uint64 array]\n\n");
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /* тест для операций на эллиптических кривых */
@@ -463,130 +544,17 @@
 {
   size_t count = 1000000;
 
-//  printf(" - ak_mpzn_add() function test\n"); add_test( count );
-//  printf(" - ak_mpzn_sub() function test\n"); sub_test( count );
-//  printf(" - ak_mpzn_mul() function test\n"); mul_test( count );
-//  printf(" - ak_mpzn_mul_ui() function test\n"); mul_ui_test( count );
-//  printf("\n - ak_mpzn_add_montgomery() function test\n"); add_montgomery_test( count );
-//  printf("\n - ak_mpzn_mul_montgomery() function test\n"); mul_montgomery_test( count );
+ /*
+  printf(" - ak_mpzn_add() function test\n"); add_test( count );
+  printf(" - ak_mpzn_sub() function test\n"); sub_test( count );
+  printf(" - ak_mpzn_mul() function test\n"); mul_test( count );
+  printf(" - ak_mpzn_mul_ui() function test\n"); mul_ui_test( count );
+  printf("\n - ak_mpzn_add_montgomery() function test\n"); add_montgomery_test( count );
+  printf("\n - ak_mpzn_mul_montgomery() function test\n"); mul_montgomery_test( count );
   printf("\n - wcurve class test\n"); wcurve_test( count );
+*/
+
+  printf(" - ak_mpzn_modpow_montgomery() function test\n"); modpow_montgomery_test( count );
 
  return 0;
 }
-
-/*
-   printf("elliptic curve:\n");
-   printf(" a = %s [byte array]\n a = %s [string]\n a = ",
-          str = ak_ptr_to_hexstr( ec->a, ec->size*sizeof(ak_uint64), ak_false ),
-          ((const ak_wcurve_params) &wcurve_GOST)->ca );
-   free(str);
-   for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->a[i]);
-   printf("[ak_uint64 array]\n\n");
-   printf(" b = %s [byte array]\n b = %s [string]\n b = ",
-          str = ak_ptr_to_hexstr( ec->b, ec->size*sizeof(ak_uint64), ak_false ),
-          ((const ak_wcurve_params) &wcurve_GOST)->cb );
-   free(str);
-   for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->b[i]);
-   printf("[ak_uint64 array]\n\n");
-   printf(" p = %s [byte array]\n p = %s [string]\n p = ",
-          str = ak_ptr_to_hexstr( ec->p, ec->size*sizeof(ak_uint64), ak_false ),
-          ((const ak_wcurve_params) &wcurve_GOST)->cp );
-   free(str);
-   for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->p[i]);
-   printf("[ak_uint64 array]\n\n");
-   printf(" q = %s [byte array]\n q = %s [string]\n q = ",
-          str = ak_ptr_to_hexstr( ec->q, ec->size*sizeof(ak_uint64), ak_false ),
-          ((const ak_wcurve_params) &wcurve_GOST)->cq );
-   free(str);
-   for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->q[i]);
-   printf("[ak_uint64 array]\n\n");
-   printf("r1 = %s [byte array]\nr1 = %s [string]\nr1 = ",
-          str = ak_ptr_to_hexstr( ec->r1, ec->size*sizeof(ak_uint64), ak_false ),
-          ((const ak_wcurve_params) &wcurve_GOST)->cr1 );
-   free(str);
-   for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->r1[i]);
-   printf("[ak_uint64 array]\n\n");
-   printf("r2 = %s [byte array]\nr2 = %s [string]\nr2 = ",
-          str = ak_ptr_to_hexstr( ec->r2, ec->size*sizeof(ak_uint64), ak_false ),
-          ((const ak_wcurve_params) &wcurve_GOST)->cr2 );
-   free(str);
-   for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->r2[i]);
-   printf("[ak_uint64 array]\n\n");
-
- // конвертируем в mpz_t
-  ak_mpzn_to_mpz( ec->a, ak_mpzn256_size, am );
-  ak_mpzn_to_mpz( ec->b, ak_mpzn256_size, bm );
-  ak_mpzn_to_mpz( ec->p, ak_mpzn256_size, pm );
-  mpz_ui_pow_ui( rm, 2, 256 );
-
-  ak_mpzn256 t = ak_mpzn256_zero,
-             s = ak_mpzn256_zero,
-             one = ak_mpzn256_one,
-             four,
-             twentyseven, a = ak_mpzn256_zero, b = ak_mpzn256_zero;
-
-  ak_mpzn_set_ui( four, ak_mpzn256_size, 4 );
-  ak_mpzn_set_ui( twentyseven, ak_mpzn256_size, 27 );
-
-  mpz_set_ui( tm, 4 );
-  mpz_mul( tm, tm, rm );
-  mpz_mod( tm, tm, pm );
-  printf(" 4r (mod p)            = "); mpz_out_str( stdout, 16, tm ); printf("\n");
-
-  mpz_mul( tm, tm, am );
-  mpz_mul( tm, tm, am );
-  mpz_mul( tm, tm, am ); mpz_mod( tm, tm, pm );
-  printf(" 4a^3r (mod p)         = "); mpz_out_str( stdout, 16, tm ); printf("\n");
-
-  mpz_set_ui( sm, 27 );
-  mpz_mul( sm, sm, rm );
-  mpz_mod( sm, sm, pm );
-  printf(" 27r (mod p)           = "); mpz_out_str( stdout, 16, sm ); printf("\n");
-
-  mpz_mul( sm, sm, bm );
-  mpz_mul( sm, sm, bm ); mpz_mod( sm, sm, pm );
-  printf(" 27b^2r (mod p)        = "); mpz_out_str( stdout, 16, sm ); printf("\n");
-
-  mpz_add( tm, tm, sm ); mpz_mod( tm, tm, pm );
-  printf(" (4a^3+27b^2)r (mod p) = "); mpz_out_str( stdout, 16, tm ); printf("\n");
-
-  mpz_gcdext( gm, sm, r2m, rm, pm ); // sm*rm + nm*pm = 1 = gm
-  mpz_mul( tm, tm, sm ); mpz_mod( tm, tm, pm );
-  printf(" (4a^3+27b^2) (mod p)  = "); mpz_out_str( stdout, 16, tm ); printf("\n\n");
-
-  mpz_mul_ui( tm, am, 4 );
-  mpz_mul( tm, tm, am );
-  mpz_mul( tm, tm, am );
-  mpz_mul_ui( sm, bm, 27 );
-  mpz_mul( sm, sm, bm );
-  mpz_add( tm, tm, sm );
-  mpz_mod( tm, tm, pm );
-  printf(" Discriminant (mod p)  = "); mpz_out_str( stdout, 16, tm ); printf("\n\n");
-
-  ak_mpzn_mul_montgomery( t, four, ec->r2, ec->p, ec->n, ec->size );
-  printf(" 4r (mod p)            = %s [ak_uint64 array]\n",
-            str = ak_ptr_to_hexstr( t, ec->size*sizeof(ak_uint64), ak_true )); free(str);
-
-  // ak_mpzn_mul_montgomery( a, ec->a, ec->r2, ec->p, ec->n, ec->size );
-  ak_mpzn_mul_montgomery( t, t, ec->a, ec->p, ec->n, ec->size );
-  ak_mpzn_mul_montgomery( t, t, ec->a, ec->p, ec->n, ec->size );
-  ak_mpzn_mul_montgomery( t, t, ec->a, ec->p, ec->n, ec->size );
-  printf(" 4a^3r (mod p)         = %s [ak_uint64 array]\n",
-            str = ak_ptr_to_hexstr( t, ec->size*sizeof(ak_uint64), ak_true )); free(str);
-
-
-   ak_mpzn_mul_montgomery( s, twentyseven, ec->r2, ec->p, ec->n, ec->size );
-   printf(" 27r (mod p)           = %s [ak_uint64 array]\n",
-             str = ak_ptr_to_hexstr( s, ec->size*sizeof(ak_uint64), ak_true )); free(str);
-   //ak_mpzn_mul_montgomery( b, ec->b, ec->r2, ec->p, ec->n, ec->size );
-   ak_mpzn_mul_montgomery( s, s, ec->b, ec->p, ec->n, ec->size );
-   ak_mpzn_mul_montgomery( s, s, ec->b, ec->p, ec->n, ec->size );
-   printf(" 27b^2r (mod p)        = %s [ak_uint64 array]\n",
-             str = ak_ptr_to_hexstr( s, ec->size*sizeof(ak_uint64), ak_true )); free(str);
-   ak_mpzn_add_montgomery( t, t, s, ec->p, ec->size );
-   printf(" (4a^3+27b^2)r (mod p) = %s [ak_uint64 array]\n",
-             str = ak_ptr_to_hexstr( t, ec->size*sizeof(ak_uint64), ak_true )); free(str);
-   ak_mpzn_mul_montgomery( t, t, one, ec->p, ec->n, ec->size );
-   printf(" (4a^3+27b^2) (mod p)  = %s [ak_uint64 array]\n",
-             str = ak_ptr_to_hexstr( t, ec->size*sizeof(ak_uint64), ak_true )); free(str);
-*/

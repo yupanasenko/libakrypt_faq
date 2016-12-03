@@ -64,6 +64,24 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
+ int ak_mpzn_set( ak_uint64 *z, ak_uint64 *x, const size_t size )
+{
+  if( z == NULL ) {
+    ak_error_message( ak_error_null_pointer, "using a null pointer to result number", __func__ );
+    return ak_error_null_pointer;
+  }
+  if( x == NULL ) {
+    ak_error_message( ak_error_null_pointer, "using a null pointer to source number", __func__ );
+    return ak_error_null_pointer;
+  }
+  if( !size ) {
+    ak_error_message( ak_error_zero_length, "using a zero legth of source number", __func__ );
+    return ak_error_zero_length;
+  }
+  memcpy( z, x, size*sizeof (ak_uint64 ));
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция рассматривает указатель на массив как вычет одного из типов ak_mpznxxx и присваивает
     этому вычету беззнаковое целое значение value.
 
@@ -446,7 +464,7 @@ int ak_mpzn_set_ui( ak_uint64 *x, const size_t size, ak_uint64 value )
     @param z Указатель на вычет, в который помещается результат
     @param x Левый аргумент опреации сложения
     @param y Правый аргумент операции сложения
-    @param p Модуль, по которому производяится операция сложения
+    @param p Модуль, по которому производятся вычисления
     @param n0 Константа, используемая в вычислениях. Представляет собой младшее слово числа n,
     удовлетворяющего равенству \f$ rs - np = 1\f$.
     @param size Размер модуля в словах (значение константы ak_mpzn256_size или ak_mpzn512_size )   */
@@ -507,6 +525,51 @@ int ak_mpzn_set_ui( ak_uint64 *x, const size_t size, ak_uint64 value )
      z[i] = av;
   }
   if( cy == 1 ) memcpy( z, t+size, size*sizeof( ak_uint64 ));
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Пусть вычет x задан в представлении Монтгомери в виде \f$ xr \f$, где \f$ r \f$
+    заданная степень двойки. Тогда, функция вычисляет вычет z,
+    удовлетворяющий сравнению \f$z \equiv (x^k)r \pmod{p}\f$.
+    Результат z является значением вычета \f$ x^k \pmod{p}\f$ в представлении Монтгомери.
+    Величины k и p задаются как обычные вычеты, р отлично от нуля.
+
+    @param z Вычет, в который помещается результат
+    @param x Вычет, который возводится в степень k
+    @param k Степень, в которую возводится вычет x
+    @param p Модуль, по которому производятся вычисления
+    @param n0 Константа, используемая в вычислениях. Представляет собой младшее слово числа n,
+    удовлетворяющего равенству \f$ rs - np = 1\f$.
+    @param size Размер модуля в словах (значение константы ak_mpzn256_size или ak_mpzn512_size )   */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_mpzn_modpow_montgomery( ak_uint64 *z, ak_uint64 *x, ak_uint64 *k,
+                                                   ak_uint64 *p, ak_uint64 n0, const size_t size )
+{
+  ak_uint64 uk = 0;
+  size_t s = size-1;
+  long long int i, j;
+  ak_mpznmax res = ak_mpznmax_zero; // это константа r (mod p) = r-p
+  if( ak_mpzn_sub( res, res, p, size ) == 0 ) {
+    ak_error_message( ak_error_undefined_value,
+                                             "using an unexpected value of prime modulo", __func__ );
+    return;
+  }
+  while( k[s] == 0 ) {
+     if( s > 0 ) --s;
+      else {
+             ak_mpzn_set( z, res, size );
+             return;
+           }
+  }
+  for( i = s; i >= 0; i-- ) {
+     uk = k[i];
+     for( j = 0; j < 64; j++ ) {
+        ak_mpzn_mul_montgomery( res, res, res, p, n0, size );
+        if( uk&0x8000000000000000LL ) ak_mpzn_mul_montgomery( res, res, x, p, n0, size );
+        uk <<= 1;
+     }
+  }
+  memcpy( z, res, size*sizeof( ak_uint64 ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */
