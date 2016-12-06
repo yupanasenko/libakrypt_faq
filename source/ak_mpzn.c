@@ -79,6 +79,7 @@
     return ak_error_zero_length;
   }
   memcpy( z, x, size*sizeof (ak_uint64 ));
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -112,10 +113,10 @@ int ak_mpzn_set_ui( ak_uint64 *x, const size_t size, ak_uint64 value )
 /*! Функция рассматривает указатель на массив как вычет одного из типов ak_mpznxxx и присваивает
     этому вычету случайное значение, вырабатываемое заданным генератором псевдо случайных чисел.
 
-    @param x[out] Указатель на массив, в который помещается значение вычета
-    @param size[in] Размер массива в словах типа \ref ak_uint64. Данная переменная может
+    @param x Указатель на массив, в который помещается значение вычета
+    @param size Размер массива в словах типа \ref ak_uint64. Данная переменная может
     принимать значения \ref ak_mpzn256_size, \ref ak_mpzn512_size и т.п.
-    @param generator[in] Указатель на генератор псевдо случайных чисел,
+    @param generator Указатель на генератор псевдо случайных чисел,
     используемый для генерации случайного вычета.
 
     @return В случае успеха, функция возвращает ноль (\ref ak_error_ok). В противном случае,
@@ -180,10 +181,10 @@ int ak_mpzn_set_ui( ak_uint64 *x, const size_t size, ak_uint64 value )
 /*! Функция рассматривает указатель на массив как вычет одного из типов ak_mpznxxx и присваивает
     этому вычету значение, содержащееся в строке шестнадцатеричных вычетов.
 
-    @param x[out] Указатель на массив, в который помещается значение вычета
-    @param size[in] Размер массива в словах типа \ref ak_uint64. Данная переменная может
+    @param x Указатель на массив, в который помещается значение вычета
+    @param size Размер массива в словах типа \ref ak_uint64. Данная переменная может
     принимать значения \ref ak_mpzn256_size, \ref ak_mpzn512_size и т.п.
-    @param str[in] Строка шестнадцатеричных символов,
+    @param str Строка шестнадцатеричных символов,
     значение которой присваивается вычету. Если строка содержит больше символов, чем может
     поместиться в заданный массив, то возбуждаетс ошибка.
 
@@ -551,7 +552,7 @@ int ak_mpzn_set_ui( ak_uint64 *x, const size_t size, ak_uint64 value )
   ak_mpznmax res = ak_mpznmax_zero; // это константа r (mod p) = r-p
   if( ak_mpzn_sub( res, res, p, size ) == 0 ) {
     ak_error_message( ak_error_undefined_value,
-                                             "using an unexpected value of prime modulo", __func__ );
+                                          "using an unexpected value of prime modulo", __func__ );
     return;
   }
   while( k[s] == 0 ) {
@@ -565,7 +566,7 @@ int ak_mpzn_set_ui( ak_uint64 *x, const size_t size, ak_uint64 value )
      uk = k[i];
      for( j = 0; j < 64; j++ ) {
         ak_mpzn_mul_montgomery( res, res, res, p, n0, size );
-        if( uk&0x8000000000000000LL ) ak_mpzn_mul_montgomery( res, res, x, p, n0, size );
+        //if( uk&0x8000000000000000LL ) ak_mpzn_mul_montgomery( res, res, x, p, n0, size );
         uk <<= 1;
      }
   }

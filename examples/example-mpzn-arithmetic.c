@@ -512,16 +512,17 @@
   printf(" (4a^3+27b^2) (mod p)  = %s [reverse byte array]\n",
             str = ak_ptr_to_hexstr( d, ec->size*sizeof(ak_uint64), ak_true )); free(str);
 
-
   mpz_set_str( am, wcurve_GOST.ca, 16 );
   mpz_set_str( bm, wcurve_GOST.cb, 16 );
   mpz_set_str( pm, wcurve_GOST.cp, 16 );
+  mpz_sub_ui( rm, pm, 16 );
   mpz_mul_ui( tm, am, 4 );
   mpz_mul( tm, tm, am );
   mpz_mul( tm, tm, am );
   mpz_mul_ui( sm, bm, 27 );
   mpz_mul( sm, sm, bm );
   mpz_add( tm, tm, sm );
+  mpz_mul( tm, tm, rm );
   mpz_mod( tm, tm, pm );
   printf(" Discriminant (mod p)  = "); mpz_out_str( stdout, 16, tm ); printf("\n\n");
 
@@ -551,10 +552,9 @@
   printf(" - ak_mpzn_mul_ui() function test\n"); mul_ui_test( count );
   printf("\n - ak_mpzn_add_montgomery() function test\n"); add_montgomery_test( count );
   printf("\n - ak_mpzn_mul_montgomery() function test\n"); mul_montgomery_test( count );
-  printf("\n - wcurve class test\n"); wcurve_test( count );
-*/
-
   printf(" - ak_mpzn_modpow_montgomery() function test\n"); modpow_montgomery_test( count );
+ */
+  printf("\n - wcurve class test\n"); wcurve_test( count );
 
  return 0;
 }

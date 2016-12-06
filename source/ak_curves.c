@@ -197,6 +197,12 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
   ak_mpzn_mul_montgomery( s, s, ec->b, ec->p, ec->n, ec->size );
   ak_mpzn_add_montgomery( d, d, s, ec->p, ec->size );
 
+ /* определяем константу -16 в представлении Монтгомери и вычисляем D = -16(4a^3+27b^2) (mod p) */
+  ak_mpzn_set_ui( s, ec->size, 16 );
+  ak_mpzn_sub( s, ec->p, s, ec->size );
+  ak_mpzn_mul_montgomery( s, s, ec->r2, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( d, d, s, ec->p, ec->n, ec->size );
+
  /* возвращаем результат (в обычном представлении) */
   ak_mpzn_mul_montgomery( d, d, one, ec->p, ec->n, ec->size );
 }
