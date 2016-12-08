@@ -552,6 +552,8 @@
   print_wpoint( wp, ec );
   if( ak_wpoint_is_ok( wp, ec )) printf(" point is Ok\n"); else printf(" point is wrong\n");
 
+  ak_wpoint_double( wp, ec );
+
 
   mpz_clear( gm );
   mpz_clear( rm );
