@@ -376,12 +376,10 @@
 /* тест для операции возведения в степень */
  void modpow_montgomery_test( size_t count )
 {
-   size_t i = 0, errors_gmp = 0, val = 0;
+   size_t i = 0, val = 0;
    mpz_t xm, ym, zm, tm, pm, rm, gm, sm, um, nm;
-   ak_mpzn256 x, y, n, p, r;
-   ak_mpzn512 z;
+   ak_mpzn256 x, y, n;
    ak_random generator = ak_random_new_lcg();
-   char *str = NULL;
    clock_t tmr;
    ak_wcurve ec = ak_wcurve_new(( const ak_wcurve_params) &wcurve_GOST );
    count /= 10;
@@ -553,6 +551,8 @@
 
   print_wpoint( wp, ec );
   if( ak_wpoint_is_ok( wp, ec )) printf(" point is Ok\n"); else printf(" point is wrong\n");
+
+  ak_wpoint_double( wp, ec );
 
 
   mpz_clear( gm );
