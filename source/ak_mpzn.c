@@ -64,33 +64,17 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция присваивает значение вычета x вычету z. В случае использования неинициализированных
-    данных возвращается ошибка.
+/*! Функция присваивает значение вычета x вычету z. Для оптимизацции вычислений проверка
+    корректности входных данных не производится.
 
     @param z Вычет, которому присваивается значение
     @param x Вычет, значение которого присваивается.
     @param size Размер массива в словах типа \ref ak_uint64. Данная переменная может
-    принимать значения \ref ak_mpzn256_size, \ref ak_mpzn512_size и т.п.
-
-    @return В случае успеха, функция возвращает ноль (\ref ak_error_ok). В противном случае,
-    возвращается код ошибки.                                                                       */
+    принимать значения \ref ak_mpzn256_size, \ref ak_mpzn512_size и т.п.                           */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_mpzn_set( ak_uint64 *z, ak_uint64 *x, const size_t size )
+ void ak_mpzn_set( ak_uint64 *z, ak_uint64 *x, const size_t size )
 {
-  if( z == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to result number", __func__ );
-    return ak_error_null_pointer;
-  }
-  if( x == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to source number", __func__ );
-    return ak_error_null_pointer;
-  }
-  if( !size ) {
-    ak_error_message( ak_error_zero_length, "using a zero legth of source number", __func__ );
-    return ak_error_zero_length;
-  }
   memcpy( z, x, size*sizeof (ak_uint64 ));
- return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -105,19 +89,10 @@
     @return В случае успеха, функция возвращает ноль (\ref ak_error_ok). В противном случае,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
-int ak_mpzn_set_ui( ak_uint64 *x, const size_t size, ak_uint64 value )
+ void ak_mpzn_set_ui( ak_uint64 *x, const size_t size, ak_uint64 value )
 {
-  if( x == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to mpzn", __func__ );
-    return ak_error_null_pointer;
-  }
-  if( !size ) {
-    ak_error_message( ak_error_zero_length, "using a zero legth of input data", __func__ );
-    return ak_error_zero_length;
-  }
   memset( x, 0, size*sizeof( ak_uint64 ));
   x[0] = value;
- return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -464,6 +439,39 @@ int ak_mpzn_set_ui( ak_uint64 *x, const size_t size, ak_uint64 value )
   if( t[size] != cy ) memcpy( z, t, size*sizeof( ak_uint64 ));
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция умножает вычет x на 2, после чего приводит полученную сумму
+    по модулю p, то есть вычисляет значение сравнения \f$ z \equiv 2x \pmod{p}\f$.
+    Умножение производится путем сдвига на 1 разряд влево и последующего вычистания модуля p.
+
+    Результат помещается в переменную z. Указатель на z может совпадать с одним из указателей на
+    слагаемые.
+
+    @param z Вычет, в который помещается результат
+    @param x Вычет, для которого производится умножение
+    @param y Правый аргумент операции сложения
+    @param p Модуль, по которому производяится операция сложения
+    @param size Размер модуля в словах (значение константы ak_mpzn256_size или ak_mpzn512_size )   */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_mpzn_lshift_montgomery( ak_uint64 *z, ak_uint64 *x, ak_uint64 *p, const size_t size )
+{
+  size_t i;
+  ak_uint64 av = 0, bv = 0, cy = 0;
+  ak_mpznmax t = ak_mpznmax_zero;
+
+  t[size] = 0;
+  for( i = 0; i < size; i++, p++ ) {
+    t[i+1] =  (( x[i]&0x8000000000000000LL ) > 0 );
+    t[i] |= x[i] << 1; // сначала сдвигаем на один разряд влево
+    av = t[i];         // потом вычитаем модуль
+    bv = av - cy;
+    cy = bv > av;
+    av = bv - *p;
+    cy += av > bv;
+    z[i] = av;
+   }
+   if( t[size] != cy ) memcpy( z, t, size*sizeof( ak_uint64 ));
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция умножает два вычета x и y в представлении Моонтгомери, после чего приводит полученное
@@ -577,7 +585,7 @@ int ak_mpzn_set_ui( ak_uint64 *x, const size_t size, ak_uint64 value )
      uk = k[i];
      for( j = 0; j < 64; j++ ) {
         ak_mpzn_mul_montgomery( res, res, res, p, n0, size );
-        //if( uk&0x8000000000000000LL ) ak_mpzn_mul_montgomery( res, res, x, p, n0, size );
+        if( uk&0x8000000000000000LL ) ak_mpzn_mul_montgomery( res, res, x, p, n0, size );
         uk <<= 1;
      }
   }

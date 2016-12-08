@@ -388,34 +388,11 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_wpoint_set( ak_wpoint left, ak_wpoint right, ak_wcurve ec )
+ void ak_wpoint_set( ak_wpoint left, ak_wpoint right, ak_wcurve ec )
 {
-  int error = ak_error_ok;
-  if( left == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to result point", __func__ );
-    return ak_error_null_pointer;
-  }
-  if( right == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to assigning point", __func__ );
-    return ak_error_null_pointer;
-  }
-  if( ec == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to elliptic curve", __func__ );
-    return ak_error_null_pointer;
-  }
-  if(( error = ak_mpzn_set( left->x, right->x, ec->size )) != ak_error_ok ) {
-    ak_error_message( error, "wrong assigning of coordinate X", __func__ );
-    return error;
-  }
-  if(( error = ak_mpzn_set( left->y, right->y, ec->size )) != ak_error_ok ) {
-    ak_error_message( error, "wrong assigning of coordinate Y", __func__ );
-    return error;
-  }
-  if(( error = ak_mpzn_set( left->z, right->z, ec->size )) != ak_error_ok ) {
-    ak_error_message( error, "wrong assigning of coordinate Z", __func__ );
-    return error;
-  }
- return ak_error_ok;
+  ak_mpzn_set( left->x, right->x, ec->size );
+  ak_mpzn_set( left->y, right->y, ec->size );
+  ak_mpzn_set( left->z, right->z, ec->size );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

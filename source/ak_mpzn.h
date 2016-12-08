@@ -54,9 +54,9 @@ typedef ak_uint64 ak_mpznmax[ ak_mpznmax_size ];
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Присвоение вычету другого вычета */
- int ak_mpzn_set( ak_uint64 *, ak_uint64 * , const size_t );
+ void ak_mpzn_set( ak_uint64 *, ak_uint64 * , const size_t );
 /*! \brief Присвоение вычету беззнакового целого значения */
- int ak_mpzn_set_ui( ak_uint64 *, const size_t , const ak_uint64 );
+ void ak_mpzn_set_ui( ak_uint64 *, const size_t , const ak_uint64 );
 /*! \brief Присвоение вычету случайного значения */
  int ak_mpzn_set_random( ak_uint64 *, const size_t , ak_random );
 /*! \brief Присвоение вычету случайного значения по фиксированному модулю */
@@ -83,6 +83,8 @@ typedef ak_uint64 ak_mpznmax[ ak_mpznmax_size ];
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Сложение двух вычетов в представлении Монтгомери */
  void ak_mpzn_add_montgomery( ak_uint64 *, ak_uint64 *, ak_uint64 *, ak_uint64 *, const size_t );
+/*! \brief Удвоение на двойку в представлении Монтгомери */
+ void ak_mpzn_lshift_montgomery( ak_uint64 *, ak_uint64 *, ak_uint64 *, const size_t );
 /*! \brief Умножение двух вычетов в представлении Монтгомери */
  void ak_mpzn_mul_montgomery( ak_uint64 *, ak_uint64 *, ak_uint64 *,
                                                           ak_uint64 *, ak_uint64, const size_t );

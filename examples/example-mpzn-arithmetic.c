@@ -319,6 +319,20 @@
   }
   printf(" correct montgomery multiplications %ld from %ld with %ld gmp errors\n", val, count, errors_gmp );
 
+ val=0;
+ // дополнительный цикл проверок
+  for( i = 0; i < count; i++ ) {
+     ak_mpzn_set_random_modulo( x, p, ak_mpzn256_size, generator );
+     ak_mpzn_to_mpz( x, ak_mpzn256_size, xm );
+
+     // тестовый пример для умножения: результат 2x (mod p)
+     mpz_mul_ui( zm, xm, 2 ); mpz_mod( zm, zm, pm );
+     ak_mpzn_lshift_montgomery( x, x, p, ak_mpzn256_size );
+     ak_mpzn_to_mpz( x, ak_mpzn256_size, um );
+     if( mpz_cmp( um, zm ) == 0 ) val++;
+  }
+  printf(" correct montgomery left shiftings (multiplication by 2) %ld from %ld\n\n multiplications:\n", val, count );
+
   // speed test
   ak_mpzn_set_random_modulo( x, p, ak_mpzn256_size, generator );
   ak_mpzn_set_random_modulo( y, p, ak_mpzn256_size, generator );
@@ -358,6 +372,27 @@
   }
   tmr = clock() - tmr;
   printf(" gmp time:  %.3fs [only multiplication with modulo reduction]\n", ((double) tmr) / ((double) CLOCKS_PER_SEC));
+
+  // -----------------------
+  printf("\n shiftings (multiplication by 2):\n");
+  ak_mpzn_set_random_modulo( x, p, ak_mpzn256_size, generator );
+  ak_mpzn_to_mpz( x, ak_mpzn256_size, xm );
+  tmr = clock();
+  for( i = 0; i < count; i++ ) {
+     ak_mpzn_lshift_montgomery( x, x, p, ak_mpzn256_size );
+  }
+  tmr = clock() - tmr;
+  printf(" mpzn time: %.3fs [", ((double) tmr) / ((double) CLOCKS_PER_SEC));
+  printf("x = %s]\n", str = ak_mpzn_to_hexstr( x, ak_mpzn256_size )); free(str);
+
+  tmr = clock();
+  for( i = 0; i < count; i++ ) {
+     mpz_mul_ui( xm, xm, 2 ); mpz_mod( xm, xm, pm );
+  }
+  tmr = clock() - tmr;
+  printf(" gmp time:  %.3fs [", ((double) tmr) / ((double) CLOCKS_PER_SEC));
+  printf("z = "); mpz_out_str( stdout, 16, xm ); printf("]\n");
+
 
   mpz_clear(nm);
   mpz_clear(gm);
@@ -517,6 +552,7 @@
   ak_wcurve ec = ak_wcurve_new(( const ak_wcurve_params) &wcurve_GOST );
   ak_wpoint wp = ak_wpoint_new(( const ak_wcurve_params) &wcurve_GOST );
   mpz_t am, bm, pm, r2m, tm, sm, rm, gm;
+  ak_random generator = ak_random_new_lcg();
 
   mpz_init(am);
   mpz_init(bm);
@@ -554,7 +590,6 @@
 
   ak_wpoint_double( wp, ec );
 
-
   mpz_clear( gm );
   mpz_clear( rm );
   mpz_clear( am );
@@ -566,6 +601,7 @@
 
   wp = ak_wpoint_delete( wp );
   ec = ak_wcurve_delete( ec );
+  generator = ak_random_delete( generator );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -580,10 +616,12 @@
   printf(" - ak_mpzn_mul() function test\n"); mul_test( count );
   printf(" - ak_mpzn_mul_ui() function test\n"); mul_ui_test( count );
   printf("\n - ak_mpzn_add_montgomery() function test\n"); add_montgomery_test( count );
+*/
   printf("\n - ak_mpzn_mul_montgomery() function test\n"); mul_montgomery_test( count );
+/*
   printf(" - ak_mpzn_modpow_montgomery() function test\n"); modpow_montgomery_test( count );
- */
-  printf("\n - wcurve class test\n"); wcurve_test( count );
 
+  printf("\n - wcurve class test\n"); wcurve_test( count );
+*/
  return 0;
 }
