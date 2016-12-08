@@ -344,7 +344,7 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
 {
   ak_mpznmax t, s;
 
- /* 1. В начале проверяем принадлежность точки заданной кривой */
+ /* Проверяем принадлежность точки заданной кривой */
   ak_mpzn_set( t, ec->a, ec->size );
   ak_mpzn_mul_montgomery( t, t, wp->x, ec->p, ec->n, ec->size );
   ak_mpzn_set( s, ec->b, ec->size );
