@@ -222,5 +222,209 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*          реализация операций с точками эллиптической кривой в короткой форме Вейерштрасса       */
+/* ----------------------------------------------------------------------------------------------- */
+/*!  Функция создает вектор \f$ (P_x:P_y:r^{-1}) \f$, являющийся точкой проективного пространства,
+     соответствующего аффинной точке \f$ P=(P_x,P_y)\f$. Дополнительно, для оптимизации вычислений,
+     точка записывается в представлении Монтгомери.
+
+     @param wp указатель на структуру struct wpoint
+     @param params Параметры эллиптической кривой, заданные в читаемой человеком форме.
+     @return В случае возникновения ошибки, возвращается ее код. В противном случае,
+     возвращается \ref ak_error_ok.                                                               */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_wpoint_create( ak_wpoint wp, ak_wcurve_params params )
+{
+ int local_error = ak_error_ok;
+ size_t bytelen = 0;
+ if( wp == NULL ) {
+     ak_error_message( ak_error_null_pointer,
+                             "use a null pointer to point of elliptic curve context", __func__ );
+     return ak_error_null_pointer;
+ }
+ if( params == NULL ) {
+     ak_error_message( ak_error_null_pointer,
+                                    "use a null pointer to elliptic curve parameters", __func__ );
+     return ak_error_null_pointer;
+ }
+
+/* определяем размер координат точки в байтах */
+ bytelen = params->size*sizeof( ak_uint64 );
+
+/* инициализируем координату x */
+ if(( wp->x = malloc( bytelen )) == NULL ) {
+   ak_error_message( ak_error_out_of_memory, "wrong coordinate X memory allocation", __func__ );
+   goto wrong_label;
+ }
+ if(( local_error = ak_mpzn_set_hexstr( wp->x, params->size, params->cpx )) != ak_error_ok ) {
+   ak_error_message( local_error, "wrong coordinate X convertation", __func__ );
+   goto wrong_label;
+ }
+/* инициализируем координату y */
+ if(( wp->y = malloc( bytelen )) == NULL ) {
+   ak_error_message( ak_error_out_of_memory, "wrong coordinate Y memory allocation", __func__ );
+   goto wrong_label;
+ }
+ if(( local_error = ak_mpzn_set_hexstr( wp->y, params->size, params->cpy )) != ak_error_ok ) {
+   ak_error_message( local_error, "wrong coordinate Y convertation", __func__ );
+   goto wrong_label;
+ }
+/* инициализируем координату z */
+ if(( wp->z = malloc( bytelen )) == NULL ) {
+   ak_error_message( ak_error_out_of_memory, "wrong coordinate Z memory allocation", __func__ );
+   goto wrong_label;
+ }
+ ak_mpzn_set_ui( wp->z, params->size, 1 );
+
+/* завершение и очистка памяти */
+ return ak_error_ok;
+ wrong_label:
+   local_error = ak_error_get_value();
+   ak_wpoint_destroy( wp );
+ return local_error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_wpoint_destroy( ak_wpoint wp )
+{
+  int destroy_error = ak_error_ok;
+  if( wp == NULL ) { ak_error_message( ak_error_null_pointer,
+                          "destroing null pointer to point of elliptic curve context", __func__ );
+    return ak_error_null_pointer;
+  }
+  if( wp->x != NULL ) free( wp->x );
+    else ak_error_message( destroy_error = ak_error_undefined_value,
+                "destroing null pointer to coordinate X of elliptic curve's poiont ", __func__ );
+  if( wp->y != NULL ) free( wp->y );
+    else ak_error_message( destroy_error = ak_error_undefined_value,
+                "destroing null pointer to coordinate Y of elliptic curve's poiont ", __func__ );
+  if( wp->z != NULL ) free( wp->z );
+    else ak_error_message( destroy_error = ak_error_undefined_value,
+                "destroing null pointer to coordinate Z of elliptic curve's poiont ", __func__ );
+    return destroy_error;
+
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_wpoint ak_wpoint_new( ak_wcurve_params params )
+{
+  ak_wpoint wp = ( ak_wpoint ) malloc( sizeof( struct wpoint ));
+  if( wp != NULL ) ak_wpoint_create( wp, params );
+   else ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+  return wp;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_wpoint_delete( ak_pointer wp )
+{
+  if( wp != NULL ) {
+    ak_wpoint_destroy( wp );
+    free( wp );
+  } else ak_error_message( ak_error_null_pointer,
+                         "deleting a null pointer to point of elliptic curve context", __func__ );
+  return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Для заданной точки \f$ P = (x:y:z) \f$ функция проверяет
+    что точка принадлежит эллиптической кривой, то есть выполнено сравнение
+    \f$ yz^2 \equiv x^3 + axz^2 + bz^3 \pmod{p}\f$,
+    - проверяется, что порядок точки действительно есть величина \f$ q \f$, заданная в параметрах
+    эллиптической кривой, то есть выполнимость равенства \f$ [q]P = \mathcal O\f$,
+    где \f$ \mathcal O \f$ - бесконечно удаленная точка (ноль группы точек эллиптической кривой),
+    а \f$ q \f$ порядок подгруппы, в которой реализуются вычисления.
+
+    @param wp точка \f$ P \f$ эллиптической кривой
+    @param ec эллиптическая кривая, на принадлежность которой проверяется точка \f$P\f$.
+
+    @return Функция возвращает \ref ak_true если все проверки выполнены. В противном случае
+    возвращается \ref ak_false.                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_wpoint_is_ok( ak_wpoint wp, ak_wcurve ec )
+{
+  ak_mpznmax t, s;
+
+ /* 1. В начале проверяем принадлежность точки заданной кривой */
+  ak_mpzn_set( t, ec->a, ec->size );
+  ak_mpzn_mul_montgomery( t, t, wp->x, ec->p, ec->n, ec->size );
+  ak_mpzn_set( s, ec->b, ec->size );
+  ak_mpzn_mul_montgomery( s, s, wp->z, ec->p, ec->n, ec->size );
+  ak_mpzn_add_montgomery( t, t, s, ec->p, ec->size ); // теперь в t величина (ax+bz)
+
+  ak_mpzn_set( s, wp->z, ec->size );
+  ak_mpzn_mul_montgomery( s, s, s, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( t, t, s, ec->p, ec->n, ec->size ); // теперь в t величина (ax+bz)z^2
+
+  ak_mpzn_set( s, wp->x, ec->size );
+  ak_mpzn_mul_montgomery( s, s, s, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( s, s, wp->x, ec->p, ec->n, ec->size );
+  ak_mpzn_add_montgomery( t, t, s, ec->p, ec->size ); // теперь в t величина x^3 + (ax+bz)z^2
+
+  ak_mpzn_set( s, wp->y, ec->size );
+  ak_mpzn_mul_montgomery( s, s, s, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( s, s, wp->z, ec->p, ec->n, ec->size ); // теперь в s величина x^3 + (ax+bz)z^2
+
+  if( ak_mpzn_cmp( t, s, ec->size )) return ak_false;
+ return ak_true;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Для заданной точки \f$ P = (x:y:z) \f$ функция проверяет
+    что порядок точки действительно есть величина \f$ q \f$, заданная в параметрах
+    эллиптической кривой, то есть проверяется выполнимость равенства \f$ [q]P = \mathcal O\f$,
+    где \f$ \mathcal O \f$ - бесконечно удаленная точка (ноль группы точек эллиптической кривой),
+    а \f$ q \f$ порядок подгруппы, в которой реализуются вычисления.
+
+    @param wp точка \f$ P \f$ эллиптической кривой
+    @param ec эллиптическая кривая, на принадлежность которой проверяется точка \f$P\f$.
+
+    @return Функция возвращает \ref ak_true если все проверки выполнены. В противном случае
+    возвращается \ref ak_false.                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_wpoint_check_order( ak_wpoint wp, ak_wcurve ec )
+{
+  return ak_false;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_wpoint_set( ak_wpoint left, ak_wpoint right, ak_wcurve ec )
+{
+  int error = ak_error_ok;
+  if( left == NULL ) {
+    ak_error_message( ak_error_null_pointer, "using a null pointer to result point", __func__ );
+    return ak_error_null_pointer;
+  }
+  if( right == NULL ) {
+    ak_error_message( ak_error_null_pointer, "using a null pointer to assigning point", __func__ );
+    return ak_error_null_pointer;
+  }
+  if( ec == NULL ) {
+    ak_error_message( ak_error_null_pointer, "using a null pointer to elliptic curve", __func__ );
+    return ak_error_null_pointer;
+  }
+  if(( error = ak_mpzn_set( left->x, right->x, ec->size )) != ak_error_ok ) {
+    ak_error_message( error, "wrong assigning of coordinate X", __func__ );
+    return error;
+  }
+  if(( error = ak_mpzn_set( left->y, right->y, ec->size )) != ak_error_ok ) {
+    ak_error_message( error, "wrong assigning of coordinate Y", __func__ );
+    return error;
+  }
+  if(( error = ak_mpzn_set( left->z, right->z, ec->size )) != ak_error_ok ) {
+    ak_error_message( error, "wrong assigning of coordinate Z", __func__ );
+    return error;
+  }
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Точка эллиптической кривой \f$ P \f$ заменяется значением \f$ 2P \f$. */
+ void ak_wpoint_double( ak_wpoint wp, ak_wcurve ec )
+{
+
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                                                                    ak_curves.c  */
 /* ----------------------------------------------------------------------------------------------- */

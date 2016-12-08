@@ -488,11 +488,36 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ void print_wpoint( ak_wpoint wp, ak_wcurve ec )
+{
+  int i = 0;
+  char *str = NULL;
+
+  printf("point of elliptic curve:\n");
+  // X
+  printf(" x = %s [reverse byte array]\n x = ",
+     str = ak_ptr_to_hexstr( wp->x, ec->size*sizeof(ak_uint64), ak_true )); free(str);
+  for( i = 0; i < ec->size; i++ ) printf("%lx ", wp->x[i]);
+  printf("[ak_uint64 array]\n\n");
+  // Y
+  printf(" y = %s [reverse byte array]\n y = ",
+     str = ak_ptr_to_hexstr( wp->y, ec->size*sizeof(ak_uint64), ak_true )); free(str);
+  for( i = 0; i < ec->size; i++ ) printf("%lx ", wp->y[i]);
+  printf("[ak_uint64 array]\n\n");
+  // X
+  printf(" z = %s [reverse byte array]\n z = ",
+     str = ak_ptr_to_hexstr( wp->z, ec->size*sizeof(ak_uint64), ak_true )); free(str);
+  for( i = 0; i < ec->size; i++ ) printf("%lx ", wp->z[i]);
+  printf("[ak_uint64 array]\n\n");
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /* тест для операций на эллиптических кривых */
  void wcurve_test( size_t count )
 {
   char *str = NULL;
   ak_wcurve ec = ak_wcurve_new(( const ak_wcurve_params) &wcurve_GOST );
+  ak_wpoint wp = ak_wpoint_new(( const ak_wcurve_params) &wcurve_GOST );
   mpz_t am, bm, pm, r2m, tm, sm, rm, gm;
 
   mpz_init(am);
@@ -526,6 +551,9 @@
   mpz_mod( tm, tm, pm );
   printf(" Discriminant (mod p)  = "); mpz_out_str( stdout, 16, tm ); printf("\n\n");
 
+  print_wpoint( wp, ec );
+  if( ak_wpoint_is_ok( wp, ec )) printf(" point is Ok\n"); else printf(" point is wrong\n");
+
 
   mpz_clear( gm );
   mpz_clear( rm );
@@ -536,6 +564,7 @@
   mpz_clear( tm );
   mpz_clear( sm );
 
+  wp = ak_wpoint_delete( wp );
   ec = ak_wcurve_delete( ec );
 }
 
