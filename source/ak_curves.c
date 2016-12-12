@@ -407,7 +407,7 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
 /*! Точка эллиптической кривой \f$ P \f$ заменяется значением \f$ 2P \f$. */
  void ak_wpoint_double( ak_wpoint wp, ak_wcurve ec )
 {
- ak_mpznmax u1, u2, u3, u4, u5, u6;
+ ak_mpznmax u1, u2, u3, u4, u5, u6, u7;
  ak_mpznmax three;
 
  if( ak_mpzn_cmp_ui( wp->z, ec->size, 0 ) == ak_true ) return;
@@ -431,10 +431,10 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
  ak_mpzn_mul_montgomery( u3, wp->x, wp->y, ec->p, ec->n, ec->size );
  ak_mpzn_mul_montgomery( u3, u3, u2, ec->p, ec->n, ec->size ); // u3 <- xzy^2 (B)
 
- ak_mpzn_lshift_montgomery( u5, u3, ec->p, ec->size );
- ak_mpzn_lshift_montgomery( u5, u5, ec->p, ec->size );
- ak_mpzn_lshift_montgomery( u5, u5, ec->p, ec->size );
- ak_mpzn_sub( u5, ec->p, u5, ec->size );
+ ak_mpzn_lshift_montgomery( u7, u3, ec->p, ec->size );
+ ak_mpzn_lshift_montgomery( u7, u7, ec->p, ec->size ); // u7 <- 4u3
+ ak_mpzn_lshift_montgomery( u5, u7, ec->p, ec->size );
+ ak_mpzn_sub( u5, ec->p, u5, ec->size ); // u5 <- -8u3
 
  ak_mpzn_mul_montgomery( u4, u1, u1, ec->p, ec->n, ec->size );
  ak_mpzn_add_montgomery( u4, u4, u5, ec->p, ec->size ); // u4 <- u1^2 - 8u3 (H)
@@ -442,27 +442,33 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
  ak_mpzn_lshift_montgomery( wp->x, u4, ec->p, ec->size );
  ak_mpzn_mul_montgomery( wp->x, wp->x, u2, ec->p, ec->n, ec->size ); // x <- 2u2u4
 
- ak_mpzn_lshift_montgomery( u5, u3, ec->p, ec->size );
- ak_mpzn_lshift_montgomery( u5, u5, ec->p, ec->size );
  ak_mpzn_sub( u6, ec->p, u4, ec->size );
- ak_mpzn_add_montgomery( u5, u5, u6, ec->p, ec->size );
+ ak_mpzn_add_montgomery( u5, u7, u6, ec->p, ec->size );
  ak_mpzn_mul_montgomery( u5, u5, u1, ec->p, ec->n, ec->size ); // u5 = u1( 4u3 - u4 )
 
- ak_mpzn_mul_montgomery( u6, wp->y, u2, ec->p, ec->n, ec->size );
- ak_mpzn_mul_montgomery( u6, u6, u6, ec->p, ec->n, ec->size );
- ak_mpzn_lshift_montgomery( u6, u6, ec->p, ec->size );
- ak_mpzn_lshift_montgomery( u6, u6, ec->p, ec->size );
- ak_mpzn_lshift_montgomery( u6, u6, ec->p, ec->size ); // u6 = 8y^2u2^2
+ ak_mpzn_mul_montgomery( u7, u2, u2, ec->p, ec->n, ec->size );
+ ak_mpzn_lshift_montgomery( u7, u7, ec->p, ec->size );
+ ak_mpzn_lshift_montgomery( u7, u7, ec->p, ec->size );
+ ak_mpzn_lshift_montgomery( u7, u7, ec->p, ec->size ); // u7 <- 8u2^2
+
+ ak_mpzn_mul_montgomery( u6, wp->y, u7, ec->p, ec->n, ec->size );
+ ak_mpzn_mul_montgomery( u6, wp->y, u6, ec->p, ec->n, ec->size ); // u6 = 8y^2u2^2
  ak_mpzn_sub( u6, ec->p, u6, ec->size );
 
  ak_mpzn_add_montgomery( wp->y, u6, u5, ec->p, ec->size ); // y <- u6 - u5
-
- ak_mpzn_mul_montgomery( wp->z, u2, u2, ec->p, ec->n, ec->size );
- ak_mpzn_mul_montgomery( wp->z, wp->z, u2, ec->p, ec->n, ec->size );
- ak_mpzn_lshift_montgomery( wp->z, wp->z, ec->p, ec->size );
- ak_mpzn_lshift_montgomery( wp->z, wp->z, ec->p, ec->size );
- ak_mpzn_lshift_montgomery( wp->z, wp->z, ec->p, ec->size );
+ ak_mpzn_mul_montgomery( wp->z, u7, u2, ec->p, ec->n, ec->size ); // z <- u2u7
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_wpoint_reduce( ak_wpoint wp, ak_wcurve ec )
+{
+ ak_mpznmax u;
+
+
+
+
+}
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                    ak_curves.c  */
