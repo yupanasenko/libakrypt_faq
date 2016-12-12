@@ -588,11 +588,17 @@
   print_wpoint( wp, ec );
   if( ak_wpoint_is_ok( wp, ec )) printf(" point is Ok\n"); else printf(" point is wrong\n");
 
+ for(int i = 0; i < 5; i++ ) {
   ak_wpoint_double( wp, ec );
   print_wpoint( wp, ec );
   if( ak_wpoint_is_ok( wp, ec)) printf(" point iss Ok\n");
    else printf("point iss wrong\n");
 
+  ak_wpoint_reduce( wp, ec );
+  print_wpoint( wp, ec );
+  if( ak_wpoint_is_ok( wp, ec)) printf(" point iss Ok\n");
+   else printf("point iss wrong\n");
+ }
 
   mpz_clear( gm );
   mpz_clear( rm );
