@@ -407,28 +407,8 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
 /*! Точка эллиптической кривой \f$ P \f$ заменяется значением \f$ 2P \f$. */
  void ak_wpoint_double( ak_wpoint wp, ak_wcurve ec )
 {
-/*
-    // s1 = y;
-    s1 *= y; s1 %= ec.modulo();
-    u1 = s1; u1 *= s1; u1 %= ec.modulo();
-    s1 *= x; s1 <<= 2; s1 %= ec.modulo();
-
-    // u2 = x;
-    u2 *= 3;
-    //m = z;
-    m *= z; m %= ec.modulo();
-    m *= m;  m *= ec.coefa(); m.add_mul( u2, x ); m %= ec.modulo();
-    u2 = s1; x = m; x *= m; x -= u2; x -= u2;
-    u1 <<= 3; u2 -= x; u2 *= m; u2 -= u1;
-    z *= ( y <<= 1 ); y = u2;
-
-    x %= ec.modulo(); if( x < 0 ) x += ec.modulo();
-    y %= ec.modulo(); if( y < 0 ) y += ec.modulo();
-    z %= ec.modulo();
-   return *this;
-*/
- char *str = NULL;
- ak_mpznmax u0, u1, u2, u3, u4, u5;
+ ak_mpznmax u1, u2, u3, u4, u5, u6;
+ ak_mpznmax three;
 
  if( ak_mpzn_cmp_ui( wp->z, ec->size, 0 ) == ak_true ) return;
  if( ak_mpzn_cmp_ui( wp->y, ec->size, 0 ) == ak_true ) {
@@ -436,40 +416,54 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
    return;
  }
 
+ ak_mpzn_set_ui( three, ec->size, 3 );
+ ak_mpzn_mul_montgomery( three, three, ec->r2, ec->p, ec->n, ec->size );
 
+ ak_mpzn_mul_montgomery( u1, wp->z, wp->z, ec->p, ec->n, ec->size );
+ ak_mpzn_mul_montgomery( u1, u1, ec->a, ec->p, ec->n, ec->size ); // u1 <- az^2
 
+ ak_mpzn_mul_montgomery( u2, wp->x, wp->x, ec->p, ec->n, ec->size );
+ ak_mpzn_mul_montgomery( u2, u2, three, ec->p, ec->n, ec->size ); // u2 <- 3x^2
+
+ ak_mpzn_add_montgomery( u1, u1, u2, ec->p, ec->size ); // u1 <- az^2 + 3x^2 (W)
+
+ ak_mpzn_mul_montgomery( u2, wp->y, wp->z, ec->p, ec->n, ec->size ); // u2 <- yz (S)
+ ak_mpzn_mul_montgomery( u3, wp->x, wp->y, ec->p, ec->n, ec->size );
+ ak_mpzn_mul_montgomery( u3, u3, u2, ec->p, ec->n, ec->size ); // u3 <- xzy^2 (B)
+
+ ak_mpzn_lshift_montgomery( u5, u3, ec->p, ec->size );
+ ak_mpzn_lshift_montgomery( u5, u5, ec->p, ec->size );
+ ak_mpzn_lshift_montgomery( u5, u5, ec->p, ec->size );
+ ak_mpzn_sub( u5, ec->p, u5, ec->size );
+
+ ak_mpzn_mul_montgomery( u4, u1, u1, ec->p, ec->n, ec->size );
+ ak_mpzn_add_montgomery( u4, u4, u5, ec->p, ec->size ); // u4 <- u1^2 - 8u3 (H)
+
+ ak_mpzn_lshift_montgomery( wp->x, u4, ec->p, ec->size );
+ ak_mpzn_mul_montgomery( wp->x, wp->x, u2, ec->p, ec->n, ec->size ); // x <- 2u2u4
+
+ ak_mpzn_lshift_montgomery( u5, u3, ec->p, ec->size );
+ ak_mpzn_lshift_montgomery( u5, u5, ec->p, ec->size );
+ ak_mpzn_sub( u6, ec->p, u4, ec->size );
+ ak_mpzn_add_montgomery( u5, u5, u6, ec->p, ec->size );
+ ak_mpzn_mul_montgomery( u5, u5, u1, ec->p, ec->n, ec->size ); // u5 = u1( 4u3 - u4 )
+
+ ak_mpzn_mul_montgomery( u6, wp->y, u2, ec->p, ec->n, ec->size );
+ ak_mpzn_mul_montgomery( u6, u6, u6, ec->p, ec->n, ec->size );
+ ak_mpzn_lshift_montgomery( u6, u6, ec->p, ec->size );
+ ak_mpzn_lshift_montgomery( u6, u6, ec->p, ec->size );
+ ak_mpzn_lshift_montgomery( u6, u6, ec->p, ec->size ); // u6 = 8y^2u2^2
+ ak_mpzn_sub( u6, ec->p, u6, ec->size );
+
+ ak_mpzn_add_montgomery( wp->y, u6, u5, ec->p, ec->size ); // y <- u6 - u5
+
+ ak_mpzn_mul_montgomery( wp->z, u2, u2, ec->p, ec->n, ec->size );
+ ak_mpzn_mul_montgomery( wp->z, wp->z, u2, ec->p, ec->n, ec->size );
+ ak_mpzn_lshift_montgomery( wp->z, wp->z, ec->p, ec->size );
+ ak_mpzn_lshift_montgomery( wp->z, wp->z, ec->p, ec->size );
+ ak_mpzn_lshift_montgomery( wp->z, wp->z, ec->p, ec->size );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                    ak_curves.c  */
 /* ----------------------------------------------------------------------------------------------- */
-/*
-
- ak_mpznmax s1, u1, u2, u3, u4, m;
-
-  ak_mpzn_set( s1, wp->y, ec->size );                               // s1 <- y;
-  ak_mpzn_mul_montgomery( s1, s1, wp->y, ec->p, ec->n, ec->size );  // s1 <- s1*y = y^2
-  ak_mpzn_set( u1, s1, ec->size );                                  // u1 <- s1 = y^2
-  ak_mpzn_mul_montgomery( u1, u1, s1, ec->p, ec->n, ec->size );     // u1 <- u1*s1 = y^4
-  ak_mpzn_mul_montgomery( s1, s1, wp->x, ec->p, ec->n, ec->size );  // s1 <- s1*x = xy^2
-
-  ak_mpzn_set_ui( u4, ec->size, 4 );
-  ak_mpzn_mul_montgomery( u4, u4, ec->r2, ec->p, ec->n, ec->size ); // u4 <- 4r (mod p)
-  ak_mpzn_mul_montgomery( s1, s1, u2, ec->p, ec->n, ec->size );     // s1 <- 4s1 = 4xy^2
-
-  ak_mpzn_set( u2, wp->x, ec->size );
-  ak_mpzn_set_ui( u3, ec->size, 3 );
-  ak_mpzn_mul_montgomery( u3, u3, ec->r2, ec->p, ec->n, ec->size ); // u3 <- 3r (mod p)
-  ak_mpzn_mul_montgomery( u2, u2, u3, ec->p, ec->n, ec->size );     // u2 <- u2*3 = 3x
-
-  ak_mpzn_set( m, wp->z, ec->size ); // m <- z
-  ak_mpzn_mul_montgomery( m, m, m, ec->p, ec->n, ec->size ); // m <- m^2 = z^2
-  ak_mpzn_mul_montgomery( m, m, m, ec->p, ec->n, ec->size ); // m <- m^2 = z^4
-  ak_mpzn_mul_montgomery( m, m, ec->a, ec->p, ec->n, ec->size ); // m <- am = az^4
-
-  ak_mpzn_mul_montgomery( u2, u2, wp->x, ec->p, ec->n, ec->size ); // u2 <- u2*x = 3x^2
-  ak_mpzn_add_montgomery( m, m, u2, ec->p, ec->size ); // m <= m + u2 = (az^4 + 3x^2)
-
-  ak_mpzn_set( u2, s1, ec->size ); // u2 = s1
-
-*/

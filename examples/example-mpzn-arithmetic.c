@@ -589,6 +589,10 @@
   if( ak_wpoint_is_ok( wp, ec )) printf(" point is Ok\n"); else printf(" point is wrong\n");
 
   ak_wpoint_double( wp, ec );
+  print_wpoint( wp, ec );
+  if( ak_wpoint_is_ok( wp, ec)) printf(" point iss Ok\n");
+   else printf("point iss wrong\n");
+
 
   mpz_clear( gm );
   mpz_clear( rm );
@@ -616,12 +620,10 @@
   printf(" - ak_mpzn_mul() function test\n"); mul_test( count );
   printf(" - ak_mpzn_mul_ui() function test\n"); mul_ui_test( count );
   printf("\n - ak_mpzn_add_montgomery() function test\n"); add_montgomery_test( count );
-*/
   printf("\n - ak_mpzn_mul_montgomery() function test\n"); mul_montgomery_test( count );
-/*
   printf(" - ak_mpzn_modpow_montgomery() function test\n"); modpow_montgomery_test( count );
-
-  printf("\n - wcurve class test\n"); wcurve_test( count );
 */
+  printf("\n - wcurve class test\n"); wcurve_test( count );
+
  return 0;
 }
