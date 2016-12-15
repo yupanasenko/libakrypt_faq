@@ -408,7 +408,6 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
  void ak_wpoint_double( ak_wpoint wp, ak_wcurve ec )
 {
  ak_mpznmax u1, u2, u3, u4, u5;
- ak_mpznmax three;
 
  if( ak_mpzn_cmp_ui( wp->z, ec->size, 0 ) == ak_true ) return;
  if( ak_mpzn_cmp_ui( wp->y, ec->size, 0 ) == ak_true ) {
@@ -416,13 +415,11 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
    return;
  }
 
- ak_mpzn_set_ui( three, ec->size, 3 );
- ak_mpzn_mul_montgomery( three, three, ec->r2, ec->p, ec->n, ec->size );
-
  ak_mpzn_mul_montgomery( u1, wp->z, wp->z, ec->p, ec->n, ec->size );
  ak_mpzn_mul_montgomery( u1, u1, ec->a, ec->p, ec->n, ec->size ); // u1 <- az^2
  ak_mpzn_mul_montgomery( u2, wp->x, wp->x, ec->p, ec->n, ec->size );
- ak_mpzn_mul_montgomery( u2, u2, three, ec->p, ec->n, ec->size ); // u2 <- 3x^2
+ ak_mpzn_lshift_montgomery( u3, u2, ec->p, ec->size );
+ ak_mpzn_add_montgomery( u2, u2, u3, ec->p, ec->size );
  ak_mpzn_add_montgomery( u1, u1, u2, ec->p, ec->size ); // u1 <- az^2 + 3x^2 (W)
  ak_mpzn_mul_montgomery( u2, wp->y, wp->z, ec->p, ec->n, ec->size ); // u2 <- yz (S)
  ak_mpzn_mul_montgomery( u3, wp->x, wp->y, ec->p, ec->n, ec->size );
