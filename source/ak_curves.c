@@ -466,6 +466,139 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
  ak_mpzn_set_ui( wp->z, ec->size, 1 );
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! Точка эллиптической кривой \f$ P \f$ заменяется удвоенным значением \f$ 2P \f$
+
+    Для вычислений используются соотношения приведенные в работе:
+    1998 Cohen–Miyaji–Ono "Efficient elliptic curve exponentiation using mixed coordinates",
+    formula (6).
+
+    Explicit formulas:
+    \code
+      XX = X1^2
+      YY = Y1^2
+      ZZ = Z1^2
+      S = 4*X1*YY
+      M = 3*XX+a*ZZ^2
+      T = M2-2*S
+      X3 = T
+      Y3 = M*(S-T)-8*YY^2
+      Z3 = 2*Y1*Z1
+    \endcode
+
+   @param wp Удваиваемая точка кривой \f$ P \f$
+   @param ec Эллиптическая кривая, которой принадлежит точка \f$ P \f$                             */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_wpoint_double_mj( ak_wpoint wp, ak_wcurve ec )
+{
+ ak_mpznmax u1, u2, s1, m;
+
+ if( ak_mpzn_cmp_ui( wp->z, ec->size, 0 ) == ak_true ) return;
+ if( ak_mpzn_cmp_ui( wp->y, ec->size, 0 ) == ak_true ) {
+   ak_wpoint_set_as_unit( wp, ec );
+   return;
+ }
+
+//    s1 = y;
+//    s1 *= y; s1 %= ec.modulo();
+  ak_mpzn_mul_montgomery( s1, wp->y, wp->y, ec->p, ec->n, ec->size );
+
+//    u1 = s1; u1 *= s1; u1 %= ec.modulo();
+  ak_mpzn_mul_montgomery( u1, s1, s1, ec->p, ec->n, ec->size );
+
+//    s1 *= x; s1 <<= 2; s1 %= ec.modulo();
+  ak_mpzn_mul_montgomery( s1, s1, wp->x, ec->p, ec->n, ec->size );
+  ak_mpzn_lshift_montgomery( s1, s1, ec->p, ec->size );
+  ak_mpzn_lshift_montgomery( s1, s1, ec->p, ec->size );
+
+//     u2 = x; u2 *= 3;
+  ak_mpzn_lshift_montgomery( u2, wp->x, ec->p, ec->size );
+  ak_mpzn_add_montgomery( u2, u2, wp->x, ec->p, ec->size );
+
+//    m = z; m *= z; m %= ec.modulo(); m *= m;
+  ak_mpzn_mul_montgomery( m, wp->z, wp->z, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( m, m, m, ec->p, ec->n, ec->size );
+
+//    m *= ec.coefa(); m.add_mul( u2, x ); m %= ec.modulo();
+  ak_mpzn_mul_montgomery( m, m, ec->a, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( u2, u2, wp->x, ec->p, ec->n, ec->size );
+  ak_mpzn_add_montgomery( m, m, u2, ec->p, ec->size );
+
+//    x = m; x *= m; x -= s1; x -= s1;
+  ak_mpzn_mul_montgomery( wp->x, m, m, ec->p, ec->n, ec->size );
+  ak_mpzn_lshift_montgomery( u2, s1, ec->p, ec->size );
+  ak_mpzn_sub( u2, ec->p, u2, ec->size );
+  ak_mpzn_add_montgomery( wp->x, wp->x, u2, ec->p, ec->size );
+
+//    u1 <<= 3; s1 -= x; s1 *= m; s1 -= u1;
+ ak_mpzn_lshift_montgomery( u1, u1, ec->p, ec->size );
+ ak_mpzn_lshift_montgomery( u1, u1, ec->p, ec->size );
+ ak_mpzn_lshift_montgomery( u1, u1, ec->p, ec->size );
+ ak_mpzn_sub( u2, ec->p, wp->x, ec->size );
+ ak_mpzn_add_montgomery( s1, s1, u2, ec->p, ec->size );
+ ak_mpzn_mul_montgomery( s1, s1, m, ec->p, ec->n, ec->size );
+ ak_mpzn_sub( u2, ec->p, u1, ec->size );
+ ak_mpzn_add_montgomery( s1, s1, u2, ec->p, ec->size );
+
+//    z *= ( y <<= 1 ); y = s1;
+ ak_mpzn_lshift_montgomery( u2, wp->y, ec->p, ec->size );
+ ak_mpzn_mul_montgomery( wp->z, wp->z, u2, ec->p, ec->n, ec->size );
+ ak_mpzn_set( wp->y, s1, ec->size );
+
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Точка приводится к аффинной форме записи, то есть тройка
+    \f$ (x:y:z) \f$ заменяется на тройку \f$ (xz^{-2} \pmod{p}: yz^{-3} \pmod{p}: 1) \f$.
+
+   @param wp Удваиваемая точка кривой \f$ P \f$
+   @param ec Эллиптическая кривая, которой принадлежит точка \f$ P \f$                             */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_wpoint_reduce_mj( ak_wpoint wp, ak_wcurve ec )
+{
+ ak_mpznmax z1, z2, one = ak_mpznmax_one;
+
+ if( ak_mpzn_cmp_ui( wp->z, ec->size, 0 ) == ak_true ) {
+   ak_mpzn_set_ui( wp->x, ec->size, 0 );
+   ak_mpzn_set_ui( wp->y, ec->size, 1 );
+ } else {
+         ak_mpzn_set_ui( z2, ec->size, 2 );
+         ak_mpzn_sub( z2, ec->p, z2, ec->size );
+         ak_mpzn_modpow_montgomery( z1, wp->z, z2, ec->p, ec->n, ec->size ); // u <- z^{p-2} (mod p)
+
+         char *str = NULL;
+         printf(" z^{-1} = %s\n", str = ak_mpzn_to_hexstr(z1, ec->size)); free(str);
+         printf("DDDDD\n");
+
+         ak_mpzn_mul_montgomery( z1, z1, z1, ec->p, ec->n, ec->size );
+
+         printf(" z^{-2} = %s\n", str = ak_mpzn_to_hexstr(z1, ec->size)); free(str);
+
+         ak_mpzn_set( z2, z1, ec->size );
+         ak_mpzn_mul_montgomery( z1, z1, z1, ec->p, ec->n, ec->size );
+         ak_mpzn_mul_montgomery( wp->x, wp->x, z1, ec->p, ec->n, ec->size );
+         ak_mpzn_mul_montgomery( wp->x, wp->x, one, ec->p, ec->n, ec->size );
+
+         ak_mpzn_mul_montgomery( z1, z1, z2, ec->p, ec->n, ec->size );
+         ak_mpzn_mul_montgomery( wp->y, wp->y, z1, ec->p, ec->n, ec->size );
+         ak_mpzn_mul_montgomery( wp->y, wp->y, one, ec->p, ec->n, ec->size );
+
+         ak_mpzn_set_ui( wp->z, ec->size, 1 );
+        }
+
+// if( z == 0 ) { x = 0; y = 1; return *this; }
+//  ak_int z1, z2;
+//     ak_modinvert( z, ec.modulo( ), z1 );
+//     z2 = z1;
+//     z1 *= z1;
+//     x *= z1; x %= ec.modulo();
+//     z1 *= z2;
+//     y *= z1; y %= ec.modulo();
+//     z = 1;
+
+
+
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                    ak_curves.c  */

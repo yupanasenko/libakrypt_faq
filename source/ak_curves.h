@@ -158,6 +158,8 @@
  void ak_wpoint_set_as_unit( ak_wpoint , ak_wcurve );
  void ak_wpoint_double( ak_wpoint , ak_wcurve );
  void ak_wpoint_reduce( ak_wpoint wp, ak_wcurve ec );
+ void ak_wpoint_double_mj( ak_wpoint , ak_wcurve );
+ void ak_wpoint_reduce_mj( ak_wpoint wp, ak_wcurve ec );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

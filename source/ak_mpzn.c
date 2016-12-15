@@ -475,11 +475,11 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция умножает два вычета x и y в представлении Моонтгомери, после чего приводит полученное
-    произведение по модулю p, то есть для $\f$ x \equiv x_0r \pmod{p} \f$ и
+    произведение по модулю p, то есть для \f$ x \equiv x_0r \pmod{p} \f$ и
     \f$ y \equiv y_0r \pmod{p} \f$ функция вычисляет значение,
     удовлетворяющее сравнению \f$ z \equiv x_0y_0r \pmod{p}\f$.
     Результат помещается в переменную z. Указатель на z может совпадать с одним из указателей на
-    слагаемые.
+    перемножаемые вычеты.
 
     @param z Указатель на вычет, в который помещается результат
     @param x Левый аргумент опреации сложения
@@ -495,6 +495,10 @@
   size_t i = 0, j = 0, ij = 0;
   ak_uint64 av = 0, bv = 0, cy = 0;
   ak_mpznmax t = ak_mpznmax_zero;
+
+  printf(" x = " ); for( i = 0; i < size; i++ ) printf(" %lx", x[i]); printf("\n");
+  printf(" y = " ); for( i = 0; i < size; i++ ) printf(" %lx", y[i]); printf("\n");
+
 
   // ak_mpzn_mul( t, x, y, size );
   for( i = 0; i < size; i++ ) {
@@ -512,28 +516,33 @@
      t[ij] = c;
   }
 
+  printf(" t = " ); for( i = 0; i <= 2*size; i++ ) printf(" %lx", t[i]); printf("\n");
+
   //  ak_mpzn_mul( u, t, n, size );
   //  ak_mpzn_mul( u, u, p, size );
   //  ak_mpzn_add( u, u, t, (size<<1));
   for( i = 0; i < size; i++ ) {
-     ak_uint64 c = 0, m = t[i]*n0, cy;
+     ak_uint64 c = 0, m = t[i]*n0;
      for( j = 0, ij = i; j < size; j++ , ij++ ) {
-        ak_uint64 w1, w0;
+        ak_uint64 w1, w0, cy;
         umul_ppmm( w1, w0, m, p[j] );
         t[ij] += c;
         cy = t[ij] < c;
 
         t[ij] += w0;
         cy += t[ij] < w0;
-        c = w1 + cy;
+        c = w1;
+        c += cy;
      }
-     cy = c;
      do {
-         t[ij] += cy;
-         cy = t[ij] < cy;
+         t[ij] += c;
+         c = t[ij] < c;
          ij++;
-     } while( cy != 0 );
+         // if(ij > 2*size) break;
+     } while( c != 0 );
   }
+
+  printf(" t = " ); for( i = 0; i <= 2*size; i++ ) printf(" %lx", t[i]); printf("\n");
 
   // вычитаем из результата модуль p
   for( i = 0, j = size; i < size; i++, j++ ) {
