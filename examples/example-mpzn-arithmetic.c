@@ -508,11 +508,6 @@
      str = ak_ptr_to_hexstr( ec->q, ec->size*sizeof(ak_uint64), ak_true )); free(str);
   for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->q[i]);
   printf("[ak_uint64 array]\n\n");
-  // R1
-  printf("r1 = %s [reverse byte array]\nr1 = ",
-     str = ak_ptr_to_hexstr( ec->r1, ec->size*sizeof(ak_uint64), ak_true )); free(str);
-  for( i = 0; i < ec->size; i++ ) printf("%lx ", ec->r1[i]);
-  printf("[ak_uint64 array]\n\n");
   // R2
   printf("r2 = %s [reverse byte array]\nr2 = ",
      str = ak_ptr_to_hexstr( ec->r2, ec->size*sizeof(ak_uint64), ak_true )); free(str);
@@ -551,8 +546,10 @@
   char *str = NULL;
   ak_wcurve ec = ak_wcurve_new(( const ak_wcurve_params) &wcurve_GOST );
   ak_wpoint wp = ak_wpoint_new(( const ak_wcurve_params) &wcurve_GOST );
+  ak_wpoint ep = ak_wpoint_new_as_unit( ec->size );
   mpz_t am, bm, pm, r2m, tm, sm, rm, gm;
   ak_random generator = ak_random_new_lcg();
+  clock_t tmr;
 
   mpz_init(am);
   mpz_init(bm);
@@ -587,27 +584,25 @@
 
   print_wpoint( wp, ec );
   if( ak_wpoint_is_ok( wp, ec )) printf(" point is Ok\n"); else printf(" point is wrong\n");
+  ak_wpoint_set( ep, wp, ec->size );
 
-//  ak_wpoint_double_mj( wp, ec );
-//  printf(" -------------------- 2P ---------------------\n");
-//  print_wpoint( wp, ec );
-  ak_wpoint_reduce_mj( wp, ec );
-  printf(" -------------------- 2P (reduced) -----------\n");
-  print_wpoint( wp, ec );
-  if( ak_wpoint_is_ok( wp, ec)) printf(" point iss Ok\n");
-   else printf("point iss wrong\n");
+   printf(" speed test:\n"); fflush( stdout );
+   tmr = clock();
+   for( int i = 0; i < count; i++ ) ak_wpoint_double( wp, ec );
+   tmr = clock() - tmr;
+   printf(" mpzn time: %.3fs (double)\n", ((double) tmr) / ((double) CLOCKS_PER_SEC));
 
-// for(int i = 0; i < 5; i++ ) {
-//  ak_wpoint_double( wp, ec );
-//  print_wpoint( wp, ec );
-//  if( ak_wpoint_is_ok( wp, ec)) printf(" point iss Ok\n");
-//   else printf("point iss wrong\n");
+   tmr = clock();
+   for( int i = 0; i < count; i++ ) ak_wpoint_double_bl( ep, ec );
+   tmr = clock() - tmr;
+   printf(" mpzn time: %.3fs (double_bl)\n", ((double) tmr) / ((double) CLOCKS_PER_SEC));
 
-//  ak_wpoint_reduce( wp, ec );
-//  print_wpoint( wp, ec );
-//  if( ak_wpoint_is_ok( wp, ec)) printf(" point iss Ok\n");
-//   else printf("point iss wrong\n");
-// }
+   ak_wpoint_reduce( wp, ec ); print_wpoint( wp, ec );
+   if( ak_wpoint_is_ok( wp, ec)) printf(" WP point iss Ok\n"); else printf(" WP point iss wrong\n");
+   ak_wpoint_reduce( ep, ec ); print_wpoint( ep, ec );
+   if( ak_wpoint_is_ok( ep, ec)) printf(" EP point iss Ok\n"); else printf(" EP point iss wrong\n");
+
+
 
   mpz_clear( gm );
   mpz_clear( rm );

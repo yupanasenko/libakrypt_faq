@@ -496,8 +496,8 @@
   ak_uint64 av = 0, bv = 0, cy = 0;
   ak_mpznmax t = ak_mpznmax_zero;
 
-  printf(" x = " ); for( i = 0; i < size; i++ ) printf(" %lx", x[i]); printf("\n");
-  printf(" y = " ); for( i = 0; i < size; i++ ) printf(" %lx", y[i]); printf("\n");
+//&  printf(" x = " ); for( i = 0; i < size; i++ ) printf(" %lx", x[i]); printf("\n");
+//&  printf(" y = " ); for( i = 0; i < size; i++ ) printf(" %lx", y[i]); printf("\n");
 
 
   // ak_mpzn_mul( t, x, y, size );
@@ -516,7 +516,7 @@
      t[ij] = c;
   }
 
-  printf(" t = " ); for( i = 0; i <= 2*size; i++ ) printf(" %lx", t[i]); printf("\n");
+  //& printf(" t = " ); for( i = 0; i <= 2*size; i++ ) printf(" %lx", t[i]); printf("\n");
 
   //  ak_mpzn_mul( u, t, n, size );
   //  ak_mpzn_mul( u, u, p, size );
@@ -542,7 +542,7 @@
      } while( c != 0 );
   }
 
-  printf(" t = " ); for( i = 0; i <= 2*size; i++ ) printf(" %lx", t[i]); printf("\n");
+  //& printf(" t = " ); for( i = 0; i <= 2*size; i++ ) printf(" %lx", t[i]); printf("\n");
 
   // вычитаем из результата модуль p
   for( i = 0, j = size; i < size; i++, j++ ) {
@@ -569,7 +569,8 @@
     @param p Модуль, по которому производятся вычисления
     @param n0 Константа, используемая в вычислениях. Представляет собой младшее слово числа n,
     удовлетворяющего равенству \f$ rs - np = 1\f$.
-    @param size Размер модуля в словах (значение константы ak_mpzn256_size или ak_mpzn512_size )   */
+    @param size Размер модуля в словах (значение константы \ref ak_mpzn256_size
+    или \ref ak_mpzn512_size )                                                                     */
 /* ----------------------------------------------------------------------------------------------- */
  void ak_mpzn_modpow_montgomery( ak_uint64 *z, ak_uint64 *x, ak_uint64 *k,
                                                    ak_uint64 *p, ak_uint64 n0, const size_t size )

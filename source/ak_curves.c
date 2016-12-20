@@ -56,7 +56,7 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
   ec->size = params->size;
   ec->n = params->cn;
   ec->d = params->cd;
-  ec->a = ec->b = ec->p = ec->q = ec->r1 = ec->r2 = NULL;
+  ec->a = ec->b = ec->p = ec->q = ec->r2 = NULL;
 
  /* инициализируем коэффициент a */
   if(( ec->a = malloc( bytelen )) == NULL ) {
@@ -93,15 +93,6 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
   }
   if(( local_error = ak_mpzn_set_hexstr( ec->q, ec->size, params->cq )) != ak_error_ok ) {
     ak_error_message( local_error, "wrong order Q convertation", __func__ );
-    goto wrong_label;
-  }
- /* инициализируем константу r1 */
-  if(( ec->r1 = malloc( bytelen )) == NULL ) {
-    ak_error_message( ak_error_out_of_memory, "wrong constant R1 memory allocation", __func__ );
-    goto wrong_label;
-  }
-  if(( local_error = ak_mpzn_set_hexstr( ec->r1, ec->size, params->cr1 )) != ak_error_ok ) {
-    ak_error_message( local_error, "wrong constant R1 convertation", __func__ );
     goto wrong_label;
   }
  /* инициализируем константу r2 */
@@ -156,9 +147,6 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
   if( ec->q != NULL ) free( ec->q );
    else ak_error_message( destroy_error = ak_error_undefined_value,
                                        "destroing null pointer to elliptic curve order", __func__ );
-  if( ec->r1 != NULL ) free( ec->r1 );
-   else ak_error_message( destroy_error = ak_error_undefined_value,
-                                 "destroing null pointer to elliptic curve constant R1", __func__ );
   if( ec->r2 != NULL ) free( ec->r2 );
    else ak_error_message( destroy_error = ak_error_undefined_value,
                                  "destroing null pointer to elliptic curve constant R2", __func__ );
@@ -176,6 +164,12 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
   return NULL;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция вычисляерт величину \f$\Delta \equiv -16(4a^3 + 27b^2) \pmod{p} \f$, зависящую
+    от параметров эллиптической кривой
+
+    @param d Вычет, в который помещается вычисленное значение.
+    @param ec Контекст эллиптической кривой, для которой вычисляется ее дискриминант               */
 /* ----------------------------------------------------------------------------------------------- */
  void ak_mpzn_set_wcurve_discriminant( ak_uint64 *d, ak_wcurve ec )
 {
@@ -285,6 +279,59 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция инициализирует контекст значением \f$(0:1:0) \f$ -- значениепм бесконечно
+    удаленной точки эллиптической кривой
+
+     @param wp указатель на структуру struct wpoint
+     @param size Размер координат точки в словах (значение константы \ref ak_mpzn256_size или
+     \ref ak_mpzn512_size )
+     @return В случае возникновения ошибки, возвращается ее код. В противном случае,
+     возвращается \ref ak_error_ok.                                                                */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_wpoint_create_as_unit( ak_wpoint wp, const size_t size )
+{
+ int local_error = ak_error_ok;
+ size_t bytelen = 0;
+ if( wp == NULL ) { ak_error_message( ak_error_null_pointer,
+                             "use a null pointer to point of elliptic curve context", __func__ );
+     return ak_error_null_pointer;
+ }
+ if( size == 0 ) { ak_error_message( ak_error_zero_length,
+                                       "use a zero length of elliptic curve's point", __func__ );
+     return ak_error_zero_length;
+ }
+
+/* определяем размер координат точки в байтах */
+ bytelen = size*sizeof( ak_uint64 );
+
+/* инициализируем координату x */
+ if(( wp->x = malloc( bytelen )) == NULL ) {
+   ak_error_message( ak_error_out_of_memory, "wrong coordinate X memory allocation", __func__ );
+   goto wrong_label;
+ }
+ ak_mpzn_set_ui( wp->x, size, 0 );
+/* инициализируем координату y */
+ if(( wp->y = malloc( bytelen )) == NULL ) {
+   ak_error_message( ak_error_out_of_memory, "wrong coordinate Y memory allocation", __func__ );
+   goto wrong_label;
+ }
+ ak_mpzn_set_ui( wp->y, size, 1 );
+/* инициализируем координату z */
+ if(( wp->z = malloc( bytelen )) == NULL ) {
+   ak_error_message( ak_error_out_of_memory, "wrong coordinate Z memory allocation", __func__ );
+   goto wrong_label;
+ }
+ ak_mpzn_set_ui( wp->z, size, 0 );
+
+/* завершение и очистка памяти */
+ return ak_error_ok;
+ wrong_label:
+   local_error = ak_error_get_value();
+   ak_wpoint_destroy( wp );
+ return local_error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int ak_wpoint_destroy( ak_wpoint wp )
 {
   int destroy_error = ak_error_ok;
@@ -315,6 +362,15 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ ak_wpoint ak_wpoint_new_as_unit( const size_t size )
+{
+  ak_wpoint wp = ( ak_wpoint ) malloc( sizeof( struct wpoint ));
+  if( wp != NULL ) ak_wpoint_create_as_unit( wp, size );
+   else ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+  return wp;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  ak_pointer ak_wpoint_delete( ak_pointer wp )
 {
   if( wp != NULL ) {
@@ -326,13 +382,9 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Для заданной точки \f$ P = (x:y:z) \f$ функция проверяет
+/*! Для заданной точки \f$ P = (x:y:z) \f$ функция проверяет,
     что точка принадлежит эллиптической кривой, то есть выполнено сравнение
-    \f$ yz^2 \equiv x^3 + axz^2 + bz^3 \pmod{p}\f$,
-    - проверяется, что порядок точки действительно есть величина \f$ q \f$, заданная в параметрах
-    эллиптической кривой, то есть выполнимость равенства \f$ [q]P = \mathcal O\f$,
-    где \f$ \mathcal O \f$ - бесконечно удаленная точка (ноль группы точек эллиптической кривой),
-    а \f$ q \f$ порядок подгруппы, в которой реализуются вычисления.
+    \f$ yz^2 \equiv x^3 + axz^2 + bz^3 \pmod{p}\f$.
 
     @param wp точка \f$ P \f$ эллиптической кривой
     @param ec эллиптическая кривая, на принадлежность которой проверяется точка \f$P\f$.
@@ -388,19 +440,19 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- void ak_wpoint_set( ak_wpoint left, ak_wpoint right, ak_wcurve ec )
+ void ak_wpoint_set( ak_wpoint left, ak_wpoint right, const size_t size )
 {
-  ak_mpzn_set( left->x, right->x, ec->size );
-  ak_mpzn_set( left->y, right->y, ec->size );
-  ak_mpzn_set( left->z, right->z, ec->size );
+  ak_mpzn_set( left->x, right->x, size );
+  ak_mpzn_set( left->y, right->y, size );
+  ak_mpzn_set( left->z, right->z, size );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- void ak_wpoint_set_as_unit( ak_wpoint wp, ak_wcurve ec )
+ void ak_wpoint_set_as_unit( ak_wpoint wp, const size_t size )
 {
-  ak_mpzn_set_ui( wp->x, ec->size, 0 );
-  ak_mpzn_set_ui( wp->y, ec->size, 1 );
-  ak_mpzn_set_ui( wp->z, ec->size, 0 );
+  ak_mpzn_set_ui( wp->x, size, 0 );
+  ak_mpzn_set_ui( wp->y, size, 1 );
+  ak_mpzn_set_ui( wp->z, size, 0 );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -411,10 +463,10 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
 
  if( ak_mpzn_cmp_ui( wp->z, ec->size, 0 ) == ak_true ) return;
  if( ak_mpzn_cmp_ui( wp->y, ec->size, 0 ) == ak_true ) {
-   ak_wpoint_set_as_unit( wp, ec );
+   ak_wpoint_set_as_unit( wp, ec->size );
    return;
  }
-
+ // dbl-1998-cmo-2
  ak_mpzn_mul_montgomery( u1, wp->z, wp->z, ec->p, ec->n, ec->size );
  ak_mpzn_mul_montgomery( u1, u1, ec->a, ec->p, ec->n, ec->size ); // u1 <- az^2
  ak_mpzn_mul_montgomery( u2, wp->x, wp->x, ec->p, ec->n, ec->size );
@@ -452,6 +504,62 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Точка эллиптической кривой \f$ P = (x:y:z) \f$ заменяется значением \f$ 2P  = (x_3:y_3:z_3)\f$.
+    При вычислениях используются следующие соотношения.
+    \code
+      XX = X^2
+      ZZ = Z^2
+      w = a*ZZ+3*XX
+      s = 2*Y*Z
+      ss = s^2
+      sss = s*ss
+      R = Y*s
+      RR = R^2
+      B = (X+R)^2-XX-RR
+      h = w^2-2*B
+      X3 = h*s
+      Y3 = w*(B-h)-2*RR
+      Z3 = sss
+    \endcode
+                                                                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_wpoint_double_bl( ak_wpoint wp, ak_wcurve ec )
+{
+ ak_mpznmax u1, u2, u3, u4, u5, u6, u7;
+
+ if( ak_mpzn_cmp_ui( wp->z, ec->size, 0 ) == ak_true ) return;
+ if( ak_mpzn_cmp_ui( wp->y, ec->size, 0 ) == ak_true ) {
+   ak_wpoint_set_as_unit( wp, ec->size );
+   return;
+ }
+ // dbl-2007-bl
+ ak_mpzn_mul_montgomery( u1, wp->x, wp->x, ec->p, ec->n, ec->size );
+ ak_mpzn_mul_montgomery( u2, wp->z, wp->z, ec->p, ec->n, ec->size );
+ ak_mpzn_lshift_montgomery( u4, u1, ec->p, ec->size );
+ ak_mpzn_add_montgomery( u4, u4, u1, ec->p, ec->size );
+ ak_mpzn_mul_montgomery( u3, u2, ec->a, ec->p, ec->n, ec->size );
+ ak_mpzn_add_montgomery( u3, u3, u4, ec->p, ec->size );  // u3 = az^2 + 3x^2
+ ak_mpzn_mul_montgomery( u4, wp->y, wp->z, ec->p, ec->n, ec->size );
+ ak_mpzn_lshift_montgomery( u4, u4, ec->p, ec->size );   // u4 = 2yz
+ ak_mpzn_mul_montgomery( u5, wp->y, u4, ec->p, ec->n, ec->size ); // u5 = 2y^2z
+ ak_mpzn_lshift_montgomery( u6, u5, ec->p, ec->size ); // u6 = 2u5
+ ak_mpzn_mul_montgomery( u7, u6, wp->x, ec->p, ec->n, ec->size ); // u7 = 8xy^2z
+ ak_mpzn_lshift_montgomery( u1, u7, ec->p, ec->size );
+ ak_mpzn_sub( u1, ec->p, u1, ec->size );
+ ak_mpzn_mul_montgomery( u2, u3, u3, ec->p, ec->n, ec->size );
+ ak_mpzn_add_montgomery( u2, u2, u1, ec->p, ec->size );
+ ak_mpzn_mul_montgomery( wp->x, u2, u4, ec->p, ec->n, ec->size );
+ ak_mpzn_mul_montgomery( u6, u6, u5, ec->p, ec->n, ec->size );
+ ak_mpzn_sub( u6, ec->p, u6, ec->size );
+ ak_mpzn_sub( u2, ec->p, u2, ec->size );
+ ak_mpzn_add_montgomery( u2, u2, u7, ec->p, ec->size );
+ ak_mpzn_mul_montgomery( wp->y, u2, u3, ec->p, ec->n, ec->size );
+ ak_mpzn_add_montgomery( wp->y, wp->y, u6, ec->p, ec->size );
+ ak_mpzn_mul_montgomery( wp->z, u4, u4, ec->p, ec->n, ec->size );
+ ak_mpzn_mul_montgomery( wp->z, wp->z, u4, ec->p, ec->n, ec->size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  void ak_wpoint_reduce( ak_wpoint wp, ak_wcurve ec )
 {
  ak_mpznmax u, one = ak_mpznmax_one;
@@ -464,140 +572,6 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
  ak_mpzn_mul_montgomery( wp->x, wp->x, u, ec->p, ec->n, ec->size );
  ak_mpzn_mul_montgomery( wp->y, wp->y, u, ec->p, ec->n, ec->size );
  ak_mpzn_set_ui( wp->z, ec->size, 1 );
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Точка эллиптической кривой \f$ P \f$ заменяется удвоенным значением \f$ 2P \f$
-
-    Для вычислений используются соотношения приведенные в работе:
-    1998 Cohen–Miyaji–Ono "Efficient elliptic curve exponentiation using mixed coordinates",
-    formula (6).
-
-    Explicit formulas:
-    \code
-      XX = X1^2
-      YY = Y1^2
-      ZZ = Z1^2
-      S = 4*X1*YY
-      M = 3*XX+a*ZZ^2
-      T = M2-2*S
-      X3 = T
-      Y3 = M*(S-T)-8*YY^2
-      Z3 = 2*Y1*Z1
-    \endcode
-
-   @param wp Удваиваемая точка кривой \f$ P \f$
-   @param ec Эллиптическая кривая, которой принадлежит точка \f$ P \f$                             */
-/* ----------------------------------------------------------------------------------------------- */
- void ak_wpoint_double_mj( ak_wpoint wp, ak_wcurve ec )
-{
- ak_mpznmax u1, u2, s1, m;
-
- if( ak_mpzn_cmp_ui( wp->z, ec->size, 0 ) == ak_true ) return;
- if( ak_mpzn_cmp_ui( wp->y, ec->size, 0 ) == ak_true ) {
-   ak_wpoint_set_as_unit( wp, ec );
-   return;
- }
-
-//    s1 = y;
-//    s1 *= y; s1 %= ec.modulo();
-  ak_mpzn_mul_montgomery( s1, wp->y, wp->y, ec->p, ec->n, ec->size );
-
-//    u1 = s1; u1 *= s1; u1 %= ec.modulo();
-  ak_mpzn_mul_montgomery( u1, s1, s1, ec->p, ec->n, ec->size );
-
-//    s1 *= x; s1 <<= 2; s1 %= ec.modulo();
-  ak_mpzn_mul_montgomery( s1, s1, wp->x, ec->p, ec->n, ec->size );
-  ak_mpzn_lshift_montgomery( s1, s1, ec->p, ec->size );
-  ak_mpzn_lshift_montgomery( s1, s1, ec->p, ec->size );
-
-//     u2 = x; u2 *= 3;
-  ak_mpzn_lshift_montgomery( u2, wp->x, ec->p, ec->size );
-  ak_mpzn_add_montgomery( u2, u2, wp->x, ec->p, ec->size );
-
-//    m = z; m *= z; m %= ec.modulo(); m *= m;
-  ak_mpzn_mul_montgomery( m, wp->z, wp->z, ec->p, ec->n, ec->size );
-  ak_mpzn_mul_montgomery( m, m, m, ec->p, ec->n, ec->size );
-
-//    m *= ec.coefa(); m.add_mul( u2, x ); m %= ec.modulo();
-  ak_mpzn_mul_montgomery( m, m, ec->a, ec->p, ec->n, ec->size );
-  ak_mpzn_mul_montgomery( u2, u2, wp->x, ec->p, ec->n, ec->size );
-  ak_mpzn_add_montgomery( m, m, u2, ec->p, ec->size );
-
-//    x = m; x *= m; x -= s1; x -= s1;
-  ak_mpzn_mul_montgomery( wp->x, m, m, ec->p, ec->n, ec->size );
-  ak_mpzn_lshift_montgomery( u2, s1, ec->p, ec->size );
-  ak_mpzn_sub( u2, ec->p, u2, ec->size );
-  ak_mpzn_add_montgomery( wp->x, wp->x, u2, ec->p, ec->size );
-
-//    u1 <<= 3; s1 -= x; s1 *= m; s1 -= u1;
- ak_mpzn_lshift_montgomery( u1, u1, ec->p, ec->size );
- ak_mpzn_lshift_montgomery( u1, u1, ec->p, ec->size );
- ak_mpzn_lshift_montgomery( u1, u1, ec->p, ec->size );
- ak_mpzn_sub( u2, ec->p, wp->x, ec->size );
- ak_mpzn_add_montgomery( s1, s1, u2, ec->p, ec->size );
- ak_mpzn_mul_montgomery( s1, s1, m, ec->p, ec->n, ec->size );
- ak_mpzn_sub( u2, ec->p, u1, ec->size );
- ak_mpzn_add_montgomery( s1, s1, u2, ec->p, ec->size );
-
-//    z *= ( y <<= 1 ); y = s1;
- ak_mpzn_lshift_montgomery( u2, wp->y, ec->p, ec->size );
- ak_mpzn_mul_montgomery( wp->z, wp->z, u2, ec->p, ec->n, ec->size );
- ak_mpzn_set( wp->y, s1, ec->size );
-
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Точка приводится к аффинной форме записи, то есть тройка
-    \f$ (x:y:z) \f$ заменяется на тройку \f$ (xz^{-2} \pmod{p}: yz^{-3} \pmod{p}: 1) \f$.
-
-   @param wp Удваиваемая точка кривой \f$ P \f$
-   @param ec Эллиптическая кривая, которой принадлежит точка \f$ P \f$                             */
-/* ----------------------------------------------------------------------------------------------- */
- void ak_wpoint_reduce_mj( ak_wpoint wp, ak_wcurve ec )
-{
- ak_mpznmax z1, z2, one = ak_mpznmax_one;
-
- if( ak_mpzn_cmp_ui( wp->z, ec->size, 0 ) == ak_true ) {
-   ak_mpzn_set_ui( wp->x, ec->size, 0 );
-   ak_mpzn_set_ui( wp->y, ec->size, 1 );
- } else {
-         ak_mpzn_set_ui( z2, ec->size, 2 );
-         ak_mpzn_sub( z2, ec->p, z2, ec->size );
-         ak_mpzn_modpow_montgomery( z1, wp->z, z2, ec->p, ec->n, ec->size ); // u <- z^{p-2} (mod p)
-
-         char *str = NULL;
-         printf(" z^{-1} = %s\n", str = ak_mpzn_to_hexstr(z1, ec->size)); free(str);
-         printf("DDDDD\n");
-
-         ak_mpzn_mul_montgomery( z1, z1, z1, ec->p, ec->n, ec->size );
-
-         printf(" z^{-2} = %s\n", str = ak_mpzn_to_hexstr(z1, ec->size)); free(str);
-
-         ak_mpzn_set( z2, z1, ec->size );
-         ak_mpzn_mul_montgomery( z1, z1, z1, ec->p, ec->n, ec->size );
-         ak_mpzn_mul_montgomery( wp->x, wp->x, z1, ec->p, ec->n, ec->size );
-         ak_mpzn_mul_montgomery( wp->x, wp->x, one, ec->p, ec->n, ec->size );
-
-         ak_mpzn_mul_montgomery( z1, z1, z2, ec->p, ec->n, ec->size );
-         ak_mpzn_mul_montgomery( wp->y, wp->y, z1, ec->p, ec->n, ec->size );
-         ak_mpzn_mul_montgomery( wp->y, wp->y, one, ec->p, ec->n, ec->size );
-
-         ak_mpzn_set_ui( wp->z, ec->size, 1 );
-        }
-
-// if( z == 0 ) { x = 0; y = 1; return *this; }
-//  ak_int z1, z2;
-//     ak_modinvert( z, ec.modulo( ), z1 );
-//     z2 = z1;
-//     z1 *= z1;
-//     x *= z1; x %= ec.modulo();
-//     z1 *= z2;
-//     y *= z1; y %= ec.modulo();
-//     z = 1;
-
-
-
 }
 
 /* ----------------------------------------------------------------------------------------------- */
