@@ -161,9 +161,8 @@
  void ak_wpoint_set( ak_wpoint , ak_wpoint , const size_t );
 /*! Присвоение точке эллиптической кривой значения бесконечно удаленной точки */
  void ak_wpoint_set_as_unit( ak_wpoint , const size_t );
- void ak_wpoint_double( ak_wpoint , ak_wcurve );
 /*! \brief Удвоение точки эллиптической кривой, заданной в короткой форме Вейерштрасса */
- void ak_wpoint_double_bl( ak_wpoint , ak_wcurve );
+ void ak_wpoint_double( ak_wpoint , ak_wcurve );
 /*! \brief Прибавление к одной точке эллиптической кривой значения другой точки*/
  void ak_wpoint_add( ak_wpoint , ak_wpoint , ak_wcurve );
 /*! \brief Приведение проективной точки к аффинному виду */
@@ -173,4 +172,3 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                    ak_curves.h  */
 /* ----------------------------------------------------------------------------------------------- */
-

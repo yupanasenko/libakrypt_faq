@@ -595,10 +595,10 @@
   }
   ak_wpoint_reduce( wp, ec );
 
-  ak_wpoint_double_bl( ep, ec );
-  ak_wpoint_double_bl( ep, ec );
-  ak_wpoint_double_bl( ep, ec );
-  ak_wpoint_double_bl( ep, ec );
+  ak_wpoint_double( ep, ec );
+  ak_wpoint_double( ep, ec );
+  ak_wpoint_double( ep, ec );
+  ak_wpoint_double( ep, ec );
   ak_wpoint_reduce( ep, ec );
 
   printf(" ---------------------------------- with addition\n");
