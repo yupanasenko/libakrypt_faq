@@ -167,6 +167,8 @@
  void ak_wpoint_add( ak_wpoint , ak_wpoint , ak_wcurve );
 /*! \brief Приведение проективной точки к аффинному виду */
  void ak_wpoint_reduce( ak_wpoint , ak_wcurve );
+/*! \brief Приведение проективной точки к аффинному виду */
+ void ak_wpoint_pow( ak_wpoint , ak_wpoint , ak_uint64 *, size_t, ak_wcurve );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

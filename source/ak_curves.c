@@ -87,11 +87,13 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
     goto wrong_label;
   }
  /* инициализируем порядок q */
-  if(( ec->q = malloc( bytelen )) == NULL ) {
+ /* поскольку порядок группы может быть больше, чем р, нам приходится выделять под него */
+ /* дополнительное слово */
+  if(( ec->q = malloc( sizeof(ak_uint64) + bytelen )) == NULL ) {
     ak_error_message( ak_error_out_of_memory, "wrong order Q memory allocation", __func__ );
     goto wrong_label;
   }
-  if(( local_error = ak_mpzn_set_hexstr( ec->q, ec->size, params->cq )) != ak_error_ok ) {
+  if(( local_error = ak_mpzn_set_hexstr( ec->q, 1+ec->size, params->cq )) != ak_error_ok ) {
     ak_error_message( local_error, "wrong order Q convertation", __func__ );
     goto wrong_label;
   }
@@ -436,7 +438,14 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
 /* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_wpoint_check_order( ak_wpoint wp, ak_wcurve ec )
 {
-  return ak_false;
+  ak_bool result = ak_false;
+  ak_wpoint ep = ak_wpoint_new_as_unit( ec->size );
+
+  ak_wpoint_pow( ep, wp, ec->q, 1+ec->size, ec );
+  result = ak_mpzn_cmp_ui( ep->z, ec->size, 0 );
+  ep = ak_wpoint_delete( ep );
+
+  return result;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -609,6 +618,10 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
  void ak_wpoint_reduce( ak_wpoint wp, ak_wcurve ec )
 {
  ak_mpznmax u, one = ak_mpznmax_one;
+ if( ak_mpzn_cmp_ui( wp->z, ec->size, 0 ) == ak_true ) {
+   ak_wpoint_set_as_unit( wp, ec->size );
+   return;
+ }
 
  ak_mpzn_set_ui( u, ec->size, 2 );
  ak_mpzn_sub( u, ec->p, u, ec->size );
@@ -618,6 +631,43 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
  ak_mpzn_mul_montgomery( wp->x, wp->x, u, ec->p, ec->n, ec->size );
  ak_mpzn_mul_montgomery( wp->y, wp->y, u, ec->p, ec->n, ec->size );
  ak_mpzn_set_ui( wp->z, ec->size, 1 );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Для заданной точки \f$ P = (x:y:z) \f$ и заданного целого числа (вычета) \f$ k \f$
+    функция вычисляет кратную точку \f$ Q \f$, удовлетворяющую
+    равенству \f$  Q = [k]P = \underbrace{P+ \cdots + P}_{k\text{~раз}}\f$.
+
+    Функция не приводит результирующую точку \f$ Q \f$ к аффинной форме.
+
+    @param wq Точка \f$ Q \f$, в которую помещается результат
+    @param wp Точка \f$ P \f$
+    @param k Степень кратности
+    @param size Размер степени \f$ k \f$ в машинных словах - значение, как правило,
+    задаваемое константой \ref ak_mpzn256_size или \ref ak_mpzn512_size. В общем случае
+    может приниимать любое неотрицательное значение.
+    @param ec Эллиптическая кривая, на которой происходят вычисления                               */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_wpoint_pow( ak_wpoint wq, ak_wpoint wp, ak_uint64 *k, size_t size, ak_wcurve ec )
+{
+  ak_uint64 uk = 0;
+  size_t s = size-1;
+  long long int i, j;
+
+  ak_wpoint_set_as_unit( wq, ec->size );
+  while( k[s] == 0 ) {
+     if( s > 0 ) --s;
+      else return;
+  }
+
+  for( i = s; i >= 0; i-- ) {
+     uk = k[i];
+     for( j = 0; j < 64; j++ ) {
+        ak_wpoint_double( wq, ec );
+        if( uk&0x8000000000000000LL ) ak_wpoint_add( wq, wp, ec );
+        uk <<= 1;
+     }
+  }
 }
 
 /* ----------------------------------------------------------------------------------------------- */
