@@ -1,0 +1,7 @@
+
+\newpage
+\phantomsection
+\addcontentsline{toc}{chapter}{Алфавитный указатель}
+\printindex
+
+\end{document}

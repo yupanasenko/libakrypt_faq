@@ -19,7 +19,7 @@ cmake_minimum_required( VERSION 2.8 )
 project( libakrypt )
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 4 )
-set( MINOR_VERSION 24 )
+set( MINOR_VERSION 25 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )

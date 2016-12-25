@@ -586,6 +586,30 @@
   if( ak_wpoint_is_ok( wp, ec )) printf(" point is Ok\n"); else printf(" point is wrong\n");
   ak_wpoint_set( ep, wp, ec->size );
 
+  //ak_wpoint_double( wp, ec );
+  ak_wpoint_add( wp, wp, ec );
+  for( int i = 0; i < 14; i++ ) {
+     ak_wpoint_add( wp, ep, ec ); // wp = 2p + (i+1)p
+     print_wpoint( wp, ec );
+     if( ak_wpoint_is_ok( wp, ec )) printf(" point is Ok\n"); else printf(" point is wrong\n");
+  }
+  ak_wpoint_reduce( wp, ec );
+
+  ak_wpoint_double_bl( ep, ec );
+  ak_wpoint_double_bl( ep, ec );
+  ak_wpoint_double_bl( ep, ec );
+  ak_wpoint_double_bl( ep, ec );
+  ak_wpoint_reduce( ep, ec );
+
+  printf(" ---------------------------------- with addition\n");
+  print_wpoint( wp, ec );
+  if( ak_wpoint_is_ok( wp, ec )) printf(" point is Ok\n"); else printf(" point is wrong\n");
+
+  printf(" ---------------------------------- with doubling\n");
+  print_wpoint( ep, ec );
+  if( ak_wpoint_is_ok( ep, ec )) printf(" point is Ok\n"); else printf(" point is wrong\n");
+
+/* скоростной тест для удвоения
    printf(" speed test:\n"); fflush( stdout );
    tmr = clock();
    for( int i = 0; i < count; i++ ) ak_wpoint_double( wp, ec );
@@ -601,7 +625,7 @@
    if( ak_wpoint_is_ok( wp, ec)) printf(" WP point iss Ok\n"); else printf(" WP point iss wrong\n");
    ak_wpoint_reduce( ep, ec ); print_wpoint( ep, ec );
    if( ak_wpoint_is_ok( ep, ec)) printf(" EP point iss Ok\n"); else printf(" EP point iss wrong\n");
-
+*/
 
 
   mpz_clear( gm );

@@ -164,7 +164,9 @@
  void ak_wpoint_double( ak_wpoint , ak_wcurve );
 /*! \brief Удвоение точки эллиптической кривой, заданной в короткой форме Вейерштрасса */
  void ak_wpoint_double_bl( ak_wpoint , ak_wcurve );
-/*! \brief Удвоение точки эллиптической кривой, заданной в короткой форме Вейерштрасса */
+/*! \brief Прибавление к одной точке эллиптической кривой значения другой точки*/
+ void ak_wpoint_add( ak_wpoint , ak_wpoint , ak_wcurve );
+/*! \brief Приведение проективной точки к аффинному виду */
  void ak_wpoint_reduce( ak_wpoint , ak_wcurve );
 
 #endif

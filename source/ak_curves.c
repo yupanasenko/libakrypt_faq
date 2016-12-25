@@ -505,7 +505,10 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Точка эллиптической кривой \f$ P = (x:y:z) \f$ заменяется значением \f$ 2P  = (x_3:y_3:z_3)\f$.
-    При вычислениях используются следующие соотношения.
+    При вычислениях используются соотношения, основанные на результатах работы
+    D.Bernstein, T.Lange, <a href="http://eprint.iacr.org/2007/286">Faster addition and doubling
+     on elliptic curves</a>, 2007.
+
     \code
       XX = X^2
       ZZ = Z^2
@@ -559,6 +562,105 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
  ak_mpzn_mul_montgomery( wp->z, wp->z, u4, ec->p, ec->n, ec->size );
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! Для двух заданных точек эллиптической кривой \f$ P = (x_1: y_1: z_1) \f$ и
+    \f$ Q = (x_2:y_2:z_2)\f$ вычисляется сумма \f$ P+Q = (x_3:y_3:z_3)\f$,
+    которая присваивается точке \f$ P\f$.
+
+    Для вычислений используются соотношения,
+    приведенные в работе H.Cohen, A.Miyaji and T.Ono
+    <a href=http://link.springer.com/chapter/10.1007/3-540-49649-1_6>Efficient elliptic curve
+    exponentiation using mixed coordinates</a>, 1998.
+
+    \code
+      Y1Z2 = Y1*Z2
+      X1Z2 = X1*Z2
+      Z1Z2 = Z1*Z2
+      u = Y2*Z1-Y1Z2
+      uu = u^2
+      v = X2*Z1-X1Z2
+      vv = v^2
+      vvv = v*vv
+      R = vv*X1Z2
+      A = uu*Z1Z2-vvv-2*R
+      X3 = v*A
+      Y3 = u*(R-A)-vvv*Y1Z2
+      Z3 = vvv*Z1Z2
+    \endcode
+
+    Если в качестве точки \f$ Q \f$ передается точка \f$ P \f$,
+    то функция ak_wpoint_addd() корректно обрабатывает такую ситуацию и вызывает функцию
+    удвоения точки ak_wpoint_double().
+
+    @param wp1 Точка \f$ P \f$, в которую помещается результат операции сложения; первое слагаемое
+    @param wp1 Точка \f$ Q \f$, второе слагаемое
+    @param ec Эллиптическая кривая, которой принадллежат складываемые точки                        */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_wpoint_add( ak_wpoint wp1, ak_wpoint wp2, ak_wcurve ec )
+{
+  ak_mpznmax u1, u2; //, u3, u4, u5, u6, u7, u8, u9;
+  ak_mpznmax x1z2, y1z2, z1z2, u, uu, v, vv, vvv, r, a, t;
+
+  if( ak_mpzn_cmp_ui( wp2->z, ec->size, 0 ) == ak_true ) return;
+  if( ak_mpzn_cmp_ui( wp1->z, ec->size, 0 ) == ak_true ) {
+    ak_wpoint_set( wp1, wp2, ec->size );
+    return;
+  }
+  // поскольку удвоение точки с помощью формул сложения дает бесконечно удаленную точку,
+  // необходимо выполнить проверку
+  ak_mpzn_mul_montgomery( u1, wp1->x, wp2->z, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( u2, wp2->x, wp1->z, ec->p, ec->n, ec->size );
+  if( ak_mpzn_cmp( u1, u2, ec->size ) == 0 ) { // случай совпадения х-координат точки
+    ak_mpzn_mul_montgomery( u1, wp1->y, wp2->z, ec->p, ec->n, ec->size );
+    ak_mpzn_mul_montgomery( u2, wp2->y, wp1->z, ec->p, ec->n, ec->size );
+    if( ak_mpzn_cmp( u1, u2, ec->size ) == 0 ) // случай полного совпадения точек
+      ak_wpoint_double( wp1, ec );
+     else ak_wpoint_set_as_unit( wp1, ec->size );
+    return;
+  }
+
+  //add-1998-cmo-2
+  ak_mpzn_mul_montgomery( x1z2, wp1->x, wp2->z, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( y1z2, wp1->y, wp2->z, ec->p, ec->n, ec->size );
+  ak_mpzn_sub( y1z2, ec->p, y1z2, ec->size );
+  ak_mpzn_mul_montgomery( z1z2, wp1->z, wp2->z, ec->p, ec->n, ec->size );
+
+  ak_mpzn_mul_montgomery( u, wp2->y, wp1->z, ec->p, ec->n, ec->size );
+  ak_mpzn_add_montgomery( u, u, y1z2, ec->p, ec->size );
+  ak_mpzn_mul_montgomery( uu, u, u, ec->p, ec->n, ec->size );
+
+  ak_mpzn_sub( t, ec->p, x1z2, ec->size );
+  ak_mpzn_mul_montgomery( v, wp2->x, wp1->z, ec->p, ec->n, ec->size );
+  ak_mpzn_add_montgomery( v, v, t, ec->p, ec->size );
+
+  ak_mpzn_mul_montgomery( vv, v, v, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( vvv, vv, v, ec->p, ec->n, ec->size);
+  ak_mpzn_mul_montgomery( r, vv, x1z2, ec->p, ec->n, ec->size );
+
+  ak_mpzn_lshift_montgomery( t, r, ec->p, ec->size );
+  ak_mpzn_add_montgomery( t, t, vvv, ec->p, ec->size );
+  ak_mpzn_sub( t, ec->p, t, ec->size );
+  ak_mpzn_mul_montgomery( a, uu, z1z2, ec->p, ec->n, ec->size );
+  ak_mpzn_add_montgomery( a, a, t, ec->p, ec->size );
+
+  ak_mpzn_mul_montgomery( wp1->x, v, a, ec->p, ec->n, ec->size );
+
+  ak_mpzn_mul_montgomery( y1z2, y1z2, vvv, ec->p, ec->n, ec->size );
+  ak_mpzn_sub( a, ec->p, a, ec->size );
+  ak_mpzn_add_montgomery( r, r, a, ec->p, ec->size );
+  ak_mpzn_mul_montgomery( wp1->y, u, r, ec->p, ec->n, ec->size );
+  ak_mpzn_add_montgomery( wp1->y, wp1->y, y1z2, ec->p, ec->size );
+
+  ak_mpzn_mul_montgomery( wp1->z, vvv, z1z2, ec->p, ec->n, ec->size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Для точки \f$ P = (x:y:z) \f$ функция вычисляет аффинное представление,
+    задаваемое следующим вектором \f$ P = \left( \frac{x}{z} \pmod{p}, \frac{y}{z} \pmod{p}, 1\right) \f$,
+    где \f$ p \f$ модуль эллиптической кривой.
+
+    @param wp Точка кривой, которая приводится к аффинной форме
+    @param ec Эллиптическая кривая, которой принадлежит точка                                      */
 /* ----------------------------------------------------------------------------------------------- */
  void ak_wpoint_reduce( ak_wpoint wp, ak_wcurve ec )
 {
