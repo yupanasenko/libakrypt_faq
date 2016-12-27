@@ -416,7 +416,7 @@
    ak_mpzn256 x, y, n;
    ak_random generator = ak_random_new_lcg();
    clock_t tmr;
-   ak_wcurve ec = ak_wcurve_new(( const ak_wcurve_params) &wcurve_GOST );
+   ak_wcurve ec = ak_wcurve_new(( const ak_wcurve_params) &wcurve_gost_3410_2012_test256 );
    count /= 10;
 
    mpz_init(xm);
@@ -543,12 +543,12 @@
 /* тест для операций на эллиптических кривых */
  void wcurve_test( size_t count )
 {
+  int i = 0;
   char *str = NULL;
-  ak_wcurve ec = ak_wcurve_new(( const ak_wcurve_params) &wcurve_GOST );
-  ak_wpoint wp = ak_wpoint_new(( const ak_wcurve_params) &wcurve_GOST );
+  ak_wcurve ec = ak_wcurve_new(( const ak_wcurve_params) &wcurve_gost_3410_2012_test256 );
+  ak_wpoint wp = ak_wpoint_new(( const ak_wcurve_params) &wcurve_gost_3410_2012_test256 );
   ak_wpoint ep = ak_wpoint_new_as_unit( ec->size );
   mpz_t am, bm, pm, r2m, tm, sm, rm, gm;
-  ak_mpzn256 k;
   ak_random generator = ak_random_new_lcg();
   clock_t tmr;
 
@@ -569,9 +569,9 @@
   printf(" (4a^3+27b^2) (mod p)  = %s [reverse byte array]\n",
             str = ak_ptr_to_hexstr( d, ec->size*sizeof(ak_uint64), ak_true )); free(str);
 
-  mpz_set_str( am, wcurve_GOST.ca, 16 );
-  mpz_set_str( bm, wcurve_GOST.cb, 16 );
-  mpz_set_str( pm, wcurve_GOST.cp, 16 );
+  mpz_set_str( am, wcurve_gost_3410_2012_test256.ca, 16 );
+  mpz_set_str( bm, wcurve_gost_3410_2012_test256.cb, 16 );
+  mpz_set_str( pm, wcurve_gost_3410_2012_test256.cp, 16 );
   mpz_sub_ui( rm, pm, 16 );
   mpz_mul_ui( tm, am, 4 );
   mpz_mul( tm, tm, am );
@@ -589,6 +589,15 @@
 
   if( ak_wpoint_check_order( wp, ec ))
     printf(" order is Ok\n"); else printf(" order is wrong\n");
+
+  printf(" speed test:\n"); fflush(stdout);
+  tmr = clock();
+  for( i = 0; i < 5000; i++ ) {
+     ak_wpoint_check_order( wp, ec );
+  }
+  tmr = clock() - tmr;
+  double seconds = ((double) tmr) / ((double) CLOCKS_PER_SEC);
+  printf(" ak_wcurve_pow() time: %.3fs [%.3f points per second]\n", seconds, (double)5000 / seconds );
 
   mpz_clear( gm );
   mpz_clear( rm );
@@ -611,14 +620,13 @@
 {
   size_t count = 1000000;
 
-//  printf(" - ak_mpzn_add() function test\n"); add_test( count );
-//  printf(" - ak_mpzn_sub() function test\n"); sub_test( count );
-//  printf(" - ak_mpzn_mul() function test\n"); mul_test( count );
-//  printf(" - ak_mpzn_mul_ui() function test\n"); mul_ui_test( count );
-//  printf("\n - ak_mpzn_add_montgomery() function test\n"); add_montgomery_test( count );
-//  printf("\n - ak_mpzn_mul_montgomery() function test\n"); mul_montgomery_test( count );
-//  printf(" - ak_mpzn_modpow_montgomery() function test\n"); modpow_montgomery_test( count );
-
+  printf(" - ak_mpzn_add() function test\n"); add_test( count );
+  printf(" - ak_mpzn_sub() function test\n"); sub_test( count );
+  printf(" - ak_mpzn_mul() function test\n"); mul_test( count );
+  printf(" - ak_mpzn_mul_ui() function test\n"); mul_ui_test( count );
+  printf("\n - ak_mpzn_add_montgomery() function test\n"); add_montgomery_test( count );
+  printf("\n - ak_mpzn_mul_montgomery() function test\n"); mul_montgomery_test( count );
+  printf(" - ak_mpzn_modpow_montgomery() function test\n"); modpow_montgomery_test( count );
   printf("\n - wcurve class test\n"); wcurve_test( count );
 
  return 0;

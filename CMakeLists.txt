@@ -97,6 +97,7 @@ set( EXAMPLES_LIST intro
                    hash-oids
                    random
                    dev-random
+                   wcurves
                    encrypt-ecb )
 foreach( programm ${EXAMPLES_LIST} )
     # сборка статических примеров

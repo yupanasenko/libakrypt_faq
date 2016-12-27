@@ -117,8 +117,8 @@
 };
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Параметры эллиптической кривой из тестового примера ГОСТ Р 34.10-2012 */
- static const struct wcurve_params wcurve_GOST = {
+/*! \brief Параметры эллиптической кривой из тестового примера ГОСТ Р 34.10-2012 (Приложение А.1)  */
+ static const struct wcurve_params wcurve_gost_3410_2012_test256 = {
   ak_mpzn256_size,
   "7",                                                                // a
   "5FBFF498AA938CE739B8E022FBAFEF40563F6E6A3472FC2A514C0CE9DAE23B7E", // b
@@ -130,6 +130,26 @@
   0xDBF951D5883B2B2FLL,                                               // n
   1                                                                   // d
 };
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Параметры эллиптической кривой из тестового примера ГОСТ Р 34.10-2012 (Приложение А.2)  */
+ static const struct wcurve_params wcurve_gost_3410_2012_test512 = {
+  ak_mpzn512_size,
+  "7",                                                                                                                                // a
+  "1CFF0806A31116DA29D8CFA54E57EB748BC5F377E49400FDD788B649ECA1AC4361834013B2AD7322480A89CA58E0CF74BC9E540C2ADD6897FAD0A3084F302ADC", // b
+  "4531ACD1FE0023C7550D267B6B2FEE80922B14B2FFB90F04D4EB7C09B5D2D15DF1D852741AF4704A0458047E80E4546D35B8336FAC224DD81664BBF528BE6373", // p
+  "4531ACD1FE0023C7550D267B6B2FEE80922B14B2FFB90F04D4EB7C09B5D2D15DA82F2D7ECB1DBAC719905C5EECC423F1D86E25EDBE23C595D644AAF187E6E6DF", // q
+  "24D19CC64572EE30F396BF6EBBFD7A6C5213B3B3D7057CC825F91093A68CD762FD60611262CD838DC6B60AA7EEE804E28BC849977FAC33B4B530F1B120248A9A", // px
+  "2BB312A43BD2CE6E0D020613C857ACDDCFBF061E91E5F2C3F32447C259F39B2C83AB156D77F1496BF7EB3351E1EE4E43DC1A18B91B24640B6DBB92CB1ADD371E", // py
+  "1d887dcd9cd19c1001fde9ca99de0852fcd983cfb7c663d9ca0bc8af77c8690a0815b9eb1e7dd300e417d58d200c2aa04b907a71e647ee63001c10bc2d005b65", // r2
+  0xd6412ff7c29b8645LL,                                               // n
+  1                                                                   // d
+};
+
+
+
+// static const struct wcurve_params wcurve_tc26_gost_3410_2012_512_paramSetC = {
+
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

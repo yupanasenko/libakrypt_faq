@@ -463,10 +463,10 @@
     return ak_false;
   }
   /* инициализируем механизм обработки секретных ключей пользователей */
-  if(( error = ak_keylist_create()) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "secret key control mechanism not started", __func__ );
-    return ak_false;
-  }
+//  if(( error = ak_keylist_create()) != ak_error_ok ) {
+//    ak_error_message( ak_error_get_value(), "secret key control mechanism not started", __func__ );
+//    return ak_false;
+//  }
   /* тестируем работу функций хеширования */
   if(( error = ak_libakrypt_test_hash_functions()) != ak_true ) {
     ak_error_message( ak_error_get_value(), "error while testing hash functions", __func__ );
@@ -489,10 +489,10 @@
   if( error != ak_error_ok )
     ak_error_message( error, "before destroing library holds an error", __func__ );
 
-  ak_error_set_value( ak_error_ok );
-  if( ak_keylist_destroy() != ak_error_ok )
-    ak_error_message( ak_error_get_value(), 
-                             "secret key control mechanism not properly destroyed", __func__ );
+//  ak_error_set_value( ak_error_ok );
+//  if( ak_keylist_destroy() != ak_error_ok )
+//    ak_error_message( ak_error_get_value(),
+//                             "secret key control mechanism not properly destroyed", __func__ );
   ak_error_set_value( ak_error_ok );
   if( ak_oids_destroy() != ak_error_ok )
     ak_error_message( ak_error_get_value(), "OID mechanism not properly destroyed", __func__ );
