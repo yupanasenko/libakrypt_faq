@@ -123,12 +123,19 @@
     ­ id-tc26-gost-3410-2012-256-paramSetA,  1.2.643.7.1.2.1.1.1
      id-tc26-gost-3410-2012-512-paramSetC,  1.2.643.7.1.2.1.2.3   */
 
-  ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-tc26-gost-3410-12-512-paramSetA",
+  ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-tc26-gost3410-2012-512-paramSetA",
                     "1.2.643.7.1.2.1.2.1", (ak_pointer) &wcurve_tc26_gost_3410_2012_512_paramSetA ));
-  ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-tc26-gost-3410-12-512-paramSetB",
+  ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-tc26-gost3410-2012-512-paramSetB",
                     "1.2.643.7.1.2.1.2.2", (ak_pointer) &wcurve_tc26_gost_3410_2012_512_paramSetB ));
-  ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-tc26-gost-3410-12-512-paramSetC",
+  ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-tc26-gost3410-2012-512-paramSetC",
                     "1.2.643.7.1.2.1.2.3", (ak_pointer) &wcurve_tc26_gost_3410_2012_512_paramSetC ));
+
+  ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-axel-gost3410-2012-512-paramSetA",
+                "1.2.643.2.52.1.27.1.2.1", (ak_pointer) &wcurve_axel_gost_3410_2012_512_paramSetA ));
+  ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-axel-gost3410-2012-512-paramSetB",
+                "1.2.643.2.52.1.27.1.2.2", (ak_pointer) &wcurve_axel_gost_3410_2012_512_paramSetB ));
+  ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-axel-gost3410-2012-512-paramSetC",
+                "1.2.643.2.52.1.27.1.2.3", (ak_pointer) &wcurve_axel_gost_3410_2012_512_paramSetC ));
 
  return ak_error_ok;
 }

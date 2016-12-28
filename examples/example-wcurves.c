@@ -21,13 +21,17 @@
        ak_wpoint wp = ak_wpoint_new(ecp);
 
        printf(" curve: %s [%s]", ak_oid_get_name(oid), ak_oid_get_id( oid ));
-       if( result = ak_wcurve_is_ok( ec )) printf(" is Ok\n"); else printf(" is wrong\n");
-
+       if((result = ak_wcurve_is_ok( ec )) == ak_true ) printf(" is Ok\n"); else printf(" is wrong\n");
+       printf("  a = %s\n", ecp->ca );
+       printf("  b = %s\n", ecp->cb );
+       printf("  p = %s\n", ecp->cp );
        if( result ) {
          if( ak_wpoint_is_ok( wp, ec )) printf(" point is Ok\n"); else printf(" point is wrong\n");
-         printf("  px = %s\n", ecp->cpx );
-         printf("  py = %s\n", ecp->cpy );
+         //printf(" px = %s\n", ecp->cpx );
+         //printf(" py = %s\n", ecp->cpy );
+         printf("  (%s:%s)\n", ecp->cpx, ecp->cpy );
          if( ak_wpoint_check_order( wp, ec )) printf(" order is Ok\n"); else printf(" order is wrong\n");
+         printf("  q = %s\n\n", ecp->cq );
        }
        wp = ak_wpoint_delete( wp );
        ec = ak_wcurve_delete( ec );
