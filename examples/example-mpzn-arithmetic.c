@@ -416,7 +416,7 @@
    ak_mpzn256 x, y, n;
    ak_random generator = ak_random_new_lcg();
    clock_t tmr;
-   ak_wcurve ec = ak_wcurve_new(( const ak_wcurve_params) &wcurve_gost_3410_2012_test256 );
+   ak_wcurve ec = ak_wcurve_new(( const ak_wcurve_paramset) &wcurve_gost_3410_2012_test256 );
    count /= 10;
 
    mpz_init(xm);
@@ -545,8 +545,8 @@
 {
   int i = 0;
   char *str = NULL;
-  ak_wcurve ec = ak_wcurve_new(( const ak_wcurve_params) &wcurve_gost_3410_2012_test256 );
-  ak_wpoint wp = ak_wpoint_new(( const ak_wcurve_params) &wcurve_gost_3410_2012_test256 );
+  ak_wcurve ec = ak_wcurve_new(( const ak_wcurve_paramset) &wcurve_gost_3410_2012_test256 );
+  ak_wpoint wp = ak_wpoint_new(( const ak_wcurve_paramset) &wcurve_gost_3410_2012_test256 );
   ak_wpoint ep = ak_wpoint_new_as_unit( ec->size );
   mpz_t am, bm, pm, r2m, tm, sm, rm, gm;
   ak_random generator = ak_random_new_lcg();

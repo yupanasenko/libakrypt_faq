@@ -118,7 +118,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Параметры эллиптической кривой из тестового примера ГОСТ Р 34.10-2012 (Приложение А.1)  */
- static const struct wcurve_params wcurve_gost_3410_2012_test256 = {
+ static const struct wcurve_paramset wcurve_gost_3410_2012_test256 = {
   ak_mpzn256_size,
   "7",                                                                // a
   "5FBFF498AA938CE739B8E022FBAFEF40563F6E6A3472FC2A514C0CE9DAE23B7E", // b
@@ -133,7 +133,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Параметры эллиптической кривой из тестового примера ГОСТ Р 34.10-2012 (Приложение А.2)  */
- static const struct wcurve_params wcurve_gost_3410_2012_test512 = {
+ static const struct wcurve_paramset wcurve_gost_3410_2012_test512 = {
   ak_mpzn512_size,
   "7",                                                                                                                                // a
   "1CFF0806A31116DA29D8CFA54E57EB748BC5F377E49400FDD788B649ECA1AC4361834013B2AD7322480A89CA58E0CF74BC9E540C2ADD6897FAD0A3084F302ADC", // b
@@ -146,10 +146,50 @@
   1                                                                   // d
 };
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Параметры эллиптической кривой из рекомендаций Р 50.1.114-2016 (paramSetA)              */
+ static const struct wcurve_paramset wcurve_tc26_gost_3410_2012_512_paramSetA = {
+  ak_mpzn512_size,
+  "", //a
+  "", //b
+  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFDC7", // p
+  "", // q
+  "", // px
+  "", // py
+  "", // r2
+  0x00LL, // n
+  1       // d
+};
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Параметры эллиптической кривой из рекомендаций Р 50.1.114-2016 (paramSetB)              */
+ static const struct wcurve_paramset wcurve_tc26_gost_3410_2012_512_paramSetB = {
+  ak_mpzn512_size,
+  "", //a
+  "", //b
+  "", // p
+  "", // q
+  "", // px
+  "", // py
+  "", // r2
+  0x00LL, // n
+  1       // d
+};
 
-// static const struct wcurve_params wcurve_tc26_gost_3410_2012_512_paramSetC = {
-
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Параметры эллиптической кривой из рекомендаций Р 50.1.114-2016 (paramSetC)              */
+ static const struct wcurve_paramset wcurve_tc26_gost_3410_2012_512_paramSetC = {
+  ak_mpzn512_size,
+  "", //a
+  "", //b
+  "", // p
+  "", // q
+  "", // px
+  "", // py
+  "", // r2
+  0x00LL, // n
+  1       // d
+};
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

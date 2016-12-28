@@ -37,7 +37,7 @@
     @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
     возвращается ее код.                                                                           */
 /* ----------------------------------------------------------------------------------------------- */
-int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
+int ak_wcurve_create( ak_wcurve ec, ak_wcurve_paramset params )
 {
   int local_error = ak_error_ok;
   size_t bytelen = 0;
@@ -120,7 +120,7 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_wcurve ak_wcurve_new( ak_wcurve_params params )
+ ak_wcurve ak_wcurve_new( ak_wcurve_paramset params )
 {
   ak_wcurve ec = ( ak_wcurve ) malloc( sizeof( struct wcurve ));
   if( ec != NULL ) ak_wcurve_create( ec, params );
@@ -229,7 +229,7 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
      @return В случае возникновения ошибки, возвращается ее код. В противном случае,
      возвращается \ref ak_error_ok.                                                               */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_wpoint_create( ak_wpoint wp, ak_wcurve_params params )
+ int ak_wpoint_create( ak_wpoint wp, ak_wcurve_paramset params )
 {
  int local_error = ak_error_ok;
  size_t bytelen = 0;
@@ -355,7 +355,7 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_params params )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_wpoint ak_wpoint_new( ak_wcurve_params params )
+ ak_wpoint ak_wpoint_new( ak_wcurve_paramset params )
 {
   ak_wpoint wp = ( ak_wpoint ) malloc( sizeof( struct wpoint ));
   if( wp != NULL ) ak_wpoint_create( wp, params );

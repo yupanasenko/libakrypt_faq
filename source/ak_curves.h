@@ -46,7 +46,7 @@
     определяются равенством
     \f$r\cdot r_1 - n_1\cdot p = 1\f$ и \f$ r_2 \equiv r^2 \pmod{p}\f$.                            */
 /* ----------------------------------------------------------------------------------------------- */
- struct wcurve_params {
+ struct wcurve_paramset {
  /*! \brief Количество слов в элементах конечного поля, может принимать значения
                                                      \ref ak_mpzn256_size или \ref ak_mpzn512_size */
   size_t size;
@@ -69,7 +69,7 @@
  /*! \brief Кофактор порядка подгруппы, т.е. \f$ m = qd \f$, где \f$ m \f$ порядок всей группы */
   ak_uint64 cd;
 };
- typedef struct wcurve_params *ak_wcurve_params;
+ typedef struct wcurve_paramset *ak_wcurve_paramset;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Класс, реализующий эллиптическую кривую, заданную в короткой форме Вейерштрасса
@@ -107,9 +107,9 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация контекста эллиптической кривой в короткой форме Вейерштрасса */
- int ak_wcurve_create( ak_wcurve , ak_wcurve_params );
+ int ak_wcurve_create( ak_wcurve , ak_wcurve_paramset );
 /*! \brief Создание указателя на контекст эллиптической кривой */
- ak_wcurve ak_wcurve_new( ak_wcurve_params );
+ ak_wcurve ak_wcurve_new( ak_wcurve_paramset );
 /*! \brief Уничтожение данных из контекста эллиптической кривой */
  int ak_wcurve_destroy( ak_wcurve );
 /*! \brief Уничтожение контекста эллиптической кривой */
@@ -141,11 +141,11 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация контекста точки эллиптической кривой в короткой форме Вейерштрасса */
- int ak_wpoint_create( ak_wpoint , ak_wcurve_params );
+ int ak_wpoint_create( ak_wpoint , ak_wcurve_paramset );
 /*! \brief Инициализация и присвоение контексту значения бесконечно удаленной точки эллиптической кривой */
  int ak_wpoint_create_as_unit( ak_wpoint , const size_t );
 /*! \brief Создание указателя на контекст точки эллиптической кривой */
- ak_wpoint ak_wpoint_new( ak_wcurve_params );
+ ak_wpoint ak_wpoint_new( ak_wcurve_paramset );
 /*! \brief Создание указателя на контекст точки эллиптической кривой */
  ak_wpoint ak_wpoint_new_as_unit( const size_t );
 /*! \brief Уничтожение данных из контекста точки эллиптической кривой */
