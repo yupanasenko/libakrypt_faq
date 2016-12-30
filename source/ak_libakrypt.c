@@ -30,6 +30,7 @@
  #include <ak_hash.h>
  #include <ak_skey.h>
  #include <ak_keylist.h>
+ #include <ak_curves.h>
 
  #include <errno.h>
  #include <fcntl.h>
@@ -413,6 +414,73 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция выводит в файл аудита значения параметров эллиптической кривой                  */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_libakrypt_wcurve_to_log( const ak_wcurve_paramset ecp )
+{
+
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция проверяет корректность реализации операций на эллиптических кривых в короткой форме Вейерштрасса
+
+  Проверяются все параметры эллиптических кривых, доступные через механизм OID.
+  Проверяется отличие дискриминанта кривой от нуля, принадлежность заданной точки заданной
+  эллиптической кривой, а также проверяется порядок заданной точки.
+
+  @return Возвращает ak_true в случае успешного тестирования. В случае возникновения
+  ошибки функция возвращает ak_false. Код ошибки можеть быть получен с помощью вызова
+  ak_error_get_value().                                                                            */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_libakrypt_test_wcurves( void )
+{
+  size_t idx = 0;
+  ak_bool result = ak_true;
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, "testing Weierstrass curves started", __func__ );
+
+ /* перебираем все кривые, которые доступны через механизм OIDэов библиотеки */
+  for( idx = 0; idx < ak_oids_get_count(); idx++ ) {
+     ak_oid oid = ak_oids_get_oid( idx );
+     if( ak_oid_get_mode( oid ) == wcurve_params ) {
+       const ak_wcurve_paramset ecp = (const ak_wcurve_paramset) oid->data;
+       ak_wcurve ec = ak_wcurve_new(ecp);
+       ak_wpoint wp = ak_wpoint_new(ecp);
+       if(( result = ak_wcurve_is_ok( ec )) == ak_true ) {
+         if( ak_wpoint_is_ok( wp, ec )) {
+           if( ak_wpoint_check_order( wp, ec )) {
+              if( audit >= ak_log_maximum ) {
+                char message[1024];
+                memset( message, 0, 1024 );
+                ak_snprintf( message, 1022, "curve %s [OID: %s] is Ok",
+                                                      ak_oid_get_name(oid), ak_oid_get_id(oid));
+                ak_error_message( ak_error_ok, message, __func__ );
+              }
+           } else { ak_libakrypt_wcurve_to_log( ecp );
+                    ak_error_message( result = ak_error_wcurve_point_order,
+                                   "incorrect order of elliptic curve's base point", __func__ );
+                   }
+         } else { ak_libakrypt_wcurve_to_log( ecp );
+                  ak_error_message( result = ak_error_wcurve_point,
+                                           "incorrect base point of elliptic curve", __func__ );
+                }
+       } else { ak_libakrypt_wcurve_to_log( ecp );
+                ak_error_message( result = ak_error_wcurve_discriminant,
+                                "incorrect value of elliptic curve's' discriminant", __func__ );
+              }
+       wp = ak_wpoint_delete( wp );
+       ec = ak_wcurve_delete( ec );
+       if( result != ak_true ) break;
+     }
+  }
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, "testing Weierstrass curves started", __func__ );
+ return result;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция должна вызываться перед использованием
     криптографических механизмов библиотеки.
 
@@ -475,6 +543,11 @@
   /* тестируем работу алгоритмов блочного шифрования */
   if(( error = ak_libakrypt_test_block_ciphers()) != ak_true ) {
     ak_error_message( ak_error_get_value(), "error while testing block ciphers", __func__ );
+    return ak_false;
+  }
+  /* тестируем корректность реализации операций с эллиптическими кривыми в короткой форме Вейерштрасса */
+  if(( error = ak_libakrypt_test_wcurves()) != ak_true ) {
+    ak_error_message( ak_error_get_value(), "error while testing Wierstrass curves", __func__ );
     return ak_false;
   }
 
