@@ -418,6 +418,20 @@
 /* ----------------------------------------------------------------------------------------------- */
  void ak_libakrypt_wcurve_to_log( const ak_wcurve_paramset ecp )
 {
+ char message[160];
+
+  ak_snprintf( message, 158, " a = %s", ecp->ca );
+  ak_log_set_message( message );
+  ak_snprintf( message, 158, " b = %s", ecp->cb );
+  ak_log_set_message( message );
+  ak_snprintf( message, 158, " p = %s", ecp->cp );
+  ak_log_set_message( message );
+  ak_snprintf( message, 158, " q = %s", ecp->cq );
+  ak_log_set_message( message );
+  ak_snprintf( message, 158, "px = %s", ecp->cpx );
+  ak_log_set_message( message );
+  ak_snprintf( message, 158, "py = %s", ecp->cpy );
+  ak_log_set_message( message );
 
 }
 
@@ -435,6 +449,7 @@
  ak_bool ak_libakrypt_test_wcurves( void )
 {
   size_t idx = 0;
+  char message[1024];
   ak_bool result = ak_true;
   int audit = ak_log_get_level();
   if( audit >= ak_log_maximum )
@@ -447,35 +462,48 @@
        const ak_wcurve_paramset ecp = (const ak_wcurve_paramset) oid->data;
        ak_wcurve ec = ak_wcurve_new(ecp);
        ak_wpoint wp = ak_wpoint_new(ecp);
-       if(( result = ak_wcurve_is_ok( ec )) == ak_true ) {
-         if( ak_wpoint_is_ok( wp, ec )) {
-           if( ak_wpoint_check_order( wp, ec )) {
-              if( audit >= ak_log_maximum ) {
-                char message[1024];
-                memset( message, 0, 1024 );
-                ak_snprintf( message, 1022, "curve %s [OID: %s] is Ok",
-                                                      ak_oid_get_name(oid), ak_oid_get_id(oid));
-                ak_error_message( ak_error_ok, message, __func__ );
-              }
-           } else { ak_libakrypt_wcurve_to_log( ecp );
-                    ak_error_message( result = ak_error_wcurve_point_order,
-                                   "incorrect order of elliptic curve's base point", __func__ );
-                   }
-         } else { ak_libakrypt_wcurve_to_log( ecp );
-                  ak_error_message( result = ak_error_wcurve_point,
-                                           "incorrect base point of elliptic curve", __func__ );
-                }
-       } else { ak_libakrypt_wcurve_to_log( ecp );
-                ak_error_message( result = ak_error_wcurve_discriminant,
-                                "incorrect value of elliptic curve's' discriminant", __func__ );
-              }
+
+       /* исправить!!!
+
+if( audit >= ak_log_maximum ) {
+  ak_snprintf( message, 1022, "curve %s [OID: %s]", ak_oid_get_name(oid), ak_oid_get_id(oid));
+  ak_error_message( ak_error_ok, message, __func__ );
+}
+
+if(( result = ak_wcurve_is_ok( ec )) == ak_true ) {
+  if( ak_wpoint_is_ok( wp, ec )) {
+    if( ak_wpoint_check_order( wp, ec )) {
+       if( audit >= ak_log_maximum ) {
+         ak_error_message( ak_error_ok, "checked properly, curve is Ok", __func__ );
+       }
+    } else { ak_libakrypt_wcurve_to_log( ecp );
+             ak_error_message( result = ak_error_wcurve_point_order,
+                            "incorrect order of elliptic curve's base point", __func__ );
+            }
+  } else { ak_libakrypt_wcurve_to_log( ecp );
+           ak_error_message( result = ak_error_wcurve_point,
+                                    "incorrect base point of elliptic curve", __func__ );
+         }
+} else { ak_libakrypt_wcurve_to_log( ecp );
+         ak_error_message( result = ak_error_wcurve_discriminant,
+                         "incorrect value of elliptic curve's' discriminant", __func__ );
+       }
+}
+}
+
+
+       */
+
+
+
        wp = ak_wpoint_delete( wp );
        ec = ak_wcurve_delete( ec );
        if( result != ak_true ) break;
      }
-  }
+  } /* end of for */
+
   if( audit >= ak_log_maximum )
-    ak_error_message( ak_error_ok, "testing Weierstrass curves started", __func__ );
+    ak_error_message( ak_error_get_value(), "testing Weierstrass curves ended successfully", __func__ );
  return result;
 }
 

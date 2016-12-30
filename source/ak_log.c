@@ -156,7 +156,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param code код ошибки
     @param message1 читаемое (понятное для пользователя) сообщение (первая часть)
-    @param message1 читаемое (понятное для пользователя) сообщение (вторая часть)
+    @param message2 читаемое (понятное для пользователя) сообщение (вторая часть)
     @param function имя функции, вызвавшей ошибку                                                  */
 /* ----------------------------------------------------------------------------------------------- */
  void ak_error_message_str( const int code, const char *message1,
@@ -174,6 +174,33 @@
 #endif
   ak_log_set_message( error_event_string );
   ak_error_set_value( code );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param code код ошибки
+    @param format строка с форматом вывода (преобразования)
+    @param function имя функции, вызвавшей ошибку                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_error_message_fmt( const int code, const char *format, const char *function, ... )
+{
+  int result = 0;
+  char str[1024];
+  va_list args;
+  va_start( args, format ); // format должен быть посденим перед точками .....
+  memset( str, 0, 1024 );
+
+  ччерт, надо все переделывать (((((
+
+ #ifdef _MSC_VER
+  #if _MSC_VER > 1310
+    _vsnprintf_s( str, 1022, 1022, format, args );
+  #else
+    _vsnprintf( str, 1022, format, args );
+  #endif
+ #else
+   result = vsnprintf( str, 1022, format, args );
+ #endif
+   ak_error_message( code, str, function );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

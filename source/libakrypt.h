@@ -172,11 +172,11 @@
  #define ak_error_wcurve_point        (-28)
  #define ak_error_wcurve_point_order  (-29)
 
- #define ak_null_string        ("(null)")
+ #define ak_null_string          ("(null)")
 
- #define ak_log_none                  (0)
- #define ak_log_standard              (1)
- #define ak_log_maximum               (2)
+ #define ak_log_none                    (0)
+ #define ak_log_standard                (1)
+ #define ak_log_maximum                 (2)
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает уровень аудита библиотеки */
@@ -193,17 +193,15 @@
  dll_export int ak_function_log_stderr( const char * );
 /*! \brief Вывод сообщений о возникшей в процессе выполнения ошибке */
  dll_export void ak_error_message( const int, const char *, const char * );
-/*! \brief Вывод сообщений о возникшей в процессе выполнения ошибке */
- dll_export void ak_error_message_str( const int , const char *, const char *, const char * );
 /*! \brief Функция устанавливает значение переменной, хранящей ошибку выполнения программы */
  dll_export int ak_error_set_value( const int );
 /*! \brief Функция возвращает код последней ошибки выполнения программы */
  dll_export int ak_error_get_value( void );
 /*! \brief Функция возвращает константный указатель NULL-строку с текущей версией библиотеки */
  dll_export const char *ak_libakrypt_version( void );
-/*! \brief Функция инициализации и тестирования риптографических механизмов библиотеки */
+/*! \brief Функция инициализации и тестирования криптографических механизмов библиотеки */
  dll_export int ak_libakrypt_create( ak_function_log * );
-/*! \brief Функция останавливает поддержку криптографических механизмов */
+/*! \brief Функция останавки поддержки криптографических механизмов */
  dll_export int ak_libakrypt_destroy( void );
 
 /* ----------------------------------------------------------------------------------------------- */
