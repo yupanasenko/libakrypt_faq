@@ -496,10 +496,6 @@
   ak_uint64 av = 0, bv = 0, cy = 0;
   ak_mpznmax t = ak_mpznmax_zero;
 
-//&  printf(" x = " ); for( i = 0; i < size; i++ ) printf(" %lx", x[i]); printf("\n");
-//&  printf(" y = " ); for( i = 0; i < size; i++ ) printf(" %lx", y[i]); printf("\n");
-
-
   // ak_mpzn_mul( t, x, y, size );
   for( i = 0; i < size; i++ ) {
      ak_uint64 c = 0, m = x[i];
@@ -515,8 +511,6 @@
      }
      t[ij] = c;
   }
-
-  //& printf(" t = " ); for( i = 0; i <= 2*size; i++ ) printf(" %lx", t[i]); printf("\n");
 
   //  ak_mpzn_mul( u, t, n, size );
   //  ak_mpzn_mul( u, u, p, size );
@@ -538,11 +532,8 @@
          t[ij] += c;
          c = t[ij] < c;
          ij++;
-         // if(ij > 2*size) break;
      } while( c != 0 );
   }
-
-  //& printf(" t = " ); for( i = 0; i <= 2*size; i++ ) printf(" %lx", t[i]); printf("\n");
 
   // вычитаем из результата модуль p
   for( i = 0, j = size; i < size; i++, j++ ) {
@@ -553,7 +544,8 @@
      cy += av > bv;
      z[i] = av;
   }
-  if( cy == 1 ) memcpy( z, t+size, size*sizeof( ak_uint64 ));
+  //if( cy == 1 ) memcpy( z, t+size, size*sizeof( ak_uint64 )); <--- то ошибочный вариант !!!
+  if( cy != t[2*size] ) memcpy( z, t+size, size*sizeof( ak_uint64 ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */

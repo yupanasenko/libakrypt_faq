@@ -548,19 +548,17 @@
   const ak_wcurve_paramset ecp = ( const ak_wcurve_paramset) &wcurve_tc26_gost_3410_2012_512_paramSetA;
   ak_wcurve ec = ak_wcurve_new( ecp );
   ak_wpoint wp = ak_wpoint_new( ecp );
-  ak_wpoint ep = ak_wpoint_new_as_unit( ec->size );
-  mpz_t am, bm, pm, r2m, tm, sm, rm, gm;
+  mpz_t am, bm, pm, tm, sm, rm;
   ak_random generator = ak_random_new_lcg();
   clock_t tmr;
 
   mpz_init(am);
   mpz_init(bm);
   mpz_init(pm);
-  mpz_init(r2m);
   mpz_init(tm);
   mpz_init(sm);
   mpz_init(rm);
-  mpz_init(gm);
+  mpz_init(sm);
 
   print_wcurve(ec);
   if( ak_wcurve_is_ok(ec)) printf(" curve is Ok\n");
@@ -574,19 +572,17 @@
   mpz_set_str( bm, ecp->cb, 16 );
   mpz_set_str( pm, ecp->cp, 16 );
   mpz_sub_ui( rm, pm, 16 );
-  mpz_mul_ui( tm, am, 4 );
-  mpz_mul( tm, tm, am );
-  mpz_mul( tm, tm, am );
-  mpz_mul_ui( sm, bm, 27 );
-  mpz_mul( sm, sm, bm );
-  mpz_add( tm, tm, sm );
-  mpz_mul( tm, tm, rm );
-  mpz_mod( tm, tm, pm );
+  mpz_mul_ui( tm, am, 4 ); mpz_mod( tm, tm, pm );
+  mpz_mul( tm, tm, am ); mpz_mod( tm, tm, pm );
+  mpz_mul( tm, tm, am ); mpz_mod( tm, tm, pm );
+  mpz_mul_ui( sm, bm, 27 ); mpz_mod( sm, sm, pm );
+  mpz_mul( sm, sm, bm ); mpz_mod( sm, sm, pm );
+  mpz_add( tm, tm, sm ); mpz_mod( tm, tm, pm );
+  mpz_mul( tm, tm, rm );  mpz_mod( tm, tm, pm );
   printf(" Discriminant (mod p)  = "); mpz_out_str( stdout, 16, tm ); printf("\n\n");
 
   print_wpoint( wp, ec );
   if( ak_wpoint_is_ok( wp, ec )) printf(" point is Ok\n"); else printf(" point is wrong\n");
-  ak_wpoint_set( ep, wp, ec->size );
 
   if( ak_wpoint_check_order( wp, ec ))
     printf(" order is Ok\n"); else printf(" order is wrong\n");
@@ -600,17 +596,14 @@
   double seconds = ((double) tmr) / ((double) CLOCKS_PER_SEC);
   printf(" ak_wcurve_pow() time: %.3fs [%.3f points per second]\n", seconds, (double)500 / seconds );
 
-  mpz_clear( gm );
   mpz_clear( rm );
   mpz_clear( am );
   mpz_clear( bm );
   mpz_clear( pm );
-  mpz_clear( r2m );
   mpz_clear( tm );
   mpz_clear( sm );
 
   wp = ak_wpoint_delete( wp );
-  ep = ak_wpoint_delete( ep );
   ec = ak_wcurve_delete( ec );
   generator = ak_random_delete( generator );
 }
@@ -620,7 +613,6 @@
  int main( void )
 {
   size_t count = 1000000;
-/*
   printf(" - ak_mpzn_add() function test\n"); add_test( count );
   printf(" - ak_mpzn_sub() function test\n"); sub_test( count );
   printf(" - ak_mpzn_mul() function test\n"); mul_test( count );
@@ -628,7 +620,6 @@
   printf("\n - ak_mpzn_add_montgomery() function test\n"); add_montgomery_test( count );
   printf("\n - ak_mpzn_mul_montgomery() function test\n"); mul_montgomery_test( count );
   printf(" - ak_mpzn_modpow_montgomery() function test\n"); modpow_montgomery_test( count );
-*/
   printf("\n - wcurve class test\n"); wcurve_test( count );
 
  return 0;
