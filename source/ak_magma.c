@@ -270,8 +270,8 @@
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  /* выводим сообщение о факте создания ключа */
-  if( ak_log_get_level() >= ak_log_standard ) ak_error_message_str( ak_error_ok,
-                       "created a secret key", ak_buffer_get_str(ckey->key->number ), __func__ );
+  if( ak_log_get_level() >= ak_log_standard ) ak_error_message_fmt( ak_error_ok, __func__ ,
+                              "created a secret key %s", ak_buffer_get_str(ckey->key->number ));
  /* закрываем доступ к секретному ключу */
   if( ak_skey_lock( ckey->key ) != ak_error_ok ) {
     ak_error_message( ak_error_get_value(), "incorrect locking of secret key", __func__ );
@@ -320,8 +320,8 @@
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  /* выводим сообщение о факте создания ключа */
-  if( ak_log_get_level() >= ak_log_standard ) ak_error_message_str( ak_error_ok,
-                       "created a secret key", ak_buffer_get_str(ckey->key->number ), __func__ );
+  if( ak_log_get_level() >= ak_log_standard ) ak_error_message_fmt( ak_error_ok, __func__ ,
+                            "created a secret key %s", ak_buffer_get_str(ckey->key->number ));
  /* закрываем доступ к секретному ключу */
   if( ak_skey_lock( ckey->key ) != ak_error_ok ) {
     ak_error_message( ak_error_get_value(), "incorrect locking of secret key", __func__ );

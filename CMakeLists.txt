@@ -33,12 +33,11 @@ set( HEADERS source/ak_buffer.h
              source/ak_random.h
              source/ak_skey.h
              source/ak_parameters.h
-             source/ak_libakrypt.h
+             source/ak_tools.h
              source/ak_keylist.h
              source/ak_mpzn.h
              source/ak_curves.h )
-set( SOURCES source/ak_log.c
-             source/ak_libakrypt.c
+set( SOURCES source/ak_tools.c
              source/ak_buffer.c
              source/ak_oid.c
              source/ak_hash.c

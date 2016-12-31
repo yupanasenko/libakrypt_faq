@@ -269,11 +269,8 @@
      for( j = 0; j < 16; j++ ) if( v[j] != 1) result++;
   }
   if( result ) {
-    char str[16];
-    memset( str, 0, 16 );
-    ak_snprintf( str, 15, "%d errors", result );
-    ak_error_message_str( ak_error_undefined_value,
-                       "using a data which not represent a magma tables with", str, __func__ );
+    ak_error_message_fmt( ak_error_undefined_value, __func__ ,
+                      "using a data which not represent a magma tables with %d errors", result );
     return ak_error_undefined_value;
   }
   return ak_oids_add_oid( ak_oid_new( block_cipher, kbox_params, name, id, (ak_pointer) table ));

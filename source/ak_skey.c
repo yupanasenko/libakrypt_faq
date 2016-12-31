@@ -29,6 +29,7 @@
  #include <time.h>
  #include <ak_skey.h>
  #include <ak_buffer.h>
+ #include <ak_tools.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция создает контекст секретного ключа, устанавливая все поля в значения по-умолчанию.
@@ -81,8 +82,8 @@
   if( key->data != NULL ) free( key->data );
 
  /* выводим сообщение и завершаем удаление */
-  if( ak_log_get_level() >= ak_log_standard ) ak_error_message_str( ak_error_ok,
-                     "deleted a secret key", ak_buffer_get_str(key->number), __func__ );
+  if( ak_log_get_level() >= ak_log_standard ) ak_error_message_fmt( ak_error_ok, __func__,
+                               "deleted a secret key %s", ak_buffer_get_str( key->number ));
   key->number = ak_buffer_delete( key->number );
 
  /* обнуляем указатели */
