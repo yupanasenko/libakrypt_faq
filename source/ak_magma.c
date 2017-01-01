@@ -33,8 +33,14 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Контекст для хранения развернутых таблиц замен алгоритма ГОСТ 28147-89                  */
  struct magma_ctx {
-  /*! \brief k-боксы   */
-   sbox k21, k43, k65, k87;
+  /*! \brief k-боксы */
+   sbox k21;
+  /*! \brief k-боксы */
+   sbox k43;
+  /*! \brief k-боксы */
+   sbox k65;
+  /*! \brief k-боксы */
+   sbox k87;
 };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -166,11 +172,11 @@
 
   if( oid != NULL ) { /* проверяем корректность переданного в функцию OID таблицы замен */
     if( oid->engine != block_cipher ) {
-      ak_error_message( ak_error_oid_engine, "using a not cipher OID", __func__ );
+      ak_error_message( ak_error_oid_engine, __func__ , "using a not cipher OID" );
       return NULL;
     }
     if( oid->mode != kbox_params ) {
-      ak_error_message( ak_error_oid_mode, "using a wrong mode OID", __func__ );
+      ak_error_message( ak_error_oid_mode, __func__ , "using a wrong mode OID" );
       return NULL;
     }
     tables_oid = oid;
@@ -178,24 +184,24 @@
 
  /* теперь создаем ключ алгоритма шифрования и определяем его методы */
   if(( ckey = ak_cipher_key_new()) == NULL ) {
-    ak_error_message( ak_error_null_pointer, "incorrect memory allocation", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "incorrect memory allocation" );
     return NULL;
   }
  /* создаем область для хранения ключевых данных */
   if(( ckey->key->key = ak_buffer_new_function_size( malloc, free, 32 )) == NULL ) {
-    ak_error_message( ak_error_get_value(), "incorrect memory allocation for key buffer", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect memory allocation for key buffer" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  /* создаем область для хранения развернутых таблиц замен */
   if(( ckey->key->data = malloc( sizeof( struct magma_ctx ))) == NULL ) {
-     ak_error_message( ak_error_out_of_memory, "wrong allocation of internal data", __func__ );
+     ak_error_message( ak_error_out_of_memory, __func__ , "wrong allocation of internal data" );
      return ( ckey = ak_cipher_key_delete( ckey ));
   };
  /* вычисляем таблицы замен */
   sx = (struct magma_ctx *) ckey->key->data;
   if( ak_kbox_to_sbox( (const ak_kbox) tables_oid->data,
                                             sx->k21, sx->k43, sx->k65, sx->k87 ) != ak_error_ok ) {
-    ak_error_message( ak_error_null_pointer, "wrong extracting of k-boxes", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "wrong extracting of k-boxes" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  /* устанавливаем OID алгоритма шифрования */
@@ -209,7 +215,7 @@
 
  /* присваиваем ключу уникальный номер */
   if( ak_skey_assign_unique_number( ckey->key ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "incorrect calculation of unique key number", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect calculation of unique key number" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
 
@@ -256,17 +262,17 @@
 
  /* проверяем входной буффер */
   if( buff == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to buffer", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to buffer" );
     return NULL;
   }
  /* создаем контекст ключа */
   if(( ckey = ak_cipher_key_new_magma( oid )) == NULL ) {
-    ak_error_message( ak_error_get_value(), "incorrect creation of magma secret key", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect creation of magma secret key" );
     return NULL;
   }
  /* присваиваем ключевой буффер */
   if( ak_skey_assign_buffer( ckey->key, buff ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "incorrect assigning of key buffer", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect assigning of key buffer" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  /* выводим сообщение о факте создания ключа */
@@ -274,7 +280,7 @@
                               "created a secret key %s", ak_buffer_get_str(ckey->key->number ));
  /* закрываем доступ к секретному ключу */
   if( ak_skey_lock( ckey->key ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "incorrect locking of secret key", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect locking of secret key" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  return ckey;
@@ -295,28 +301,28 @@
 
  /* проверяем входной буффер */
   if( generator == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to random generator", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to random generator" );
     return NULL;
   }
  /* создаем контекст ключа */
   if(( ckey = ak_cipher_key_new_magma( oid )) == NULL ) {
-    ak_error_message( ak_error_get_value(), "incorrect creation of magma secret key", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect creation of magma secret key" );
     return NULL;
   }
  /* присваиваем случайные данные, выработанные генератором */
   if(( ak_random_ptr( generator,
     ak_buffer_get_ptr( ckey->key->key ), ak_buffer_get_size( ckey->key->key ))) != ak_error_ok ) {
-      ak_error_message( ak_error_get_value(), "incorrect generation a random key data", __func__ );
+      ak_error_message( ak_error_get_value(), __func__ , "incorrect generation a random key data" );
       return ( ckey = ak_cipher_key_delete( ckey ));
   }
  /* накладываем маску */
   if( ckey->key->set_mask( ckey->key ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "wrong secret key masking", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "wrong secret key masking" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  /* вычисляем контрольную сумму */
   if( ckey->key->set_icode( ckey->key ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "wrong calculation of integrity code", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "wrong calculation of integrity code" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  /* выводим сообщение о факте создания ключа */
@@ -324,7 +330,7 @@
                             "created a secret key %s", ak_buffer_get_str(ckey->key->number ));
  /* закрываем доступ к секретному ключу */
   if( ak_skey_lock( ckey->key ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "incorrect locking of secret key", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect locking of secret key" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  return ckey;
@@ -415,61 +421,61 @@
   if(( ckey = ak_cipher_key_new_magma_buffer(
          ak_oids_find_by_name( "id-magma-gost3412-2015-ParamSet" ),
                                  ak_buffer_new_ptr( test_3412_2015_key, 32, ak_false ))) == NULL ) {
-   ak_error_message( ak_error_get_value(), "wrong creation of secret key", __func__ );
+   ak_error_message( ak_error_get_value(), __func__ , "wrong creation of secret key" );
    return ak_false;
   }
   ckey->encrypt( ckey->key, &in_3412_2015_text, &out_text );
   if( out_text != out_3412_2015_text ) {
-    ak_error_message( ak_error_not_equal_data,
-                       "the one block encryption test from GOST R 34.12-2015 is wrong", __func__ );
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                       "the one block encryption test from GOST R 34.12-2015 is wrong" );
     ak_log_set_message(( str = ak_ptr_to_hexstr( &out_text, sizeof( ak_uint64 ), ak_false ))); free( str );
     ak_log_set_message(( str =
                      ak_ptr_to_hexstr( &out_3412_2015_text, sizeof( ak_uint64 ), ak_false ))); free( str );
     ckey = ak_cipher_key_delete( ckey );
     return ak_false;
   }
-  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok,
-                         "the one block encryption test from GOST R 34.12-2015 is Ok", __func__ );
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                         "the one block encryption test from GOST R 34.12-2015 is Ok" );
 
   ckey->decrypt( ckey->key, &out_text, &out_text );
   if( out_text != in_3412_2015_text ) {
-    ak_error_message( ak_error_not_equal_data,
-                    "the one block decryption test from GOST R 34.12-2015 is wrong", __func__ );
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                    "the one block decryption test from GOST R 34.12-2015 is wrong" );
     ak_log_set_message(( str = ak_ptr_to_hexstr( &out_text, sizeof( ak_uint64 ), ak_false ))); free( str );
     ak_log_set_message(( str =
                       ak_ptr_to_hexstr( &in_3412_2015_text, sizeof( ak_uint64 ), ak_false ))); free( str );
     ckey = ak_cipher_key_delete( ckey );
     return ak_false;
   }
-  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok,
-                       "the one block decryption test from GOST R 34.12-2015 is Ok", __func__ );
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                       "the one block decryption test from GOST R 34.12-2015 is Ok" );
 
  /* 2. Выполняем пример из ГОСТ 34.13-2015 для режима простой замены (ECB) */
   memset( result3413, 0, 32 );
   ak_cipher_key_encrypt_ecb( ckey, in_3413_2015_text, result3413, 32 );
   if( memcmp( out_3413_2015_ecb_text, result3413, 32 ) != 0 ) {
-    ak_error_message( ak_error_not_equal_data,
-                       "the ecb mode encryption test from GOST 34.13-2015 is wrong", __func__ );
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                       "the ecb mode encryption test from GOST 34.13-2015 is wrong" );
     ak_log_set_message(( str = ak_ptr_to_hexstr( out_3413_2015_ecb_text, 32, ak_false ))); free( str );
     ak_log_set_message(( str = ak_ptr_to_hexstr( result3413, 32, ak_false ))); free( str );
     ckey = ak_cipher_key_delete( ckey );
     return ak_false;
   }
-  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok,
-                          "the ecb mode encryption test from GOST 34.13-2015 is Ok", __func__ );
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                          "the ecb mode encryption test from GOST 34.13-2015 is Ok" );
 
   memset( result3413, 0, 32 );
   ak_cipher_key_decrypt_ecb( ckey, out_3413_2015_ecb_text, result3413, 32 );
   if( memcmp( in_3413_2015_text, result3413, 32 ) != 0 ) {
-    ak_error_message( ak_error_not_equal_data,
-                       "the ecb mode decryption test from GOST 34.13-2015 is wrong", __func__ );
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                       "the ecb mode decryption test from GOST 34.13-2015 is wrong" );
     ak_log_set_message(( str = ak_ptr_to_hexstr( in_3413_2015_text, 32, ak_false ))); free( str );
     ak_log_set_message(( str = ak_ptr_to_hexstr( result3413, 32, ak_false ))); free( str );
     ckey = ak_cipher_key_delete( ckey );
     return ak_false;
   }
-  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok,
-                          "the ecb mode decryption test from GOST 34.13-2015 is Ok", __func__ );
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                          "the ecb mode decryption test from GOST 34.13-2015 is Ok" );
 
   ckey = ak_cipher_key_delete( ckey );
 
@@ -478,35 +484,35 @@
   if(( ckey = ak_cipher_key_new_magma_buffer(
          ak_oids_find_by_name( "id-magma-TestParamSet" ),
                                  ak_buffer_new_ptr( test_28147_89_key, 32, ak_false ))) == NULL ) {
-   ak_error_message( ak_error_get_value(), "wrong creation of secret key", __func__ );
+   ak_error_message( ak_error_get_value(), __func__ , "wrong creation of secret key" );
    return ak_false;
   }
 
   memset( result28147, 0, 256 );
   ak_cipher_key_encrypt_ecb( ckey, p_text_com, result28147, 256 );
   if( memcmp( c_text_ecb, result28147, 256 ) != 0 ) {
-    ak_error_message( ak_error_not_equal_data,
-      "the ecb encryption test for 256 bytes message with GOST 28147-89 tables is wrong", __func__ );
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+      "the ecb encryption test for 256 bytes message with GOST 28147-89 tables is wrong" );
     ak_log_set_message(( str = ak_ptr_to_hexstr( c_text_ecb, 256, ak_false ))); free( str );
     ak_log_set_message(( str = ak_ptr_to_hexstr( result28147, 256, ak_false ))); free( str );
     ckey = ak_cipher_key_delete( ckey );
     return ak_false;
   }
-  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok,
-       "the ecb encryption test for 256 bytes message with GOST 28147-89 tables is Ok", __func__ );
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+       "the ecb encryption test for 256 bytes message with GOST 28147-89 tables is Ok" );
 
   memset( result28147, 0, 256 );
   ak_cipher_key_decrypt_ecb( ckey, c_text_ecb, result28147, 256 );
   if( memcmp( p_text_com, result28147, 256 ) != 0 ) {
-    ak_error_message( ak_error_not_equal_data,
-      "the ecb decryption test for 256 bytes message with GOST 28147-89 tables is wrong", __func__ );
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+      "the ecb decryption test for 256 bytes message with GOST 28147-89 tables is wrong" );
     ak_log_set_message(( str = ak_ptr_to_hexstr( p_text_com, 256, ak_false ))); free( str );
     ak_log_set_message(( str = ak_ptr_to_hexstr( result28147, 256, ak_false ))); free( str );
     ckey = ak_cipher_key_delete( ckey );
     return ak_false;
   }
-  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok,
-       "the ecb decryption test for 256 bytes message with GOST 28147-89 tables is Ok", __func__ );
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+       "the ecb decryption test for 256 bytes message with GOST 28147-89 tables is Ok" );
   ckey = ak_cipher_key_delete( ckey );
 
  return ak_true;

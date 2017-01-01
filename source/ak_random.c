@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*   Copyright (c) 2014, 2015, 2016 by Axel Kenzo, axelkenzo@mail.ru                               */
+/*   Copyright (c) 2014 - 2016 by Axel Kenzo, axelkenzo@mail.ru                                    */
 /*   All rights reserved.                                                                          */
 /*                                                                                                 */
 /*   Redistribution and use in source and binary forms, with or without modification, are          */
@@ -46,7 +46,7 @@
  int ak_random_create( ak_random rnd )
 {
   if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
     return ak_error_null_pointer;
   }
   rnd->data = NULL;
@@ -73,7 +73,7 @@
 {
   ak_random rnd = ( ak_random ) malloc( sizeof( struct random ));
   if( rnd != NULL ) ak_random_create( rnd );
-   else ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+   else ak_error_message( ak_error_out_of_memory, __func__ , "incorrect memory allocation" );
   return rnd;
 }
 
@@ -87,7 +87,7 @@
  int ak_random_destroy( ak_random rnd )
 {
   if( rnd == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__ ,"use a null pointer to a random generator" );
   return ak_error_null_pointer;
   }
   if( rnd->data != NULL ) rnd->free( rnd->data );
@@ -115,8 +115,8 @@
   if( rnd != NULL ) {
    ak_random_destroy(( ak_random ) rnd );
    free( rnd );
-  } else ak_error_message( ak_error_null_pointer,
-                                            "use a null pointer to a random generator", __func__ );
+  } else ak_error_message( ak_error_null_pointer, __func__ ,
+                                            "use a null pointer to a random generator" );
   return NULL;
 }
 
@@ -128,12 +128,12 @@
  int ak_random_randomize( ak_random rnd )
 {
   if( rnd == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
    return ak_error_null_pointer;
   }
   if( rnd->randomize != NULL ) return rnd->randomize( rnd );
-  ak_error_message( ak_error_undefined_function,
-                                            "use a null pointer to a function pointer", __func__ );
+  ak_error_message( ak_error_undefined_function, __func__ ,
+                                                       "use a null pointer to a function pointer" );
   return ak_error_undefined_function;
 }
 
@@ -146,12 +146,12 @@
  int ak_random_randomize_uint64( ak_random rnd, const ak_uint64 value )
 {
   if( rnd == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
    return ak_error_null_pointer;
   }
   if( rnd->randomize_uint64 != NULL ) return rnd->randomize_uint64( rnd, value );
-  ak_error_message( ak_error_undefined_function,
-                                            "use a null pointer to a function pointer", __func__ );
+  ak_error_message( ak_error_undefined_function, __func__ ,
+                                                       "use a null pointer to a function pointer" );
   return ak_error_undefined_function;
 }
 
@@ -165,12 +165,12 @@
  int ak_random_randomize_ptr( ak_random rnd, const ak_pointer ptr, const size_t size )
 {
   if( rnd == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
    return ak_error_null_pointer;
   }
   if( rnd->randomize_ptr != NULL ) return rnd->randomize_ptr( rnd, ptr, size );
-  ak_error_message( ak_error_undefined_function,
-                                            "use a null pointer to a function pointer", __func__ );
+  ak_error_message( ak_error_undefined_function, __func__ ,
+                                                       "use a null pointer to a function pointer" );
   return ak_error_undefined_function;
 }
 
@@ -183,13 +183,13 @@
  ak_uint8 ak_random_uint8( ak_random rnd )
 {
   if( rnd == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
    return 0; /* возвращение нуля есть неявный признак ошибки,
                                          явный -- контроль с помощью функции ak_error_get_value() */
   }
   if( rnd->uint8 != NULL ) return rnd->uint8( rnd );
-  ak_error_message( ak_error_undefined_function,
-                                            "use a null pointer to a function pointer", __func__ );
+  ak_error_message( ak_error_undefined_function, __func__ ,
+                                            "use a null pointer to a function pointer" );
   return 0;
 }
 
@@ -202,13 +202,13 @@
  ak_uint64 ak_random_uint64( ak_random rnd )
 {
   if( rnd == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
    return 0; /* возвращение нуля есть неявный признак ошибки,
                                          явный -- контроль с помощью функции ak_error_get_value() */
   }
   if( rnd->uint64 != NULL ) return rnd->uint64( rnd );
-  ak_error_message( ak_error_undefined_function,
-                                            "use a null pointer to a function pointer", __func__ );
+  ak_error_message( ak_error_undefined_function, __func__ ,
+                                                       "use a null pointer to a function pointer" );
   return 0;
 }
 
@@ -222,12 +222,12 @@
  int ak_random_ptr( ak_random rnd, const ak_pointer ptr, const size_t size )
 {
   if( rnd == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
    return ak_error_null_pointer;
   }
   if( rnd->random != NULL ) return rnd->random( rnd, ptr, size );
-  ak_error_message( ak_error_undefined_function,
-                                            "use a null pointer to a function pointer", __func__ );
+  ak_error_message( ak_error_undefined_function, __func__ ,
+                                                       "use a null pointer to a function pointer" );
   return ak_error_undefined_function;
 }
 
@@ -274,7 +274,7 @@
  static int ak_random_lcg_next( ak_random rnd )
 {
   if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
     return ak_error_null_pointer;
   }
   (( ak_random_lcg ) ( rnd->data ))->val *= 125643267795740073LL;
@@ -286,7 +286,7 @@
  static int ak_random_lcg_randomize( ak_random rnd )
 {
   if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
     return ak_error_null_pointer;
   }
   (( ak_random_lcg ) ( rnd->data ))->val = ak_random_value();
@@ -297,7 +297,7 @@
  static int ak_random_lcg_randomize_uint64( ak_random rnd, const ak_uint64 value )
 {
   if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
     return ak_error_null_pointer;
   }
   (( ak_random_lcg ) ( rnd->data ))->val = value;
@@ -311,15 +311,15 @@
   ak_uint8 *value = ptr;
 
   if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
     return ak_error_null_pointer;
   }
   if( ptr == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to initial vector", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to initial vector" );
     return ak_error_null_pointer;
   }
   if( !size ) {
-    ak_error_message( ak_error_zero_length, "use initial vector with zero length", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "use initial vector with zero length" );
     return ak_error_null_pointer;
   }
   /* сначала начальное значение, потом цикл по всем элементам массива */
@@ -336,7 +336,7 @@
 {
   ak_uint8 value = 0;
   if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
     return 0;
   }
  value = (ak_uint8) ((( ak_random_lcg ) ( rnd->data ))->val >> 16);
@@ -350,7 +350,7 @@
   int i = 0;
   ak_uint64 value = 0;
   if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
     return 0;
   }
   for( i = 0; i < 8; i++ ) {
@@ -368,15 +368,15 @@
   ak_uint8 *value = ptr;
 
   if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
     return ak_error_null_pointer;
   }
   if( ptr == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to data", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to data" );
     return ak_error_null_pointer;
   }
   if( !size ) {
-    ak_error_message( ak_error_zero_length, "use a data with zero length", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "use a data with zero length" );
     return ak_error_zero_length;
   }
 
@@ -404,13 +404,13 @@
  ak_random ak_random_new_lcg( void )
 {
   ak_random rnd = ak_random_new();
-  if( rnd == NULL ) { ak_error_message( ak_error_out_of_memory,
-                                  "incorrect memory allocation for a random generator", __func__ );
+  if( rnd == NULL ) { ak_error_message( ak_error_out_of_memory, __func__ ,
+                                  "incorrect memory allocation for a random generator" );
     return NULL;
   }
   if(( rnd->data = malloc( sizeof( struct random_lcg ))) == NULL ) {
-    ak_error_message( ak_error_out_of_memory,
-           "incorrect memory allocation for an internal variables of random generator", __func__ );
+    ak_error_message( ak_error_out_of_memory, __func__ ,
+           "incorrect memory allocation for an internal variables of random generator" );
     return ( rnd = ak_random_delete( rnd ));
   }
   rnd->next = ak_random_lcg_next;
@@ -441,11 +441,11 @@
  void ak_random_file_free( ak_pointer ptr )
 {
   if( ptr == NULL ) {
-    ak_error_message( ak_error_null_pointer, "freeing a null pointer to data", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "freeing a null pointer to data" );
     return;
   }
   if( close( (( ak_random_file ) ptr )->fd ) == -1 )
-    ak_error_message( ak_error_close_file, "wrong closing a file with random data", __func__ );
+    ak_error_message( ak_error_close_file, __func__ , "wrong closing a file with random data" );
   free(ptr);
 }
 
@@ -456,7 +456,7 @@
   ak_uint8 value = 0;
 
   if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
     return 0;
   }
   /* считываем один байт */
@@ -470,7 +470,7 @@
   }
   /* если ошибка чтения, то возбуждаем ошибку */
   if( result == -1 ) {
-    ak_error_message( ak_error_read_data, "wrong reading data from file", __func__ );
+    ak_error_message( ak_error_read_data, __func__ , "wrong reading data from file" );
     return 0;
   }
  return value;
@@ -483,15 +483,15 @@
   size_t result = 0, count = size;
 
   if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
     return ak_error_null_pointer;
   }
   if( ptr == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to data", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to data" );
     return ak_error_null_pointer;
   }
   if( !size ) {
-    ak_error_message( ak_error_zero_length, "use a data with zero length", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "use a data with zero length" );
     return ak_error_zero_length;
   }
 
@@ -516,7 +516,7 @@
   }
   /* если ошибка чтения, то возбуждаем ошибку */
   if( result == -1 ) {
-    ak_error_message( ak_error_read_data, "wrong reading data from file", __func__ );
+    ak_error_message( ak_error_read_data, __func__ , "wrong reading data from file" );
     return ak_error_read_data;
   }
  return ak_error_ok;
@@ -527,12 +527,12 @@
 {
   ak_uint64 value = 0;
   if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
     return 0;
   }
 
   if( ak_random_file_random( rnd, &value, sizeof( ak_uint64 )) != ak_error_ok ) {
-    ak_error_message( ak_error_undefined_value, "wrong reading a random data", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "wrong reading a random data" );
     return 0;
   }
   return value;
@@ -554,19 +554,19 @@
  ak_random ak_random_new_file( const char *filename )
 {
   ak_random rnd = ak_random_new();
-  if( rnd == NULL ) { ak_error_message( ak_error_out_of_memory,
-                                  "incorrect memory allocation for a random generator", __func__ );
+  if( rnd == NULL ) { ak_error_message( ak_error_out_of_memory, __func__ ,
+                                  "incorrect memory allocation for a random generator" );
     return NULL;
   }
   if(( rnd->data = malloc( sizeof( struct random_file ))) == NULL ) {
-    ak_error_message( ak_error_out_of_memory,
-           "incorrect memory allocation for an internal variables of random generator", __func__ );
+    ak_error_message( ak_error_out_of_memory, __func__ ,
+           "incorrect memory allocation for an internal variables of random generator" );
     return ( rnd = ak_random_delete( rnd ));
   }
 
   /* теперь мы открываем заданный пользователем файл */
   if( ((( ak_random_file ) ( rnd->data ))->fd = open( filename, O_RDONLY | O_BINARY )) == -1 ) {
-    ak_error_message( ak_error_open_file, "wrong opening a file with random data", __func__ );
+    ak_error_message( ak_error_open_file, __func__ , "wrong opening a file with random data" );
     return ( rnd = ak_random_delete( rnd ));
   }
 

@@ -44,7 +44,7 @@
  int ak_skey_create( ak_skey key )
 {
   if( key == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to secret key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ ,"using a null pointer to secret key" );
     return ak_error_null_pointer;
   }
  /*  сначала данные */
@@ -67,7 +67,7 @@
  int ak_skey_destroy( ak_skey key )
 {
   if( key == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to secret key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to secret key" );
     return ak_error_null_pointer;
   }
 
@@ -99,7 +99,7 @@
 {
   ak_skey skey = ( ak_skey ) malloc( sizeof( struct skey ));
    if( skey != NULL ) ak_skey_create( skey );
-     else ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+     else ak_error_message( ak_error_out_of_memory, __func__ , "incorrect memory allocation" );
  return skey;
 }
 
@@ -109,7 +109,7 @@
   if( skey != NULL ) {
     ak_skey_destroy( skey );
     free( skey );
-  } else ak_error_message( ak_error_null_pointer, "using a null pointer to secret key", __func__ );
+  } else ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to secret key" );
  return NULL;
 }
 
@@ -133,27 +133,27 @@
   ak_uint32 *kp = NULL, *mp = NULL;
 
   if( key == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to secret key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to secret key" );
     return ak_error_null_pointer;
   }
   /* проверяем наличие и длину ключа */
   if( key->key == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using undefined key buffer", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using undefined key buffer" );
     return ak_error_undefined_value;
   }
   if( !( keylen = ak_buffer_get_size( key->key ))) {
-    ak_error_message( ak_error_zero_length, "using a key buffer with zero length", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "using a key buffer with zero length" );
     return ak_error_zero_length;
   }
   if( keylen%4 != 0 ) {
-    ak_error_message( ak_error_undefined_value, "using a key buffer with wrong length", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using a key buffer with wrong length" );
     return ak_error_undefined_value;
   }
 
  /* уничтожаем старый буфер и создаем новый */
   if( key->mask != NULL ) key->mask = ak_buffer_delete( key->mask );
   if(( key->mask = ak_buffer_new_random( key->generator, keylen )) == NULL ) {
-    ak_error_message( ak_error_out_of_memory, "wrong mask buffer generation", __func__ );
+    ak_error_message( ak_error_out_of_memory, __func__ , "wrong mask buffer generation" );
     return ak_error_out_of_memory;
   }
  /* накладываем маску на ключ */
@@ -185,27 +185,27 @@
   ak_uint64 *kp = NULL, *mp = NULL;
 
   if( key == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to secret key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to secret key" );
     return ak_error_null_pointer;
   }
   /* проверяем наличие и длину ключа */
   if( key->key == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using undefined key buffer", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using undefined key buffer" );
     return ak_error_undefined_value;
   }
   if( !( keylen = ak_buffer_get_size( key->key ))) {
-    ak_error_message( ak_error_zero_length, "using a key buffer with zero length", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "using a key buffer with zero length" );
     return ak_error_zero_length;
   }
   if( keylen%8 != 0 ) {
-    ak_error_message( ak_error_undefined_value, "using a key buffer with wrong length", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using a key buffer with wrong length" );
     return ak_error_undefined_value;
   }
 
   /* уничтожаем старый буфер и создаем новый */
   if( key->mask != NULL ) key->mask = ak_buffer_delete( key->mask );
   if(( key->mask = ak_buffer_new_random( key->generator, keylen )) == NULL ) {
-    ak_error_message( ak_error_out_of_memory, "wrong mask buffer generation", __func__ );
+    ak_error_message( ak_error_out_of_memory, __func__ , "wrong mask buffer generation" );
     return ak_error_out_of_memory;
   }
   /* накладываем маску на ключ */
@@ -237,22 +237,22 @@
 
  /* выполняем стандартные проверки */
   if( key == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to secret key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to secret key" );
     return ak_error_null_pointer;
   }
   if( key->key == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using undefined key buffer", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using undefined key buffer" );
     return ak_error_undefined_value;
   }
   if( key->mask == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using undefined mask buffer", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using undefined mask buffer" );
     return ak_error_undefined_value;
   }
 
  /* создаем новый буффер */
   keylen = ak_buffer_get_size( key->mask );
   if(( newmask = ak_buffer_new_random( key->generator, keylen )) == NULL ) {
-    ak_error_message( ak_error_out_of_memory, "wrong mask buffer generation", __func__ );
+    ak_error_message( ak_error_out_of_memory, __func__ , "wrong mask buffer generation" );
     return ak_error_out_of_memory;
   }
  /* накладываем маску */
@@ -287,22 +287,22 @@
 
  /* выполняем стандартные проверки */
   if( key == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to secret key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to secret key" );
     return ak_error_null_pointer;
   }
   if( key->key == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using undefined key buffer", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using undefined key buffer" );
     return ak_error_undefined_value;
   }
   if( key->mask == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using undefined mask buffer", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using undefined mask buffer" );
     return ak_error_undefined_value;
   }
 
  /* создаем новый буффер */
   keylen = ak_buffer_get_size( key->mask );
   if(( newmask = ak_buffer_new_random( key->generator, keylen )) == NULL ) {
-    ak_error_message( ak_error_out_of_memory, "wrong mask buffer generation", __func__ );
+    ak_error_message( ak_error_out_of_memory, __func__ , "wrong mask buffer generation" );
     return ak_error_out_of_memory;
   }
  /* накладываем маску */
@@ -361,28 +361,28 @@
   ak_uint32 *kptr = NULL, *mptr = NULL;
 
   if( key == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to secret key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to secret key" );
     return ak_error_null_pointer;
   }
 
  /* проверяем наличие и длину ключа */
   if( key->key == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using undefined key buffer", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using undefined key buffer" );
     return ak_error_undefined_value;
   }
   if( !( keylen = ak_buffer_get_size( key->key ))) {
-    ak_error_message( ak_error_zero_length, "using a key buffer with zero length", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "using a key buffer with zero length" );
     return ak_error_zero_length;
   }
   if( keylen%8 != 0 ) {
-    ak_error_message( ak_error_undefined_value, "using a key buffer with wrong length", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using a key buffer with wrong length" );
     return ak_error_undefined_value;
   }
 
  /* если нужно, создаем новый буффер */
   if( key->icode == NULL ) {
     if(( key->icode = ak_buffer_new_size(8)) == NULL ) {
-      ak_error_message( ak_error_out_of_memory, "wrong allocation memory", __func__ );
+      ak_error_message( ak_error_out_of_memory, __func__ , "wrong allocation memory" );
       return ak_error_out_of_memory;
     }
   }
@@ -399,7 +399,7 @@
       result += ak_skey_set_icode_permutation( x, y );
   }
   if( ak_buffer_set_ptr( key->icode, &result, 8, ak_true ) != ak_error_ok ) {
-      ak_error_message( ak_error_undefined_value, "wrong integrity code assigning", __func__ );
+      ak_error_message( ak_error_undefined_value, __func__ , "wrong integrity code assigning" );
       return ak_error_undefined_value;
   }
 
@@ -414,28 +414,28 @@
   ak_uint32 *kptr = NULL, *mptr = NULL;
 
   if( key == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to secret key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to secret key" );
     return ak_error_null_pointer;
   }
 
  /* проверяем наличие и длину ключа */
   if( key->key == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using undefined key buffer", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__, "using undefined key buffer" );
     return ak_error_undefined_value;
   }
   if( !( keylen = ak_buffer_get_size( key->key ))) {
-    ak_error_message( ak_error_zero_length, "using a key buffer with zero length", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "using a key buffer with zero length" );
     return ak_error_zero_length;
   }
   if( keylen%8 != 0 ) {
-    ak_error_message( ak_error_undefined_value, "using a key buffer with wrong length", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using a key buffer with wrong length" );
     return ak_error_undefined_value;
   }
 
  /* если нужно, создаем новый буффер */
   if( key->icode == NULL ) {
     if(( key->icode = ak_buffer_new_size(8)) == NULL ) {
-      ak_error_message( ak_error_out_of_memory, "wrong allocation memory", __func__ );
+      ak_error_message( ak_error_out_of_memory, __func__ , "wrong allocation memory" );
       return ak_error_out_of_memory;
     }
   }
@@ -452,7 +452,7 @@
       result += ak_skey_set_icode_permutation( x, y );
   }
   if( ak_buffer_set_ptr( key->icode, &result, 8, ak_true ) != ak_error_ok ) {
-      ak_error_message( ak_error_undefined_value, "wrong integrity code assigning", __func__ );
+      ak_error_message( ak_error_undefined_value, __func__ , "wrong integrity code assigning" );
       return ak_error_undefined_value;
   }
 
@@ -468,27 +468,27 @@
 
  /* выполняем стандартные проверки */
   if( key == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to secret key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to secret key" );
     return ak_false;
   }
   if( key->key == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using undefined key buffer", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using undefined key buffer" );
     return ak_false;
   }
   if( !( keylen = ak_buffer_get_size( key->key ))) {
-    ak_error_message( ak_error_zero_length, "using a key buffer with zero length", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "using a key buffer with zero length" );
     return ak_false;
   }
   if( keylen%8 != 0 ) {
-    ak_error_message( ak_error_undefined_value, "using a key buffer with wrong length", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using a key buffer with wrong length" );
     return ak_false;
   }
   if( key->mask == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using undefined mask buffer", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using undefined mask buffer" );
     return ak_false;
   }
   if( key->icode == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using undefined integrity code buffer", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using undefined integrity code buffer" );
     return ak_false;
   }
 
@@ -518,27 +518,27 @@
 
  /* выполняем стандартные проверки */
   if( key == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to secret key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to secret key" );
     return ak_false;
   }
   if( key->key == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using undefined key buffer", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using undefined key buffer" );
     return ak_false;
   }
   if( !( keylen = ak_buffer_get_size( key->key ))) {
-    ak_error_message( ak_error_zero_length, "using a key buffer with zero length", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "using a key buffer with zero length" );
     return ak_false;
   }
   if( keylen%8 != 0 ) {
-    ak_error_message( ak_error_undefined_value, "using a key buffer with wrong length", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using a key buffer with wrong length" );
     return ak_false;
   }
   if( key->mask == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using undefined mask buffer", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using undefined mask buffer" );
     return ak_false;
   }
   if( key->icode == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using undefined integrity code buffer", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using undefined integrity code buffer" );
     return ak_false;
   }
 
@@ -565,11 +565,11 @@
  int ak_skey_assign_buffer( ak_skey key, ak_buffer buff )
 {
   if( key == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to secret key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to secret key" );
     return ak_error_null_pointer;
   }
   if( buff == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to buffer", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to buffer" );
     return ak_error_null_pointer;
   }
 
@@ -583,13 +583,13 @@
   key->key = buff;
   if( key->set_mask( key ) != ak_error_ok ) {
     int error = ak_error_get_value();
-      ak_error_message( error, "wrong secret key masking", __func__ );
+      ak_error_message( error, __func__ , "wrong secret key masking" );
       return error;
   }
 
   if( key->set_icode( key ) != ak_error_ok ) {
     int error = ak_error_get_value();
-    ak_error_message( error, "wrong calculation of integrity code", __func__ );
+    ak_error_message( error, __func__ , "wrong calculation of integrity code" );
     return error;
   }
  return ak_error_ok;
@@ -614,11 +614,11 @@
 
  /* стандартные проверки */
   if( key == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to secret key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to secret key" );
     return ak_error_null_pointer;
   }
   if( ( ctx = ak_hash_new_streebog256()) == NULL ) {
-    ak_error_message( ak_error_out_of_memory, "wrong creation of hash function context", __func__ );
+    ak_error_message( ak_error_out_of_memory, __func__ , "wrong creation of hash function context" );
     return ak_error_out_of_memory;
   }
  /* заполняем стандартное начало вектора */
@@ -636,7 +636,7 @@
   free(number);
   ctx = ak_hash_delete( ctx );
   if( key->number == NULL ) {
-    ak_error_message( ak_error_get_value(), "wrong calculation of unique key number", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "wrong calculation of unique key number" );
     return ak_error_get_value();
   };
  return ak_error_ok;
@@ -650,7 +650,7 @@
  int ak_skey_lock( ak_skey key )
 {
   if( key == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to secret key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to secret key" );
     return ak_error_null_pointer;
   }
 
@@ -665,7 +665,7 @@
  int ak_skey_unlock( ak_skey key )
 {
   if( key == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to secret key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to secret key" );
     return ak_error_null_pointer;
   }
  return ak_error_ok;
@@ -686,12 +686,12 @@
  int ak_cipher_key_create( ak_cipher_key ckey )
 {
   if( ckey == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using null pointer to a cipher key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a cipher key" );
     return ak_error_null_pointer;
   }
  /* сначала данные */
   if(( ckey->key = ak_skey_new()) == NULL ) {
-    ak_error_message( ak_error_null_pointer, "wrong creation of cipher key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "wrong creation of cipher key" );
     return ak_error_null_pointer;
   }
   ckey->oid = NULL;
@@ -710,7 +710,7 @@
  int ak_cipher_key_destroy( ak_cipher_key ckey )
 {
   if( ckey == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using null pointer to a secret key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a secret key" );
     return ak_error_null_pointer;
   }
  /* сначала данные */
@@ -732,7 +732,7 @@
 {
   ak_cipher_key ckey = ( ak_cipher_key ) malloc( sizeof( struct cipher_key ));
    if( ckey != NULL ) ak_cipher_key_create( ckey );
-     else ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+     else ak_error_message( ak_error_out_of_memory, __func__ , "incorrect memory allocation" );
  return ckey;
 }
 
@@ -742,7 +742,7 @@
   if( ckey != NULL ) {
     ak_cipher_key_destroy( ckey );
     free( ckey );
-  } else ak_error_message( ak_error_null_pointer, "using null pointer to a cipher key", __func__ );
+  } else ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a cipher key" );
  return NULL;
 }
 
@@ -759,11 +759,11 @@
   int ak_cipher_key_get_resource( ak_cipher_key ckey, ak_uint32 *value )
 {
   if( ckey == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using null pointer to a cipher key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a cipher key" );
     return ak_error_null_pointer;
   }
   if( value == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using null result pointer", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null result pointer" );
     return ak_error_null_pointer;
   }
 
@@ -791,49 +791,49 @@
 {
  /* проверяем входные параметры */
   if( ckey == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using null pointer to a cipher key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a cipher key" );
     return ak_error_null_pointer;
   }
   if( in == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using null pointer to input data", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to input data" );
     return ak_error_null_pointer;
   }
   if( out == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using null pointer to result data", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to result data" );
     return ak_error_null_pointer;
   }
   if( size == 0 ) {
-    ak_error_message( ak_error_zero_length, "using zero length of input data", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "using zero length of input data" );
     return ak_error_zero_length;
   }
   /* проверяем ресурс ключа */
   if( ckey->block_size == 0 ) {
-    ak_error_message( ak_error_undefined_value,
-                                              "using a cipher key with zero block size", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ ,
+                                              "using a cipher key with zero block size" );
     return ak_error_undefined_value;
   }
   if( (size_t)ckey->resource < ( size/ckey->block_size )) {
-    ak_error_message( ak_error_low_key_resource, "using a cipher key with low resource", __func__ );
+    ak_error_message( ak_error_low_key_resource, __func__ , "using a cipher key with low resource" );
     return ak_error_low_key_resource;
   }
   /* открываем доступ к ключу */
   if( ak_skey_unlock( ckey->key ) != ak_error_ok ) {
-    ak_error_message( ak_error_wrong_key_unlock, "wrong unlocking of cipher key", __func__ );
+    ak_error_message( ak_error_wrong_key_unlock, __func__ , "wrong unlocking of cipher key" );
     return ak_error_wrong_key_unlock;
   }
   /* проверяем целостность ключа */
   if( ckey->key->check_icode( ckey->key ) != ak_true ) {
-    ak_error_message( ak_error_wrong_key_icode,
-                                         "wrong value of integrity code of cipher key", __func__ );
+    ak_error_message( ak_error_wrong_key_icode, __func__ ,
+                                         "wrong value of integrity code of cipher key" );
     if( ak_skey_lock( ckey->key ) != ak_error_ok )
-              ak_error_message( ak_error_wrong_key_lock, "wrong locking of cipher key", __func__ );
+              ak_error_message( ak_error_wrong_key_lock, __func__ , "wrong locking of cipher key" );
     return ak_error_wrong_key_icode;
   }
   if( wholeblock == ak_true ) { /* в этом режиме данные должны быть кратны длине блока */
      if( size%ckey->block_size != 0 ) {
-       ak_error_message( ak_error_wrong_length, "using wrong length of input data", __func__ );
+       ak_error_message( ak_error_wrong_length, __func__ , "using wrong length of input data" );
        if( ak_skey_lock( ckey->key ) != ak_error_ok )
-              ak_error_message( ak_error_wrong_key_lock, "wrong locking of cipher key", __func__ );
+              ak_error_message( ak_error_wrong_key_lock, __func__ , "wrong locking of cipher key" );
        return ak_error_wrong_length;
      }
   }
@@ -860,7 +860,7 @@
   /* выполняем проверку входных параметров */
   if(( error = ak_cipher_key_check_before_encrypt( ckey, in, out, size, ak_true )) != ak_error_ok )
   {
-    ak_error_message( error, "wrong testing a cipher key before encryption", __func__ );
+    ak_error_message( error, __func__ , "wrong testing a cipher key before encryption" );
     return error;
   }
 
@@ -884,10 +884,10 @@
 
   /* перемаскируем ключ */
   if( ckey->key->remask( ckey->key ) != ak_error_ok )
-    ak_error_message( ak_error_get_value(), "wrong remasking of secret key", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "wrong remasking of secret key" );
   /* и снова блокируем доступ к ключу */
   if( ak_skey_lock( ckey->key ) != ak_error_ok ) {
-    ak_error_message( ak_error_wrong_key_lock, "wrong locking of secret key", __func__ );
+    ak_error_message( ak_error_wrong_key_lock, __func__ , "wrong locking of secret key" );
     return ak_error_wrong_key_lock;
   }
 
@@ -914,7 +914,7 @@
   /* выполняем проверку входных параметров */
   if(( error = ak_cipher_key_check_before_encrypt( ckey, in, out, size, ak_true )) != ak_error_ok )
   {
-    ak_error_message( error, "wrong testing a cipher key before decryption", __func__ );
+    ak_error_message( error, __func__ , "wrong testing a cipher key before decryption" );
     return error;
   }
 
@@ -938,10 +938,10 @@
 
   /* перемаскируем ключ */
   if( ckey->key->remask( ckey->key ) != ak_error_ok )
-    ak_error_message( ak_error_get_value(), "wrong remasking of secret key", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "wrong remasking of secret key" );
   /* и снова блокируем доступ к ключу */
   if( ak_skey_lock( ckey->key ) != ak_error_ok ) {
-    ak_error_message( ak_error_wrong_key_lock, "wrong locking of secret key", __func__ );
+    ak_error_message( ak_error_wrong_key_lock, __func__ , "wrong locking of secret key" );
     return ak_error_wrong_key_lock;
   }
 

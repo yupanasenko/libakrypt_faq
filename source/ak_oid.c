@@ -51,13 +51,13 @@
  static inline int ak_oids_add_oid( ak_oid oid )
 {
   if( oid == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to OID", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to OID" );
     return ak_error_null_pointer;
   }
 
   pthread_mutex_lock( &ak_oids_add_mutex );
   if( global_oids_array.count >= ak_oids_array_count ) {
-    ak_error_message( ak_error_oid_index, "new oid exceeds permissible bounds", __func__ );
+    ak_error_message( ak_error_oid_index, __func__ , "new oid exceeds permissible bounds" );
     pthread_mutex_unlock( &ak_oids_add_mutex );
     return ak_error_oid_index;
   }
@@ -175,7 +175,7 @@
  const ak_oid ak_oids_get_oid( const size_t idx )
 {
   if( idx >= global_oids_array.count ) {
-    ak_error_message( ak_error_oid_index, "index exceeds permissible bounds", __func__ );
+    ak_error_message( ak_error_oid_index, __func__ , "index exceeds permissible bounds" );
     return NULL;
   }
   return ( const ak_oid ) global_oids_array.array[ idx ];
@@ -190,19 +190,19 @@
 {
   size_t idx = 0;
   if( name == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to a name", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to a name" );
     return NULL;
   }
   /* собственно поиск */
   for( idx = 0; idx < global_oids_array.count; idx++ ) {
      if( global_oids_array.array[ idx ] == NULL  ){
-       ak_error_message( ak_error_null_pointer, "using a null pointer to internal OID", __func__ );
+       ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to internal OID" );
        return NULL;
      }
      if( strstr( ak_oid_get_name( global_oids_array.array[ idx ]), name ) != NULL )
        return ( const ak_oid ) global_oids_array.array[ idx ];
   }
-  ak_error_message( ak_error_oid_name , "searching OID with wrong name", __func__ );
+  ak_error_message( ak_error_oid_name , __func__ , "searching OID with wrong name" );
   return NULL;
 }
 
@@ -215,19 +215,19 @@
 {
   size_t idx = 0;
   if( id == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to identifier", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to identifier" );
     return NULL;
   }
   /* собственно поиск */
   for( idx = 0; idx < global_oids_array.count; idx++ ) {
      if( global_oids_array.array[ idx ] == NULL  ){
-       ak_error_message( ak_error_null_pointer, "using a null pointer to internal OID", __func__ );
+       ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to internal OID" );
        return NULL;
      }
      if( strstr( ak_oid_get_id( global_oids_array.array[ idx ]), id ) != NULL )
        return ( const ak_oid ) global_oids_array.array[ idx ];
   }
-  ak_error_message( ak_error_oid_id, "searching OID with wrong identifier", __func__ );
+  ak_error_message( ak_error_oid_id, __func__ , "searching OID with wrong identifier" );
   return NULL;
 }
 
@@ -246,19 +246,19 @@
   int i = 0, j = 0, result = 0;
 
   if( name == NULL ) {
-    ak_error_message( ak_error_oid_name, "using a null pointer to OID name", __func__ );
+    ak_error_message( ak_error_oid_name, __func__ , "using a null pointer to OID name" );
     return ak_error_oid_name;
   }
   if( id == NULL ) {
-    ak_error_message( ak_error_oid_id, "using a null pointer to OID identifier", __func__ );
+    ak_error_message( ak_error_oid_id, __func__ , "using a null pointer to OID identifier" );
     return ak_error_oid_id;
   }
   if( table == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to magma tables", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to magma tables" );
     return ak_error_null_pointer;
   }
   if( global_oids_array.count >= ak_oids_array_count ) {
-    ak_error_message( ak_error_oid_index, "new oid exceeds permissible bounds", __func__ );
+    ak_error_message( ak_error_oid_index, __func__ , "new oid exceeds permissible bounds" );
     return ak_error_oid_index;
   }
 
@@ -295,26 +295,26 @@
                                                 const char *name, const char *id, ak_pointer data )
 {
  if( oid == NULL ) {
-  ak_error_message( ak_error_null_pointer, "use a null pointer to an oid", __func__ );
+  ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to an oid" );
   return ak_error_null_pointer;
  }
  if( name == NULL ) {
-  ak_error_message( ak_error_null_pointer, "use a null pointer to an oid name", __func__ );
+  ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to an oid name" );
   return ak_error_null_pointer;
  }
  if( id == NULL ) {
-  ak_error_message( ak_error_null_pointer, "use a null pointer to an oid stlist", __func__ );
+  ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to an oid stlist" );
   return ak_error_null_pointer;
 }
 
  oid->engine = engine;
  oid->mode = mode;
  if( (oid->name = ak_buffer_new_str( name )) == NULL ) {
-  ak_error_message( ak_error_out_of_memory, "incorrect assignment of oid name", __func__ );
+  ak_error_message( ak_error_out_of_memory, __func__ , "incorrect assignment of oid name" );
   return ak_error_out_of_memory;
  }
  if( (oid->id = ak_buffer_new_str( id )) == NULL ) {
-  ak_error_message( ak_error_out_of_memory, "incorrect assignment of oid stlist", __func__ );
+  ak_error_message( ak_error_out_of_memory, __func__ , "incorrect assignment of oid stlist" );
   return ak_error_out_of_memory;
  }
  oid->data = data;
@@ -338,7 +338,7 @@
 {
   ak_oid boid = ( ak_oid ) malloc( sizeof( struct oid ));
   if( boid != NULL ) ak_oid_create( boid, engine, mode, name, id, data );
-    else ak_error_message( ak_error_out_of_memory, "invalid creation of a new oid" , __func__ );
+    else ak_error_message( ak_error_out_of_memory, __func__ , "invalid creation of a new oid" );
   return boid;
 }
 
@@ -354,7 +354,7 @@
   if( boid != NULL ) {
    ak_oid_destroy( boid );
    free( boid );
-  } else ak_error_message( ak_error_null_pointer, "use a null pointer to an oid", __func__ );
+  } else ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to an oid" );
  return NULL;
 }
 
@@ -368,7 +368,7 @@
  int ak_oid_destroy( ak_oid boid )
 {
   if( boid == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to an oid", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to an oid" );
    return ak_error_null_pointer;
   }
   if( boid->name != NULL ) ak_buffer_delete( boid->name );
@@ -385,7 +385,7 @@
  const char *ak_oid_get_name( ak_oid oid )
 {
   if( oid == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to an oid", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to an oid" );
     return NULL;
   }
   return ak_buffer_get_str( oid->name );
@@ -399,7 +399,7 @@
  const char *ak_oid_get_id( ak_oid oid )
 {
   if( oid == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to an oid", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to an oid" );
     return NULL;
   }
   return ak_buffer_get_str( oid->id );
@@ -413,7 +413,7 @@
  const ak_oid_engine ak_oid_get_engine( ak_oid oid )
 {
   if( oid == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to an oid", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to an oid" );
     return identifier;
   }
   return oid->engine;
@@ -427,7 +427,7 @@
  const ak_oid_mode ak_oid_get_mode( ak_oid oid )
 {
   if( oid == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to an oid", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to an oid" );
     return undefined_mode;
   }
   return oid->mode;
@@ -441,7 +441,7 @@
  const ak_pointer ak_oid_get_data( ak_oid oid )
 {
   if( oid == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to an oid", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to an oid" );
     return NULL;
   }
  return oid->data;
@@ -449,8 +449,8 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*!  \example example-oid.c
-     \example example-oid-magma.c                                                         */
+     \example example-oid-magma.c
+     \example example-oid-wcurve.c                                                                 */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                       ak_oid.c  */
 /* ----------------------------------------------------------------------------------------------- */
-

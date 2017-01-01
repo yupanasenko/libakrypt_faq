@@ -26,7 +26,6 @@
 /*                                                                                                 */
 /*   ak_tools.c                                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_tools.h>
  #include <ak_oid.h>
  #include <ak_hash.h>
  #include <ak_skey.h>

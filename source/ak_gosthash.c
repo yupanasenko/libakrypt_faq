@@ -44,23 +44,23 @@
 {
  int i = 0;
  if( k == NULL ) {
-   ak_error_message( ak_error_null_pointer, "using null pointer to kbox set", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to kbox set" );
    return ak_error_null_pointer;
  }
  if( k21 == NULL ) {
-   ak_error_message( ak_error_null_pointer, "using null pointer to k21 sbox", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to k21 sbox" );
    return ak_error_null_pointer;
  }
  if( k43 == NULL ) {
-   ak_error_message( ak_error_null_pointer, "using null pointer to k43 sbox", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to k43 sbox" );
    return ak_error_null_pointer;
    }
  if( k65 == NULL ) {
-   ak_error_message( ak_error_null_pointer, "using null pointer to k65 sbox", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to k65 sbox" );
    return ak_error_null_pointer;
  }
  if( k87 == NULL ) {
-   ak_error_message( ak_error_null_pointer, "using null pointer to k87 sbox", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to k87 sbox" );
    return ak_error_null_pointer;
  }
  /* мы выполняем преобразование в предположении, что под указатели корректно распределена память */
@@ -149,7 +149,7 @@
 {
   struct gosthash94_ctx *sx = NULL;
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
     return;
   }
   sx = ( struct gosthash94_ctx * ) ctx->data;
@@ -164,7 +164,7 @@
  static void ak_hash_gosthash94_get_code( ak_hash ctx, ak_pointer out )
 {
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
     return;
   }
   memcpy( out, (( struct gosthash94_ctx * ) ctx->data )->hvec, ctx->hsize );
@@ -325,16 +325,16 @@
   struct gosthash94_ctx *sx = NULL;
 
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
     return;
   }
   if( !size ) {
-    ak_error_message( ak_error_zero_length, "using zero length for hash data", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "using zero length for hash data" );
     return;
   }
   quot = size/ctx->bsize;
   if( size - quot*ctx->bsize ) { /* длина данных должна быть кратна ctx->bsize */
-    ak_error_message( ak_error_wrong_length, "using data with wrong length", __func__ );
+    ak_error_message( ak_error_wrong_length, __func__ , "using data with wrong length" );
     return;
   }
 
@@ -356,11 +356,11 @@
   struct gosthash94_ctx *sx = NULL;
 
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
     return;
   }
   if( size >= 32 ) {
-    ak_error_message( ak_error_zero_length, "using zero length for hash data", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "using zero length for hash data" );
     return;
   }
 
@@ -397,21 +397,21 @@
   struct gosthash94_ctx *sx = NULL;
 
   if( oid == NULL ) {
-     ak_error_message( ak_error_null_pointer, "using a NULL pointer to OID", __func__ );
+     ak_error_message( ak_error_null_pointer, __func__ , "using a NULL pointer to OID" );
      return NULL;
   }
   if( oid->engine != hash_function ) {
-      ak_error_message( ak_error_oid_engine, "using a not hash function OID", __func__ );
+      ak_error_message( ak_error_oid_engine, __func__ , "using a not hash function OID" );
       return NULL;
   }
   if( oid->mode != kbox_params ) {
-      ak_error_message( ak_error_oid_mode, "using a wrong mode OID", __func__ );
+      ak_error_message( ak_error_oid_mode, __func__ , "using a wrong mode OID" );
       return NULL;
   }
 
  /* создаем контекст */
   if(( ctx = ak_hash_new( sizeof( struct gosthash94_ctx ))) == NULL ) {
-    ak_error_message( ak_error_create_function, "incorrect context creation", __func__ );
+    ak_error_message( ak_error_create_function, __func__ , "incorrect context creation" );
     return NULL;
   }
   ctx->bsize = 32; /* длина блока обрабатываемых данных составляет 256 бит */
@@ -423,7 +423,7 @@
 
  /* устанавливаем OID алгоритма хеширования */
   if(( ctx->oid = ak_oids_find_by_name( "gosthash94" )) == NULL ) {
-    ak_error_message( ak_error_find_pointer, "incorrect search of gosthash94 OID", __func__ );
+    ak_error_message( ak_error_find_pointer, __func__ , "incorrect search of gosthash94 OID" );
     return ctx = ak_hash_delete( ctx );
   }
   /* устанавливаем функции - обработчики событий */
@@ -478,7 +478,7 @@
 
  /* первый пример из ГОСТ Р 34.11-94 */
   if((ctx = ak_hash_new_gosthash94( ak_oids_find_by_name( "id-gosthash94-TestParamSet" ))) == NULL ) {
-      ak_error_message( ak_error_get_value(), "wrong creation of hash function context", __func__ );
+      ak_error_message( ak_error_get_value(), __func__ , "wrong creation of hash function context" );
       result = ak_false;
       goto lab_exit;
   }
@@ -486,14 +486,14 @@
                                           hbuff = ak_buffer_new_ptr( test_hash1, 32, ak_false ));
                                     /* здесь false означает, что мы не выделяем память под буффер */
   if( result != ak_true ) {
-     ak_error_message( ak_error_not_equal_data,
-                                "the 1st test with id-gosthash94-TestParamSet is wrong", __func__ );
+     ak_error_message( ak_error_not_equal_data, __func__ ,
+                                "the 1st test with id-gosthash94-TestParamSet is wrong" );
      ak_log_set_message(( str = ak_buffer_to_hexstr( hbuff ))); free( str );
      ak_log_set_message(( str = ak_buffer_to_hexstr( rbuff ))); free( str );
      goto lab_exit;
   }
   if( audit >= ak_log_maximum )
-    ak_error_message( ak_error_ok, "the 1st test with id-gosthash94-TestParamSet is Ok", __func__ );
+    ak_error_message( ak_error_ok, __func__ , "the 1st test with id-gosthash94-TestParamSet is Ok" );
   rbuff = ak_buffer_delete( rbuff );
   hbuff = ak_buffer_delete( hbuff );
 
@@ -501,35 +501,35 @@
   result = ak_buffer_is_equal( rbuff = ak_hash_data( ctx, test_text2, 50, NULL ),
                                          hbuff = ak_buffer_new_ptr( test_hash2, 32, ak_false ));
   if( result != ak_true ) {
-     ak_error_message( ak_error_not_equal_data,
-                                "the 2nd test with id-gosthash94-TestParamSet is wrong", __func__ );
+     ak_error_message( ak_error_not_equal_data, __func__ ,
+                                "the 2nd test with id-gosthash94-TestParamSet is wrong" );
      ak_log_set_message(( str = ak_buffer_to_hexstr( hbuff ))); free( str );
      ak_log_set_message(( str = ak_buffer_to_hexstr( rbuff ))); free( str );
      goto lab_exit;
   }
   if( audit >= ak_log_maximum )
-    ak_error_message( ak_error_ok, "the 2nd test with id-gosthash94-TestParamSet is Ok", __func__ );
+    ak_error_message( ak_error_ok, __func__ , "the 2nd test with id-gosthash94-TestParamSet is Ok" );
   ctx = ak_hash_delete( ctx );
   rbuff = ak_buffer_delete( rbuff );
   hbuff = ak_buffer_delete( hbuff );
 
  /* первый пример для таблиц замен из Верба-О */
   if((ctx = ak_hash_new_gosthash94( ak_oids_find_by_name( "id-gosthash94-VerbaO-ParamSet" ))) == NULL ) {
-      ak_error_message( ak_error_get_value(), "wrong creation of hash function context", __func__ );
+      ak_error_message( ak_error_get_value(), __func__ , "wrong creation of hash function context" );
       result = ak_false;
       goto lab_exit;
   }
   result = ak_buffer_is_equal( rbuff = ak_hash_data( ctx, test_text1, 32, NULL ),
                                           hbuff = ak_buffer_new_ptr( test_VerbaO_1, 32, ak_false ));
   if( result != ak_true ) {
-     ak_error_message( ak_error_not_equal_data,
-                             "the 1st test with id-gosthash94-VerbaO-ParamSet is wrong", __func__ );
+     ak_error_message( ak_error_not_equal_data, __func__ ,
+                             "the 1st test with id-gosthash94-VerbaO-ParamSet is wrong" );
      ak_log_set_message(( str = ak_buffer_to_hexstr( hbuff ))); free( str );
      ak_log_set_message(( str = ak_buffer_to_hexstr( rbuff ))); free( str );
      goto lab_exit;
   }
-  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok,
-                                "the 1st test with id-gosthash94-VerbaO-ParamSet is Ok", __func__ );
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                "the 1st test with id-gosthash94-VerbaO-ParamSet is Ok" );
   rbuff = ak_buffer_delete( rbuff );
   hbuff = ak_buffer_delete( hbuff );
 
@@ -537,14 +537,14 @@
   result = ak_buffer_is_equal( rbuff = ak_hash_data( ctx, test_text2, 50, NULL ),
                                          hbuff = ak_buffer_new_ptr( test_VerbaO_2, 32, ak_false ));
   if( result != ak_true ) {
-     ak_error_message( ak_error_not_equal_data,
-                             "the 2nd test with id-gosthash94-VerbaO-ParamSet is wrong", __func__ );
+     ak_error_message( ak_error_not_equal_data, __func__ ,
+                             "the 2nd test with id-gosthash94-VerbaO-ParamSet is wrong" );
      ak_log_set_message(( str = ak_buffer_to_hexstr( hbuff ))); free( str );
      ak_log_set_message(( str = ak_buffer_to_hexstr( rbuff ))); free( str );
      goto lab_exit;
   }
-  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok,
-                                "the 2nd test with id-gosthash94-VerbaO-ParamSet is Ok", __func__ );
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                "the 2nd test with id-gosthash94-VerbaO-ParamSet is Ok" );
   lab_exit:
    ctx = ak_hash_delete( ctx );
    rbuff = ak_buffer_delete( rbuff );

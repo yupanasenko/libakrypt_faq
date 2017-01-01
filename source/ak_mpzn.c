@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*   Copyright (c) 2014, 2015, 2016 by Axel Kenzo, axelkenzo@mail.ru                               */
+/*   Copyright (c) 2014 - 2016 by Axel Kenzo, axelkenzo@mail.ru                                    */
 /*   All rights reserved.                                                                          */
 /*                                                                                                 */
 /*   Redistribution and use in source and binary forms, with or without modification, are          */
@@ -111,15 +111,15 @@
  int ak_mpzn_set_random( ak_uint64 *x, const size_t size, ak_random generator )
 {
   if( x == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to mpzn", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to mpzn" );
     return ak_error_null_pointer;
   }
   if( !size ) {
-    ak_error_message( ak_error_zero_length, "using a zero legth of input data", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "using a zero legth of input data" );
     return ak_error_zero_length;
   }
   if( generator == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using an undefined random generator", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__, "using an undefined random generator" );
     return ak_error_undefined_value;
   }
  return ak_random_ptr( generator, x, size*sizeof( ak_uint64 ));
@@ -131,26 +131,26 @@
 {
   size_t midx = size-1;
   if( x == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to mpzn", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to mpzn" );
     return ak_error_null_pointer;
   }
   if( p == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to modulo", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to modulo" );
     return ak_error_null_pointer;
   }
   if( !size ) {
-    ak_error_message( ak_error_zero_length, "using a zero legth of input data", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "using a zero legth for generated data" );
     return ak_error_zero_length;
   }
   if( generator == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using an undefined random generator", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using an undefined random generator" );
     return ak_error_undefined_value;
   }
 
   /* определяем старший значащий разряд у модуля */
   while( p[midx] == 0 ) {
     if( midx == 0 ) {
-      ak_error_message( ak_error_undefined_value, "modulo is equal to zero", __func__ );
+      ak_error_message( ak_error_undefined_value, __func__ , "modulo is equal to zero" );
       return ak_error_undefined_value;
     } else --midx;
   }
@@ -180,15 +180,15 @@
  int ak_mpzn_set_hexstr( ak_uint64 *x, const size_t size, const char *str )
 {
   if( x == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to mpzn", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to mpzn" );
     return ak_error_null_pointer;
   }
   if( !size ) {
-    ak_error_message( ak_error_zero_length, "using a zero legth of input data", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "using a zero legth of input data" );
     return ak_error_zero_length;
   }
   if( str == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to hexademal string", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to hexademal string" );
     return ak_error_null_pointer;
   }
  return ak_hexstr_to_ptr( str, x, size*sizeof( ak_uint64 ), ak_true );
@@ -208,11 +208,11 @@
  char *ak_mpzn_to_hexstr( ak_uint64 *x, const size_t size )
 {
   if( x == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to mpzn", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to mpzn" );
     return NULL;
   }
   if( !size ) {
-    ak_error_message( ak_error_zero_length, "using a zero legth of input data", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "using a zero legth of input data" );
     return NULL;
   }
  return ak_ptr_to_hexstr( x, size*sizeof( ak_uint64 ), ak_true );
@@ -544,7 +544,7 @@
      cy += av > bv;
      z[i] = av;
   }
-  //if( cy == 1 ) memcpy( z, t+size, size*sizeof( ak_uint64 )); <--- то ошибочный вариант !!!
+  //if( cy == 1 ) memcpy( z, t+size, size*sizeof( ak_uint64 )); <--- это ошибочный вариант !!!
   if( cy != t[2*size] ) memcpy( z, t+size, size*sizeof( ak_uint64 ));
 }
 
