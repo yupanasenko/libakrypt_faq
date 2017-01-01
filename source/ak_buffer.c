@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*   Copyright (c) 2014, 2015, 2016 by Axel Kenzo, axelkenzo@mail.ru                               */
+/*   Copyright (c) 2014 - 2017 by Axel Kenzo, axelkenzo@mail.ru                                    */
 /*   All rights reserved.                                                                          */
 /*                                                                                                 */
 /*   Redistribution and use in source and binary forms, with or without modification, are          */
@@ -38,7 +38,7 @@
  int ak_buffer_create( ak_buffer buff )
 {
   if( buff == NULL ) {
-      ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+      ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
       return ak_error_null_pointer;
   }
   buff->data = NULL; buff->size = 0; buff->flag = ak_false;
@@ -57,7 +57,7 @@
 {
   ak_buffer buff = ( ak_buffer ) malloc( sizeof( struct buffer ));
   if( buff != NULL ) ak_buffer_create( buff );
-   else ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+   else ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
   return buff;
 }
 
@@ -76,7 +76,7 @@
   if( buff != NULL ) {
        ak_buffer_create( buff );
        buff->free = free; buff->alloc = alloc;
-  } else ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+  } else ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation"  );
 
   if( ak_buffer_alloc( buff, size ) == ak_error_ok ) return buff;
   return ( buff = ak_buffer_delete( buff ));
@@ -97,11 +97,11 @@
 {
   ak_buffer buff = NULL;
   if( ptr == NULL ) { /* присвоение не существующих данных */
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a data", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a data" );
    return NULL;
   }
   if( size <= 0 ) { /* присвоение данных неопределенной длины */
-   ak_error_message( ak_error_zero_length, "use a data with non positive length", __func__ );
+   ak_error_message( ak_error_zero_length, __func__, "use a data with non positive length" );
    return NULL;
   }
   if( ak_buffer_set_ptr( buff = ak_buffer_new(), ptr, size, flag ) == ak_error_ok ) return buff;
@@ -119,7 +119,7 @@
 {
   ak_buffer buff = NULL;
   if( hexstr == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a hex string", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a hex string" );
    return NULL;
   }
   if( ak_buffer_set_hexstr( buff = ak_buffer_new(), hexstr ) == ak_error_ok ) return buff;
@@ -146,20 +146,20 @@
 {
   ak_buffer buff = NULL;
   if( hexstr == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a hex string", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a hex string" );
    return NULL;
   }
   if( size == 0 ) {
-    ak_error_message( ak_error_zero_length, "using zero value for length of buffer", __func__ );
+    ak_error_message( ak_error_zero_length, __func__, "using zero value for length of buffer" );
     return NULL;
   }
   if(( buff = ak_buffer_new_size( size )) == NULL ) {
-    ak_error_message( ak_error_get_value(), "wrong creation of a new buffer", __func__ );
+    ak_error_message( ak_error_get_value(), __func__, "wrong creation of a new buffer" );
     return NULL;
   }
 
   if( ak_hexstr_to_ptr( hexstr, ak_buffer_get_ptr( buff ), size, reverse ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "wrong convertaion of hex string", __func__ );
+    ak_error_message( ak_error_get_value(), __func__, "wrong convertaion of hex string" );
     return( buff = ak_buffer_delete( buff ));
   }
  return buff;
@@ -174,7 +174,7 @@
 {
   ak_buffer buff = NULL;
   if( str == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a string", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a string" );
    return NULL;
   }
   if( ak_buffer_set_str( buff = ak_buffer_new(), str ) == ak_error_ok ) return buff;
@@ -190,7 +190,7 @@
 {
   ak_buffer buff = NULL;
   if( size <= 0 ) {
-    ak_error_message( ak_error_wrong_length, "create a buffer with non positive length", __func__ );
+    ak_error_message( ak_error_wrong_length, __func__, "create a buffer with non positive length" );
     return NULL;
   }
   if( ak_buffer_alloc( buff = ak_buffer_new(), size ) == ak_error_ok ) return buff;
@@ -205,7 +205,7 @@
  int ak_buffer_free( ak_buffer buff )
 {
   if( buff == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
    return ak_error_null_pointer;
   }
   if( buff->flag == ak_true ) {
@@ -227,14 +227,14 @@
   ak_uint8 *ptr = NULL;
   if( size > 0 ) {
     if(( ptr = buff->alloc( size )) == NULL ) {
-     ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+     ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
      return ak_error_out_of_memory;
     }
     memset( ptr, 0, size );
   }
   if( ak_buffer_free( buff ) != ak_error_ok ) {
     int local_error = ak_error_get_value();
-    ak_error_message( local_error, "incorrect memory cleaning", __func__ );
+    ak_error_message( local_error, __func__, "incorrect memory cleaning" );
     return local_error;
   }
   buff->data = ptr;
@@ -252,7 +252,7 @@
  int ak_buffer_destroy( ak_buffer buff )
 {
   if( buff == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
    return ak_error_null_pointer;
   }
   ak_buffer_free( buff );
@@ -273,7 +273,7 @@
   if( buff != NULL ) {
    ak_buffer_destroy( buff );
    free( buff );
-  } else ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+  } else ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
   return NULL;
 }
 
@@ -306,15 +306,15 @@
  int ak_buffer_set_ptr( ak_buffer buff, const ak_pointer ptr, const size_t size, const ak_bool cflag )
 {
   if( buff == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
    return ak_error_null_pointer;
   }
   if( ptr == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a data", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a data" );
    return ak_error_null_pointer;
   }
   if( size <= 0 ) {
-   ak_error_message( ak_error_zero_length, "use a data with zero or negative length", __func__ );
+   ak_error_message( ak_error_zero_length, __func__, "use a data with zero or negative length" );
    return ak_error_zero_length;
   }
   if( cflag == ak_false ) {
@@ -324,7 +324,7 @@
         buff->flag = ak_false;
   } else {
            if( ak_buffer_alloc( buff, size )) {
-             ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+             ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
              return ak_error_out_of_memory;
            }
            memcpy( buff->data, ptr, size );
@@ -345,54 +345,21 @@
 {
   size_t len = 0;
   if( buff == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
    return ak_error_null_pointer;
   }
   if( str == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a string", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a string" );
    return ak_error_null_pointer;
   }
 
   len = strlen( (char *)str );
   if( ak_buffer_alloc( buff, 1+len )) {
-   ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+   ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
    return ak_error_out_of_memory;
   }
   memcpy( buff->data, str, len );
  return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Конвертация символа в целочисленное значение                                           + */
-/* ----------------------------------------------------------------------------------------------- */
- inline static ak_uint32 ak_xconvert( const char c )
-{
-    switch( c )
-   {
-      case 'a' :
-      case 'A' : return 10;
-      case 'b' :
-      case 'B' : return 11;
-      case 'c' :
-      case 'C' : return 12;
-      case 'd' :
-      case 'D' : return 13;
-      case 'e' :
-      case 'E' : return 14;
-      case 'f' :
-      case 'F' : return 15;
-      case '0' : return 0;
-      case '1' : return 1;
-      case '2' : return 2;
-      case '3' : return 3;
-      case '4' : return 4;
-      case '5' : return 5;
-      case '6' : return 6;
-      case '7' : return 7;
-      case '8' : return 8;
-      case '9' : return 9;
-      default : ak_error_set_value( ak_error_undefined_value ); return 0;
-  }
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -409,15 +376,14 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_buffer_set_hexstr( ak_buffer buff, const char *hexstr )
 {
-  ak_uint8 *bdata = NULL;
-  size_t len = 0, i = 0;
+  size_t len = 0;
 
   if( buff == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
    return ak_error_null_pointer;
   }
   if( hexstr == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a hex string", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a hex string" );
    return ak_error_null_pointer;
   }
 
@@ -425,17 +391,12 @@
   if( len&1 ) len++;
   len >>= 1;
   if( ak_buffer_alloc( buff, len )) {
-    ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+    ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
     return ak_error_out_of_memory;
   }
 
-   ak_error_set_value( ak_error_ok );
-   bdata = (ak_uint8 *) buff->data; /* представляем данные в виде массива байт */
-   for( i = 0; i < strlen( hexstr ); i += 2 ) {
-     bdata[i>>1] = (ak_xconvert( hexstr[i] ) << 4);
-     if( i < strlen( hexstr )-1) bdata[i>>1] += ak_xconvert( hexstr[i+1] );
-   }
- return ak_error_get_value();
+  ak_error_set_value( ak_error_ok );
+ return ak_hexstr_to_ptr( hexstr, buff->data, len, ak_false );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -448,7 +409,7 @@
  char *ak_buffer_to_hexstr( const ak_buffer buff )
 {
   if( buff == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
    return ak_null_string;
   }
   return ak_ptr_to_hexstr( buff->data, buff->size, ak_false );
@@ -462,7 +423,7 @@
  const char *ak_buffer_get_str( ak_buffer buff )
 {
   if( buff == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
    return ak_null_string;
   }
   return (const char *) buff->data;
@@ -476,7 +437,7 @@
  const ak_pointer ak_buffer_get_ptr( ak_buffer buff )
 {
   if( buff == NULL ) {
-   ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
    return ak_null_string;
   }
   return buff->data;
@@ -490,7 +451,7 @@
  const size_t ak_buffer_get_size( ak_buffer buff )
 {
   if( buff == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
     return ak_error_null_pointer;
   }
   return buff->size;
@@ -508,11 +469,11 @@
  int ak_buffer_is_equal( const ak_buffer left, const ak_buffer right )
 {
   if( left == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a left buffer", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a left buffer" );
     return ak_error_null_pointer;
   }
   if( right == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a right buffer", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a right buffer" );
     return ak_error_null_pointer;
   }
   if( left->size != right->size ) return ak_false;
@@ -536,15 +497,15 @@
   int result = ak_error_ok;
 
   if( buff == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a buffer", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
     return ak_error_null_pointer;
   }
   if( generator == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a random generator", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a random generator" );
     return ak_error_null_pointer;
   }
   if( ak_random_ptr( generator, buff->data, buff->size ) != ak_error_ok ) {
-    ak_error_message( ak_error_write_data, "incorrect wiping a buffer data", __func__ );
+    ak_error_message( ak_error_write_data, __func__, "incorrect wiping a buffer data" );
     memset( buff->data, 0, buff->size );
     result = ak_error_write_data;
   }
@@ -569,28 +530,26 @@
 {
   ak_buffer buff = NULL;
   if( generator == NULL ) { /* использование NULL-генератора */
-    ak_error_message( ak_error_null_pointer, "using a null pointer to random generator", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to random generator" );
     return NULL;
   }
   if( size <= 0 ) { /* присвоение данных неопределенной длины */
-    ak_error_message( ak_error_zero_length, "using a data with non positive length", __func__ );
+    ak_error_message( ak_error_zero_length, __func__, "using a data with non positive length" );
     return NULL;
   }
 
   /* создаем буффер */
   if(( buff = ak_buffer_new_size( size )) == NULL ) {
-    ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+    ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
     return NULL;
   }
   if( ak_random_ptr( generator, buff->data, buff->size ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "incorrect random data generation", __func__ );
+    ak_error_message( ak_error_get_value(), __func__, "incorrect random data generation" );
     return ( buff = ak_buffer_delete( buff ));
   }
  return buff;
 }
 
-/* ----------------------------------------------------------------------------------------------- */
-/*! \example example-buffer.c                                                                      */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                    ak_buffer.c  */
 /* ----------------------------------------------------------------------------------------------- */

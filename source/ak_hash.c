@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*   Copyright (c) 2014, 2015, 2016 by Axel Kenzo, axelkenzo@mail.ru                               */
+/*   Copyright (c) 2014 - 2017 by Axel Kenzo, axelkenzo@mail.ru                                    */
 /*   All rights reserved.                                                                          */
 /*                                                                                                 */
 /*   Redistribution and use in source and binary forms, with or without modification, are          */
@@ -49,12 +49,12 @@
 {
   ak_hash ctx = ( ak_hash ) malloc( sizeof( struct hash ));
   if( ctx == NULL ) {
-    ak_error_message( ak_error_out_of_memory, "incorrect context memory allocation", __func__ );
+    ak_error_message( ak_error_out_of_memory, __func__ , "incorrect context memory allocation" );
     return NULL;
   }
   if(( ctx->data = malloc( data_size )) == NULL ) {
-      ak_error_message( ak_error_create_function,
-                                     "incorrect internal data memory allocation", __func__ );
+      ak_error_message( ak_error_create_function, __func__ ,
+                                                   "incorrect internal data memory allocation" );
       return ctx = ak_hash_delete( ctx );
   }
   ctx->bsize =     0;
@@ -76,7 +76,7 @@
 {
   ak_hash ctx = ( ak_hash )inctx;
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a context" );
   } else {
            if( ctx->data != NULL ) free( ctx->data );
            ctx->bsize =     0;
@@ -100,7 +100,7 @@
  size_t ak_hash_get_code_size( ak_hash ctx )
 {
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a context" );
     return ak_error_null_pointer;
   }
  return ctx->hsize;
@@ -115,7 +115,7 @@
  size_t ak_hash_get_block_size( ak_hash ctx )
 {
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a context" );
     return ak_error_null_pointer;
   }
  return ctx->bsize;
@@ -129,7 +129,7 @@
  ak_oid ak_hash_get_oid( ak_hash ctx )
 {
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a context" );
     return NULL;
   }
  return ctx->oid;
@@ -157,11 +157,11 @@
   ak_uint64 quot = 0, offset = 0;
 
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a context" );
     return NULL;
   }
   if( in == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a data", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a data" );
     return NULL;
   }
 
@@ -207,11 +207,11 @@
 
   /* выполняем необходимые проверки */
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a context" );
     return NULL;
   }
   if( filename == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to a file name", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a file name" );
     return NULL;
   }
   if(( fd = open( filename, O_RDONLY | O_BINARY )) < 0 ) {
@@ -234,7 +234,7 @@
   #endif
   if((localbuffer = ( ak_uint8 * ) malloc( block_size )) == NULL ) {
     close( fd );
-    ak_error_message( ak_error_out_of_memory, "out of memory", __func__ );
+    ak_error_message( ak_error_out_of_memory, __func__ , "out of memory" );
     return NULL;
   }
   /* теперь обрабатываем файл с данными */
@@ -267,11 +267,11 @@
  ak_hash ak_hash_new_oid( ak_oid oid )
 {
  if( oid == NULL ) {
-   ak_error_message( ak_error_null_pointer, "using a null pointer to OID", __func__ );
+   ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to OID" );
    return NULL;
  }
  if( oid->engine != hash_function ) {
-     ak_error_message( ak_error_oid_engine, "using a not hash function OID", __func__ );
+     ak_error_message( ak_error_oid_engine, __func__ , "using a not hash function OID" );
      return NULL;
  }
 
@@ -283,7 +283,7 @@
       return ak_hash_new_gosthash94( ak_oids_find_by_name( "id-gosthash94-CryptoPro-A-ParamSet" ));
  }
 
- ak_error_message( ak_error_undefined_value, "using a pointer to undefined OID", __func__ );
+ ak_error_message( ak_error_undefined_value, __func__ , "using a pointer to undefined OID" );
  return NULL;
 }
 
@@ -295,12 +295,12 @@
  int ak_hash_clean( ak_hash ctx )
 {
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to a context" );
     return ak_error_null_pointer;
   }
   if( ctx->clean == NULL ) {
-    ak_error_message( ak_error_undefined_function,
-                                          "using an undefined internal function", __func__ );
+    ak_error_message( ak_error_undefined_function, __func__ ,
+                                                     "using an undefined internal function" );
     return ak_error_undefined_function;
   }
   ctx->clean( ctx );
@@ -319,12 +319,12 @@
  int ak_hash_update( ak_hash ctx, const ak_pointer in, const ak_uint64 size )
 {
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to a context" );
     return ak_error_null_pointer;
   }
   if( ctx->update == NULL ) {
-    ak_error_message( ak_error_undefined_function,
-                                         "using an undefined internal function", __func__ );
+    ak_error_message( ak_error_undefined_function, __func__ ,
+                                                    "using an undefined internal function" );
     return ak_error_undefined_function;
   }
   ctx->update( ctx, in, size );
@@ -343,12 +343,12 @@
  int ak_hash_final( ak_hash ctx, const ak_pointer in, const ak_uint64 size )
 {
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to a context" );
     return ak_error_null_pointer;
   }
   if( ctx->final == NULL ) {
-    ak_error_message( ak_error_undefined_function,
-                                         "using an undefined internal function", __func__ );
+    ak_error_message( ak_error_undefined_function, __func__ ,
+                                                     "using an undefined internal function" );
     return ak_error_undefined_function;
   }
   ctx->final( ctx, in, size );
@@ -372,12 +372,12 @@
 {
   ak_buffer result = NULL;
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to a context" );
     return NULL;
   }
   if( ctx->code == NULL ) {
-    ak_error_message( ak_error_undefined_function,
-                                         "using an undefined internal function", __func__ );
+    ak_error_message( ak_error_undefined_function, __func__ ,
+                                                     "using an undefined internal function" );
     return NULL;
   }
  /* проверяем, надо ли выделять память */

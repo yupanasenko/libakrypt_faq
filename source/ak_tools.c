@@ -26,7 +26,6 @@
 /*                                                                                                 */
 /*   ak_tools.c                                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- #include <libakrypt.h>
  #include <ak_tools.h>
  #include <ak_oid.h>
  #include <ak_hash.h>
@@ -36,9 +35,8 @@
 
  #include <errno.h>
  #include <fcntl.h>
- #include <stdlib.h>
- #include <string.h>
  #include <stdarg.h>
+ #include <sys/stat.h>
 
  #ifndef _MSC_VER
   #ifndef __MINGW32__
@@ -53,7 +51,6 @@
   #include <windows.h>
  #endif
 
- #include <sys/stat.h>
  #ifdef _MSC_VER
   #include <io.h>
   #include <conio.h>
@@ -119,7 +116,7 @@
   int result = 0;
   if( ak_function_log_default == NULL ) return ak_error_set_value( ak_error_null_pointer );
   if( message == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a NULL string for message", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a NULL string for message" );
   } else {
        pthread_mutex_lock( &ak_function_log_default_mutex );
        result = ak_function_log_default( message );
@@ -256,16 +253,16 @@
   size_t len = 1 + (ptr_size << 1);
 
   if( ptr == NULL ) {
-    ak_error_message( ak_error_null_pointer, "use a null pointer to data", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to data" );
     return NULL;
   }
   if( ptr_size <= 0 ) {
-    ak_error_message( ak_error_zero_length, "use a data with zero or negative length", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "use a data with zero or negative length" );
     return NULL;
   }
 
   if(( nullstr = (char *) malloc( len )) == NULL ) {
-    ak_error_message( ak_error_out_of_memory, "incorrect memory allocation", __func__ );
+    ak_error_message( ak_error_out_of_memory, __func__ , "incorrect memory allocation" );
   }
     else {
       size_t idx = 0, js = 0, start = 0, offset = 2;
@@ -341,15 +338,15 @@
   size_t len = 0;
 
   if( hexstr == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using null pointer to a hex string", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a hex string" );
     return ak_error_null_pointer;
   }
   if( ptr == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using null pointer to a buffer", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a buffer" );
     return ak_error_null_pointer;
   }
   if( size == 0 ) {
-    ak_error_message( ak_error_zero_length, "using zero value for length of buffer", __func__ );
+    ak_error_message( ak_error_zero_length, __func__, "using zero value for length of buffer" );
     return ak_error_zero_length;
   }
 
@@ -357,7 +354,7 @@
   if( len&1 ) len++;
   len >>= 1;
   if( size < len ) {
-    ak_error_message( ak_error_wrong_length, "using a buffer with small length", __func__ );
+    ak_error_message( ak_error_wrong_length, __func__ , "using a buffer with small length" );
     return ak_error_wrong_length;
   }
 
@@ -469,7 +466,7 @@ int ak_libakrypt_create_filename_for_options( char *filename, size_t size )
  /* здесь мы обрабатываем путь, заданный из командной строки при сборке библиотеки */
  size_t len = 0;
  if(( len = strlen( LIBAKRYPT_OPTIONS_PATH )) > FILENAME_MAX-16 ) {
-   ak_error_message( ak_error_wrong_length, "wrong length of predefined filepath", __func__ );
+   ak_error_message( ak_error_wrong_length, __func__ , "wrong length of predefined filepath" );
    return ak_error_wrong_length;
  }
  memcpy( hpath, LIBAKRYPT_OPTIONS_PATH, len ); /* массивы drive и append остаются пустыми */
@@ -512,32 +509,32 @@ ak_bool ak_libakrypt_load_options( void )
 
 /* создаем имя файла */
  if( ak_libakrypt_create_filename_for_options( filename, FILENAME_MAX ) != ak_error_ok ) {
-   ak_error_message( ak_error_get_value(), "wrong creation options filename", __func__ );
+   ak_error_message( ak_error_get_value(), __func__ , "wrong creation options filename" );
    return ak_false;
  }
 
 /* проверяем наличие файла и прав доступа к нему */
  if(( fd = open( filename, O_RDONLY | O_BINARY )) < 0 ) {
    ak_error_message_fmt( ak_error_open_file,
-                                         __func__, "%s for file %s", strerror( errno ), filename );
+                           __func__, "error %s for file %s", strerror( errno ), filename );
    return ak_false;
  }
  if( fstat( fd, &st ) ) {
    close( fd );
-   ak_error_message( ak_error_access_file, strerror( errno ), __func__ );
+   ak_error_message( ak_error_access_file, __func__ , strerror( errno ));
    return ak_false;
  }
 /* считываем данные и побайтно формуруем строки с  */
  memset( localbuffer, 0, 1024 );
  for( idx = 0; idx < (size_t) st.st_size; idx++ ) {
    if( read( fd, &ch, 1 ) != 1 ) {
-     ak_error_message( ak_error_read_data, "unexpected end of libakrypt.conf", __func__ );
+     ak_error_message( ak_error_read_data, __func__ , "unexpected end of libakrypt.conf" );
      close(fd);
      return ak_false;
    }
    if( off > 1022 ) {
-     ak_error_message( ak_error_read_data,
-                              "libakrypt.conf has a line with more than 1022 symbols", __func__ );
+     ak_error_message( ak_error_read_data, __func__ ,
+                              "libakrypt.conf has a line with more than 1022 symbols" );
      close(fd);
      return ak_false;
    }
@@ -549,14 +546,14 @@ ak_bool ak_libakrypt_load_options( void )
          char *endptr = NULL;
          int value = (int) strtol( ptr+12, &endptr, 10 );
          if( *endptr != '\0' ) {
-           ak_error_message( ak_error_undefined_value,
-                                            "unexpected value for variable log_level", __func__ );
+           ak_error_message( ak_error_undefined_value, __func__ ,
+                                            "unexpected value for variable log_level" );
            close(fd);
            return ak_false;
          }
          if( value < ak_log_none || value > ak_log_maximum ) {
-           ak_error_message( ak_error_undefined_value,
-                                                 "wrong value for variable log_level", __func__ );
+           ak_error_message( ak_error_undefined_value, __func__ ,
+                                                 "wrong value for variable log_level" );
            close(fd);
            return ak_false;
          }
@@ -567,40 +564,40 @@ ak_bool ak_libakrypt_load_options( void )
          char *endptr = NULL;
          long int value = strtol( ptr+23, &endptr, 10 );
          if( *endptr != '\0' ) {
-           ak_error_message( ak_error_undefined_value,
-                                 "unexpected value for variable magma_block_resource", __func__ );
+           ak_error_message( ak_error_undefined_value, __func__ ,
+                                 "unexpected value for variable magma_block_resource" );
            close(fd);
            return ak_false;
          }
          if( value < 1024 || value > 0xFFFFFFFF ) {
-           ak_error_message( ak_error_undefined_value,
-                                      "wrong value for variable magma_block_resource", __func__ );
+           ak_error_message( ak_error_undefined_value, __func__ ,
+                                      "wrong value for variable magma_block_resource" );
            close(fd);
            return ak_false;
          }
          libakrypt_options.cipher_key_magma_block_resource = value;
          if( libakrypt_options.log_level == ak_log_maximum ) ak_error_message( ak_error_ok,
-                                  "reading a new value of block_magma_resoure is Ok", __func__ );
+                                  __func__ , "reading a new value of block_magma_resoure is Ok" );
        }
        /* проверяем ресурс для Кузнечика */
        if(( ptr = strstr( localbuffer, "kuznetchik_block_resource = " )) != NULL ) {
          char *endptr = NULL;
          long int value = strtol( ptr+28, &endptr, 10 );
          if( *endptr != '\0' ) {
-           ak_error_message( ak_error_undefined_value,
-                           "unexpected value for variable kuznetchik_block_resource", __func__ );
+           ak_error_message( ak_error_undefined_value, __func__ ,
+                                     "unexpected value for variable kuznetchik_block_resource" );
            close(fd);
            return ak_false;
          }
          if( value < 1024 || value > 0xFFFFFFFF ) {
-           ak_error_message( ak_error_undefined_value,
-                                "wrong value for variable kuznetchik_block_resource", __func__ );
+           ak_error_message( ak_error_undefined_value, __func__ ,
+                                          "wrong value for variable kuznetchik_block_resource" );
            close(fd);
            return ak_false;
          }
          libakrypt_options.cipher_key_kuznetchik_block_resource = value;
          if( libakrypt_options.log_level == ak_log_maximum ) ak_error_message( ak_error_ok,
-                             "reading a new value of block_kuznetchik_resoure is Ok", __func__ );
+                            __func__ , "reading a new value of block_kuznetchik_resoure is Ok" );
        }
      }
      memset( localbuffer, 0, 1024 );
@@ -630,33 +627,33 @@ const char *ak_libakrypt_version( void )
 ak_bool ak_libakrypt_test_types( void )
 {
  if( sizeof( ak_int8 ) != 1 ) {
-  ak_error_message( ak_error_undefined_value, "wrong size of ak_int8 type", __func__ );
+  ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_int8 type" );
   return ak_false;
  }
  if( sizeof( ak_uint8 ) != 1 ) {
-  ak_error_message( ak_error_undefined_value, "wrong size of ak_uint8 type", __func__ );
+  ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_uint8 type" );
   return ak_false;
  }
  if( sizeof( ak_int32 ) != 4 ) {
-  ak_error_message( ak_error_undefined_value, "wrong size of ak_int32 type", __func__ );
+  ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_int32 type" );
   return ak_false;
  }
  if( sizeof( ak_uint32 ) != 4 ) {
-  ak_error_message( ak_error_undefined_value, "wrong size of ak_uint32 type", __func__ );
+  ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_uint32 type" );
   return ak_false;
  }
  if( sizeof( ak_int64 ) != 8 ) {
-  ak_error_message( ak_error_undefined_value, "wrong size of ak_int64 type", __func__ );
+  ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_int64 type" );
   return ak_false;
  }
  if( sizeof( ak_uint64 ) != 8 ) {
-  ak_error_message( ak_error_undefined_value, "wrong size of ak_uint64 type", __func__ );
+  ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_uint64 type" );
   return ak_false;
  }
 
 #ifdef LIBAKRYPT_HAVE_BUILTIN_XOR_SI128
  if( ak_log_get_level() >= ak_log_maximum )
-    ak_error_message( ak_error_ok, "library applies __m128i base type", __func__ );
+    ak_error_message( ak_error_ok, __func__ , "library applies __m128i base type" );
 #endif
 return ak_true;
 }
@@ -670,75 +667,75 @@ ak_bool ak_libakrypt_test_hash_functions( void )
 {
  int audit = ak_log_get_level();
  if( audit >= ak_log_maximum )
-   ak_error_message( ak_error_ok, "testing hash functions started", __func__ );
+   ak_error_message( ak_error_ok, __func__ , "testing hash functions started" );
 
  /* тестируем функцию ГОСТ Р 34.11-94 */
  if( ak_hash_test_gosthash94() != ak_true ) {
-   ak_error_message( ak_error_get_value(), "incorrect gosthash94 testing", __func__ );
+   ak_error_message( ak_error_get_value(), __func__ , "incorrect gosthash94 testing" );
    return ak_false;
  }
 
  /* тестируем функцию Стрибог256 */
  if( ak_hash_test_streebog256() != ak_true ) {
-   ak_error_message( ak_error_get_value(), "incorrect streebog256 testing", __func__ );
+   ak_error_message( ak_error_get_value(), __func__, "incorrect streebog256 testing" );
    return ak_false;
  }
 
  /* тестируем функцию Стрибог512 */
  if( ak_hash_test_streebog512() != ak_true ) {
-   ak_error_message( ak_error_get_value(), "incorrect streebog512 testing", __func__ );
+   ak_error_message( ak_error_get_value(), __func__, "incorrect streebog512 testing" );
    return ak_false;
  }
 
  /* тестируем функцию SHA-256 */
  if( ak_hash_test_sha256() != ak_true ) {
-   ak_error_message( ak_error_get_value(), "incorrect sha256 testing", __func__ );
+   ak_error_message( ak_error_get_value(), __func__ , "incorrect sha256 testing" );
    return ak_false;
  }
 
  /* тестируем функцию SHA-512 */
  if( ak_hash_test_sha512() != ak_true ) {
-   ak_error_message( ak_error_get_value(), "incorrect sha512 testing", __func__ );
+   ak_error_message( ak_error_get_value(), __func__ , "incorrect sha512 testing" );
    return ak_false;
  }
 
  if( audit >= ak_log_maximum )
-   ak_error_message( ak_error_ok, "testing hash functions ended successfully", __func__ );
+   ak_error_message( ak_error_ok, __func__ , "testing hash functions ended successfully" );
 return ak_true;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция проверяет корректность реализации алгоритмов лочного шифрования
-@return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
-функция возвращает ak_false. Код ошибки можеть быть получен с помощью вызова ak_error_get_value() */
+ @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+ функция возвращает ak_false. Код ошибки можеть быть получен с помощью вызова ak_error_get_value() */
 /* ----------------------------------------------------------------------------------------------- */
 ak_bool ak_libakrypt_test_block_ciphers( void )
 {
  int audit = ak_log_get_level();
  if( audit >= ak_log_maximum )
-   ak_error_message( ak_error_ok, "testing block ciphers started", __func__ );
+   ak_error_message( ak_error_ok, __func__ , "testing block ciphers started" );
 
  /* тестируем алгоритм Магма (ГОСТ 28147-89, ГОСТ Р 34.12-2015) */
  if( ak_cipher_key_test_magma() != ak_true ) {
-   ak_error_message( ak_error_get_value(), "incorrect block cipher marma testing", __func__ );
+   ak_error_message( ak_error_get_value(), __func__ , "incorrect block cipher magma testing" );
    return ak_false;
  }
 
  /* вырабатываем долговременные параметры алгоритма Кузнечик */
  if( ak_crypt_kuznetchik_init_tables() != ak_error_ok ) {
-   ak_error_message( ak_error_get_value(),
-                                 "wrong creation of kuznetchik predefined tables", __func__ );
+   ak_error_message( ak_error_get_value(), __func__ ,
+                                           "wrong creation of kuznetchik predefined tables" );
    return ak_false;
  }
 
  /* тестируем алгоритм Кузнечик (ГОСТ Р 34.12-2015) */
  if( ak_cipher_key_test_kuznetchik() != ak_true ) {
-   ak_error_message( ak_error_get_value(), "incorrect block cipher kuznetchik testing", __func__ );
+   ak_error_message( ak_error_get_value(), __func__ , "incorrect block cipher kuznetchik testing" );
    return ak_false;
  }
 
  if( audit >= ak_log_maximum )
-   ak_error_message( ak_error_ok, "testing block ciphers ended successfully", __func__ );
+   ak_error_message( ak_error_ok, __func__ , "testing block ciphers ended successfully" );
 return ak_true;
 }
 
@@ -747,7 +744,7 @@ return ak_true;
 /* ----------------------------------------------------------------------------------------------- */
 void ak_libakrypt_wcurve_to_log( const ak_wcurve_paramset ecp )
 {
-char message[160];
+ char message[160];
 
  ak_snprintf( message, 158, " a = %s", ecp->ca );
  ak_log_set_message( message );
@@ -761,7 +758,6 @@ char message[160];
  ak_log_set_message( message );
  ak_snprintf( message, 158, "py = %s", ecp->cpy );
  ak_log_set_message( message );
-
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -779,9 +775,10 @@ ak_bool ak_libakrypt_test_wcurves( void )
 {
  size_t idx = 0;
  ak_bool result = ak_true;
+ int reason = ak_error_ok;
  int audit = ak_log_get_level();
  if( audit >= ak_log_maximum )
-   ak_error_message( ak_error_ok, "testing Weierstrass curves started", __func__ );
+   ak_error_message( ak_error_ok, __func__ , "testing Weierstrass curves started" );
 
 /* перебираем все кривые, которые доступны через механизм OIDэов библиотеки */
  for( idx = 0; idx < ak_oids_get_count(); idx++ ) {
@@ -791,50 +788,42 @@ ak_bool ak_libakrypt_test_wcurves( void )
       ak_wcurve ec = ak_wcurve_new(ecp);
       ak_wpoint wp = ak_wpoint_new(ecp);
 
-      /* исправить!!!
-
-if( audit >= ak_log_maximum ) {
- ak_snprintf( message, 1022, "curve %s [OID: %s]", ak_oid_get_name(oid), ak_oid_get_id(oid));
- ak_error_message( ak_error_ok, message, __func__ );
-}
-
-if(( result = ak_wcurve_is_ok( ec )) == ak_true ) {
- if( ak_wpoint_is_ok( wp, ec )) {
-   if( ak_wpoint_check_order( wp, ec )) {
-      if( audit >= ak_log_maximum ) {
-        ak_error_message( ak_error_ok, "checked properly, curve is Ok", __func__ );
-      }
-   } else { ak_libakrypt_wcurve_to_log( ecp );
-            ak_error_message( result = ak_error_wcurve_point_order,
-                           "incorrect order of elliptic curve's base point", __func__ );
-           }
- } else { ak_libakrypt_wcurve_to_log( ecp );
-          ak_error_message( result = ak_error_wcurve_point,
-                                   "incorrect base point of elliptic curve", __func__ );
-        }
-} else { ak_libakrypt_wcurve_to_log( ecp );
-        ak_error_message( result = ak_error_wcurve_discriminant,
-                        "incorrect value of elliptic curve's' discriminant", __func__ );
-      }
-}
-}
-
-
-      */
-
-
+      if(( result = ak_wcurve_is_ok( ec )) == ak_true ) {
+        if(( result = ak_wpoint_is_ok( wp, ec )) == ak_true ) {
+          if(( result = ak_wpoint_check_order( wp, ec )) == ak_true ) {
+            /* здесь все проверки выполнены успешно */
+            if( audit > ak_log_standard ) {
+              ak_error_message_fmt( ak_error_ok, __func__ ,
+                   "curve %s [OID: %s] is Ok", ak_oid_get_name( oid ), ak_oid_get_id( oid ));
+            }
+          } else reason = ak_error_wcurve_point_order;
+        } else reason = ak_error_wcurve_point;
+      } else reason = ak_error_wcurve_discriminant;
 
       wp = ak_wpoint_delete( wp );
       ec = ak_wcurve_delete( ec );
-      if( result != ak_true ) break;
+      if( result != ak_true )  {
+        char *p = NULL;
+        switch( reason ) {
+          case ak_error_wcurve_discriminant : p = "discriminant"; break;
+          case ak_error_wcurve_point        : p = "base point"; break;
+          case ak_error_wcurve_point_order  : p = "base point order"; break;
+          default : p = "unxepected parameter";
+        }
+        ak_libakrypt_wcurve_to_log( ecp );
+        ak_error_message_fmt( reason, __func__ ,
+             "curve %s [OID: %s] has wrong %s", ak_oid_get_name( oid ), ak_oid_get_id( oid ), p );
+        break;
+      }
     }
  } /* end of for */
 
- if( audit >= ak_log_maximum )
-   ak_error_message( ak_error_get_value(), "testing Weierstrass curves ended successfully", __func__ );
-return result;
+ if( !result ) ak_error_message( ak_error_get_value(), __func__ ,
+                                                         "incorrect testing Weierstrass curves" );
+ else if( audit >= ak_log_maximum ) ak_error_message( ak_error_get_value(), __func__ ,
+                                                "testing Weierstrass curves ended successfully" );
+ return result;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция должна вызываться перед использованием
@@ -868,46 +857,48 @@ int ak_libakrypt_create( ak_function_log *logger )
 
  /* инициализируем систему аудита (вывод сообщений) */
  if( ak_log_set_function( logger ) != ak_error_ok ) {
-   ak_error_message( ak_error_get_value(), "audit mechanism not started", __func__ );
+   ak_error_message( ak_error_get_value(), __func__ , "audit mechanism not started" );
    return ak_false;
  }
  /* считываем настройки криптографических алгоритмов */
  if(( error = ak_libakrypt_load_options()) != ak_true ) {
-   ak_error_message( ak_error_get_value(), "wrong reading of libakrypt options", __func__ );
+   ak_error_message( ak_error_get_value(), __func__ , "wrong reading of libakrypt options" );
    return ak_false;
  }
  /* проверяем длины фиксированных типов данных */
  if(( error = ak_libakrypt_test_types( )) != ak_true ) {
-   ak_error_message( ak_error_get_value(), "sizes of predefined types is wrong", __func__ );
+   ak_error_message( ak_error_get_value(), __func__ , "sizes of predefined types is wrong" );
    return ak_false;
  }
  /* инициализируем механизм обработки идентификаторов */
  if(( error = ak_oids_create()) != ak_error_ok ) {
-   ak_error_message( ak_error_get_value(), "OID mechanism not started", __func__ );
+   ak_error_message( ak_error_get_value(), __func__ , "OID mechanism not started" );
    return ak_false;
  }
+
  /* инициализируем механизм обработки секретных ключей пользователей */
 //  if(( error = ak_keylist_create()) != ak_error_ok ) {
 //    ak_error_message( ak_error_get_value(), "secret key control mechanism not started", __func__ );
 //    return ak_false;
 //  }
+
  /* тестируем работу функций хеширования */
  if(( error = ak_libakrypt_test_hash_functions()) != ak_true ) {
-   ak_error_message( ak_error_get_value(), "error while testing hash functions", __func__ );
+   ak_error_message( ak_error_get_value(), __func__ , "error while testing hash functions" );
    return ak_false;
  }
  /* тестируем работу алгоритмов блочного шифрования */
  if(( error = ak_libakrypt_test_block_ciphers()) != ak_true ) {
-   ak_error_message( ak_error_get_value(), "error while testing block ciphers", __func__ );
+   ak_error_message( ak_error_get_value(), __func__ , "error while testing block ciphers" );
    return ak_false;
  }
  /* тестируем корректность реализации операций с эллиптическими кривыми в короткой форме Вейерштрасса */
  if(( error = ak_libakrypt_test_wcurves()) != ak_true ) {
-   ak_error_message( ak_error_get_value(), "error while testing Wierstrass curves", __func__ );
+   ak_error_message( ak_error_get_value(), __func__ , "error while testing Wierstrass curves" );
    return ak_false;
  }
 
- ak_error_message( ak_error_ok, "all crypto mechanisms tested successfully", __func__ );
+ ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms tested successfully" );
 return ak_true;
 }
 
@@ -916,17 +907,18 @@ int ak_libakrypt_destroy( void )
 {
  int error = ak_error_get_value();
  if( error != ak_error_ok )
-   ak_error_message( error, "before destroing library holds an error", __func__ );
+   ak_error_message( error, __func__ , "before destroing library holds an error" );
 
 //  ak_error_set_value( ak_error_ok );
 //  if( ak_keylist_destroy() != ak_error_ok )
 //    ak_error_message( ak_error_get_value(),
 //                             "secret key control mechanism not properly destroyed", __func__ );
+
  ak_error_set_value( ak_error_ok );
  if( ak_oids_destroy() != ak_error_ok )
-   ak_error_message( ak_error_get_value(), "OID mechanism not properly destroyed", __func__ );
+   ak_error_message( ak_error_get_value(), __func__ , "OID mechanism not properly destroyed" );
 
- ak_error_message( ak_error_ok, "all crypto mechanisms successfully destroyed", __func__ );
+ ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms successfully destroyed" );
  return ak_error_get_value();
 }
 

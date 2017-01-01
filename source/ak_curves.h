@@ -152,14 +152,14 @@
  int ak_wpoint_destroy( ak_wpoint );
 /*! \brief Уничтожение контекста точки эллиптической кривой */
  ak_pointer ak_wpoint_delete( ak_pointer );
-/*! Проверка принадлежности точки заданной кривой */
+/*! \brief Проверка принадлежности точки заданной кривой */
  ak_bool ak_wpoint_is_ok( ak_wpoint , ak_wcurve );
-/*! Проверка порядка заданной точки */
+/*! \brief Проверка порядка заданной точки */
  ak_bool ak_wpoint_check_order( ak_wpoint , ak_wcurve );
 
-/*! Присвоение одной точке эллиптической кривой значения другой точки */
+/*! \brief Присвоение одной точке эллиптической кривой значения другой точки */
  void ak_wpoint_set( ak_wpoint , ak_wpoint , const size_t );
-/*! Присвоение точке эллиптической кривой значения бесконечно удаленной точки */
+/*! \brief Присвоение точке эллиптической кривой значения бесконечно удаленной точки */
  void ak_wpoint_set_as_unit( ak_wpoint , const size_t );
 /*! \brief Удвоение точки эллиптической кривой, заданной в короткой форме Вейерштрасса */
  void ak_wpoint_double( ak_wpoint , ak_wcurve );

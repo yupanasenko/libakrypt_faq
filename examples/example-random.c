@@ -11,7 +11,9 @@
  if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true ) return ak_libakrypt_destroy();
 
  /* создаем линейный конгруэнтный генератор со случайным внутренним состоянием */
- generator = ak_random_new_lcg();
+ if((generator = ak_random_new_lcg()) != NULL )
+   printf(" testing a linear congruence generator (lcg)\n");
+  else return ak_libakrypt_destroy();
 
  /* вывод десяти случайных значений */
  printf(" -- random values:\n");
@@ -31,9 +33,9 @@
  }
 
  /* тестируем загрузку данных в произвольную область память (массив) */
- printf(" -- buffer with random values:\n");
+ printf(" -- buffer with %ld random bytes:\n", sizeof( buff ));
  ak_random_ptr( generator, buff, sizeof( buff ));
- for( i = 0; i < sizeof( buff ); i++ ) printf(" %x", buff[i] );
+ for( i = 0; i < sizeof( buff ); i++ ) printf(" %02x", buff[i] );
  printf("\n");
 
  /* удаляем генератор и останавливаем библитеку */

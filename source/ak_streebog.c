@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*   Copyright (c) 2014, 2015, 2016 by Axel Kenzo, axelkenzo@mail.ru                               */
+/*   Copyright (c) 2014 - 2016 by Axel Kenzo, axelkenzo@mail.ru                                    */
 /*   All rights reserved.                                                                          */
 /*                                                                                                 */
 /*   Redistribution and use in source and binary forms, with or without modification, are          */
@@ -626,7 +626,7 @@ struct streebog_ctx {
   /* (этот очень короткий код был предложен Павлом Лебедевым */
   for( idx = 0; idx < 8; idx++ ) {
     ak_uint64 sidx = idx, c = 0;
-    for( idx2 = 0; idx2 < 8 ; idx2++ )
+    for( idx2 = 0; idx2 < 8; idx2++ )
     {
       c ^= AReverseExpand[idx2][pi[a[sidx]]]; /* idx + (idx2 << 3) */
       sidx += 8;
@@ -697,7 +697,7 @@ struct streebog_ctx {
 {
   struct streebog_ctx *sx = NULL;
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
     return;
   }
   sx = ( struct streebog_ctx * ) ctx->data;
@@ -713,7 +713,7 @@ struct streebog_ctx {
 {
   struct streebog_ctx *sx = NULL;
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
     return;
   }
   sx = ( struct streebog_ctx * ) ctx->data;
@@ -729,16 +729,16 @@ struct streebog_ctx {
   struct streebog_ctx *sx = NULL;
 
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
     return;
   }
   if( !size ) {
-    ak_error_message( ak_error_zero_length, "using zero length for hash data", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "using zero length for hash data" );
     return;
   }
   quot = size/ctx->bsize;
   if( size - quot*ctx->bsize ) { /* длина данных должна быть кратна ctx->bsize */
-    ak_error_message( ak_error_wrong_length, "using data with wrong length", __func__ );
+    ak_error_message( ak_error_wrong_length, __func__ , "using data with wrong length" );
     return;
   }
   dt = ( ak_uint64 *) in;
@@ -759,11 +759,11 @@ struct streebog_ctx {
   struct streebog_ctx *sx = NULL;
 
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using null pointer to a context", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
     return;
   }
   if( size >= 64 ) {
-    ak_error_message( ak_error_zero_length, "using zero length for hash data", __func__ );
+    ak_error_message( ak_error_zero_length, __func__ , "using zero length for hash data" );
     return;
   }
 
@@ -786,15 +786,15 @@ struct streebog_ctx {
 {
   ak_hash ctx = ak_hash_new( sizeof( struct streebog_ctx ));
   if( ctx == NULL ) {
-    ak_error_message( ak_error_create_function, "incorrect context creation", __func__ );
+    ak_error_message( ak_error_create_function, __func__ , "incorrect context creation" );
     return NULL;
   }
   ctx->bsize = 64;
   ctx->hsize = 32; /* длина хешкода составляет 256 бит */
 
   if(( ctx->oid = ak_oids_find_by_name( "streebog256" )) == NULL ) {
-    ak_error_message( ak_error_find_pointer,
-                                   "incorrect search of streebog256 OID", __func__ );
+    ak_error_message( ak_error_find_pointer, __func__ ,
+                                   "incorrect search of streebog256 OID" );
     return ctx = ak_hash_delete( ctx );
   }
   /* устанавливаем функции - обработчики событий */
@@ -810,14 +810,14 @@ struct streebog_ctx {
 {
   ak_hash ctx = ak_hash_new( sizeof( struct streebog_ctx ));
   if( ctx == NULL ) {
-    ak_error_message( ak_error_create_function, "incorrect context creation", __func__ );
+    ak_error_message( ak_error_create_function, __func__ , "incorrect context creation" );
     return NULL;
   }
   ctx->bsize = 64;
   ctx->hsize = 64; /* длина хешкода составляет 512 бит */
   if(( ctx->oid = ak_oids_find_by_name( "streebog512" )) == NULL ) {
-     ak_error_message( ak_error_find_pointer,
-                                   "incorrect search of streebog512 OID", __func__ );
+     ak_error_message( ak_error_find_pointer, __func__ ,
+                                                  "incorrect search of streebog512 OID" );
      return ctx = ak_hash_delete( ctx );
   }
   /* устанавливаем функции - обработчики событий */
@@ -863,7 +863,7 @@ struct streebog_ctx {
 
  /* создаем контекст функции хеширования */
   if((ctx = ak_hash_new_streebog256( )) == NULL ) {
-    ak_error_message( ak_error_get_value(), "wrong creation of hash function context", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "wrong creation of hash function context" );
     result = ak_false;
     goto lab_exit;
   }
@@ -874,14 +874,14 @@ struct streebog_ctx {
     hbuff =
         ak_buffer_new_hexstr( "9D151EEFD8590B89DAA6BA6CB74AF9275DD051026BB149A452FD84E5E57B5500" ));
   if( result != ak_true ) {
-    ak_error_message( ak_error_not_equal_data,
-                                         "the 1st test from GOST R 34.22-2012 is wrong", __func__ );
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                                   "the 1st test from GOST R 34.22-2012 is wrong" );
     ak_log_set_message(( str = ak_buffer_to_hexstr( hbuff ))); free( str );
     ak_log_set_message(( str = ak_buffer_to_hexstr( rbuff ))); free( str );
     goto lab_exit;
   }
   if( audit >= ak_log_maximum )
-             ak_error_message( ak_error_ok, "the 1st test from GOST R 34.22-2012 is Ok", __func__ );
+             ak_error_message( ak_error_ok, __func__ , "the 1st test from GOST R 34.22-2012 is Ok" );
   rbuff = ak_buffer_delete( rbuff );
   hbuff = ak_buffer_delete( hbuff );
 
@@ -891,14 +891,14 @@ struct streebog_ctx {
     hbuff =
         ak_buffer_new_hexstr( "9DD2FE4E90409E5DA87F53976D7405B0C0CAC628FC669A741D50063C557E8F50" ));
   if( result != ak_true ) {
-    ak_error_message( ak_error_not_equal_data,
-                                         "the 2nd test from GOST R 34.22-2012 is wrong", __func__ );
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                                   "the 2nd test from GOST R 34.22-2012 is wrong" );
     ak_log_set_message(( str = ak_buffer_to_hexstr( hbuff ))); free( str );
     ak_log_set_message(( str = ak_buffer_to_hexstr( rbuff ))); free( str );
     goto lab_exit;
   }
   if( audit >= ak_log_maximum )
-             ak_error_message( ak_error_ok, "the 2nd test from GOST R 34.22-2012 is Ok", __func__ );
+             ak_error_message( ak_error_ok, __func__ , "the 2nd test from GOST R 34.22-2012 is Ok" );
   rbuff = ak_buffer_delete( rbuff );
   hbuff = ak_buffer_delete( hbuff );
 
@@ -908,14 +908,14 @@ struct streebog_ctx {
     hbuff =
         ak_buffer_new_hexstr( "3E7DEA7F2384B6C5A3D0E24AAA29C05E89DDD762145030EC22C71A6DB8B2C1F4" ));
   if( result != ak_true ) {
-    ak_error_message( ak_error_not_equal_data,
-                                        "the \"lazy dog\" test from Wikipedia is wrong", __func__ );
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                                  "the \"lazy dog\" test from Wikipedia is wrong" );
      ak_log_set_message(( str = ak_buffer_to_hexstr( hbuff ))); free( str );
      ak_log_set_message(( str = ak_buffer_to_hexstr( rbuff ))); free( str );
      goto lab_exit;
   }
   if( audit >= ak_log_maximum )
-            ak_error_message( ak_error_ok, "the \"lazy dog\" test from Wikipedia is Ok", __func__ );
+            ak_error_message( ak_error_ok, __func__ , "the \"lazy dog\" test from Wikipedia is Ok" );
   rbuff = ak_buffer_delete( rbuff );
   hbuff = ak_buffer_delete( hbuff );
 
@@ -925,14 +925,14 @@ struct streebog_ctx {
     hbuff =
         ak_buffer_new_hexstr( "36816A824DCBE7D6171AA58500741F2EA2757AE2E1784AB72C5C3C6C198D71DA" ));
   if( result != ak_true ) {
-    ak_error_message( ak_error_not_equal_data,
-                             "the \"lazy dog with point\" test from Wikipedia is wrong", __func__ );
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                             "the \"lazy dog with point\" test from Wikipedia is wrong" );
     ak_log_set_message(( str = ak_buffer_to_hexstr( hbuff ))); free( str );
     ak_log_set_message(( str = ak_buffer_to_hexstr( rbuff ))); free( str );
     goto lab_exit;
   }
-  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok,
-                                "the \"lazy dog with point\" test from Wikipedia is Ok", __func__ );
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                "the \"lazy dog with point\" test from Wikipedia is Ok" );
   rbuff = ak_buffer_delete( rbuff );
   hbuff = ak_buffer_delete( hbuff );
 
@@ -942,13 +942,13 @@ struct streebog_ctx {
     hbuff =
         ak_buffer_new_hexstr( "3F539A213E97C802CC229D474C6AA32A825A360B2A933A949FD925208D9CE1BB" ));
   if( result != ak_true ) {
-    ak_error_message( ak_error_not_equal_data, "the zero length vector test is wrong", __func__ );
+    ak_error_message( ak_error_not_equal_data, __func__ , "the zero length vector test is wrong" );
      ak_log_set_message(( str = ak_buffer_to_hexstr( hbuff ))); free( str );
      ak_log_set_message(( str = ak_buffer_to_hexstr( rbuff ))); free( str );
      goto lab_exit;
   }
-  if( audit >= ak_log_maximum )
-                     ak_error_message( ak_error_ok, "the zero length vector test is Ok", __func__ );
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                                             "the zero length vector test is Ok" );
  lab_exit:
   ctx = ak_hash_delete( ctx );
   rbuff = ak_buffer_delete( rbuff );
@@ -971,7 +971,7 @@ struct streebog_ctx {
 
  /* создаем контекст функции хеширования */
   if((ctx = ak_hash_new_streebog512( )) == NULL ) {
-    ak_error_message( ak_error_get_value(), "wrong creation of hash function context", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "wrong creation of hash function context" );
     result = ak_false;
     goto lab_exit;
   }
@@ -982,14 +982,14 @@ struct streebog_ctx {
     hbuff =
         ak_buffer_new_hexstr( "1B54D01A4AF5B9D5CC3D86D68D285462B19ABC2475222F35C085122BE4BA1FFA00AD30F8767B3A82384C6574F024C311E2A481332B08EF7F41797891C1646F48" ));
   if( result != ak_true ) {
-    ak_error_message( ak_error_not_equal_data,
-                                          "the 1st test from GOST R 34.22-2012 is wrong", __func__ );
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                          "the 1st test from GOST R 34.22-2012 is wrong" );
     ak_log_set_message(( str = ak_buffer_to_hexstr( hbuff ))); free( str );
     ak_log_set_message(( str = ak_buffer_to_hexstr( rbuff ))); free( str );
     goto lab_exit;
   }
   if( audit >= ak_log_maximum )
-             ak_error_message( ak_error_ok, "the 1st test from GOST R 34.22-2012 is Ok", __func__ );
+             ak_error_message( ak_error_ok, __func__ , "the 1st test from GOST R 34.22-2012 is Ok" );
   rbuff = ak_buffer_delete( rbuff );
   hbuff = ak_buffer_delete( hbuff );
 
@@ -999,14 +999,14 @@ struct streebog_ctx {
     hbuff =
         ak_buffer_new_hexstr( "1E88E62226BFCA6F9994F1F2D51569E0DAF8475A3B0FE61A5300EEE46D961376035FE83549ADA2B8620FCD7C496CE5B33F0CB9DDDC2B6460143B03DABAC9FB28" ));
   if( result != ak_true ) {
-    ak_error_message( ak_error_not_equal_data,
-                                          "the 2nd test from GOST R 34.22-2012 is wrong", __func__ );
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                          "the 2nd test from GOST R 34.22-2012 is wrong" );
     ak_log_set_message(( str = ak_buffer_to_hexstr( hbuff ))); free( str );
     ak_log_set_message(( str = ak_buffer_to_hexstr( rbuff ))); free( str );
     goto lab_exit;
   }
   if( audit >= ak_log_maximum )
-             ak_error_message( ak_error_ok, "the 2nd test from GOST R 34.22-2012 is Ok", __func__ );
+             ak_error_message( ak_error_ok, __func__ , "the 2nd test from GOST R 34.22-2012 is Ok" );
   rbuff = ak_buffer_delete( rbuff );
   hbuff = ak_buffer_delete( hbuff );
 
@@ -1016,13 +1016,13 @@ struct streebog_ctx {
     hbuff =
         ak_buffer_new_hexstr( "8E945DA209AA869F0455928529BCAE4679E9873AB707B55315F56CEB98BEF0A7362F715528356EE83CDA5F2AAC4C6AD2BA3A715C1BCD81CB8E9F90BF4C1C1A8A" ));
   if( result != ak_true ) {
-    ak_error_message( ak_error_not_equal_data, "the zero length vector test is wrong", __func__ );
+    ak_error_message( ak_error_not_equal_data, __func__ , "the zero length vector test is wrong" );
     ak_log_set_message(( str = ak_buffer_to_hexstr( hbuff ))); free( str );
     ak_log_set_message(( str = ak_buffer_to_hexstr( rbuff ))); free( str );
     goto lab_exit;
   }
   if( audit >= ak_log_maximum )
-                     ak_error_message( ak_error_ok, "the zero length vector test is Ok", __func__ );
+                     ak_error_message( ak_error_ok, __func__ , "the zero length vector test is Ok" );
  lab_exit:
   ctx = ak_hash_delete( ctx );
   rbuff = ak_buffer_delete( rbuff );

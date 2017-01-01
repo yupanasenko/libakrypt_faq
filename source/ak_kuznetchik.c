@@ -242,11 +242,11 @@
 
  /* выполняем стандартные проверки */
   if( key == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to secret key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to secret key" );
     return ak_error_null_pointer;
   }
   if( key->data == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to internal data", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to internal data" );
     return ak_error_null_pointer;
   }
 
@@ -272,29 +272,29 @@
 
  /* выполняем стандартные проверки */
   if( key == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to secret key", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to secret key" );
     return ak_error_null_pointer;
   }
   if( key->key == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using undefined key buffer", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using undefined key buffer" );
     return ak_error_undefined_value;
   }
   if( key->mask == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using undefined mask buffer", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using undefined mask buffer" );
     return ak_error_undefined_value;
   }
   if( key->generator == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using undefined random generator", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using undefined random generator" );
     return ak_error_null_pointer;
   }
   if( key->check_icode( key ) != ak_true ) {
-    ak_error_message( ak_error_wrong_key_icode, "using key with wrong integrity code", __func__ );
+    ak_error_message( ak_error_wrong_key_icode, __func__ , "using key with wrong integrity code" );
       return ak_error_wrong_key_icode;
   }
 
   /* готовим память для переменных */
   if(( key->data = malloc( sizeof( struct kuznetchik_ctx ))) == NULL ) {
-     ak_error_message( ak_error_out_of_memory, "wrong allocation of internal data", __func__ );
+     ak_error_message( ak_error_out_of_memory, __func__ , "wrong allocation of internal data" );
      return ak_error_out_of_memory;
   }
   kdata = ( struct kuznetchik_ctx * ) key->data;
@@ -305,22 +305,22 @@
 
   /* создаем необходимые массивы данных */
   if(( kdata->encryptkey = ak_buffer_new_size( sizeof( ak_kuz_key ))) == NULL ) {
-    ak_error_message( ak_error_get_value(), "wrong allocation of encrypt keys memory", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "wrong allocation of encrypt keys memory" );
     ak_cipher_key_kuznetchik_delete_keys( key );
     return ak_error_out_of_memory;
   }
   if(( kdata->decryptkey = ak_buffer_new_size( sizeof( ak_kuz_key ))) == NULL ) {
-    ak_error_message( ak_error_get_value(), "wrong allocation of decrypt keys memory", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "wrong allocation of decrypt keys memory" );
     ak_cipher_key_kuznetchik_delete_keys( key );
     return ak_error_out_of_memory;
   }
   if(( kdata->encryptmask = ak_buffer_new_random( key->generator, sizeof( ak_kuz_key ))) == NULL ) {
-    ak_error_message( ak_error_get_value(), "wrong allocation of encrypt masks memory", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "wrong allocation of encrypt masks memory" );
     ak_cipher_key_kuznetchik_delete_keys( key );
     return ak_error_out_of_memory;
   }
   if(( kdata->decryptmask = ak_buffer_new_random( key->generator, sizeof( ak_kuz_key ))) == NULL ) {
-    ak_error_message( ak_error_get_value(), "wrong allocation of decrypt masks memory", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "wrong allocation of decrypt masks memory" );
     ak_cipher_key_kuznetchik_delete_keys( key );
     return ak_error_out_of_memory;
   }
@@ -588,12 +588,12 @@
 
  /* вначале маскируем ключ */
   if( error != ak_error_ok ) {
-   ak_error_message( error, "wrong key remasking", __func__ );
+   ak_error_message( error, __func__ , "wrong key remasking" );
    return error;
   };
  /* проверяем наличие развертки ключа */
   if( key->data == NULL ) {
-    ak_error_message( ak_error_undefined_value, "using context with non initialized data", __func__ );
+    ak_error_message( ak_error_undefined_value, __func__ , "using context with non initialized data" );
     return ak_error_undefined_value;
   }
 
@@ -601,7 +601,7 @@
   kdata = ( struct kuznetchik_ctx * ) key->data;
   keylen = ak_buffer_get_size( kdata->encryptkey );
   if(( newmask = ak_buffer_new_random( key->generator, keylen )) == NULL ) {
-     ak_error_message( ak_error_out_of_memory, "wrong mask buffer generation", __func__ );
+     ak_error_message( ak_error_out_of_memory, __func__ , "wrong mask buffer generation" );
      return ak_error_out_of_memory;
    }
  /* накладываем маску */
@@ -617,7 +617,7 @@
 
  /* создаем новый буффер */
   if(( newmask = ak_buffer_new_random( key->generator, keylen )) == NULL ) {
-     ak_error_message( ak_error_out_of_memory, "wrong mask buffer generation", __func__ );
+     ak_error_message( ak_error_out_of_memory, __func__ , "wrong mask buffer generation" );
      return ak_error_out_of_memory;
   }
  /* накладываем маску */
@@ -652,12 +652,12 @@
 
  /* создаем ключ алгоритма шифрования и определяем его методы */
   if(( ckey = ak_cipher_key_new()) == NULL ) {
-     ak_error_message( ak_error_null_pointer, "incorrect memory allocation", __func__ );
+     ak_error_message( ak_error_null_pointer, __func__ , "incorrect memory allocation" );
      return NULL;
   }
  /* создаем область для хранения ключевых данных */
   if(( ckey->key->key = ak_buffer_new_function_size( malloc, free, 32 )) == NULL ) {
-    ak_error_message( ak_error_get_value(), "incorrect memory allocation for key buffer", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect memory allocation for key buffer" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  /* устанавливаем OID алгоритма шифрования */
@@ -668,7 +668,7 @@
   ckey->block_size = 16;  /* длина блока для алгоритма Кузнечик равна 128 бит */
  /* присваиваем ключу уникальный номер */
   if( ak_skey_assign_unique_number( ckey->key ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "incorrect calculation of unique key number", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect calculation of unique key number" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
 
@@ -709,22 +709,23 @@
 
  /* проверяем входной буффер */
   if( buff == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to buffer", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to buffer" );
     return NULL;
   }
  /* создаем контекст ключа */
   if(( ckey = ak_cipher_key_new_kuznetchik()) == NULL ) {
-     ak_error_message( ak_error_get_value(), "incorrect creation of magma secret key", __func__ );
+     ak_error_message( ak_error_get_value(), __func__ ,
+                                             "incorrect creation of kuznetchik secret key" );
      return NULL;
   }
  /* присваиваем ключевой буффер */
   if( ak_skey_assign_buffer( ckey->key, buff ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "incorrect assigning of key buffer", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect assigning of key buffer" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  /* инициализируем раундовые ключи */
   if( ckey->init_keys( ckey->key ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "incorrect initialization of round keys", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect initialization of round keys" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  /* выводим сообщение о факте создания ключа */
@@ -732,7 +733,7 @@
                                "created a secret key %s", ak_buffer_get_str(ckey->key->number ));
  /* закрываем доступ к секретному ключу */
   if( ak_skey_lock( ckey->key ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "incorrect locking of secret key", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect locking of secret key" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  return ckey;
@@ -745,33 +746,33 @@
 
  /* проверяем входной буффер */
   if( generator == NULL ) {
-    ak_error_message( ak_error_null_pointer, "using a null pointer to random generator", __func__ );
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to random generator" );
     return NULL;
   }
  /* создаем контекст ключа */
   if(( ckey = ak_cipher_key_new_kuznetchik()) == NULL ) {
-    ak_error_message( ak_error_get_value(), "incorrect creation of magma secret key", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect creation of kuznetchik secret key" );
     return NULL;
   }
  /* присваиваем случайные данные, выработанные генератором */
   if(( ak_random_ptr( generator,
     ak_buffer_get_ptr( ckey->key->key ), ak_buffer_get_size( ckey->key->key ))) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "incorrect generation a random key data", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect generation a random key data" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  /* накладываем маску */
   if( ckey->key->set_mask( ckey->key ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "wrong secret key masking", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "wrong secret key masking" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  /* вычисляем контрольную сумму */
   if( ckey->key->set_icode( ckey->key ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "wrong calculation of integrity code", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "wrong calculation of integrity code" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  /* инициализируем раундовые ключи */
   if( ckey->init_keys( ckey->key ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "incorrect initialization of round keys", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect initialization of round keys" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  /* выводим сообщение о факте создания ключа */
@@ -779,7 +780,7 @@
                               "created a secret key %s", ak_buffer_get_str(ckey->key->number ));
  /* закрываем доступ к секретному ключу */
   if( ak_skey_lock( ckey->key ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), "incorrect locking of secret key", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect locking of secret key" );
     return ( ckey = ak_cipher_key_delete( ckey ));
   }
  return ckey;
@@ -818,63 +819,64 @@
  /* 1. Выполняем тестовый пример из ГОСТ 34.12-2015 */
   if(( ckey = ak_cipher_key_new_kuznetchik_buffer(
                                   ak_buffer_new_ptr( test3412_key, 32, ak_false ))) == NULL ) {
-    ak_error_message( ak_error_get_value(), "wrong creation of secret key", __func__ );
+    ak_error_message( ak_error_get_value(), __func__ , "wrong creation of secret key" );
     return ak_false;
    }
    memset( result, 0, 16 );
    ckey->encrypt( ckey->key, in, result );
    if( memcmp( result, out, 16 ) != 0  ) {
-     ak_error_message( ak_error_not_equal_data,
-                     "the one block encryption test from GOST R 34.12-2015 is wrong", __func__ );
+     ak_error_message( ak_error_not_equal_data, __func__ ,
+                               "the one block encryption test from GOST R 34.12-2015 is wrong" );
      ak_log_set_message(( str = ak_ptr_to_hexstr( result, 16, ak_false ))); free( str );
      ak_log_set_message(( str = ak_ptr_to_hexstr( out, 16, ak_false ))); free( str );
      ckey = ak_cipher_key_delete( ckey );
      return ak_false;
    }
-   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok,
-                        "the one block encryption test from GOST R 34.12-2015 is Ok", __func__ );
+   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                  "the one block encryption test from GOST R 34.12-2015 is Ok" );
    memset( result, 0, 16 );
    ckey->decrypt( ckey->key, out, result );
    if( memcmp( result, in, 16 ) != 0 ) {
-     ak_error_message( ak_error_not_equal_data,
-                     "the one block decryption test from GOST R 34.12-2015 is wrong", __func__ );
+     ak_error_message( ak_error_not_equal_data, __func__ ,
+                               "the one block decryption test from GOST R 34.12-2015 is wrong" );
      ak_log_set_message(( str = ak_ptr_to_hexstr( result, 16, ak_false ))); free( str );
      ak_log_set_message(( str = ak_ptr_to_hexstr( in, 16, ak_false ))); free( str );
      ckey = ak_cipher_key_delete( ckey );
      return ak_false;
    }
-   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok,
-                        "the one block decryption test from GOST R 34.12-2015 is Ok", __func__ );
+   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                  "the one block decryption test from GOST R 34.12-2015 is Ok" );
 
   /* 2. Выполняем пример из ГОСТ 34.13-2015 для режима простой замены (ECB) */
    memset( result, 0, 64 );
    ak_cipher_key_encrypt_ecb( ckey, inlong, result, 64 );
    if( memcmp( outecb, result, 64 ) != 0 ) {
-     ak_error_message( ak_error_not_equal_data,
-                        "the ecb mode encryption test from GOST 34.13-2015 is wrong", __func__ );
+     ak_error_message( ak_error_not_equal_data, __func__ ,
+                                  "the ecb mode encryption test from GOST 34.13-2015 is wrong" );
      ak_log_set_message(( str = ak_ptr_to_hexstr( result, 64, ak_false ))); free( str );
      ak_log_set_message(( str = ak_ptr_to_hexstr( outecb, 64, ak_false ))); free( str );
      ckey = ak_cipher_key_delete( ckey );
      return ak_false;
    }
-   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok,
-                           "the ecb mode encryption test from GOST 34.13-2015 is Ok", __func__ );
+   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                     "the ecb mode encryption test from GOST 34.13-2015 is Ok" );
    memset( result, 0, 64 );
    ak_cipher_key_decrypt_ecb( ckey, outecb, result, 64 );
    if( memcmp( inlong, result, 64 ) != 0 ) {
-     ak_error_message( ak_error_not_equal_data,
-                        "the ecb mode decryption test from GOST 34.13-2015 is wrong", __func__ );
+     ak_error_message( ak_error_not_equal_data, __func__ ,
+                                  "the ecb mode decryption test from GOST 34.13-2015 is wrong" );
      ak_log_set_message(( str = ak_ptr_to_hexstr( result, 64, ak_false ))); free( str );
      ak_log_set_message(( str = ak_ptr_to_hexstr( inlong, 64, ak_false ))); free( str );
      ckey = ak_cipher_key_delete( ckey );
      return ak_false;
    }
-   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok,
-                           "the ecb mode decryption test from GOST 34.13-2015 is Ok", __func__ );
+   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                     "the ecb mode decryption test from GOST 34.13-2015 is Ok" );
 
    ckey = ak_cipher_key_delete( ckey );
  return ak_true;
 }
+
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                ak_kuznetchik.c  */
 /* ----------------------------------------------------------------------------------------------- */

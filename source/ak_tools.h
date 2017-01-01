@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*   Copyright (c) 2014, 2015, 2016 by Axel Kenzo, axelkenzo@mail.ru                               */
+/*   Copyright (c) 2014 - 2017 by Axel Kenzo, axelkenzo@mail.ru                                    */
 /*   All rights reserved.                                                                          */
 /*                                                                                                 */
 /*   Redistribution and use in source and binary forms, with or without modification, are          */
@@ -24,12 +24,15 @@
 /*   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED  */
 /*   OF THE POSSIBILITY OF SUCH DAMAGE.                                                            */
 /*                                                                                                 */
-/*   ak_libakrypt.h                                                                                */
+/*   ak_tools.h                                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
 /*   Файл содержит описания служебных функций и переменных, не экспортруемых за пределы библиотеки */
 /* ----------------------------------------------------------------------------------------------- */
-#ifndef    __AK_LIBAKRYPT_H__
-#define    __AK_LIBAKRYPT_H__
+#ifndef    __AK_TOOLS_H__
+#define    __AK_TOOLS_H__
+
+/* ----------------------------------------------------------------------------------------------- */
+ #include <libakrypt.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Неэкспортируемая функция устанлвления уровня аудита */
