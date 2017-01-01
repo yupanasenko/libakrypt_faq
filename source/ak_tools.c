@@ -29,7 +29,6 @@
  #include <ak_oid.h>
  #include <ak_hash.h>
  #include <ak_skey.h>
- #include <ak_keylist.h>
  #include <ak_curves.h>
 
  #include <errno.h>
@@ -686,18 +685,6 @@ ak_bool ak_libakrypt_test_hash_functions( void )
    return ak_false;
  }
 
- /* тестируем функцию SHA-256 */
- if( ak_hash_test_sha256() != ak_true ) {
-   ak_error_message( ak_error_get_value(), __func__ , "incorrect sha256 testing" );
-   return ak_false;
- }
-
- /* тестируем функцию SHA-512 */
- if( ak_hash_test_sha512() != ak_true ) {
-   ak_error_message( ak_error_get_value(), __func__ , "incorrect sha512 testing" );
-   return ak_false;
- }
-
  if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "testing hash functions ended successfully" );
 return ak_true;
@@ -876,10 +863,6 @@ int ak_libakrypt_create( ak_function_log *logger )
  }
 
  /* инициализируем механизм обработки секретных ключей пользователей */
-//  if(( error = ak_keylist_create()) != ak_error_ok ) {
-//    ak_error_message( ak_error_get_value(), "secret key control mechanism not started", __func__ );
-//    return ak_false;
-//  }
 
  /* тестируем работу функций хеширования */
  if(( error = ak_libakrypt_test_hash_functions()) != ak_true ) {
@@ -908,11 +891,9 @@ int ak_libakrypt_destroy( void )
  if( error != ak_error_ok )
    ak_error_message( error, __func__ , "before destroing library holds an error" );
 
-//  ak_error_set_value( ak_error_ok );
-//  if( ak_keylist_destroy() != ak_error_ok )
-//    ak_error_message( ak_error_get_value(),
-//                             "secret key control mechanism not properly destroyed", __func__ );
+ /* деактивируем механизм обработки секретных ключей */
 
+ /* деактивируем механизм поддержки OID */
  ak_error_set_value( ak_error_ok );
  if( ak_oids_destroy() != ak_error_ok )
    ak_error_message( ak_error_get_value(), __func__ , "OID mechanism not properly destroyed" );

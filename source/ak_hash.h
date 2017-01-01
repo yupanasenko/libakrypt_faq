@@ -79,8 +79,6 @@
  ak_hash ak_hash_new( const size_t );
  ak_bool ak_hash_test_streebog256( void );
  ak_bool ak_hash_test_streebog512( void );
- ak_bool ak_hash_test_sha256( void );
- ak_bool ak_hash_test_sha512( void );
  ak_bool ak_hash_test_gosthash94( void );
 
 #endif

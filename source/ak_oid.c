@@ -86,10 +86,6 @@
  /* в начале, добавляем идентификаторы алгоритмов бесключевого хеширования */
   ak_oids_add_oid( ak_oid_new( hash_function, algorithm, "streebog256", "1.2.643.7.1.1.2.2", NULL ));
   ak_oids_add_oid( ak_oid_new( hash_function, algorithm, "streebog512", "1.2.643.7.1.1.2.3", NULL ));
-  ak_oids_add_oid( ak_oid_new( hash_function, algorithm,
-                                                       "sha2-256", "2.16.840.1.101.3.4.2.1", NULL ));
-  ak_oids_add_oid( ak_oid_new( hash_function, algorithm,
-                                                       "sha2-512", "2.16.840.1.101.3.4.2.3", NULL ));
   ak_oids_add_oid( ak_oid_new( hash_function, algorithm, "gosthash94", "1.2.643.2.2.9", NULL ));
 
   /* добавляем таблицы замен для функции хеширования ГОСТ Р 34.11-94 */
@@ -202,7 +198,7 @@
      if( strstr( ak_oid_get_name( global_oids_array.array[ idx ]), name ) != NULL )
        return ( const ak_oid ) global_oids_array.array[ idx ];
   }
-  ak_error_message( ak_error_oid_name , __func__ , "searching OID with wrong name" );
+  ak_error_message_fmt( ak_error_oid_name , __func__ , "searching OID with wrong name %s", name );
   return NULL;
 }
 
@@ -227,7 +223,7 @@
      if( strstr( ak_oid_get_id( global_oids_array.array[ idx ]), id ) != NULL )
        return ( const ak_oid ) global_oids_array.array[ idx ];
   }
-  ak_error_message( ak_error_oid_id, __func__ , "searching OID with wrong identifier" );
+  ak_error_message_fmt( ak_error_oid_id, __func__ , "searching OID with wrong identifier %s", id );
   return NULL;
 }
 

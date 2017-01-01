@@ -277,8 +277,6 @@
 
  if( !memcmp( ak_buffer_get_str( oid->name ), "streebog256", 11 )) return ak_hash_new_streebog256();
  if( !memcmp( ak_buffer_get_str( oid->name ), "streebog512", 11 )) return ak_hash_new_streebog512();
- if( !memcmp( ak_buffer_get_str( oid->name ), "sha2-256", 6 )) return ak_hash_new_sha256();
- if( !memcmp( ak_buffer_get_str( oid->name ), "sha2-512", 6 )) return ak_hash_new_sha512();
  if( !memcmp( ak_buffer_get_str( oid->name ), "gosthash94", 11 )) {
       return ak_hash_new_gosthash94( ak_oids_find_by_name( "id-gosthash94-CryptoPro-A-ParamSet" ));
  }

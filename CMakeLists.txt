@@ -19,7 +19,7 @@ cmake_minimum_required( VERSION 2.8 )
 project( libakrypt )
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 4 )
-set( MINOR_VERSION 25 )
+set( MINOR_VERSION 26 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -34,7 +34,6 @@ set( HEADERS source/ak_buffer.h
              source/ak_skey.h
              source/ak_parameters.h
              source/ak_tools.h
-             source/ak_keylist.h
              source/ak_mpzn.h
              source/ak_curves.h )
 set( SOURCES source/ak_tools.c
@@ -42,13 +41,11 @@ set( SOURCES source/ak_tools.c
              source/ak_oid.c
              source/ak_hash.c
              source/ak_streebog.c
-             source/ak_sha.c
              source/ak_gosthash.c
              source/ak_random.c
              source/ak_skey.c
              source/ak_magma.c
              source/ak_kuznetchik.c
-             source/ak_keylist.c
              source/ak_mpzn.c
              source/ak_curves.c )
 set( DOCS    doc/libakrypt.dox
@@ -96,8 +93,7 @@ set( EXAMPLES_LIST intro
                    hash-oids
                    random
                    dev-random
-                   wcurves
-                   encrypt-ecb )
+                   wcurves )
 foreach( programm ${EXAMPLES_LIST} )
     # сборка статических примеров
     add_executable( example-${programm} examples/example-${programm}.c )

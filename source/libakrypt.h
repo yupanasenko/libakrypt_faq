@@ -331,10 +331,6 @@
  dll_export ak_hash ak_hash_new_streebog256( void );
 /*! \brief Функция создает контекст алгоритма бесключевого хеширования ГОСТ Р 34.11-2012 */
  dll_export ak_hash ak_hash_new_streebog512( void );
-/*! \brief Функция создает контекст функции хеширования SHA2-256 */
- dll_export ak_hash ak_hash_new_sha256( void );
-/*! \brief Функция создает контекст функции хеширования SHA2-512 */
- dll_export ak_hash ak_hash_new_sha512( void );
 /*! \brief Получение длины хешкода алгоритма хеширования (в байтах) */
  dll_export size_t ak_hash_get_code_size( ak_hash );
 /*! \brief Получение длины блока обрабатываемых данных (в байтах) */
@@ -375,25 +371,6 @@
  dll_export int ak_random_ptr( ak_random, const ak_pointer, const size_t );
 /*! \brief Уничтожение генератора псевдо-случайных чисел */
  dll_export ak_pointer ak_random_delete( ak_pointer );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание случайного ключа алгоритма блочного шифрования Магма (ГОСТ Р 34.12-2015) */
- dll_export ak_key ak_key_new_magma( const char * );
-/*! \brief Создание случайного ключа алгоритма ГОСТ 28147-89 с заданной таблицей замен */
- dll_export ak_key ak_key_new_magma_oid( ak_oid , const char * );
-/*! \brief Создание случайного ключа алгоритма блочного шифрования Кузнечик (ГОСТ Р 34.12-2015) */
- dll_export ak_key ak_key_new_kuznetchik( const char * );
-/*! \brief Получение описания секретного ключа */
- dll_export const char *ak_key_get_description( ak_key );
-/*! \brief Получение ресурса секретного ключа */
- dll_export ak_uint32 ak_key_get_resource( ak_key );
-/*! \brief Получение номера секретного ключа */
- dll_export const char *ak_key_get_number( ak_key );
-
-/*! \brief Алгоритм зашифрования для блочного шифра в режиме простой замены (ГОСТ Р 34.13-2015) */
- dll_export int ak_key_encrypt_ecb( ak_key , ak_pointer , ak_pointer , size_t );
-/*! \brief Алгоритм расшифрования для блочного шифра в режиме простой замены (ГОСТ Р 34.13-2015) */
- dll_export int ak_key_decrypt_ecb( ak_key , ak_pointer , ak_pointer , size_t );
  
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей значение заданной области памяти */
