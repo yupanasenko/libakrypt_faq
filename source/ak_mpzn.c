@@ -89,7 +89,7 @@
     @return В случае успеха, функция возвращает ноль (\ref ak_error_ok). В противном случае,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- void ak_mpzn_set_ui( ak_uint64 *x, const size_t size, ak_uint64 value )
+ void ak_mpzn_set_ui( ak_uint64 *x, const size_t size, const ak_uint64 value )
 {
   memset( x, 0, size*sizeof( ak_uint64 ));
   x[0] = value;

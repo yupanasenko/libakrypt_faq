@@ -22,15 +22,18 @@ macro( try_append_c_flag _flag _append_to )
 endmacro( try_append_c_flag )
 
 # -------------------------------------------------------------------------------------------------- #
-set( CMAKE_BUILD_TYPE "Release" )
+#set( CMAKE_BUILD_TYPE "Release" )
 if( MSVC )
 # набор флагов для компиляторов семейства MSVC
+  try_append_c_flag( "/Ot" CMAKE_C_FLAGS )
+  try_append_c_flag( "/Ox" CMAKE_C_FLAGS )
+  try_append_c_flag( "/Ob2" CMAKE_C_FLAGS )
+  try_append_c_flag( "/Qpar" CMAKE_C_FLAGS )
   try_append_c_flag( "/W3" CMAKE_C_FLAGS )
   try_append_c_flag( "/TC" CMAKE_C_FLAGS )
   try_append_c_flag( "/arch:SSE2" CMAKE_C_FLAGS )
   try_append_c_flag( "/MD" CMAKE_C_FLAGS )
   try_append_c_flag( "/DNDEBUG" CMAKE_C_FLAGS )
-  try_append_c_flag( "/Ob2" CMAKE_C_FLAGS )
 else()
   # набор Unix'овых флагов
   try_append_c_flag( "-Wall" CMAKE_C_FLAGS )

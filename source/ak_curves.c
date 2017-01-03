@@ -136,7 +136,7 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_paramset params )
                                                "destroing null pointer to elliptic curve context" );
     return ak_error_null_pointer;
   }
-  ec->size = ec->d = ec->n = 0;
+  ec->size = 0; ec->d = 0; ec->n = 0;
   if( ec->a != NULL ) free( ec->a );
    else ak_error_message( destroy_error = ak_error_undefined_value, __func__ ,
                                          "destroing null pointer to elliptic curve coefficient A" );

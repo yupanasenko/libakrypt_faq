@@ -15,14 +15,14 @@
  /* 2. Создаем файл для тестирования */
  fp = fopen( "file2", "rb" );
  if( fp == NULL ) {
-   printf(" generation a %ldMB file, wait a few seconds ... ", mbsize ); fflush(stdout);
+   printf(" generation a %dMB file, wait a few seconds ... ", (int) mbsize ); fflush(stdout);
    fp = fopen("file2", "wb");
    for( idx = 0; idx < mbsize*1024; idx++ ) { // mbsize MB
       memset( memory, (ak_uint8)idx, 1024 );
       fwrite( memory, 1, 1024, fp );
    }
    fflush(fp);
- } else printf(" found file for testing with %ldMB size\n", mbsize );
+ } else printf(" found file for testing with %dMB size\n", (int) mbsize );
  fclose(fp);
  printf("\n");
 

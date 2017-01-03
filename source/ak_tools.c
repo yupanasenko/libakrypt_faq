@@ -364,9 +364,9 @@
     }
     if( i == -1 ) bdata[len] = ak_xconvert( hexstr[0] );
   }	else {
-        for( i = 0, len = 0; i < strlen( hexstr ); i += 2, len++ ) {
+        for( i = 0, len = 0; i < (int) strlen( hexstr ); i += 2, len++ ) {
            bdata[len] = (ak_xconvert( hexstr[i] ) << 4);
-           if( i < strlen( hexstr )-1 ) bdata[len] += ak_xconvert( hexstr[i+1] );
+           if( i < (int) strlen( hexstr )-1 ) bdata[len] += ak_xconvert( hexstr[i+1] );
         }
     }
  return ak_error_get_value();
