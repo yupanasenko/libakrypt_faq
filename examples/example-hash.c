@@ -17,7 +17,7 @@
            /* вычисляем хеш-код и помещаем его в буффер */
            ak_buffer buff = ak_hash_data( ctx, data, sizeof(data), NULL );
            printf(" length (in bytes): %lu\n", ak_hash_get_code_size(ctx));
-           printf(" code: %s\n", ak_buffer_to_hexstr(buff));
+           printf(" code: %s\n", str = ak_buffer_to_hexstr(buff));
 
            /* теперь удаляем память */
            free( str );

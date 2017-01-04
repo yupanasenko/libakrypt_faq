@@ -18,11 +18,11 @@
 \usepackage{textcomp}
 \usepackage[nointegrals]{wasysym}
 \usepackage[table]{xcolor}
+\usepackage{longtable}
 
 % NLS support packages
 \usepackage[T2A]{fontenc}
 \usepackage[russian]{babel}
-\usepackage{courier}
 \usepackage{amssymb}
 \usepackage{sectsty}
 
@@ -31,6 +31,15 @@
   \color{darkgray}%
 }
 \newcommand{\+}{\discretionary{\mbox{\scriptsize$\hookleftarrow$}}{}{}}
+%
+\renewenvironment{DoxyCode}{%
+  \par%
+  \scriptsize%
+  \begin{alltt}
+}{%
+  \end{alltt}%
+  \normalsize%
+}
 
 % Page & text layout
 \usepackage{geometry}

@@ -113,11 +113,28 @@
                                "1.2.643.7.1.2.1.1.0", (ak_pointer) &wcurve_gost_3410_2012_test256 ));
   ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-gost3410-2012-test512",
                                "1.2.643.7.1.2.1.2.0", (ak_pointer) &wcurve_gost_3410_2012_test512 ));
+
   /* рекомендации Росстандарта Р 50.1.114-2016
     ­ id-tc26-gost-3410-12-512-paramSetA,    1.2.643.7.1.2.1.2.1
      id-tc26-gost-3410-12-512-paramSetB,    1.2.643.7.1.2.1.2.2
     ­ id-tc26-gost-3410-2012-256-paramSetA,  1.2.643.7.1.2.1.1.1
-     id-tc26-gost-3410-2012-512-paramSetC,  1.2.643.7.1.2.1.2.3   */
+     id-tc26-gost-3410-2012-512-paramSetC,  1.2.643.7.1.2.1.2.3
+
+     а также КриптоПро (RFC 4357) */
+
+  ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-tc26-gost3410-2012-256-paramSetA",
+                    "1.2.643.7.1.2.1.1.1", (ak_pointer) &wcurve_tc26_gost_3410_2012_256_paramSetA ));
+  ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-cryptoPro-gost3410-2001-paramSetA",
+                                       "1.2.643.2.2.35.1", (ak_pointer) &wcurve_rfc4357_paramSetA ));
+  ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-cryptoPro-gost3410-2001-paramSetB",
+                                       "1.2.643.2.2.35.2", (ak_pointer) &wcurve_rfc4357_paramSetB ));
+  ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-cryptoPro-gost3410-2001-paramSetC",
+                                       "1.2.643.2.2.35.3", (ak_pointer) &wcurve_rfc4357_paramSetC ));
+  ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-cryptoPro-2001DH-paramSet",
+                                       "1.2.643.2.2.36.0", (ak_pointer) &wcurve_rfc4357_paramSetA ));
+
+  ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-axel-gost3410-2012-256-paramSetA",
+                "1.2.643.2.52.1.25.1.2.1", (ak_pointer) &wcurve_axel_gost_3410_2012_256_paramSetA ));
 
   ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-tc26-gost3410-2012-512-paramSetA",
                     "1.2.643.7.1.2.1.2.1", (ak_pointer) &wcurve_tc26_gost_3410_2012_512_paramSetA ));
