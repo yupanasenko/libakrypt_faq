@@ -377,7 +377,7 @@
 /*! \brief Тип данных для хранения значений опций библиотеки */
 static struct libakrypt_options_ctx {
  /*! \brief Уровень вывода сообщений выполнения функций библиотеки */
-  int log_level;
+  ak_uint32 log_level;
  /*! \brief Ресурс использования ключа (в блоках) алгоритма ГОСТ 28147-89 (Магма) */
   ak_uint32 cipher_key_magma_block_resource;
  /*! \brief Ресурс использования ключа (в блоках) алгоритма ГОСТ 34.12-2015 (Кузнечик) */
@@ -496,7 +496,24 @@ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-ak_bool ak_libakrypt_load_options( void )
+ int ak_libakrypt_get_option( const char *string, const char *field, ak_uint32 *value )
+{
+  char *ptr = NULL, *endptr = NULL;
+  if(( ptr = strstr( string, field )) != NULL ) {
+    signed long val = (ak_uint32) strtol( ptr + strlen(field), &endptr, 10 ); 
+    if(( errno == ERANGE && ( val == LONG_MAX || val == LONG_MIN )) || (errno != 0 && val == 0)) {
+      ak_error_message_fmt( ak_error_undefined_value, __func__, 
+                                                       "%s for field %s", strerror( errno ), field );
+    } else { 
+             *value = ( ak_uint32 ) val;
+             return ak_true;
+           }
+  } 
+ return ak_false;
+}  
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_libakrypt_load_options( void )
 {
  size_t idx = 0;
  int fd = 0, off = 0;;
@@ -522,6 +539,7 @@ ak_bool ak_libakrypt_load_options( void )
    return ak_false;
  }
 
+ /* нарезаем входные на строки длиной не более чем 1022 символа */
  memset( localbuffer, 0, 1024 );
  for( idx = 0; idx < (size_t) st.st_size; idx++ ) {
     if( read( fd, &ch, 1 ) != 1 ) {
@@ -532,18 +550,38 @@ ak_bool ak_libakrypt_load_options( void )
     if( off > 1022 ) {
       ak_error_message( ak_error_read_data, __func__ ,
                                   "libakrypt.conf has a line with more than 1022 symbols" );
-      close(fd);
+      close( fd );
       return ak_false;
     }
    if( ch == '\n' ) {
-
-     printf("%s\n", localbuffer );
+     if((strlen(localbuffer) != 0 ) && ( strchr( localbuffer, '#' ) == 0 )) {
+       ak_uint32 value;
+       /* устанавливаем уровень аудита */
+       if( ak_libakrypt_get_option( localbuffer, "log_level = ", &value )) 
+                                                                libakrypt_options.log_level = value; 
+       /* устанавливаем максимальное число блоков обрабатываемых данных для Магмы (ГОСТ 28147-89) */
+       if( ak_libakrypt_get_option( localbuffer, "magma_block_resource = ", &value )) 
+                                          libakrypt_options.cipher_key_magma_block_resource = value; 
+       /* устанавливаем максимальное число блоков обрабатываемых данных для шифра Кузнечик */
+       if( ak_libakrypt_get_option( localbuffer, "kuznetchik_block_resource = ", &value )) 
+                                     libakrypt_options.cipher_key_kuznetchik_block_resource = value; 
+     } /* далее мы очищаем строку независимо от ее содержимого */
      off = 0;
      memset( localbuffer, 0, 1024 );
-
    } else localbuffer[off++] = ch;
  }
 
+ /* выводим сообщение об установленных параметрах библиотеки */
+ if( libakrypt_options.log_level > ak_log_standard ) {
+    ak_error_message_fmt( ak_error_ok, __func__, 
+                                   "log level is %u", libakrypt_options.log_level );
+    ak_error_message_fmt( ak_error_ok, __func__, 
+                                   "magma block ciper resource is %u", 
+                                                 libakrypt_options.cipher_key_magma_block_resource );
+    ak_error_message_fmt( ak_error_ok, __func__, 
+                                   "kuznetchik block ciper resource is %u", 
+                                            libakrypt_options.cipher_key_kuznetchik_block_resource );
+ }
  /* закрываем все и выходим */
  close(fd);
  return ak_true;
