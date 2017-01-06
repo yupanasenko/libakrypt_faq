@@ -498,11 +498,10 @@ return ak_error_ok;
 /* ----------------------------------------------------------------------------------------------- */
 ak_bool ak_libakrypt_load_options( void )
 {
+ size_t idx = 0;
+ int fd = 0, off = 0;;
  char ch;
- size_t idx;
- int fd = 0, off = 0;
  struct stat st;
- char *ptr = NULL;
  char localbuffer[1024], filename[FILENAME_MAX];
 
 /* создаем имя файла */
@@ -522,89 +521,32 @@ ak_bool ak_libakrypt_load_options( void )
    ak_error_message( ak_error_access_file, __func__ , strerror( errno ));
    return ak_false;
  }
-/* считываем данные и побайтно формуруем строки с  */
+
  memset( localbuffer, 0, 1024 );
  for( idx = 0; idx < (size_t) st.st_size; idx++ ) {
-   if( read( fd, &ch, 1 ) != 1 ) {
-     ak_error_message( ak_error_read_data, __func__ , "unexpected end of libakrypt.conf" );
-     close(fd);
-     return ak_false;
-   }
-   if( off > 1022 ) {
-     ak_error_message( ak_error_read_data, __func__ ,
-                              "libakrypt.conf has a line with more than 1022 symbols" );
-     close(fd);
-     return ak_false;
-   }
-   if( ch == 10 ) {
-    /* мы обрабатываем только ненулевые строки без символа # */
-     if(( off != 0 ) && ( strchr( localbuffer, '#' ) == NULL )) {
-       /* проверяем уровень аудита */
-       if(( ptr = strstr( localbuffer, "log_level = " )) != NULL ) {
-         char *endptr = NULL;
-         int value = (int) strtol( ptr+12, &endptr, 10 );
-         if( *endptr != '\0' ) {
-           ak_error_message( ak_error_undefined_value, __func__ ,
-                                            "unexpected value for variable log_level" );
-           close(fd);
-           return ak_false;
-         }
-         if( value < ak_log_none || value > ak_log_maximum ) {
-           ak_error_message( ak_error_undefined_value, __func__ ,
-                                                 "wrong value for variable log_level" );
-           close(fd);
-           return ak_false;
-         }
-         libakrypt_options.log_level = value;
-       }
-       /* проверяем ресурс для Магмы */
-       if(( ptr = strstr( localbuffer, "magma_block_resource = " )) != NULL ) {
-         char *endptr = NULL;
-         long int value = strtol( ptr+23, &endptr, 10 );
-         if( *endptr != '\0' ) {
-           ak_error_message( ak_error_undefined_value, __func__ ,
-                                 "unexpected value for variable magma_block_resource" );
-           close(fd);
-           return ak_false;
-         }
-         if( value < 1024 || value > 0xFFFFFFFF ) {
-           ak_error_message( ak_error_undefined_value, __func__ ,
-                                      "wrong value for variable magma_block_resource" );
-           close(fd);
-           return ak_false;
-         }
-         libakrypt_options.cipher_key_magma_block_resource = value;
-         if( libakrypt_options.log_level == ak_log_maximum ) ak_error_message( ak_error_ok,
-                                  __func__ , "reading a new value of block_magma_resoure is Ok" );
-       }
-       /* проверяем ресурс для Кузнечика */
-       if(( ptr = strstr( localbuffer, "kuznetchik_block_resource = " )) != NULL ) {
-         char *endptr = NULL;
-         long int value = strtol( ptr+28, &endptr, 10 );
-         if( *endptr != '\0' ) {
-           ak_error_message( ak_error_undefined_value, __func__ ,
-                                     "unexpected value for variable kuznetchik_block_resource" );
-           close(fd);
-           return ak_false;
-         }
-         if( value < 1024 || value > 0xFFFFFFFF ) {
-           ak_error_message( ak_error_undefined_value, __func__ ,
-                                          "wrong value for variable kuznetchik_block_resource" );
-           close(fd);
-           return ak_false;
-         }
-         libakrypt_options.cipher_key_kuznetchik_block_resource = value;
-         if( libakrypt_options.log_level == ak_log_maximum ) ak_error_message( ak_error_ok,
-                            __func__ , "reading a new value of block_kuznetchik_resoure is Ok" );
-       }
-     }
-     memset( localbuffer, 0, 1024 );
+    if( read( fd, &ch, 1 ) != 1 ) {
+      ak_error_message( ak_error_read_data, __func__ , "unexpected end of libakrypt.conf" );
+      close(fd);
+      return ak_false;
+    }
+    if( off > 1022 ) {
+      ak_error_message( ak_error_read_data, __func__ ,
+                                  "libakrypt.conf has a line with more than 1022 symbols" );
+      close(fd);
+      return ak_false;
+    }
+   if( ch == '\n' ) {
+
+     printf("%s\n", localbuffer );
      off = 0;
+     memset( localbuffer, 0, 1024 );
+
    } else localbuffer[off++] = ch;
  }
-/* закрываем все и выходим */
+
+ /* закрываем все и выходим */
  close(fd);
-return ak_true;
+ return ak_true;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

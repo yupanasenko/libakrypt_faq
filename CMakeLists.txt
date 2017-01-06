@@ -24,6 +24,10 @@ set( MINOR_VERSION 26 )
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 
+option( LIBAKRYPT_STATIC_LIB "Build the static library" ON )
+option( LIBAKRYPT_SHARED_LIB "Build the shared library" OFF )
+option( LIBAKRYPT_GMP_TESTS "Build test programs with libGMP" OFF)
+
 # -------------------------------------------------------------------------------------------------- #
 # описание исходных кодов
 set( MAIN_HEADER source/libakrypt.h )
@@ -69,55 +73,62 @@ include( FindRelations )
 # -------------------------------------------------------------------------------------------------- #
 # сборка библиотек
 include_directories( "./source" )
-if( LIBAKRYPT_OPTIONS_PATH )
-    message("-- Path for libakrypt.conf is ${LIBAKRYPT_OPTIONS_PATH}")
-    add_compile_options( -DLIBAKRYPT_OPTIONS_PATH="${LIBAKRYPT_OPTIONS_PATH}" )
+if( LIBAKRYPT_CONF )
+    message("-- Path for libakrypt.conf is ${LIBAKRYPT_CONF}")
+    add_compile_options( -DLIBAKRYPT_OPTIONS_PATH="${LIBAKRYPT_CONF}" )
 endif()
 add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
 #
-add_library( akrypt-shared SHARED ${MAIN_HEADER} ${SOURCES} )
-set_target_properties( akrypt-shared PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
-target_link_libraries( akrypt-shared ${PTHREAD_LIB} )
-add_library( akrypt-static STATIC ${MAIN_HEADER} ${SOURCES} )
-set_target_properties( akrypt-static PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
+if( LIBAKRYPT_SHARED_LIB )
+  add_library( akrypt-shared SHARED ${MAIN_HEADER} ${SOURCES} )
+  set_target_properties( akrypt-shared PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
+  target_link_libraries( akrypt-shared ${PTHREAD_LIB} )
+endif()
+#
+if( LIBAKRYPT_STATIC_LIB )
+  add_library( akrypt-static STATIC ${MAIN_HEADER} ${SOURCES} )
+  set_target_properties( akrypt-static PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
+endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # сборка тестовых примеров
-set( EXAMPLES_LIST intro
-                   log
-                   oid
-                   oid-magma
-                   hash
-                   hash-parts
-                   hash-oids
-                   random
-                   dev-random
-                   wcurves )
-foreach( programm ${EXAMPLES_LIST} )
-    # сборка статических примеров
-    add_executable( example-${programm} examples/example-${programm}.c )
-    target_link_libraries( example-${programm} akrypt-static ${PTHREAD_LIB} )
-endforeach()
+if( LIBAKRYPT_STATIC_LIB )
+  set( EXAMPLES_LIST intro
+                     log
+                     oid
+                     oid-magma
+                     hash
+                     hash-parts
+                     hash-oids
+                     random
+                     dev-random )
+  foreach( programm ${EXAMPLES_LIST} )
+      # сборка статических примеров
+      add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
+      target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static ${PTHREAD_LIB} )
+  endforeach()
+endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # поиск gmp для отладки и тестирования арифметических операций
-find_library( GMPLIB gmp )
-if( GMPLIB )
-   find_file( GMPLIB_H gmp.h )
-   if( GMPLIB_H )
-     message("-- Searching libgmp for special arithmetic tests is done")
-     set( ARITHMETIC_TESTS_LIST mpzn-convert-to-gmp
-                                mpzn-convert-to-hexstr
-                                mpzn-random-modulo
-                                mpzn-arithmetic )
-     foreach( programm ${ARITHMETIC_TESTS_LIST} )
+if( LIBAKRYPT_GMP_TESTS )
+  find_library( GMPLIB gmp )
+  if( GMPLIB )
+    find_file( GMPLIB_H gmp.h )
+    if( GMPLIB_H )
+      message("-- Searching libgmp for special arithmetic tests is done")
+      set( ARITHMETIC_TESTS_LIST mpzn-convert-to-gmp
+                                 mpzn-convert-to-hexstr
+                                 mpzn-random-modulo
+                                 mpzn-arithmetic )
+      foreach( programm ${ARITHMETIC_TESTS_LIST} )
          # сборка статических примеров
          add_executable( example-${programm} examples/example-${programm}.c )
          target_link_libraries( example-${programm} akrypt-static ${PTHREAD_LIB} gmp )
-     endforeach()
-   endif()
+      endforeach()
+    endif()
+  endif()
 endif()
-
 # -------------------------------------------------------------------------------------------------- #
 # очистка служебной информации из статических примеров
 add_custom_target( strip strip --strip-all ${CMAKE_BINARY_DIR}/example-* )
@@ -130,12 +141,20 @@ message("-- Compiler options is ${CMAKE_C_FLAGS}" )
 # -------------------------------------------------------------------------------------------------- #
 # инсталляция библиотеки (только для UNIX)
 if( CMAKE_HOST_UNIX )
-    install( TARGETS akrypt-shared akrypt-static
+  if( LIBAKRYPT_SHARED_LIB )
+    install( TARGETS akrypt-shared
              LIBRARY DESTINATION lib
              ARCHIVE DESTINATION lib
            )
-    install( FILES ${MAIN_HEADER} DESTINATION include )
-    install( FILES libakrypt.conf DESTINATION ${LIBAKRYPT_OPTIONS_PATH} )
+  endif()
+  if( LIBAKRYPT_STATIC_LIB )
+    install( TARGETS akrypt-static
+             LIBRARY DESTINATION lib
+             ARCHIVE DESTINATION lib
+           )
+  endif()
+  install( FILES ${MAIN_HEADER} DESTINATION include )
+  install( FILES libakrypt.conf DESTINATION ${LIBAKRYPT_CONF} )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
