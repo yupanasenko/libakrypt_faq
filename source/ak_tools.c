@@ -45,6 +45,7 @@
 
  #ifndef _WIN32
   #include <unistd.h>
+  #include <limits.h>
  #else
   #include <windows.h>
  #endif
@@ -373,16 +374,16 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тип данных для хранения значений опций библиотеки */
-static struct libakrypt_options_ctx {
+ static struct libakrypt_options_ctx {
  /*! \brief Уровень вывода сообщений выполнения функций библиотеки */
   ak_uint32 log_level;
  /*! \brief Ресурс использования ключа (в блоках) алгоритма ГОСТ 28147-89 (Магма) */
   ak_uint32 cipher_key_magma_block_resource;
  /*! \brief Ресурс использования ключа (в блоках) алгоритма ГОСТ 34.12-2015 (Кузнечик) */
   ak_uint32 cipher_key_kuznetchik_block_resource;
-} libakrypt_options =
+}
+ libakrypt_options =
 {
   ak_log_standard,
   4194304, /* количество блоков для ГОСТ 28147-89, для объема в 250 Mb (по 64 бита) */
@@ -500,7 +501,12 @@ return ak_error_ok;
 {
   char *ptr = NULL, *endptr = NULL;
   if(( ptr = strstr( string, field )) != NULL ) {
-    signed long val = (ak_uint32) strtol( ptr + strlen(field), &endptr, 10 ); 
+    signed long val = (ak_uint32) strtol( ptr += strlen(field), &endptr, 10 );
+    if(( endptr != NULL ) && ( ptr == endptr )) {
+      ak_error_message_fmt( ak_error_undefined_value, __func__,
+			                        "using an undefinded value for variable %s", field );
+      return ak_false;
+    }  
     if(( errno == ERANGE && ( val == LONG_MAX || val == LONG_MIN )) || (errno != 0 && val == 0)) {
       ak_error_message_fmt( ak_error_undefined_value, __func__, 
                                                        "%s for field %s", strerror( errno ), field );
