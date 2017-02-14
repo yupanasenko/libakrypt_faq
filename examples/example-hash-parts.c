@@ -24,7 +24,7 @@
   ak_random_ptr( generator, data, data_size );
 
  /* 3. Создаем контекст функции хеширования */
-  ctx = ak_hash_new_streebog512();
+  ctx = ak_hash_new_streebog256();
 
  /* 4. Хешируем данные как единый фрагмент при помощи одного
        вызова функции ak_hash_data() */
@@ -53,13 +53,13 @@
   ak_hash_clean( ctx );
   ptr = data; tail = data_size;
   while( tail > 32 ) {
-    /* вырабатываем смещение, не превосходящее по длине 32 байт */
+    /* вырабатываем случайное смещение, не превосходящее по длине 32 байт */
     parts = ak_random_uint8( generator )%32;
     ak_hash_update( ctx, ptr, parts );
     ptr += parts; tail -= parts;
   }
   result = ak_hash_finalize( ctx, ptr, tail, NULL );
-  printf("\n small ength parts:  %s\n", str = ak_buffer_to_hexstr( result ));
+  printf("\n small length parts: %s\n", str = ak_buffer_to_hexstr( result ));
   free(str); result = ak_buffer_delete( result );
 
  /* 7. Еще раз хешируем те же данные, но подавая на вход функции
