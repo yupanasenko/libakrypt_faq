@@ -1,28 +1,28 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*   Copyright (c) 2014-2016 by Axel Kenzo, axelkenzo@mail.ru                                      */
-/*   All rights reserved.                                                                          */
+/*  Copyright (c) 2014 - 2017 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
-/*   Redistribution and use in source and binary forms, with or without modification, are          */
-/*   permitted provided that the following conditions are met:                                     */
+/*  Разрешается повторное распространение и использование как в виде исходного кода, так и         */
+/*  в двоичной форме, с изменениями или без, при соблюдении следующих условий:                     */
 /*                                                                                                 */
-/*   1. Redistributions of source code must retain the above copyright notice, this list of        */
-/*      conditions and the following disclaimer.                                                   */
-/*   2. Redistributions in binary form must reproduce the above copyright notice, this list of     */
-/*      conditions and the following disclaimer in the documentation and/or other materials        */
-/*      provided with the distribution.                                                            */
-/*   3. Neither the name of the copyright holder nor the names of its contributors may be used     */
-/*      to endorse or promote products derived from this software without specific prior written   */
-/*      permission.                                                                                */
+/*   1. При повторном распространении исходного кода должно оставаться указанное выше уведомление  */
+/*      об авторском праве, этот список условий и последующий отказ от гарантий.                   */
+/*   2. При повторном распространении двоичного кода должна сохраняться указанная выше информация  */
+/*      об авторском праве, этот список условий и последующий отказ от гарантий в документации     */
+/*      и/или в других материалах, поставляемых при распространении.                               */
+/*   3. Ни имя владельца авторских прав, ни имена его соратников не могут быть использованы в      */
+/*      качестве рекламы или средства продвижения продуктов, основанных на этом ПО без             */
+/*      предварительного письменного разрешения.                                                   */
 /*                                                                                                 */
-/*   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS   */
-/*   OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF               */
-/*   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL        */
-/*   THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, */
-/*   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE */
-/*   GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED    */
-/*   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING     */
-/*   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED  */
-/*   OF THE POSSIBILITY OF SUCH DAMAGE.                                                            */
+/*  ЭТА ПРОГРАММА ПРЕДОСТАВЛЕНА ВЛАДЕЛЬЦАМИ АВТОРСКИХ ПРАВ И/ИЛИ ДРУГИМИ СТОРОНАМИ "КАК ОНА ЕСТЬ"  */
+/*  БЕЗ КАКОГО-ЛИБО ВИДА ГАРАНТИЙ, ВЫРАЖЕННЫХ ЯВНО ИЛИ ПОДРАЗУМЕВАЕМЫХ, ВКЛЮЧАЯ, НО НЕ             */
+/*  ОГРАНИЧИВАЯСЬ ИМИ, ПОДРАЗУМЕВАЕМЫЕ ГАРАНТИИ КОММЕРЧЕСКОЙ ЦЕННОСТИ И ПРИГОДНОСТИ ДЛЯ КОНКРЕТНОЙ */
+/*  ЦЕЛИ. НИ В КОЕМ СЛУЧАЕ НИ ОДИН ВЛАДЕЛЕЦ АВТОРСКИХ ПРАВ И НИ ОДНО ДРУГОЕ ЛИЦО, КОТОРОЕ МОЖЕТ    */
+/*  ИЗМЕНЯТЬ И/ИЛИ ПОВТОРНО РАСПРОСТРАНЯТЬ ПРОГРАММУ, КАК БЫЛО СКАЗАНО ВЫШЕ, НЕ НЕСЁТ              */
+/*  ОТВЕТСТВЕННОСТИ, ВКЛЮЧАЯ ЛЮБЫЕ ОБЩИЕ, СЛУЧАЙНЫЕ, СПЕЦИАЛЬНЫЕ ИЛИ ПОСЛЕДОВАВШИЕ УБЫТКИ,         */
+/*  ВСЛЕДСТВИЕ ИСПОЛЬЗОВАНИЯ ИЛИ НЕВОЗМОЖНОСТИ ИСПОЛЬЗОВАНИЯ ПРОГРАММЫ (ВКЛЮЧАЯ, НО НЕ             */
+/*  ОГРАНИЧИВАЯСЬ ПОТЕРЕЙ ДАННЫХ, ИЛИ ДАННЫМИ, СТАВШИМИ НЕПРАВИЛЬНЫМИ, ИЛИ ПОТЕРЯМИ ПРИНЕСЕННЫМИ   */
+/*  ИЗ-ЗА ВАС ИЛИ ТРЕТЬИХ ЛИЦ, ИЛИ ОТКАЗОМ ПРОГРАММЫ РАБОТАТЬ СОВМЕСТНО С ДРУГИМИ ПРОГРАММАМИ),    */
+/*  ДАЖЕ ЕСЛИ ТАКОЙ ВЛАДЕЛЕЦ ИЛИ ДРУГОЕ ЛИЦО БЫЛИ ИЗВЕЩЕНЫ О ВОЗМОЖНОСТИ ТАКИХ УБЫТКОВ.            */
 /*                                                                                                 */
 /*   libakrypt.h                                                                                   */
 /* ----------------------------------------------------------------------------------------------- */
@@ -337,18 +337,16 @@
  dll_export size_t ak_hash_get_block_size( ak_hash );
 /*! \brief Получение OID алгоритма хеширования */
  dll_export ak_oid ak_hash_get_oid( ak_hash );
+/*! \brief Начальная инициализация и очистка контекста функции хеширования */
+ dll_export int ak_hash_clean( ak_hash );
 /*! \brief Вычисление хешкода заданной области памяти известной длины */
  dll_export ak_buffer ak_hash_data( ak_hash, const ak_pointer , const ak_uint64 , ak_pointer );
 /*! \brief Вычисление хешкода для заданного файла */
  dll_export ak_buffer ak_hash_file( ak_hash, const char * , ak_pointer );
-/*! \brief Начальная инициализация и очистка контекста функции хеширования */
- dll_export int ak_hash_clean( ak_hash );
 /*! \brief Обновление текущего состояния контекста функции хеширования */
- dll_export int ak_hash_update( ak_hash , const ak_pointer , const ak_uint64 );
+ dll_export int ak_hash_update( ak_hash , const ak_pointer , const size_t );
 /*! \brief Завершение хеширования и закрытие контекста функции хеширования */
- dll_export int ak_hash_final( ak_hash , const ak_pointer , const ak_uint64 );
-/*! \brief Получение результатов хеширования */
- dll_export ak_buffer ak_hash_get_code( ak_hash, ak_pointer );
+ dll_export ak_buffer ak_hash_finalize( ak_hash , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Удаление контекста хеширования */
  dll_export ak_pointer ak_hash_delete( ak_pointer );
 

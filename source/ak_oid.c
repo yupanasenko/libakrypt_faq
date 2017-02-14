@@ -114,14 +114,10 @@
   ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-gost3410-2012-test512",
                                "1.2.643.7.1.2.1.2.0", (ak_pointer) &wcurve_gost_3410_2012_test512 ));
 
-  /* рекомендации Росстандарта Р 50.1.114-2016
-    ­ id-tc26-gost-3410-12-512-paramSetA,    1.2.643.7.1.2.1.2.1
-     id-tc26-gost-3410-12-512-paramSetB,    1.2.643.7.1.2.1.2.2
-    ­ id-tc26-gost-3410-2012-256-paramSetA,  1.2.643.7.1.2.1.1.1
-     id-tc26-gost-3410-2012-512-paramSetC,  1.2.643.7.1.2.1.2.3
-
-     а также КриптоПро (RFC 4357) */
-
+  /* добавляем параметры эллиптических кривых из
+     - рекомендаций Росстандарта Р 50.1.114-2016
+     - КриптоПро (RFC 4357)
+     - разработанных авторами библиотеки кривых */
   ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-tc26-gost3410-2012-256-paramSetA",
                     "1.2.643.7.1.2.1.1.1", (ak_pointer) &wcurve_tc26_gost_3410_2012_256_paramSetA ));
   ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-cryptoPro-gost3410-2001-paramSetA",

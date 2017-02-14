@@ -65,6 +65,10 @@
    ak_pointer data;
   /*! \brief OID алгоритма хеширования */
    ak_oid oid;
+  /*! \brief указатель на промежуточный буффер хранения хешируемых данных */
+   ak_uint8 *tempdata;
+  /*! \brief текущее количество элементов в буффере tempdata */
+   size_t templen;
   /*! \brief функция очистки контекста */
    ak_function_hash_clean *clean;
   /*! \brief функция обновления состояния контекста */
@@ -76,7 +80,7 @@
  };
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_hash ak_hash_new( const size_t );
+ ak_hash ak_hash_new( const size_t , const size_t );
  ak_bool ak_hash_test_streebog256( void );
  ak_bool ak_hash_test_streebog512( void );
  ak_bool ak_hash_test_gosthash94( void );

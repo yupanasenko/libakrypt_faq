@@ -6,51 +6,85 @@
 
  int main( void )
 {
- char *str = NULL;
- ak_int64 i, bsize = 0, parts = 0, tail = 0;
- ak_hash ctx = NULL; /* определяем контекст */
- ak_uint8 *data = NULL, *ptr = NULL; /* определяем указатель на хешируемые данные */
- ak_uint8 result[64]; /* массив для хранения результатов вычислений */
+  size_t i, bsize = 0, tail = 0, parts = 0;
+  char *str = NULL;
+  ak_hash ctx = NULL;
+  ak_buffer result = NULL;
+  ak_uint8 data[data_size], *ptr = NULL;
+  ak_random generator = ak_random_new_lcg();
 
  /* 1. Инициализируем библиотеку */
-  if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true ) goto exit;
+  if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true )
+   return ak_libakrypt_destroy();
 
- /* 2. Моделируем данные для хеширования */
-  if(( ptr = data = malloc( data_size )) == NULL ) goto exit;
-  for( i = 0; i < data_size; i++ ) data[i] = i&0xFF;
+ /* 2. Вырабатываем данные для вычисления контрольной суммы.
+       Мы устанавливаем генератор в фиксированное начальное состояние
+       и заполняем массив значениями псевдослучаной последовательности */
+  ak_random_randomize_uint64( generator, 10237 );
+  ak_random_ptr( generator, data, data_size );
 
  /* 3. Создаем контекст функции хеширования */
-  if(( ctx = ak_hash_new_streebog256()) == NULL ) goto exit;
-  ak_hash_clean( ctx ); /* инициализируем и очищаем контекст */
+  ctx = ak_hash_new_streebog512();
 
- /* 4. Вычисляем количество и длины обрабатываемых фрагментов */
-  bsize = ak_hash_get_block_size( ctx );
-  printf(" count of parts: %lu\n", parts = data_size/bsize );
-  printf(" length of tail: %lu\n", tail = data_size - parts*bsize );
+ /* 4. Хешируем данные как единый фрагмент при помощи одного
+       вызова функции ak_hash_data() */
+  result = ak_hash_data( ctx, data, data_size, NULL );
+  printf("\n ak_hash_data():     %s\n", str = ak_buffer_to_hexstr( result ));
+  free(str); result = ak_buffer_delete( result );
 
- /* 5. Фрагментируем и обрабатываем данные */
-  for( i = 0; i < parts; i++ ) {
-     ak_hash_update( ctx, data, bsize );
-     data += bsize;
+ /* 5. Хешируем данные фрагментами фиксированной длины.
+       Теперь мы обрабатываем те же данные путем последовательного вызова
+       функции ak_hash_update(), на вход которой подаются фрагменты длины
+       64 байта.  Для получения значения хеш-кода используется вызов
+       функции ak_hash_finalize().                                       */
+  printf("\n parts with fixed length (%d)\n",
+                          (int)(bsize = ak_hash_get_block_size( ctx )));
+  printf(" count of parts:     %lu\n", parts = data_size/bsize );
+  printf(" length of tail:     %lu\n", tail = data_size - parts*bsize );
+  ak_hash_clean( ctx );
+  for( i = 0, ptr = data; i < parts; i++, ptr += bsize )
+     ak_hash_update( ctx, ptr, bsize );
+  result = ak_hash_finalize( ctx, ptr, tail, NULL );
+  printf(" hash value:         %s\n", str = ak_buffer_to_hexstr( result ));
+  free(str); result = ak_buffer_delete( result );
+
+ /* 6. Хешируем те же данные подавая на вход функции ak_hash_update()
+       короткие фрагменты, длина которых определяется случайным образом */
+  ak_hash_clean( ctx );
+  ptr = data; tail = data_size;
+  while( tail > 32 ) {
+    /* вырабатываем смещение, не превосходящее по длине 32 байт */
+    parts = ak_random_uint8( generator )%32;
+    ak_hash_update( ctx, ptr, parts );
+    ptr += parts; tail -= parts;
   }
- /* 6. Выполняем завершающее преобразование */
-  ak_hash_final( ctx, data, tail );
+  result = ak_hash_finalize( ctx, ptr, tail, NULL );
+  printf("\n small ength parts:  %s\n", str = ak_buffer_to_hexstr( result ));
+  free(str); result = ak_buffer_delete( result );
 
- /* 7. Получаем результат хеширования */
-  memset( result, 0, 64 );
-  ak_hash_get_code( ctx, result );
-  printf("as is:        %s\n", str = ak_ptr_to_hexstr( result, ak_hash_get_code_size( ctx ), ak_false ));
-  free(str);
+ /* 7. Еще раз хешируем те же данные, но подавая на вход функции
+       ak_hash_update() фрагменты длина которых случайна и превышает
+       длину блока обрабатываемых данных                             */
+  ak_hash_clean( ctx );
+  ptr = data; tail = data_size;
+  while( tail > 32 ) {
+    if(( parts = ak_random_uint8( generator )%1024 ) > tail ) break;
+    ak_hash_update( ctx, ptr, parts );
+    ptr += parts; tail -= parts;
+  }
+  result = ak_hash_finalize( ctx, ptr, tail, NULL );
+  printf(" long length parts:  %s\n", str = ak_buffer_to_hexstr( result ));
+  free(str); result = ak_buffer_delete( result );
 
- /* 8. Проверяем результат */
-  memset( result, 0, 64 );
-  ak_hash_data( ctx, ptr, data_size, result );
-  printf("ak_hash_data: %s\n", str = ak_ptr_to_hexstr( result, ak_hash_get_code_size( ctx ), ak_false ));
-  free(str);
+ /* 8. Хешируем данные c помощью всего лишь одного вызова функции ak_hash_finalize() */
+  ak_hash_clean( ctx );
+  result = ak_hash_finalize( ctx, data, data_size, NULL );
+  printf(" ak_hash_finalize(): %s\n", str = ak_buffer_to_hexstr( result ));
+  free(str); result = ak_buffer_delete( result );
 
- /* 9. Останавливаем библиотеку и выходим */
+ /* 9. Удаляем переменные и останавливаем библиотеку */
   ctx = ak_hash_delete( ctx );
-  exit: if( ptr != NULL ) free( ptr );
+  generator = ak_random_delete( generator );
  return ak_libakrypt_destroy();
 }
 

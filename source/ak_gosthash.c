@@ -410,11 +410,12 @@
   }
 
  /* создаем контекст */
-  if(( ctx = ak_hash_new( sizeof( struct gosthash94_ctx ))) == NULL ) {
+  if(( ctx = ak_hash_new( sizeof( struct gosthash94_ctx ), 32 )) == NULL ) {
     ak_error_message( ak_error_create_function, __func__ , "incorrect context creation" );
     return NULL;
   }
-  ctx->bsize = 32; /* длина блока обрабатываемых данных составляет 256 бит */
+  /* значение ctx->bsize = 32 (длина блока обрабатываемых данных) присваивается внутри вызова
+                                                                            функции ak_hash_new() */
   ctx->hsize = 32; /* длина хешкода составляет 256 бит */
 
  /* устанавливаем таблицы замен, указатель на которые хранится в OID */

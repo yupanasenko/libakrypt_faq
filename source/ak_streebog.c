@@ -781,12 +781,12 @@ struct streebog_ctx {
 /* ----------------------------------------------------------------------------------------------- */
  ak_hash ak_hash_new_streebog256( void )
 {
-  ak_hash ctx = ak_hash_new( sizeof( struct streebog_ctx ));
+  ak_hash ctx = ak_hash_new( sizeof( struct streebog_ctx ), 64 );
   if( ctx == NULL ) {
     ak_error_message( ak_error_create_function, __func__ , "incorrect context creation" );
     return NULL;
   }
-  ctx->bsize = 64;
+  /* значение ctx->bsize = 64 устанавливается при вызове ak_hash_new() */
   ctx->hsize = 32; /* длина хешкода составляет 256 бит */
 
   if(( ctx->oid = ak_oids_find_by_name( "streebog256" )) == NULL ) {
@@ -805,12 +805,12 @@ struct streebog_ctx {
 /* ----------------------------------------------------------------------------------------------- */
  ak_hash ak_hash_new_streebog512( void )
 {
-  ak_hash ctx = ak_hash_new( sizeof( struct streebog_ctx ));
+  ak_hash ctx = ak_hash_new( sizeof( struct streebog_ctx ), 64 );
   if( ctx == NULL ) {
     ak_error_message( ak_error_create_function, __func__ , "incorrect context creation" );
     return NULL;
   }
-  ctx->bsize = 64;
+  /* значение ctx->bsize = 64 устанавливается при вызове ak_hash_new() */
   ctx->hsize = 64; /* длина хешкода составляет 512 бит */
   if(( ctx->oid = ak_oids_find_by_name( "streebog512" )) == NULL ) {
      ak_error_message( ak_error_find_pointer, __func__ ,

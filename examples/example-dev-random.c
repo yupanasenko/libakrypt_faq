@@ -6,14 +6,14 @@
  ak_uint8 buffer[128];
  ak_random generator = NULL, /* указатели на генераторы псевдо-случайных чисел */
           fgenerator = NULL;
+ char *filename = "../libakrypt-0.x/examples/example-dev-random.c";
 
  /* инициализируем библиотеку */
  if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true ) return ak_libakrypt_destroy();
 
  /* создаем генератор, циклически считывающий значения из заданного файла */
- if(( fgenerator =
-           ak_random_new_file( "../libakrypt-0.x/examples/example-dev-random.c" )) != NULL ) {
-    printf(" -- random values from fixed file:\n");
+ if(( fgenerator = ak_random_new_file( filename )) != NULL ) {
+    printf(" -- random values from fixed file %s:\n", filename );
     for( i = 0; i < 20; i++ ) {
        ak_random_ptr( fgenerator, buffer, 128 );
        for( j = 0; j < 128; j++ ) printf( "%c", buffer[j] );

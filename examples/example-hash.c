@@ -7,7 +7,8 @@
  ak_uint8 data[12] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
 
  /* инициализируем библиотеку */
-  if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true ) return ak_libakrypt_destroy();
+  if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true )
+    return ak_libakrypt_destroy();
 
  /* создаем контекст функции хеширования */
   if(( ctx = ak_hash_new_streebog256()) == NULL ) {
