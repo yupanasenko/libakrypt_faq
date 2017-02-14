@@ -53,6 +53,8 @@ set( SOURCES source/ak_tools.c
              source/ak_mpzn.c
              source/ak_curves.c )
 set( DOCS    doc/libakrypt.dox
+             doc/refman_header.in
+             doc/refman_footer.in
              doc/Doxyfile.in )
 set( CMAKES  cmake/DetectFlags.cmake
              cmake/DetectIntrinsics.cmake

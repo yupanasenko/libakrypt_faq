@@ -231,7 +231,7 @@
  dll_export int ak_buffer_set_ptr( ak_buffer , const ak_pointer , const size_t , const ak_bool );
 /*! \brief Пощемение в буффер данных, заданных строкой в  шестнадцатеричном представлении */
  dll_export int ak_buffer_set_hexstr( ak_buffer, const char * );
-/*! \brief Пощемение строки, оканчивающейся нулем, в буффер */
+/*! \brief Помещение строки, оканчивающейся нулем, в буффер */
  dll_export int ak_buffer_set_str( ak_buffer, const char * );
 /*! \brief Получение указателя на данные (как на строку символов) */
  dll_export const char *ak_buffer_get_str( ak_buffer );

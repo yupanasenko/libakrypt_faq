@@ -626,11 +626,8 @@ struct streebog_ctx {
   /* (этот очень короткий код был предложен Павлом Лебедевым */
   for( idx = 0; idx < 8; idx++ ) {
     ak_uint64 sidx = idx, c = 0;
-    for( idx2 = 0; idx2 < 8; idx2++ )
-    {
-      c ^= AReverseExpand[idx2][pi[a[sidx]]]; /* idx + (idx2 << 3) */
-      sidx += 8;
-    }
+    for( idx2 = 0; idx2 < 8; idx2++, sidx += 8 )
+      c ^= AReverseExpand[idx2][pi[a[sidx]]];
     result[idx] = c;
   }
 }

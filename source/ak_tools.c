@@ -766,7 +766,7 @@ ak_bool ak_libakrypt_test_wcurves( void )
             /* здесь все проверки выполнены успешно */
             if( audit > ak_log_standard ) {
               ak_error_message_fmt( ak_error_ok, __func__ ,
-                   "curve %s [OID: %s] is Ok", ak_oid_get_name( oid ), ak_oid_get_id( oid ));
+                   "curve %s (OID: %s) is Ok", ak_oid_get_name( oid ), ak_oid_get_id( oid ));
             }
           } else reason = ak_error_wcurve_point_order;
         } else reason = ak_error_wcurve_point;
