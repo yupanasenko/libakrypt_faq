@@ -23,7 +23,7 @@
  /* поиск несуществующего OID */
   if(( oid = ak_oids_find_by_id( wrong )) == NULL ) {
     printf(" special OID not found\n");
-    ak_error_set_value( ak_error_ok ); // найденная ошибка обработана пользователем
+    ak_error_set_value( ak_error_ok ); /* найденная ошибка обработана пользователем */
   }
    else printf(" founded by id:   %s [%s]\n", ak_oid_get_name( oid ), ak_oid_get_id( oid ));
 

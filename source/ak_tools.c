@@ -504,19 +504,19 @@ return ak_error_ok;
     signed long val = (ak_uint32) strtol( ptr += strlen(field), &endptr, 10 );
     if(( endptr != NULL ) && ( ptr == endptr )) {
       ak_error_message_fmt( ak_error_undefined_value, __func__,
-			                        "using an undefinded value for variable %s", field );
+                                    "using an undefinded value for variable %s", field );
       return ak_false;
-    }  
+    }
     if(( errno == ERANGE && ( val == LONG_MAX || val == LONG_MIN )) || (errno != 0 && val == 0)) {
-      ak_error_message_fmt( ak_error_undefined_value, __func__, 
+      ak_error_message_fmt( ak_error_undefined_value, __func__,
                                                        "%s for field %s", strerror( errno ), field );
-    } else { 
+    } else {
              *value = ( ak_uint32 ) val;
              return ak_true;
            }
-  } 
+  }
  return ak_false;
-}  
+}
 
 /* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_libakrypt_load_options( void )
@@ -563,14 +563,14 @@ return ak_error_ok;
      if((strlen(localbuffer) != 0 ) && ( strchr( localbuffer, '#' ) == 0 )) {
        ak_uint32 value;
        /* устанавливаем уровень аудита */
-       if( ak_libakrypt_get_option( localbuffer, "log_level = ", &value )) 
-                                                                libakrypt_options.log_level = value; 
+       if( ak_libakrypt_get_option( localbuffer, "log_level = ", &value ))
+                                                                libakrypt_options.log_level = value;
        /* устанавливаем максимальное число блоков обрабатываемых данных для Магмы (ГОСТ 28147-89) */
-       if( ak_libakrypt_get_option( localbuffer, "magma_block_resource = ", &value )) 
-                                          libakrypt_options.cipher_key_magma_block_resource = value; 
+       if( ak_libakrypt_get_option( localbuffer, "magma_block_resource = ", &value ))
+                                          libakrypt_options.cipher_key_magma_block_resource = value;
        /* устанавливаем максимальное число блоков обрабатываемых данных для шифра Кузнечик */
-       if( ak_libakrypt_get_option( localbuffer, "kuznetchik_block_resource = ", &value )) 
-                                     libakrypt_options.cipher_key_kuznetchik_block_resource = value; 
+       if( ak_libakrypt_get_option( localbuffer, "kuznetchik_block_resource = ", &value ))
+                                     libakrypt_options.cipher_key_kuznetchik_block_resource = value;
      } /* далее мы очищаем строку независимо от ее содержимого */
      off = 0;
      memset( localbuffer, 0, 1024 );
@@ -579,13 +579,13 @@ return ak_error_ok;
 
  /* выводим сообщение об установленных параметрах библиотеки */
  if( libakrypt_options.log_level > ak_log_standard ) {
-    ak_error_message_fmt( ak_error_ok, __func__, 
+    ak_error_message_fmt( ak_error_ok, __func__,
                                    "log level is %u", libakrypt_options.log_level );
-    ak_error_message_fmt( ak_error_ok, __func__, 
-                                   "magma block ciper resource is %u", 
+    ak_error_message_fmt( ak_error_ok, __func__,
+                                   "magma block ciper resource is %u",
                                                  libakrypt_options.cipher_key_magma_block_resource );
-    ak_error_message_fmt( ak_error_ok, __func__, 
-                                   "kuznetchik block ciper resource is %u", 
+    ak_error_message_fmt( ak_error_ok, __func__,
+                                   "kuznetchik block ciper resource is %u",
                                             libakrypt_options.cipher_key_kuznetchik_block_resource );
  }
  /* закрываем все и выходим */
@@ -687,24 +687,24 @@ ak_bool ak_libakrypt_test_block_ciphers( void )
  if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "testing block ciphers started" );
 
- /* тестируем алгоритм Магма (ГОСТ 28147-89, ГОСТ Р 34.12-2015) */
- if( ak_cipher_key_test_magma() != ak_true ) {
-   ak_error_message( ak_error_get_value(), __func__ , "incorrect block cipher magma testing" );
-   return ak_false;
- }
+// /* тестируем алгоритм Магма (ГОСТ 28147-89, ГОСТ Р 34.12-2015) */
+// if( ak_cipher_key_test_magma() != ak_true ) {
+//   ak_error_message( ak_error_get_value(), __func__ , "incorrect block cipher magma testing" );
+//   return ak_false;
+// }
 
- /* вырабатываем долговременные параметры алгоритма Кузнечик */
- if( ak_crypt_kuznetchik_init_tables() != ak_error_ok ) {
-   ak_error_message( ak_error_get_value(), __func__ ,
-                                           "wrong creation of kuznetchik predefined tables" );
-   return ak_false;
- }
+// /* вырабатываем долговременные параметры алгоритма Кузнечик */
+// if( ak_crypt_kuznetchik_init_tables() != ak_error_ok ) {
+//   ak_error_message( ak_error_get_value(), __func__ ,
+//                                           "wrong creation of kuznetchik predefined tables" );
+//   return ak_false;
+// }
 
- /* тестируем алгоритм Кузнечик (ГОСТ Р 34.12-2015) */
- if( ak_cipher_key_test_kuznetchik() != ak_true ) {
-   ak_error_message( ak_error_get_value(), __func__ , "incorrect block cipher kuznetchik testing" );
-   return ak_false;
- }
+// /* тестируем алгоритм Кузнечик (ГОСТ Р 34.12-2015) */
+// if( ak_cipher_key_test_kuznetchik() != ak_true ) {
+//   ak_error_message( ak_error_get_value(), __func__ , "incorrect block cipher kuznetchik testing" );
+//   return ak_false;
+// }
 
  if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "testing block ciphers ended successfully" );
