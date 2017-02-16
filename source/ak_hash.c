@@ -161,10 +161,10 @@
     @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
     возвращается указатель на буффер, содержащий результат вычислений.                             */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_hash_data( ak_hash ctx, const ak_pointer in, const ak_uint64 size, ak_pointer out )
+ ak_buffer ak_hash_data( ak_hash ctx, const ak_pointer in, const size_t size, ak_pointer out )
 {
   ak_buffer result = NULL;
-  ak_uint64 quot = 0, offset = 0;
+  size_t quot = 0, offset = 0;
 
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a context" );

@@ -17,11 +17,9 @@
   if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true )
    return ak_libakrypt_destroy();
 
- /* 2. Вырабатываем данные для вычисления контрольной суммы.
-       Мы устанавливаем генератор в фиксированное начальное состояние
-       и заполняем массив значениями псевдослучаной последовательности */
-  ak_random_randomize_uint64( generator, 10237 );
-  ak_random_ptr( generator, data, data_size );
+ /* 2. Инициализируем хешируемые данные фиксированными значениями */
+   memset( data, 0, data_size );
+   data[0] = 0xa; data[data_size-1] = 0xf;
 
  /* 3. Создаем контекст функции хеширования */
   ctx = ak_hash_new_streebog256();
@@ -68,7 +66,7 @@
   ak_hash_clean( ctx );
   ptr = data; tail = data_size;
   while( tail > 32 ) {
-    if(( parts = ak_random_uint8( generator )%1024 ) > tail ) break;
+    if(( parts = ak_random_uint64( generator )%1024 ) > tail ) break;
     ak_hash_update( ctx, ptr, parts );
     ptr += parts; tail -= parts;
   }
@@ -76,7 +74,9 @@
   printf(" long length parts:  %s\n", str = ak_buffer_to_hexstr( result ));
   free(str); result = ak_buffer_delete( result );
 
- /* 8. Хешируем данные c помощью всего лишь одного вызова функции ak_hash_finalize() */
+ /* 8. Хешируем данные c помощью всего лишь одного вызова функции
+       ak_hash_finalize(). Такой вызов также является допустимым, но
+       он медленнее, чем вызов функции ak_hash_data()                  */
   ak_hash_clean( ctx );
   result = ak_hash_finalize( ctx, data, data_size, NULL );
   printf(" ak_hash_finalize(): %s\n", str = ak_buffer_to_hexstr( result ));
