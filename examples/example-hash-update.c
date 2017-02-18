@@ -32,7 +32,7 @@
   while( tail > 32 ) {
      size_t len = ak_random_uint8( generator )%32;
      printf(" %s\n", str = ak_ptr_to_hexstr( data+offset, len, ak_false )); free(str);
-//     ak_update_update( upd, data+offset, len );
+     ak_update_update( upd, data+offset, len );
      offset += len; tail -= len;
   }
   printf(" %s\n", str = ak_ptr_to_hexstr( data+offset, tail, ak_false )); free(str);

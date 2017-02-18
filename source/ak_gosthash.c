@@ -360,7 +360,7 @@
     return NULL;
   }
 
-  sx = ( struct gosthash94_ctx * ) (( ak_hash ) ctx )->data;
+  sx = ( struct gosthash94_ctx * )( (( ak_hash ) ctx )->data );
   if( size > 0 ) {
     ak_uint32 ms[8];
     ak_uint32 bits = (ak_uint32 )( size << 3 );
