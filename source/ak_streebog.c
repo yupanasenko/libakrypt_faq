@@ -27,6 +27,7 @@
 /*   ak_streebog.c                                                                                 */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_hash.h>
+ #include <ak_buffer.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Нелинейное биективное преобразование байт (алгоритм Стрибог)                                   */
@@ -690,37 +691,23 @@ struct streebog_ctx {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция очистки контекста                                                                      */
- static void ak_hash_streebog_clean( ak_hash ctx )
+ static void ak_hash_streebog_clean( ak_pointer ctx )
 {
   struct streebog_ctx *sx = NULL;
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
     return;
   }
-  sx = ( struct streebog_ctx * ) ctx->data;
+  sx = ( struct streebog_ctx * ) (( ak_hash ) ctx )->data;
   memset( sx->N, 0, 64 );
   memset( sx->SIGMA, 0, 64 );
-  if( ctx->hsize == 32 ) memset( sx->H, 1, 64 );
+  if( (( ak_hash ) ctx )->hsize == 32 ) memset( sx->H, 1, 64 );
      else memset( sx->H, 0, 64 );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция возвращает результат вычислений                                                        */
- static void ak_hash_streebog_get_code( ak_hash ctx, ak_pointer out )
-{
-  struct streebog_ctx *sx = NULL;
-  if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
-    return;
-  }
-  sx = ( struct streebog_ctx * ) ctx->data;
-  if( ctx->hsize == 64 ) memcpy( out, sx->H, ctx->hsize );
-       else memcpy( out, sx->H+4, 32 );
-}
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! Основное циклическое преобразование (Этап 2)                                                   */
- static void ak_hash_streebog_update( ak_hash ctx, const ak_pointer in, const ak_uint64 size )
+ static void ak_hash_streebog_update( ak_pointer ctx, const ak_pointer in, const size_t size )
 {
   ak_uint64 quot = 0, *dt = NULL;
   struct streebog_ctx *sx = NULL;
@@ -733,13 +720,13 @@ struct streebog_ctx {
     ak_error_message( ak_error_zero_length, __func__ , "using zero length for hash data" );
     return;
   }
-  quot = size/ctx->bsize;
-  if( size - quot*ctx->bsize ) { /* длина данных должна быть кратна ctx->bsize */
+  quot = size/(( ak_hash ) ctx )->bsize;
+  if( size - quot*(( ak_hash ) ctx )->bsize ) { /* длина данных должна быть кратна ctx->bsize */
     ak_error_message( ak_error_wrong_length, __func__ , "using data with wrong length" );
     return;
   }
   dt = ( ak_uint64 *) in;
-  sx = ( struct streebog_ctx * ) ctx->data;
+  sx = ( struct streebog_ctx * ) (( ak_hash ) ctx )->data;
   do{
       streebog_g( sx, sx->N, dt );
       streebog_add( sx, 512 );
@@ -749,33 +736,49 @@ struct streebog_ctx {
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static void ak_hash_streebog_final( ak_hash ctx, const ak_pointer in, const ak_uint64 size )
+ static ak_buffer ak_hash_streebog_finalize( ak_pointer ctx, const ak_pointer in,
+                                                                 const size_t size, ak_pointer out )
 {
   ak_uint64 m[8];
+  ak_pointer pout = NULL;
+  ak_buffer result = NULL;
   unsigned char *mhide = NULL;
   struct streebog_ctx *sx = NULL;
 
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
-    return;
+    return NULL;
   }
   if( size >= 64 ) {
     ak_error_message( ak_error_zero_length, __func__ , "using zero length for hash data" );
-    return;
+    return NULL;
   }
 
   /* формируем временный текст */
   memset( m, 0, 64 );
   memcpy( m, in, ( ak_uint32 )size ); // здесь приведение типов корректно, поскольку 0 <= size < 64
-  mhide = (unsigned char *)m;
+  mhide = ( unsigned char * )m;
   mhide[size] = 1; /* дополнение */
 
-  sx = ( struct streebog_ctx * ) ctx->data;
+  sx = ( struct streebog_ctx * ) (( ak_hash ) ctx )->data;
   streebog_g( sx, sx->N, m );
   streebog_add( sx, size << 3 );
   streebog_sadd( sx, m );
   streebog_g( sx, NULL, sx->N );
   streebog_g( sx, NULL, sx->SIGMA );
+
+ /* определяем указатель на область памяти, в которую будет помещен результат вычислений */
+  if( out != NULL ) pout = out;
+   else
+     if(( result = ak_buffer_new_size((( ak_hash )ctx)->hsize )) != NULL ) pout = result->data;
+
+ /* копируем нужную часть результирующего массива или выдаем сообщение об ошибке */
+  if( pout != NULL ) {
+    if((( ak_hash )ctx)->hsize == 64 ) memcpy( pout, sx->H, 64 );
+      else memcpy( pout, sx->H+4, 32 );
+  } else ak_error_message( ak_error_out_of_memory, __func__ ,
+                                                  "incorrect memory allocation for result buffer" );
+ return result;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -795,10 +798,9 @@ struct streebog_ctx {
     return ctx = ak_hash_delete( ctx );
   }
   /* устанавливаем функции - обработчики событий */
-  ctx->clean =  ak_hash_streebog_clean;
-  ctx->code =   ak_hash_streebog_get_code;
-  ctx->update = ak_hash_streebog_update;
-  ctx->final =  ak_hash_streebog_final;
+  ctx->clean =     ak_hash_streebog_clean;
+  ctx->update =    ak_hash_streebog_update;
+  ctx->finalize =  ak_hash_streebog_finalize;
  return ctx;
 }
 
@@ -812,16 +814,16 @@ struct streebog_ctx {
   }
   /* значение ctx->bsize = 64 устанавливается при вызове ak_hash_new() */
   ctx->hsize = 64; /* длина хешкода составляет 512 бит */
+
   if(( ctx->oid = ak_oids_find_by_name( "streebog512" )) == NULL ) {
      ak_error_message( ak_error_find_pointer, __func__ ,
                                                   "incorrect search of streebog512 OID" );
      return ctx = ak_hash_delete( ctx );
   }
   /* устанавливаем функции - обработчики событий */
-  ctx->clean =  ak_hash_streebog_clean;
-  ctx->code =   ak_hash_streebog_get_code;
-  ctx->update = ak_hash_streebog_update;
-  ctx->final =  ak_hash_streebog_final;
+  ctx->clean =     ak_hash_streebog_clean;
+  ctx->update =    ak_hash_streebog_update;
+  ctx->finalize =  ak_hash_streebog_finalize;
  return ctx;
 }
 
@@ -846,8 +848,7 @@ struct streebog_ctx {
          0xe2, 0xfb };
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Проверка корректной работы функции Стрибог-256
-    @return Если тестирование прошло успешно возвращается ak_true (истина). В противном случае,
+/*! @return Если тестирование прошло успешно возвращается ak_true (истина). В противном случае,
     возвращается ak_false.                                                                         */
 /* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_hash_test_streebog256( void )
@@ -954,8 +955,7 @@ struct streebog_ctx {
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Проверка корректной работы функции Стрибог-512
-    @return Если тестирование прошло успешно возвращается ak_true (истина). В противном случае,
+/*! @return Если тестирование прошло успешно возвращается ak_true (истина). В противном случае,
     возвращается ak_false.                                                                         */
 /* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_hash_test_streebog512( void )

@@ -34,6 +34,7 @@ set( MAIN_HEADER source/libakrypt.h )
 set( HEADERS source/ak_buffer.h
              source/ak_oid.h
              source/ak_hash.h
+             source/ak_update.h
              source/ak_random.h
              source/ak_skey.h
              source/ak_parameters.h
@@ -44,6 +45,7 @@ set( SOURCES source/ak_tools.c
              source/ak_buffer.c
              source/ak_oid.c
              source/ak_hash.c
+             source/ak_update.c
              source/ak_streebog.c
              source/ak_gosthash.c
              source/ak_random.c
@@ -101,6 +103,7 @@ if( LIBAKRYPT_STATIC_LIB )
                      oid-magma
                      hash
                      hash-parts
+                     hash-update
                      hash-oids
                      random
                      dev-random )

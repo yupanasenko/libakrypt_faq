@@ -39,12 +39,10 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                               некоторые методы класса ak_hash                                   */
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание нового контектса хеширования
-
-   Функция выделяет память под контекст, а также под внутренние данные контекста
-   @param data_size Размер внутренних данных контекста в байтах
-   @param block_size Размер внутренних данных контекста в байтах
-   @return указатель на контекст или NULL, сли создание контекста произошло неудачно.              */
+/*! Функция выделяет память под контекст, а также под внутренние данные контекста
+    @param data_size Размер внутренних данных контекста в байтах
+    @param block_size Размер внутренних данных контекста в байтах
+    @return указатель на контекст или NULL, сли создание контекста произошло неудачно.              */
 /* ----------------------------------------------------------------------------------------------- */
  ak_hash ak_hash_new( const size_t data_size, const size_t block_size )
 {
@@ -58,20 +56,12 @@
                                                    "incorrect internal data memory allocation" );
       return ctx = ak_hash_delete( ctx );
   }
-  if(( ctx->tempdata = malloc( block_size )) == NULL ) {
-      ak_error_message( ak_error_create_function, __func__ ,
-                                                "incorrect temporarty data buffer allocation" );
-      return ctx = ak_hash_delete( ctx );
-  }
-  memset( ctx->tempdata, 0, block_size );
-  ctx->templen =         0;
   ctx->bsize =  block_size;
   ctx->hsize =           0;
   ctx->oid =          NULL;
   ctx->clean =        NULL;
-  ctx->code =         NULL;
   ctx->update =       NULL;
-  ctx->final =        NULL;
+  ctx->finalize =     NULL;
  return ctx;
 }
 
@@ -87,16 +77,13 @@
     ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a context" );
   } else {
            if( ctx->data != NULL ) free( ctx->data );
-           if( ctx->tempdata != NULL ) free( ctx->tempdata );
-           ctx->templen =   0;
-           ctx->bsize =     0;
-           ctx->hsize =     0;
-           ctx->data =   NULL;
-           ctx->oid =    NULL;
-           ctx->clean =  NULL;
-           ctx->code =   NULL;
-           ctx->update = NULL;
-           ctx->final =  NULL;
+           ctx->bsize =       0;
+           ctx->hsize =       0;
+           ctx->data =     NULL;
+           ctx->oid =      NULL;
+           ctx->clean =    NULL;
+           ctx->update =   NULL;
+           ctx->finalize = NULL;
            free( inctx );
          }
  return NULL;
@@ -182,12 +169,9 @@
   /* вызываем, если длина сообщения не менее одного полного блока */
   if( quot > 0 ) ctx->update( ctx, in, offset );
   /* обрабатываем хвост */
-  ctx->final( ctx, (unsigned char *)in + offset, size - offset );
-
-  /* проверяем, надо ли выделять память */
-  if( out != NULL ) ctx->code( ctx, out );
-   else
-     if(( result = ak_buffer_new_size( ctx->hsize )) != NULL ) ctx->code( ctx, result->data );
+  result = ctx->finalize( ctx, (unsigned char *)in + offset, size - offset, out );
+  /* очищаем за собой данные, содержащиеся в контексте */
+  ctx->clean( ctx );
  return result;
 }
 
@@ -261,15 +245,13 @@
            ak_uint64 qcnt = len / ctx->bsize,
                      tail = len - qcnt*ctx->bsize;
            if( qcnt ) ctx->update( ctx, localbuffer, qcnt*ctx->bsize );
-           ctx->final( ctx, localbuffer + qcnt*ctx->bsize, tail );
+           result = ctx->finalize( ctx, localbuffer + qcnt*ctx->bsize, tail, out );
          }
+ /* очищаем за собой данные, содержащиеся в контексте */
+  ctx->clean( ctx );
  /* закрываем данные */
   close(fd);
   free( localbuffer );
- /* проверяем, надо ли выделять память */
-  if( out != NULL ) ctx->code( ctx, out );
-   else
-     if(( result = ak_buffer_new_size( ctx->hsize )) != NULL ) ctx->code( ctx, result->data );
  return result;
 }
 
@@ -315,9 +297,6 @@
                                                      "using an undefined internal function" );
     return ak_error_undefined_function;
   }
-  /* очищаем временный буффер для обрабатываемых данных */
-  if( ctx->tempdata != NULL ) memset( ctx->tempdata, 0, ctx->bsize );
-  ctx->templen = 0;
   ctx->clean( ctx ); /* чистим внутренние данные алгоритма */
  return ak_error_ok;
 }
@@ -325,15 +304,17 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param ctx Контекст функции хеширования.
     @param in Хешируемые данные.
-    @param size Размер хешируемых данных в байтах. Данное значение может
-    быть произвольным, в том числе и не кратным длине блока обрабатываемых данных.
+    @param size Размер хешируемых данных в байтах. Данное значение не может
+    быть произвольным и должно быть кратным длине блока обрабатываемых данных.
+    Значение длины блока может быть получено с помощью вызова функции
+    ak_hash_get_block_size().
+
     @return В случае успеха функция возвращает ноль (\ref ak_error_ok). В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_hash_update( ak_hash ctx, const ak_pointer in, const size_t size )
 {
-  ak_uint8 *ptrin = (ak_uint8 *)in;
-  size_t quot = 0, offset = 0, newsize = size;
+  int result = ak_error_ok;
 
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to a context" );
@@ -345,38 +326,10 @@
     return ak_error_undefined_function;
   }
 
- /* в начале проверыем, есть ли данные во временном буфере */
-  if( ctx->templen != 0 ) {
-   /* если новых данных мало, то добавляем во временный буффер и выходим */
-    if(( ctx->templen + size ) < ctx->bsize ) {
-       memcpy( ctx->tempdata + ctx->templen, ptrin, size );
-       ctx->templen += size;
-       return ak_error_ok;
-    }
-   /* дополняем буффер до длины, кратной ctx->bsize */
-    offset = ctx->bsize - ctx->templen;
-    memcpy( ctx->tempdata+ctx->templen, ptrin, offset );
-   /* обновляем значение контекста функции и очищаем временный буффер */
-    ctx->update( ctx, ctx->tempdata, ctx->bsize );
-    memset( ctx->tempdata, 0, ctx->bsize );
-    ctx->templen = 0;
-    ptrin += offset;
-    newsize -= offset;
-  }
-
- /* теперь обрабатываем входные данные с пустым временным буффером */
-  if( newsize != 0 ) {
-    quot = newsize/ctx->bsize;
-    offset = quot*ctx->bsize;
-   /* обрабатываем часть, кратную величине bsize */
-    if( quot > 0 ) ctx->update( ctx, ptrin, offset );
-   /* хвост оставляем на следующий раз */
-    if( offset < newsize ) {
-      ctx->templen = newsize - offset;
-      memcpy( ctx->tempdata, ptrin + offset, ctx->templen );
-    }
-  }
- return ak_error_ok;
+  ctx->update( ctx, in, size  );
+  if(( result = ak_error_get_value()) != ak_error_ok )
+    ak_error_message( ak_error_undefined_value, __func__ , "wrong updating a hash function context");
+ return result;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -387,8 +340,10 @@
 
     @param ctx Контекст функции хеширования.
     @param in Хешируемые данные.
-    @param size Размер хешируемых данных в байтах. Данное значение может
-    быть произвольным, в том числе превышающем величину блока обрабатываемых данных.
+    @param size Размер хешируемых данных в байтах. Данное значение не может
+    быть произвольным и должно ыть строго менее длины блока обрабатываемых данных.
+    Значение длины блока может быть получено с помощью вызова функции
+    ak_hash_get_block_size().
     @param out Область памяти, куда будет помещен рещультат. Память должна быть заранее выделена.
     Размер выделяемой памяти может быть определен с помощью вызова ak_hash_get_code_size().
     Указатель out может принимать значение NULL.
@@ -398,26 +353,17 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_buffer ak_hash_finalize( ak_hash ctx, const ak_pointer in, const size_t size, ak_pointer out )
 {
-  ak_buffer result = NULL;
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to a context" );
     return NULL;
   }
-  if( ctx->final == NULL ) {
+  if( ctx->finalize == NULL ) {
     ak_error_message( ak_error_undefined_function, __func__ ,
                                                      "using an undefined internal function" );
     return NULL;
   }
 
-  /* начинаем с того, что обрабатываем все переданные данные */
-   ak_hash_update( ctx, in, size );
-  /* потом обрабатываем хвост, оставшийся во временном буффере */
-  ctx->final( ctx, ctx->tempdata, ctx->templen );
-  /* теперь проверяем, надо ли выделять память */
-  if( out != NULL ) ctx->code( ctx, out );
-    else
-      if(( result = ak_buffer_new_size( ctx->hsize )) != NULL ) ctx->code( ctx, result->data );
- return result;
+ return ctx->finalize( ctx, in, size, out );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -434,7 +434,7 @@
     @return Указатель на данные, помещенные в буффер. Если указатель buff не определен,
     возвращается NULL,  в переменную ak_errno помещается код ошибки.                               */
 /* ----------------------------------------------------------------------------------------------- */
- const ak_pointer ak_buffer_get_ptr( ak_buffer buff )
+ ak_pointer ak_buffer_get_ptr( ak_buffer buff )
 {
   if( buff == NULL ) {
    ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );

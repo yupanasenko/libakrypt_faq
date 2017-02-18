@@ -145,29 +145,18 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция очистки контекста                                                                      */
- static void ak_hash_gosthash94_clean( ak_hash ctx )
+ static void ak_hash_gosthash94_clean( ak_pointer ctx )
 {
   struct gosthash94_ctx *sx = NULL;
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
     return;
   }
-  sx = ( struct gosthash94_ctx * ) ctx->data;
+  sx = ( struct gosthash94_ctx * ) (( ak_hash ) ctx )->data;
   /* мы очищаем данные, не трогая таблицы замен */
   memset( sx->sum, 0, 32 );
   memset( sx->len, 0, 32 );
   memset( sx->hvec, 0, 32 );
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция возвращает результат вычислений                                                        */
- static void ak_hash_gosthash94_get_code( ak_hash ctx, ak_pointer out )
-{
-  if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
-    return;
-  }
-  memcpy( out, (( struct gosthash94_ctx * ) ctx->data )->hvec, ctx->hsize );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -183,9 +172,10 @@
     \b Внимание. Функция потенциально опасна - она не проверяет передаваемые указатели и
     длины обрабатываемых массивов.                                                                 */
 /* ----------------------------------------------------------------------------------------------- */
- static void ak_hash_gosthash94_addition( ak_uint8 *left, const ak_uint8 *right, const ak_uint32 n )
+ static void ak_hash_gosthash94_addition( ak_uint8 *left, const ak_uint8 *right, const size_t n )
 {
-   ak_uint32 i, sum, carry = 0;
+   size_t i = 0;
+   ak_uint32 sum, carry = 0;
 
     for( i = 0; i < n; i++ )
    {
@@ -319,10 +309,11 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Основное циклическое преобразование (Этап 2)                                                   */
- static void ak_hash_gosthash94_update( ak_hash ctx, const ak_pointer in, const ak_uint64 size )
+ void ak_hash_gosthash94_update( ak_pointer ctx, const ak_pointer in, const size_t size )
 {
   ak_uint64 quot = 0, offset = 0;
   struct gosthash94_ctx *sx = NULL;
+  size_t bsize = 0;
 
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
@@ -332,52 +323,69 @@
     ak_error_message( ak_error_zero_length, __func__ , "using zero length for hash data" );
     return;
   }
-  quot = size/ctx->bsize;
-  if( size - quot*ctx->bsize ) { /* длина данных должна быть кратна ctx->bsize */
+
+  bsize = (( ak_hash ) ctx )->bsize;
+  quot = size/bsize;
+  if( size - quot*bsize ) { /* длина данных должна быть кратна ctx->bsize */
     ak_error_message( ak_error_wrong_length, __func__ , "using data with wrong length" );
     return;
   }
 
-  sx = ( struct gosthash94_ctx * ) ctx->data;
+  sx = ( struct gosthash94_ctx * ) (( ak_hash ) ctx )->data;
   do{
       sx->len[0] += 256;
       if( sx->len[0] < 256 ) sx->len[1]++; // увеличиваем длину сообщения
 
       ak_hash_gosthash94_addition( (ak_uint8 *) sx->sum, (ak_uint8 *)in + offset, 32 );
       ak_hash_gosthash94_compress( sx, (ak_uint32 *)in + (offset >> 2));
-      offset += ctx->bsize;
+      offset += bsize;
     }
   while( offset < size );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static void ak_hash_gosthash94_final( ak_hash ctx, const ak_pointer in, const ak_uint64 size )
+ ak_buffer ak_hash_gosthash94_finalize( ak_pointer ctx, const ak_pointer in,
+                                                                  const size_t size, ak_pointer out )
 {
+  ak_pointer pout = NULL;
+  ak_buffer result = NULL;
   struct gosthash94_ctx *sx = NULL;
 
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
-    return;
+    return NULL;
   }
   if( size >= 32 ) {
     ak_error_message( ak_error_zero_length, __func__ , "using zero length for hash data" );
-    return;
+    return NULL;
   }
 
-  sx = ( struct gosthash94_ctx * ) ctx->data;
+  sx = ( struct gosthash94_ctx * ) (( ak_hash ) ctx )->data;
   if( size > 0 ) {
     ak_uint32 ms[8];
     ak_uint32 bits = (ak_uint32 )( size << 3 );
 
-    memset( ms, 0, 32 ); memcpy( ms, in, (size_t) size ); // копируем данные в вектор M'
+    memset( ms, 0, 32 ); memcpy( ms, in, size ); // копируем данные в вектор M'
     sx->len[0] += bits;
     if( sx->len[0] < bits) sx->len[1]++; // увеличиваем длину сообщения
 
-    ak_hash_gosthash94_addition( (ak_uint8 *) sx->sum, (ak_uint8 *)ms, (const ak_uint32) size );
+    ak_hash_gosthash94_addition( (ak_uint8 *) sx->sum, (const ak_uint8 *) ms, size );
     ak_hash_gosthash94_compress( sx, ms );
   }
   ak_hash_gosthash94_compress( sx, sx->len );
   ak_hash_gosthash94_compress( sx, sx->sum );
+
+ /* определяем указатель на область памяти, в которую будет помещен результат вычислений */
+  if( out != NULL ) pout = out;
+   else
+     if(( result = ak_buffer_new_size((( ak_hash )ctx)->hsize )) != NULL ) pout = result->data;
+
+  /* копируем нужную часть результирующего массива или выдаем сообщение об ошибке */
+   if( pout != NULL ) {
+     memcpy( pout, (( struct gosthash94_ctx * ) (( ak_hash ) ctx )->data )->hvec, 32 );
+   } else ak_error_message( ak_error_out_of_memory, __func__ ,
+                                                  "incorrect memory allocation for result buffer" );
+  return result;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -428,16 +436,14 @@
     return ctx = ak_hash_delete( ctx );
   }
   /* устанавливаем функции - обработчики событий */
-  ctx->clean =  ak_hash_gosthash94_clean;
-  ctx->code =   ak_hash_gosthash94_get_code;
-  ctx->update = ak_hash_gosthash94_update;
-  ctx->final =  ak_hash_gosthash94_final;
+  ctx->clean =    ak_hash_gosthash94_clean;
+  ctx->update =   ak_hash_gosthash94_update;
+  ctx->finalize = ak_hash_gosthash94_finalize;
  return ctx;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Проверка корректной работы функции ГОСТ Р 34.11-94
-     @return Если тестирование прошло успешно возвращается ak_true (истина). В противном случае,
+/*!  @return Если тестирование прошло успешно возвращается ak_true (истина). В противном случае,
      возвращается ak_false.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_hash_test_gosthash94( void )

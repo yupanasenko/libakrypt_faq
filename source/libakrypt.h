@@ -126,8 +126,10 @@
  struct hash;
 /*! \brief Контекст бесключевой функции хеширования */
  typedef struct hash *ak_hash;
-/*! \brief Идентификатор секретного ключа */
- typedef size_t ak_key;
+/*! \brief Структура для итеративного вычисления значений сжимающих отображений */
+ struct update;
+/*! \brief Контекст структуры итеративного вычисления сжимающих отображений */
+ typedef struct update *ak_update;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Указатель на произвольный объект библиотеки */
@@ -236,7 +238,7 @@
 /*! \brief Получение указателя на данные (как на строку символов) */
  dll_export const char *ak_buffer_get_str( ak_buffer );
 /*! \brief Получение указателя на данные */
- dll_export const ak_pointer ak_buffer_get_ptr( ak_buffer );
+ dll_export ak_pointer ak_buffer_get_ptr( ak_buffer );
 /*! \brief Получение размера буффера */
  dll_export const size_t ak_buffer_get_size( ak_buffer );
 /*! \brief Получение строки символов с шестнадцатеричным значением буффера */
@@ -248,7 +250,7 @@
 /*! \brief Тип криптографического механизма                                                        */
  typedef enum {
    /*! \brief неопределенный механизм, может возвращаться как ошибка */
-     undefined_engine,	 
+     undefined_engine,
    /*! \brief идентификатор */
      identifier,
    /*! \brief симметричный шифр (блочный алгоритм)  */
@@ -369,7 +371,27 @@
  dll_export int ak_random_ptr( ak_random, const ak_pointer, const size_t );
 /*! \brief Уничтожение генератора псевдо-случайных чисел */
  dll_export ak_pointer ak_random_delete( ak_pointer );
- 
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Создание сжимающего отображения на основе функции хеширования */
+ dll_export ak_update ak_update_new_hash( ak_hash );
+
+/* в дальнешем сздесь должны появиться функции вычисления имитовставки
+
+   dll_export ak_update ak_update_new_hmac( ak_key_handle );
+   dll_export ak_update ak_update_new_omac( ak_key_handle ); */
+
+/*! \brief Получение длины хешкода сжимающего отображения (в байтах) */
+ dll_export size_t ak_update_get_code_size( ak_update );
+/*! \brief Начальная инициализация и очистка структуры сжимающего отображения */
+ dll_export int ak_update_clean( ak_update );
+/*! \brief Обновление текущего состояния структуры сжимающего отображения */
+ dll_export int ak_update_update( ak_update , const ak_pointer , const size_t );
+/*! \brief Завершение сжатия и получение результата сжимающего отображения */
+  dll_export ak_buffer ak_update_finalize( ak_update , const ak_pointer , const size_t , ak_pointer );
+/*! \brief Удаление и очистка структуры сжимающего отображения */
+ dll_export ak_pointer ak_update_delete( ak_pointer );
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей значение заданной области памяти */
  dll_export char *ak_ptr_to_hexstr( const ak_pointer , const size_t , const ak_bool );

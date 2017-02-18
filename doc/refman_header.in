@@ -1,8 +1,5 @@
 \documentclass[12pt, oneside]{report}
 
-%\usepackage[cm-default]{fontspec}
-%\usepackage{xunicode, xltxtra}
-
 % -------------------------------------------------------------------- %
 % Packages required by doxygen
 \usepackage{fixltx2e}
@@ -23,7 +20,6 @@
 \usepackage{amsmath}
 \usepackage{amsfonts}
 
-% NLS support packages
 \usepackage[T2A]{fontenc}
 \usepackage[russian]{babel}
 \usepackage{amssymb}
@@ -65,8 +61,8 @@
 \fancyhead[RO]{\fancyplain{}{\bfseries\thepage}}
 \fancyfoot[LE]{\fancyplain{}{}}
 \fancyfoot[CE]{\fancyplain{}{}}
-\fancyfoot[RE]{\fancyplain{}{\bfseries\scriptsize Документация для проекта libakrypt}}
-\fancyfoot[LO]{\fancyplain{}{\bfseries\scriptsize Документация для проекта libakrypt}}
+\fancyfoot[RE]{\fancyplain{}{\bfseries\scriptsize Документация к библиотеке libakrypt}}
+\fancyfoot[LO]{\fancyplain{}{\bfseries\scriptsize Документация к библиотеке libakrypt}}
 \fancyfoot[CO]{\fancyplain{}{}}
 \fancyfoot[RO]{\fancyplain{}{}}
 \renewcommand{\footrulewidth}{0.4pt}
@@ -90,20 +86,44 @@
 % Hyperlinks (required, but should be loaded last)
 \usepackage[unicode, colorlinks]{hyperref} % настройка PDF
 \hypersetup{%
-  pdftitle      = {Справочная документация к библиотеке libakrypt (версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@)},
+  pdftitle      = {Документация к библиотеке libakrypt (версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@)},
   pdfauthor     = {Axel Kenzo},
-  colorlinks=true,%
-  linkcolor=blue,%
-  citecolor=blue,
+  colorlinks    = true,%
+  linkcolor     = blue,%
+  citecolor     = blue,
   bookmarksopen = {true},
   bookmarksnumbered = {true}
 }
 
 % -------------------------------------------------------------------- %
-%\setmainfont{Petersburg}          %% задаёт основной шрифт документа
-%\setsansfont{CMU Sans Serif}      %% задаёт шрифт без засечек
-%\setmonofont{CMU Typewriter Text} %% задаёт моноширинный шрифт
-
-% -------------------------------------------------------------------- %
 \begin{document}
+% Title page   
+\thispagestyle{plain}
+\ \\ 
+
+\vfill 
+
+\begin{center}    
+{\LARGE\bfseries Документация к библиотеке LIBAKRYPT}
+\end{center}
+\begin{center}    
+версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@ от \today
+\end{center}
+
+\vfill
+
+\begin{flushright}
+\begin{tabular}{r}
+\emph{Инструкция по сборке и установке}\\
+\emph{Рекомендации по встраиванию}\\
+\emph{Принципы реализации}\\
+\end{tabular}    
+\end{flushright}
+
+\vfill
+\begin{center}
+Axel Kenzo \& The Mystical Company Of Belle Lettres (c) 2014 -- 2017
+\end{center}
+
+\newpage    
 \tableofcontents
