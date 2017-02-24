@@ -32,8 +32,8 @@
 
  /* 5. Теперь мы обрабатываем те же данные путем последовательного вызова
        функции ak_hash_update(), на вход которой подаются фрагменты длины
-       64 байта.  Для получения значения хеш-кода используется вызов
-       функции ak_hash_finalize().                                       */
+       64 байта.  Для получения окончательного значения хеш-кода
+       используется вызов функции ak_hash_finalize().                     */
   bsize = ak_hash_get_block_size( ctx );
   printf(" count of parts: %lu\n", parts = data_size/bsize );
   printf(" length of tail: %lu\n", tail = data_size - parts*bsize );

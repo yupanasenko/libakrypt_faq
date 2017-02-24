@@ -373,6 +373,14 @@
  dll_export ak_pointer ak_random_delete( ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
+ dll_export ak_update ak_update_new_hash( ak_hash );
+ dll_export ak_pointer ak_update_delete( ak_pointer );
+ dll_export size_t ak_update_get_code_size( ak_update );
+ dll_export int ak_update_clean( ak_update );
+ dll_export int ak_update_update( ak_update , const ak_pointer , const size_t );
+ dll_export ak_buffer ak_update_finalize( ak_update , const ak_pointer , const size_t , ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей значение заданной области памяти */
  dll_export char *ak_ptr_to_hexstr( const ak_pointer , const size_t , const ak_bool );
 /*! \brief Конвертация строки шестнадцатеричных символов в массив данных */
