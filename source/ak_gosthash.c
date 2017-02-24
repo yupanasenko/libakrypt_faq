@@ -132,7 +132,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура для хранения внутренних данных контекста функции хеширования ГОСТ Р 34.11-94  */
- struct gosthash94_ctx {
+ struct gosthash94 {
    /*! \brief k-боксы   */
     sbox k21, k43, k65, k87;
    /*! \brief Частичная сумма */
@@ -147,12 +147,12 @@
 /*! Функция очистки контекста                                                                      */
  static void ak_hash_gosthash94_clean( ak_pointer ctx )
 {
-  struct gosthash94_ctx *sx = NULL;
+  struct gosthash94 *sx = NULL;
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
     return;
   }
-  sx = ( struct gosthash94_ctx * ) (( ak_hash ) ctx )->data;
+  sx = ( struct gosthash94 * ) (( ak_hash ) ctx )->data;
   /* мы очищаем данные, не трогая таблицы замен */
   memset( sx->sum, 0, 32 );
   memset( sx->len, 0, 32 );
@@ -195,7 +195,7 @@
      @param ctx контекст алгоритма ГОСТ Р 34.11-94, обрабатывающий информацию
      @param in Блок обрабатываемых данных длины 256 бит (32 байта)                                 */
 /* ----------------------------------------------------------------------------------------------- */
- static void ak_hash_gosthash94_compress( struct gosthash94_ctx *sx, const ak_uint32 *in )
+ static void ak_hash_gosthash94_compress( struct gosthash94 *sx, const ak_uint32 *in )
 {
    ak_uint32 idx = 0, *u = NULL, *v = NULL, key[8], s[8];
    ak_uint64 U[4], V[4], W[4];
@@ -309,14 +309,18 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Основное циклическое преобразование (Этап 2)                                                   */
- void ak_hash_gosthash94_update( ak_pointer ctx, const ak_pointer in, const size_t size )
+ static void ak_hash_gosthash94_update( ak_pointer ctx, const ak_pointer in, const size_t size )
 {
   ak_uint64 quot = 0, offset = 0;
-  struct gosthash94_ctx *sx = NULL;
+  struct gosthash94 *sx = NULL;
   size_t bsize = 0;
 
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
+    return;
+  }
+  if( in == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to hashing data" );
     return;
   }
   if( !size ) {
@@ -331,7 +335,7 @@
     return;
   }
 
-  sx = ( struct gosthash94_ctx * ) (( ak_hash ) ctx )->data;
+  sx = ( struct gosthash94 * ) (( ak_hash ) ctx )->data;
   do{
       sx->len[0] += 256;
       if( sx->len[0] < 256 ) sx->len[1]++; // увеличиваем длину сообщения
@@ -344,12 +348,12 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_hash_gosthash94_finalize( ak_pointer ctx, const ak_pointer in,
+ static ak_buffer ak_hash_gosthash94_finalize( ak_pointer ctx, const ak_pointer in,
                                                                   const size_t size, ak_pointer out )
 {
   ak_pointer pout = NULL;
   ak_buffer result = NULL;
-  struct gosthash94_ctx *sx = NULL;
+  struct gosthash94 *sx = NULL;
 
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
@@ -360,7 +364,7 @@
     return NULL;
   }
 
-  sx = ( struct gosthash94_ctx * )( (( ak_hash ) ctx )->data );
+  sx = ( struct gosthash94 * )( (( ak_hash ) ctx )->data );
   if( size > 0 ) {
     ak_uint32 ms[8];
     ak_uint32 bits = (ak_uint32 )( size << 3 );
@@ -380,12 +384,12 @@
    else
      if(( result = ak_buffer_new_size((( ak_hash )ctx)->hsize )) != NULL ) pout = result->data;
 
-  /* копируем нужную часть результирующего массива или выдаем сообщение об ошибке */
-   if( pout != NULL ) {
-     memcpy( pout, (( struct gosthash94_ctx * ) (( ak_hash ) ctx )->data )->hvec, 32 );
-   } else ak_error_message( ak_error_out_of_memory, __func__ ,
+ /* копируем нужную часть результирующего массива или выдаем сообщение об ошибке */
+  if( pout != NULL ) {
+    memcpy( pout, (( struct gosthash94 * ) (( ak_hash ) ctx )->data )->hvec, 32 );
+  } else ak_error_message( ak_error_out_of_memory, __func__ ,
                                                   "incorrect memory allocation for result buffer" );
-  return result;
+ return result;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -402,7 +406,7 @@
  ak_hash ak_hash_new_gosthash94( ak_oid oid )
 {
   ak_hash ctx = NULL;
-  struct gosthash94_ctx *sx = NULL;
+  struct gosthash94 *sx = NULL;
 
   if( oid == NULL ) {
      ak_error_message( ak_error_null_pointer, __func__ , "using a NULL pointer to OID" );
@@ -418,7 +422,7 @@
   }
 
  /* создаем контекст */
-  if(( ctx = ak_hash_new( sizeof( struct gosthash94_ctx ), 32 )) == NULL ) {
+  if(( ctx = ak_hash_new( sizeof( struct gosthash94 ), 32 )) == NULL ) {
     ak_error_message( ak_error_create_function, __func__ , "incorrect context creation" );
     return NULL;
   }
@@ -427,7 +431,7 @@
   ctx->hsize = 32; /* длина хешкода составляет 256 бит */
 
  /* устанавливаем таблицы замен, указатель на которые хранится в OID */
-  sx = ( struct gosthash94_ctx *) ctx->data;
+  sx = ( struct gosthash94 *) ctx->data;
   ak_kbox_to_sbox( (const ak_kbox) oid->data, sx->k21, sx->k43, sx->k65, sx->k87 );
 
  /* устанавливаем OID алгоритма хеширования */

@@ -49,7 +49,7 @@ set( SOURCES source/ak_tools.c
              source/ak_streebog.c
              source/ak_gosthash.c
              source/ak_random.c
-#             source/ak_skey.c
+             source/ak_skey.c
 #             source/ak_magma.c
 #             source/ak_kuznetchik.c
              source/ak_mpzn.c

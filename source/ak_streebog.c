@@ -607,7 +607,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура для хранения внутренних данных контекста функции хеширования Стрибог          */
-struct streebog_ctx {
+ struct streebog {
  /*! \brief вектор h - временный */
   ak_uint64 H[8];
  /*! \brief вектор n - временный */
@@ -643,7 +643,7 @@ struct streebog_ctx {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Преобразование G (\b важно: мы предполагаем, что данные содержат 64 байта)                     */
- static inline void streebog_g( struct streebog_ctx *ctx, ak_uint64 *n, const ak_uint64 *m )
+ static inline void streebog_g( struct streebog *ctx, ak_uint64 *n, const ak_uint64 *m )
 {
    int idx = 0;
    ak_uint64 K[8], T[8], B[8];
@@ -665,7 +665,7 @@ struct streebog_ctx {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Преобразование Add (увеличения счетчика длины обработаного сообщения)                          */
- static inline void streebog_add( struct streebog_ctx *ctx, ak_uint64 size )
+ static inline void streebog_add( struct streebog *ctx, ak_uint64 size )
 {
    ak_uint64 tmp = size + ctx->N[0];
    if( tmp < ctx->N[0] ) ctx->N[1]++;
@@ -674,7 +674,7 @@ struct streebog_ctx {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Преобразование SAdd (Прибавление к массиву S вектора по модулю \f$ 2^{512} \f$)                */
- static inline void streebog_sadd( struct streebog_ctx *ctx,  const ak_uint64 *data )
+ static inline void streebog_sadd( struct streebog *ctx,  const ak_uint64 *data )
 {
    int i = 0;
    ak_uint64 carry = 0;
@@ -693,12 +693,12 @@ struct streebog_ctx {
 /*! Функция очистки контекста                                                                      */
  static void ak_hash_streebog_clean( ak_pointer ctx )
 {
-  struct streebog_ctx *sx = NULL;
+  struct streebog *sx = NULL;
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
     return;
   }
-  sx = ( struct streebog_ctx * ) (( ak_hash ) ctx )->data;
+  sx = ( struct streebog * ) (( ak_hash ) ctx )->data;
   memset( sx->N, 0, 64 );
   memset( sx->SIGMA, 0, 64 );
   if( (( ak_hash ) ctx )->hsize == 32 ) memset( sx->H, 1, 64 );
@@ -710,7 +710,7 @@ struct streebog_ctx {
  static void ak_hash_streebog_update( ak_pointer ctx, const ak_pointer in, const size_t size )
 {
   ak_uint64 quot = 0, *dt = NULL;
-  struct streebog_ctx *sx = NULL;
+  struct streebog *sx = NULL;
 
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
@@ -726,7 +726,7 @@ struct streebog_ctx {
     return;
   }
   dt = ( ak_uint64 *) in;
-  sx = ( struct streebog_ctx * ) (( ak_hash ) ctx )->data;
+  sx = ( struct streebog * ) (( ak_hash ) ctx )->data;
   do{
       streebog_g( sx, sx->N, dt );
       streebog_add( sx, 512 );
@@ -743,7 +743,7 @@ struct streebog_ctx {
   ak_pointer pout = NULL;
   ak_buffer result = NULL;
   unsigned char *mhide = NULL;
-  struct streebog_ctx *sx = NULL;
+  struct streebog *sx = NULL;
 
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
@@ -760,7 +760,7 @@ struct streebog_ctx {
   mhide = ( unsigned char * )m;
   mhide[size] = 1; /* дополнение */
 
-  sx = ( struct streebog_ctx * ) (( ak_hash ) ctx )->data;
+  sx = ( struct streebog * ) (( ak_hash ) ctx )->data;
   streebog_g( sx, sx->N, m );
   streebog_add( sx, size << 3 );
   streebog_sadd( sx, m );
@@ -784,7 +784,7 @@ struct streebog_ctx {
 /* ----------------------------------------------------------------------------------------------- */
  ak_hash ak_hash_new_streebog256( void )
 {
-  ak_hash ctx = ak_hash_new( sizeof( struct streebog_ctx ), 64 );
+  ak_hash ctx = ak_hash_new( sizeof( struct streebog ), 64 );
   if( ctx == NULL ) {
     ak_error_message( ak_error_create_function, __func__ , "incorrect context creation" );
     return NULL;
@@ -807,7 +807,7 @@ struct streebog_ctx {
 /* ----------------------------------------------------------------------------------------------- */
  ak_hash ak_hash_new_streebog512( void )
 {
-  ak_hash ctx = ak_hash_new( sizeof( struct streebog_ctx ), 64 );
+  ak_hash ctx = ak_hash_new( sizeof( struct streebog ), 64 );
   if( ctx == NULL ) {
     ak_error_message( ak_error_create_function, __func__ , "incorrect context creation" );
     return NULL;
