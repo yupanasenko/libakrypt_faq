@@ -82,7 +82,7 @@
  } ak_resource;
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Секретный ключ -- базовый набор данных и методов контроля, обработки и изменения */
+/*! \brief Структура секретного ключа -- базовый набор данных и методов контроля */
  struct skey {
   /*! \brief ключ */
    struct buffer key;
@@ -117,31 +117,31 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация структуры секретного ключа */
- int ak_skey_create( ak_skey );
+ int ak_skey_create( ak_skey , size_t );
 /*! \brief Очистка структуры секретного ключа */
  int ak_skey_destroy( ak_skey );
-
-
-
-
-
-/*! \brief */
- int ak_skey_set_mask_additive( ak_skey );
- int ak_skey_set_mask_xor( ak_skey );
- int ak_skey_remask_additive( ak_skey );
- int ak_skey_remask_xor( ak_skey );
- int ak_skey_set_icode_additive( ak_skey );
- int ak_skey_set_icode_xor( ak_skey );
- ak_bool ak_skey_check_icode_additive( ak_skey );
- ak_bool ak_skey_check_icode_xor( ak_skey );
-
-/*! \brief Присвоение секретному ключу константного значения */
- int ak_skey_assign_buffer( ak_skey , ak_buffer );
 /*! \brief Присвоение секретному ключу уникального номера */
  int ak_skey_assign_unique_number( ak_skey );
 
+/*! \brief Накложение аддитивной (в кольце \f$ \mathbb Z_{2^{32}}\f$ ) маски на ключ */
+ int ak_skey_set_mask_additive( ak_skey );
+/*! \brief Смена значения аддитивной (в кольце \f$ \mathbb Z_{2^{32}}\f$ ) маски ключа */
+ int ak_skey_remask_additive( ak_skey );
+/*! \brief Вычисление значения контрольной суммы ключа */
+ int ak_skey_set_icode_additive( ak_skey );
+/*! \brief Проверка значения контрольной суммы ключа */
+ ak_bool ak_skey_check_icode_additive( ak_skey );
+
+// int ak_skey_set_mask_xor( ak_skey );
+// int ak_skey_remask_xor( ak_skey );
+// int ak_skey_set_icode_xor( ak_skey );
+// ak_bool ak_skey_check_icode_xor( ak_skey );
+
+/*! \brief Присвоение секретному ключу константного значения */
+ int ak_skey_assign_buffer( ak_skey , ak_buffer );
+
 /* ----------------------------------------------------------------------------------------------- */
- /*! Функция зашифрования/расширования одного блока информации */
+/*! \brief Функция зашифрования/расширования одного блока информации */
   typedef void ( ak_function_block_cipher_key )( ak_skey, ak_pointer, ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */

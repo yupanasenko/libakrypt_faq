@@ -106,7 +106,10 @@ if( LIBAKRYPT_STATIC_LIB )
                      hash-update
                      hash-oids
                      random
-                     dev-random )
+                     dev-random
+                     skey
+
+                     )
   foreach( programm ${EXAMPLES_LIST} )
       # сборка статических примеров
       add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )

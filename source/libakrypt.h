@@ -207,10 +207,10 @@
  dll_export int ak_libakrypt_destroy( void );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Инициализация буффера */
- dll_export int ak_buffer_create( ak_buffer );
 /*! \brief Создание буффера */
  dll_export ak_buffer ak_buffer_new( void );
+/*! \brief Создание буффера заданного размера */
+ dll_export ak_buffer ak_buffer_new_size( const size_t );
 /*! \brief Создание буффера с данными */
  dll_export ak_buffer ak_buffer_new_ptr( const ak_pointer , const size_t , const ak_bool );
 /*! \brief Создание буффера с данными, записанными в шестнадцатеричном виде */
@@ -219,14 +219,10 @@
  dll_export ak_buffer ak_buffer_new_hexstr_str( const char * , const size_t , const ak_bool );
 /*! \brief Создание буффера, содержащего строку символов, оканчивающуюся нулем */
  dll_export ak_buffer ak_buffer_new_str( const char * );
-/*! \brief Создание буффера заданного размера */
- dll_export ak_buffer ak_buffer_new_size( const size_t );
 /*! \brief Функция создает буффер заданный длины со случайными значениями */
  dll_export ak_buffer ak_buffer_new_random( ak_random, const size_t );
 /*! \brief Зачистка данных, хранящихся в буффере */
  dll_export int ak_buffer_wipe( ak_buffer, ak_random );
-/*! \brief Уничтожение данных, хранящиеся в полях структуры struct buffer */
- dll_export int ak_buffer_destroy( ak_buffer );
 /*! \brief Уничтожение буффера */
  dll_export ak_pointer ak_buffer_delete( ak_pointer );
 /*! \brief Пощемение двоичных данных в буффер */
@@ -235,6 +231,8 @@
  dll_export int ak_buffer_set_hexstr( ak_buffer, const char * );
 /*! \brief Помещение строки, оканчивающейся нулем, в буффер */
  dll_export int ak_buffer_set_str( ak_buffer, const char * );
+/*! \brief Заполнение буффера случайными данными */
+ dll_export int ak_buffer_set_random( ak_buffer , ak_random );
 /*! \brief Получение указателя на данные (как на строку символов) */
  dll_export const char *ak_buffer_get_str( ak_buffer );
 /*! \brief Получение указателя на данные */

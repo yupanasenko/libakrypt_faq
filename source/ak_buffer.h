@@ -52,12 +52,19 @@
  };
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание буффера с заданными функциями - обработчиками выделения и освобождения памяти */
- ak_buffer ak_buffer_new_function_size( ak_function_alloc *, ak_function_free *, const size_t );
+/*! \brief Инициализация буффера */
+ int ak_buffer_create( ak_buffer );
+/*! \brief Инициализация буффера и выделение памяти фиксированной длины */
+ int ak_buffer_create_size( ak_buffer , const size_t );
+/*! \brief Инициализация буффера с заданными обработчиками выделения и освобождения памяти */
+ int ak_buffer_create_function_size( ak_buffer ,
+                                          ak_function_alloc *, ak_function_free *, const size_t );
 /*! \brief Функция освобождает память, выделенную под данные (поле data структуры struct buffer ) */
  int ak_buffer_free( ak_buffer );
 /*! \brief Функция выделяет память под данные, хранимые в буффере */
  int ak_buffer_alloc( ak_buffer , const size_t );
+/*! \brief Уничтожение данных, хранящиеся в полях структуры struct buffer */
+ int ak_buffer_destroy( ak_buffer );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

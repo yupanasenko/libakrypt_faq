@@ -38,12 +38,50 @@
  int ak_buffer_create( ak_buffer buff )
 {
   if( buff == NULL ) {
-      ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
-      return ak_error_null_pointer;
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to a buffer" );
+    return ak_error_null_pointer;
   }
   buff->data = NULL; buff->size = 0; buff->flag = ak_false;
   buff->alloc = malloc; /* по-умолчанию, используются обычные функции */
   buff->free = free;    /* выделения/перераспределения/освобождения памяти */
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_buffer_create_size( ak_buffer buff, const size_t size )
+{
+  int error = ak_error_ok;
+  if(( error = ak_buffer_create( buff )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong buffer context creation" );
+    return error;
+  }
+  if(( error = ak_buffer_alloc( buff, size )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong memory allocation for buffer context" );
+    ak_buffer_destroy( buff );
+    return error;
+  }
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param alloc указатель на функцию выделения памяти
+    @param free указатель на функцию освобождения памяти
+    @param realloc указатель на функцию перераспределения памяти
+    @param size размер выделяемой под буффер памяти (в байтах)
+    @return Функция возвращает указатель на созданный буффер. Если произошла ошибка,
+    то возвращается NULL                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_buffer_create_function_size( ak_buffer buff, ak_function_alloc *falloc,
+                                                        ak_function_free *ffree, const size_t size )
+{
+  int error = ak_error_ok;
+  if(( error = ak_buffer_create_size( buff, size )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong creation buffer context" );
+    ak_buffer_destroy( buff );
+    return error;
+  }
+  buff->free = ffree; buff->alloc = falloc;
  return ak_error_ok;
 }
 
@@ -61,26 +99,6 @@
   return buff;
 }
 
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param alloc указатель на функцию выделения памяти
-    @param free указатель на функцию освобождения памяти
-    @param realloc указатель на функцию перераспределения памяти
-    @param size размер выделяемой под буффер памяти (в байтах)
-    @return Функция возвращает указатель на созданный буффер. Если произошла ошибка,
-    то возвращается NULL                                                                           */
-/* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_buffer_new_function_size( ak_function_alloc *alloc,
-                                                          ak_function_free *free, const size_t size )
-{
-  ak_buffer buff = ( ak_buffer ) malloc( sizeof( struct buffer ));
-  if( buff != NULL ) {
-       ak_buffer_create( buff );
-       buff->free = free; buff->alloc = alloc;
-  } else ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation"  );
-
-  if( ak_buffer_alloc( buff, size ) == ak_error_ok ) return buff;
-  return ( buff = ak_buffer_delete( buff ));
-}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param ptr указатель на данные, помещаемые в буффер. Если указатель не определен, то
@@ -330,6 +348,31 @@
            memcpy( buff->data, ptr, size );
          }
  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_buffer_set_random( ak_buffer buff, ak_random generator )
+{
+  int result = ak_error_ok;
+
+  if( buff == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to buffer context" );
+    return ak_error_null_pointer;
+  }
+  if( generator == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to a random generator" );
+    return ak_error_null_pointer;
+  }
+  if( buff->data == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to internal buffer" );
+    return ak_error_null_pointer;
+  }
+  if( ak_random_ptr( generator, buff->data, buff->size ) != ak_error_ok ) {
+    ak_error_message( ak_error_write_data, __func__, "incorrect randomizing interbal buffer" );
+    memset( buff->data, 0, buff->size );
+    result = ak_error_write_data;
+  }
+ return result;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

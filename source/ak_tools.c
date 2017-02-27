@@ -415,7 +415,7 @@
 
   @return функция всегда возвращает ak_error_ok (ноль).                                           */
 /* ----------------------------------------------------------------------------------------------- */
-int ak_log_set_level( int level )
+ int ak_log_set_level( int level )
 {
  if( level >= ak_log_maximum ) {
    libakrypt_options.log_level = ak_log_maximum;
@@ -431,14 +431,14 @@ return ak_error_ok;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция возвращает ресурс секретного ключа для алгоритма ГОСТ 28147-89 (Магма) */
-ak_uint32 ak_libakrypt_get_magma_resource( void )
+ ak_uint32 ak_libakrypt_get_magma_resource( void )
 {
  return libakrypt_options.cipher_key_magma_block_resource;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция возвращает ресурс секретного ключа для алгоритма ГОСТ 34.12-2015 (Кузнечик) */
-ak_uint32 ak_libakrypt_get_kuznetchik_resource( void )
+ ak_uint32 ak_libakrypt_get_kuznetchik_resource( void )
 {
  return libakrypt_options.cipher_key_kuznetchik_block_resource;
 }
