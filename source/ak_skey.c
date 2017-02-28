@@ -132,6 +132,8 @@
   if( skey->data != NULL ) free( skey->data );
 
   ak_buffer_destroy( &skey->number );
+  skey->oid = NULL;
+  memset( &(skey->resource), 0, sizeof( ak_resource ));
 
  /* обнуляем указатели */
   skey->set_mask = NULL;
