@@ -108,7 +108,7 @@
   ak_oids_add_oid( ak_oid_new( block_cipher, kbox_params,
             "id-magma-gost3412-2015-ParamSet", "1.2.643.2.52.31.1", (ak_pointer) cipher_box_magma ));
 
-  /* добавляем параметры эллиптических кривых */
+  /* добавляем тестовые параметры эллиптических кривых */
   ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-gost3410-2012-test256",
                                "1.2.643.7.1.2.1.1.0", (ak_pointer) &wcurve_gost_3410_2012_test256 ));
   ak_oids_add_oid( ak_oid_new( identifier, wcurve_params, "id-gost3410-2012-test512",

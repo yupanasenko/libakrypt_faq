@@ -39,10 +39,15 @@
 
 /*! Тип данных, реализующий перестановки на множестве из 8 бит */
  typedef ak_uint8 sbox[256];
+ typedef sbox magma[4];
  typedef sbox *ak_sbox;
+ extern const magma magma_boxes;
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_kbox_to_sbox( const ak_kbox k, sbox k21, sbox k43, sbox k65, sbox k87 );
+/*! \brief Преобразование перестановок */
+ int ak_kbox_to_sbox( const ak_kbox , sbox , sbox , sbox , sbox );
+/*! \brief Преобразование перестановок */
+ int ak_kbox_to_magma( const ak_kbox , magma );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief функция создания контекста хеширования */

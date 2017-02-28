@@ -122,8 +122,10 @@
  int ak_skey_destroy( ak_skey );
 /*! \brief Присвоение секретному ключу уникального номера */
  int ak_skey_assign_unique_number( ak_skey );
+/*! \brief Присвоение секретному ключу константного значения */
+ int ak_skey_assign_ptr( ak_skey , const ak_pointer , const ak_bool );
 
-/*! \brief Накложение аддитивной (в кольце \f$ \mathbb Z_{2^{32}}\f$ ) маски на ключ */
+/*! \brief Наложение аддитивной (в кольце \f$ \mathbb Z_{2^{32}}\f$ ) маски на ключ */
  int ak_skey_set_mask_additive( ak_skey );
 /*! \brief Смена значения аддитивной (в кольце \f$ \mathbb Z_{2^{32}}\f$ ) маски ключа */
  int ak_skey_remask_additive( ak_skey );
@@ -137,8 +139,6 @@
 // int ak_skey_set_icode_xor( ak_skey );
 // ak_bool ak_skey_check_icode_xor( ak_skey );
 
-// /*! \brief Присвоение секретному ключу константного значения */
-// int ak_skey_assign_buffer( ak_skey , ak_buffer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция зашифрования/расширования одного блока информации */
@@ -165,10 +165,20 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация ключа алгоритма блочного шифрования */
  int ak_block_cipher_key_create( ak_block_cipher_key , size_t , size_t );
+/*! \brief Создание контекста ключа алгоритма блочного шифрования */
+ ak_block_cipher_key ak_block_cipher_key_new( size_t , size_t );
 /*! \brief Очистка ключа алгоритма блочного шифрования */
  int ak_block_cipher_key_destroy( ak_block_cipher_key );
 /*! \brief Удаление ключа алгоритма блочного шифрования */
  ak_pointer ak_block_cipher_key_delete( ak_pointer );
+
+/*! Создание контекста ключа алгоритма Магма с заданным значением */
+ ak_block_cipher_key ak_block_cipher_key_magma_new_buffer( const ak_pointer , const ak_bool );
+
+
+
+/*! \brief Функция выполняет тестирование алгоритма Магма в соответствии с ГОСТ Р 34.12-2015 и ГОСТ Р 34.13-2015 */
+ ak_bool ak_block_cipher_key_magma_test( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Секретный ключ алгоритма выработки имитовставки HMAC */

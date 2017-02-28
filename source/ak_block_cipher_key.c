@@ -49,9 +49,9 @@
     создающих объекты конкретных алгоритмов блочного шифрования.
 
     @param bkey контекст ключа алгоритма блочного шифрованния
-    @param keylen длина ключа в байтах
+    @param keysize длина ключа в байтах
     @param blocksize длина блока обрабатываемых данных в байтах
-    @return В случае успеха функция возввращает \ref ak_error_ok (ноль).
+    @return В случае успеха функция возвращает \ref ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_block_cipher_key_create( ak_block_cipher_key bkey, size_t keysize, size_t blocksize )
@@ -83,6 +83,21 @@
   bkey->shedule_keys = NULL;
   bkey->delete_keys =  NULL;
  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param keysize длина ключа в байтах
+    @param blocksize длина блока обрабатываемых данных в байтах
+    @return В случае успеха функция возвращает указатель на созданный контекст ключа.
+    В противном случае, возвращается NULL. Код ошибки может быть получен с помощью вызова
+    функции ak_error_get_value()                                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_block_cipher_key ak_block_cipher_key_new( size_t keysize, size_t blocksize )
+{
+  ak_block_cipher_key bkey = ( ak_block_cipher_key ) malloc( sizeof( struct block_cipher_key ));
+   if( bkey != NULL ) ak_block_cipher_key_create( bkey, keysize, blocksize );
+     else ak_error_message( ak_error_out_of_memory, __func__ , "incorrect memory allocation" );
+ return bkey;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

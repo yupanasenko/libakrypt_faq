@@ -416,5 +416,57 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает ключу заданное значение, размер которого определяется размером секретного
+    ключа. В зависимости от значения флага cflag при присвоении данные могут копироваться в контекст
+    секретного ключа,
+    либо в контекст может передаваться владение указателем на данные.
+    В этом случае поведение функции аналогично поведению функции ak_buffer_set_ptr().
+
+    @param skey Контекст секретного ключа. К моменту вызова функции контекст должен быть
+    инициализирован.
+    @param ptr Указатель на данные, которые будут интерпретироваться в качестве значения ключа.
+    @param cflag Флаг передачи владения укзателем ptr. Если cflag ложен (ak_false), то физического
+    копирования данных не происходит: внутренний буфер лишь указывает на размещенные в другом месте
+    данные, но не владеет ими. Если cflag истиннен (ak_true), то происходит выделение памяти и
+    копирование данных в эту память (размножение данных).
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_assign_ptr( ak_skey skey, const ak_pointer ptr, const ak_bool cflag )
+{
+  int error = ak_error_ok;
+
+  if( skey == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to secret key" );
+    return ak_error_null_pointer;
+  }
+  if( skey->key.size == 0 ) {
+    ak_error_message( ak_error_zero_length, __func__ , "using non initialized secret key context" );
+    return ak_error_zero_length;
+  }
+  if( ptr == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to buffer" );
+    return ak_error_null_pointer;
+  }
+
+ /* присваиваем буффер и маскируем его */
+  if(( error = ak_buffer_set_ptr( &skey->key, ptr, skey->key.size, cflag )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong assigning a key data" );
+    return error;
+  }
+  if(( error = skey->set_mask( skey )) != ak_error_ok ) {
+      ak_error_message( error, __func__ , "wrong secret key masking" );
+      return error;
+  }
+  if(( error = skey->set_icode( skey )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong calculation of integrity code" );
+    return error;
+  }
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_skey.c  */
 /* ----------------------------------------------------------------------------------------------- */

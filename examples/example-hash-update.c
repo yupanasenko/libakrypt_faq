@@ -13,9 +13,6 @@
   ak_random generator = NULL; /* псевдослучайный генератор */
   ak_buffer result = NULL;    /* буффер для результов хеширования */
 
-  printf("Произвольное сообщение на русском языке\n");
-
-
  /* Инициализируем библиотеку */
   if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true )
     return ak_libakrypt_destroy();

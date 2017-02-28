@@ -687,11 +687,11 @@ ak_bool ak_libakrypt_test_block_ciphers( void )
  if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "testing block ciphers started" );
 
-// /* тестируем алгоритм Магма (ГОСТ 28147-89, ГОСТ Р 34.12-2015) */
-// if( ak_cipher_key_test_magma() != ak_true ) {
-//   ak_error_message( ak_error_get_value(), __func__ , "incorrect block cipher magma testing" );
-//   return ak_false;
-// }
+/* тестируем алгоритм Магма (ГОСТ 28147-89, ГОСТ Р 34.12-2015) */
+ if( ak_block_cipher_key_magma_test() != ak_true ) {
+   ak_error_message( ak_error_get_value(), __func__ , "incorrect block cipher magma testing" );
+   return ak_false;
+ }
 
 // /* вырабатываем долговременные параметры алгоритма Кузнечик */
 // if( ak_crypt_kuznetchik_init_tables() != ak_error_ok ) {

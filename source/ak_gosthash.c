@@ -75,6 +75,11 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ int ak_kbox_to_magma( const ak_kbox k, magma perm ) {
+  return ak_kbox_to_sbox( k, perm[0], perm[1], perm[2], perm[3] );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция реализует один такт шифрующего преобразования ГОСТ 28147-89                            */
  static ak_uint32 ak_crypt_magma_gostf( ak_uint32 x, const ak_uint8* k21,
                                      const ak_uint8 *k43, const ak_uint8* k65, const ak_uint8 *k87 )
