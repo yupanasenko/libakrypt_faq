@@ -72,7 +72,7 @@
   }
 
  /* теперь инициализируем данные */
-  if(( error = ak_skey_create( &bkey->key, keysize )) == ak_error_ok ) {
+  if(( error = ak_skey_create( &bkey->key, keysize )) != ak_error_ok ) {
     ak_error_message( error, __func__, "wrong creation of secret key" );
     return error;
   }

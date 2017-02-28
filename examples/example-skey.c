@@ -18,7 +18,7 @@
 
   printf("resource: %lu\n", res.counter );
   if( skey->oid == NULL ) printf("oid:     (null)\n");
-   else printf("oid:      %s\n", ak_oid_get_name( skey->oid ));
+   else printf("oid:      %s (%s)\n", ak_oid_get_name( skey->oid ), ak_oid_get_id( skey->oid ));
   printf("random:   "); for( i = 0; i < 16; i++ ) printf("%02x ", ak_random_uint8( skey->generator ));
   printf("\n");
 }
