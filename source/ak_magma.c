@@ -120,32 +120,14 @@
   register ak_uint32 n1 = ((ak_uint32 *) in)[0];
   register ak_uint32 n2 = ((ak_uint32 *) in)[1];
 
-  p = (n1 - mp[0]); p += kp[0]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[1]); p += kp[1]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[2]); p += kp[2]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[3]); p += kp[3]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[4]); p += kp[4]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[5]); p += kp[5]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[6]); p += kp[6]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[7]); p += kp[7]; n1 ^= ak_magma_gostf( p );
-
-  p = (n1 - mp[0]); p += kp[0]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[1]); p += kp[1]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[2]); p += kp[2]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[3]); p += kp[3]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[4]); p += kp[4]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[5]); p += kp[5]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[6]); p += kp[6]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[7]); p += kp[7]; n1 ^= ak_magma_gostf( p );
-
-  p = (n1 - mp[0]); p += kp[0]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[1]); p += kp[1]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[2]); p += kp[2]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[3]); p += kp[3]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[4]); p += kp[4]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[5]); p += kp[5]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[6]); p += kp[6]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[7]); p += kp[7]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[7]); p += kp[7]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[6]); p += kp[6]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[5]); p += kp[5]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[4]); p += kp[4]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[3]); p += kp[3]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[2]); p += kp[2]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[1]); p += kp[1]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[0]); p += kp[0]; n1 ^= ak_magma_gostf( p );
 
   p = (n1 - mp[7]); p += kp[7]; n2 ^= ak_magma_gostf( p );
   p = (n2 - mp[6]); p += kp[6]; n1 ^= ak_magma_gostf( p );
@@ -155,6 +137,24 @@
   p = (n2 - mp[2]); p += kp[2]; n1 ^= ak_magma_gostf( p );
   p = (n1 - mp[1]); p += kp[1]; n2 ^= ak_magma_gostf( p );
   p = (n2 - mp[0]); p += kp[0]; n1 ^= ak_magma_gostf( p );
+
+  p = (n1 - mp[7]); p += kp[7]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[6]); p += kp[6]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[5]); p += kp[5]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[4]); p += kp[4]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[3]); p += kp[3]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[2]); p += kp[2]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[1]); p += kp[1]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[0]); p += kp[0]; n1 ^= ak_magma_gostf( p );
+
+  p = (n1 - mp[0]); p += kp[0]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[1]); p += kp[1]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[2]); p += kp[2]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[3]); p += kp[3]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[4]); p += kp[4]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[5]); p += kp[5]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[6]); p += kp[6]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[7]); p += kp[7]; n1 ^= ak_magma_gostf( p );
 
  ((ak_uint32 *)out)[0] = n2; ((ak_uint32 *)out)[1] = n1;
 }
@@ -167,6 +167,15 @@
   register ak_uint32 n1 = ((ak_uint32 *) in)[0];
   register ak_uint32 n2 = ((ak_uint32 *) in)[1];
 
+  p = (n1 - mp[7]); p += kp[7]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[6]); p += kp[6]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[5]); p += kp[5]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[4]); p += kp[4]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[3]); p += kp[3]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[2]); p += kp[2]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[1]); p += kp[1]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[0]); p += kp[0]; n1 ^= ak_magma_gostf( p );
+
   p = (n1 - mp[0]); p += kp[0]; n2 ^= ak_magma_gostf( p );
   p = (n2 - mp[1]); p += kp[1]; n1 ^= ak_magma_gostf( p );
   p = (n1 - mp[2]); p += kp[2]; n2 ^= ak_magma_gostf( p );
@@ -176,32 +185,23 @@
   p = (n1 - mp[6]); p += kp[6]; n2 ^= ak_magma_gostf( p );
   p = (n2 - mp[7]); p += kp[7]; n1 ^= ak_magma_gostf( p );
 
-  p = (n1 - mp[7]); p += kp[7]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[6]); p += kp[6]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[5]); p += kp[5]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[4]); p += kp[4]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[3]); p += kp[3]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[2]); p += kp[2]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[1]); p += kp[1]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[0]); p += kp[0]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[0]); p += kp[0]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[1]); p += kp[1]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[2]); p += kp[2]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[3]); p += kp[3]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[4]); p += kp[4]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[5]); p += kp[5]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[6]); p += kp[6]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[7]); p += kp[7]; n1 ^= ak_magma_gostf( p );
 
-  p = (n1 - mp[7]); p += kp[7]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[6]); p += kp[6]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[5]); p += kp[5]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[4]); p += kp[4]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[3]); p += kp[3]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[2]); p += kp[2]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[1]); p += kp[1]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[0]); p += kp[0]; n1 ^= ak_magma_gostf( p );
-
-  p = (n1 - mp[7]); p += kp[7]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[6]); p += kp[6]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[5]); p += kp[5]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[4]); p += kp[4]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[3]); p += kp[3]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[2]); p += kp[2]; n1 ^= ak_magma_gostf( p );
-  p = (n1 - mp[1]); p += kp[1]; n2 ^= ak_magma_gostf( p );
-  p = (n2 - mp[0]); p += kp[0]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[0]); p += kp[0]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[1]); p += kp[1]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[2]); p += kp[2]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[3]); p += kp[3]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[4]); p += kp[4]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[5]); p += kp[5]; n1 ^= ak_magma_gostf( p );
+  p = (n1 - mp[6]); p += kp[6]; n2 ^= ak_magma_gostf( p );
+  p = (n2 - mp[7]); p += kp[7]; n1 ^= ak_magma_gostf( p );
 
   ((ak_uint32 *)out)[0] = n2; ((ak_uint32 *)out)[1] = n1;
 }
@@ -279,7 +279,7 @@
     @return Функция возвращает указатель на созданный контекст. В случае возникновения ошибки,
     возвращается NULL, код ошибки может быть получен с помощью вызова функции ak_error_get_value() */
 /* ----------------------------------------------------------------------------------------------- */
- ak_block_cipher_key ak_block_cipher_key_magma_new_buffer( const ak_pointer keyptr,
+ ak_block_cipher_key ak_block_cipher_key_new_magma_ptr( const ak_pointer keyptr,
                                                                               const ak_bool cflag  )
 {
   int error = ak_error_ok;
@@ -300,34 +300,112 @@
     ak_error_message( error, __func__ , "incorrect assigning of key data" );
     return ( bkey = ak_block_cipher_key_delete( bkey ));
   }
-// /* выводим сообщение о факте создания ключа */
-//  if( ak_log_get_level() >= ak_log_standard ) ak_error_message_fmt( ak_error_ok, __func__ ,
-//                              "created a secret key %s", ak_buffer_get_str(ckey->key->number ));
-// /* закрываем доступ к секретному ключу */
-//  if( ak_skey_lock( ckey->key ) != ak_error_ok ) {
-//    ak_error_message( ak_error_get_value(), __func__ , "incorrect locking of secret key" );
-//    return ( ckey = ak_cipher_key_delete( ckey ));
-//   }
  return bkey;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_block_cipher_key_magma_test( void )
+ ak_bool ak_block_cipher_key_test_magma( void )
 {
   int value = 0;
   magma test_boxes;
+  char *str = NULL;
+  int audit = ak_log_get_level();
+  ak_block_cipher_key bkey = NULL;
+
+  /*! тестовый ключ из ГОСТ Р 34.12-2015, приложение А.2 */
+  ak_uint8 gost3412_2015_key[32] = {
+     0xff, 0xfe, 0xfd, 0xfc, 0xfb, 0xfa, 0xf9, 0xf8, 0xf7, 0xf6, 0xf5, 0xf4, 0xf3, 0xf2, 0xf1, 0xf0,
+     0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
+  };
+  ak_uint8 out[32];
+  /*! открытый текст из ГОСТ Р 34.12-2015, приложение А.2, подлежащий зашифрованию */
+  ak_uint8 a[8] = { 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe };
+  /*! зашифрованный блок из ГОСТ Р 34.12-2015 */
+  ak_uint8 b[8] = { 0x3d, 0xca, 0xd8, 0xc2, 0xe5, 0x01, 0xe9, 0x4e };
+  /*! открытый текст из ГОСТ Р 34.13-2015, приложение А.2 */
+  ak_uint64 in_3413_2015_text[4] = {
+                   0x92def06b3c130a59, 0xdb54c704f8189d20, 0x4a98fb2e67a8024c, 0x8912409b17b57e41 };
+  /*! зашифрованный текст из ГОСТ Р 34.13-2015, приложение А.2 */
+  ak_uint64 out_3413_2015_ecb_text[4] = {
+                   0x2b073f0494f372a0, 0xde70e715d3556e48, 0x11d8d9e9eacfbc1e, 0x7c68260996c67efb };
 
   /* 1. Проверяем корректность развертки перестановок алгоритма Магма */
    ak_kbox_to_magma( (kbox *) cipher_box_magma, test_boxes );
-   if((value = memcmp( test_boxes, magma_boxes, sizeof( magma ))) != 0 ) {
+   if(( value = memcmp( test_boxes, magma_boxes, sizeof( magma ))) != 0 ) {
      ak_error_message_fmt( ak_error_not_equal_data, __func__,
-                                   "wrong magma boxes comparison with  value %d", value );
+                                   "wrong magma boxes comparison with value %d", value );
      return ak_false;
    }
 
+  /* 2. Вырабатываем ключ алгоритма Магма */
+   if((bkey = ak_block_cipher_key_new_magma_ptr( gost3412_2015_key, ak_false )) == NULL ) {
+     ak_error_message( ak_error_get_value(), __func__, "wrong creation of test key" );
+     return ak_false;
+   }
+
+  /* 3. Тестируем зашифрование/расшифрование одного блока согласно ГОСТ Р34.12-2015 */
+   bkey->encrypt( &bkey->key, a, out );
+    if( memcmp( out, b, 8 ) != 0 ) {
+      ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                         "the one block encryption test from GOST R 34.12-2015 is wrong");
+      ak_log_set_message( str = ak_ptr_to_hexstr( out, 8, ak_true )); free( str );
+      ak_log_set_message( str = ak_ptr_to_hexstr( b, 8, ak_true )); free( str );
+      bkey = ak_block_cipher_key_delete( bkey );
+      return ak_false;
+    }
+    if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                           "the one block encryption test from GOST R 34.12-2015 is Ok" );
+
+   bkey->decrypt( &bkey->key, b, out );
+    if( memcmp( out, a, 8 ) != 0 ) {
+      ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                         "the one block decryption test from GOST R 34.12-2015 is wrong");
+      ak_log_set_message( str = ak_ptr_to_hexstr( out, 8, ak_true )); free( str );
+      ak_log_set_message( str = ak_ptr_to_hexstr( a, 8, ak_true )); free( str );
+      bkey = ak_block_cipher_key_delete( bkey );
+      return ak_false;
+    }
+   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                           "the one block decryption test from GOST R 34.12-2015 is Ok" );
+
+  /* 4. Тестируем режим простой замены согласно ГОСТ Р34.13-2015 */
+    if( ak_block_cipher_key_encrypt_ecb( bkey, in_3413_2015_text, out, 32 ) != ak_error_ok ) {
+      ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong checking a secret key" );
+      bkey = ak_block_cipher_key_delete( bkey );
+      return ak_false;
+    }
+    if( memcmp( out, out_3413_2015_ecb_text, 32 ) != 0 ) {
+      ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                          "the ecb mode encryption test from GOST R 34.13-2015 is wrong");
+      ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free( str );
+      ak_log_set_message( str = ak_ptr_to_hexstr( out_3413_2015_ecb_text, 32, ak_true ));
+      free( str );
+      bkey = ak_block_cipher_key_delete( bkey );
+      return ak_false;
+    }
+    if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                             "the ecb mode encryption test from GOST 34.13-2015 is Ok" );
+
+    if( ak_block_cipher_key_decrypt_ecb( bkey, out_3413_2015_ecb_text, out, 32 ) != ak_error_ok ) {
+      ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong checking a secret key" );
+      bkey = ak_block_cipher_key_delete( bkey );
+      return ak_false;
+    }
+    if( memcmp( out, in_3413_2015_text, 32 ) != 0 ) {
+      ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                          "the ecb mode decryption test from GOST R 34.13-2015 is wrong");
+      ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free( str );
+      ak_log_set_message( str = ak_ptr_to_hexstr( out_3413_2015_ecb_text, 32, ak_true ));
+      free( str );
+      bkey = ak_block_cipher_key_delete( bkey );
+      return ak_false;
+    }
+    if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                             "the ecb mode decryption test from GOST 34.13-2015 is Ok" );
+    bkey = ak_block_cipher_key_delete( bkey );
+
  return ak_true;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                     ak_magma.c  */

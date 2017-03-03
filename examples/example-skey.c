@@ -23,31 +23,32 @@
   printf("\n");
 }
 
-
  int main( void )
 {
- /* тестовое значение ключа из ГОСТ Р 34.12-2015 */
-  ak_uint32 test_3412_2015_key[8] = {
-    0xffeeddcc, 0xbbaa9988, 0x77665544, 0x33221100, 0xf0f1f2f3, 0xf4f5f6f7, 0xf8f9fafb, 0xfcfdfeff };
-  ak_uint64 out_text = 0;
-  ak_uint64 in_3412_2015_text = 0xfedcba9876543210, out_3412_2015_text = 0x4ee901e5c2d8ca3d;
   char *str = NULL;
+  ak_uint8 gost3412_2015_key[32] = {
+       0xff, 0xfe, 0xfd, 0xfc, 0xfb, 0xfa, 0xf9, 0xf8, 0xf7, 0xf6, 0xf5, 0xf4, 0xf3, 0xf2, 0xf1, 0xf0,
+       0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
+  };
+  ak_uint8 out[32];
+  ak_uint8 a[8] = { 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe };
+  ak_uint8 b[8] = { 0x3d, 0xca, 0xd8, 0xc2, 0xe5, 0x01, 0xe9, 0x4e };
 
  /* инициализируем библиотеку. в случае возникновения ошибки завершаем работу */
   if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true ) {
    return ak_libakrypt_destroy();
   }
 
-  ak_block_cipher_key key = ak_block_cipher_key_magma_new_buffer( test_3412_2015_key, ak_false );
+  ak_block_cipher_key key = ak_block_cipher_key_new_magma_ptr( gost3412_2015_key, ak_false );
   print_key( &key->key );
 
-  key->encrypt( &key->key, &in_3412_2015_text, &out_text );
-  printf("out: %s\n", str = ak_ptr_to_hexstr( &out_text, 8, ak_true )); free( str );
-  printf("out: %s\n", str = ak_ptr_to_hexstr( &out_3412_2015_text, 8, ak_true )); free( str );
+  key->encrypt( &key->key, a, out );
+  printf("out: %s\n", str = ak_ptr_to_hexstr( out, 8, ak_true )); free( str );
+  printf("out: %s\n", str = ak_ptr_to_hexstr( b, 8, ak_true )); free( str );
 
-  key->decrypt( &key->key, &out_3412_2015_text, &out_text );
-  printf("in:  %s\n", str = ak_ptr_to_hexstr( &out_text, 8, ak_true )); free( str );
-  printf("in:  %s\n", str = ak_ptr_to_hexstr( &in_3412_2015_text, 8, ak_true )); free( str );
+  key->decrypt( &key->key, b, out );
+  printf("in:  %s\n", str = ak_ptr_to_hexstr( out, 8, ak_true )); free( str );
+  printf("in:  %s\n", str = ak_ptr_to_hexstr( a, 8, ak_true )); free( str );
 
   key = ak_block_cipher_key_delete( key );
 

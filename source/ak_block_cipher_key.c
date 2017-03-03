@@ -146,5 +146,101 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*                                        теперь режимы шифрования                                 */
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param bkey Ключ алгоритма блочного шифрования, на котором происходит зашифрование информации
+    @param in Указатель на область памяти, где хранятся входные (зашифровываемые) данные
+    @param out Указатель на область памяти, куда помещаются зашифрованные данные
+    (этот указатель может совпадать с in)
+    @param size Размер зашировываемых данных (в байтах)
+
+    @return В случае возникновения ошибки функция возвращает ее код, в противном случае
+    возвращается ak_error_ok (ноль)                                                                */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_block_cipher_key_encrypt_ecb( ak_block_cipher_key bkey,
+                                                        ak_pointer in, ak_pointer out, size_t size )
+{
+  size_t blocks = 0;
+  int error = ak_error_ok;
+  ak_uint64 *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
+
+//  /* выполняем проверку входных параметров */
+//  if(( error = ak_cipher_key_check_before_encrypt( ckey, in, out, size, ak_true )) != ak_error_ok )
+//  {
+//    ak_error_message( error, __func__ , "wrong testing a cipher key before encryption" );
+//    return error;
+//  }
+
+  /* теперь приступаем к зашифрованию данных */
+  blocks = size/bkey->block_size;
+  bkey->key.resource.counter -= ( ak_uint64 ) blocks; /* уменьшаем ресурс ключа */
+
+  if( bkey->block_size == 8 ) { /* здесь длина блока равна 64 бита */
+    do{
+       bkey->encrypt( &bkey->key, inptr++, outptr++ );
+    } while( --blocks > 0 );
+  }
+  if( bkey->block_size == 16 ) { /* здесь длина блока равна 128 бит */
+    do{
+       bkey->encrypt( &bkey->key, inptr, outptr );
+       inptr+=2; outptr+=2;
+    } while( --blocks > 0 );
+  }
+
+  /* перемаскируем ключ */
+  if( bkey->key.remask( &bkey->key ) != ak_error_ok )
+    ak_error_message( ak_error_get_value(), __func__ , "wrong remasking of secret key" );
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param bkey Ключ алгоритма блочного шифрования, на котором происходит расшифрование информации
+    @param in Указатель на область памяти, где хранятся входные (расшифровываемые) данные
+    @param out Указатель на область памяти, куда помещаются расшифровыванные данные
+    (этот указатель может совпадать с in)
+    @param size Размер зашировываемых данных (в байтах)
+
+    @return В случае возникновения ошибки функция возвращает ее код, в противном случае
+    возвращается ak_error_ok (ноль)                                                                */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_block_cipher_key_decrypt_ecb( ak_block_cipher_key bkey,
+                                                        ak_pointer in, ak_pointer out, size_t size )
+{
+  size_t blocks = 0;
+  int error = ak_error_ok;
+  ak_uint64 *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
+
+//  /* выполняем проверку входных параметров */
+//  if(( error = ak_cipher_key_check_before_encrypt( ckey, in, out, size, ak_true )) != ak_error_ok )
+//  {
+//    ak_error_message( error, __func__ , "wrong testing a cipher key before encryption" );
+//    return error;
+//  }
+
+  /* теперь приступаем к зашифрованию данных */
+  blocks = size/bkey->block_size;
+  bkey->key.resource.counter -= ( ak_uint64 ) blocks; /* уменьшаем ресурс ключа */
+
+  if( bkey->block_size == 8 ) { /* здесь длина блока равна 64 бита */
+    do{
+       bkey->decrypt( &bkey->key, inptr++, outptr++ );
+    } while( --blocks > 0 );
+  }
+  if( bkey->block_size == 16 ) { /* здесь длина блока равна 128 бит */
+    do{
+       bkey->decrypt( &bkey->key, inptr, outptr );
+       inptr+=2; outptr+=2;
+    } while( --blocks > 0 );
+  }
+
+  /* перемаскируем ключ */
+  if( bkey->key.remask( &bkey->key ) != ak_error_ok )
+    ak_error_message( ak_error_get_value(), __func__ , "wrong remasking of secret key" );
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                                                          ak_block_cipher_key.c  */
 /* ----------------------------------------------------------------------------------------------- */

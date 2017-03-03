@@ -173,12 +173,15 @@
  ak_pointer ak_block_cipher_key_delete( ak_pointer );
 
 /*! Создание контекста ключа алгоритма Магма с заданным значением */
- ak_block_cipher_key ak_block_cipher_key_magma_new_buffer( const ak_pointer , const ak_bool );
+ ak_block_cipher_key ak_block_cipher_key_new_magma_ptr( const ak_pointer , const ak_bool );
 
-
+/*! \brief Зашифрование данных в режиме простой замены */
+ int ak_block_cipher_key_encrypt_ecb( ak_block_cipher_key , ak_pointer , ak_pointer , size_t );
+/*! \brief Расшифрование данных в режиме простой замены */
+ int ak_block_cipher_key_decrypt_ecb( ak_block_cipher_key , ak_pointer , ak_pointer , size_t );
 
 /*! \brief Функция выполняет тестирование алгоритма Магма в соответствии с ГОСТ Р 34.12-2015 и ГОСТ Р 34.13-2015 */
- ak_bool ak_block_cipher_key_magma_test( void );
+ ak_bool ak_block_cipher_key_test_magma( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Секретный ключ алгоритма выработки имитовставки HMAC */
