@@ -382,12 +382,15 @@
   ak_uint32 cipher_key_magma_block_resource;
  /*! \brief Ресурс использования ключа (в блоках) алгоритма ГОСТ 34.12-2015 (Кузнечик) */
   ak_uint32 cipher_key_kuznetchik_block_resource;
+ /*! \brief Длина номера ключа в байтах */
+  ak_uint32 key_number_length;
 }
  libakrypt_options =
 {
   ak_log_standard,
   4194304, /* количество блоков для ГОСТ 28147-89, для объема в 250 Mb (по 64 бита) */
-  8388608  /* количество блоков для ГОСТ 34.12-2015, для объема в 1Gb (по 128 бит) */
+  8388608,  /* количество блоков для ГОСТ 34.12-2015, для объема в 1Gb (по 128 бит) */
+  16
 };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -430,17 +433,21 @@ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция возвращает ресурс секретного ключа для алгоритма ГОСТ 28147-89 (Магма) */
  ak_uint32 ak_libakrypt_get_magma_resource( void )
 {
  return libakrypt_options.cipher_key_magma_block_resource;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция возвращает ресурс секретного ключа для алгоритма ГОСТ 34.12-2015 (Кузнечик) */
  ak_uint32 ak_libakrypt_get_kuznetchik_resource( void )
 {
  return libakrypt_options.cipher_key_kuznetchik_block_resource;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_uint32 ak_libakrypt_get_key_number_length( void )
+{
+ return libakrypt_options.key_number_length;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -571,30 +578,35 @@ return ak_error_ok;
        /* устанавливаем максимальное число блоков обрабатываемых данных для шифра Кузнечик */
        if( ak_libakrypt_get_option( localbuffer, "kuznetchik_block_resource = ", &value ))
                                      libakrypt_options.cipher_key_kuznetchik_block_resource = value;
+       /* устанавливаем размер номера ключа в байтах */
+       if( ak_libakrypt_get_option( localbuffer, "key_number_length = ", &value )) {
+         if(( value > 15 ) && ( value < 33 )) libakrypt_options.key_number_length = value;
+           else libakrypt_options.key_number_length = 16;
+       }
      } /* далее мы очищаем строку независимо от ее содержимого */
      off = 0;
      memset( localbuffer, 0, 1024 );
    } else localbuffer[off++] = ch;
  }
 
+ /* закрываем */
+ close(fd);
+
  /* выводим сообщение об установленных параметрах библиотеки */
  if( libakrypt_options.log_level > ak_log_standard ) {
-    ak_error_message_fmt( ak_error_ok, __func__,
-                                   "log level is %u", libakrypt_options.log_level );
-    ak_error_message_fmt( ak_error_ok, __func__,
-                                   "magma block ciper resource is %u",
-                                                 libakrypt_options.cipher_key_magma_block_resource );
-    ak_error_message_fmt( ak_error_ok, __func__,
-                                   "kuznetchik block ciper resource is %u",
-                                            libakrypt_options.cipher_key_kuznetchik_block_resource );
+    ak_error_message_fmt( ak_error_ok, __func__, "log level is %u", libakrypt_options.log_level );
+    ak_error_message_fmt( ak_error_ok, __func__, "magma block ciper resource is %u",
+                                              libakrypt_options.cipher_key_magma_block_resource );
+    ak_error_message_fmt( ak_error_ok, __func__, "kuznetchik block ciper resource is %u",
+                                         libakrypt_options.cipher_key_kuznetchik_block_resource );
+    ak_error_message_fmt( ak_error_ok, __func__, "key number length is %u bytes",
+                                                            libakrypt_options.key_number_length );
  }
- /* закрываем все и выходим */
- close(fd);
  return ak_true;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-const char *ak_libakrypt_version( void )
+ const char *ak_libakrypt_version( void )
 {
 #ifdef LIBAKRYPT_VERSION
   return LIBAKRYPT_VERSION;

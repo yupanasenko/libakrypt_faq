@@ -182,7 +182,7 @@
  /* вычисляем номер и очищаем память */
   ak_hash_data( ctx, out, 32, out );
   if(( ak_buffer_set_str( &skey->number,
-                          number = ak_ptr_to_hexstr( out, 16, ak_false ))) != ak_error_ok ) {
+         number = ak_ptr_to_hexstr( out, ak_libakrypt_get_key_number_length(), ak_false ))) != ak_error_ok ) {
     ak_error_message( ak_error_write_data, __func__ , "wrong assigning key number" );
     return ak_error_write_data;
   }
