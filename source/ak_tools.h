@@ -47,7 +47,7 @@
 /*! \brief Обобщенная реализация функции snprintf для различных компиляторов */
  int ak_snprintf( char *str, size_t size, const char *format, ... );
 /*! \brief Вывод сообщений о возникшей в процессе выполнения ошибке */
- void ak_error_message_fmt( const int , const char *, const char *, ... );
+ int ak_error_message_fmt( const int , const char *, const char *, ... );
 
  #endif
 /* ----------------------------------------------------------------------------------------------- */

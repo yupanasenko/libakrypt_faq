@@ -437,33 +437,88 @@
 {
   int error = ak_error_ok;
 
-  if( skey == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to secret key" );
-    return ak_error_null_pointer;
-  }
-  if( skey->key.size == 0 ) {
-    ak_error_message( ak_error_zero_length, __func__ , "using non initialized secret key context" );
-    return ak_error_zero_length;
-  }
-  if( ptr == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to buffer" );
-    return ak_error_null_pointer;
-  }
-
+ /* выполняем необходимые проверки */
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                             "using a null pointer to secret key" );
+  if( skey->key.size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                       "using non initialized secret key context" );
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                                 "using a null pointer to buffer" );
  /* присваиваем буффер и маскируем его */
-  if(( error = ak_buffer_set_ptr( &skey->key, ptr, skey->key.size, cflag )) != ak_error_ok ) {
-    ak_error_message( error, __func__ , "wrong assigning a key data" );
-    return error;
-  }
-  if(( error = skey->set_mask( skey )) != ak_error_ok ) {
-      ak_error_message( error, __func__ , "wrong secret key masking" );
-      return error;
-  }
-  if(( error = skey->set_icode( skey )) != ak_error_ok ) {
-    ak_error_message( error, __func__ , "wrong calculation of integrity code" );
-    return error;
-  }
+  if(( error = ak_buffer_set_ptr( &skey->key, ptr, skey->key.size, cflag )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "wrong assigning a secret key data" );
 
+  if(( error = skey->set_mask( skey )) != ak_error_ok ) return  ak_error_message( error,
+                                                           __func__ , "wrong secret key masking" );
+
+  if(( error = skey->set_icode( skey )) != ak_error_ok ) return ak_error_message( error,
+                                                __func__ , "wrong calculation of integrity code" );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает ключу псевдо-случайное случайное значение, размер которого определяется
+    размером секретного ключа.
+
+    @param skey Контекст секретного ключа. К моменту вызова функции контекст должен быть
+    инициализирован.
+    @param generator Указатель на генератор псевдо-случайных чисел.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_assign_random( ak_skey skey, ak_random generator )
+{
+  int error = ak_error_ok;
+
+ /* выполняем необходимые проверки */
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                             "using a null pointer to secret key" );
+  if( skey->key.size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                       "using non initialized secret key context" );
+  if( generator == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                "using a null pointer to random number generator" );
+ /* присваиваем буффер и маскируем его */
+  if(( error = ak_buffer_set_random( &skey->key, generator )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "wrong generation a secret key data" );
+
+  if(( error = skey->set_mask( skey )) != ak_error_ok ) return  ak_error_message( error,
+                                                           __func__ , "wrong secret key masking" );
+
+  if(( error = skey->set_icode( skey )) != ak_error_ok ) return ak_error_message( error,
+                                                __func__ , "wrong calculation of integrity code" );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/* пока делаем реализацию как бы PBKDF2 */
+ int ak_skey_assign_password( ak_skey skey, const ak_pointer pass, const size_t size )
+{
+  ak_hash ctx = NULL;
+  int error = ak_error_ok;
+
+ /* выполняем необходимые проверки */
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using a null pointer to secret key" );
+  if( skey->key.size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                      "using non initialized secret key context" );
+  if( pass == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                              "using a null pointer to password" );
+  if( size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                            "using a passsword with zero length" );
+ /* формируем ключ */
+  ak_error_set_value( ak_error_ok );
+   ak_hash_data( ctx = ak_hash_new_streebog256(), pass, size, skey->key.data );
+  error = ak_error_get_value();
+  if( ctx != NULL ) ctx = ak_hash_delete( ctx );
+  if( error != ak_error_ok ) return ak_error_message( error, __func__ ,
+                                                            "wrong generation a secret key data" );
+ /* выполняем стандартные процедуры */
+  if(( error = skey->set_mask( skey )) != ak_error_ok ) return  ak_error_message( error,
+                                                           __func__ , "wrong secret key masking" );
+
+  if(( error = skey->set_icode( skey )) != ak_error_ok ) return ak_error_message( error,
+                                                __func__ , "wrong calculation of integrity code" );
  return ak_error_ok;
 }
 

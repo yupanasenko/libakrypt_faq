@@ -265,8 +265,7 @@
     если флаг cflag истиннен. Если флаг ложен, то копирования не происходит.
     Пооведение функции при копировании аналогично поведению функции ak_buffer_set_ptr().
 
-    После присвоения ключа производится его маскирование и выработка контрольной суммы,
-    после чего, доступ к ключу блокируется с помощью вызова функции ak_skey_lock().
+    После присвоения ключа производится его маскирование и выработка контрольной суммы.
 
     Предпалагается, что основное использование функции ak_block_cipher_key_magma_new_buffer()
     заключается в тестировании алгоритма шифрования ГОСТ 28147-89 (Магма) на заданных (тестовых)
@@ -298,6 +297,71 @@
  /* присваиваем ключевой буффер */
   if(( error = ak_skey_assign_ptr( &bkey->key, keyptr, cflag )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "incorrect assigning of key data" );
+    return ( bkey = ak_block_cipher_key_delete( bkey ));
+  }
+ return bkey;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает контекст ключа алгоритма блочного шифрования ГОСТ 28147-89 (Магма)
+    и инициализирует его случайным значением.
+
+    Значение ключа вырабатывается генератором псевдо-случайных чисел.
+    После присвоения ключа производится его маскирование и выработка контрольной суммы.
+
+    @param generator Указатель на генератор псевдо-случайных чисел.
+
+    @return Функция возвращает указатель на созданный контекст. В случае возникновения ошибки,
+    возвращается NULL, код ошибки может быть получен с помощью вызова функции ak_error_get_value() */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_block_cipher_key ak_block_cipher_key_new_magma_random( ak_random generator )
+{
+  int error = ak_error_ok;
+  ak_block_cipher_key bkey = NULL;
+
+ /* проверяем входной буффер */
+  if( generator == NULL ) { ak_error_message( ak_error_null_pointer, __func__ ,
+                                              "using a null pointer to random number generator" );
+    return NULL;
+  }
+ /* создаем контекст ключа */
+  if(( bkey = ak_block_cipher_key_magma_new( )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect creation of magma secret key" );
+    return NULL;
+  }
+ /* вырабатываем случайные данные */
+  if(( error = ak_skey_assign_random( &bkey->key, generator )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "incorrect generation of secret key data" );
+    return ( bkey = ak_block_cipher_key_delete( bkey ));
+  }
+ return bkey;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_block_cipher_key ak_block_cipher_key_new_magma_password( const ak_pointer pass, const size_t size )
+{
+  int error = ak_error_ok;
+  ak_block_cipher_key bkey = NULL;
+
+ /* проверяем входной буффер */
+  if( pass == NULL ) { ak_error_message( ak_error_null_pointer, __func__ ,
+                                                             "using a null pointer to password" );
+    return NULL;
+  }
+  if( size == 0 ) { ak_error_message( ak_error_zero_length, __func__,
+                                                            "using a password with zero length" );
+    return NULL;
+  }
+
+ /* создаем контекст ключа */
+  if(( bkey = ak_block_cipher_key_magma_new( )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect creation of magma secret key" );
+    return NULL;
+  }
+
+ /* вырабатываем случайные данные */
+  if(( error = ak_skey_assign_password( &bkey->key, pass, size )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "incorrect generation of secret key data" );
     return ( bkey = ak_block_cipher_key_delete( bkey ));
   }
  return bkey;

@@ -173,6 +173,7 @@
  #define ak_error_wcurve_discriminant (-27)
  #define ak_error_wcurve_point        (-28)
  #define ak_error_wcurve_point_order  (-29)
+ #define ak_error_block_cipher_length (-30)
 
  #define ak_null_string          ("(null)")
 
@@ -194,7 +195,7 @@
 /*! \brief Функция вывода сообщения об ошибке в стандартный канал вывода ошибок */
  dll_export int ak_function_log_stderr( const char * );
 /*! \brief Вывод сообщений о возникшей в процессе выполнения ошибке */
- dll_export void ak_error_message( const int, const char *, const char * );
+ dll_export int ak_error_message( const int, const char *, const char * );
 /*! \brief Функция устанавливает значение переменной, хранящей ошибку выполнения программы */
  dll_export int ak_error_set_value( const int );
 /*! \brief Функция возвращает код последней ошибки выполнения программы */

@@ -180,7 +180,7 @@
     @param message читаемое (понятное для пользователя) сообщение
     @param function имя функции, вызвавшей ошибку                                                  */
 /* ----------------------------------------------------------------------------------------------- */
- void ak_error_message( const int code, const char *function, const char *message )
+ int ak_error_message( const int code, const char *function, const char *message )
 {
  /* здесь мы выводим в логгер строку вида [pid] function: message (code: n)                        */
   char error_event_string[1024];
@@ -193,7 +193,7 @@
                                                              getpid(), function, message, code );
 #endif
   ak_log_set_message( error_event_string );
-  ak_error_set_value( code );
+  return ak_error_set_value( code );
 }
 
 
@@ -202,7 +202,7 @@
     @param function имя функции, вызвавшей ошибку
     @param format Форматная строка, в соответствии с которой формируется сообщение                 */
 /* ----------------------------------------------------------------------------------------------- */
- void ak_error_message_fmt( const int code, const char *function, const char *format, ... )
+ int ak_error_message_fmt( const int code, const char *function, const char *format, ... )
 {
   char message[256];
   va_list args;
@@ -218,7 +218,7 @@
  #else
    vsnprintf( message, 256, format, args );
  #endif
-  ak_error_message( code, function, message );
+ return ak_error_message( code, function, message );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

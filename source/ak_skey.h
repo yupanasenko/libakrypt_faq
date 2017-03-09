@@ -113,7 +113,7 @@
   /* где же функции чтения/изменения ресурса, получения/установки номера ?
      блокировки доступа к ключу,
      выработка (параметрическая, непараметрическая) следующего в последовательности ключей */
- };
+};
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация структуры секретного ключа */
@@ -124,6 +124,10 @@
  int ak_skey_assign_unique_number( ak_skey );
 /*! \brief Присвоение секретному ключу константного значения */
  int ak_skey_assign_ptr( ak_skey , const ak_pointer , const ak_bool );
+/*! \brief Присвоение секретному ключу случайного значения */
+ int ak_skey_assign_random( ak_skey , ak_random );
+/*! \brief Присвоение секретному ключу значения, выработанного из пароля */
+ int ak_skey_assign_password( ak_skey , const ak_pointer , const size_t );
 
 /*! \brief Наложение аддитивной (в кольце \f$ \mathbb Z_{2^{32}}\f$ ) маски на ключ */
  int ak_skey_set_mask_additive( ak_skey );
@@ -174,6 +178,10 @@
 
 /*! Создание контекста ключа алгоритма Магма с заданным значением */
  ak_block_cipher_key ak_block_cipher_key_new_magma_ptr( const ak_pointer , const ak_bool );
+/*! Создание контекста ключа алгоритма Магма с новым, случайным значением */
+ ak_block_cipher_key ak_block_cipher_key_new_magma_random( ak_random );
+/*! Выработка контекста ключа алгоритма Магма из пароля */
+ ak_block_cipher_key ak_block_cipher_key_new_magma_password( const ak_pointer , const size_t );
 
 /*! \brief Зашифрование данных в режиме простой замены */
  int ak_block_cipher_key_encrypt_ecb( ak_block_cipher_key , ak_pointer , ak_pointer , size_t );

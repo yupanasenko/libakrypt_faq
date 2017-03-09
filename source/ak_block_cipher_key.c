@@ -57,25 +57,16 @@
  int ak_block_cipher_key_create( ak_block_cipher_key bkey, size_t keysize, size_t blocksize )
 {
   int error = ak_error_ok;
-  if( bkey == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__,
+  if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                    "using a null pointer to block cipher context" );
-    return ak_error_null_pointer;
-  }
-  if( !keysize ) {
-    ak_error_message( ak_error_zero_length, __func__, "using block cipher key with zero length" );
-    return ak_error_zero_length;
-  }
-  if( !blocksize ) {
-    ak_error_message( ak_error_zero_length, __func__, "using cipher with zero block length" );
-    return ak_error_zero_length;
-  }
+  if( !keysize ) return ak_error_message( ak_error_zero_length, __func__,
+                                                        "using block cipher key with zero length" );
+  if( !blocksize ) return ak_error_message( ak_error_zero_length, __func__,
+                                                            "using cipher with zero block length" );
 
  /* теперь инициализируем данные */
-  if(( error = ak_skey_create( &bkey->key, keysize )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "wrong creation of secret key" );
-    return error;
-  }
+  if(( error = ak_skey_create( &bkey->key, keysize )) != ak_error_ok )
+    return ak_error_message( error, __func__, "wrong creation of secret key" );
 
   bkey->block_size =   blocksize;
   bkey->encrypt =      NULL;
@@ -108,11 +99,8 @@
  int ak_block_cipher_key_destroy( ak_block_cipher_key bkey )
 {
   int error = ak_error_ok;
-  if( bkey == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__,
+  if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                   "using a null pointer to block cipher context" );
-    return ak_error_null_pointer;
-  }
   if( bkey->delete_keys != NULL ) {
     if(( error = bkey->delete_keys( &bkey->key )) != ak_error_ok ) {
       ak_error_message( error, __func__ , "wrong deleting of round keys" );
@@ -160,21 +148,19 @@
  int ak_block_cipher_key_encrypt_ecb( ak_block_cipher_key bkey,
                                                         ak_pointer in, ak_pointer out, size_t size )
 {
-  size_t blocks = 0;
-  int error = ak_error_ok;
-  ak_uint64 *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
+  ak_uint64 blocks = 0, *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
 
-//  /* выполняем проверку входных параметров */
-//  if(( error = ak_cipher_key_check_before_encrypt( ckey, in, out, size, ak_true )) != ak_error_ok )
-//  {
-//    ak_error_message( error, __func__ , "wrong testing a cipher key before encryption" );
-//    return error;
-//  }
+ /* выполняем проверку размера входных данных */
+  if( size%bkey->block_size != 0 ) return ak_error_message( ak_error_block_cipher_length,
+                          __func__ , "the length of input data is not divided on block length" );
 
-  /* теперь приступаем к зашифрованию данных */
-  blocks = size/bkey->block_size;
-  bkey->key.resource.counter -= ( ak_uint64 ) blocks; /* уменьшаем ресурс ключа */
+ /* уменьшаем значение ресурса ключа */
+  blocks = (ak_uint64 ) size/bkey->block_size;
+  if( bkey->key.resource.counter < blocks ) return ak_error_message( ak_error_low_key_resource,
+                                                 __func__ , "low resource of block cipher key" );
+   else bkey->key.resource.counter -= blocks; /* уменьшаем ресурс ключа */
 
+ /* теперь приступаем к зашифрованию данных */
   if( bkey->block_size == 8 ) { /* здесь длина блока равна 64 бита */
     do{
        bkey->encrypt( &bkey->key, inptr++, outptr++ );
@@ -207,21 +193,19 @@
  int ak_block_cipher_key_decrypt_ecb( ak_block_cipher_key bkey,
                                                         ak_pointer in, ak_pointer out, size_t size )
 {
-  size_t blocks = 0;
-  int error = ak_error_ok;
-  ak_uint64 *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
+  ak_uint64 blocks = 0, *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
 
-//  /* выполняем проверку входных параметров */
-//  if(( error = ak_cipher_key_check_before_encrypt( ckey, in, out, size, ak_true )) != ak_error_ok )
-//  {
-//    ak_error_message( error, __func__ , "wrong testing a cipher key before encryption" );
-//    return error;
-//  }
+ /* выполняем проверку размера входных данных */
+  if( size%bkey->block_size != 0 ) return ak_error_message( ak_error_block_cipher_length,
+                          __func__ , "the length of input data is not divided on block length" );
 
-  /* теперь приступаем к зашифрованию данных */
-  blocks = size/bkey->block_size;
-  bkey->key.resource.counter -= ( ak_uint64 ) blocks; /* уменьшаем ресурс ключа */
+ /* уменьшаем значение ресурса ключа */
+  blocks = (ak_uint64 ) size/bkey->block_size;
+  if( bkey->key.resource.counter < blocks ) return ak_error_message( ak_error_low_key_resource,
+                                                 __func__ , "low resource of block cipher key" );
+   else bkey->key.resource.counter -= blocks; /* уменьшаем ресурс ключа */
 
+ /* теперь приступаем к зашифрованию данных */
   if( bkey->block_size == 8 ) { /* здесь длина блока равна 64 бита */
     do{
        bkey->decrypt( &bkey->key, inptr++, outptr++ );
