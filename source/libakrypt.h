@@ -131,7 +131,7 @@
 /*! \brief Контекст структуры итеративного вычисления сжимающих отображений */
  typedef struct update *ak_update;
 /*! \brief Дескриптор ключа */
- typedef ak_uint64 ak_key;
+ typedef ak_int64 ak_key;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Указатель на произвольный объект библиотеки */
@@ -148,40 +148,43 @@
  typedef int ( ak_function_log )( const char * );
 
 /* ----------------------------------------------------------------------------------------------- */
- #define ak_error_ok                    (0)
- #define ak_error_out_of_memory        (-1)
- #define ak_error_null_pointer         (-2)
- #define ak_error_zero_length          (-3)
- #define ak_error_wrong_length         (-4)
- #define ak_error_undefined_value      (-5)
- #define ak_error_undefined_function   (-6)
- #define ak_error_create_function      (-7)
- #define ak_error_access_file         (-10)
- #define ak_error_open_file           (-11)
- #define ak_error_close_file          (-12)
- #define ak_error_find_pointer        (-13)
- #define ak_error_read_data           (-15)
- #define ak_error_write_data          (-16)
- #define ak_error_oid_engine          (-17)
- #define ak_error_oid_mode            (-18)
- #define ak_error_oid_name            (-19)
- #define ak_error_oid_id              (-20)
- #define ak_error_oid_index           (-21)
- #define ak_error_not_equal_data      (-22)
- #define ak_error_low_key_resource    (-23)
- #define ak_error_wrong_key_lock      (-24)
- #define ak_error_wrong_key_unlock    (-25)
- #define ak_error_wrong_key_icode     (-26)
- #define ak_error_wcurve_discriminant (-27)
- #define ak_error_wcurve_point        (-28)
- #define ak_error_wcurve_point_order  (-29)
- #define ak_error_block_cipher_length (-30)
+ #define ak_error_ok                          (0)
+ #define ak_error_out_of_memory              (-1)
+ #define ak_error_null_pointer               (-2)
+ #define ak_error_zero_length                (-3)
+ #define ak_error_wrong_length               (-4)
+ #define ak_error_undefined_value            (-5)
+ #define ak_error_undefined_function         (-6)
+ #define ak_error_create_function            (-7)
+ #define ak_error_access_file               (-10)
+ #define ak_error_open_file                 (-11)
+ #define ak_error_close_file                (-12)
+ #define ak_error_find_pointer              (-13)
+ #define ak_error_read_data                 (-15)
+ #define ak_error_write_data                (-16)
+ #define ak_error_oid_engine                (-17)
+ #define ak_error_oid_mode                  (-18)
+ #define ak_error_oid_name                  (-19)
+ #define ak_error_oid_id                    (-20)
+ #define ak_error_oid_index                 (-21)
+ #define ak_error_not_equal_data            (-22)
+ #define ak_error_low_key_resource          (-23)
+ #define ak_error_wrong_key_lock            (-24)
+ #define ak_error_wrong_key_unlock          (-25)
+ #define ak_error_wrong_key_icode           (-26)
+ #define ak_error_wcurve_discriminant       (-27)
+ #define ak_error_wcurve_point              (-28)
+ #define ak_error_wcurve_point_order        (-29)
+ #define ak_error_context_manager_max_size  (-30)
+ #define ak_error_block_cipher_length       (-31)
 
- #define ak_null_string          ("(null)")
+ #define ak_null_string                ("(null)")
 
- #define ak_log_none                    (0)
- #define ak_log_standard                (1)
- #define ak_log_maximum                 (2)
+ #define ak_log_none                          (0)
+ #define ak_log_standard                      (1)
+ #define ak_log_maximum                       (2)
+
+ #define ak_key_descriptor_wrong             (-1)
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает уровень аудита библиотеки */
