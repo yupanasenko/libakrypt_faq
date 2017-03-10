@@ -249,7 +249,7 @@
     @return В случае успеха, функция возвращает ноль (ak_error_ok).  В противном случае,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_oids_add_magma_tables( const char *name, const char *id, const ak_uint8 table[8][16] )
+ int ak_oids_add_gost28147_tables( const char *name, const char *id, const ak_uint8 table[8][16] )
 {
   ak_uint8 v[16];
   int i = 0, j = 0, result = 0;

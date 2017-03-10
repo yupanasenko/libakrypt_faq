@@ -109,6 +109,13 @@
  int ak_context_manager_destroy( ak_context_manager );
 /*! \brief Увеличение памяти для структуры управления контекстами */
  int ak_context_manager_morealloc( ak_context_manager );
+/*! \brief Дабавление контекста в структуру управления контекстами */
+ ak_key ak_context_manager_add_ctx( ak_context_manager , ak_pointer , ak_oid_engine ,
+                                                           ak_buffer , ak_function_free_object * );
+/*! \brief Инициализация глобальной сруктуры управления контекстами */
+ int ak_libakrypt_context_manager_create( void );
+/*! \brief Удаление глобальной сруктуры управления контекстами */
+ int ak_libakrypt_context_manager_destroy( void );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

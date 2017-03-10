@@ -184,7 +184,7 @@
  #define ak_log_standard                      (1)
  #define ak_log_maximum                       (2)
 
- #define ak_key_descriptor_wrong             (-1)
+ #define ak_key_wrong                        (-1)
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает уровень аудита библиотеки */
@@ -326,7 +326,7 @@
  /*! \brief Поиск OID по его идентификатору (строке цифр, разделенных точками) */
  dll_export const ak_oid ak_oids_find_by_id( const char * );
 /*! \brief Функция добавляет в массив OID'ов библиотеки новые таблицы замен для ГОСТ 28147-89 */
- dll_export int ak_oids_add_magma_tables( const char *, const char *, const ak_uint8[8][16] );
+ dll_export int ak_oids_add_gost28147_tables( const char *, const char *, const ak_uint8[8][16] );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание контекста алгоритма хеширования по заданному OID */

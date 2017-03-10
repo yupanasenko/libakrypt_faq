@@ -30,6 +30,7 @@
  #include <ak_hash.h>
  #include <ak_skey.h>
  #include <ak_curves.h>
+ #include <ak_context_manager.h>
 
  #include <errno.h>
  #include <fcntl.h>
@@ -383,7 +384,7 @@
  /*! \brief Ресурс использования ключа (в блоках) алгоритма ГОСТ 34.12-2015 (Кузнечик) */
   ak_uint32 cipher_key_kuznetchik_block_resource;
  /*! \brief Длина номера ключа в байтах */
-  ak_uint32 key_number_length;
+  size_t key_number_length;
 }
  libakrypt_options =
 {
@@ -656,10 +657,11 @@ return ak_true;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция проверяет корректность реализации алгоритмов хеширования
-@return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
-функция возвращает ak_false. Код ошибки можеть быть получен с помощью вызова ak_error_get_value() */
+    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
+    вызова ak_error_get_value()                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
-ak_bool ak_libakrypt_test_hash_functions( void )
+ ak_bool ak_libakrypt_test_hash_functions( void )
 {
  int audit = ak_log_get_level();
  if( audit >= ak_log_maximum )
@@ -834,7 +836,7 @@ ak_bool ak_libakrypt_test_wcurves( void )
    библиотеки. В противном случае, возвращается ak_false. Код ошибки может быть получен с помощью
    вызова функции ak_error_get_value()                                                            */
 /* ----------------------------------------------------------------------------------------------- */
-int ak_libakrypt_create( ak_function_log *logger )
+ int ak_libakrypt_create( ak_function_log *logger )
 {
  int error = ak_true;
  ak_error_set_value( ak_error_ok );
@@ -845,35 +847,39 @@ int ak_libakrypt_create( ak_function_log *logger )
    return ak_false;
  }
  /* считываем настройки криптографических алгоритмов */
- if(( error = ak_libakrypt_load_options()) != ak_true ) {
+ if( ak_libakrypt_load_options() != ak_true ) {
    ak_error_message( ak_error_get_value(), __func__ , "wrong reading of libakrypt options" );
    return ak_false;
  }
  /* проверяем длины фиксированных типов данных */
- if(( error = ak_libakrypt_test_types( )) != ak_true ) {
+ if( ak_libakrypt_test_types( ) != ak_true ) {
    ak_error_message( ak_error_get_value(), __func__ , "sizes of predefined types is wrong" );
    return ak_false;
  }
  /* инициализируем механизм обработки идентификаторов */
  if(( error = ak_oids_create()) != ak_error_ok ) {
-   ak_error_message( ak_error_get_value(), __func__ , "OID mechanism not started" );
+   ak_error_message( error, __func__ , "OID mechanism not started" );
    return ak_false;
  }
 
  /* инициализируем механизм обработки секретных ключей пользователей */
+ if(( error = ak_libakrypt_context_manager_create()) != ak_error_ok ) {
+   ak_error_message( error, __func__ , "OID mechanism not started" );
+   return ak_false;
+ }
 
  /* тестируем работу функций хеширования */
- if(( error = ak_libakrypt_test_hash_functions()) != ak_true ) {
+ if( ak_libakrypt_test_hash_functions() != ak_true ) {
    ak_error_message( ak_error_get_value(), __func__ , "error while testing hash functions" );
    return ak_false;
  }
  /* тестируем работу алгоритмов блочного шифрования */
- if(( error = ak_libakrypt_test_block_ciphers()) != ak_true ) {
+ if( ak_libakrypt_test_block_ciphers() != ak_true ) {
    ak_error_message( ak_error_get_value(), __func__ , "error while testing block ciphers" );
    return ak_false;
  }
  /* тестируем корректность реализации операций с эллиптическими кривыми в короткой форме Вейерштрасса */
- if(( error = ak_libakrypt_test_wcurves()) != ak_true ) {
+ if( ak_libakrypt_test_wcurves() != ak_true ) {
    ak_error_message( ak_error_get_value(), __func__ , "error while testing Wierstrass curves" );
    return ak_false;
  }
@@ -883,20 +889,21 @@ return ak_true;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-int ak_libakrypt_destroy( void )
+ int ak_libakrypt_destroy( void )
 {
- int error = ak_error_get_value();
- if( error != ak_error_ok )
-   ak_error_message( error, __func__ , "before destroing library holds an error" );
+  int error = ak_error_get_value();
+  if( error != ak_error_ok )
+    ak_error_message( error, __func__ , "before destroing library holds an error" );
 
  /* деактивируем механизм обработки секретных ключей */
+  if(( error = ak_libakrypt_context_manager_destroy()) != ak_error_ok )
+    ak_error_message( error, __func__ , "context manager not properly destroyed" );
 
  /* деактивируем механизм поддержки OID */
- ak_error_set_value( ak_error_ok );
- if( ak_oids_destroy() != ak_error_ok )
-   ak_error_message( ak_error_get_value(), __func__ , "OID mechanism not properly destroyed" );
+  if(( error = ak_oids_destroy()) != ak_error_ok )
+    ak_error_message( error, __func__ , "OID mechanism not properly destroyed" );
 
- ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms successfully destroyed" );
+  ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms successfully destroyed" );
  return ak_error_get_value();
 }
 

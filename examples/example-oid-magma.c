@@ -21,7 +21,7 @@
                                                  ak_libakrypt_version(), ak_oids_get_count());
 
  /* добавляем новую таблицу замен в список OID'ов */
-  if( ak_oids_add_magma_tables( "id-my-magma-tables",
+  if( ak_oids_add_gost28147_tables( "id-my-gost28147-tables",
                "000.1.2.3.4.5.6.7.8.9.000", cipher_box_new ) != ak_error_ok ) {
      ak_error_message( ak_error_get_value(),
                             "wrong value of magma tables", "example-oid-magma");
