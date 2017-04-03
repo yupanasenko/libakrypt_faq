@@ -37,7 +37,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /* Предварительные описания ключевых структур */
  struct skey;
- struct block_cipher_key;
+ struct bckey;
  struct hmac_key;
  struct cmac_key;
  struct sign_key;
@@ -47,7 +47,7 @@
 /*! \brief Указатель на структуру секретного ключа */
  typedef struct skey *ak_skey;
 /*! \brief Указатель на структуру ключа блочного алгоритма шифрования */
- typedef struct block_cipher_key *ak_block_cipher_key;
+ typedef struct bckey *ak_bckey;
 /*! \brief Указатель на структуру ключа алгоритма выработки имитовставки HMAC */
  typedef struct hmac_key *ak_hmac_key;
 /*! \brief Указатель на структуру ключа алгоритма ГОСТ Р 34.13-2015 выработки имитовставки */
@@ -146,20 +146,20 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция зашифрования/расширования одного блока информации */
-  typedef void ( ak_function_block_cipher_key )( ak_skey, ak_pointer, ak_pointer );
+  typedef void ( ak_function_bckey )( ak_skey, ak_pointer, ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Секретный ключ блочного алгоритма шифрования */
- struct block_cipher_key {
+ struct bckey {
   /*! \brief Указатель на секретный ключ */
    struct skey key;
   /*! \brief Длина блока обрабатываемых данных в байтах */
    size_t block_size;
 
   /*! \brief Функция заширования одного блока информации */
-   ak_function_block_cipher_key *encrypt;
+   ak_function_bckey *encrypt;
   /*! \brief Функция расширования одного блока информации */
-   ak_function_block_cipher_key *decrypt;
+   ak_function_bckey *decrypt;
   /*! \brief Функция развертки ключа */
    ak_function_skey *shedule_keys;
   /*! \brief Функция уничтожения развернутых ключей */
@@ -168,31 +168,31 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация ключа алгоритма блочного шифрования */
- int ak_block_cipher_key_create( ak_block_cipher_key , size_t , size_t );
+ int ak_bckey_create( ak_bckey , size_t , size_t );
 /*! \brief Создание контекста ключа алгоритма блочного шифрования */
- ak_block_cipher_key ak_block_cipher_key_new( size_t , size_t );
+ ak_bckey ak_bckey_new( size_t , size_t );
 /*! \brief Очистка ключа алгоритма блочного шифрования */
- int ak_block_cipher_key_destroy( ak_block_cipher_key );
+ int ak_bckey_destroy( ak_bckey );
 /*! \brief Удаление ключа алгоритма блочного шифрования */
- ak_pointer ak_block_cipher_key_delete( ak_pointer );
+ ak_pointer ak_bckey_delete( ak_pointer );
 
 /*! Создание контекста ключа алгоритма Магма с заданным значением */
- ak_block_cipher_key ak_block_cipher_key_new_magma_ptr( const ak_pointer , const ak_bool );
+ ak_bckey ak_bckey_new_magma_ptr( const ak_pointer , const ak_bool );
 /*! Создание контекста ключа алгоритма Магма с новым, случайным значением */
- ak_block_cipher_key ak_block_cipher_key_new_magma_random( ak_random );
+ ak_bckey ak_bckey_new_magma_random( ak_random );
 /*! Выработка контекста ключа алгоритма Магма из пароля */
- ak_block_cipher_key ak_block_cipher_key_new_magma_password( const ak_pointer , const size_t );
+ ak_bckey ak_bckey_new_magma_password( const ak_pointer , const size_t );
 
 /*! \brief Зашифрование данных в режиме простой замены */
- int ak_block_cipher_key_encrypt_ecb( ak_block_cipher_key , ak_pointer , ak_pointer , size_t );
+ int ak_bckey_encrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
 /*! \brief Расшифрование данных в режиме простой замены */
- int ak_block_cipher_key_decrypt_ecb( ak_block_cipher_key , ak_pointer , ak_pointer , size_t );
+ int ak_bckey_decrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
 /*! \brief Зашифрование/расшифрование данных в режиме гаммирования (режим счетчика из ГОСТ Р 34.13-2015) */
- int ak_block_cipher_key_encrypt_ctr( ak_block_cipher_key , ak_pointer , ak_pointer ,
+ int ak_bckey_encrypt_ctr( ak_bckey , ak_pointer , ak_pointer ,
                                                                          size_t , ak_pointer );
 
 /*! \brief Функция выполняет тестирование алгоритма Магма в соответствии с ГОСТ Р 34.12-2015 и ГОСТ Р 34.13-2015 */
- ak_bool ak_block_cipher_key_test_magma( void );
+ ak_bool ak_bckey_test_magma( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Секретный ключ алгоритма выработки имитовставки HMAC */
@@ -238,7 +238,7 @@
     методов от ключа блочного шифрования)
 
     struct omac_key {
-      ak_block_cipher_key key;
+      ak_bckey key;
       ak_buffer промежуточные данные
       + выработка производных ключей в конце
       + промежуточный буффер,
@@ -266,7 +266,7 @@
      - параллельная обработка фрагментов данных (?)
 
     struct unictr_key {
-      ak_block_cipher_key key; // исходный ключ
+      ak_bckey key; // исходный ключ
       ak_skey iteration_key; // промежуточные значения (k1, k2), вырабатываемые для выработки
       ak_buffer промежуточные данные
 

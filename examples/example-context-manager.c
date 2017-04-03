@@ -33,10 +33,10 @@
      switch( ak_random_uint8( generator )%3 )
     {
       case 0: key = ak_context_manager_add_ctx( &manager,
-                           ak_block_cipher_key_new_magma_password( "longhellostring", 2+i ),
+                           ak_bckey_new_magma_password( "longhellostring", 2+i ),
                            block_cipher,
                            ak_buffer_new_str("block cipher MAGMA key"),
-                           ak_block_cipher_key_delete );
+                           ak_bckey_delete );
               printf("%02lu: added block cipher key %lx\n", i, key );
               break;
 

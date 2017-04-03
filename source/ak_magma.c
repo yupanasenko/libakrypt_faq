@@ -222,12 +222,12 @@
    @return Функция возвращает указатель на созданный контекст. В случае возникновения ошибки,
    возвращается NULL, код ошибки может быть получен с помощью вызова функции ak_error_get_value()  */
 /* ----------------------------------------------------------------------------------------------- */
- static ak_block_cipher_key ak_block_cipher_key_magma_new( void )
+ static ak_bckey ak_bckey_magma_new( void )
 {
-  ak_block_cipher_key bkey = NULL;
+  ak_bckey bkey = NULL;
 
  /* создаем ключ алгоритма шифрования и определяем его методы */
-  if(( bkey = ak_block_cipher_key_new( 32, 8 )) == NULL ) {
+  if(( bkey = ak_bckey_new( 32, 8 )) == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "incorrect memory allocation" );
     return NULL;
   }
@@ -235,7 +235,7 @@
   if(( bkey->key.oid = ak_oids_find_by_name( "magma" )) == NULL ) {
     int error = ak_error_get_value();
     ak_error_message( error, __func__, "wrong search of predefined magma block cipher OID" );
-    return ( bkey = ak_block_cipher_key_delete( bkey ));
+    return ( bkey = ak_bckey_delete( bkey ));
   };
 
  /* устанавливаем ресурс использования серетного ключа */
@@ -267,7 +267,7 @@
 
     После присвоения ключа производится его маскирование и выработка контрольной суммы.
 
-    Предпалагается, что основное использование функции ak_block_cipher_key_magma_new_buffer()
+    Предпалагается, что основное использование функции ak_bckey_magma_new_buffer()
     заключается в тестировании алгоритма шифрования ГОСТ 28147-89 (Магма) на заданных (тестовых)
     значениях ключей.
 
@@ -278,11 +278,11 @@
     @return Функция возвращает указатель на созданный контекст. В случае возникновения ошибки,
     возвращается NULL, код ошибки может быть получен с помощью вызова функции ak_error_get_value() */
 /* ----------------------------------------------------------------------------------------------- */
- ak_block_cipher_key ak_block_cipher_key_new_magma_ptr( const ak_pointer keyptr,
+ ak_bckey ak_bckey_new_magma_ptr( const ak_pointer keyptr,
                                                                               const ak_bool cflag  )
 {
   int error = ak_error_ok;
-  ak_block_cipher_key bkey = NULL;
+  ak_bckey bkey = NULL;
 
  /* проверяем входной буффер */
   if( keyptr == NULL ) {
@@ -290,14 +290,14 @@
     return NULL;
   }
  /* создаем контекст ключа */
-  if(( bkey = ak_block_cipher_key_magma_new( )) == NULL ) {
+  if(( bkey = ak_bckey_magma_new( )) == NULL ) {
     ak_error_message( ak_error_get_value(), __func__ , "incorrect creation of magma secret key" );
     return NULL;
   }
  /* присваиваем ключевой буффер */
   if(( error = ak_skey_assign_ptr( &bkey->key, keyptr, cflag )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "incorrect assigning of key data" );
-    return ( bkey = ak_block_cipher_key_delete( bkey ));
+    return ( bkey = ak_bckey_delete( bkey ));
   }
  return bkey;
 }
@@ -314,10 +314,10 @@
     @return Функция возвращает указатель на созданный контекст. В случае возникновения ошибки,
     возвращается NULL, код ошибки может быть получен с помощью вызова функции ak_error_get_value() */
 /* ----------------------------------------------------------------------------------------------- */
- ak_block_cipher_key ak_block_cipher_key_new_magma_random( ak_random generator )
+ ak_bckey ak_bckey_new_magma_random( ak_random generator )
 {
   int error = ak_error_ok;
-  ak_block_cipher_key bkey = NULL;
+  ak_bckey bkey = NULL;
 
  /* проверяем входной буффер */
   if( generator == NULL ) { ak_error_message( ak_error_null_pointer, __func__ ,
@@ -325,23 +325,23 @@
     return NULL;
   }
  /* создаем контекст ключа */
-  if(( bkey = ak_block_cipher_key_magma_new( )) == NULL ) {
+  if(( bkey = ak_bckey_magma_new( )) == NULL ) {
     ak_error_message( ak_error_get_value(), __func__ , "incorrect creation of magma secret key" );
     return NULL;
   }
  /* вырабатываем случайные данные */
   if(( error = ak_skey_assign_random( &bkey->key, generator )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "incorrect generation of secret key data" );
-    return ( bkey = ak_block_cipher_key_delete( bkey ));
+    return ( bkey = ak_bckey_delete( bkey ));
   }
  return bkey;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_block_cipher_key ak_block_cipher_key_new_magma_password( const ak_pointer pass, const size_t size )
+ ak_bckey ak_bckey_new_magma_password( const ak_pointer pass, const size_t size )
 {
   int error = ak_error_ok;
-  ak_block_cipher_key bkey = NULL;
+  ak_bckey bkey = NULL;
 
  /* проверяем входной буффер */
   if( pass == NULL ) {
@@ -354,7 +354,7 @@
   }
 
  /* создаем контекст ключа */
-  if(( bkey = ak_block_cipher_key_magma_new( )) == NULL ) {
+  if(( bkey = ak_bckey_magma_new( )) == NULL ) {
     ak_error_message( ak_error_get_value(), __func__ , "incorrect creation of magma secret key" );
     return NULL;
   }
@@ -362,19 +362,19 @@
  /* вырабатываем случайные данные */
   if(( error = ak_skey_assign_password( &bkey->key, pass, size )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "incorrect generation of secret key data" );
-    return ( bkey = ak_block_cipher_key_delete( bkey ));
+    return ( bkey = ak_bckey_delete( bkey ));
   }
  return bkey;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_block_cipher_key_test_magma( void )
+ ak_bool ak_bckey_test_magma( void )
 {
   int value = 0;
   magma test_boxes;
   char *str = NULL;
   int audit = ak_log_get_level();
-  ak_block_cipher_key bkey = NULL;
+  ak_bckey bkey = NULL;
 
   /*! тестовый ключ из ГОСТ Р 34.12-2015, приложение А.2 */
   ak_uint8 gost3412_2015_key[32] = {
@@ -406,7 +406,7 @@
    }
 
   /* 2. Вырабатываем ключ алгоритма Магма */
-   if((bkey = ak_block_cipher_key_new_magma_ptr( gost3412_2015_key, ak_false )) == NULL ) {
+   if((bkey = ak_bckey_new_magma_ptr( gost3412_2015_key, ak_false )) == NULL ) {
      ak_error_message( ak_error_get_value(), __func__, "wrong creation of test key" );
      return ak_false;
    }
@@ -418,7 +418,7 @@
                          "the one block encryption test from GOST R 34.12-2015 is wrong");
       ak_log_set_message( str = ak_ptr_to_hexstr( out, 8, ak_true )); free( str );
       ak_log_set_message( str = ak_ptr_to_hexstr( b, 8, ak_true )); free( str );
-      bkey = ak_block_cipher_key_delete( bkey );
+      bkey = ak_bckey_delete( bkey );
       return ak_false;
     }
     if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
@@ -430,16 +430,16 @@
                          "the one block decryption test from GOST R 34.12-2015 is wrong");
       ak_log_set_message( str = ak_ptr_to_hexstr( out, 8, ak_true )); free( str );
       ak_log_set_message( str = ak_ptr_to_hexstr( a, 8, ak_true )); free( str );
-      bkey = ak_block_cipher_key_delete( bkey );
+      bkey = ak_bckey_delete( bkey );
       return ak_false;
     }
    if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                            "the one block decryption test from GOST R 34.12-2015 is Ok" );
 
   /* 4. Тестируем режим простой замены согласно ГОСТ Р34.13-2015 */
-    if( ak_block_cipher_key_encrypt_ecb( bkey, in_3413_2015_text, out, 32 ) != ak_error_ok ) {
+    if( ak_bckey_encrypt_ecb( bkey, in_3413_2015_text, out, 32 ) != ak_error_ok ) {
       ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong checking a secret key" );
-      bkey = ak_block_cipher_key_delete( bkey );
+      bkey = ak_bckey_delete( bkey );
       return ak_false;
     }
     if( memcmp( out, out_3413_2015_ecb_text, 32 ) != 0 ) {
@@ -448,15 +448,15 @@
       ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free( str );
       ak_log_set_message( str = ak_ptr_to_hexstr( out_3413_2015_ecb_text, 32, ak_true ));
       free( str );
-      bkey = ak_block_cipher_key_delete( bkey );
+      bkey = ak_bckey_delete( bkey );
       return ak_false;
     }
     if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                              "the ecb mode encryption test from GOST R 34.13-2015 is Ok" );
 
-    if( ak_block_cipher_key_decrypt_ecb( bkey, out_3413_2015_ecb_text, out, 32 ) != ak_error_ok ) {
+    if( ak_bckey_decrypt_ecb( bkey, out_3413_2015_ecb_text, out, 32 ) != ak_error_ok ) {
       ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong checking a secret key" );
-      bkey = ak_block_cipher_key_delete( bkey );
+      bkey = ak_bckey_delete( bkey );
       return ak_false;
     }
     if( memcmp( out, in_3413_2015_text, 32 ) != 0 ) {
@@ -465,16 +465,16 @@
       ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free( str );
       ak_log_set_message( str = ak_ptr_to_hexstr( out_3413_2015_ecb_text, 32, ak_true ));
       free( str );
-      bkey = ak_block_cipher_key_delete( bkey );
+      bkey = ak_bckey_delete( bkey );
       return ak_false;
     }
     if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                              "the ecb mode decryption test from GOST R 34.13-2015 is Ok" );
 
   /* 5. Тестируем режим гаммирования (счетчика) согласно ГОСТ Р34.13-2015 */
-    if( ak_block_cipher_key_encrypt_ctr( bkey, in_3413_2015_text, out, 32, ctr_iv ) != ak_error_ok ) {
+    if( ak_bckey_encrypt_ctr( bkey, in_3413_2015_text, out, 32, ctr_iv ) != ak_error_ok ) {
       ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong checking a secret key" );
-      bkey = ak_block_cipher_key_delete( bkey );
+      bkey = ak_bckey_delete( bkey );
       return ak_false;
     }
     if( memcmp( out, out_3413_2015_ctr_text, 32 ) != 0 ) {
@@ -483,15 +483,15 @@
       ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free( str );
       ak_log_set_message( str = ak_ptr_to_hexstr( out_3413_2015_ctr_text, 32, ak_true ));
       free( str );
-      bkey = ak_block_cipher_key_delete( bkey );
+      bkey = ak_bckey_delete( bkey );
       return ak_false;
     }
     if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                              "the ctr mode encryption test from GOST R 34.13-2015 is Ok" );
 
-    if( ak_block_cipher_key_encrypt_ctr( bkey, out_3413_2015_ctr_text, out, 32, ctr_iv ) != ak_error_ok ) {
+    if( ak_bckey_encrypt_ctr( bkey, out_3413_2015_ctr_text, out, 32, ctr_iv ) != ak_error_ok ) {
       ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong checking a secret key" );
-      bkey = ak_block_cipher_key_delete( bkey );
+      bkey = ak_bckey_delete( bkey );
       return ak_false;
     }
     if( memcmp( out, in_3413_2015_text, 32 ) != 0 ) {
@@ -500,13 +500,13 @@
       ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free( str );
       ak_log_set_message( str = ak_ptr_to_hexstr( in_3413_2015_text, 32, ak_true ));
       free( str );
-      bkey = ak_block_cipher_key_delete( bkey );
+      bkey = ak_bckey_delete( bkey );
       return ak_false;
     }
     if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                              "the ctr mode decryption test from GOST R 34.13-2015 is Ok" );
 
-    bkey = ak_block_cipher_key_delete( bkey );
+    bkey = ak_bckey_delete( bkey );
  return ak_true;
 }
 

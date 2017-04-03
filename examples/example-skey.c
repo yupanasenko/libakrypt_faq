@@ -40,9 +40,9 @@
   }
 
   // ak_random generator = ak_random_new_file("/dev/random");
-  // ak_block_cipher_key key = ak_block_cipher_key_new_magma_random( generator );
-  // ak_block_cipher_key key = ak_block_cipher_key_new_magma_password( "password", 8 );
-  ak_block_cipher_key key = ak_block_cipher_key_new_magma_ptr( gost3412_2015_key, ak_false );
+  // ak_bckey key = ak_bckey_new_magma_random( generator );
+  // ak_bckey key = ak_bckey_new_magma_password( "password", 8 );
+  ak_bckey key = ak_bckey_new_magma_ptr( gost3412_2015_key, ak_false );
   print_key( &key->key );
 
   key->encrypt( &key->key, a, out );
@@ -53,7 +53,7 @@
   printf("in:  %s\n", str = ak_ptr_to_hexstr( out, 8, ak_true )); free( str );
   printf("in:  %s\n", str = ak_ptr_to_hexstr( a, 8, ak_true )); free( str );
 
-  key = ak_block_cipher_key_delete( key );
+  key = ak_bckey_delete( key );
 
  return ak_libakrypt_destroy();
 }

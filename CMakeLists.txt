@@ -19,7 +19,7 @@ cmake_minimum_required( VERSION 2.8 )
 project( libakrypt )
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 4 )
-set( MINOR_VERSION 29 )
+set( MINOR_VERSION 30 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -51,7 +51,7 @@ set( SOURCES source/ak_tools.c
              source/ak_gosthash.c
              source/ak_random.c
              source/ak_skey.c
-             source/ak_block_cipher_key.c
+             source/ak_bckey.c
              source/ak_magma.c
 #             source/ak_kuznetchik.c
              source/ak_context_manager.c

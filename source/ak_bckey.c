@@ -24,7 +24,7 @@
 /*  ИЗ-ЗА ВАС ИЛИ ТРЕТЬИХ ЛИЦ, ИЛИ ОТКАЗОМ ПРОГРАММЫ РАБОТАТЬ СОВМЕСТНО С ДРУГИМИ ПРОГРАММАМИ),    */
 /*  ДАЖЕ ЕСЛИ ТАКОЙ ВЛАДЕЛЕЦ ИЛИ ДРУГОЕ ЛИЦО БЫЛИ ИЗВЕЩЕНЫ О ВОЗМОЖНОСТИ ТАКИХ УБЫТКОВ.            */
 /*                                                                                                 */
-/*   ak_block_cipher_key.c                                                                         */
+/*   ak_bckey.c                                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_skey.h>
 
@@ -54,7 +54,7 @@
     @return В случае успеха функция возвращает \ref ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_block_cipher_key_create( ak_block_cipher_key bkey, size_t keysize, size_t blocksize )
+ int ak_bckey_create( ak_bckey bkey, size_t keysize, size_t blocksize )
 {
   int error = ak_error_ok;
   if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -83,10 +83,10 @@
     В противном случае, возвращается NULL. Код ошибки может быть получен с помощью вызова
     функции ak_error_get_value()                                                                   */
 /* ----------------------------------------------------------------------------------------------- */
- ak_block_cipher_key ak_block_cipher_key_new( size_t keysize, size_t blocksize )
+ ak_bckey ak_bckey_new( size_t keysize, size_t blocksize )
 {
-  ak_block_cipher_key bkey = ( ak_block_cipher_key ) malloc( sizeof( struct block_cipher_key ));
-   if( bkey != NULL ) ak_block_cipher_key_create( bkey, keysize, blocksize );
+  ak_bckey bkey = ( ak_bckey ) malloc( sizeof( struct bckey ));
+   if( bkey != NULL ) ak_bckey_create( bkey, keysize, blocksize );
      else ak_error_message( ak_error_out_of_memory, __func__ , "incorrect memory allocation" );
  return bkey;
 }
@@ -96,7 +96,7 @@
     @return В случае успеха функция возввращает \ref ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_block_cipher_key_destroy( ak_block_cipher_key bkey )
+ int ak_bckey_destroy( ak_bckey bkey )
 {
   int error = ak_error_ok;
   if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -123,10 +123,10 @@
 /*! @param bkey контекст ключа алгоритма блочного шифрованния
     @return Функция всегда возвращает NULL.                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- ak_pointer ak_block_cipher_key_delete( ak_pointer bkey )
+ ak_pointer ak_bckey_delete( ak_pointer bkey )
 {
   if( bkey != NULL ) {
-    ak_block_cipher_key_destroy( bkey );
+    ak_bckey_destroy( bkey );
     free( bkey );
   } else ak_error_message( ak_error_null_pointer, __func__ ,
                                                          "using null pointer to block cipher key" );
@@ -145,7 +145,7 @@
     @return В случае возникновения ошибки функция возвращает ее код, в противном случае
     возвращается ak_error_ok (ноль)                                                                */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_block_cipher_key_encrypt_ecb( ak_block_cipher_key bkey,
+ int ak_bckey_encrypt_ecb( ak_bckey bkey,
                                                         ak_pointer in, ak_pointer out, size_t size )
 {
   ak_uint64 blocks = 0, *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
@@ -190,7 +190,7 @@
     @return В случае возникновения ошибки функция возвращает ее код, в противном случае
     возвращается ak_error_ok (ноль)                                                                */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_block_cipher_key_decrypt_ecb( ak_block_cipher_key bkey,
+ int ak_bckey_decrypt_ecb( ak_bckey bkey,
                                                         ak_pointer in, ak_pointer out, size_t size )
 {
   ak_uint64 blocks = 0, *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
@@ -245,7 +245,7 @@
     @return В случае возникновения ошибки функция возвращает ее код, в противном случае
     возвращается ak_error_ok (ноль)                                                                */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_block_cipher_key_encrypt_ctr( ak_block_cipher_key bkey,
+ int ak_bckey_encrypt_ctr( ak_bckey bkey,
                                          ak_pointer in, ak_pointer out, size_t size, ak_pointer iv )
 {
   ak_uint64 blocks = (ak_uint64)size/bkey->block_size,
@@ -288,5 +288,5 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*                                                                          ak_block_cipher_key.c  */
+/*                                                                          ak_bckey.c  */
 /* ----------------------------------------------------------------------------------------------- */
