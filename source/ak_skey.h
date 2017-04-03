@@ -39,7 +39,7 @@
  struct skey;
  struct block_cipher_key;
  struct hmac_key;
- struct omac_key;
+ struct cmac_key;
  struct sign_key;
  struct hybrid_cipher_key;
 
@@ -187,6 +187,9 @@
  int ak_block_cipher_key_encrypt_ecb( ak_block_cipher_key , ak_pointer , ak_pointer , size_t );
 /*! \brief Расшифрование данных в режиме простой замены */
  int ak_block_cipher_key_decrypt_ecb( ak_block_cipher_key , ak_pointer , ak_pointer , size_t );
+/*! \brief Зашифрование/расшифрование данных в режиме гаммирования (режим счетчика из ГОСТ Р 34.13-2015) */
+ int ak_block_cipher_key_encrypt_ctr( ak_block_cipher_key , ak_pointer , ak_pointer ,
+                                                                         size_t , ak_pointer );
 
 /*! \brief Функция выполняет тестирование алгоритма Магма в соответствии с ГОСТ Р 34.12-2015 и ГОСТ Р 34.13-2015 */
  ak_bool ak_block_cipher_key_test_magma( void );
@@ -209,6 +212,7 @@
  /*! \brief контекст функции хеширования */
   struct hash ctx;
 };
+
 
 /* ----------------------------------------------------------------------------------------------- */
 

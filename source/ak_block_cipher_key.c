@@ -152,24 +152,24 @@
 
  /* выполняем проверку размера входных данных */
   if( size%bkey->block_size != 0 ) return ak_error_message( ak_error_block_cipher_length,
-                          __func__ , "the length of input data is not divided on block length" );
+                          __func__ , "the length of input data is not divided by block length" );
 
  /* уменьшаем значение ресурса ключа */
   blocks = (ak_uint64 ) size/bkey->block_size;
   if( bkey->key.resource.counter < blocks ) return ak_error_message( ak_error_low_key_resource,
                                                  __func__ , "low resource of block cipher key" );
-   else bkey->key.resource.counter -= blocks; /* уменьшаем ресурс ключа */
+   else bkey->key.resource.counter -= blocks;
 
  /* теперь приступаем к зашифрованию данных */
   if( bkey->block_size == 8 ) { /* здесь длина блока равна 64 бита */
-    do{
-       bkey->encrypt( &bkey->key, inptr++, outptr++ );
+    do {
+        bkey->encrypt( &bkey->key, inptr++, outptr++ );
     } while( --blocks > 0 );
   }
   if( bkey->block_size == 16 ) { /* здесь длина блока равна 128 бит */
-    do{
-       bkey->encrypt( &bkey->key, inptr, outptr );
-       inptr+=2; outptr+=2;
+    do {
+        bkey->encrypt( &bkey->key, inptr, outptr );
+        inptr+=2; outptr+=2;
     } while( --blocks > 0 );
   }
 
@@ -185,7 +185,7 @@
     @param in Указатель на область памяти, где хранятся входные (расшифровываемые) данные
     @param out Указатель на область памяти, куда помещаются расшифровыванные данные
     (этот указатель может совпадать с in)
-    @param size Размер зашировываемых данных (в байтах)
+    @param size Размер расшифровываемых данных (в байтах)
 
     @return В случае возникновения ошибки функция возвращает ее код, в противном случае
     возвращается ak_error_ok (ноль)                                                                */
@@ -203,24 +203,86 @@
   blocks = (ak_uint64 ) size/bkey->block_size;
   if( bkey->key.resource.counter < blocks ) return ak_error_message( ak_error_low_key_resource,
                                                  __func__ , "low resource of block cipher key" );
-   else bkey->key.resource.counter -= blocks; /* уменьшаем ресурс ключа */
+   else bkey->key.resource.counter -= blocks;
 
- /* теперь приступаем к зашифрованию данных */
+ /* теперь приступаем к расшифрованию данных */
   if( bkey->block_size == 8 ) { /* здесь длина блока равна 64 бита */
-    do{
-       bkey->decrypt( &bkey->key, inptr++, outptr++ );
+    do {
+        bkey->decrypt( &bkey->key, inptr++, outptr++ );
     } while( --blocks > 0 );
   }
   if( bkey->block_size == 16 ) { /* здесь длина блока равна 128 бит */
-    do{
-       bkey->decrypt( &bkey->key, inptr, outptr );
-       inptr+=2; outptr+=2;
+    do {
+        bkey->decrypt( &bkey->key, inptr, outptr );
+        inptr+=2; outptr+=2;
     } while( --blocks > 0 );
   }
 
   /* перемаскируем ключ */
   if( bkey->key.remask( &bkey->key ) != ak_error_ok )
     ak_error_message( ak_error_get_value(), __func__ , "wrong remasking of secret key" );
+
+ return ak_error_ok;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Поскольку операцией заширования является гаммирование (сложение открытого  текста по модулю два
+    с последовательностью, вырабатываемой шифром), то операция расшифрования производится также
+    наложением гаммы по модулю два. Таким образом, для зашифрования и расшифрования
+    информациии используется одна и таже функция.
+
+    @param bkey Ключ алгоритма блочного шифрования, на котором происходит зашифрование информации
+    @param in Указатель на область памяти, где хранятся входные (открытые) данные
+    @param out Указатель на область памяти, куда помещаются зашифрованные данные
+    (этот указатель может совпадать с in)
+    @param size Размер зашировываемых данных (в байтах)
+    @param iv Синхропосылка. Согласно  стандарту ГОСТ Р 34.12-2015 длина синхропосылки должна быть
+    ровно в два раза меньше, чем длина блока, то есть 4 байта для Магмы и 8 байт для Кузнечика.
+    Поскольку длина блока может быть получена через указатель bkey, то длина синхропосылки
+    в функцию не передается.
+
+    @return В случае возникновения ошибки функция возвращает ее код, в противном случае
+    возвращается ak_error_ok (ноль)                                                                */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_block_cipher_key_encrypt_ctr( ak_block_cipher_key bkey,
+                                         ak_pointer in, ak_pointer out, size_t size, ak_pointer iv )
+{
+  ak_uint64 blocks = (ak_uint64)size/bkey->block_size,
+            tail = (ak_uint64)size%bkey->block_size;
+  ak_uint64 yain[2], yaout[2], *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
+
+ /* уменьшаем значение ресурса ключа */
+  if( bkey->key.resource.counter < ( blocks + ( tail > 0 )))
+    return ak_error_message( ak_error_low_key_resource,
+                                                    __func__ , "low resource of block cipher key" );
+   else bkey->key.resource.counter -= ( blocks + ( tail > 0 )); /* уменьшаем ресурс ключа */
+
+ /* теперь приступаем к зашифрованию данных */
+  if( bkey->block_size == 8 ) { /* здесь длина блока равна 64 бита */
+    memcpy( &yain, iv, 4 );
+    yain[0] <<= 32;
+    do {
+        bkey->encrypt( &bkey->key, yain, yaout );
+        *outptr = *inptr ^ yaout[0];
+        outptr++; inptr++; yain[0]++;
+    } while( --blocks > 0 );
+  }
+
+  if( bkey->block_size == 16 ) { /* здесь длина блока равна 128 бит */
+
+  }
+
+  if( tail ) { /* на последок, мы обрабатываем хвост сообщения */
+    size_t i;
+    bkey->encrypt( &bkey->key, yain, yaout );
+    for( i = 0; i < tail; i++ )
+        ( (ak_uint8*)outptr )[i] = ( (ak_uint8*)inptr )[i]^( (ak_uint8 *)yaout)[i];
+  }
+
+ /* перемаскируем ключ */
+  if( bkey->key.remask( &bkey->key ) != ak_error_ok )
+    return ak_error_message( ak_error_get_value(), __func__ , "wrong remasking of secret key" );
 
  return ak_error_ok;
 }

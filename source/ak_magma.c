@@ -344,12 +344,12 @@
   ak_block_cipher_key bkey = NULL;
 
  /* проверяем входной буффер */
-  if( pass == NULL ) { ak_error_message( ak_error_null_pointer, __func__ ,
-                                                             "using a null pointer to password" );
+  if( pass == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to password" );
     return NULL;
   }
-  if( size == 0 ) { ak_error_message( ak_error_zero_length, __func__,
-                                                            "using a password with zero length" );
+  if( size == 0 ) {
+    ak_error_message( ak_error_zero_length, __func__, "using a password with zero length" );
     return NULL;
   }
 
@@ -392,6 +392,10 @@
   /*! зашифрованный текст из ГОСТ Р 34.13-2015, приложение А.2 */
   ak_uint64 out_3413_2015_ecb_text[4] = {
                    0x2b073f0494f372a0, 0xde70e715d3556e48, 0x11d8d9e9eacfbc1e, 0x7c68260996c67efb };
+
+  ak_uint8 ctr_iv[4] = { 0x78, 0x56, 0x34, 0x12 };
+  ak_uint64 out_3413_2015_ctr_text[4] = {
+                   0x4e98110c97b7b93c, 0x3e250d93d6e85d69, 0x136d868807b2dbef, 0x568eb680ab52a12d };
 
   /* 1. Проверяем корректность развертки перестановок алгоритма Магма */
    ak_kbox_to_magma( (kbox *) cipher_box_magma, test_boxes );
@@ -448,7 +452,7 @@
       return ak_false;
     }
     if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
-                             "the ecb mode encryption test from GOST 34.13-2015 is Ok" );
+                             "the ecb mode encryption test from GOST R 34.13-2015 is Ok" );
 
     if( ak_block_cipher_key_decrypt_ecb( bkey, out_3413_2015_ecb_text, out, 32 ) != ak_error_ok ) {
       ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong checking a secret key" );
@@ -465,9 +469,44 @@
       return ak_false;
     }
     if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
-                             "the ecb mode decryption test from GOST 34.13-2015 is Ok" );
-    bkey = ak_block_cipher_key_delete( bkey );
+                             "the ecb mode decryption test from GOST R 34.13-2015 is Ok" );
 
+  /* 5. Тестируем режим гаммирования (счетчика) согласно ГОСТ Р34.13-2015 */
+    if( ak_block_cipher_key_encrypt_ctr( bkey, in_3413_2015_text, out, 32, ctr_iv ) != ak_error_ok ) {
+      ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong checking a secret key" );
+      bkey = ak_block_cipher_key_delete( bkey );
+      return ak_false;
+    }
+    if( memcmp( out, out_3413_2015_ctr_text, 32 ) != 0 ) {
+      ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                          "the ctr mode encryption test from GOST R 34.13-2015 is wrong");
+      ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free( str );
+      ak_log_set_message( str = ak_ptr_to_hexstr( out_3413_2015_ctr_text, 32, ak_true ));
+      free( str );
+      bkey = ak_block_cipher_key_delete( bkey );
+      return ak_false;
+    }
+    if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                             "the ctr mode encryption test from GOST R 34.13-2015 is Ok" );
+
+    if( ak_block_cipher_key_encrypt_ctr( bkey, out_3413_2015_ctr_text, out, 32, ctr_iv ) != ak_error_ok ) {
+      ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong checking a secret key" );
+      bkey = ak_block_cipher_key_delete( bkey );
+      return ak_false;
+    }
+    if( memcmp( out, in_3413_2015_text, 32 ) != 0 ) {
+      ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                          "the ctr mode decryption test from GOST R 34.13-2015 is wrong");
+      ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free( str );
+      ak_log_set_message( str = ak_ptr_to_hexstr( in_3413_2015_text, 32, ak_true ));
+      free( str );
+      bkey = ak_block_cipher_key_delete( bkey );
+      return ak_false;
+    }
+    if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                             "the ctr mode decryption test from GOST R 34.13-2015 is Ok" );
+
+    bkey = ak_block_cipher_key_delete( bkey );
  return ak_true;
 }
 
