@@ -187,11 +187,12 @@
  int ak_bckey_encrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
 /*! \brief Расшифрование данных в режиме простой замены */
  int ak_bckey_decrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
-/*! \brief Зашифрование/расшифрование данных в режиме гаммирования (режим счетчика из ГОСТ Р 34.13-2015) */
- int ak_bckey_encrypt_ctr( ak_bckey , ak_pointer , ak_pointer ,
-                                                                         size_t , ak_pointer );
+/*! \brief Зашифрование/расшифрование данных в режиме гаммирования
+                                                             (режим счетчика из ГОСТ Р 34.13-2015) */
+ int ak_bckey_encrypt_ctr( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer );
 
-/*! \brief Функция выполняет тестирование алгоритма Магма в соответствии с ГОСТ Р 34.12-2015 и ГОСТ Р 34.13-2015 */
+/*! \brief Функция выполняет тестирование алгоритма Магма в соответствии с
+                                                             ГОСТ Р 34.12-2015 и ГОСТ Р 34.13-2015 */
  ak_bool ak_bckey_test_magma( void );
 
 /* ----------------------------------------------------------------------------------------------- */
