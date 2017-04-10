@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*   Copyright (c) 2014, 2015, 2016 by Axel Kenzo, axelkenzo@mail.ru                               */
+/*   Copyright (c) 2014 - 2017 by Axel Kenzo, axelkenzo@mail.ru                                    */
 /*   All rights reserved.                                                                          */
 /*                                                                                                 */
 /*   Redistribution and use in source and binary forms, with or without modification, are          */
@@ -79,6 +79,8 @@ typedef ak_uint64 ak_mpznmax[ ak_mpznmax_size ];
  ak_uint64 ak_mpzn_mul_ui( ak_uint64 *, ak_uint64 *, const size_t, const ak_uint64 );
 /*! \brief Умножение двух вычетов как целых чисел */
  void ak_mpzn_mul( ak_uint64 *, ak_uint64 *, ak_uint64 *, const size_t );
+/*! \brief Вычисление остатка от деления одного вычета на другой */
+ void ak_mpzn_rem( ak_uint64 *, ak_uint64 *, ak_uint64 *, const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Сложение двух вычетов в представлении Монтгомери */

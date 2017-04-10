@@ -110,59 +110,44 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mpzn_set_random( ak_uint64 *x, const size_t size, ak_random generator )
 {
-  if( x == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to mpzn" );
-    return ak_error_null_pointer;
-  }
-  if( !size ) {
-    ak_error_message( ak_error_zero_length, __func__ , "using a zero legth of input data" );
-    return ak_error_zero_length;
-  }
-  if( generator == NULL ) {
-    ak_error_message( ak_error_undefined_value, __func__, "using an undefined random generator" );
-    return ak_error_undefined_value;
-  }
+  if( x == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                      __func__ , "using a null pointer to mpzn" );
+  if( !size ) return ak_error_message( ak_error_zero_length,
+                                                  __func__ , "using a zero legth of input data" );
+  if( generator == NULL ) return ak_error_message( ak_error_undefined_value,
+                                                __func__, "using an undefined random generator" );
+
  return ak_random_ptr( generator, x, size*sizeof( ak_uint64 ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_mpzn_set_random_modulo( ak_uint64 *x, ak_uint64 *p,
-                                                            const size_t size, ak_random generator )
+ int ak_mpzn_set_random_modulo( ak_uint64 *x, ak_uint64 *p, const size_t size, ak_random generator )
 {
   size_t midx = size-1;
-  if( x == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to mpzn" );
-    return ak_error_null_pointer;
-  }
-  if( p == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to modulo" );
-    return ak_error_null_pointer;
-  }
-  if( !size ) {
-    ak_error_message( ak_error_zero_length, __func__ , "using a zero legth for generated data" );
-    return ak_error_zero_length;
-  }
-  if( generator == NULL ) {
-    ak_error_message( ak_error_undefined_value, __func__ , "using an undefined random generator" );
-    return ak_error_undefined_value;
-  }
+  if( x == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                       __func__ , "using a null pointer to mpzn" );
+  if( p == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                     __func__ , "using a null pointer to modulo" );
+  if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                         "using a zero legth for generated data" );
+  if( generator == NULL ) return ak_error_message( ak_error_undefined_value,
+                                                __func__ , "using an undefined random generator" );
 
-  /* определяем старший значащий разряд у модуля */
+ /* определяем старший значащий разряд у модуля */
   while( p[midx] == 0 ) {
-    if( midx == 0 ) {
-      ak_error_message( ak_error_undefined_value, __func__ , "modulo is equal to zero" );
-      return ak_error_undefined_value;
-    } else --midx;
+    if( midx == 0 ) return ak_error_message( ak_error_undefined_value,
+                                                            __func__ , "modulo is equal to zero" );
+      else --midx;
   }
 
-  /* старший разряд - по модулю, остальное мусор */
+ /* старший разряд - по модулю, остальное мусор */
   memset( x, 0, size*sizeof( ak_uint64 ));
   x[midx] = ak_random_uint64( generator )%p[midx];
-  if( midx > 0 ) ak_random_ptr( generator, x, midx*sizeof( ak_uint64));
+  if( midx > 0 ) ak_random_ptr( generator, x, midx*sizeof( ak_uint64 ));
 
  return ak_error_ok;
 }
- 
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция рассматривает указатель на массив как вычет одного из типов ak_mpznxxx и присваивает
     этому вычету значение, содержащееся в строке шестнадцатеричных вычетов.
@@ -313,7 +298,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция сравнивает вычет x со значением value.  В случае равенства значений возвращается
+/*! Функция сравнивает вычет \f$ x \f$ со значением value.  В случае равенства значений возвращается
    \ref ak_true. В противном случае, возвращается \ref ak_false.
 
    @param x Заданный вычет
@@ -332,6 +317,18 @@
  return ak_true;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция реализует операцию умножения вычета \f$ x\f$, рассматриваемого как целое число,
+    на целое число \f$ d \f$. Результат помещается в переменную \f$ z \f$.
+    Старший значащий разряд вычисленного произведения возвращается в виде
+    возвращаемого значения функции.
+
+    \param z   Переменная, в которую помещается результат
+    \param x   Множимое число (многкратной точности)
+    \param size Размер множимого числа. Данная ведичина может принимать значения
+    \ref ak_mpzn256_size или \ref ak_mpzn512_size
+    \param d   Множитель, беззнаковое число однократной точности.
+    \return    Старший значащий разряд вычисленног произведения.                                   */
 /* ----------------------------------------------------------------------------------------------- */
  ak_uint64 ak_mpzn_mul_ui( ak_uint64 *z, ak_uint64 *x, const size_t size, const ak_uint64 d )
 {
@@ -391,6 +388,43 @@
     w[ij] = m;
  }
  memcpy( z, w, 2*sizeof( ak_uint64 )*size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция вычисляет вычет \f$ r \f$, удовлетворяющий сравнению \f$ r \equiv u \pmod{p}\f$
+    При этом предполагается, что вычет \f$ u \f$ и модуль \f$ p \f$ имеют одну и ту же
+    длину, т.е. \f$ u, p \in \mathbb Z_{2^n}\f$ для одного и того же натурального \f$ n \f$.
+
+    Более того, для \f$ p \f$ дожно выполняться неравенство
+    \f$ p > 2^{n-32}\f$. В противном случае результат может оказаться неверным.
+
+    @param r Результат применения операции вычисления остатка от деления
+    @param u Вычет, значение которого приводится по модулю
+    @param p Модуль, по которому приводится приведение
+    @param size Размер всех трех вычетов, участвующих в вычислениях. Данная переменная должна
+    принимать значения \ref ak_mpzn256_size или \ref ak_mpzn512_size.                              */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_mpzn_rem( ak_uint64 *r, ak_uint64 *u, ak_uint64 *p, const size_t size )
+{
+  ak_uint64 q = 0;
+  ak_mpznmax z, s;
+
+  if( p[size-1] != -1 ) q = u[size-1]/(1+p[size-1]);
+  // printf("u[%lu] = %lx, p[%lu] = %lx => q = %lu\n", size-1, u[size-1], size-1, p[size-1], q );
+
+ /* проверяем, нужно ли приведение, или же вычет меньше модуля */
+  if( q == 0 ) {
+    memcpy( r, u, size*sizeof( ak_uint64 ));
+    return;
+  }
+ /* выполняем умножение и последующее вычитание */
+  if( q > 1 )  {
+    ak_mpzn_mul_ui( s, p, size, q );
+    ak_mpzn_sub( z, u, s, size );
+  } else ak_mpzn_sub( z, u, p, size );
+
+  if( ak_mpzn_sub( s, z, p, size )) memcpy( r, z, size*sizeof( ak_uint64 ));
+   else memcpy( r, s, size*sizeof( ak_uint64 ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */

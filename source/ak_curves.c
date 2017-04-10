@@ -204,17 +204,63 @@ int ak_wcurve_create( ak_wcurve ec, ak_wcurve_paramset params )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_wcurve_is_ok( ak_wcurve ec )
+ ak_bool ak_wcurve_discriminant_is_ok( ak_wcurve ec )
 {
   ak_mpznmax d;
-
-  if( ec == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ ,
+  if( ec == NULL ) { ak_error_message( ak_error_null_pointer, __func__ ,
                                                "using a null pointer to elliptic curve context" );
     return ak_false;
   }
   ak_mpzn_set_wcurve_discriminant( d, ec );
  return !ak_mpzn_cmp_ui( d, ec->size, 0 );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция принимает на вход контекст структуры wcurve_paramset и выполняет следующие проверки
+
+   - проверяется, что модуль кривой (простое число p) не менее,
+     чем \f$ 2^{n-32}\f$, где \f$ n \f$ это либо 256, либо 512 в зависимости от параметров кривой.
+   - проверяется, что дискриминант эллиптической кривой отличен от нуля по модулю \f$ p \f4.
+   - проверяется, что точка, задаваемая структурой wcurve_paramset
+     принадлежит эллиптической кривой,
+   - проверяется, что порядок точки равен простому числу \f$ q \f$,
+     задаваемому структурой wcurve_paramset.
+
+  @param ecp указатель на структуру wcurve_paramset
+  @return в случае успеха, функция возвращает \ref ak_error_ok. В противном случае,
+  возвращается код ошибки.                                                                         */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_wcurve_paramset_is_ok( const ak_wcurve_paramset ecp )
+{
+  struct wcurve ec;
+  struct wpoint wp;
+  int error = ak_error_ok;
+
+ /* создали кривую и проверяем ее параметры */
+  if(( error = ak_wcurve_create( &ec, ecp )) != ak_error_ok ) return error;
+  if( ec.p[ ec.size-1 ] < 0x100000000LL ) { /* слишком маленький модуль */
+    error = ak_error_wcurve_prime_size;
+    goto ex2;
+  }
+  if( !ak_wcurve_discriminant_is_ok( &ec )) { /* нулевой дискриминант */
+    error = ak_error_wcurve_discriminant;
+    goto ex2;
+  }
+ /* теперь тестируем точку на кривой */
+  if(( error = ak_wpoint_create( &wp, ecp )) != ak_error_ok ) goto ex2;
+  if( ak_wpoint_is_ok( &wp, &ec ) != ak_true ) { /* точка не принадлежит кривой */
+    error = ak_error_wcurve_point;
+    goto ex1;
+  }
+  if( ak_wpoint_check_order( &wp, &ec ) != ak_true ) {
+    error = ak_error_wcurve_point_order; /* порядок точки отличен от заданного */
+    goto ex1;
+  }
+
+ /* удаляем контексты */
+  ex1: ak_wpoint_destroy( &wp );
+  ex2: ak_wcurve_destroy( &ec );
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

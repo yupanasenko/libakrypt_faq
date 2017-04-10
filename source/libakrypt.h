@@ -172,11 +172,12 @@
  #define ak_error_wrong_key_lock            (-24)
  #define ak_error_wrong_key_unlock          (-25)
  #define ak_error_wrong_key_icode           (-26)
- #define ak_error_wcurve_discriminant       (-27)
- #define ak_error_wcurve_point              (-28)
- #define ak_error_wcurve_point_order        (-29)
- #define ak_error_context_manager_max_size  (-30)
- #define ak_error_block_cipher_length       (-31)
+ #define ak_error_wcurve_prime_size         (-27)
+ #define ak_error_wcurve_discriminant       (-28)
+ #define ak_error_wcurve_point              (-29)
+ #define ak_error_wcurve_point_order        (-30)
+ #define ak_error_context_manager_max_size  (-31)
+ #define ak_error_block_cipher_length       (-32)
 
  #define ak_null_string                ("(null)")
 

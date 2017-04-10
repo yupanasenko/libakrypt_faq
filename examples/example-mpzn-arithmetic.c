@@ -561,7 +561,7 @@
   mpz_init(sm);
 
   print_wcurve(ec);
-  if( ak_wcurve_is_ok(ec)) printf(" curve is Ok\n");
+  if( ak_wcurve_discriminant_is_ok(ec)) printf(" curve is Ok\n");
 
   ak_mpznmax d;
   ak_mpzn_set_wcurve_discriminant( d, ec );

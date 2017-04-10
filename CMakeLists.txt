@@ -27,6 +27,7 @@ set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 option( LIBAKRYPT_STATIC_LIB "Build the static library" ON )
 option( LIBAKRYPT_SHARED_LIB "Build the shared library" OFF )
 option( LIBAKRYPT_GMP_TESTS "Build test programs with libGMP" OFF)
+# для включения опции cmake -D LIBAKRYPT_GMP_TESTS=ON path
 
 # -------------------------------------------------------------------------------------------------- #
 # описание исходных кодов
@@ -131,7 +132,8 @@ if( LIBAKRYPT_GMP_TESTS )
       set( ARITHMETIC_TESTS_LIST mpzn-convert-to-gmp
                                  mpzn-convert-to-hexstr
                                  mpzn-random-modulo
-                                 mpzn-arithmetic )
+                                 mpzn-arithmetic
+                                 mpzn-rem )
       foreach( programm ${ARITHMETIC_TESTS_LIST} )
          # сборка статических примеров
          add_executable( example-${programm} examples/example-${programm}.c )
@@ -140,6 +142,7 @@ if( LIBAKRYPT_GMP_TESTS )
     endif()
   endif()
 endif()
+
 # -------------------------------------------------------------------------------------------------- #
 # очистка служебной информации из статических примеров
 add_custom_target( strip strip --strip-all ${CMAKE_BINARY_DIR}/example-* )

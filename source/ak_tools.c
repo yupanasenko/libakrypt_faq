@@ -755,7 +755,7 @@ void ak_libakrypt_wcurve_to_log( const ak_wcurve_paramset ecp )
 
  @return Возвращает ak_true в случае успешного тестирования. В случае возникновения
  ошибки функция возвращает ak_false. Код ошибки можеть быть получен с помощью вызова
- ak_error_get_value().                                                                            */
+ ak_error_get_value().                                                                             */
 /* ----------------------------------------------------------------------------------------------- */
 ak_bool ak_libakrypt_test_wcurves( void )
 {
@@ -770,38 +770,26 @@ ak_bool ak_libakrypt_test_wcurves( void )
  for( idx = 0; idx < ak_oids_get_count(); idx++ ) {
     ak_oid oid = ak_oids_get_oid( idx );
     if( ak_oid_get_mode( oid ) == wcurve_params ) {
-      const ak_wcurve_paramset ecp = (const ak_wcurve_paramset) oid->data;
-      ak_wcurve ec = ak_wcurve_new(ecp);
-      ak_wpoint wp = ak_wpoint_new(ecp);
-
-      if(( result = ak_wcurve_is_ok( ec )) == ak_true ) {
-        if(( result = ak_wpoint_is_ok( wp, ec )) == ak_true ) {
-          if(( result = ak_wpoint_check_order( wp, ec )) == ak_true ) {
-            /* здесь все проверки выполнены успешно */
-            if( audit > ak_log_standard ) {
-              ak_error_message_fmt( ak_error_ok, __func__ ,
-                   "curve %s (OID: %s) is Ok", ak_oid_get_name( oid ), ak_oid_get_id( oid ));
-            }
-          } else reason = ak_error_wcurve_point_order;
-        } else reason = ak_error_wcurve_point;
-      } else reason = ak_error_wcurve_discriminant;
-
-      wp = ak_wpoint_delete( wp );
-      ec = ak_wcurve_delete( ec );
-      if( result != ak_true )  {
+      const ak_wcurve_paramset ecp = ( const ak_wcurve_paramset) oid->data;
+      if(( reason = ak_wcurve_paramset_is_ok( ecp )) != ak_error_ok ) {
         char *p = NULL;
         switch( reason ) {
           case ak_error_wcurve_discriminant : p = "discriminant"; break;
           case ak_error_wcurve_point        : p = "base point"; break;
           case ak_error_wcurve_point_order  : p = "base point order"; break;
+          case ak_error_wcurve_prime_size   : p = "prime modulo p"; break;
           default : p = "unxepected parameter";
         }
         ak_libakrypt_wcurve_to_log( ecp );
         ak_error_message_fmt( reason, __func__ ,
-             "curve %s [OID: %s] has wrong %s", ak_oid_get_name( oid ), ak_oid_get_id( oid ), p );
-        break;
-      }
-    }
+               "curve %s (OID: %s) has wrong %s", ak_oid_get_name( oid ), ak_oid_get_id( oid ), p );
+        result = ak_false;
+      } else
+          if( audit > ak_log_standard ) {
+            ak_error_message_fmt( ak_error_ok, __func__ ,
+                 "curve %s (OID: %s) is Ok", ak_oid_get_name( oid ), ak_oid_get_id( oid ));
+          }
+    } /* end if */
  } /* end of for */
 
  if( !result ) ak_error_message( ak_error_get_value(), __func__ ,
