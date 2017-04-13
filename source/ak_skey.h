@@ -129,20 +129,22 @@
 /*! \brief Присвоение секретному ключу значения, выработанного из пароля */
  int ak_skey_assign_password( ak_skey , const ak_pointer , const size_t );
 
-/*! \brief Наложение аддитивной (в кольце \f$ \mathbb Z_{2^{32}}\f$ ) маски на ключ */
+/*! \brief Наложение аддитивной в кольце \f$ \mathbb Z_{2^{32}}\f$ маски на ключ */
  int ak_skey_set_mask_additive( ak_skey );
-/*! \brief Смена значения аддитивной (в кольце \f$ \mathbb Z_{2^{32}}\f$ ) маски ключа */
+/*! \brief Наложение аддитивной в пространстве векторов \f$ \mathbb V^n \f$ маски на ключ */
+ int ak_skey_set_mask_xor( ak_skey );
+/*! \brief Смена значения аддитивной в кольце \f$ \mathbb Z_{2^{32}}\f$ маски ключа */
  int ak_skey_remask_additive( ak_skey );
+/*! \brief Смена значения аддитивной в пространстве векторов \f$ \mathbb V^n \f$ маски ключа */
+ int ak_skey_remask_xor( ak_skey );
 /*! \brief Вычисление значения контрольной суммы ключа */
  int ak_skey_set_icode_additive( ak_skey );
+/*! \brief Вычисление значения контрольной суммы ключа */
+ int ak_skey_set_icode_xor( ak_skey );
 /*! \brief Проверка значения контрольной суммы ключа */
  ak_bool ak_skey_check_icode_additive( ak_skey );
-
-// int ak_skey_set_mask_xor( ak_skey );
-// int ak_skey_remask_xor( ak_skey );
-// int ak_skey_set_icode_xor( ak_skey );
-// ak_bool ak_skey_check_icode_xor( ak_skey );
-
+/*! \brief Проверка значения контрольной суммы ключа */
+ ak_bool ak_skey_check_icode_xor( ak_skey );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция зашифрования/расширования одного блока информации */
@@ -189,7 +191,7 @@
  int ak_bckey_decrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
 /*! \brief Зашифрование/расшифрование данных в режиме гаммирования
                                                              (режим счетчика из ГОСТ Р 34.13-2015) */
- int ak_bckey_encrypt_ctr( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer );
+ int ak_bckey_xcrypt_ctr( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer );
 
 /*! \brief Функция выполняет тестирование алгоритма Магма в соответствии с
                                                              ГОСТ Р 34.12-2015 и ГОСТ Р 34.13-2015 */
@@ -211,9 +213,8 @@
  /*! \brief контекст секретного ключа */
   struct skey key;
  /*! \brief контекст функции хеширования */
-  struct hash ctx;
+  ak_hash ctx;
 };
-
 
 /* ----------------------------------------------------------------------------------------------- */
 

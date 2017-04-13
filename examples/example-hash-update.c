@@ -30,6 +30,8 @@
   generator = ak_random_new_lcg();
 
  /* Нарезаем входные данные на фрагменты длины, меньшей чем длина обрабатываемого блока */
+  offset = 0; tail = data_size; /* устанавливаем счетчики в исходное положение */
+  ak_update_clean( upd ); /* очищаем контекст структуры сжатия данных */
   while( tail > ak_hash_get_block_size( ctx )) {
      size_t len = ak_random_uint8( generator )%ak_hash_get_block_size( ctx );
      ak_update_update( upd, data+offset, len );
