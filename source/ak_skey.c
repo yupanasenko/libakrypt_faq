@@ -589,6 +589,7 @@
     @param skey Контекст секретного ключа. К моменту вызова функции контекст должен быть
     инициализирован.
     @param ptr Указатель на данные, которые будут интерпретироваться в качестве значения ключа.
+    @param size Размер данных, на которые указывает ptr (размер в байтах)
     @param cflag Флаг передачи владения укзателем ptr. Если cflag ложен (ak_false), то физического
     копирования данных не происходит: внутренний буфер лишь указывает на размещенные в другом месте
     данные, но не владеет ими. Если cflag истиннен (ak_true), то происходит выделение памяти и
@@ -597,7 +598,7 @@
     @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_skey_assign_ptr( ak_skey skey, const ak_pointer ptr, const ak_bool cflag )
+ int ak_skey_assign_ptr( ak_skey skey, const ak_pointer ptr, const size_t size, const ak_bool cflag )
 {
   int error = ak_error_ok;
 
@@ -608,8 +609,10 @@
                                                        "using non initialized secret key context" );
   if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                                  "using a null pointer to buffer" );
+  if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                           "wrong assigning a zero length buffer" );
  /* присваиваем буффер и маскируем его */
-  if(( error = ak_buffer_set_ptr( &skey->key, ptr, skey->key.size, cflag )) != ak_error_ok )
+  if(( error = ak_buffer_set_ptr( &skey->key, ptr, size, cflag )) != ak_error_ok )
     return ak_error_message( error, __func__ , "wrong assigning a secret key data" );
 
   if(( error = skey->set_mask( skey )) != ak_error_ok ) return  ak_error_message( error,

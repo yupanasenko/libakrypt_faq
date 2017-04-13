@@ -42,7 +42,7 @@
   // ak_random generator = ak_random_new_file("/dev/random");
   // ak_bckey key = ak_bckey_new_magma_random( generator );
   // ak_bckey key = ak_bckey_new_magma_password( "password", 8 );
-  ak_bckey key = ak_bckey_new_magma_ptr( gost3412_2015_key, ak_false );
+  ak_bckey key = ak_bckey_new_magma_ptr( gost3412_2015_key, 32, ak_false );
   print_key( &key->key );
 
   key->encrypt( &key->key, a, out );

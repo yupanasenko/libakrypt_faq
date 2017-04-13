@@ -56,6 +56,7 @@ set( SOURCES source/ak_tools.c
              source/ak_magma.c
 #             source/ak_kuznetchik.c
              source/ak_context_manager.c
+             source/ak_hmac.c
              source/ak_mpzn.c
              source/ak_curves.c )
 set( DOCS    doc/libakrypt.dox

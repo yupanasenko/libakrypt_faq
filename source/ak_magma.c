@@ -278,8 +278,7 @@
     @return Функция возвращает указатель на созданный контекст. В случае возникновения ошибки,
     возвращается NULL, код ошибки может быть получен с помощью вызова функции ak_error_get_value() */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bckey ak_bckey_new_magma_ptr( const ak_pointer keyptr,
-                                                                              const ak_bool cflag  )
+ ak_bckey ak_bckey_new_magma_ptr( const ak_pointer keyptr, const size_t size, const ak_bool cflag  )
 {
   int error = ak_error_ok;
   ak_bckey bkey = NULL;
@@ -289,13 +288,17 @@
     ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to key data" );
     return NULL;
   }
+  if( size != 32 ) {
+    ak_error_message( ak_error_wrong_length, __func__, "using a wrong length of secret key" );
+    return NULL;
+  }
  /* создаем контекст ключа */
   if(( bkey = ak_bckey_magma_new( )) == NULL ) {
     ak_error_message( ak_error_get_value(), __func__ , "incorrect creation of magma secret key" );
     return NULL;
   }
  /* присваиваем ключевой буффер */
-  if(( error = ak_skey_assign_ptr( &bkey->key, keyptr, cflag )) != ak_error_ok ) {
+  if(( error = ak_skey_assign_ptr( &bkey->key, keyptr, size, cflag )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "incorrect assigning of key data" );
     return ( bkey = ak_bckey_delete( bkey ));
   }
@@ -406,7 +409,7 @@
    }
 
   /* 2. Вырабатываем ключ алгоритма Магма */
-   if((bkey = ak_bckey_new_magma_ptr( gost3412_2015_key, ak_false )) == NULL ) {
+   if((bkey = ak_bckey_new_magma_ptr( gost3412_2015_key, 32, ak_false )) == NULL ) {
      ak_error_message( ak_error_get_value(), __func__, "wrong creation of test key" );
      return ak_false;
    }

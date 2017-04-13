@@ -76,12 +76,19 @@
                                                         ak_function_free *ffree, const size_t size )
 {
   int error = ak_error_ok;
-  if(( error = ak_buffer_create_size( buff, size )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "wrong creation buffer context" );
+ /* создаем буффер со значениями по умолчанию */
+  if(( error = ak_buffer_create( buff )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong buffer context creation" );
+    return error;
+  }
+ /* меняем указатели на функции выделенияочистки памяти */
+  buff->free = ffree; buff->alloc = falloc;
+ /* только теперь реально выделяем память под данные */
+  if(( error = ak_buffer_alloc( buff, size )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong memory allocation for buffer context" );
     ak_buffer_destroy( buff );
     return error;
   }
-  buff->free = ffree; buff->alloc = falloc;
  return ak_error_ok;
 }
 
@@ -243,6 +250,32 @@
  int ak_buffer_alloc( ak_buffer buff, const size_t size )
 {
   ak_uint8 *ptr = NULL;
+  int error = ak_error_ok;
+
+ /* сли новый размер равен нулю, то просто очищаем память */
+  if( size == 0 ) {
+    if(( error = ak_buffer_free( buff )) != ak_error_ok )
+      ak_error_message( error, __func__, "incorrect buffer memory destroying");
+    return error;
+  }
+ /* если буфер не владеет памятью или ее недостаточно, то выделяем новую память */
+  if(( buff->flag == ak_false) || ( size > buff->size )) {
+
+    if(( ptr = buff->alloc( size )) == NULL )
+      return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
+    memset( ptr, 0, size );
+    if(( error = ak_buffer_free( buff )) != ak_error_ok ) {
+      ak_error_message( error, __func__, "incorrect buffer memory destroying");
+      free( ptr );
+      return error;
+    }
+    buff->data = ptr;
+    buff->flag = ak_true;
+    buff->size = size;
+  } else memset( buff->data, 0, buff->size );
+ return ak_error_ok;
+
+ /*
   if( size > 0 ) {
     if(( ptr = buff->alloc( size )) == NULL ) {
      ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
@@ -260,6 +293,7 @@
   if( size > 0 ) buff->size = size;
     else buff->size = 0;
   return ak_error_ok;
+ */
 }
 
 /* ----------------------------------------------------------------------------------------------- */

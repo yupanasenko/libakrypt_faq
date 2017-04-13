@@ -297,7 +297,7 @@
 {
   ak_random generator = NULL;
   ak_error_message( ak_error_ok, __func__ ,
-                           "TODO: we need correct random generator initialization under Windows");
+                                   "TODO: correct random generator initialization under Windows");
 #ifdef __linux__
   if(( generator = ak_random_new_file("/dev/random")) == NULL ) {
  #else

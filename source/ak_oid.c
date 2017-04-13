@@ -96,6 +96,12 @@
   ak_oids_add_oid( ak_oid_new( hash_function, kbox_params,
                 "id-gosthash94-VerbaO-ParamSet", "1.2.643.2.2.30.2", (ak_pointer) hash_box_VerbaO ));
 
+ /* добавляем алгоритмы hmac (см. Р 50.1.113-2016) */
+  ak_oids_add_oid( ak_oid_new( mac_function, algorithm,
+                                                    "hmac-streebog256", "1.2.643.7.1.1.4.1", NULL ));
+  ak_oids_add_oid( ak_oid_new( mac_function, algorithm,
+                                                    "hmac-streebog512", "1.2.643.7.1.1.4.2", NULL ));
+
   /* добавляем алгоритмы блочного шифрования */
   ak_oids_add_oid( ak_oid_new( block_cipher, algorithm, "magma", "1.2.643.2.2.21", NULL ));
   ak_oids_add_oid( ak_oid_new( block_cipher, algorithm, "kuznetchik", "1.2.643.7.1.1.5.1", NULL ));

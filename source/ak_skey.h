@@ -123,7 +123,7 @@
 /*! \brief Присвоение секретному ключу уникального номера */
  int ak_skey_assign_unique_number( ak_skey );
 /*! \brief Присвоение секретному ключу константного значения */
- int ak_skey_assign_ptr( ak_skey , const ak_pointer , const ak_bool );
+ int ak_skey_assign_ptr( ak_skey , const ak_pointer , const size_t , const ak_bool );
 /*! \brief Присвоение секретному ключу случайного значения */
  int ak_skey_assign_random( ak_skey , ak_random );
 /*! \brief Присвоение секретному ключу значения, выработанного из пароля */
@@ -178,11 +178,11 @@
 /*! \brief Удаление ключа алгоритма блочного шифрования */
  ak_pointer ak_bckey_delete( ak_pointer );
 
-/*! Создание контекста ключа алгоритма Магма с заданным значением */
- ak_bckey ak_bckey_new_magma_ptr( const ak_pointer , const ak_bool );
-/*! Создание контекста ключа алгоритма Магма с новым, случайным значением */
+/*! \brief Создание контекста ключа алгоритма Магма с заданным значением */
+ ak_bckey ak_bckey_new_magma_ptr( const ak_pointer , const size_t , const ak_bool );
+/*! \brief Создание контекста ключа алгоритма Магма с новым, случайным значением */
  ak_bckey ak_bckey_new_magma_random( ak_random );
-/*! Выработка контекста ключа алгоритма Магма из пароля */
+/*! \brief Выработка контекста ключа алгоритма Магма из пароля */
  ak_bckey ak_bckey_new_magma_password( const ak_pointer , const size_t );
 
 /*! \brief Зашифрование данных в режиме простой замены */
@@ -215,6 +215,21 @@
  /*! \brief контекст функции хеширования */
   ak_hash ctx;
 };
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Инициализация ключа алгоритма выработки имитовставки HMAC */
+ int ak_hmac_create( ak_hmac_key , ak_hash );
+/*! \brief Создание контекста ключа алгоритма выработки имитовставки HMAC */
+ ak_hmac_key ak_hmac_new( ak_hash );
+/*! \brief Очистка ключа алгоритма выработки имитовставки HMAC */
+ int ak_hmac_destroy( ak_hmac_key );
+/*! \brief Удаление ключа алгоритма выработки имитовставки HMAC */
+ ak_pointer ak_hmac_delete( ak_pointer );
+
+/*! \brief Создание контекста ключа алгоритма вычисления имитовставки HMAC с заданным значением */
+ ak_hmac_key ak_hmac_new_ptr( ak_hash , const ak_pointer , const size_t , const ak_bool );
+/*! \brief Очистка и начальная инициализация контекста ключа алгоритма вычисления имитовставки HMAC */
+ int ak_hmac_clean( ak_hmac_key );
 
 /* ----------------------------------------------------------------------------------------------- */
 

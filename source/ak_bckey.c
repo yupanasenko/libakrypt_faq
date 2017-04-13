@@ -85,9 +85,17 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_bckey ak_bckey_new( size_t keysize, size_t blocksize )
 {
-  ak_bckey bkey = ( ak_bckey ) malloc( sizeof( struct bckey ));
-   if( bkey != NULL ) ak_bckey_create( bkey, keysize, blocksize );
-     else ak_error_message( ak_error_out_of_memory, __func__ , "incorrect memory allocation" );
+  ak_bckey bkey = NULL;
+  int error = ak_error_ok;
+
+  if(( bkey = ( ak_bckey ) malloc( sizeof( struct bckey ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ , "incorrect memory allocation" );
+    return NULL;
+  }
+  if(( error = ak_bckey_create( bkey, keysize, blocksize )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "incorrect creation of block cipher key context" );
+    return( bkey = ak_bckey_delete( bkey ));
+  }
  return bkey;
 }
 
