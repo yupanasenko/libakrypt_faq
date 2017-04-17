@@ -101,6 +101,8 @@
                                                     "hmac-streebog256", "1.2.643.7.1.1.4.1", NULL ));
   ak_oids_add_oid( ak_oid_new( mac_function, algorithm,
                                                     "hmac-streebog512", "1.2.643.7.1.1.4.2", NULL ));
+  ak_oids_add_oid( ak_oid_new( mac_function, algorithm,
+                                                "hmac-gosthash94", "1.2.643.2.52.1.1.1.4.2", NULL ));
 
   /* добавляем алгоритмы блочного шифрования */
   ak_oids_add_oid( ak_oid_new( block_cipher, algorithm, "magma", "1.2.643.2.2.21", NULL ));

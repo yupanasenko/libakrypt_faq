@@ -114,6 +114,7 @@ if( LIBAKRYPT_STATIC_LIB )
                      dev-random
                      skey
                      context-manager
+                     hmac
                      )
   foreach( programm ${EXAMPLES_LIST} )
       # сборка статических примеров

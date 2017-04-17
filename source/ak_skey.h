@@ -218,18 +218,22 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация ключа алгоритма выработки имитовставки HMAC */
- int ak_hmac_create( ak_hmac_key , ak_hash );
+ int ak_hmac_key_create( ak_hmac_key , ak_hash );
 /*! \brief Создание контекста ключа алгоритма выработки имитовставки HMAC */
- ak_hmac_key ak_hmac_new( ak_hash );
+ ak_hmac_key ak_hmac_key_new( ak_hash );
 /*! \brief Очистка ключа алгоритма выработки имитовставки HMAC */
- int ak_hmac_destroy( ak_hmac_key );
+ int ak_hmac_key_destroy( ak_hmac_key );
 /*! \brief Удаление ключа алгоритма выработки имитовставки HMAC */
- ak_pointer ak_hmac_delete( ak_pointer );
+ ak_pointer ak_hmac_key_delete( ak_pointer );
 
 /*! \brief Создание контекста ключа алгоритма вычисления имитовставки HMAC с заданным значением */
- ak_hmac_key ak_hmac_new_ptr( ak_hash , const ak_pointer , const size_t , const ak_bool );
+ ak_hmac_key ak_hmac_key_new_ptr( ak_hash , const ak_pointer , const size_t );
 /*! \brief Очистка и начальная инициализация контекста ключа алгоритма вычисления имитовставки HMAC */
- int ak_hmac_clean( ak_hmac_key );
+ int ak_hmac_key_clean( ak_hmac_key );
+/*! \brief Обновление контекста ключа алгоритма вычисления имитовставки HMAC */
+ int ak_hmac_key_update( ak_hmac_key , const ak_pointer , const size_t );
+/*! \brief Завершение алгоритма вычисления имитовставки HMAC и получение результата вычислений */
+ ak_buffer ak_hmac_key_finalize( ak_hmac_key , const ak_pointer , const size_t , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 
