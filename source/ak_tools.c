@@ -740,7 +740,13 @@ return ak_true;
 
  /* тестируем алгоритм HMAC на основе российской функции Стрибог */
   if( ak_hmac_key_test_streebog() != ak_true ) {
-    ak_error_message( ak_error_get_value(), __func__ , "incorrect HMAC functions testing" );
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect mac functions testing" );
+    return ak_false;
+  }
+
+ /* тестируем алгоритм выработки ключа из пароля PBKDF2 на основе алгоритма HMAC */
+  if( ak_hmac_key_test_pbkdf2() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect pbkdf2 function testing" );
     return ak_false;
   }
 
@@ -894,7 +900,7 @@ ak_bool ak_libakrypt_test_wcurves( void )
 
  /* тестируем работу алгоритмов выработки имитовставки */
  if( ak_libakrypt_test_mac_functions() != ak_true ) {
-   ak_error_message( ak_error_get_value(), __func__ , "error while testing block ciphers" );
+   ak_error_message( ak_error_get_value(), __func__ , "error while testing mac functions" );
    return ak_false;
  }
 

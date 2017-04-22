@@ -658,8 +658,21 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/* пока делаем реализацию как бы PBKDF2 */
- int ak_skey_assign_password( ak_skey skey, const ak_pointer pass, const size_t size )
+/*! Функция реализует алгоритм выработки ключа из пароля, регламентированный рекомендациями по
+    стандартизации Р 50.1.111-2016. В качестве пароля может выступать строка символов
+    в кодировке UTF8. Реализация функции допускает использование в качестве пароля произввольной
+    области памяти с фиксированной длиной.
+
+    @param skey Контекст секретного ключа. К моменту вызова функции контекст должен быть
+    инициализирован.
+    @param pass Указатель на массив данных, рассматриваемый в качевте пароля.
+    В рекомендациях Р 50.1.111-2016 предполагается, что паролем является строка символов
+    в UTF8 кодировке.
+    @param size Количество символов пароля, которые будут использованы для выработки ключа.
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_assign_password( ak_skey skey, const ak_pointer pass, const size_t size  )
 {
   ak_hash ctx = NULL;
   int error = ak_error_ok;
@@ -671,11 +684,12 @@
                                                       "using non initialized secret key context" );
   if( pass == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                               "using a null pointer to password" );
-  if( size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
-                                                            "using a passsword with zero length" );
+//  if( size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+//                                                            "using a passsword with zero length" );
+
  /* формируем ключ */
   ak_error_set_value( ak_error_ok );
-   ak_hash_data( ctx = ak_hash_new_streebog256(), pass, size, skey->key.data );
+   ak_hash_data( ctx = ak_hash_new_streebog256(), pass, 3 /*size*/, skey->key.data );
   error = ak_error_get_value();
   if( ctx != NULL ) ctx = ak_hash_delete( ctx );
   if( error != ak_error_ok ) return ak_error_message( error, __func__ ,

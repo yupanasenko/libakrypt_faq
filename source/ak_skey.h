@@ -241,8 +241,14 @@
  int ak_hmac_key_update( ak_hmac_key , const ak_pointer , const size_t );
 /*! \brief Завершение алгоритма вычисления имитовставки HMAC и получение результата вычислений */
  ak_buffer ak_hmac_key_finalize( ak_hmac_key , const ak_pointer , const size_t , ak_pointer );
-/*! \brief Тестирование корректности реализации */
+/*! \brief Тестирование корректности реализации алгоритма выработки имитовставки HMAC */
  ak_bool ak_hmac_key_test_streebog( void );
+
+/*! Алгоритм выработки ключевого вектора из пароля */
+ int ak_ptr_to_skey_pbkdf2( const ak_pointer , const size_t ,
+                       const ak_pointer , const size_t , const size_t , const size_t , ak_pointer );
+/*! \brief Тестирование корректности реализации алгоритма выработки имитовставки HMAC */
+ ak_bool ak_hmac_key_test_pbkdf2( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 
