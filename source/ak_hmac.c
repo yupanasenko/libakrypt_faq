@@ -357,7 +357,7 @@
 {
   int fd = 0;
   struct stat st;
-  ak_uint64 len = 0;
+  size_t len = 0;
   ak_uint8 *localbuffer; /* место для локального считывания информации */
   ak_uint32 block_size = 4096; /* оптимальная длина блока для Windows пока не ясна */
   ak_buffer result = NULL;
@@ -402,10 +402,10 @@
     ak_hmac_key_update( hkey, localbuffer, block_size ); /* добавляем считанные данные */
     goto read_label;
   } else {
-          ak_uint64 qcnt = len / hkey->ctx->bsize,
-                    tail = len - qcnt*hkey->ctx->bsize;
-                    if( qcnt ) ak_hmac_key_update( hkey, localbuffer, qcnt*hkey->ctx->bsize );
-                    result = ak_hmac_key_finalize( hkey, localbuffer + qcnt*hkey->ctx->bsize, tail, out );
+          size_t qcnt = len / hkey->ctx->bsize,
+                 tail = len - qcnt*hkey->ctx->bsize;
+                 if( qcnt ) ak_hmac_key_update( hkey, localbuffer, qcnt*hkey->ctx->bsize );
+                 result = ak_hmac_key_finalize( hkey, localbuffer + qcnt*hkey->ctx->bsize, tail, out );
          }
 
  /* очищаем за собой данные, содержащиеся в контексте */
