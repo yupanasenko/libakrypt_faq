@@ -195,7 +195,7 @@
 {
   int fd = 0;
   struct stat st;
-  ak_uint64 len = 0;
+  size_t len = 0;
   ak_uint8 *localbuffer; /* место для локального считывания информации */
   ak_uint32 block_size = 4096; /* оптимальная длина блока для Windows пока не ясна */
   ak_buffer result = NULL;
@@ -240,8 +240,8 @@
     ctx->update( ctx, localbuffer, block_size ); /* добавляем считанные данные */
     goto read_label;
   } else {
-           ak_uint64 qcnt = len / ctx->bsize,
-                     tail = len - qcnt*ctx->bsize;
+           size_t qcnt = len / ctx->bsize,
+                  tail = len - qcnt*ctx->bsize;
            if( qcnt ) ctx->update( ctx, localbuffer, qcnt*ctx->bsize );
            result = ctx->finalize( ctx, localbuffer + qcnt*ctx->bsize, tail, out );
          }
