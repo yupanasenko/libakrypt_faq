@@ -1,3 +1,4 @@
+ #include <time.h>
  #include <stdio.h>
  #include <libakrypt.h>
  #include <ak_skey.h>

@@ -385,7 +385,7 @@
   if( !st.st_size ) return ak_hmac_key_data( hkey, "", 0, out );
  /* готовим область для хранения данных */
   #ifdef _WIN32
-    block_size = ak_max( 4096, ctx->bsize );
+    block_size = ak_max( 4096, hkey->ctx->bsize );
   #else
     block_size = ak_max( st.st_blksize, hkey->ctx->bsize );
   #endif
