@@ -980,13 +980,13 @@
         ak_buffer_new_hexstr( "1B54D01A4AF5B9D5CC3D86D68D285462B19ABC2475222F35C085122BE4BA1FFA00AD30F8767B3A82384C6574F024C311E2A481332B08EF7F41797891C1646F48" ));
   if( result != ak_true ) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
-                                          "the 1st test from GOST R 34.22-2012 is wrong" );
+                                          "the 1st test from GOST R 34.11-2012 is wrong" );
     ak_log_set_message(( str = ak_buffer_to_hexstr( hbuff ))); free( str );
     ak_log_set_message(( str = ak_buffer_to_hexstr( rbuff ))); free( str );
     goto lab_exit;
   }
   if( audit >= ak_log_maximum )
-             ak_error_message( ak_error_ok, __func__ , "the 1st test from GOST R 34.22-2012 is Ok" );
+             ak_error_message( ak_error_ok, __func__ , "the 1st test from GOST R 34.11-2012 is Ok" );
   rbuff = ak_buffer_delete( rbuff );
   hbuff = ak_buffer_delete( hbuff );
 
@@ -997,13 +997,13 @@
         ak_buffer_new_hexstr( "1E88E62226BFCA6F9994F1F2D51569E0DAF8475A3B0FE61A5300EEE46D961376035FE83549ADA2B8620FCD7C496CE5B33F0CB9DDDC2B6460143B03DABAC9FB28" ));
   if( result != ak_true ) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
-                                          "the 2nd test from GOST R 34.22-2012 is wrong" );
+                                          "the 2nd test from GOST R 34.11-2012 is wrong" );
     ak_log_set_message(( str = ak_buffer_to_hexstr( hbuff ))); free( str );
     ak_log_set_message(( str = ak_buffer_to_hexstr( rbuff ))); free( str );
     goto lab_exit;
   }
   if( audit >= ak_log_maximum )
-             ak_error_message( ak_error_ok, __func__ , "the 2nd test from GOST R 34.22-2012 is Ok" );
+             ak_error_message( ak_error_ok, __func__ , "the 2nd test from GOST R 34.11-2012 is Ok" );
   rbuff = ak_buffer_delete( rbuff );
   hbuff = ak_buffer_delete( hbuff );
 

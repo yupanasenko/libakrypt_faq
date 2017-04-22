@@ -595,13 +595,14 @@ return ak_error_ok;
 
  /* выводим сообщение об установленных параметрах библиотеки */
  if( libakrypt_options.log_level > ak_log_standard ) {
+    ak_error_message_fmt( ak_error_ok, __func__, "libakrypt version: %s", ak_libakrypt_version( ));
     ak_error_message_fmt( ak_error_ok, __func__, "log level is %u", libakrypt_options.log_level );
     ak_error_message_fmt( ak_error_ok, __func__, "magma block ciper resource is %u",
-                                              libakrypt_options.cipher_key_magma_block_resource );
+                                               libakrypt_options.cipher_key_magma_block_resource );
     ak_error_message_fmt( ak_error_ok, __func__, "kuznetchik block ciper resource is %u",
-                                         libakrypt_options.cipher_key_kuznetchik_block_resource );
+                                          libakrypt_options.cipher_key_kuznetchik_block_resource );
     ak_error_message_fmt( ak_error_ok, __func__, "key number length is %u bytes",
-                                                            libakrypt_options.key_number_length );
+                                                             libakrypt_options.key_number_length );
  }
  return ak_true;
 }
@@ -691,21 +692,21 @@ return ak_true;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция проверяет корректность реализации алгоритмов лочного шифрования
+/*! \brief Функция проверяет корректность реализации алгоритмов блочного шифрования
  @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
  функция возвращает ak_false. Код ошибки можеть быть получен с помощью вызова ak_error_get_value() */
 /* ----------------------------------------------------------------------------------------------- */
-ak_bool ak_libakrypt_test_block_ciphers( void )
+ ak_bool ak_libakrypt_test_block_ciphers( void )
 {
- int audit = ak_log_get_level();
- if( audit >= ak_log_maximum )
-   ak_error_message( ak_error_ok, __func__ , "testing block ciphers started" );
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing block ciphers started" );
 
-/* тестируем алгоритм Магма (ГОСТ Р 34.12-2015) */
- if( ak_bckey_test_magma() != ak_true ) {
-   ak_error_message( ak_error_get_value(), __func__ , "incorrect block cipher magma testing" );
-   return ak_false;
- }
+ /* тестируем алгоритм Магма (ГОСТ Р 34.12-2015) */
+  if( ak_bckey_test_magma() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect block cipher magma testing" );
+    return ak_false;
+  }
 
 // /* вырабатываем долговременные параметры алгоритма Кузнечик */
 // if( ak_crypt_kuznetchik_init_tables() != ak_error_ok ) {
@@ -720,9 +721,32 @@ ak_bool ak_libakrypt_test_block_ciphers( void )
 //   return ak_false;
 // }
 
- if( audit >= ak_log_maximum )
-   ak_error_message( ak_error_ok, __func__ , "testing block ciphers ended successfully" );
-return ak_true;
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing block ciphers ended successfully" );
+ return ak_true;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция проверяет корректность реализации алгоритмов выработки имитовставки.
+ @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+ функция возвращает ak_false. Код ошибки можеть быть получен с помощью вызова ak_error_get_value() */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_libakrypt_test_mac_functions( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing mac functions started" );
+
+ /* тестируем алгоритм HMAC на основе российской функции Стрибог */
+  if( ak_hmac_key_test_streebog() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect HMAC functions testing" );
+    return ak_false;
+  }
+
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing mac functions ended successfully" );
+ return ak_true;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -861,11 +885,19 @@ ak_bool ak_libakrypt_test_wcurves( void )
    ak_error_message( ak_error_get_value(), __func__ , "error while testing hash functions" );
    return ak_false;
  }
+
  /* тестируем работу алгоритмов блочного шифрования */
  if( ak_libakrypt_test_block_ciphers() != ak_true ) {
    ak_error_message( ak_error_get_value(), __func__ , "error while testing block ciphers" );
    return ak_false;
  }
+
+ /* тестируем работу алгоритмов выработки имитовставки */
+ if( ak_libakrypt_test_mac_functions() != ak_true ) {
+   ak_error_message( ak_error_get_value(), __func__ , "error while testing block ciphers" );
+   return ak_false;
+ }
+
  /* тестируем корректность реализации операций с эллиптическими кривыми в короткой форме Вейерштрасса */
  if( ak_libakrypt_test_wcurves() != ak_true ) {
    ak_error_message( ak_error_get_value(), __func__ , "error while testing Wierstrass curves" );
