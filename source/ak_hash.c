@@ -98,7 +98,7 @@
 {
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a context" );
-    return ak_error_null_pointer;
+    return 0;
   }
  return ctx->hsize;
 }
@@ -112,7 +112,7 @@
 {
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a context" );
-    return ak_error_null_pointer;
+    return 0;
   }
  return ctx->bsize;
 }
@@ -227,9 +227,7 @@
   #else
     block_size = ak_max( st.st_blksize, ctx->bsize );
   #endif
-  /* здесь мы выделяем локальный буффер для считывания/обработки данных.
-     мы могли бы использовать встроенный в ak_hash массив tempdata, но
-     он имеет слишком короткую длину                                   */
+  /* здесь мы выделяем локальный буффер для считывания/обработки данных */
   if((localbuffer = ( ak_uint8 * ) malloc( block_size )) == NULL ) {
     close( fd );
     ak_error_message( ak_error_out_of_memory, __func__ , "out of memory" );

@@ -114,7 +114,8 @@ if( LIBAKRYPT_STATIC_LIB )
                      dev-random
                      skey
                      context-manager
-                     hmac
+                     hmac-key
+                     hmac-key-file
                      )
   foreach( programm ${EXAMPLES_LIST} )
       # сборка статических примеров

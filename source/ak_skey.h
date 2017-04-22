@@ -225,6 +225,13 @@
  int ak_hmac_key_destroy( ak_hmac_key );
 /*! \brief Удаление ключа алгоритма выработки имитовставки HMAC */
  ak_pointer ak_hmac_key_delete( ak_pointer );
+/*! \brief Размер вырабатываемой имитовставки в байтах */
+ size_t ak_hmac_key_get_code_size( ak_hmac_key );
+
+/*! \brief Вычисление имитовставки HMAC для заданной области памяти известной длины */
+ ak_buffer ak_hmac_key_data( ak_hmac_key , const ak_pointer , const size_t , ak_pointer );
+/*! \brief Вычисление имитовставки HMAC для заданного файла */
+ ak_buffer ak_hmac_key_file( ak_hmac_key, const char * , ak_pointer );
 
 /*! \brief Создание контекста ключа алгоритма вычисления имитовставки HMAC с заданным значением */
  ak_hmac_key ak_hmac_key_new_ptr( ak_hash , const ak_pointer , const size_t );

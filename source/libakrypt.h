@@ -346,7 +346,7 @@
  dll_export ak_oid ak_hash_get_oid( ak_hash );
 /*! \brief Начальная инициализация и очистка контекста функции хеширования */
  dll_export int ak_hash_clean( ak_hash );
-/*! \brief Вычисление хешкода заданной области памяти известной длины */
+/*! \brief Вычисление хешкода для заданной области памяти известной длины */
  dll_export ak_buffer ak_hash_data( ak_hash, const ak_pointer , const size_t , ak_pointer );
 /*! \brief Вычисление хешкода для заданного файла */
  dll_export ak_buffer ak_hash_file( ak_hash, const char * , ak_pointer );

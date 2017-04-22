@@ -24,9 +24,16 @@
 /*  ИЗ-ЗА ВАС ИЛИ ТРЕТЬИХ ЛИЦ, ИЛИ ОТКАЗОМ ПРОГРАММЫ РАБОТАТЬ СОВМЕСТНО С ДРУГИМИ ПРОГРАММАМИ),    */
 /*  ДАЖЕ ЕСЛИ ТАКОЙ ВЛАДЕЛЕЦ ИЛИ ДРУГОЕ ЛИЦО БЫЛИ ИЗВЕЩЕНЫ О ВОЗМОЖНОСТИ ТАКИХ УБЫТКОВ.            */
 /*                                                                                                 */
-/*   ak_bckey.c                                                                                    */
+/*   ak_hmac.c                                                                                     */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_skey.h>
+
+ #include <errno.h>
+ #include <fcntl.h>
+ #ifndef _WIN32
+  #include <unistd.h>
+ #endif
+ #include <sys/stat.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param hkey Инициализируемый контекст алгоритма выработки имитовставки
@@ -201,8 +208,8 @@
   }
   error = ak_hash_update( hkey->ctx, hkey->key.key.data, hkey->ctx->bsize );
   for( idx = 0; idx < count; idx++ ) {
-     ((ak_uint64 *)hkey->key.key.data)[idx] ^= 0x3636363636363636LL;
      ((ak_uint64 *)hkey->key.key.data)[idx] ^= ((ak_uint64 *)hkey->key.mask.data)[idx];
+     ((ak_uint64 *)hkey->key.key.data)[idx] ^= 0x3636363636363636LL;
   }
   hkey->key.remask( &hkey->key );
 
@@ -233,10 +240,6 @@
     ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to hmac context" );
     return NULL;
   }
-  if( !size ) {
-    ak_error_message( ak_error_zero_length, __func__ , "using zero length for authenticated data" );
-    return NULL;
-  }
   if( size >= hkey->ctx->bsize ) {
     ak_error_message( ak_error_zero_length, __func__ , "using wrong length for authenticated data" );
     return NULL;
@@ -255,18 +258,167 @@
   }
   ak_hash_update( ctx2, hkey->key.key.data, hkey->key.key.size );
   for( idx = 0; idx < count; idx++ ) {
-     ((ak_uint64 *)hkey->key.key.data)[idx] ^= 0x5C5C5C5C5C5C5C5CLL;
      ((ak_uint64 *)hkey->key.key.data)[idx] ^= ((ak_uint64 *)hkey->key.mask.data)[idx];
+     ((ak_uint64 *)hkey->key.key.data)[idx] ^= 0x5C5C5C5C5C5C5C5CLL;
   }
   hkey->key.remask( &hkey->key );
 
-  temp = ak_hash_finalize( ctx2, result->data, result->size, out );
+  if( ctx2->bsize == result->size ) {
+    ak_hash_update( ctx2, result->data, result->size );
+    temp = ak_hash_finalize( ctx2, NULL, 0, out );
+  } else temp = ak_hash_finalize( ctx2, result->data, result->size, out );
   ctx2 = ak_hash_delete( ctx2 );
 
   result = ak_buffer_delete( result );
  return temp;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+ size_t ak_hmac_key_get_code_size( ak_hmac_key hkey )
+{
+  if( hkey == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to hmac key context" );
+    return 0;
+  }
+ return hkey->ctx->hsize;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция вычисляет имитовставку по алгоритму HMAC от заданной области памяти на которую
+    указывает in. Размер памяти задается в байтах в переменной size. Результат вычислений помещается
+    в область памяти, на которую указывает out. Если out равен NULL, то функция создает новый буффер
+    (структуру struct buffer), помещает в нее вычисленное значение и возвращает на указатель на
+    буффер. Буффер должен позднее быть удален с помощью вызова ak_buffer_delete().
+
+    @param hkey Контекст ключа алгоритма вычисления имитовставки HMAC, должен быть отличен от NULL.
+    @param in Указатель на входные данные для которых вычисляется хеш-код.
+    @param size Размер входных данных в байтах.
+    @param out Область памяти, куда будет помещен рещультат. Память должна быть заранее выделена.
+    Размер выделяемой памяти может быть определен с помощью вызова ak_hmac_key_get_code_size().
+    Указатель out может принимать значение NULL.
+
+    @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+    возвращается указатель на буффер, содержащий результат вычислений.                             */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_hmac_key_data( ak_hmac_key hkey, const ak_pointer in,
+                                                                 const size_t size, ak_pointer out )
+{
+  int error = ak_error_ok;
+  ak_buffer result = NULL;
+  size_t quot = 0, offset = 0;
+
+  if( hkey == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to hmac key context" );
+    return NULL;
+  }
+  if( in == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to input data" );
+    return NULL;
+  }
+
+ /* вычищаем результаты предыдущих вычислений */
+  if(( error = ak_hmac_key_clean( hkey )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong initialization of hmac key context" );
+    return NULL;
+  }
+ /* вычисляем фрагмент,длина которого кратна длине блока входных данных для хеш-функции */
+  quot = size/hkey->ctx->bsize;
+  offset = quot*hkey->ctx->bsize;
+  /* вызываем, если длина сообщения не менее одного полного блока */
+  if( quot > 0 )
+    if(( error = ak_hmac_key_update( hkey, in, offset )) != ak_error_ok ) {
+      ak_error_message( error, __func__ , "wrong caclucation of hmac function" );
+      return NULL;
+    }
+  /* обрабатываем хвост */
+  result = ak_hmac_key_finalize( hkey, (unsigned char *)in + offset, size - offset, out );
+  /* очищаем за собой данные, содержащиеся в контексте функции хеширования */
+  hkey->ctx->clean( hkey->ctx );
+ return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*!  Функция вычисляет имитовставку по алгоритму HMAC от файла, имя которого задается переменной
+     filename. Результат вычислений помещается в область памяти,
+     на которую указывает out. Если out равен NULL, то функция создает новый буффер
+     (структуру struct buffer), помещает в нее вычисленное значение и возвращает на указатель на
+     буффер. Буффер должен позднее быть удален с помощью вызова ak_buffer_delete().
+
+     @param hkey Контекст ключа алгоритма вычисления имитовставки HMAC, должен быть отличен от NULL.
+     @param filename Указатель на строку, в которой содержится имя файла.
+     @param out Область памяти, куда будет помещен рещультат. Память должна быть заранее выделена.
+     Размер выделяемой памяти может быть определен с помощью вызова ak_hash_get_code_size().
+     Указатель out может принимать значение NULL.
+
+     @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+     возвращается указатель на буффер, содержащий результат вычислений.                            */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_hmac_key_file( ak_hmac_key hkey, const char* filename, ak_pointer out )
+{
+  int fd = 0;
+  struct stat st;
+  ak_uint64 len = 0;
+  ak_uint8 *localbuffer; /* место для локального считывания информации */
+  ak_uint32 block_size = 4096; /* оптимальная длина блока для Windows пока не ясна */
+  ak_buffer result = NULL;
+
+ /* выполняем необходимые проверки */
+  if( hkey == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to hmac key context" );
+    return NULL;
+  }
+  if( filename == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a file name" );
+    return NULL;
+  }
+  if(( fd = open( filename, O_RDONLY | O_BINARY )) < 0 ) {
+    ak_error_message( ak_error_open_file, strerror( errno ), __func__ );
+    return NULL;
+  }
+  if( fstat( fd, &st ) ) {
+    close( fd );
+    ak_error_message( ak_error_access_file, strerror( errno ), __func__ );
+    return NULL;
+  }
+
+ /* для файла нулевой длины результатом будет хеш от нулевого вектора */
+  if( !st.st_size ) return ak_hmac_key_data( hkey, "", 0, out );
+ /* готовим область для хранения данных */
+  #ifdef _WIN32
+    block_size = ak_max( 4096, ctx->bsize );
+  #else
+    block_size = ak_max( st.st_blksize, hkey->ctx->bsize );
+  #endif
+ /* здесь мы выделяем локальный буффер для считывания/обработки данных */
+  if((localbuffer = ( ak_uint8 * ) malloc( block_size )) == NULL ) {
+    close( fd );
+    ak_error_message( ak_error_out_of_memory, __func__ , "out of memory" );
+    return NULL;
+  }
+ /* теперь обрабатываем файл с данными */
+  ak_hmac_key_clean( hkey );
+  read_label: len = read( fd, localbuffer, block_size );
+  if( len == block_size ) {
+    ak_hmac_key_update( hkey, localbuffer, block_size ); /* добавляем считанные данные */
+    goto read_label;
+  } else {
+          ak_uint64 qcnt = len / hkey->ctx->bsize,
+                    tail = len - qcnt*hkey->ctx->bsize;
+                    if( qcnt ) ak_hmac_key_update( hkey, localbuffer, qcnt*hkey->ctx->bsize );
+                    result = ak_hmac_key_finalize( hkey, localbuffer + qcnt*hkey->ctx->bsize, tail, out );
+         }
+
+ /* очищаем за собой данные, содержащиеся в контексте */
+  hkey->ctx->clean( hkey->ctx );
+ /* закрываем данные */
+  close(fd);
+  free( localbuffer );
+ return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \example example-hmac-key.c
+    \example example-hmac-key-file.c                                                               */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_hmac.c  */
 /* ----------------------------------------------------------------------------------------------- */
