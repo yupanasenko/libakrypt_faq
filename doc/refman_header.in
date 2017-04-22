@@ -97,16 +97,16 @@
 
 % -------------------------------------------------------------------- %
 \begin{document}
-% Title page   
+% Title page
 \thispagestyle{plain}
-\ \\ 
+\ \\
 
-\vfill 
+\vfill
 
-\begin{center}    
+\begin{center}
 {\LARGE\bfseries Документация к библиотеке LIBAKRYPT}
 \end{center}
-\begin{center}    
+\begin{center}
 версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@ от \today
 \end{center}
 
@@ -117,13 +117,13 @@
 \emph{Инструкция по сборке и установке}\\
 \emph{Рекомендации по встраиванию}\\
 \emph{Принципы реализации}\\
-\end{tabular}    
+\end{tabular}
 \end{flushright}
 
 \vfill
 \begin{center}
-Axel Kenzo \& The Mystical Company Of Belle Lettres (c) 2014 -- 2017
+Axel Kenzo \& The Mystical Company Of Belles Lettres (c) 2014 -- 2017
 \end{center}
 
-\newpage    
+\newpage
 \tableofcontents
