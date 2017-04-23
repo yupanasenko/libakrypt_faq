@@ -529,12 +529,12 @@
   memcpy( result, s, ssize );
   result[ssize+3] = 1;
   ak_hmac_key_data( hkey, result, ssize+4, result );
-  memcpy( ((ak_uint8 *)out)+64-dklen, result, dklen );
+  memcpy( out, result+64-dklen, dklen );
 
  /* теперь основной цикл */
   for( idx = 1; idx < c; idx++ ) {
      ak_hmac_key_data( hkey, result, 64, result );
-     for( jdx = 0; jdx < dklen; jdx++ ) ((ak_uint8 *)out)[jdx] ^= result[jdx];
+     for( jdx = 0; jdx < dklen; jdx++ ) ((ak_uint8 *)out)[jdx] ^= result[64-dklen+jdx];
   }
 
  /* очищаем память и выходим */

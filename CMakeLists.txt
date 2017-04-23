@@ -112,7 +112,7 @@ if( LIBAKRYPT_STATIC_LIB )
                      hash-oids
                      random
                      dev-random
-                     skey
+                     bckey
                      context-manager
                      hmac-key
                      hmac-key-file

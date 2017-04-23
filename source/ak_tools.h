@@ -44,9 +44,11 @@
 /*! \brief Функция возвращает ресурс секретного ключа для алгоритмов ГОСТ 28147-89 и Магма */
  ak_uint32 ak_libakrypt_get_magma_resource( void );
 /*! \brief Функция возвращает ресурс секретного ключа для алгоритма ГОСТ 34.12-2015 (Кузнечик) */
- ak_uint32 ak_libakrypt_get_kuznetchik_resource( void );
+ ak_uint32 ak_libakrypt_get_kuznechik_resource( void );
 /*! \brief Функция возвращает длину номера формируемого библиотекой ключа в байтах */
  ak_uint32 ak_libakrypt_get_key_number_length( void );
+/*! \brief Функция возвращает количество итерация для алгоритма pbkdf2 */
+ ak_uint32 ak_libakrypt_get_pbkdf2_iteration_count( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Обобщенная реализация функции snprintf для различных компиляторов */

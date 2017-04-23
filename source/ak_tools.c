@@ -170,6 +170,7 @@
  #else
   result = vsnprintf( str, size, format, args );
  #endif
+  va_end( args );
  return result;
 }
 
@@ -219,6 +220,7 @@
  #else
    vsnprintf( message, 256, format, args );
  #endif
+   va_end( args );
  return ak_error_message( code, function, message );
 }
 
@@ -382,16 +384,19 @@
  /*! \brief Ресурс использования ключа (в блоках) алгоритма ГОСТ 28147-89 (Магма) */
   ak_uint32 cipher_key_magma_block_resource;
  /*! \brief Ресурс использования ключа (в блоках) алгоритма ГОСТ 34.12-2015 (Кузнечик) */
-  ak_uint32 cipher_key_kuznetchik_block_resource;
+  ak_uint32 cipher_key_kuznechik_block_resource;
  /*! \brief Длина номера ключа в байтах */
-  size_t key_number_length;
+  ak_uint32 key_number_length;
+ /*! \brief Количество итераций в алгоритме PBKDF2 */
+  ak_uint32 pbkdf2_iteration_count;
 }
  libakrypt_options =
 {
   ak_log_standard,
-  4194304, /* количество блоков для ГОСТ 28147-89, для объема в 250 Mb (по 64 бита) */
-  8388608,  /* количество блоков для ГОСТ 34.12-2015, для объема в 1Gb (по 128 бит) */
-  16
+  4194304,  /* константа расчитана для объема в 250 Mb (по 64 бита) */
+  8388608,  /* константа расчитана для объема в 1Gb (по 128 бит) */
+  16,
+  2000
 };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -442,13 +447,19 @@ return ak_error_ok;
 /* ----------------------------------------------------------------------------------------------- */
  ak_uint32 ak_libakrypt_get_kuznetchik_resource( void )
 {
- return libakrypt_options.cipher_key_kuznetchik_block_resource;
+ return libakrypt_options.cipher_key_kuznechik_block_resource;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
  ak_uint32 ak_libakrypt_get_key_number_length( void )
 {
  return libakrypt_options.key_number_length;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_uint32 ak_libakrypt_get_pbkdf2_iteration_count( void )
+{
+ return libakrypt_options.pbkdf2_iteration_count;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -572,18 +583,28 @@ return ak_error_ok;
        ak_uint32 value;
        /* устанавливаем уровень аудита */
        if( ak_libakrypt_get_option( localbuffer, "log_level = ", &value ))
-                                                                libakrypt_options.log_level = value;
+         libakrypt_options.log_level = value;
+
        /* устанавливаем максимальное число блоков обрабатываемых данных для Магмы (ГОСТ 28147-89) */
        if( ak_libakrypt_get_option( localbuffer, "magma_block_resource = ", &value ))
-                                          libakrypt_options.cipher_key_magma_block_resource = value;
+         libakrypt_options.cipher_key_magma_block_resource = value;
+
        /* устанавливаем максимальное число блоков обрабатываемых данных для шифра Кузнечик */
-       if( ak_libakrypt_get_option( localbuffer, "kuznetchik_block_resource = ", &value ))
-                                     libakrypt_options.cipher_key_kuznetchik_block_resource = value;
+       if( ak_libakrypt_get_option( localbuffer, "kuznechik_block_resource = ", &value ))
+         libakrypt_options.cipher_key_kuznechik_block_resource = value;
+
        /* устанавливаем размер номера ключа в байтах */
        if( ak_libakrypt_get_option( localbuffer, "key_number_length = ", &value )) {
          if(( value > 15 ) && ( value < 33 )) libakrypt_options.key_number_length = value;
            else libakrypt_options.key_number_length = 16;
        }
+
+       /* устанавливаем количество итераций для pbkdf2 */
+       if( ak_libakrypt_get_option( localbuffer, "pbkdf2_iteration_count = ", &value )) {
+         if( value > 1000 ) libakrypt_options.pbkdf2_iteration_count = value;
+           else libakrypt_options.pbkdf2_iteration_count = 1000;
+       }
+
      } /* далее мы очищаем строку независимо от ее содержимого */
      off = 0;
      memset( localbuffer, 0, 1024 );
@@ -600,9 +621,11 @@ return ak_error_ok;
     ak_error_message_fmt( ak_error_ok, __func__, "magma block ciper resource is %u",
                                                libakrypt_options.cipher_key_magma_block_resource );
     ak_error_message_fmt( ak_error_ok, __func__, "kuznetchik block ciper resource is %u",
-                                          libakrypt_options.cipher_key_kuznetchik_block_resource );
+                                           libakrypt_options.cipher_key_kuznechik_block_resource );
     ak_error_message_fmt( ak_error_ok, __func__, "key number length is %u bytes",
                                                              libakrypt_options.key_number_length );
+    ak_error_message_fmt( ak_error_ok, __func__, "count of iterations for pbkdf2 algorithm is %u",
+                                                        libakrypt_options.pbkdf2_iteration_count );
  }
  return ak_true;
 }
