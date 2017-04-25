@@ -19,22 +19,22 @@
  int main( void )
 {
   size_t i = 0;
-  ak_key key = ak_key_wrong;
+  ak_key key = ak_error_wrong_key;
   ak_random generator = NULL;
   struct context_manager manager;
 
  /* инициализируем библиотеку, в случае возникновения ошибки завершаем работу */
-  if( ak_libakrypt_create( NULL ) != ak_true ) return ak_libakrypt_destroy();
+  if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true ) return ak_libakrypt_destroy();
 
  /* определяем структуру управления контекстами и генератор псевдо-случайных чисел */
   generator = ak_random_new_lcg();
-  ak_context_manager_create( &manager, ak_random_new_lcg( ));
+  ak_context_manager_create( &manager, ak_random_new_lcg());
 
- /* слкучайным образом генерим контексты */
+ /* случайным образом генерим контексты */
   for( i = 0; i < 12; i++ ) {
      switch( ak_random_uint8( generator )%3 )
     {
-      case 0: key = ak_context_manager_add_ctx( &manager,
+      case 0: key = ak_context_manager_add_node( &manager,
                            ak_bckey_new_magma_password( "longhellostring", 2+i ),
                            block_cipher,
                            ak_buffer_new_str("block cipher MAGMA key"),
@@ -42,7 +42,7 @@
               printf("%02lu: added block cipher key %lx\n", i, key );
               break;
 
-      case 1: key = ak_context_manager_add_ctx( &manager,
+      case 1: key = ak_context_manager_add_node( &manager,
                            ak_random_uint8( generator) < 180 ?  /* несбалансированное условие */
                                         ak_hash_new_streebog256() : ak_hash_new_streebog512(),
                            hash_function,
@@ -51,7 +51,7 @@
               printf("%02lu: added hash function    %lx\n", i, key );
               break;
 
-      case 2: key = ak_context_manager_add_ctx( &manager,
+      case 2: key = ak_context_manager_add_node( &manager,
                            ak_buffer_new_str("simple BUFFER"),
                            undefined_engine,
                            ak_buffer_new_str("small description for string buffer"),
@@ -60,16 +60,18 @@
               break;
     }
   }
-  printf("    added generator        %lx\n", ak_context_manager_add_ctx( &manager, generator,
+  printf("    added generator        %lx\n", ak_context_manager_add_node( &manager, generator,
      random_generator, ak_buffer_new_str("random generator, FIRST"), ak_random_delete ));
 
  /* удаляем несколько контекстов */
-  manager.array[4] = ak_context_node_delete( manager.array[4] );
-  manager.array[7] = ak_context_node_delete( manager.array[7] );
+  ak_context_manager_delete_node( &manager, 4 );
+  ak_context_manager_delete_node( &manager, 7 );
 
- /* добавляем еще один */
-  ak_context_manager_add_ctx( &manager, ak_random_new_lcg(),
+ /* добавляем еще парочку */
+  ak_context_manager_add_node( &manager, ak_random_new_lcg(),
      random_generator, ak_buffer_new_str("random generator, SECOND"), ak_random_delete );
+  ak_context_manager_add_node( &manager, ak_random_new_lcg(),
+     random_generator, ak_buffer_new_str("random generator, THIRD"), ak_random_delete );
 
   print_status( &manager );
 
@@ -119,9 +121,16 @@
  void print_status( ak_context_manager manager )
 {
   size_t i = 0;
+  if( manager == NULL ) {
+    printf("manager is NULL\n");
+    return;
+  }
+  if( manager->generator == NULL ) {
+    printf("random number generator context is NULL\n");
+    return;
+  }
   printf("\nsize:  %lu\n", manager->size );
-  printf("imask: %lx\n", manager->imask );
-  for( i = 0; i < manager->size;i++ ) {
+  for( i = 0; i < manager->size; i++ ) {
      if( manager->array[i] == NULL ) printf("\n%02lu: (null)\n", i);
      else {
             ak_context_node node = manager->array[i];

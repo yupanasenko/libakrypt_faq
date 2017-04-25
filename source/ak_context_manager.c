@@ -30,12 +30,8 @@
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Глобальная структура для хранения и обработки ключевых контекстов */
- static struct context_manager libakrypt_context_manager;
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Мьютекс для блокировки структуры управления контекстами */
- static pthread_mutex_t ak_context_manager_add_mutex = PTHREAD_MUTEX_INITIALIZER;
+ static pthread_mutex_t ak_context_manager_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция инициализирует структуру управления контекстами, присваивая ее полям значения,
@@ -65,15 +61,14 @@
   manager->size = 4;
   ak_error_message( ak_error_ok, __func__ , "TODO: load manager->size value from /etc/libakrypt.conf");
 
-  if(( manager->array = malloc( manager->size*sizeof( ak_pointer ))) == NULL )
+  if(( manager->array = malloc( manager->size*sizeof( ak_pointer ))) == NULL ) {
+    generator = ak_random_delete( generator );
     return ak_error_message( ak_error_out_of_memory, __func__ ,
                                             "wrong memory allocation for context manager nodes" );
+  }
   for( idx = 0; idx < manager->size; idx++ ) manager->array[idx] = NULL;
+  manager->generator = generator;
 
- /* вырабатываем маску */
-  if(( manager->imask = ak_random_uint64( manager->generator = generator )) == 0 )
-    manager->imask = 0xfe1305da97c3e98dL;
-  manager->imask &= 0xefffffffffffffffL; /* обнуляем старший бит */
  return ak_error_ok;
 }
 
@@ -156,7 +151,6 @@
   if( manager->generator == NULL ) ak_error_message( ak_error_null_pointer, __func__ ,
                                               "using a null pointer to random number generator" );
    else manager->generator = ak_random_delete( manager->generator );
-  manager->imask = 0;
 
  return ak_error_ok;
 }
@@ -170,25 +164,24 @@
     @param ctx Контекст, который будет храниться в структуре управленияя контекстами
     @param engine тип контекста: блочный шифр, функия хеширования, массив с данными и т.п.
     @param description пользовательское описание контекста
-    @param func функция освоюождения памяти, занимаемой контекстом
+    @param func функция освобождения памяти, занимаемой контекстом
     @return Функция возвращает идентификатор созданного контекста. В случае
     возникновения ошибки возвращается значение \ref ak_key_wrong. Код ошибки может быть получен
     с помощью вызова функции ak_error_get_value().                                                 */
 /* ----------------------------------------------------------------------------------------------- */
- ak_key ak_context_manager_add_ctx( ak_context_manager manager, ak_pointer ctx,
+ ak_key ak_context_manager_add_node( ak_context_manager manager, ak_pointer ctx,
                        ak_oid_engine engine, ak_buffer description, ak_function_free_object *func )
 {
   size_t idx = 0;
-  ak_key id = ak_key_wrong;
   ak_context_node node = NULL;
 
   if( manager == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to context manager" );
-    return id;
+    return ak_error_wrong_key;
   }
 
  /* блокируем доступ к структуре управления контекстами */
-  pthread_mutex_lock( &ak_context_manager_add_mutex );
+  pthread_mutex_lock( &ak_context_manager_mutex );
 
  /* ищем свободный адрес */
   for( idx = 0; idx < manager->size; idx++ ) {
@@ -197,22 +190,38 @@
   if( idx == manager->size ) {
     if( ak_context_manager_morealloc( manager ) != ak_error_ok ) {
       ak_error_message( ak_error_get_value(), __func__, "wrong creation of context descriptor" );
-      pthread_mutex_unlock( &ak_context_manager_add_mutex );
-      return ak_key_wrong;
+      pthread_mutex_unlock( &ak_context_manager_mutex );
+      return ak_error_wrong_key;
     }
   }
 
  /* адрес найден, теперь размещаем контекст */
-  id = idx^manager->imask;
-  if(( node = ak_context_node_new( ctx, id, engine, description, func )) == NULL ) {
+  if(( node = ak_context_node_new( ctx, idx, engine, description, func )) == NULL ) {
     ak_error_message( ak_error_get_value(), __func__, "wrong creation of context manager node" );
-    pthread_mutex_unlock( &ak_context_manager_add_mutex );
-    return ak_key_wrong;
+    pthread_mutex_unlock( &ak_context_manager_mutex );
+    return ak_error_wrong_key;
   }
   manager->array[idx] = node;
-  pthread_mutex_unlock( &ak_context_manager_add_mutex );
+  pthread_mutex_unlock( &ak_context_manager_mutex );
 
- return id;
+ return idx;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_context_manager_delete_node( ak_context_manager manager, ak_key idx )
+{
+  if( manager == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using a null pointer to context manager" );
+  if(( idx < 0 ) || ( idx >= manager->size ))
+    return ak_error_message( ak_error_wrong_key, __func__,
+                                                      "using an unexpected value of secret key" );
+
+ /* блокируем доступ и изменяем поля структуры управления контекстами */
+  pthread_mutex_lock( &ak_context_manager_mutex );
+  manager->array[idx] = ak_context_node_delete( manager->array[idx] );
+  pthread_mutex_unlock( &ak_context_manager_mutex );
+
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -281,7 +290,7 @@
     if( node->ctx != NULL ) node->ctx = node->free( node->ctx );
     node->free = NULL;
   }
-  node->id = ak_key_wrong;
+  node->id = ak_error_wrong_key;
   node->status = node_undefined;
   node->engine = undefined_engine;
   free( node );
@@ -290,10 +299,21 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Глобальная структура для хранения и обработки ключевых контекстов */
+ static struct context_manager libakrypt_context_manager;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @return Функция возвращает указатель на глобальную структуру управоения контекстами */
+ ak_context_manager ak_libakrypt_get_context_manager( void )
+{
+  return &libakrypt_context_manager;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! @return В случае успеха функция возвращает \ref ak_error_ok (ноль). В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_context_manager_create( void )
+ int ak_libakrypt_create_context_manager( void )
 {
   ak_random generator = NULL;
   ak_error_message( ak_error_ok, __func__ ,
@@ -314,7 +334,7 @@
 /*! @return В случае успеха функция возвращает \ref ak_error_ok (ноль). В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_context_manager_destroy( void )
+ int ak_libakrypt_destroy_context_manager( void )
 {
   return ak_context_manager_destroy( &libakrypt_context_manager );
 }

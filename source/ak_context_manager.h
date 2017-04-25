@@ -94,8 +94,6 @@
    size_t size;
   /*! \brief генератор, используемый для выработки новых ключей */
    ak_random generator;
-  /*! \brief маска доступа к номеру структуры управления */
-   ak_uint64 imask;
 };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -109,13 +107,17 @@
  int ak_context_manager_destroy( ak_context_manager );
 /*! \brief Увеличение памяти для структуры управления контекстами */
  int ak_context_manager_morealloc( ak_context_manager );
-/*! \brief Дабавление контекста в структуру управления контекстами */
- ak_key ak_context_manager_add_ctx( ak_context_manager , ak_pointer , ak_oid_engine ,
+/*! \brief Добавление контекста в структуру управления контекстами */
+ ak_key ak_context_manager_add_node( ak_context_manager , ak_pointer , ak_oid_engine ,
                                                            ak_buffer , ak_function_free_object * );
-/*! \brief Инициализация глобальной сруктуры управления контекстами */
- int ak_libakrypt_context_manager_create( void );
-/*! \brief Удаление глобальной сруктуры управления контекстами */
- int ak_libakrypt_context_manager_destroy( void );
+/*! \brief Удаление контекста из структуры управления контекстами */
+ int ak_context_manager_delete_node( ak_context_manager , ak_key );
+/*! \brief Инициализация глобальной структуры управления контекстами */
+ int ak_libakrypt_create_context_manager( void );
+/*! \brief Удаление глобальной структуры управления контекстами */
+ int ak_libakrypt_destroy_context_manager( void );
+/*! \brief Получение указателя на глобальную структуру управления контекстами */
+ ak_context_manager ak_libakrypt_get_context_manager( void );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

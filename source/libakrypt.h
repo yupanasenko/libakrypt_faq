@@ -169,24 +169,23 @@
  #define ak_error_oid_index                 (-21)
  #define ak_error_not_equal_data            (-22)
  #define ak_error_low_key_resource          (-23)
- #define ak_error_wrong_key_lock            (-24)
- #define ak_error_wrong_key_unlock          (-25)
- #define ak_error_wrong_key_icode           (-26)
- #define ak_error_wcurve_prime_size         (-27)
- #define ak_error_wcurve_discriminant       (-28)
- #define ak_error_wcurve_point              (-29)
- #define ak_error_wcurve_point_order        (-30)
- #define ak_error_context_manager_max_size  (-31)
- #define ak_error_terminal                  (-32)
- #define ak_error_block_cipher_length       (-33)
+ #define ak_error_wrong_key                 (-24)
+ #define ak_error_wrong_key_lock            (-25)
+ #define ak_error_wrong_key_unlock          (-26)
+ #define ak_error_wrong_key_icode           (-27)
+ #define ak_error_wcurve_prime_size         (-28)
+ #define ak_error_wcurve_discriminant       (-29)
+ #define ak_error_wcurve_point              (-30)
+ #define ak_error_wcurve_point_order        (-31)
+ #define ak_error_context_manager_max_size  (-32)
+ #define ak_error_terminal                  (-33)
+ #define ak_error_block_cipher_length       (-34)
 
  #define ak_null_string                ("(null)")
 
  #define ak_log_none                          (0)
  #define ak_log_standard                      (1)
  #define ak_log_maximum                       (2)
-
- #define ak_key_wrong                        (-1)
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает уровень аудита библиотеки */
