@@ -49,6 +49,7 @@
   #include <limits.h>
  #else
   #include <windows.h>
+  #include <wincon.h>
  #endif
 
  #ifdef _MSC_VER
@@ -545,7 +546,7 @@ return ak_error_ok;
  ak_bool ak_libakrypt_load_options( void )
 {
  size_t idx = 0;
- int fd = 0, off = 0;;
+ int fd = 0, off = 0;
  char ch;
  struct stat st;
  char localbuffer[1024], filename[FILENAME_MAX];
@@ -961,12 +962,14 @@ return ak_true;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция принимает три параметра:
-    @param pass Строка, в которую будет помещен пароль
-    @param psize Максимальная длина пароля
-    @param prompt Приглашение - текст, который будет выведен перед тем, как вводить пароль
-    @param emptyflag Флаг, который разрешает/запрещает вводить пустые пароли.
-           По-умолчанию флаг ложен и ввод пустых паролей запрещен.
+/*! Функция принимает два параметра:
+    @param pass Строка, в которую будет помещен пароль. Память под данную строку должна быть
+    выделена заранее. Если в данной памяти хранились какие-либо данные, то они будут уничтожены.
+    @param psize Максимально возможная длина пароля. Предполагается, что именно
+    это значение задает размер области памяти, на которую указывает pass.
+
+    Отметим, что в случае ввода пароля нулевой длины функция возвращает ошибку с кодом
+    \ref ak_error_terminal
 
     @return В случае успеха функция возвращает значение \ref ak_error_ok. В случае возникновения
     ошибки возвращается ее код.                                                                    */
@@ -977,6 +980,29 @@ return ak_true;
    int error = ak_error_ok;
 
  #ifndef HAVE_TERMIOS_H
+  #ifdef _WIN32
+   char c = 0;
+   DWORD mode, count;
+   HANDLE ih = GetStdHandle( STD_INPUT_HANDLE  );
+   if( !GetConsoleMode( ih, &mode ))
+     return ak_error_message( ak_error_terminal, __func__, "not connected to a console" );
+   SetConsoleMode( ih, mode & ~( ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT ));
+
+   memset( pass, 0, psize );
+   while( ReadConsoleA( ih, &c, 1, &count, NULL) && (c != '\r') && (c != '\n') && (len < psize-1) ) {
+     pass[len]=c;
+     len++;
+   }
+   pass[len]=0;
+
+   /* восстанавливаем настройки консоли */
+   SetConsoleMode( ih, mode );
+   if(( len = strlen( pass )) < 1 )
+     return ak_error_message( ak_error_zero_length, __func__ , "input a very short password");
+   return error;
+
+  #endif
+   return ak_error_undefined_function;
 
  #else
   /* обрабатываем терминал */
@@ -986,7 +1012,7 @@ return ak_true;
    ots = ts;
    ts.c_cc[ VTIME ] = 0;
    ts.c_cc[ VMIN  ] = 1;
-   ts.c_iflag &= ~( BRKINT | INLCR | ISTRIP | IXOFF | IUTF8 ); // ICRNL |
+   ts.c_iflag &= ~( BRKINT | INLCR | ISTRIP | IXOFF ); // ICRNL | IUTF8
    ts.c_iflag |=    IGNBRK;
    ts.c_oflag &= ~( OPOST );
    ts.c_cflag &= ~( CSIZE | PARENB);
@@ -1012,70 +1038,6 @@ return ak_true;
  #endif
  return ak_error_undefined_function;
 }
-
-/*
-#include <iostream>
-#include <stdexcept>
-#include <string>
-#include <windows.h>
-using namespace std;
-
-string getpassword( const string& prompt = "Enter password> " )
-  {
-  string result;
-
-  // Set the console mode to no-echo, not-line-buffered input
-  DWORD mode, count;
-  HANDLE ih = GetStdHandle( STD_INPUT_HANDLE  );
-  HANDLE oh = GetStdHandle( STD_OUTPUT_HANDLE );
-  if (!GetConsoleMode( ih, &mode ))
-    throw runtime_error(
-      "getpassword: You must be connected to a console to use this program.\n"
-      );
-  SetConsoleMode( ih, mode & ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT) );
-
-  // Get the password string
-  WriteConsoleA( oh, prompt.c_str(), prompt.length(), &count, NULL );
-  char c;
-  while (ReadConsoleA( ih, &c, 1, &count, NULL) && (c != '\r') && (c != '\n'))
-    {
-    if (c == '\b')
-      {
-      if (result.length())
-        {
-        WriteConsoleA( oh, "\b \b", 3, &count, NULL );
-        result.erase( result.end() -1 );
-        }
-      }
-    else
-      {
-      WriteConsoleA( oh, "*", 1, &count, NULL );
-      result.push_back( c );
-      }
-    }
-
-  // Restore the console mode
-  SetConsoleMode( ih, mode );
-
-  return result;
-  }
-
-int main()
-  {
-  try {
-
-    string password = getpassword( "Enter a test password> " );
-    cout << "\nYour password is " << password << endl;
-
-    }
-  catch (exception& e)
-    {
-    cerr << e.what();
-    return 1;
-    }
-
-  return 0;
-  }*/
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \include doc/libakrypt.dox                                                                     */

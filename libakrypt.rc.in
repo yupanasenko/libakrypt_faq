@@ -23,7 +23,7 @@ VS_VERSION_INFO VERSIONINFO
             VALUE "FileDescription", "Crypto API for OpenSKZI Project"
             VALUE "FileVersion", "@MINOR_VERSION@"
             VALUE "InternalName", "Akrypt shared library for Windows"
-            VALUE "LegalCopyright", "Copyright (c) 2008-2016 by Axel Kenzo"
+            VALUE "LegalCopyright", "Copyright (c) 2008-2017 by Axel Kenzo"
             VALUE "OriginalFilename", "akrypt.dll"
             VALUE "ProductName", "akrypt"
             VALUE "ProductVersion", "@MAJOR_VERSION@"

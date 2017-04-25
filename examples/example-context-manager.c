@@ -6,6 +6,7 @@
  #include <libakrypt.h>
  #include <ak_skey.h>
  #include <ak_hash.h>
+ #include <ak_random.h>
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -19,13 +20,14 @@
 {
   size_t i = 0;
   ak_key key = ak_key_wrong;
+  ak_random generator = NULL;
+  struct context_manager manager;
 
  /* инициализируем библиотеку, в случае возникновения ошибки завершаем работу */
   if( ak_libakrypt_create( NULL ) != ak_true ) return ak_libakrypt_destroy();
 
  /* определяем структуру управления контекстами и генератор псевдо-случайных чисел */
-  ak_random generator = ak_random_new_lcg();
-  struct context_manager manager;
+  generator = ak_random_new_lcg();
   ak_context_manager_create( &manager, ak_random_new_lcg( ));
 
  /* слкучайным образом генерим контексты */

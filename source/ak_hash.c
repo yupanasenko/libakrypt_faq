@@ -197,7 +197,7 @@
   struct stat st;
   size_t len = 0;
   ak_uint8 *localbuffer; /* место для локального считывания информации */
-  ak_uint32 block_size = 4096; /* оптимальная длина блока для Windows пока не ясна */
+  size_t block_size = 4096; /* оптимальная длина блока для Windows пока не ясна */
   ak_buffer result = NULL;
 
   /* выполняем необходимые проверки */
