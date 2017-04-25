@@ -116,6 +116,7 @@ if( LIBAKRYPT_STATIC_LIB )
                      context-manager
                      hmac-key
                      hmac-key-file
+                     key
                      )
   foreach( programm ${EXAMPLES_LIST} )
       # сборка статических примеров

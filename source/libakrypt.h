@@ -177,7 +177,8 @@
  #define ak_error_wcurve_point              (-29)
  #define ak_error_wcurve_point_order        (-30)
  #define ak_error_context_manager_max_size  (-31)
- #define ak_error_block_cipher_length       (-32)
+ #define ak_error_terminal                  (-32)
+ #define ak_error_block_cipher_length       (-33)
 
  #define ak_null_string                ("(null)")
 
@@ -390,6 +391,10 @@
  dll_export char *ak_ptr_to_hexstr( const ak_pointer , const size_t , const ak_bool );
 /*! \brief Конвертация строки шестнадцатеричных символов в массив данных */
  dll_export int ak_hexstr_to_ptr( const char *, ak_pointer , const size_t , const ak_bool );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Чтение пароля из консоли */
+ dll_export int ak_password_read( char *, const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifndef __STDC_VERSION__

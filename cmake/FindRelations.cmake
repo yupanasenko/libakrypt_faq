@@ -1,4 +1,15 @@
 # -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
+  #include <termios.h>
+  int main( void ) {
+  return 0;
+}" LIBAKRYPT_HAVE_TERMIOS_H )
+
+if( LIBAKRYPT_HAVE_TERMIOS_H )
+  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_TERMIOS_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
 # поиск зависимостей Unix
 if( CMAKE_HOST_UNIX )
   find_library( PTHREAD pthread )
@@ -45,3 +56,4 @@ endif()
 if( MSYS )
   set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DMSYS" )
 endif()
+

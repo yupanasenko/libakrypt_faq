@@ -56,6 +56,10 @@
   #include <conio.h>
  #endif
 
+#ifdef HAVE_TERMIOS_H
+ #include <termios.h>
+#endif
+
 /* ----------------------------------------------------------------------------------------------- */
 /*!  Переменная, содержащая в себе код последней ошибки                                            */
  static int ak_errno = ak_error_ok;
@@ -367,7 +371,7 @@
        bdata[len] = (ak_xconvert( hexstr[i] ) << 4) + ak_xconvert( hexstr[i+1] );
     }
     if( i == -1 ) bdata[len] = ak_xconvert( hexstr[0] );
-  }	else {
+  } else {
         for( i = 0, len = 0; i < (int) strlen( hexstr ); i += 2, len++ ) {
            bdata[len] = (ak_xconvert( hexstr[i] ) << 4);
            if( i < (int) strlen( hexstr )-1 ) bdata[len] += ak_xconvert( hexstr[i+1] );
@@ -955,6 +959,123 @@ return ak_true;
   ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms successfully destroyed" );
  return ak_error_get_value();
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция принимает три параметра:
+    @param pass Строка, в которую будет помещен пароль
+    @param psize Максимальная длина пароля
+    @param prompt Приглашение - текст, который будет выведен перед тем, как вводить пароль
+    @param emptyflag Флаг, который разрешает/запрещает вводить пустые пароли.
+           По-умолчанию флаг ложен и ввод пустых паролей запрещен.
+
+    @return В случае успеха функция возвращает значение \ref ak_error_ok. В случае возникновения
+    ошибки возвращается ее код.                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_password_read( char *pass, const size_t psize )
+{
+   size_t len = 0;
+   int error = ak_error_ok;
+
+ #ifndef HAVE_TERMIOS_H
+
+ #else
+  /* обрабатываем терминал */
+   struct termios ts, ots;
+
+   tcgetattr( STDIN_FILENO, &ts);   /* получаем настройки терминала */
+   ots = ts;
+   ts.c_cc[ VTIME ] = 0;
+   ts.c_cc[ VMIN  ] = 1;
+   ts.c_iflag &= ~( BRKINT | INLCR | ISTRIP | IXOFF | IUTF8 ); // ICRNL |
+   ts.c_iflag |=    IGNBRK;
+   ts.c_oflag &= ~( OPOST );
+   ts.c_cflag &= ~( CSIZE | PARENB);
+   ts.c_cflag |=    CS8;
+   ts.c_lflag &= ~( ECHO | ICANON | IEXTEN | ISIG );
+   tcsetattr( STDIN_FILENO, TCSAFLUSH, &ts );
+   tcgetattr( STDIN_FILENO, &ts ); /* проверяем, что все установилось */
+   if( ts.c_lflag & ECHO ) {
+        ak_error_message( error = ak_error_terminal, __func__, "failed to turn off echo" );
+        goto lab_exit;
+   }
+
+   memset( pass, 0, psize );
+   fgets( pass, psize, stdin );
+   if(( len = strlen( pass )) < 2 )
+     ak_error_message( error = ak_error_zero_length, __func__ , "input a very short password");
+   if( len > 0 ) pass[len-1] = 0;
+    else pass[0] = 0;
+
+  /* убираем за собой и восстанавливаем настройки */
+   lab_exit: tcsetattr( STDIN_FILENO, TCSANOW, &ots );
+   return error;
+ #endif
+ return ak_error_undefined_function;
+}
+
+/*
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <windows.h>
+using namespace std;
+
+string getpassword( const string& prompt = "Enter password> " )
+  {
+  string result;
+
+  // Set the console mode to no-echo, not-line-buffered input
+  DWORD mode, count;
+  HANDLE ih = GetStdHandle( STD_INPUT_HANDLE  );
+  HANDLE oh = GetStdHandle( STD_OUTPUT_HANDLE );
+  if (!GetConsoleMode( ih, &mode ))
+    throw runtime_error(
+      "getpassword: You must be connected to a console to use this program.\n"
+      );
+  SetConsoleMode( ih, mode & ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT) );
+
+  // Get the password string
+  WriteConsoleA( oh, prompt.c_str(), prompt.length(), &count, NULL );
+  char c;
+  while (ReadConsoleA( ih, &c, 1, &count, NULL) && (c != '\r') && (c != '\n'))
+    {
+    if (c == '\b')
+      {
+      if (result.length())
+        {
+        WriteConsoleA( oh, "\b \b", 3, &count, NULL );
+        result.erase( result.end() -1 );
+        }
+      }
+    else
+      {
+      WriteConsoleA( oh, "*", 1, &count, NULL );
+      result.push_back( c );
+      }
+    }
+
+  // Restore the console mode
+  SetConsoleMode( ih, mode );
+
+  return result;
+  }
+
+int main()
+  {
+  try {
+
+    string password = getpassword( "Enter a test password> " );
+    cout << "\nYour password is " << password << endl;
+
+    }
+  catch (exception& e)
+    {
+    cerr << e.what();
+    return 1;
+    }
+
+  return 0;
+  }*/
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \include doc/libakrypt.dox                                                                     */
