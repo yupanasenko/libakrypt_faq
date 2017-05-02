@@ -687,7 +687,6 @@
                                                               "using a null pointer to password" );
   if( size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
                                                             "using a passsword with zero length" );
-
  /* формируем ключ */
   if(( error = ak_ptr_to_skey_pbkdf2( pass, size, NULL, 0,
                                ak_libakrypt_get_pbkdf2_iteration_count(),

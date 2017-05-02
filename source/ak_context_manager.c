@@ -340,7 +340,13 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*          реализация интерфесных функций для пользователя, использующих context_manager          */
+/*          реализация интерфейсных функций для пользователя, использующих context_manager         */
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param password Буффер, содержащий в себе значение пароля, из которого вырабатываемтся ключ
+    @param description Пользовательское описание ключа (буффер, содержащий строку символов)
+    @return Функция возвращает дескриптор созданного ключа. Если создание ключа произвошло с ошибкой,
+    то возвращается отрицательное значение \ref ak_error_wrong_key. Код ошибки может быть получен
+    с помощью вызова функции ak_error_get_value()                                                  */
 /* ----------------------------------------------------------------------------------------------- */
  ak_key ak_key_new_magma_password( ak_buffer password, ak_buffer description )
 {
@@ -373,23 +379,81 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_key_xcrypt_ctr( ak_key key, ak_pointer in, ak_pointer out, size_t size, ak_pointer iv )
+/*! @param password Строка с паролем, из которого вырабатываемтся ключ
+    @param description Пользовательское описание ключа (строка символов)
+    @return Функция возвращает дескриптор созданного ключа. Если создание ключа произвошло с ошибкой,
+    то возвращается отрицательное значение \ref ak_error_wrong_key. Код ошибки может быть получен
+    с помощью вызова функции ak_error_get_value()                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_key ak_key_new_magma_password_str( char *password, char *description )
 {
   ak_bckey bkey = NULL;
-  int error = ak_error_ok;
+  ak_key key = ak_error_wrong_key;
 
-  if(( key < 0 ) || (key >= libakrypt_context_manager.size ))
+  if( password == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to password" );
+    return ak_error_wrong_key;
+  }
+  if( strlen( password ) == 0 ) {
+    ak_error_message( ak_error_zero_length, __func__, "using a password with zero length" );
+    return ak_error_wrong_key;
+  }
+
+  if(( bkey = ak_bckey_new_magma_password( password, strlen( password ))) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong creation a magma block cipher key" );
+    return ak_error_wrong_key;
+  }
+
+  if(( key = ak_context_manager_add_node( &libakrypt_context_manager, bkey, block_cipher,
+                    ak_buffer_new_str( description ), ak_bckey_delete )) == ak_error_wrong_key ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                               "wrong initialization of magma block cipher key");
+    bkey = ak_bckey_delete( bkey );
+  }
+ return key;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_key_get_description( ak_key key )
+{
+  if(( key < 0 ) || ( key >= libakrypt_context_manager.size )) {
+    ak_error_message( ak_error_wrong_key, __func__, "invalid key index" );
+    return NULL;
+  }
+  if( libakrypt_context_manager.array[key] == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using undefined key context" );
+    return NULL;
+  }
+  if( libakrypt_context_manager.array[key]->ctx == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using undefined key" );
+    return NULL;
+  }
+ return libakrypt_context_manager.array[key]->description;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static inline int ak_key_check_value( ak_key key, ak_oid_engine engine )
+{
+  if(( key < 0 ) || ( key >= libakrypt_context_manager.size ))
     return ak_error_message( ak_error_wrong_key, __func__, "invalid key index" );
   if( libakrypt_context_manager.array[key] == NULL )
-    return ak_error_message( ak_error_null_pointer, __func__, "using undefined secret key context" );
-  if( libakrypt_context_manager.array[key]->engine != block_cipher )
-    return ak_error_message( ak_error_oid_engine, __func__, "using non block cipher key" );
-  if(( bkey = libakrypt_context_manager.array[key]->ctx ) == NULL )
-    return ak_error_message( ak_error_null_pointer, __func__, "using null pointer to secret key" );
+    return ak_error_message( ak_error_null_pointer, __func__, "using undefined key context" );
+  if( libakrypt_context_manager.array[key]->engine != engine )
+    return ak_error_message( ak_error_oid_engine, __func__, "using wrong engine for given key" );
+  if( libakrypt_context_manager.array[key]->ctx == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__, "using undefined key" );
+ return ak_error_ok;
+}
 
-  if(( error = ak_bckey_xcrypt_ctr( bkey, in, out, size, iv )) != ak_error_ok )
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_key_xcrypt_ctr( ak_key key, ak_pointer in, ak_pointer out, size_t size, ak_pointer iv )
+{
+  int error = ak_error_ok;
+  if(( error = ak_key_check_value( key, block_cipher )) != ak_error_ok )
+    return ak_error_message( error, __func__, "using wrong key");
+  if(( error = ak_bckey_xcrypt_ctr( (ak_bckey) libakrypt_context_manager.array[key]->ctx,
+                                                             in, out, size, iv )) != ak_error_ok )
     return ak_error_message( error, __func__, "invalid xcrypt operation" );
-
  return error;
 }
 

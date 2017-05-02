@@ -147,6 +147,12 @@
     и удаляет его самостоятельно.
     @param ptr Указатель на данные, которые будут интерпретироваться в качестве значения ключа.
     Данные всегда копируются во внутреннюю память контекста алгоритма.
+
+    Если длина ключа превышает размер блока хешируемых данных, т.е. \$ K = K_1 || K_2 \f$,
+    где \f$ |K_1| = \text{\texttt{ ctx->bsize }}\f$,
+    то в качестве ключа используются значение \f$  K_1 \oplus Hash( K_1 || K_2 ) \f$,
+    длина оторого в точности совпадает с длиной блока хешируемых данных.
+
     @param size Размер данных, на которые указывает ptr (размер в байтах)
     @return В случае успеха функция возвращает указатель на созданный контекст. В противном случае
     возвращается NULL. Код возникшей ошибки может быть получен с помощью вызова функции
@@ -154,6 +160,9 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_hmac_key ak_hmac_key_new_ptr( ak_hash ctx, const ak_pointer ptr, const size_t size )
 {
+
+  править здесь (сделать сжатие в соотвествии с описанием выше)
+
   int error = ak_error_ok;
   ak_hmac_key hkey = NULL;
 
@@ -503,6 +512,7 @@
   ak_uint8 *result = NULL;
   int error = ak_error_ok;
   ak_hmac_key hkey = NULL;
+  ak_hash ctx = NULL;
 
   if( p == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                              "using a null pointer to password" );
@@ -516,9 +526,10 @@
     return ak_error_message( ak_error_out_of_memory, __func__, "wrong memory allocation" );
 
  /* инициализируем ключ алгоритма HMAC */
-  if(( hkey = ak_hmac_key_new_ptr( ak_hash_new_streebog512(), p, psize )) == NULL ) {
+  if(( hkey = ak_hmac_key_new_ptr( ctx = ak_hash_new_streebog512(), p, psize )) == NULL ) {
     ak_error_message( error = ak_error_get_value(), __func__,
                                                            "wrong creation of hmac key context" );
+    ctx = ak_hash_delete( ctx );
     goto lab_exit;
   }
 

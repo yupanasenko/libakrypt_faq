@@ -387,10 +387,17 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание ключа алгоритма блочного шифрования Магма из пароля */
- ak_key ak_key_new_magma_password( ak_buffer passsword, ak_buffer description );
+ dll_export ak_key ak_key_new_magma_password( ak_buffer passsword, ak_buffer description );
+/*! \brief Создание ключа алгоритма блочного шифрования Магма из пароля */
+ dll_export ak_key ak_key_new_magma_password_str( char *passsword, char *description );
 
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Зашифрование данных в режиме гаммирования (режиме счетчика) согласно ГОСТ 34.13-2015 */
- int ak_key_xcrypt_ctr( ak_key , ak_pointer , ak_pointer , size_t , ak_pointer );
+ dll_export int ak_key_xcrypt_ctr( ak_key , ak_pointer , ak_pointer , size_t , ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Получение пользовательского описания ключа */
+ dll_export ak_buffer ak_key_get_description( ak_key );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей значение заданной области памяти */
