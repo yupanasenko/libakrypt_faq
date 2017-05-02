@@ -1041,6 +1041,32 @@ return ak_true;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! @param buffer Буфер, в который помещается пароль. Буфер должен быть создан заранее с заданным
+    размером хранящихся в нем данных (с помощью вызова функции ak_buffer_new_size() )
+    Если в буффере хранились данные, то они будут уничтожены.
+
+    Отметим, что в случае ввода пароля нулевой длины функция возвращает ошибку с кодом
+    \ref ak_error_terminal
+
+    @return В случае успеха функция возвращает значение \ref ak_error_ok. В случае возникновения
+    ошибки возвращается ее код.                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_password_read_buffer( ak_buffer password )
+{
+  int error = ak_error_ok;
+  if( password == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                        "using null pointer to password buffer" );
+  if( password->data == NULL ) return ak_error_message( ak_error_zero_length, __func__,
+                                                  "using a password buffer null internal array" );
+  if( password->size == 0 ) return ak_error_message( ak_error_zero_length, __func__,
+                                                     "using a password buffer with zero length" );
+  if(( error = ak_password_read( password->data, password->size )) != ak_error_ok ) {
+    return ak_error_message( error, __func__, "invalind password reading from standard console");
+  }
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \include doc/libakrypt.dox                                                                     */
 /*! \example example-log.c                                                                         */
 /* ----------------------------------------------------------------------------------------------- */

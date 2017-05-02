@@ -386,6 +386,13 @@
  dll_export ak_buffer ak_update_finalize( ak_update , const ak_pointer , const size_t , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Создание ключа алгоритма блочного шифрования Магма из пароля */
+ ak_key ak_key_new_magma_password( ak_buffer passsword, ak_buffer description );
+
+/*! \brief Зашифрование данных в режиме гаммирования (режиме счетчика) согласно ГОСТ 34.13-2015 */
+ int ak_key_xcrypt_ctr( ak_key , ak_pointer , ak_pointer , size_t , ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей значение заданной области памяти */
  dll_export char *ak_ptr_to_hexstr( const ak_pointer , const size_t , const ak_bool );
 /*! \brief Конвертация строки шестнадцатеричных символов в массив данных */
@@ -394,6 +401,8 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Чтение пароля из консоли */
  dll_export int ak_password_read( char *, const size_t );
+/*! \brief Чтение пароля из консоли в буффер */
+ dll_export int ak_password_read_buffer( ak_buffer );
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifndef __STDC_VERSION__

@@ -1,58 +1,42 @@
  #include <stdio.h>
  #include <libakrypt.h>
- #include <ak_skey.h>
- #include <ak_hash.h>
- #include <ak_tools.h>
- #include <ak_context_manager.h>
-
- void print_key( ak_skey skey )
-{
- int i = 0;
- char *str = NULL;
- ak_resource res = skey->resource;
-
- printf("key:      %s\n", str = ak_buffer_to_hexstr( &skey->key )); if( str ) free( str );
- printf("mask:     %s\n", str = ak_buffer_to_hexstr( &skey->mask )); if( str ) free( str );
- printf("icode:    %s ", str = ak_buffer_to_hexstr( &skey->icode )); if( str ) free( str );
- if( ak_skey_check_icode_additive( skey )) printf("(Ok)\n"); else printf("(No)\n");
- printf("number:   %s\n", ak_buffer_get_str( &skey->number ));
-
- printf("resource: %lu\n", res.counter );
- if( skey->oid == NULL ) printf("oid:     (null)\n");
-  else printf("oid:      %s (%s)\n", ak_oid_get_name( skey->oid ), ak_oid_get_id( skey->oid ));
- printf("random:   "); for( i = 0; i < 16; i++ ) printf("%02x ", ak_random_uint8( skey->generator ));
- printf("\n");
-}
-
 
  int main( void )
 {
-  ak_key key;
-  ak_bckey bkey = NULL;
+  char *str = NULL;
+  ak_key key = ak_error_wrong_key;
   int error = ak_error_ok;
-  char password[32], *str = NULL;
+  ak_buffer password = NULL;
+  ak_uint8 iv[4] = { 0, 1, 2, 3 },
+           enc_data[53],
+           plain_data[53] = "abcdefgh000132432123456aaascdfszswqkndbbdknanbdbbbbs1";
 
  /* инициализируем библиотеку. в случае возникновения ошибки завершаем работу */
   if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true ) return ak_libakrypt_destroy();
 
  /* вводим пароль */
+  password = ak_buffer_new_size( 128 );
   printf("password: ");
-  if(( error = ak_password_read( password, 32 )) != ak_error_ok ) return ak_libakrypt_destroy();
-  printf("\ninput value: %s (len: %u, hex: %s)\n",
-                      password, (unsigned int) strlen(password),
-                                 str = ak_ptr_to_hexstr( password, 32, ak_false ));
-  free(str);
+  if(( error = ak_password_read_buffer( password )) != ak_error_ok ) goto ext;
+  printf("\ninput value: %s\n", ak_buffer_get_ptr( password ));
 
- /* создаем ключа из пароля */
-  key = ak_context_manager_add_node( ak_libakrypt_get_context_manager(),
-                                     bkey = ak_bckey_new_magma_password( password, strlen( password )),
-                                     block_cipher,
-                                     NULL,
-                                     ak_bckey_delete );
-  memset( password, 0, 32 );
-  printf("handle: %ld\n", key );
-  print_key( &bkey->key );
+ /* создаем ключ */
+  key = ak_key_new_magma_password( password, NULL );
+  printf("key: %ld\nplain text: %s\n", key,
+              str = ak_ptr_to_hexstr( plain_data, sizeof( plain_data ), ak_false )); free(str);
 
+ /* зашифровываем данные */
+  ak_key_xcrypt_ctr( key, plain_data, enc_data, sizeof(plain_data), iv );
+  printf("encrypt   : %s\n",
+              str = ak_ptr_to_hexstr( enc_data, sizeof( enc_data ), ak_false )); free(str);
+
+  ak_key_xcrypt_ctr( key, enc_data, enc_data, sizeof(enc_data), iv );
+  printf("plain_text: %s ",
+              str = ak_ptr_to_hexstr( enc_data, sizeof( enc_data ), ak_false )); free(str);
+  if( memcmp( plain_data, enc_data, sizeof( enc_data )) == 0 ) printf("Ok\n");
+    else printf(" Wrong\n");
+
+  ext: password = ak_buffer_delete( password );
  return ak_libakrypt_destroy();
 }
 

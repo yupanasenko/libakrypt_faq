@@ -340,6 +340,60 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*          реализация интерфесных функций для пользователя, использующих context_manager          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_key ak_key_new_magma_password( ak_buffer password, ak_buffer description )
+{
+  ak_bckey bkey = NULL;
+  ak_key key = ak_error_wrong_key;
+
+  if( password == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to password buffer" );
+    return ak_error_wrong_key;
+  }
+  if( password->data == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to password data" );
+    return ak_error_wrong_key;
+  }
+  if( password->size == 0 ) {
+    ak_error_message( ak_error_zero_length, __func__, "using a password with zero length" );
+    return ak_error_wrong_key;
+  }
+  if(( bkey = ak_bckey_new_magma_password( password->data, strlen( password->data ))) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong creation a block cipher key" );
+    return ak_error_wrong_key;
+  }
+
+  if(( key = ak_context_manager_add_node( &libakrypt_context_manager, bkey, block_cipher,
+                                   description, ak_bckey_delete )) == ak_error_wrong_key ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong initialization of block cipher key");
+    bkey = ak_bckey_delete( bkey );
+  }
+ return key;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_key_xcrypt_ctr( ak_key key, ak_pointer in, ak_pointer out, size_t size, ak_pointer iv )
+{
+  ak_bckey bkey = NULL;
+  int error = ak_error_ok;
+
+  if(( key < 0 ) || (key >= libakrypt_context_manager.size ))
+    return ak_error_message( ak_error_wrong_key, __func__, "invalid key index" );
+  if( libakrypt_context_manager.array[key] == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__, "using undefined secret key context" );
+  if( libakrypt_context_manager.array[key]->engine != block_cipher )
+    return ak_error_message( ak_error_oid_engine, __func__, "using non block cipher key" );
+  if(( bkey = libakrypt_context_manager.array[key]->ctx ) == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__, "using null pointer to secret key" );
+
+  if(( error = ak_bckey_xcrypt_ctr( bkey, in, out, size, iv )) != ak_error_ok )
+    return ak_error_message( error, __func__, "invalid xcrypt operation" );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \example example-context-manager.c                                                             */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                           ak_context_manager.c  */
