@@ -98,32 +98,28 @@
 % -------------------------------------------------------------------- %
 \begin{document}
 % Title page
+
 \thispagestyle{plain}
-\ \\
 
 \vfill
+\hbox{%
+\rule{1pt}{1.0\textheight}
+\hspace*{0.05\textwidth}%
+\parbox[b]{0.95\textwidth}{
+\vbox{%
+\vspace{0.1\textwidth}
+{\noindent\Huge\bfseries LIBAKRYPT}\\[2\baselineskip]
+{\Large\itshape Инструкция по сборке и установке}\\[1\baselineskip]
+{\Large\itshape Рекомендации по встраиванию}\\[1\baselineskip]
+{\Large\itshape Принципы реализации}\\[1\baselineskip]
 
-\begin{center}
-{\LARGE\bfseries Документация к библиотеке LIBAKRYPT}
-\end{center}
-\begin{center}
-версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@ от \today
-\end{center}
-
+\vspace{0.5\textheight}
+{\large версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@} от \today\\[1\baselineskip]
+{\large Axel Kenzo \& The Mystical Company Of Belles Lettres (c) 2014 -- 2017}\\[1\baselineskip]
+}% end of vbox
+}% end of parbox
+}% end of hbox
 \vfill
-
-\begin{flushright}
-\begin{tabular}{r}
-\emph{Инструкция по сборке и установке}\\
-\emph{Рекомендации по встраиванию}\\
-\emph{Принципы реализации}\\
-\end{tabular}
-\end{flushright}
-
-\vfill
-\begin{center}
-Axel Kenzo \& The Mystical Company Of Belles Lettres (c) 2014 -- 2017
-\end{center}
 
 \newpage
 \tableofcontents

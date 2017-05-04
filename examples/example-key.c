@@ -24,7 +24,7 @@
         strlen( ak_buffer_get_str( password )));
 
  /* создаем ключ */
-  key = ak_key_new_magma_password( password, NULL ); // description = ak_buffer_new_str( "test magma key" )
+  key = ak_key_new_magma_password( password, description = ak_buffer_new_str( "test magma key" ));
   if( key == ak_error_wrong_key ) {
       description = ak_buffer_delete( description );
       goto ext;

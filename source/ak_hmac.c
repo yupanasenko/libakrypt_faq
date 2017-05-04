@@ -160,18 +160,13 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_hmac_key ak_hmac_key_new_ptr( ak_hash ctx, const ak_pointer ptr, const size_t size )
 {
-
-  править здесь (сделать сжатие в соотвествии с описанием выше)
-
+  size_t i = 0;
+  ak_buffer buff = NULL;
   int error = ak_error_ok;
   ak_hmac_key hkey = NULL;
 
   if( ptr == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to secret key" );
-    return NULL;
-  }
-  if( size > ctx->bsize ) {
-    ak_error_message( ak_error_wrong_length, __func__, "the secret key length is wrong" );
     return NULL;
   }
  /* создаем контекст */
@@ -181,13 +176,24 @@
     return NULL;
   }
  /* присваиваем ключевой буффер */
-  if(( error = ak_skey_assign_ptr( &hkey->key, ptr, size, ak_true )) != ak_error_ok ) {
+  if(( error =
+    ak_skey_assign_ptr( &hkey->key, ptr, ak_min( size, ctx->bsize ), ak_true )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "incorrect assigning of key data" );
     return ( hkey = ak_hmac_key_delete( hkey ));
   }
+  if( size > ctx->bsize ) {
+    if(( buff = ak_hash_data( ctx, ptr, size, NULL )) == NULL ) {
+      ak_error_message( ak_error_get_value(), __func__ , "invalid hashing of long password" );
+      return ( hkey = ak_hmac_key_delete( hkey ));
+    }
+    for( i = 0; i < ctx->hsize; i++ ) ((char *)hkey->key.key.data)[i] ^= ((char *)buff->data)[i];
+    error = ak_buffer_wipe( buff, hkey->key.generator );
+    buff = ak_buffer_delete( buff );
+  }
+
  /* инициализируем начальное состояние */
   if(( error = ak_hmac_key_clean( hkey )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "invalid cleanin a hmac key context ");
+    ak_error_message( error, __func__, "invalid cleaning a hmac key context ");
     return ( hkey = ak_hmac_key_delete( hkey ));
   }
  return hkey;
