@@ -156,8 +156,9 @@
   /*! \brief Указатель на секретный ключ */
    struct skey key;
   /*! \brief Длина блока обрабатываемых данных в байтах */
-   size_t block_size;
-
+  // size_t block_size;
+  /*! \brief Буффер, для хранения синхропосылки */
+   struct buffer ivector;
   /*! \brief Функция заширования одного блока информации */
    ak_function_bckey *encrypt;
   /*! \brief Функция расширования одного блока информации */

@@ -378,18 +378,24 @@
  dll_export ak_pointer ak_random_delete( ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Создание структуры итеративного вычисления сжимающих отображений для функции хеширования */
  dll_export ak_update ak_update_new_hash( ak_hash );
+/*! \brief Удаление структуры итеративного вычисления сжимающих отображений */
  dll_export ak_pointer ak_update_delete( ak_pointer );
+/*! \brief Получение размера результата вычисления сжимающего отображения */
  dll_export size_t ak_update_get_code_size( ak_update );
+/*! \brief Очистка структуры итератичного вычисления сжимающего отображения */
  dll_export int ak_update_clean( ak_update );
+/*! \brief Обновление внутреннего состояния структуры итеративного ыисления сжимающего отображения */
  dll_export int ak_update_update( ak_update , const ak_pointer , const size_t );
+/*! \brief Завершение вычисления сжимающего отображения */
  dll_export ak_buffer ak_update_finalize( ak_update , const ak_pointer , const size_t , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание ключа алгоритма блочного шифрования Магма из пароля */
- dll_export ak_key ak_key_new_magma_password( ak_buffer passsword, ak_buffer description );
-/*! \brief Создание ключа алгоритма блочного шифрования Магма из пароля */
- dll_export ak_key ak_key_new_magma_password_str( char *passsword, char *description );
+ dll_export ak_key ak_key_new_magma_password( ak_buffer , ak_buffer );
+/*! \brief Создание случайного ключа алгоритма блочного шифрования Магма */
+ dll_export ak_key ak_key_new_magma_random( ak_buffer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Зашифрование данных в режиме гаммирования (режиме счетчика) согласно ГОСТ 34.13-2015 */

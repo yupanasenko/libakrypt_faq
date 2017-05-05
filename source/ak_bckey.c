@@ -253,8 +253,7 @@
     @return В случае возникновения ошибки функция возвращает ее код, в противном случае
     возвращается ak_error_ok (ноль)                                                                */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_bckey_xcrypt_ctr( ak_bckey bkey,
-                                         ak_pointer in, ak_pointer out, size_t size, ak_pointer iv )
+ int ak_bckey_xcrypt_ctr( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size, ak_pointer iv )
 {
   ak_uint64 blocks = (ak_uint64)size/bkey->block_size,
             tail = (ak_uint64)size%bkey->block_size;

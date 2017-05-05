@@ -43,6 +43,27 @@
   printf("plain_text: %s ",
         str = ak_ptr_to_hexstr( enc_data, sizeof( enc_data ), ak_false )); free(str);
 
+  if( memcmp( plain_data, enc_data, sizeof( enc_data )) == 0 ) printf("Ok\n\n");
+    else printf(" Wrong\n");
+
+ /* теперь создаем случайный ключ */
+  if(( key = ak_key_new_magma_random( description = ak_buffer_new_str( "new random key" )))
+                                                                       == ak_error_wrong_key ) {
+    description = ak_buffer_delete( description );
+    goto ext;
+  }
+  printf("key: %ld (%s)\nplain text: %s\n", key,
+        ak_buffer_get_str( ak_key_get_description( key )),
+        str = ak_ptr_to_hexstr( plain_data, sizeof( plain_data ), ak_false )); free(str);
+
+ /* и зашифровываем и расшифровываем те же данные, но на случайном ключе  */
+  ak_key_xcrypt_ctr( key, plain_data, enc_data, sizeof(plain_data), iv );
+  printf("encrypt   : %s\n",
+        str = ak_ptr_to_hexstr( enc_data, sizeof( enc_data ), ak_false )); free(str);
+  ak_key_xcrypt_ctr( key, enc_data, enc_data, sizeof(enc_data), iv );
+  printf("plain_text: %s ",
+        str = ak_ptr_to_hexstr( enc_data, sizeof( enc_data ), ak_false )); free(str);
+
   if( memcmp( plain_data, enc_data, sizeof( enc_data )) == 0 ) printf("Ok\n");
     else printf(" Wrong\n");
 
