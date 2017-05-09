@@ -155,10 +155,10 @@
  struct bckey {
   /*! \brief Указатель на секретный ключ */
    struct skey key;
-  /*! \brief Длина блока обрабатываемых данных в байтах */
-  // size_t block_size;
-  /*! \brief Буффер, для хранения синхропосылки */
+  /*! \brief Буффер, для хранения синхропосылки. Длина буффера совпадает с длиной блока */
    struct buffer ivector;
+  /*! \brief Статус ключа */
+   int status;
   /*! \brief Функция заширования одного блока информации */
    ak_function_bckey *encrypt;
   /*! \brief Функция расширования одного блока информации */
@@ -190,9 +190,10 @@
  int ak_bckey_encrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
 /*! \brief Расшифрование данных в режиме простой замены */
  int ak_bckey_decrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
-/*! \brief Зашифрование/расшифрование данных в режиме гаммирования
-                                                             (режим счетчика из ГОСТ Р 34.13-2015) */
- int ak_bckey_xcrypt_ctr( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer );
+/*! \brief Зашифрование/расшифрование данных в режиме гаммирования из ГОСТ Р 34.13-2015) */
+ int ak_bckey_xcrypt( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer );
+/*! \brief Дальнейшее зашифрование/расшифрование в режиме гаммирования */
+ int ak_bckey_xcrypt_update( ak_bckey , ak_pointer , ak_pointer , size_t );
 
 /*! \brief Функция выполняет тестирование алгоритма Магма в соответствии с
                                                              ГОСТ Р 34.12-2015 и ГОСТ Р 34.13-2015 */

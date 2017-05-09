@@ -465,7 +465,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_key_xcrypt_ctr( ak_key key, ak_pointer in, ak_pointer out, size_t size, ak_pointer iv )
+ int ak_key_xcrypt( ak_key key, ak_pointer in, ak_pointer out, size_t size, ak_pointer iv )
 {
   int error = ak_key_check( key );
   if( error != ak_error_ok ) return ak_error_message( error, __func__, "wrong key descriptor");
@@ -473,8 +473,23 @@
   if(( error = ak_key_check_engine( key, block_cipher )) != ak_error_ok )
     return ak_error_message( error, __func__, "using non block cipher key descriptor");
 
-  if(( error = ak_bckey_xcrypt_ctr(( ak_bckey )libakrypt_context_manager.array[key]->ctx,
+  if(( error = ak_bckey_xcrypt(( ak_bckey )libakrypt_context_manager.array[key]->ctx,
                                                              in, out, size, iv )) != ak_error_ok )
+    return ak_error_message( error, __func__, "invalid result of xcrypt operation" );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_key_xcrypt_update( ak_key key, ak_pointer in, ak_pointer out, size_t size )
+{
+  int error = ak_key_check( key );
+  if( error != ak_error_ok ) return ak_error_message( error, __func__, "wrong key descriptor");
+
+  if(( error = ak_key_check_engine( key, block_cipher )) != ak_error_ok )
+    return ak_error_message( error, __func__, "using non block cipher key descriptor");
+
+  if(( error = ak_bckey_xcrypt_update(( ak_bckey )libakrypt_context_manager.array[key]->ctx,
+                                                                   in, out, size )) != ak_error_ok )
     return ak_error_message( error, __func__, "invalid result of xcrypt operation" );
  return error;
 }

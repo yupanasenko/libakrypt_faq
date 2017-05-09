@@ -15,7 +15,7 @@
   if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true ) return ak_libakrypt_destroy();
 
  /* вводим пароль */
-  password = ak_buffer_new_size( 67 );
+  password = ak_buffer_new_size( 128 );
   printf("password: ");
   if(( error = ak_password_read_buffer( password )) != ak_error_ok ) goto ext;
   printf("\ninput value: %s (len: %ld, strlen %ld)\n",
@@ -34,12 +34,14 @@
         str = ak_ptr_to_hexstr( plain_data, sizeof( plain_data ), ak_false )); free(str);
 
  /* зашифровываем данные */
-  ak_key_xcrypt_ctr( key, plain_data, enc_data, sizeof(plain_data), iv );
+  ak_key_xcrypt( key, plain_data, enc_data, 32, iv );
+  ak_key_xcrypt_update( key, plain_data+32, enc_data+32, 16 );
+  ak_key_xcrypt_update( key, plain_data+48, enc_data+48, sizeof(plain_data)-48 );
   printf("encrypt   : %s\n",
         str = ak_ptr_to_hexstr( enc_data, sizeof( enc_data ), ak_false )); free(str);
 
  /* расшифровываем данные */
-  ak_key_xcrypt_ctr( key, enc_data, enc_data, sizeof(enc_data), iv );
+  ak_key_xcrypt( key, enc_data, enc_data, sizeof(enc_data), iv );
   printf("plain_text: %s ",
         str = ak_ptr_to_hexstr( enc_data, sizeof( enc_data ), ak_false )); free(str);
 
@@ -57,10 +59,10 @@
         str = ak_ptr_to_hexstr( plain_data, sizeof( plain_data ), ak_false )); free(str);
 
  /* и зашифровываем и расшифровываем те же данные, но на случайном ключе  */
-  ak_key_xcrypt_ctr( key, plain_data, enc_data, sizeof(plain_data), iv );
+  ak_key_xcrypt( key, plain_data, enc_data, sizeof(plain_data), iv );
   printf("encrypt   : %s\n",
         str = ak_ptr_to_hexstr( enc_data, sizeof( enc_data ), ak_false )); free(str);
-  ak_key_xcrypt_ctr( key, enc_data, enc_data, sizeof(enc_data), iv );
+  ak_key_xcrypt( key, enc_data, enc_data, sizeof(enc_data), iv );
   printf("plain_text: %s ",
         str = ak_ptr_to_hexstr( enc_data, sizeof( enc_data ), ak_false )); free(str);
 

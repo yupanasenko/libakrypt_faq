@@ -148,44 +148,45 @@
  typedef int ( ak_function_log )( const char * );
 
 /* ----------------------------------------------------------------------------------------------- */
- #define ak_error_ok                          (0)
- #define ak_error_out_of_memory              (-1)
- #define ak_error_null_pointer               (-2)
- #define ak_error_zero_length                (-3)
- #define ak_error_wrong_length               (-4)
- #define ak_error_undefined_value            (-5)
- #define ak_error_undefined_function         (-6)
- #define ak_error_create_function            (-7)
- #define ak_error_access_file               (-10)
- #define ak_error_open_file                 (-11)
- #define ak_error_close_file                (-12)
- #define ak_error_find_pointer              (-13)
- #define ak_error_read_data                 (-15)
- #define ak_error_write_data                (-16)
- #define ak_error_oid_engine                (-17)
- #define ak_error_oid_mode                  (-18)
- #define ak_error_oid_name                  (-19)
- #define ak_error_oid_id                    (-20)
- #define ak_error_oid_index                 (-21)
- #define ak_error_not_equal_data            (-22)
- #define ak_error_low_key_resource          (-23)
- #define ak_error_wrong_key                 (-24)
- #define ak_error_wrong_key_lock            (-25)
- #define ak_error_wrong_key_unlock          (-26)
- #define ak_error_wrong_key_icode           (-27)
- #define ak_error_wcurve_prime_size         (-28)
- #define ak_error_wcurve_discriminant       (-29)
- #define ak_error_wcurve_point              (-30)
- #define ak_error_wcurve_point_order        (-31)
- #define ak_error_context_manager_max_size  (-32)
- #define ak_error_terminal                  (-33)
- #define ak_error_block_cipher_length       (-34)
+ #define ak_error_ok                            (0)
+ #define ak_error_out_of_memory                (-1)
+ #define ak_error_null_pointer                 (-2)
+ #define ak_error_zero_length                  (-3)
+ #define ak_error_wrong_length                 (-4)
+ #define ak_error_undefined_value              (-5)
+ #define ak_error_undefined_function           (-6)
+ #define ak_error_create_function              (-7)
+ #define ak_error_access_file                 (-10)
+ #define ak_error_open_file                   (-11)
+ #define ak_error_close_file                  (-12)
+ #define ak_error_find_pointer                (-13)
+ #define ak_error_read_data                   (-15)
+ #define ak_error_write_data                  (-16)
+ #define ak_error_oid_engine                  (-17)
+ #define ak_error_oid_mode                    (-18)
+ #define ak_error_oid_name                    (-19)
+ #define ak_error_oid_id                      (-20)
+ #define ak_error_oid_index                   (-21)
+ #define ak_error_not_equal_data              (-22)
+ #define ak_error_low_key_resource            (-23)
+ #define ak_error_wrong_key                   (-24)
+ #define ak_error_wrong_key_lock              (-25)
+ #define ak_error_wrong_key_unlock            (-26)
+ #define ak_error_wrong_key_icode             (-27)
+ #define ak_error_wcurve_prime_size           (-28)
+ #define ak_error_wcurve_discriminant         (-29)
+ #define ak_error_wcurve_point                (-30)
+ #define ak_error_wcurve_point_order          (-31)
+ #define ak_error_context_manager_max_size    (-32)
+ #define ak_error_terminal                    (-33)
+ #define ak_error_wrong_block_cipher_length   (-34)
+ #define ak_error_wrong_block_cipher_function (-35)
 
- #define ak_null_string                ("(null)")
+ #define ak_null_string                  ("(null)")
 
- #define ak_log_none                          (0)
- #define ak_log_standard                      (1)
- #define ak_log_maximum                       (2)
+ #define ak_log_none                            (0)
+ #define ak_log_standard                        (1)
+ #define ak_log_maximum                         (2)
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает уровень аудита библиотеки */
@@ -386,7 +387,7 @@
  dll_export size_t ak_update_get_code_size( ak_update );
 /*! \brief Очистка структуры итератичного вычисления сжимающего отображения */
  dll_export int ak_update_clean( ak_update );
-/*! \brief Обновление внутреннего состояния структуры итеративного ыисления сжимающего отображения */
+/*! \brief Обновление внутреннего состояния структуры итеративного вычисления сжимающего отображения */
  dll_export int ak_update_update( ak_update , const ak_pointer , const size_t );
 /*! \brief Завершение вычисления сжимающего отображения */
  dll_export ak_buffer ak_update_finalize( ak_update , const ak_pointer , const size_t , ak_pointer );
@@ -398,8 +399,10 @@
  dll_export ak_key ak_key_new_magma_random( ak_buffer );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Зашифрование данных в режиме гаммирования (режиме счетчика) согласно ГОСТ 34.13-2015 */
- dll_export int ak_key_xcrypt_ctr( ak_key , ak_pointer , ak_pointer , size_t , ak_pointer );
+/*! \brief Зашифрование/расшифрование данных в режиме гаммирования согласно ГОСТ 34.13-2015 */
+ dll_export int ak_key_xcrypt( ak_key , ak_pointer , ak_pointer , size_t , ak_pointer );
+/*! \brief Дальнейшее зашифрование/расшифрование данных в режиме гаммирования согласно ГОСТ 34.13-2015 */
+ dll_export int ak_key_xcrypt_update( ak_key , ak_pointer , ak_pointer , size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Получение пользовательского описания ключа */

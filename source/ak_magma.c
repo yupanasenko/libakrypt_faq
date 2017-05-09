@@ -475,7 +475,7 @@
                              "the ecb mode decryption test from GOST R 34.13-2015 is Ok" );
 
   /* 5. Тестируем режим гаммирования (счетчика) согласно ГОСТ Р34.13-2015 */
-    if( ak_bckey_xcrypt_ctr( bkey, in_3413_2015_text, out, 32, ctr_iv ) != ak_error_ok ) {
+    if( ak_bckey_xcrypt( bkey, in_3413_2015_text, out, 32, ctr_iv ) != ak_error_ok ) {
       ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong checking a secret key" );
       bkey = ak_bckey_delete( bkey );
       return ak_false;
@@ -492,7 +492,7 @@
     if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                              "the ctr mode encryption test from GOST R 34.13-2015 is Ok" );
 
-    if( ak_bckey_xcrypt_ctr( bkey, out_3413_2015_ctr_text, out, 32, ctr_iv ) != ak_error_ok ) {
+    if( ak_bckey_xcrypt( bkey, out_3413_2015_ctr_text, out, 32, ctr_iv ) != ak_error_ok ) {
       ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong checking a secret key" );
       bkey = ak_bckey_delete( bkey );
       return ak_false;
