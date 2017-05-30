@@ -18,10 +18,13 @@
   password = ak_buffer_new_size( 128 );
   printf("password: ");
   if(( error = ak_password_read_buffer( password )) != ak_error_ok ) goto ext;
-  printf("\ninput value: %s (len: %ld, strlen %ld)\n",
+  printf("\ninput value: %s (len: %ld, strlen %ld)\ninput value as hexstr: %s\n",
         ak_buffer_get_str( password ),
         ak_buffer_get_size( password ),
-        strlen( ak_buffer_get_str( password )));
+        strlen( ak_buffer_get_str( password )),
+        str = ak_ptr_to_hexstr( ak_buffer_get_ptr(password), strlen( ak_buffer_get_str( password )), ak_false )
+  );
+  free( str );
 
  /* создаем ключ */
   key = ak_key_new_magma_password( password, description = ak_buffer_new_str( "test magma key" ));

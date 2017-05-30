@@ -109,13 +109,13 @@
 \vbox{%
 \vspace{0.1\textwidth}
 {\noindent\Huge\bfseries LIBAKRYPT}\\[2\baselineskip]
-{\Large\itshape Инструкция по сборке и установке}\\[1\baselineskip]
-{\Large\itshape Рекомендации по встраиванию}\\[1\baselineskip]
-{\Large\itshape Принципы реализации}\\[1\baselineskip]
+{\itshape Инструкция по сборке и установке}\\[1\baselineskip]
+{\itshape Рекомендации по встраиванию}\\[1\baselineskip]
+{\itshape Принципы реализации}\\[1\baselineskip]
 
 \vspace{0.5\textheight}
-{\large версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@} от \today\\[1\baselineskip]
-{\large Axel Kenzo \& The Mystical Company Of Belles Lettres (c) 2014 -- 2017}\\[1\baselineskip]
+{версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@} (дата сборки \today)\\[1\baselineskip]
+{Axel Kenzo \& The Company Of Belles Lettres (c) 2014 -- 2017}\\[1\baselineskip]
 }% end of vbox
 }% end of parbox
 }% end of hbox
