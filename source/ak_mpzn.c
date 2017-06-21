@@ -142,9 +142,8 @@
   }
 
  /* старший разряд - по модулю, остальное мусор */
-  memset( x, 0, size*sizeof( ak_uint64 ));
-  x[midx] = ak_random_uint64( generator )%p[midx];
-  if( midx > 0 ) ak_random_ptr( generator, x, midx*sizeof( ak_uint64 ));
+  ak_random_ptr( generator, x, size*sizeof( ak_uint64 ));
+  x[midx] %= p[midx];
 
  return ak_error_ok;
 }

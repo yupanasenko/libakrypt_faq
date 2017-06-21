@@ -23,7 +23,7 @@
  }
  /* вводим новое инициализационное значение для генератора */
  printf(" input an initial seed:  "); fflush(stdout); scanf("%lu", &seed );
- ak_random_randomize_uint64( generator, seed );
+ ak_random_randomize_ptr( generator, &seed, sizeof( ak_uint64 ));
 
  /* вывод десяти 64-х битных значений */
  printf(" -- seeded values:\n");

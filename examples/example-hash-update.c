@@ -33,7 +33,7 @@
   offset = 0; tail = data_size; /* устанавливаем счетчики в исходное положение */
   ak_update_clean( upd ); /* очищаем контекст структуры сжатия данных */
   while( tail > ak_hash_get_block_size( ctx )) {
-     size_t len = ak_random_uint8( generator )%ak_hash_get_block_size( ctx );
+     ak_uint8 len = ak_random_uint8( generator )%ak_hash_get_block_size( ctx );
      ak_update_update( upd, data+offset, len );
      offset += len; tail -= len;
   }
@@ -45,7 +45,9 @@
   offset = 0; tail = data_size; /* устанавливаем счетчики в исходное положение */
   ak_update_clean( upd ); /* обязательно очищаем контекст структуры сжатия данных */
   while( tail > 32 ) {
-     size_t len = ak_random_uint64( generator )%(16*ak_hash_get_block_size( ctx ));
+     size_t len = 0;
+     ak_random_ptr( generator, &len, 2 );
+     len %= 16*ak_hash_get_block_size( ctx );
      if( len > tail ) continue;
      ak_update_update( upd, data+offset, len );
      offset += len; tail -= len;
