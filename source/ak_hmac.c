@@ -64,8 +64,9 @@
   if( oid == NULL ) return ak_error_message( ak_error_undefined_function, __func__ ,
                                                                "using unsupported hash function" );
 
- /* согласно Р 50.1.113-2016 мы всегда создаем ключ K* имеющий длину 512 бит (64 байта) */
-  if(( error = ak_skey_create( &hkey->key, ctx->bsize )) != ak_error_ok )
+ /* согласно Р 50.1.113-2016 мы всегда создаем ключ K* имеющий длину 512 бит (64 байта)
+                                           при этом длина контрольной суммы всегда равна 8 байт */
+  if(( error = ak_skey_create( &hkey->key, ctx->bsize, 8 )) != ak_error_ok )
                         return ak_error_message( error, __func__, "wrong creation of secret key" );
 
  /* присваиваем указатель на контекст хеширования */

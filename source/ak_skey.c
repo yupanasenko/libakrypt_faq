@@ -39,17 +39,19 @@
     @param key контекст (структура struct skey) секретного ключа. Память под контекст
     должна быть выделена заранее.
     @param size размер секретного ключа в байтах
+    @param isize размер контрольной суммы ключа в байтах
     @return Функция возвращает \ref ak_error_ok (ноль) в случае успеха.
     В противном случае возвращается код ошибки.                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_skey_create( ak_skey skey, size_t size )
+ int ak_skey_create( ak_skey skey, size_t size, size_t isize )
 {
   int error = ak_error_ok;
-  if( skey == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ ,"using a null pointer to secret key" );
-    return ak_error_null_pointer;
-  }
-
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using a null pointer to secret key" );
+  if( size == 0 ) return ak_error_message( ak_error_zero_length, __func__,
+                                                              "using a zero length for key size" );
+  if( isize == 0 ) return ak_error_message( ak_error_zero_length, __func__,
+                                                        "using a zero length for integrity code" );
  /* Инициализируем данные базовыми значениями */
   if(( error = ak_buffer_create_function_size( &skey->key, malloc, free, size )) != ak_error_ok ) {
     ak_error_message( error, __func__ ,"wrong creation a secret key buffer" );
@@ -61,7 +63,7 @@
     ak_skey_destroy( skey );
     return error;
   }
-  if(( error = ak_buffer_create_size( &skey->icode, 8 )) != ak_error_ok ) {
+  if(( error = ak_buffer_create_size( &skey->icode, isize )) != ak_error_ok ) {
     ak_error_message( error, __func__ ,"wrong creation a integrity code buffer" );
     ak_skey_destroy( skey );
     return error;
@@ -77,8 +79,10 @@
     return error;
   }
 
- /* номер ключа генерится случайным образом. изменяется  при считывания с файлового носителя */
-  if(( error = ak_buffer_create_size( &skey->number, 33 )) != ak_error_ok ) {
+ /* номер ключа генерится случайным образом. изменяется позднее, например,
+                                                           при считывания с файлового носителя */
+  if(( error = ak_buffer_create_size( &skey->number,
+                                   ak_libakrypt_get_key_number_length()+1 )) != ak_error_ok ) {
     ak_error_message( error, __func__ ,"wrong creation key number buffer" );
     ak_skey_destroy( skey );
     return error;

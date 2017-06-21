@@ -35,7 +35,7 @@
   if( ak_skey_check_icode_xor( &hkey->key )) printf(" (Ok)\n"); else printf(" (No)\n");
   printf("number:     %s\n", ak_buffer_get_str( &hkey->key.number ));
 
-  printf("resource:   %lu\n", res.counter );
+  printf("resource:   %llu\n", ( unsigned long long int ) res.counter );
   if( hkey->key.oid == NULL ) printf("oid:       (null)\n");
    else printf("oid:        %s (%s)\n", ak_oid_get_name( hkey->key.oid ), ak_oid_get_id( hkey->key.oid ));
   printf("hash oid:   %s (%s)\n", ak_oid_get_name( hkey->ctx->oid ), ak_oid_get_id( hkey->ctx->oid ));

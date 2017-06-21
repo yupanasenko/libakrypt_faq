@@ -66,8 +66,9 @@
                                                         "using block cipher key with zero length" );
   if( !blocksize ) return ak_error_message( ak_error_zero_length, __func__,
                                                             "using cipher with zero block length" );
- /* теперь инициализируем данные */
-  if(( error = ak_skey_create( &bkey->key, keysize )) != ak_error_ok )
+ /* теперь инициализируем данные
+    для ключей блочного шифрования длина контрольной суммы всегда равна 8 байт */
+  if(( error = ak_skey_create( &bkey->key, keysize, 8 )) != ak_error_ok )
     return ak_error_message( error, __func__, "wrong creation of secret key" );
 
   if(( error = ak_buffer_create_size( &bkey->ivector, blocksize )) != ak_error_ok ) {
