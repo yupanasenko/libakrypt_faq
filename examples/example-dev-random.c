@@ -24,10 +24,7 @@
  /* создаем генератор, считывающий данные из /dev/random */
  if(( generator = ak_random_new_file( "/dev/random" )) != NULL ) {
     printf(" -- random values from /dev/random:\n");
-    for( i = 0; i < 128; i++ ) {
-      ak_uint8 byte = ak_random_uint8( generator );
-      printf(" %02X", byte );
-    }
+    for( i = 0; i < 128; i++ ) printf(" %02X", ak_random_uint8( generator ));
     printf("\n");
     generator = ak_random_delete( generator );
  }
