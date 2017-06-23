@@ -116,19 +116,24 @@ if( LIBAKRYPT_STATIC_LIB )
                      dev-random
                      key
                      )
+  foreach( programm ${EXAMPLES_LIST} )
+    # сборка статических примеров
+    add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
+    target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static ${PTHREAD_LIB} )
+  endforeach()
+  # добавляем список примеров, которые используют неэкспортируемые функции
   if( CMAKE_HOST_UNIX )
-    set( EXAMPLES_LIST "${EXAPLES_LIST} 
-                     hmac-key 
+    set( NOEXPORT_EXAMPLES_LIST ${EXAPLES_LIST}
+                     hmac-key
                      hmac-key-file
                      bckey
-                     context-manager" 
-                     ) 
-  endif() 
-  foreach( programm ${EXAMPLES_LIST} )
-      # сборка статических примеров
-      add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
-      target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-shared ${PTHREAD_LIB} )
-  endforeach()
+                     context-manager
+                     )
+    foreach( programm ${NOEXPORT_EXAMPLES_LIST} )
+       add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
+       target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static ${PTHREAD_LIB} )
+    endforeach()
+  endif()
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
