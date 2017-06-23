@@ -28,6 +28,14 @@
     printf("\n");
     generator = ak_random_delete( generator );
  }
+
+#ifdef _WIN32
+  generator = ak_random_new_winrtl();
+  for( i = 0; i < 128; i++ ) printf(" %02X", ak_random_uint8( generator ));
+  printf("\n");
+  generator = ak_random_delete( generator );
+#endif
+
  return ak_libakrypt_destroy();
 }
 

@@ -98,6 +98,7 @@ endif()
 if( LIBAKRYPT_STATIC_LIB )
   add_library( akrypt-static STATIC ${MAIN_HEADER} ${SOURCES} )
   set_target_properties( akrypt-static PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
+  target_link_libraries( akrypt-static ${PTHREAD_LIB} )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -113,16 +114,20 @@ if( LIBAKRYPT_STATIC_LIB )
                      hash-oids
                      random
                      dev-random
-                     bckey
-                     context-manager
-                     hmac-key
-                     hmac-key-file
                      key
                      )
+  if( CMAKE_HOST_UNIX )
+    set( EXAMPLES_LIST "${EXAPLES_LIST} 
+                     hmac-key 
+                     hmac-key-file
+                     bckey
+                     context-manager" 
+                     ) 
+  endif() 
   foreach( programm ${EXAMPLES_LIST} )
       # сборка статических примеров
       add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
-      target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static ${PTHREAD_LIB} )
+      target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-shared ${PTHREAD_LIB} )
   endforeach()
 endif()
 

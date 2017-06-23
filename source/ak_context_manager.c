@@ -316,16 +316,22 @@
  int ak_libakrypt_create_context_manager( void )
 {
   ak_random generator = NULL;
-  ak_error_message( ak_error_ok, __func__ ,
-                                   "TODO: correct random generator initialization under Windows");
+
 #ifdef __linux__
-  if(( generator = ak_random_new_file("/dev/random")) == NULL ) {
- #else
-  if(( generator = ak_random_new_lcg()) == NULL ) {
- #endif
+  if(( generator = ak_random_new_file("/dev/random")) == NULL ) 
     return ak_error_message( ak_error_get_value(), __func__,
-                          "wrong initialization of random number generator for context manager" );
-  }
+                             "wrong initialization of /dev/random for random number generation" );
+#else
+ #ifdef _WIN32
+   if(( generator = ak_random_new_winrtl( )) == NULL ) 
+     return ak_error_message( ak_error_get_value(), 
+                           __func__, "wrong initialization of crypto provider random generator" );
+ #else
+  if(( generator = ak_random_new_lcg()) == NULL ) 
+    return ak_error_message( ak_error_get_value(), 
+                                __func__, "wrong initialization of linear congruence generator" );
+ #endif
+#endif
 
  return ak_context_manager_create( &libakrypt_context_manager, generator );
 }

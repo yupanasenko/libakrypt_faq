@@ -28,6 +28,7 @@
 /*   ak_random.c                                                                                   */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_random.h>
+ #include <ak_tools.h>
  #include <time.h>
  #include <fcntl.h>
  #ifndef _WIN32
@@ -459,15 +460,82 @@
  return rnd;
 }
 
-
 /* ----------------------------------------------------------------------------------------------- */
 /*                                         реализация класса winrtl                                */
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef _WIN32
+ #include <windows.h>
+ #include <wincrypt.h>
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Класс для хранения контекста криптопровайдера. */
+ struct random_winrtl {
+  /*! \brief контекст криптопровайдера */
+  HCRYPTPROV handle;
+};
+ typedef struct random_winrtl *ak_random_winrtl;
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_random_winrtl_random( ak_random rnd, const ak_pointer ptr, const size_t size )
+{
+  if( !CryptGenRandom( (( ak_random_winrtl )rnd->data)->handle, size, ptr ))
+    return ak_error_message( ak_error_undefined_value, __func__, 
+                                                    "wrong generation of pseudo random sequence" );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_random_winrtl_free( ak_pointer ptr )
+{
+  ak_random_winrtl p = NULL;
+
+  if( ptr == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__ , "freeing a null pointer to data" );
+    return;
+  }
+  if( !CryptReleaseContext( (( ak_random_winrtl )ptr )->handle, 0 )) {
+    ak_error_message_fmt( ak_error_close_file,
+            __func__ , "wrong closing a system crypto provider with error: %x", GetLastError( ));
+  }
+  free( ptr );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  ak_random ak_random_new_winrtl( void )
 {
+  HCRYPTPROV handle = 0;
+  ak_random rnd = ak_random_new();
+  if( rnd == NULL ) { ak_error_message( ak_error_out_of_memory, __func__ ,
+                                  "incorrect memory allocation for a random generator" );
+    return NULL;
+  }
+  if(( rnd->data = malloc( sizeof( struct random_winrtl ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ ,
+           "incorrect memory allocation for an internal variables of random generator" );
+    return ( rnd = ak_random_delete( rnd ));
+  }
 
+  /* теперь мы открываем криптопровайдер для доступа к генерации случайных значений */
+  if( !CryptAcquireContext( &handle, NULL, NULL, PROV_RSA_FULL, 0 )) {
+    ak_error_message( ak_error_ok, __func__, 
+                           "key container for crypto provider not exists, trying to create it" );
+    if( !CryptAcquireContext( &handle, NULL, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET )) {
+      ak_error_message_fmt( ak_error_open_file, __func__ , 
+                       "wrong opening a system crypto provider with error: %x", GetLastError( ));
+      return ( rnd = ak_random_delete( rnd ));
+    }
+  }
+  (( ak_random_winrtl )rnd->data)->handle = handle;
+
+  rnd->next = NULL;
+  rnd->randomize =NULL;
+  rnd->randomize_ptr = NULL;
+  rnd->random = ak_random_winrtl_random;
+  rnd->free = ak_random_winrtl_free; /* эта функция должна закрыть открытый ранее криптопровайдер */
+
+ return rnd;
 }
+
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
