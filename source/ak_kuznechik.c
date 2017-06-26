@@ -348,18 +348,59 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция накладывает маску на ключ алгоритма блочного шифрования Кузнечик.               */
-/* ----------------------------------------------------------------------------------------------- */
- static int ak_kuznechik_set_mask_xor( ak_skey skey )
-{
- return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция изменяет маску ключа алгоритма блочного шифрования Кузнечик.                    */
 /* ----------------------------------------------------------------------------------------------- */
  static int ak_kuznechik_remask_xor( ak_skey skey )
 {
+  size_t idx = 0;
+  ak_uint64 mask[20], *kptr = NULL, *mptr = NULL;
+  int error = ak_error_ok;
+
+ /* выполняем стандартные проверки */
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using a null pointer to secret key" );
+  if( skey->key.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                                    "using undefined key buffer" );
+  if( skey->key.size != 32 ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                                           "key length is wrong" );
+  if( skey->mask.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                                   "using undefined mask buffer" );
+ /* перемаскируем ключ */
+  if(( error = ak_random_ptr( skey->generator, mask, skey->key.size )) != ak_error_ok )
+    return ak_error_message( error, __func__, "wrong generation random key mask");
+
+  for( idx = 0; idx < 4; idx++ ) {
+     ((ak_uint64 *) skey->key.data)[idx] ^= mask[idx];
+     ((ak_uint64 *) skey->key.data)[idx] ^= ((ak_uint64 *) skey->mask.data)[idx];
+     ((ak_uint64 *) skey->mask.data)[idx] = mask[idx];
+  }
+
+ /* перемаскируем раундовые ключи зашифрования */
+  if(( error = ak_random_ptr( skey->generator, mask, 20*sizeof( ak_uint64 ))) != ak_error_ok )
+    return ak_error_message( error, __func__, "wrong generation random key mask");
+
+  kptr = (ak_uint64 *) ( &(( struct kuznechik_ctx *)skey->data)->encryptkey );
+  mptr = (ak_uint64 *) ( &(( struct kuznechik_ctx *)skey->data)->encryptmask );
+  for( idx = 0; idx < 20; idx++ ) {
+     kptr[idx] ^= mask[idx];
+     kptr[idx] ^= mptr[idx];
+     mptr[idx] = mask[idx];
+  }
+
+ /* перемаскируем раундовые ключи расшифрования */
+  if(( error = ak_random_ptr( skey->generator, mask, 20*sizeof( ak_uint64 ))) != ak_error_ok )
+    return ak_error_message( error, __func__, "wrong generation random key mask");
+
+  kptr = (ak_uint64 *) ( &(( struct kuznechik_ctx *)skey->data)->decryptkey );
+  mptr = (ak_uint64 *) ( &(( struct kuznechik_ctx *)skey->data)->decryptmask );
+  for( idx = 0; idx < 20; idx++ ) {
+     kptr[idx] ^= mask[idx];
+     kptr[idx] ^= mptr[idx];
+     mptr[idx] = mask[idx];
+  }
+
+ /* удаляем старое */
+  memset( mask, 0, 20*sizeof( ak_uint64 ));
  return ak_error_ok;
 }
 
