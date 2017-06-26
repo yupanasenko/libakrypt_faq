@@ -169,8 +169,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция умножает вектор w на матрицу D, результат помещается в вектор x.                */
 /* ----------------------------------------------------------------------------------------------- */
- static void ak_kuznechik_matrix_mul_vector( const ak_uint8 D[16][16],
-                                                                      ak_uint128 *w, ak_uint128* x )
+ static void ak_kuznechik_matrix_mul_vector( const ak_uint8 D[16][16], ak_uint128 *w, ak_uint128* x )
 {
   int i = 0, j = 0;
   for( i = 0; i < 16; i++ ) {
@@ -299,19 +298,24 @@
   ak_random_ptr( skey->generator, xkey, sizeof( struct kuznechik_expanded_key ));
 
  /* только теперь выполняем алгоритм развертки ключа */
-  a0.q[0] = (( ak_uint128 *) skey->key.data )[0].q[0] ^ (( ak_uint128 *) skey->mask.data )[0].q[0];
-  a0.q[1] = (( ak_uint128 *) skey->key.data )[0].q[1] ^ (( ak_uint128 *) skey->mask.data )[0].q[1];
-  a1.q[0] = (( ak_uint128 *) skey->key.data )[1].q[0] ^ (( ak_uint128 *) skey->mask.data )[1].q[0];
-  a1.q[1] = (( ak_uint128 *) skey->key.data )[1].q[1] ^ (( ak_uint128 *) skey->mask.data )[1].q[1];
+  a0.q[0] = (( ak_uint128 *) skey->key.data )[0].q[0] ^ mkey->k[1].q[0];
+  ekey->k[1].q[0] = ( a0.q[0] ^= (( ak_uint128 *) skey->mask.data )[0].q[0] );
+  a0.q[1] = (( ak_uint128 *) skey->key.data )[0].q[1] ^ mkey->k[1].q[1];
+  ekey->k[1].q[1] = ( a0.q[1] ^= (( ak_uint128 *) skey->mask.data )[0].q[1] );
 
-  ekey->k[0].q[0] = a1.q[0]^mkey->k[0].q[0];
+  a1.q[0] = (( ak_uint128 *) skey->key.data )[1].q[0] ^ mkey->k[0].q[0];
+  ekey->k[0].q[0] = ( a1.q[0] ^= (( ak_uint128 *) skey->mask.data )[1].q[0] );
+  a1.q[1] = (( ak_uint128 *) skey->key.data )[1].q[1] ^ mkey->k[0].q[1];
+  ekey->k[0].q[1] = ( a1.q[1] ^= (( ak_uint128 *) skey->mask.data )[1].q[1] );
+
+  a1.q[0] ^= mkey->k[0].q[0];
   dkey->k[0].q[0] = a1.q[0]^xkey->k[0].q[0];
 
-  ekey->k[0].q[1] = a1.q[1]^mkey->k[0].q[1];
+  a1.q[1] ^= mkey->k[0].q[1];
   dkey->k[0].q[1] = a1.q[1]^xkey->k[0].q[1];
 
-  ekey->k[1].q[0] = a0.q[0]^mkey->k[1].q[0];
-  ekey->k[1].q[1] = a0.q[1]^mkey->k[1].q[1];
+  a0.q[0] ^= mkey->k[1].q[0];
+  a0.q[1] ^= mkey->k[1].q[1];
 
   ak_kuznechik_matrix_mul_vector( Linv, &a0, &dkey->k[1] );
   dkey->k[1].q[0] ^= xkey->k[1].q[0]; dkey->k[1].q[1] ^= xkey->k[1].q[1];
