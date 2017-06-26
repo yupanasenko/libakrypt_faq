@@ -82,7 +82,7 @@
     ak_error_message( error, __func__, "wrong buffer context creation" );
     return error;
   }
- /* меняем указатели на функции выделенияочистки памяти */
+ /* меняем указатели на функции выделения и очистки памяти */
   buff->free = ffree; buff->alloc = falloc;
  /* только теперь реально выделяем память под данные */
   if(( error = ak_buffer_alloc( buff, size )) != ak_error_ok ) {

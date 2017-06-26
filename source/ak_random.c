@@ -122,9 +122,8 @@
    return ak_error_null_pointer;
   }
   if( rnd->randomize != NULL ) return rnd->randomize( rnd );
-  ak_error_message( ak_error_undefined_function, __func__ ,
-                                                       "use a null pointer to a function pointer" );
-  return ak_error_undefined_function;
+  return ak_error_message( ak_error_undefined_function, __func__ ,
+                                                               "use a null pointer to a function" );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -141,9 +140,8 @@
    return ak_error_null_pointer;
   }
   if( rnd->randomize_ptr != NULL ) return rnd->randomize_ptr( rnd, ptr, size );
-  ak_error_message( ak_error_undefined_function, __func__ ,
-                                                       "use a null pointer to a function pointer" );
-  return ak_error_undefined_function;
+  return ak_error_message( ak_error_undefined_function, __func__ ,
+                                                               "use a null pointer to a function" );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -160,9 +158,8 @@
    return ak_error_null_pointer;
   }
   if( rnd->random != NULL ) return rnd->random( rnd, ptr, size );
-  ak_error_message( ak_error_undefined_function, __func__ ,
-                                                       "use a null pointer to a function pointer" );
-  return ak_error_undefined_function;
+  return ak_error_message( ak_error_undefined_function, __func__ ,
+                                                              "use a null pointer to a function " );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -193,16 +190,16 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_uint64 ak_random_uint64( ak_random rnd )
 {
-  ak_uint64 byte = 0;
+  ak_uint64 qword = 0;
   if( rnd == NULL ) {
     ak_error_message( ak_error_null_pointer,
                                            __func__ , "use a null pointer to a random generator" );
-    return byte;
+    return qword;
   }
-  if( rnd->random != NULL ) rnd->random( rnd, &byte, sizeof( ak_uint64 ));
+  if( rnd->random != NULL ) rnd->random( rnd, &qword, sizeof( ak_uint64 ));
      else ak_error_message( ak_error_undefined_function, __func__ ,
                                                        "use a null pointer to a function pointer" );
-  return byte;
+  return qword;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -479,7 +476,7 @@
  int ak_random_winrtl_random( ak_random rnd, const ak_pointer ptr, const size_t size )
 {
   if( !CryptGenRandom( (( ak_random_winrtl )rnd->data)->handle, size, ptr ))
-    return ak_error_message( ak_error_undefined_value, __func__, 
+    return ak_error_message( ak_error_undefined_value, __func__,
                                                     "wrong generation of pseudo random sequence" );
  return ak_error_ok;
 }
@@ -487,8 +484,6 @@
 /* ----------------------------------------------------------------------------------------------- */
  void ak_random_winrtl_free( ak_pointer ptr )
 {
-  ak_random_winrtl p = NULL;
-
   if( ptr == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "freeing a null pointer to data" );
     return;
@@ -517,10 +512,10 @@
 
   /* теперь мы открываем криптопровайдер для доступа к генерации случайных значений */
   if( !CryptAcquireContext( &handle, NULL, NULL, PROV_RSA_FULL, 0 )) {
-    ak_error_message( ak_error_ok, __func__, 
+    ak_error_message( ak_error_ok, __func__,
                            "key container for crypto provider not exists, trying to create it" );
     if( !CryptAcquireContext( &handle, NULL, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET )) {
-      ak_error_message_fmt( ak_error_open_file, __func__ , 
+      ak_error_message_fmt( ak_error_open_file, __func__ ,
                        "wrong opening a system crypto provider with error: %x", GetLastError( ));
       return ( rnd = ak_random_delete( rnd ));
     }
@@ -540,7 +535,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \example example-random.c                                                                      */
-/*! \example example-dev-random.c                                                                  */
+/*! \example example-random-sys.c                                                                  */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                    ak_random.c  */
 /* ----------------------------------------------------------------------------------------------- */

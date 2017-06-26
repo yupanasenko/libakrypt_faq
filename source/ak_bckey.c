@@ -76,11 +76,11 @@
       ak_error_message( ak_error_get_value(), __func__, "wrong destroying a secret key" );
     return ak_error_message( error, __func__, "wrong memory allocation for temporary vector");
   }
-  bkey->encrypt =      NULL;
-  bkey->decrypt =      NULL;
-  bkey->shedule_keys = NULL;
-  bkey->delete_keys =  NULL;
-  bkey->status =          0;
+  bkey->encrypt =       NULL;
+  bkey->decrypt =       NULL;
+  bkey->schedule_keys = NULL;
+  bkey->delete_keys =   NULL;
+  bkey->status =           0;
  return ak_error_ok;
 }
 
@@ -129,11 +129,11 @@
   if(( error = ak_skey_destroy( &bkey->key )) != ak_error_ok )
     ak_error_message( error, __func__, "wrong destroying a secret key" );
 
-  bkey->encrypt =      NULL;
-  bkey->decrypt =      NULL;
-  bkey->shedule_keys = NULL;
-  bkey->delete_keys =  NULL;
-  bkey->status =          0;
+  bkey->encrypt =       NULL;
+  bkey->decrypt =       NULL;
+  bkey->schedule_keys = NULL;
+  bkey->delete_keys =   NULL;
+  bkey->status =           0;
 
  return error;
 }
@@ -172,6 +172,10 @@
   if( size%bkey->ivector.size != 0 ) return ak_error_message( ak_error_wrong_block_cipher_length,
                             __func__ , "the length of input data is not divided by block length" );
 
+ /* проверяем целостность ключа */
+  if( bkey->key.check_icode( &bkey->key ) != ak_true )
+    return ak_error_message( ak_error_wrong_key_icode, __func__,
+                                                  "incorrect integrity code of secret key value" );
  /* уменьшаем значение ресурса ключа */
   blocks = (ak_uint64 ) size/bkey->ivector.size;
   if( bkey->key.resource.counter < blocks ) return ak_error_message( ak_error_low_key_resource,
@@ -215,6 +219,11 @@
  /* выполняем проверку размера входных данных */
   if( size%bkey->ivector.size != 0 ) return ak_error_message( ak_error_wrong_block_cipher_length,
                             __func__ , "the length of input data is not divided on block length" );
+
+ /* проверяем целостность ключа */
+  if( bkey->key.check_icode( &bkey->key ) != ak_true )
+    return ak_error_message( ak_error_wrong_key_icode, __func__,
+                                                  "incorrect integrity code of secret key value" );
 
  /* уменьшаем значение ресурса ключа */
   blocks = (ak_uint64 ) size/bkey->ivector.size;
@@ -270,6 +279,10 @@
             tail = (ak_uint64)size%bkey->ivector.size;
   ak_uint64 yaout[2], *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
 
+ /* проверяем целостность ключа */
+  if( bkey->key.check_icode( &bkey->key ) != ak_true )
+    return ak_error_message( ak_error_wrong_key_icode, __func__,
+                                                   "incorrect integrity code of secret key value" );
  /* уменьшаем значение ресурса ключа */
   if( bkey->key.resource.counter < ( blocks + ( tail > 0 )))
     return ak_error_message( ak_error_low_key_resource,
@@ -282,8 +295,8 @@
 
   if( blocks ) {
     if( bkey->ivector.size == 8 ) { /* здесь длина блока равна 64 бита */
-      memcpy( bkey->ivector.data, iv, 4 );
-      ((ak_uint64 *)bkey->ivector.data)[0] <<= 32;
+      memcpy( ((ak_uint8 *)bkey->ivector.data)+4, iv, 4 );
+      memset( bkey->ivector.data, 0, 4 );
       do {
           bkey->encrypt( &bkey->key, bkey->ivector.data, yaout );
           *outptr = *inptr ^ yaout[0];
@@ -292,7 +305,16 @@
     }
 
     if( bkey->ivector.size == 16 ) { /* здесь длина блока равна 128 бит */
-
+      memcpy( ((ak_uint8 *)bkey->ivector.data)+8, iv, 8 );
+      memset( bkey->ivector.data, 0, 8 );
+      do {
+          bkey->encrypt( &bkey->key, bkey->ivector.data, yaout );
+          *outptr = *inptr ^ yaout[0]; outptr++; inptr++;
+          *outptr = *inptr ^ yaout[1]; outptr++; inptr++;
+          ((ak_uint64 *)bkey->ivector.data)[0]++; // здесь мы не учитываем знак переноса
+                                                  // потому что объем данных на один ключе ее должен превышать
+                                                  // 2^64 блоков (контролируется через ресурс ключа)
+      } while( --blocks > 0 );
     }
   }
 
@@ -337,6 +359,10 @@
   if( bkey->status&ak_flag_xcrypt_update )
     return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                   "using this function with previously incorrect xcrypt operation");
+ /* проверяем целостность ключа */
+  if( bkey->key.check_icode( &bkey->key ) != ak_true )
+    return ak_error_message( ak_error_wrong_key_icode, __func__,
+                                                   "incorrect integrity code of secret key value" );
  /* уменьшаем значение ресурса ключа */
   if( bkey->key.resource.counter < ( blocks + ( tail > 0 )))
     return ak_error_message( ak_error_low_key_resource,
@@ -354,7 +380,12 @@
     }
 
     if( bkey->ivector.size == 16 ) { /* здесь длина блока равна 128 бит */
-
+      do {
+          bkey->encrypt( &bkey->key, bkey->ivector.data, yaout );
+          *outptr = *inptr ^ yaout[0]; outptr++; inptr++;
+          *outptr = *inptr ^ yaout[1]; outptr++; inptr++;
+          ((ak_uint64 *)bkey->ivector.data)[0]++;
+        } while( --blocks > 0 );
     }
   }
 

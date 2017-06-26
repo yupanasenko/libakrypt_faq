@@ -318,17 +318,17 @@
   ak_random generator = NULL;
 
 #ifdef __linux__
-  if(( generator = ak_random_new_file("/dev/random")) == NULL ) 
+  if(( generator = ak_random_new_file("/dev/random")) == NULL )
     return ak_error_message( ak_error_get_value(), __func__,
                              "wrong initialization of /dev/random for random number generation" );
 #else
  #ifdef _WIN32
-   if(( generator = ak_random_new_winrtl( )) == NULL ) 
-     return ak_error_message( ak_error_get_value(), 
+   if(( generator = ak_random_new_winrtl( )) == NULL )
+     return ak_error_message( ak_error_get_value(),
                            __func__, "wrong initialization of crypto provider random generator" );
  #else
-  if(( generator = ak_random_new_lcg()) == NULL ) 
-    return ak_error_message( ak_error_get_value(), 
+  if(( generator = ak_random_new_lcg()) == NULL )
+    return ak_error_message( ak_error_get_value(),
                                 __func__, "wrong initialization of linear congruence generator" );
  #endif
 #endif
@@ -479,6 +479,9 @@
   if(( error = ak_key_check_engine( key, block_cipher )) != ak_error_ok )
     return ak_error_message( error, __func__, "using non block cipher key descriptor");
 
+ /* модифицируем статус ключа */
+  libakrypt_context_manager.array[key]->status = node_modified;
+ /* и только потом запускаем криптографическое преобразование */
   if(( error = ak_bckey_xcrypt(( ak_bckey )libakrypt_context_manager.array[key]->ctx,
                                                              in, out, size, iv )) != ak_error_ok )
     return ak_error_message( error, __func__, "invalid result of xcrypt operation" );
@@ -494,6 +497,9 @@
   if(( error = ak_key_check_engine( key, block_cipher )) != ak_error_ok )
     return ak_error_message( error, __func__, "using non block cipher key descriptor");
 
+ /* модифицируем статус ключа */
+  libakrypt_context_manager.array[key]->status = node_modified;
+ /* и только потом запускаем криптографическое преобразование */
   if(( error = ak_bckey_xcrypt_update(( ak_bckey )libakrypt_context_manager.array[key]->ctx,
                                                                    in, out, size )) != ak_error_ok )
     return ak_error_message( error, __func__, "invalid result of xcrypt operation" );

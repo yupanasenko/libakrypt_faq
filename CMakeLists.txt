@@ -24,10 +24,10 @@ set( MINOR_VERSION 32 )
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 
+# для включения опции cmake -D LIBAKRYPT_GMP_TESTS=ON path
 option( LIBAKRYPT_STATIC_LIB "Build the static library" ON )
 option( LIBAKRYPT_SHARED_LIB "Build the shared library" OFF )
 option( LIBAKRYPT_GMP_TESTS "Build test programs with libGMP" OFF)
-# для включения опции cmake -D LIBAKRYPT_GMP_TESTS=ON path
 
 # -------------------------------------------------------------------------------------------------- #
 # описание исходных кодов
@@ -54,7 +54,7 @@ set( SOURCES source/ak_tools.c
              source/ak_skey.c
              source/ak_bckey.c
              source/ak_magma.c
-#             source/ak_kuznetchik.c
+             source/ak_kuznechik.c
              source/ak_context_manager.c
              source/ak_hmac.c
              source/ak_mpzn.c
@@ -103,37 +103,45 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # сборка тестовых примеров
+set( EXAMPLES_LIST intro
+                   log
+                   oid
+                   oid-magma
+                   hash
+                   hash-parts
+                   hash-update
+                   hash-oids
+                   random
+                   random-sys
+                   key
+   )
+# добавляем "неправильные" примеры, которые используют неэкспортируемые функции
+set( NOEXPORT_EXAMPLES_LIST ${EXAPLES_LIST}
+                   hmac-key
+                   hmac-key-file
+                   bckey
+                   context-manager
+   )
+
+# организуем сборку примеров
 if( LIBAKRYPT_STATIC_LIB )
-  set( EXAMPLES_LIST intro
-                     log
-                     oid
-                     oid-magma
-                     hash
-                     hash-parts
-                     hash-update
-                     hash-oids
-                     random
-                     dev-random
-                     key
-                     )
   foreach( programm ${EXAMPLES_LIST} )
-    # сборка статических примеров
     add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
     target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static ${PTHREAD_LIB} )
   endforeach()
-  # добавляем список примеров, которые используют неэкспортируемые функции
   if( CMAKE_HOST_UNIX )
-    set( NOEXPORT_EXAMPLES_LIST ${EXAPLES_LIST}
-                     hmac-key
-                     hmac-key-file
-                     bckey
-                     context-manager
-                     )
     foreach( programm ${NOEXPORT_EXAMPLES_LIST} )
        add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
        target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static ${PTHREAD_LIB} )
     endforeach()
   endif()
+endif()
+
+if( LIBAKRYPT_SHARED_LIB )
+  foreach( programm ${EXAMPLES_LIST} )
+    add_executable( example-dynamic-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
+    target_link_libraries( example-dynamic-${programm}${LIBAKRYPT_EXT} akrypt-shared ${PTHREAD_LIB} )
+  endforeach()
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -163,9 +171,10 @@ endif()
 add_custom_target( strip strip --strip-all ${CMAKE_BINARY_DIR}/example-* )
 
 # -------------------------------------------------------------------------------------------------- #
-include( MakeDist )
-include( MakeDoc )
-message("-- Compiler options is ${CMAKE_C_FLAGS}" )
+if( CMAKE_HOST_UNIX )
+  include( MakeDist )
+  include( MakeDoc )
+endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # инсталляция библиотеки (только для UNIX)
@@ -186,4 +195,7 @@ if( CMAKE_HOST_UNIX )
   install( FILES libakrypt.conf DESTINATION ${LIBAKRYPT_CONF} )
 endif()
 
+# -------------------------------------------------------------------------------------------------- #
+
+message("-- Compiler options is ${CMAKE_C_FLAGS}" )
 # -------------------------------------------------------------------------------------------------- #

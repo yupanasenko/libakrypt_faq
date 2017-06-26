@@ -451,7 +451,7 @@ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_uint32 ak_libakrypt_get_kuznetchik_resource( void )
+ ak_uint32 ak_libakrypt_get_kuznechik_resource( void )
 {
  return libakrypt_options.cipher_key_kuznechik_block_resource;
 }
@@ -626,7 +626,7 @@ return ak_error_ok;
     ak_error_message_fmt( ak_error_ok, __func__, "log level is %u", libakrypt_options.log_level );
     ak_error_message_fmt( ak_error_ok, __func__, "magma block ciper resource is %u",
                                                libakrypt_options.cipher_key_magma_block_resource );
-    ak_error_message_fmt( ak_error_ok, __func__, "kuznetchik block ciper resource is %u",
+    ak_error_message_fmt( ak_error_ok, __func__, "kuznechik block ciper resource is %u",
                                            libakrypt_options.cipher_key_kuznechik_block_resource );
     ak_error_message_fmt( ak_error_ok, __func__, "key number length is %u bytes",
                                                              libakrypt_options.key_number_length );
@@ -737,18 +737,18 @@ return ak_true;
     return ak_false;
   }
 
-// /* вырабатываем долговременные параметры алгоритма Кузнечик */
-// if( ak_crypt_kuznetchik_init_tables() != ak_error_ok ) {
-//   ak_error_message( ak_error_get_value(), __func__ ,
-//                                           "wrong creation of kuznetchik predefined tables" );
-//   return ak_false;
-// }
+ /* вырабатываем долговременные параметры алгоритма Кузнечик */
+  if( ak_kuznechik_init_tables() != ak_error_ok ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                             "wrong creation of kuznec hik predefined tables" );
+    return ak_false;
+  }
 
-// /* тестируем алгоритм Кузнечик (ГОСТ Р 34.12-2015) */
-// if( ak_cipher_key_test_kuznetchik() != ak_true ) {
-//   ak_error_message( ak_error_get_value(), __func__ , "incorrect block cipher kuznetchik testing" );
-//   return ak_false;
-// }
+ /* тестируем алгоритм Кузнечик (ГОСТ Р 34.12-2015) */
+  if( ak_bckey_test_kuznechik() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect block cipher kuznechik testing" );
+    return ak_false;
+  }
 
   if( audit >= ak_log_maximum )
     ak_error_message( ak_error_ok, __func__ , "testing block ciphers ended successfully" );
