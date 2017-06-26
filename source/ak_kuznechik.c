@@ -270,7 +270,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  static int ak_kuznechik_schedule_keys( ak_skey skey )
 {
-  ak_uint128 a0, a1, c, t;
+  ak_uint128 a0, a1, t, z0, z1;
   struct kuznechik_expanded_key *ekey = NULL, *mkey = NULL;
   struct kuznechik_expanded_key *dkey = NULL, *xkey = NULL;
   int i = 0, j = 0, l = 0, idx = 0, kdx = 1;
@@ -320,39 +320,49 @@
   dkey->k[1].q[0] ^= t.q[0]; dkey->k[1].q[1] ^= t.q[1];
 
  /* к этому моменту величины a0 и a1 содержат замаскированные значения */
-
-  a0.q[0] ^= mkey->k[1].q[0]; a0.q[1] ^= mkey->k[1].q[1];
-  a1.q[0] ^= mkey->k[0].q[0]; a1.q[1] ^= mkey->k[0].q[1];
+  z0.q[0] = mkey->k[1].q[0]; z0.q[1] = mkey->k[1].q[1];
+  z1.q[0] = mkey->k[0].q[0]; z1.q[1] = mkey->k[0].q[1];
 
   for( j = 0; j < 4; j++ ) {
      for( i = 0; i < 8; i++ ) {
-        c.q[0] = ++idx; /* вычисляем константу алгоритма согласно ГОСТ Р 34.12-2015 */
-        c.q[1] = 0;
-        ak_kuznechik_l1( &c );
+        t.q[0] = ++idx; /* вычисляем константу алгоритма согласно ГОСТ Р 34.12-2015 */
+        t.q[1] = 0;
+        ak_kuznechik_l1( &t );
 
-        t.q[0] = a1.q[0] ^ c.q[0]; t.q[1] = a1.q[1] ^ c.q[1];
+        t.q[0] ^= a1.q[0]; t.q[0] ^= z1.q[0];
+        t.q[1] ^= a1.q[1]; t.q[1] ^= z1.q[1];
 
         for( l = 0; l < 16; l++ ) t.b[l] = pi[t.b[l]];
         ak_kuznechik_l1( &t );
 
-        t.q[0] ^= a0.q[0]; t.q[1] ^= a0.q[1];
+        t.q[0] ^= a0.q[0]; t.q[0] ^= z0.q[0];
+        t.q[1] ^= a0.q[1]; t.q[1] ^= z0.q[1];
+
         a0.q[0] = a1.q[0]; a0.q[1] = a1.q[1];
         a1.q[0] = t.q[0];  a1.q[1] = t.q[1];
+
+        z0.q[0] = z1.q[0]; z1.q[0] = 0;
+        z0.q[1] = z1.q[1]; z1.q[1] = 0;
      }
+
      kdx++;
-     ekey->k[kdx].q[0] = a1.q[0]^mkey->k[kdx].q[0];
-     ekey->k[kdx].q[1] = a1.q[1]^mkey->k[kdx].q[1];
+     ekey->k[kdx].q[0] = a1.q[0] ^ mkey->k[kdx].q[0];
+     ekey->k[kdx].q[1] = a1.q[1] ^ mkey->k[kdx].q[1];
      ak_kuznechik_matrix_mul_vector( Linv, &a1, &dkey->k[kdx] );
      dkey->k[kdx].q[0] ^= xkey->k[kdx].q[0];
      dkey->k[kdx].q[1] ^= xkey->k[kdx].q[1];
 
      kdx++;
-     ekey->k[kdx].q[0] = a0.q[0]^mkey->k[kdx].q[0];
-     ekey->k[kdx].q[1] = a0.q[1]^mkey->k[kdx].q[1];
+     ekey->k[kdx].q[0] = a0.q[0] ^ mkey->k[kdx].q[0];
+     ekey->k[kdx].q[1] = a0.q[1] ^ mkey->k[kdx].q[1];
      ak_kuznechik_matrix_mul_vector( Linv, &a0, &dkey->k[kdx] );
      dkey->k[kdx].q[0] ^= xkey->k[kdx].q[0];
      dkey->k[kdx].q[1] ^= xkey->k[kdx].q[1];
   }
+  ak_random_ptr( skey->generator, &a0, 16 );
+  ak_random_ptr( skey->generator, &a1, 16 );
+  ak_random_ptr( skey->generator, &t, 16 );
+
  return ak_error_ok;
 }
 
