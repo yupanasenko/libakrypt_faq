@@ -308,17 +308,21 @@
   a1.q[1] = (( ak_uint128 *) skey->key.data )[1].q[1] ^ mkey->k[0].q[1];
   ekey->k[0].q[1] = ( a1.q[1] ^= (( ak_uint128 *) skey->mask.data )[1].q[1] );
 
-  a1.q[0] ^= mkey->k[0].q[0];
-  dkey->k[0].q[0] = a1.q[0]^xkey->k[0].q[0];
-
-  a1.q[1] ^= mkey->k[0].q[1];
-  dkey->k[0].q[1] = a1.q[1]^xkey->k[0].q[1];
-
-  a0.q[0] ^= mkey->k[1].q[0];
-  a0.q[1] ^= mkey->k[1].q[1];
+  dkey->k[0].q[0] = a1.q[0] ^ xkey->k[0].q[0];
+  dkey->k[0].q[0] ^= mkey->k[0].q[0];
+  dkey->k[0].q[1] = a1.q[1] ^ xkey->k[0].q[1];
+  dkey->k[0].q[1] ^= mkey->k[0].q[1];
 
   ak_kuznechik_matrix_mul_vector( Linv, &a0, &dkey->k[1] );
+  ak_kuznechik_matrix_mul_vector( Linv, &mkey->k[1], &t );
+
   dkey->k[1].q[0] ^= xkey->k[1].q[0]; dkey->k[1].q[1] ^= xkey->k[1].q[1];
+  dkey->k[1].q[0] ^= t.q[0]; dkey->k[1].q[1] ^= t.q[1];
+
+ /* к этому моменту величины a0 и a1 содержат замаскированные значения */
+
+  a0.q[0] ^= mkey->k[1].q[0]; a0.q[1] ^= mkey->k[1].q[1];
+  a1.q[0] ^= mkey->k[0].q[0]; a1.q[1] ^= mkey->k[0].q[1];
 
   for( j = 0; j < 4; j++ ) {
      for( i = 0; i < 8; i++ ) {
@@ -327,6 +331,7 @@
         ak_kuznechik_l1( &c );
 
         t.q[0] = a1.q[0] ^ c.q[0]; t.q[1] = a1.q[1] ^ c.q[1];
+
         for( l = 0; l < 16; l++ ) t.b[l] = pi[t.b[l]];
         ak_kuznechik_l1( &t );
 
