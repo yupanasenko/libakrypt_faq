@@ -731,6 +731,89 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает контекст ключа алгоритма блочного шифрования Кузнечик (ГОСТ 34.12-2015)
+    и инициализирует его случайным значением.
+
+    Значение ключа вырабатывается генератором псевдо-случайных чисел.
+    После присвоения ключа производится его развертка, маскирование и выработка контрольной суммы.
+
+    @param generator Указатель на генератор псевдо-случайных чисел.
+
+    @return Функция возвращает указатель на созданный контекст. В случае возникновения ошибки,
+    возвращается NULL, код ошибки может быть получен с помощью вызова функции ak_error_get_value() */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bckey ak_bckey_new_kuznechik_random( ak_random generator )
+{
+  int error = ak_error_ok;
+  ak_bckey bkey = NULL;
+
+ /* проверяем генератор */
+  if( generator == NULL ) { ak_error_message( ak_error_null_pointer, __func__ ,
+                                              "using a null pointer to random number generator" );
+    return NULL;
+  }
+
+ /* создаем контекст ключа */
+  if(( bkey = ak_bckey_kuznechik_new( )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect creation of kuznechik secret key" );
+    return NULL;
+  }
+
+ /* вырабатываем случайные данные */
+  if(( error = ak_skey_assign_random( &bkey->key, generator )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "incorrect generation of secret key data" );
+    return ( bkey = ak_bckey_delete( bkey ));
+  }
+
+ /* производим развертку ключа */
+  if( bkey->schedule_keys != NULL )
+    if(( error = bkey->schedule_keys( &bkey->key )) != ak_error_ok) {
+      ak_error_message( error, __func__ , "incorrect scheduling of key value" );
+      return ( bkey = ak_bckey_delete( bkey ));
+    }
+
+ return bkey;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bckey ak_bckey_new_kuznechik_password( const ak_pointer pass, const size_t size )
+{
+  int error = ak_error_ok;
+  ak_bckey bkey = NULL;
+
+ /* проверяем входной буффер */
+  if( pass == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to password" );
+    return NULL;
+  }
+  if( size == 0 ) {
+    ak_error_message( ak_error_zero_length, __func__, "using a password with zero length" );
+    return NULL;
+  }
+
+ /* создаем контекст ключа */
+  if(( bkey = ak_bckey_kuznechik_new( )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect creation of magma secret key" );
+    return NULL;
+  }
+
+ /* вырабатываем значение ключа */
+  if(( error = ak_skey_assign_password( &bkey->key, pass, size )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "incorrect generation of secret key data" );
+    return ( bkey = ak_bckey_delete( bkey ));
+  }
+
+ /* производим развертку ключа */
+  if( bkey->schedule_keys != NULL )
+    if(( error = bkey->schedule_keys( &bkey->key )) != ak_error_ok) {
+      ak_error_message( error, __func__ , "incorrect scheduling of key value" );
+      return ( bkey = ak_bckey_delete( bkey ));
+    }
+
+ return bkey;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Тестирование производится в соответствии с ГОСТ Р 34.12-2015 и ГОСТ Р 34.13-2015.              */
 /* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_bckey_test_kuznechik( void )

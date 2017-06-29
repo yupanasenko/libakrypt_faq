@@ -439,6 +439,34 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*!  @param oid указатель на структуру struct oid
+     @return Возвращается символьное описание криптографического механизма. Данное описание есть
+     константная строка, память из под которой не должна удаляться пользователем.
+     При возникновении ошибки ее код может быть получен при посощи вызова ak_error_get_value().    */
+/* ----------------------------------------------------------------------------------------------- */
+ const char *ak_oid_get_engine_str( ak_oid oid )
+{
+  if( oid == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to an oid" );
+    return ak_null_string;
+  }
+   switch( oid->engine )
+  {
+    case undefined_engine:  return "undefined_engine";
+    case identifier:        return "identifier";
+    case block_cipher:      return "block_cipher";
+    case stream_cipher:     return "stream_cipher";
+    case hybrid_cipher:     return "hybrid_cipher";
+    case hash_function:     return "hash_function";
+    case mac_function:      return "mac_function";
+    case digital_signature: return "digital_signature";
+    case random_generator:  return "random_generator";
+    default:                return ak_null_string;
+  }
+ return ak_null_string;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*!  @param oid указатель на структуру struct oid
      return Возвращается значение режима криптографического механизма. При возникновении ошибки
      возвращается ее код.                                                                          */
 /* ----------------------------------------------------------------------------------------------- */

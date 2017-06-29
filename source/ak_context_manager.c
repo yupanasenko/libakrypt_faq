@@ -350,7 +350,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param password Буффер, содержащий в себе значение пароля, из которого вырабатываемтся ключ
     @param description Пользовательское описание ключа (буффер, содержащий строку символов).
-    После создания ключа владение буффером с пользовательским описанием переход
+    После создания ключа владение буффером с пользовательским описанием переходит
     к дескриптору ключа.
 
     @return Функция возвращает дескриптор созданного ключа. Если создание ключа произошло с ошибкой,
@@ -389,7 +389,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param description Пользовательское описание ключа (буффер, содержащий строку символов).
-    После создания ключа владение буффером с пользовательским описанием переход
+    После создания ключа владение буффером с пользовательским описанием переходит
     к дескриптору ключа.
 
     @return Функция возвращает дескриптор созданного ключа. Если создание ключа произошло с ошибкой,
@@ -415,6 +415,116 @@
     bkey = ak_bckey_delete( bkey );
   }
  return key;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param password Буффер, содержащий в себе значение пароля, из которого вырабатываемтся ключ
+    @param description Пользовательское описание ключа (буффер, содержащий строку символов).
+    После создания ключа владение буффером с пользовательским описанием переходит
+    к дескриптору ключа.
+
+    @return Функция возвращает дескриптор созданного ключа. Если создание ключа произошло с ошибкой,
+    то возвращается отрицательное значение \ref ak_error_wrong_key. Код ошибки может быть получен
+    с помощью вызова функции ak_error_get_value()                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_key ak_key_new_kuznechik_password( ak_buffer password, ak_buffer description )
+{
+  ak_bckey bkey = NULL;
+  ak_key key = ak_error_wrong_key;
+
+  if( password == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to password buffer" );
+    return ak_error_wrong_key;
+  }
+  if( password->data == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to password data" );
+    return ak_error_wrong_key;
+  }
+  if( password->size == 0 ) {
+    ak_error_message( ak_error_zero_length, __func__, "using a password with zero length" );
+    return ak_error_wrong_key;
+  }
+  if(( bkey = ak_bckey_new_kuznechik_password( password->data, strlen( password->data ))) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong creation a block cipher key" );
+    return ak_error_wrong_key;
+  }
+
+  if(( key = ak_context_manager_add_node( &libakrypt_context_manager, bkey, block_cipher,
+                                   description, ak_bckey_delete )) == ak_error_wrong_key ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong initialization of block cipher key");
+    bkey = ak_bckey_delete( bkey );
+  }
+ return key;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param description Пользовательское описание ключа (буффер, содержащий строку символов).
+    После создания ключа владение буффером с пользовательским описанием переходит
+    к дескриптору ключа.
+
+    @return Функция возвращает дескриптор созданного ключа. Если создание ключа произошло с ошибкой,
+    то возвращается отрицательное значение \ref ak_error_wrong_key. Код ошибки может быть получен
+    с помощью вызова функции ak_error_get_value()                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_key ak_key_new_kuznechik_random( ak_buffer description )
+{
+  ak_bckey bkey = NULL;
+  ak_key key = ak_error_wrong_key;
+
+  if( libakrypt_context_manager.generator == NULL ) {
+    ak_error_message( ak_error_undefined_value, __func__ , "using non initialized context managment");
+    return ak_error_wrong_key;
+  }
+  if(( bkey = ak_bckey_new_kuznechik_random( libakrypt_context_manager.generator )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong creation a block cipher key" );
+    return ak_error_wrong_key;
+  }
+  if(( key = ak_context_manager_add_node( &libakrypt_context_manager, bkey, block_cipher,
+                                      description, ak_bckey_delete )) == ak_error_wrong_key ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong initialization of block cipher key");
+    bkey = ak_bckey_delete( bkey );
+  }
+ return key;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_key ak_key_new_oid_password( ak_oid oid, ak_buffer password, ak_buffer description )
+{
+ /* пытаемся создать ключ блочного алгоритма шифрования */
+  if(( ak_oid_get_engine( oid ) == block_cipher ) && (ak_oid_get_mode( oid ) == algorithm )) {
+    if( strncmp( "magma", ak_oid_get_name( oid ), 5 ) == 0 )
+      return ak_key_new_magma_password( password, description );
+    if( strncmp( "kuznechik", ak_oid_get_name( oid ), 9 ) == 0 )
+      return ak_key_new_kuznechik_password( password, description );
+
+    ak_error_message( ak_error_oid_engine, __func__, "unexpected type of block cipher" );
+    return ak_error_wrong_key;
+  }
+
+ /* пытаемся создать ключ алгоритма выработки имитовставки */
+
+  ak_error_message( ak_error_oid, __func__, "unexpected key oid" );
+ return ak_error_wrong_key;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_key ak_key_new_oid_random( ak_oid oid, ak_buffer description )
+{
+ /* пытаемся создать ключ блочного алгоритма шифрования */
+  if(( ak_oid_get_engine( oid ) == block_cipher ) && (ak_oid_get_mode( oid ) == algorithm )) {
+    if( strncmp( "magma", ak_oid_get_name( oid ), 5 ) == 0 )
+      return ak_key_new_magma_random( description );
+    if( strncmp( "kuznechik", ak_oid_get_name( oid ), 9 ) == 0 )
+      return ak_key_new_kuznechik_random( description );
+
+    ak_error_message( ak_error_oid_engine, __func__, "unexpected type of block cipher" );
+    return ak_error_wrong_key;
+  }
+
+ /* пытаемся создать ключ алгоритма выработки имитовставки */
+
+  ak_error_message( ak_error_oid, __func__, "unexpected key oid" );
+ return ak_error_wrong_key;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -468,6 +578,52 @@
     return NULL;
   }
  return libakrypt_context_manager.array[key]->description;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param key дескриптор ключа, для которого возвращается OID.
+    @return Функция возвращает указатель на буффер с пользовательским описанием ключа.
+    Если дескриптор ключа задан не верно, то будет возвращено значение NULL. Код возникшей
+    ошибки может быть получен с помощью вызова функции ak_error_get_value()                        */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_oid ak_key_get_oid( ak_key key )
+{
+  int error = ak_key_check( key );
+  if( error != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong key descriptor");
+    return NULL;
+  }
+
+ /* возвращаем OID для алгоритма блочного шифрования */
+  if( libakrypt_context_manager.array[key]->engine == block_cipher ) {
+    ak_bckey bkey = libakrypt_context_manager.array[key]->ctx;
+    return bkey->key.oid;
+  }
+
+ ak_error_message( ak_error_oid_engine, __func__, "unexpected type of key engine" );
+ return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param key дескриптор ключа, для которого возвращается номер ключа.
+    @return Функция возвращает указатель на буффер с шестнадцатеричным номером ключа.              */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_key_get_number( ak_key key )
+{
+  int error = ak_key_check( key );
+  if( error != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong key descriptor");
+    return NULL;
+  }
+
+ /* возвращаем OID для алгоритма блочного шифрования */
+  if( libakrypt_context_manager.array[key]->engine == block_cipher ) {
+    ak_bckey bkey = libakrypt_context_manager.array[key]->ctx;
+    return &(bkey->key.number);
+  }
+
+  ak_error_message( ak_error_oid_engine, __func__, "unexpected type of key engine" );
+ return NULL;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

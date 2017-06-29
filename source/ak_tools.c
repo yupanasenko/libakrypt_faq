@@ -624,9 +624,9 @@ return ak_error_ok;
  if( libakrypt_options.log_level > ak_log_standard ) {
     ak_error_message_fmt( ak_error_ok, __func__, "libakrypt version: %s", ak_libakrypt_version( ));
     ak_error_message_fmt( ak_error_ok, __func__, "log level is %u", libakrypt_options.log_level );
-    ak_error_message_fmt( ak_error_ok, __func__, "magma block ciper resource is %u",
+    ak_error_message_fmt( ak_error_ok, __func__, "magma block ciper resource is %u blocks",
                                                libakrypt_options.cipher_key_magma_block_resource );
-    ak_error_message_fmt( ak_error_ok, __func__, "kuznechik block ciper resource is %u",
+    ak_error_message_fmt( ak_error_ok, __func__, "kuznechik block ciper resource is %u blocks",
                                            libakrypt_options.cipher_key_kuznechik_block_resource );
     ak_error_message_fmt( ak_error_ok, __func__, "key number length is %u bytes",
                                                              libakrypt_options.key_number_length );

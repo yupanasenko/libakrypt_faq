@@ -162,25 +162,26 @@
  #define ak_error_find_pointer                (-13)
  #define ak_error_read_data                   (-15)
  #define ak_error_write_data                  (-16)
- #define ak_error_oid_engine                  (-17)
- #define ak_error_oid_mode                    (-18)
- #define ak_error_oid_name                    (-19)
- #define ak_error_oid_id                      (-20)
- #define ak_error_oid_index                   (-21)
- #define ak_error_not_equal_data              (-22)
- #define ak_error_low_key_resource            (-23)
- #define ak_error_wrong_key                   (-24)
- #define ak_error_wrong_key_lock              (-25)
- #define ak_error_wrong_key_unlock            (-26)
- #define ak_error_wrong_key_icode             (-27)
- #define ak_error_wcurve_prime_size           (-28)
- #define ak_error_wcurve_discriminant         (-29)
- #define ak_error_wcurve_point                (-30)
- #define ak_error_wcurve_point_order          (-31)
- #define ak_error_context_manager_max_size    (-32)
- #define ak_error_terminal                    (-33)
- #define ak_error_wrong_block_cipher_length   (-34)
- #define ak_error_wrong_block_cipher_function (-35)
+ #define ak_error_oid                         (-17)
+ #define ak_error_oid_engine                  (-18)
+ #define ak_error_oid_mode                    (-19)
+ #define ak_error_oid_name                    (-20)
+ #define ak_error_oid_id                      (-21)
+ #define ak_error_oid_index                   (-22)
+ #define ak_error_not_equal_data              (-23)
+ #define ak_error_low_key_resource            (-24)
+ #define ak_error_wrong_key                   (-25)
+ #define ak_error_wrong_key_lock              (-26)
+ #define ak_error_wrong_key_unlock            (-27)
+ #define ak_error_wrong_key_icode             (-28)
+ #define ak_error_wcurve_prime_size           (-29)
+ #define ak_error_wcurve_discriminant         (-30)
+ #define ak_error_wcurve_point                (-31)
+ #define ak_error_wcurve_point_order          (-32)
+ #define ak_error_context_manager_max_size    (-33)
+ #define ak_error_terminal                    (-34)
+ #define ak_error_wrong_block_cipher_length   (-35)
+ #define ak_error_wrong_block_cipher_function (-36)
 
  #define ak_null_string                  ("(null)")
 
@@ -203,6 +204,8 @@
  dll_export int ak_function_log_stderr( const char * );
 /*! \brief Вывод сообщений о возникшей в процессе выполнения ошибке. */
  dll_export int ak_error_message( const int, const char *, const char * );
+/*! \brief Вывод сообщений о возникшей в процессе выполнения ошибке. */
+ dll_export int ak_error_message_fmt( const int , const char *, const char *, ... );
 /*! \brief Функция устанавливает значение переменной, хранящей ошибку выполнения программы. */
  dll_export int ak_error_set_value( const int );
 /*! \brief Функция возвращает код последней ошибки выполнения программы. */
@@ -317,6 +320,8 @@
  dll_export const char *ak_oid_get_id( ak_oid );
 /*! \brief Получение криптографического механизма OID. */
  dll_export const ak_oid_engine ak_oid_get_engine( ak_oid );
+/*! \brief Получение словесного описания для криптографического механизма OID. */
+ dll_export const char *ak_oid_get_engine_str( ak_oid );
 /*! \brief Получение режима использования криптографического механизма OID. */
  dll_export const ak_oid_mode ak_oid_get_mode( ak_oid );
 /*! \brief Получение общего числа доступных OID библиотеки. */
@@ -395,10 +400,20 @@
  dll_export ak_buffer ak_update_finalize( ak_update , const ak_pointer , const size_t , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Создание ключа из пароля по заданному OID. */
+ dll_export ak_key ak_key_new_oid_password( ak_oid , ak_buffer , ak_buffer );
+/*! \brief Создание случайного ключа по заданному OID. */
+ dll_export ak_key ak_key_new_oid_random( ak_oid , ak_buffer );
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание ключа алгоритма блочного шифрования Магма из пароля. */
  dll_export ak_key ak_key_new_magma_password( ak_buffer , ak_buffer );
 /*! \brief Создание случайного ключа алгоритма блочного шифрования Магма. */
  dll_export ak_key ak_key_new_magma_random( ak_buffer );
+/*! \brief Создание ключа алгоритма блочного шифрования Кузнечик из пароля. */
+ dll_export ak_key ak_key_new_kuznechik_password( ak_buffer , ak_buffer );
+/*! \brief Создание случайного ключа алгоритма блочного шифрования Кузнечик. */
+ dll_export ak_key ak_key_new_kuznechik_random( ak_buffer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Зашифрование/расшифрование данных в режиме гаммирования согласно ГОСТ 34.13-2015. */
@@ -409,6 +424,10 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Получение пользовательского описания ключа. */
  dll_export ak_buffer ak_key_get_description( ak_key );
+/*! \brief Получение номера ключа. */
+ dll_export ak_buffer ak_key_get_number( ak_key );
+/*! \brief Получение OID ключа. */
+ dll_export ak_oid ak_key_get_oid( ak_key );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей значение заданной области памяти. */
@@ -421,6 +440,10 @@
  dll_export int ak_password_read( char *, const size_t );
 /*! \brief Чтение пароля из консоли в буффер. */
  dll_export int ak_password_read_buffer( ak_buffer );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Обобщенная реализация функции snprintf для различных компиляторов. */
+ dll_export int ak_snprintf( char *str, size_t size, const char *format, ... );
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifndef __STDC_VERSION__

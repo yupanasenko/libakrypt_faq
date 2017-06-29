@@ -114,6 +114,7 @@ set( EXAMPLES_LIST intro
                    random
                    random-sys
                    key
+                   encrypt-file
    )
 # добавляем "неправильные" примеры, которые используют неэкспортируемые функции
 set( NOEXPORT_EXAMPLES_LIST ${EXAPLES_LIST}

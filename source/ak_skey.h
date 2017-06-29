@@ -193,6 +193,10 @@
  ak_bckey ak_bckey_new_magma_password( const ak_pointer , const size_t );
 /*! \brief Создание контекста ключа алгоритма Кузнечик с заданным значением. */
  ak_bckey ak_bckey_new_kuznechik_ptr( const ak_pointer , const size_t , const ak_bool );
+/*! \brief Создание контекста ключа алгоритма Кузнечик с новым, случайным значением. */
+ ak_bckey ak_bckey_new_kuznechik_random( ak_random );
+/*! \brief Выработка контекста ключа алгоритма Кузнечик из пароля. */
+ ak_bckey ak_bckey_new_kuznechik_password( const ak_pointer , const size_t );
 
 /*! \brief Зашифрование данных в режиме простой замены. */
  int ak_bckey_encrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
