@@ -1,8 +1,6 @@
 
-Changes in version 0.4.32
--------------------------
-  * changed an internal structure of ak_random class
-  * added a winrtl random generator
-  * improved key masking for Kuznechik block cipher
-  * counter mode for 128-bit block ciphers
 
+Changes in version 0.5.1
+-------------------------
+   * changed a method for checking a system headers
+   * added support for random number generators

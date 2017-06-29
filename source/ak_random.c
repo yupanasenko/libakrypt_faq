@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*   Copyright (c) 2014 - 2016 by Axel Kenzo, axelkenzo@mail.ru                                    */
+/*   Copyright (c) 2014 - 2017 by Axel Kenzo, axelkenzo@mail.ru                                    */
 /*   All rights reserved.                                                                          */
 /*                                                                                                 */
 /*  Разрешается повторное распространение и использование как в виде исходного кода, так и         */
@@ -28,7 +28,6 @@
 /*   ak_random.c                                                                                   */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_random.h>
- #include <ak_tools.h>
  #include <time.h>
  #include <fcntl.h>
  #ifndef _WIN32
