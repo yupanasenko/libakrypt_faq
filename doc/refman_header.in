@@ -1,0 +1,125 @@
+\documentclass[12pt, oneside]{report}
+
+% -------------------------------------------------------------------- %
+% Packages required by doxygen
+\usepackage{fixltx2e}
+\usepackage{calc}
+\usepackage{doxygen}
+\usepackage[export]{adjustbox} % also loads graphicx
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage{makeidx}
+\usepackage{multicol}
+\usepackage{multirow}
+\PassOptionsToPackage{warn}{textcomp}
+\usepackage{textcomp}
+\usepackage[nointegrals]{wasysym}
+\usepackage[table]{xcolor}
+\usepackage{longtable}
+\usepackage{indentfirst}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+
+\usepackage[T2A]{fontenc}
+\usepackage[russian]{babel}
+\usepackage{amssymb}
+\usepackage{sectsty}
+
+\renewcommand{\DoxyLabelFont}{%
+  \fontseries{bc}\selectfont%
+  \color{darkgray}%
+}
+\newcommand{\+}{\discretionary{\mbox{\scriptsize$\hookleftarrow$}}{}{}}
+%
+\renewenvironment{DoxyCode}{%
+  \par%
+  \scriptsize%
+  \begin{alltt}
+}{%
+  \end{alltt}%
+  \normalsize%
+}
+
+% Page & text layout
+\usepackage{geometry}
+\geometry{%
+  a4paper,%
+  top=2.25cm,%
+  bottom=1.75cm,%
+  left=2.5cm,%
+  right=1.5cm%
+}
+
+% Headers & footers
+\usepackage{fancyhdr}
+\pagestyle{fancyplain}
+\fancyhead[LE]{\fancyplain{}{\bfseries\thepage}}
+\fancyhead[CE]{\fancyplain{}{}}
+\fancyhead[RE]{\fancyplain{}{\bfseries\leftmark}}
+\fancyhead[LO]{\fancyplain{}{\bfseries\rightmark}}
+\fancyhead[CO]{\fancyplain{}{}}
+\fancyhead[RO]{\fancyplain{}{\bfseries\thepage}}
+\fancyfoot[LE]{\fancyplain{}{}}
+\fancyfoot[CE]{\fancyplain{}{}}
+\fancyfoot[RE]{\fancyplain{}{\bfseries\scriptsize Документация к библиотеке libakrypt}}
+\fancyfoot[LO]{\fancyplain{}{\bfseries\scriptsize Документация к библиотеке libakrypt}}
+\fancyfoot[CO]{\fancyplain{}{}}
+\fancyfoot[RO]{\fancyplain{}{}}
+\renewcommand{\footrulewidth}{0.4pt}
+\renewcommand{\chaptermark}[1]{%
+  \markboth{#1}{}%
+}
+\renewcommand{\sectionmark}[1]{%
+  \markright{\thesection\ #1}%
+}
+
+\setlength{\headheight}{15pt}
+
+% Indices & bibliography
+\usepackage{natbib}
+\usepackage[titles]{tocloft}
+\setcounter{tocdepth}{3}
+\setcounter{secnumdepth}{5}
+\makeindex
+
+% -------------------------------------------------------------------- %
+% Hyperlinks (required, but should be loaded last)
+\usepackage[unicode, colorlinks]{hyperref} % настройка PDF
+\hypersetup{%
+  pdftitle      = {Документация к библиотеке libakrypt (версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@)},
+  pdfauthor     = {Axel Kenzo},
+  colorlinks    = true,%
+  linkcolor     = blue,%
+  citecolor     = blue,
+  bookmarksopen = {true},
+  bookmarksnumbered = {true}
+}
+
+% -------------------------------------------------------------------- %
+\begin{document}
+% Title page
+
+\thispagestyle{plain}
+
+\vfill
+\hbox{%
+\rule{1pt}{1.0\textheight}
+\hspace*{0.05\textwidth}%
+\parbox[b]{0.95\textwidth}{
+\vbox{%
+\vspace{0.1\textwidth}
+{\noindent\Huge\bfseries LIBAKRYPT}\\[2\baselineskip]
+{\itshape Инструкция по сборке и установке}\\[1\baselineskip]
+{\itshape Рекомендации по встраиванию}\\[1\baselineskip]
+{\itshape Принципы реализации}\\[1\baselineskip]
+
+\vspace{0.5\textheight}
+{версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@} (дата сборки \today)\\[1\baselineskip]
+{Axel Kenzo \& The Company Of Belles Lettres (c) 2014 -- 2017}\\[1\baselineskip]
+}% end of vbox
+}% end of parbox
+}% end of hbox
+\vfill
+
+\newpage
+\tableofcontents

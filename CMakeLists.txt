@@ -33,16 +33,36 @@ option( LIBAKRYPT_GMP_TESTS "Build test programs with libGMP" OFF)
 # подключаем модули CMake для тонкой настройки параметров сборки
 set( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
 include( DetectHeaders )
+include( DetectFlags )
 
 # -------------------------------------------------------------------------------------------------- #
 # множество исходных текстов библиотеки
 set( MAIN_HEADER source/libakrypt.h )
-set( HEADERS     source/ak_random.h )
+set( HEADERS     #source/ak_context_manager.h
+                 source/ak_buffer.h
+                 source/ak_random.h )
+
 set( SOURCES     source/ak_log.c
                  source/ak_libakrypt.c
+                 #source/ak_context_manager.c
+                 source/ak_buffer.c
                  source/ak_random.c )
+
+set( DOCS        doc/libakrypt.dox
+                 doc/refman_header.in
+                 doc/refman_footer.in
+                 doc/Doxyfile.in )
+
+set( CMAKES      cmake/DetectHeaders.cmake
+                 cmake/DetectFlags.cmake
+                 cmake/MakeDoc.cmake )
+
 set( OTHERS      CMakeLists.txt
-                 Changelog.md )
+                 Readme.md
+                 Changelog.md
+                 libakrypt.rc.in
+                 libakrypt.conf
+                 libakrypt-run.sh )
 
 # -------------------------------------------------------------------------------------------------- #
 # сборка библиотек - статической и, если нужно, динамической
@@ -50,13 +70,11 @@ include_directories( "./source" )
 if( LIBAKRYPT_SHARED_LIB )
   add_library( akrypt-shared SHARED ${MAIN_HEADER} ${SOURCES} )
   set_target_properties( akrypt-shared PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
-  target_link_libraries( akrypt-shared ${PTHREAD_LIB} )
 endif()
 #
 if( LIBAKRYPT_STATIC_LIB )
   add_library( akrypt-static STATIC ${MAIN_HEADER} ${SOURCES} )
   set_target_properties( akrypt-static PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
-  target_link_libraries( akrypt-static ${PTHREAD_LIB} )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -68,7 +86,7 @@ set( EXAMPLES_LIST intro
 if( LIBAKRYPT_STATIC_LIB )
   foreach( programm ${EXAMPLES_LIST} )
      add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
-     target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static ${PTHREAD_LIB} )
+     target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static )
   endforeach()
 endif()
 
@@ -76,8 +94,13 @@ endif()
 if( LIBAKRYPT_SHARED_LIB )
   foreach( programm ${EXAMPLES_LIST} )
      add_executable( example-dynamic-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
-     target_link_libraries( example-dynamic-${programm}${LIBAKRYPT_EXT} akrypt-shared ${PTHREAD_LIB} )
+     target_link_libraries( example-dynamic-${programm}${LIBAKRYPT_EXT} akrypt-shared )
   endforeach()
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+if( CMAKE_HOST_UNIX )
+  include( MakeDoc )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #

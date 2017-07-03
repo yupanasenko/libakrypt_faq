@@ -103,14 +103,10 @@
  typedef enum { ak_false, ak_true } ak_bool;
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Генератор псевдо-случайных чисел. */
- struct random;
-/*! \brief Контекст генератора псевдослучайных чисел. */
- typedef struct random *ak_random;
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Указатель на произвольный объект библиотеки. */
  typedef void *ak_pointer;
+/*! \brief Дескриптор произвольного объекта библиотеки. */
+ typedef ak_uint64 ak_handle;
 /*! \brief Стандартная для языка С функция выделения памяти. */
  typedef ak_pointer ( ak_function_alloc )( size_t );
 /*! \brief Стандартная для языка С функция освобождения памяти. */
@@ -144,6 +140,66 @@
  #define ak_log_maximum                         (2)
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Тип криптографического механизма. */
+ typedef enum {
+   /*! \brief неопределенный механизм, может возвращаться как ошибка */
+     undefined_engine,
+   /*! \brief идентификатор */
+     identifier,
+   /*! \brief симметричный шифр (блочный алгоритм)  */
+     block_cipher,
+   /*! \brief симметричный шифр (поточный алгоритм)  */
+     stream_cipher,
+   /*! \brief схема гибридного шифрования */
+     hybrid_cipher,
+   /*! \brief функция хеширования */
+     hash_function,
+   /*! \brief ключевая функция хеширования (функция вычисления имитовставки) */
+     mac_function,
+   /*! \brief электронная цифровая подпись */
+     digital_signature,
+   /*! \brief генератор случайных и псевдо-случайных последовательностей */
+     random_generator,
+   /*! \brief механизм итерационного вычисления сжимающих отображений */
+     update_engine
+} ak_oid_engine;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Режим и параметры использования криптографического механизма. */
+ typedef enum {
+   /*! \brief неопределенный режим, может возвращаться в как ошибка */
+     undefined_mode,
+   /*! \brief собственно криптографический механизм (алгоритм) */
+     algorithm,
+   /*! \brief данные */
+     parameter,
+   /*! \brief набор параметров эллиптической кривой в форме Вейерштрасса */
+     wcurve_params,
+   /*! \brief набор параметров эллиптической кривой в форме Эдвардса */
+     ecurve_params,
+   /*! \brief набор перестановок */
+     kbox_params,
+   /*! \brief режим простой замены блочного шифра */
+     ecb,
+   /*! \brief режим гаммирования для блочного шифра */
+     ofb,
+   /*! \brief режим гаммирования ГОСТ 28147-89 для блочного шифра */
+     ofb_gost,
+   /*! \brief режим гаммирования с обратной связью блочного шифра */
+     cfb,
+   /*! \brief режим ростой замены с зацеплением блочного шифра */
+     cbc,
+   /*! \brief режим шифрования XTS для блочного шифра */
+     xts,
+   /*! \brief шифрование с аутентификацией сообщений */
+     xts_mac,
+   /*! \brief режим гаммирования поточного шифра (сложение по модулю 2) */
+     xcrypt,
+   /*! \brief гаммирование по модулю \f$ 2^8 \f$ поточного шифра */
+     a8
+} ak_oid_mode;
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает уровень аудита библиотеки. */
  dll_export int ak_log_get_level( void );
 /*! \brief Прямой вывод сообщения аудита. */
@@ -174,26 +230,41 @@
  dll_export int ak_libakrypt_destroy( void );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание линейного конгруэнтного генератора псевдо-случайных чисел. */
- dll_export ak_random ak_random_new_lcg( void );
-/*! \brief Cоздание генератора, считывающего случайные значения из заданного файла. */
- dll_export ak_random ak_random_new_file( const char *filename );
-#ifdef _WIN32
-/*! \brief Интерфейс доступа к псевдо-случайному генератору ОС Windows. */
- dll_export ak_random ak_random_new_winrtl( void );
-#endif
-/*! \brief Инициализация генератора значением другого псевдо-случайного генератора. */
- dll_export int ak_random_randomize( ak_random );
-/*! \brief Инициализация генератора данными, содержащимися в заданной области памяти. */
- dll_export int ak_random_randomize_ptr( ak_random, const ak_pointer, const size_t );
-/*! \brief Заполнение заданного массива псевдо случайными данными. */
- dll_export int ak_random_ptr( ak_random, const ak_pointer, const size_t );
-/*! \brief Уничтожение генератора псевдо-случайных чисел. */
- dll_export ak_pointer ak_random_delete( ak_pointer );
-/*! \brief Выработка одного псевдо-случайного байта. */
- dll_export ak_uint8 ak_random_uint8( ak_random );
-/*! \brief Выработка одного псевдо-случайного слова размером 8 байт (64 бита). */
- dll_export ak_uint64 ak_random_uint64( ak_random );
+ struct buffer;
+/*! \brief Контекст буффера */
+ typedef struct buffer *ak_buffer;
+
+/*! \brief Создание буффера заданного размера. */
+ dll_export ak_buffer ak_buffer_new_size( const size_t );
+/*! \brief Создание буффера с данными. */
+ dll_export ak_buffer ak_buffer_new_ptr( const ak_pointer , const size_t , const ak_bool );
+/*! \brief Создание буффера с данными, записанными в шестнадцатеричном виде. */
+ dll_export ak_buffer ak_buffer_new_hexstr( const char * );
+/*! \brief Создание буффера заданной длины с данными, записанными в шестнадцатеричном виде. */
+ dll_export ak_buffer ak_buffer_new_hexstr_str( const char * , const size_t , const ak_bool );
+/*! \brief Создание буффера, содержащего строку символов, оканчивающуюся нулем. */
+ dll_export ak_buffer ak_buffer_new_str( const char * );
+/*! \brief Уничтожение буффера. */
+ dll_export ak_pointer ak_buffer_delete( ak_pointer );
+/*! \brief Пощемение двоичных данных в буффер. */
+ dll_export int ak_buffer_set_ptr( ak_buffer , const ak_pointer , const size_t , const ak_bool );
+/*! \brief Пощемение в буффер данных, заданных строкой в  шестнадцатеричном представлении. */
+ dll_export int ak_buffer_set_hexstr( ak_buffer, const char * );
+/*! \brief Помещение строки, оканчивающейся нулем, в буффер. */
+ dll_export int ak_buffer_set_str( ak_buffer, const char * );
+/*! \brief Получение указателя на данные (как на строку символов). */
+ dll_export const char *ak_buffer_get_str( ak_buffer );
+/*! \brief Получение указателя на данные. */
+ dll_export ak_pointer ak_buffer_get_ptr( ak_buffer );
+/*! \brief Получение размера буффера. */
+ dll_export const size_t ak_buffer_get_size( ak_buffer );
+/*! \brief Получение строки символов с шестнадцатеричным значением буффера. */
+ dll_export char *ak_buffer_to_hexstr( const ak_buffer );
+/*! \brief Сравнение двух буфферов. */
+ dll_export int ak_buffer_is_equal( const ak_buffer, const ak_buffer );
+
+/* ----------------------------------------------------------------------------------------------- */
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей значение заданной области памяти. */

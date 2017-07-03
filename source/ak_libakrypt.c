@@ -60,22 +60,22 @@
 
   Все сообщения библиотеки могут быть разделены на три уровня.
 
-  \li Первый уровень аудита определяется константой ak_log_none. На этом уровне выводятся
+  \li Первый уровень аудита определяется константой \ref ak_log_none. На этом уровне выводятся
   сообщения об ошибках, а также минимальный набор сообщений, включающий в себя факт
   успешного тестирования работоспособности криптографических механизмов.
 
-  \li Второй уровень аудита определяется константой ak_log_standard. На этом уровене
+  \li Второй уровень аудита определяется константой \ref ak_log_standard. На этом уровене
   выводятся все сообщения из первого уровня, а также сообщения о фактах использования
   ключевой информации.
 
-  \li Третий (максимальный) уровень аудита определяется константой ak_log_maximum.
+  \li Третий (максимальный) уровень аудита определяется константой \ref ak_log_maximum.
   На этом уровне выводятся все сообщения, доступные на первых двух уровнях, а также
-  сообщения отладосного характера, позхволяющие прослдедить логику работы функций библиотеки.
+  сообщения отладочного характера, позхволяющие прослдедить логику работы функций библиотеки.
 
-  \param level Уровень аудита, может принимать значения ak_log_none,
-  ak_log_standard и ak_log_maximum.
+  \param level Уровень аудита, может принимать значения \ref ak_log_none,
+  \ref ak_log_standard и \ref ak_log_maximum.
 
-  \return функция всегда возвращает ak_error_ok (ноль).                                            */
+  \return Функция всегда возвращает ak_error_ok (ноль).                                            */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_log_set_level( int level )
 {
@@ -101,6 +101,44 @@ return ak_error_ok;
 #endif
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция проверяет корректность определения базовых типов данных
+   \return В случе успешного тестирования возвращает ak_true (истина).
+   В противном случае возвращается ak_false.                                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_libakrypt_test_types( void )
+{
+ if( sizeof( ak_int8 ) != 1 ) {
+   ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_int8 type" );
+   return ak_false;
+ }
+ if( sizeof( ak_uint8 ) != 1 ) {
+   ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_uint8 type" );
+   return ak_false;
+ }
+ if( sizeof( ak_int32 ) != 4 ) {
+   ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_int32 type" );
+   return ak_false;
+ }
+ if( sizeof( ak_uint32 ) != 4 ) {
+   ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_uint32 type" );
+   return ak_false;
+ }
+ if( sizeof( ak_int64 ) != 8 ) {
+   ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_int64 type" );
+   return ak_false;
+ }
+ if( sizeof( ak_uint64 ) != 8 ) {
+   ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_uint64 type" );
+   return ak_false;
+ }
+
+#ifdef LIBAKRYPT_HAVE_BUILTIN_XOR_SI128
+ if( ak_log_get_level() >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "library applies __m128i base type" );
+#endif
+ return ak_true;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция должна вызываться перед использованием криптографических механизмов библиотеки.
@@ -136,9 +174,14 @@ return ak_error_ok;
    ak_error_message( error, __func__ , "audit mechanism not started" );
    return ak_false;
  }
- /* считываем настройки криптографических алгоритмов */
 
  /* проверяем длины фиксированных типов данных */
+ if( ak_libakrypt_test_types( ) != ak_true ) {
+   ak_error_message( ak_error_get_value(), __func__ , "sizes of predefined types is wrong" );
+   return ak_false;
+ }
+
+ /* считываем настройки криптографических алгоритмов */
 
  /* инициализируем механизм обработки идентификаторов */
 
