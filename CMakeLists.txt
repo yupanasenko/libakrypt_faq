@@ -37,36 +37,45 @@ include( DetectFlags )
 
 # -------------------------------------------------------------------------------------------------- #
 # множество исходных текстов библиотеки
-set( MAIN_HEADER source/libakrypt.h )
-set( HEADERS     #source/ak_context_manager.h
-                 source/ak_buffer.h
-                 source/ak_random.h )
+set( MAIN_HEADER   source/libakrypt.h )
 
-set( SOURCES     source/ak_log.c
-                 source/ak_libakrypt.c
-                 #source/ak_context_manager.c
-                 source/ak_buffer.c
-                 source/ak_random.c )
+set( HEADERS       source/ak_tools.h
+                   source/ak_context_manager.h
+                   source/ak_buffer.h
+                   source/ak_random.h )
 
-set( DOCS        doc/libakrypt.dox
-                 doc/refman_header.in
-                 doc/refman_footer.in
-                 doc/Doxyfile.in )
+set( SOURCES       source/ak_log.c
+                   source/ak_libakrypt.c
+                   source/ak_tools.c
+                   source/ak_context_manager.c
+                   source/ak_buffer.c
+                   source/ak_random.c )
 
-set( CMAKES      cmake/DetectHeaders.cmake
-                 cmake/DetectFlags.cmake
-                 cmake/MakeDoc.cmake )
+set( DOCS          doc/libakrypt.dox
+                   doc/refman_header.in
+                   doc/refman_footer.in
+                   doc/Doxyfile.in )
 
-set( OTHERS      CMakeLists.txt
-                 Readme.md
-                 Changelog.md
-                 libakrypt.rc.in
-                 libakrypt.conf
-                 libakrypt-run.sh )
+set( CMAKES        cmake/DetectHeaders.cmake
+                   cmake/DetectFlags.cmake
+                   cmake/MakeDoc.cmake )
+
+set( OTHERS        CMakeLists.txt
+                   Readme.md
+                   Changelog.md
+                   libakrypt.rc.in
+                   libakrypt.conf
+                   libakrypt-run.sh )
 
 # -------------------------------------------------------------------------------------------------- #
 # сборка библиотек - статической и, если нужно, динамической
 include_directories( "./source" )
+add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
+if( LIBAKRYPT_CONF )
+    message("-- Path for libakrypt.conf is ${LIBAKRYPT_CONF}")
+    add_compile_options( -DLIBAKRYPT_OPTIONS_PATH="${LIBAKRYPT_CONF}" )
+endif()
+
 if( LIBAKRYPT_SHARED_LIB )
   add_library( akrypt-shared SHARED ${MAIN_HEADER} ${SOURCES} )
   set_target_properties( akrypt-shared PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
@@ -97,6 +106,18 @@ if( LIBAKRYPT_SHARED_LIB )
      target_link_libraries( example-dynamic-${programm}${LIBAKRYPT_EXT} akrypt-shared )
   endforeach()
 endif()
+
+# теперь примеры, использующие неэкспортируемые функции
+set( INTERNAL_EXAMPLES_LIST
+                   context-manager-node
+                   context-manager )
+if( CMAKE_HOST_UNIX )
+  foreach( programm ${INTERNAL_EXAMPLES_LIST} )
+    add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
+    target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static )
+  endforeach()
+endif()
+
 
 # -------------------------------------------------------------------------------------------------- #
 if( CMAKE_HOST_UNIX )

@@ -131,6 +131,7 @@
  #define ak_error_close_file                  (-12)
  #define ak_error_read_data                   (-13)
  #define ak_error_write_data                  (-14)
+ #define ak_error_wrong_handle                (-15)
 
 /* ----------------------------------------------------------------------------------------------- */
  #define ak_null_string                  ("(null)")
@@ -241,7 +242,7 @@
 /*! \brief Создание буффера с данными, записанными в шестнадцатеричном виде. */
  dll_export ak_buffer ak_buffer_new_hexstr( const char * );
 /*! \brief Создание буффера заданной длины с данными, записанными в шестнадцатеричном виде. */
- dll_export ak_buffer ak_buffer_new_hexstr_str( const char * , const size_t , const ak_bool );
+ dll_export ak_buffer ak_buffer_new_hexstr_size( const char * , const size_t , const ak_bool );
 /*! \brief Создание буффера, содержащего строку символов, оканчивающуюся нулем. */
  dll_export ak_buffer ak_buffer_new_str( const char * );
 /*! \brief Уничтожение буффера. */
