@@ -28,6 +28,7 @@
 /*   ak_buffer.c                                                                                   */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_buffer.h>
+ #include <ak_random.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция устанавливает значение полей структуры struct buffer в значения по-умолчанию.
@@ -402,8 +403,8 @@
     ak_error_message( ak_error_null_pointer, __func__, "using null pointer to internal buffer" );
     return ak_error_null_pointer;
   }
-  if( ak_random_ptr( generator, buff->data, buff->size ) != ak_error_ok ) {
-    ak_error_message( ak_error_write_data, __func__, "incorrect randomizing interbal buffer" );
+  if( generator->random( generator, buff->data, buff->size ) != ak_error_ok ) {
+    ak_error_message( ak_error_write_data, __func__, "incorrect randomizing internal buffer" );
     memset( buff->data, 0, buff->size );
     result = ak_error_write_data;
   }
@@ -582,7 +583,7 @@
     ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a random generator" );
     return ak_error_null_pointer;
   }
-  if( ak_random_ptr( generator, buff->data, buff->size ) != ak_error_ok ) {
+  if( generator->random( generator, buff->data, buff->size ) != ak_error_ok ) {
     ak_error_message( ak_error_write_data, __func__, "incorrect wiping a buffer data" );
     memset( buff->data, 0, buff->size );
     result = ak_error_write_data;
@@ -621,7 +622,7 @@
     ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
     return NULL;
   }
-  if( ak_random_ptr( generator, buff->data, buff->size ) != ak_error_ok ) {
+  if( generator->random( generator, buff->data, buff->size ) != ak_error_ok ) {
     ak_error_message( ak_error_get_value(), __func__, "incorrect random data generation" );
     return ( buff = ak_buffer_delete( buff ));
   }

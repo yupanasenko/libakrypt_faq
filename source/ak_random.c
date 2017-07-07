@@ -110,98 +110,6 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param rnd указатель на структуру struct random
-    @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
-    возвращается ее код.                                                                           */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_random_randomize( ak_random rnd )
-{
-  if( rnd == NULL ) {
-   ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
-   return ak_error_null_pointer;
-  }
-  if( rnd->randomize != NULL ) return rnd->randomize( rnd );
-  return ak_error_message( ak_error_undefined_function, __func__ ,
-                                                               "use a null pointer to a function" );
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param rnd указатель на структуру struct random
-    @param ptr указатель на данные
-    @param size размер данных в байтах
-    @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
-    возвращается ее код.                                                                           */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_random_randomize_ptr( ak_random rnd, const ak_pointer ptr, const size_t size )
-{
-  if( rnd == NULL ) {
-   ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
-   return ak_error_null_pointer;
-  }
-  if( rnd->randomize_ptr != NULL ) return rnd->randomize_ptr( rnd, ptr, size );
-  return ak_error_message( ak_error_undefined_function, __func__ ,
-                                                               "use a null pointer to a function" );
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param rnd указатель на структуру struct random
-    @param ptr указатель на область памяти
-    @param size размер памяти в байтах
-    @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
-    возвращается ее код.                                                                           */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_random_ptr( ak_random rnd, const ak_pointer ptr, const size_t size )
-{
-  if( rnd == NULL ) {
-   ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
-   return ak_error_null_pointer;
-  }
-  if( rnd->random != NULL ) return rnd->random( rnd, ptr, size );
-  return ak_error_message( ak_error_undefined_function, __func__ ,
-                                                              "use a null pointer to a function " );
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param rnd указатель на структуру struct random
-    @return Функция возвращает значение одного псевдо-случайного байта.
-    В случае возникновения ошибки ее код может бвть полуучен с помощью вызова функции
-    ak_error_get_value().                                                                          */
-/* ----------------------------------------------------------------------------------------------- */
- ak_uint8 ak_random_uint8( ak_random rnd )
-{
-  ak_uint8 byte = 0;
-  if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer,
-                                           __func__ , "use a null pointer to a random generator" );
-    return byte;
-  }
-  if( rnd->random != NULL ) rnd->random( rnd, &byte, sizeof( ak_uint8 ));
-     else ak_error_message( ak_error_undefined_function, __func__ ,
-                                                       "use a null pointer to a function pointer" );
-  return byte;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param rnd указатель на структуру struct random
-    @return Функция возвращает значение одного псевдо-случайного байта.
-    В случае возникновения ошибки ее код может бвть полуучен с помощью вызова функции
-    ak_error_get_value().                                                                          */
-/* ----------------------------------------------------------------------------------------------- */
- ak_uint64 ak_random_uint64( ak_random rnd )
-{
-  ak_uint64 qword = 0;
-  if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer,
-                                           __func__ , "use a null pointer to a random generator" );
-    return qword;
-  }
-  if( rnd->random != NULL ) rnd->random( rnd, &qword, sizeof( ak_uint64 ));
-     else ak_error_message( ak_error_undefined_function, __func__ ,
-                                                       "use a null pointer to a function pointer" );
-  return qword;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
   static ak_uint32 shift_value = 0; // Внутренняя статическая переменная (счетчик вызовов)
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -329,29 +237,28 @@
     \f$ \gamma_n = \displaystyle\frac{x_n - \hat x_n}{2^{24}} \pmod{256}, \f$
     где \f$\hat x_n \equiv x_n \pmod{2^{24}}. \f$
 
-    \return Функция возвращает указатель на структуру struct random.
-            В случае ошибки возвращается NULL.                                                     */
+    @param generator Контекст создаваемого генератора.
+    \return В случае успеха, функция возвращает \ref ak_error_ok. В противном случае
+            возвращается код ошибки.                                                               */
 /* ----------------------------------------------------------------------------------------------- */
- ak_random ak_random_new_lcg( void )
+ int ak_random_create_lcg( ak_random generator )
 {
-  ak_random rnd = ak_random_new();
-  if( rnd == NULL ) { ak_error_message( ak_error_out_of_memory, __func__ ,
-                                  "incorrect memory allocation for a random generator" );
-    return NULL;
-  }
-  if(( rnd->data = malloc( sizeof( struct random_lcg ))) == NULL ) {
-    ak_error_message( ak_error_out_of_memory, __func__ ,
-           "incorrect memory allocation for an internal variables of random generator" );
-    return ( rnd = ak_random_delete( rnd ));
-  }
-  rnd->next = ak_random_lcg_next;
-  rnd->randomize = ak_random_lcg_randomize;
-  rnd->randomize_ptr = ak_random_lcg_randomize_ptr;
-  rnd->random = ak_random_lcg_random;
-  /* функция rnd->free уже установлена */
-  rnd->randomize( rnd ); /* для генерации случайных значений и корректной работы генератора
+  int error = ak_error_ok;
+  if(( error = ak_random_create( generator )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "wrong initialization of random generator" );
+
+  if(( generator->data = malloc( sizeof( struct random_lcg ))) == NULL )
+    return ak_error_message( ak_error_out_of_memory, __func__ ,
+              "incorrect memory allocation for an internal variables of random generator" );
+
+  generator->next = ak_random_lcg_next;
+  generator->randomize = ak_random_lcg_randomize;
+  generator->randomize_ptr = ak_random_lcg_randomize_ptr;
+  generator->random = ak_random_lcg_random;
+  /* функция generator->free уже установлена при вызове ak_random_create */
+  generator->randomize( generator ); /* для генерации случайных значений и корректной работы
                                                  присваиваем какое-то случайное начальное значение */
- return rnd;
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -430,34 +337,35 @@
     Основное назначение данного генератора - считывание данных из файловых устройств,
     таких как /dev/randon или /dev/urandom.
 
-    \return Функция возвращает указатель на структуру struct random.
-            В случае ошибки возвращается NULL.                                                     */
+    @param generator Контекст создаваемого генератора.
+    @param filename Имя файла.
+    \return В случае успеха, функция возвращает \ref ak_error_ok. В противном случае
+            возвращается код ошибки.                                                               */
 /* ----------------------------------------------------------------------------------------------- */
- ak_random ak_random_new_file( const char *filename )
+ int ak_random_create_file( ak_random generator, const char *filename )
 {
-  ak_random rnd = ak_random_new();
-  if( rnd == NULL ) { ak_error_message( ak_error_out_of_memory, __func__ ,
-                                  "incorrect memory allocation for a random generator" );
-    return NULL;
-  }
-  if(( rnd->data = malloc( sizeof( struct random_file ))) == NULL ) {
-    ak_error_message( ak_error_out_of_memory, __func__ ,
+  int error = ak_error_ok;
+  if(( error = ak_random_create( generator )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "wrong initialization of random generator" );
+
+  if(( generator->data = malloc( sizeof( struct random_file ))) == NULL )
+    return ak_error_message( ak_error_out_of_memory, __func__ ,
            "incorrect memory allocation for an internal variables of random generator" );
-    return ( rnd = ak_random_delete( rnd ));
-  }
 
-  /* теперь мы открываем заданный пользователем файл */
-  if( ((( ak_random_file ) ( rnd->data ))->fd = open( filename, O_RDONLY | O_BINARY )) == -1 ) {
+ /* теперь мы открываем заданный пользователем файл */
+  if( ((( ak_random_file ) ( generator->data ))->fd = open( filename, O_RDONLY | O_BINARY )) == -1 ) {
     ak_error_message( ak_error_open_file, __func__ , "wrong opening a file with random data" );
-    return ( rnd = ak_random_delete( rnd ));
+    ak_random_destroy( generator );
+    return ak_error_open_file;
   }
 
-  rnd->next = NULL;
-  rnd->randomize =NULL;
-  rnd->randomize_ptr = NULL;
-  rnd->random = ak_random_file_random;
-  rnd->free = ak_random_file_free; /* эта функция должна закрыть открытый ранее файл */
- return rnd;
+  generator->next = NULL;
+  generator->randomize =NULL;
+  generator->randomize_ptr = NULL;
+  generator->random = ak_random_file_random;
+  generator->free = ak_random_file_free; /* эта функция должна закрыть открытый ранее файл */
+
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -499,19 +407,17 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_random ak_random_new_winrtl( void )
+ int ak_random_create_winrtl( ak_random generator )
 {
   HCRYPTPROV handle = 0;
-  ak_random rnd = ak_random_new();
-  if( rnd == NULL ) { ak_error_message( ak_error_out_of_memory, __func__ ,
-                                  "incorrect memory allocation for a random generator" );
-    return NULL;
-  }
-  if(( rnd->data = malloc( sizeof( struct random_winrtl ))) == NULL ) {
-    ak_error_message( ak_error_out_of_memory, __func__ ,
+
+  int error = ak_error_ok;
+  if(( error = ak_random_create( generator )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "wrong initialization of random generator" );
+
+  if(( generator->data = malloc( sizeof( struct random_winrtl ))) == NULL )
+    return ak_error_message( ak_error_out_of_memory, __func__ ,
            "incorrect memory allocation for an internal variables of random generator" );
-    return ( rnd = ak_random_delete( rnd ));
-  }
 
   /* теперь мы открываем криптопровайдер для доступа к генерации случайных значений */
   if( !CryptAcquireContext( &handle, NULL, NULL, PROV_RSA_FULL, 0 )) {
@@ -520,16 +426,17 @@
     if( !CryptAcquireContext( &handle, NULL, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET )) {
       ak_error_message_fmt( ak_error_open_file, __func__ ,
                        "wrong opening a system crypto provider with error: %x", GetLastError( ));
-      return ( rnd = ak_random_delete( rnd ));
+      ak_random_destroy( generator );
+      return ak_error_open_file;
     }
   }
-  (( ak_random_winrtl )rnd->data)->handle = handle;
+  (( ak_random_winrtl )generator->data)->handle = handle;
 
-  rnd->next = NULL;
-  rnd->randomize =NULL;
-  rnd->randomize_ptr = NULL;
-  rnd->random = ak_random_winrtl_random;
-  rnd->free = ak_random_winrtl_free; /* эта функция должна закрыть открытый ранее криптопровайдер */
+  generator->next = NULL;
+  generator->randomize =NULL;
+  generator->randomize_ptr = NULL;
+  generator->random = ak_random_winrtl_random;
+  generator->free = ak_random_winrtl_free; /* эта функция должна закрыть открытый ранее криптопровайдер */
 
  return rnd;
 }

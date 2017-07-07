@@ -73,27 +73,27 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание линейного конгруэнтного генератора псевдо-случайных чисел. */
- ak_random ak_random_new_lcg( void );
+ int ak_random_create_lcg( ak_random );
 /*! \brief Cоздание генератора, считывающего случайные значения из заданного файла. */
- ak_random ak_random_new_file( const char *filename );
+ int ak_random_create_file( ak_random , const char * );
 #ifdef _WIN32
 /*! \brief Интерфейс доступа к генератору псевдо-случайных чисел, предоставляемому ОС Windows. */
- ak_random ak_random_new_winrtl( void );
+ int ak_random_create_winrtl( ak_random );
 #endif
 
 /* нижеследующие функции должны быть заменены на их аналоги через ak_handle
    и помещены в liabakrypt.h */
 
-/*! \brief Инициализация генератора значением другого псевдо-случайного генератора. */
- int ak_random_randomize( ak_random );
-/*! \brief Инициализация генератора данными, содержащимися в заданной области памяти. */
- int ak_random_randomize_ptr( ak_random, const ak_pointer, const size_t );
-/*! \brief Заполнение заданного массива псевдо случайными данными. */
- int ak_random_ptr( ak_random, const ak_pointer, const size_t );
-/*! \brief Выработка одного псевдо-случайного байта. */
- ak_uint8 ak_random_uint8( ak_random );
-/*! \brief Выработка одного псевдо-случайного слова размером 8 байт (64 бита). */
- ak_uint64 ak_random_uint64( ak_random );
+///*! \brief Инициализация генератора значением другого псевдо-случайного генератора. */
+// int ak_random_randomize( ak_random );
+///*! \brief Инициализация генератора данными, содержащимися в заданной области памяти. */
+// int ak_random_randomize_ptr( ak_random, const ak_pointer, const size_t );
+///*! \brief Заполнение заданного массива псевдо случайными данными. */
+// int ak_random_ptr( ak_random, const ak_pointer, const size_t );
+///*! \brief Выработка одного псевдо-случайного байта. */
+// ak_uint8 ak_random_uint8( ak_random );
+///*! \brief Выработка одного псевдо-случайного слова размером 8 байт (64 бита). */
+// ak_uint64 ak_random_uint64( ak_random );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция генерации случайного 64-х битного целого числа. */

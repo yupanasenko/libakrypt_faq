@@ -120,6 +120,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  #define ak_error_ok                            (0)
+/*! \brief Ошибка выделения оперативной памяти */
  #define ak_error_out_of_memory                (-1)
  #define ak_error_null_pointer                 (-2)
  #define ak_error_zero_length                  (-3)
@@ -132,6 +133,10 @@
  #define ak_error_read_data                   (-13)
  #define ak_error_write_data                  (-14)
  #define ak_error_wrong_handle                (-15)
+/*! \brief Ошибка возникающая в случае неправильного значения размера структуры хранения контекстов */
+ #define ak_error_context_manager_size        (-16)
+/*! \brief Ошибка возникающая при превышении числа возможных элементов структуры хранения контекстов */
+ #define ak_error_context_manager_max_size    (-17)
 
 /* ----------------------------------------------------------------------------------------------- */
  #define ak_null_string                  ("(null)")

@@ -73,8 +73,8 @@
  ak_buffer ak_buffer_new_random( ak_random, const size_t );
 /*! \brief Зачистка данных, хранящихся в буффере. */
  int ak_buffer_wipe( ak_buffer, ak_random );
-/*! \brief Заполнение буффера случайными данными. */
- int ak_buffer_set_random( ak_buffer , ak_random );
+///*! \brief Заполнение буффера случайными данными. */
+// int ak_buffer_set_random( ak_buffer , ak_random );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */
