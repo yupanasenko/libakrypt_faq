@@ -411,15 +411,12 @@
            "incorrect memory allocation for an internal variables of random generator" );
 
   /* теперь мы открываем криптопровайдер для доступа к генерации случайных значений */
-  if( !CryptAcquireContext( &handle, NULL, NULL, PROV_RSA_FULL, 0 )) {
-    ak_error_message( ak_error_ok, __func__,
-                           "key container for crypto provider not exists, trying to create it" );
-    if( !CryptAcquireContext( &handle, NULL, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET )) {
-      ak_error_message_fmt( ak_error_open_file, __func__ ,
-                       "wrong opening a system crypto provider with error: %x", GetLastError( ));
-      ak_random_destroy( generator );
-      return ak_error_open_file;
-    }
+  if( !CryptAcquireContext( &handle, NULL, NULL,
+                                         PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT )) {
+     ak_error_message_fmt( ak_error_ok, __func__,
+                      "wrong opening a system crypto provider with error: %x", GetLastError( ));
+     ak_random_destroy( generator );
+     return ak_error_open_file;
   }
   (( ak_random_winrtl )generator->data)->handle = handle;
 

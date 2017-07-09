@@ -8,4 +8,3 @@ Changes in version 0.5.1
 
 Since early versions of library has another structure of user interface
 we start a new sequence of changelog messages from version 0.5.1.
-
