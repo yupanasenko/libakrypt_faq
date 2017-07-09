@@ -76,8 +76,8 @@
 
 Флаги, передаваемые в исходные тексты (при сборке библиотек и примеров)
 
- - HAVE_SYSLOG_H
- - HAVE_UNISTD_H
+ - LIBAKRYPT_HAVE_SYSLOG_H
+ - LIBAKRYPT_HAVE_UNISTD_H
  - LIBAKRYPT_VERSION
  - LIBAKRYPT_OPTIONS_PATH
 

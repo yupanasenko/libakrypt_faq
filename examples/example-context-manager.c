@@ -41,7 +41,7 @@
                       &manager,
                       buffer = ak_buffer_new_str("string in buffer"),
                       undefined_engine,
-                      NULL, //"buffer description", <- для NULL здесь unconditional jump - разобраться
+                      "",
                       ak_buffer_delete
     /* удаляем буффер, которому не хватило места в структуре */
        )) == ak_error_wrong_handle ) ak_buffer_delete( buffer );
@@ -62,7 +62,7 @@
   printf("list of deleted handles:\n");
   for( i = 0; i < delcount; i++ ) {
      ak_context_manager_delete_node( &manager, delarray[i] );
-     printf("%lu ", delarray[i] );
+     printf("%u ", (unsigned int) delarray[i] );
   }
   printf("\n");
   print_context_managet_status( &manager, 0, 0 );
@@ -78,8 +78,8 @@
 {
   if( manager == NULL ) printf("null\n");
    else {
-     printf("iter: %lu ->address: %016lx, array address: %016lx [size: %ld, handle: %016lx]\n",
-                     iter, (ak_uint64) manager, (ak_uint64)manager->array, manager->size, handle );
+    printf("iter: %u -> [size: %u, handle: %016llx]\n",
+                  (unsigned int)iter, (unsigned int)manager->size, (unsigned long long int)handle );
   }
 }
 

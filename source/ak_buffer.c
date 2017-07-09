@@ -28,7 +28,6 @@
 /*   ak_buffer.c                                                                                   */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_buffer.h>
- #include <ak_random.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция устанавливает значение полей структуры struct buffer в значения по-умолчанию.
@@ -216,12 +215,20 @@
  ak_buffer ak_buffer_new_size( const size_t size )
 {
   ak_buffer buff = NULL;
+  int error = ak_error_ok;
+
   if( size <= 0 ) {
     ak_error_message( ak_error_wrong_length, __func__, "create a buffer with non positive length" );
     return NULL;
   }
-  if( ak_buffer_alloc( buff = ak_buffer_new(), size ) == ak_error_ok ) return buff;
-  return ( buff = ak_buffer_delete( buff ));
+
+  if( ak_buffer_alloc( buff = ak_buffer_new(), size ) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong memory alloction" );
+    return buff = ak_buffer_delete( buff );
+  }
+
+  memset( buff->data, 0, buff->size );
+ return buff;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -542,22 +549,23 @@
 
     @param left Буффер, участвующий в сравнении слева.
     @param right Буффер, участвующий в сравнении справа.
-    @return если данные идентичны, возвращается
-    ak_error_ok (ноль). В противном случае, возвращается вод ошибки.                               */
+    @return Если данные идентичны, то возвращается \ref ak_true.
+    В противном случае, а также в случае возникновения ошибки, возвращается \ref ak_false.
+    Код шибки может быть получен с помощью выщова функции ak_error_get_value().                    */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_buffer_is_equal( const ak_buffer left, const ak_buffer right )
+ ak_bool ak_buffer_is_equal( const ak_buffer left, const ak_buffer right )
 {
   if( left == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a left buffer" );
-    return ak_error_null_pointer;
+    return ak_false;
   }
   if( right == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a right buffer" );
-    return ak_error_null_pointer;
+    return ak_false;
   }
   if( left->size != right->size ) return ak_false;
-  if( memcmp( left->data, right->data, left->size ) == 0 ) return ak_true;
- return ak_false;
+
+ return ak_ptr_is_equal( left->data, right->data, left->size );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

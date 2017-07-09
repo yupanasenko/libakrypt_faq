@@ -29,6 +29,95 @@
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
+/*                                 класс ak_context_manager_node                                   */
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает новый элемент структуры управления контекстами, заполняя его поля значениями,
+    передаваемыми в качестве аргументов функции.
+
+    @param ctx Контекст, который будет храниться в структуре управленияя контекстами
+    @param id Идентификатор контекста, величина по которой пользовать может получить доступ
+    к функциям, реализующим действия с контекстом.
+    @param engine тип контекста: блочный шифр, функия хеширования, массив с данными и т.п.
+    @param description пользовательское описание контекста
+    @param func функция освоюождения памяти, занимаемой контекстом
+    @return Функция возвращает указатель на созданный элемент структуры управления контекстами.
+    В случае возникновения ошибки возвращается NULL. Код ошибки может быть получен с помощью
+    вызова функции ak_error_get_value().                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_context_node ak_context_node_new( ak_pointer ctx, ak_handle id, ak_oid_engine engine,
+                                            const char *description, ak_function_free_object *func )
+{
+  int error = ak_error_ok;
+  ak_context_node node = NULL;
+
+ /* минимальные проверки */
+  if( ctx == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to context" );
+    return NULL;
+  }
+  if( func == NULL ) {
+    ak_error_message( ak_error_undefined_function, __func__,
+                                         "using a null pointer to context free function" );
+    return NULL;
+  }
+
+ /* создаем контекст */
+  if(( node = malloc( sizeof( struct context_node ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__,
+                                  "wrong memory allocation for new context manager node" );
+    return NULL;
+  }
+
+ /* инициализируем буффер и присваиваем ему значение */
+  if(( error = ak_buffer_create( &node->description )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong creation of internal buffer" );
+    return ( node = ak_context_node_delete( node ));
+  }
+
+  if(( error = ak_buffer_set_str( &node->description, description )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong initialization of internal buffer" );
+    return ( node = ak_context_node_delete( node ));
+  }
+
+ /* присваиваем остальные данные */
+  node->ctx = ctx;
+  node->id = id;
+  node->engine = engine;
+  node->free = func;
+  node->status = node_is_equal;
+
+ return node;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param pointer указатель на элемент структуры управления контекстами.
+    @return Функция всегда возвращает NULL.                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_context_node_delete( ak_pointer pointer )
+{
+  ak_context_node node = ( ak_context_node ) pointer;
+
+  if( node == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__,
+                                       "wrong deleting a null pointer to context manager node" );
+    return NULL;
+  }
+
+  ak_buffer_destroy( &node->description );
+
+  if( node->free != NULL ) {
+    if( node->ctx != NULL ) node->ctx = node->free( node->ctx );
+    node->free = NULL;
+  }
+  node->id = ak_error_wrong_handle;
+  node->status = node_undefined;
+  node->engine = undefined_engine;
+  free( node );
+
+ return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Мьютекс для блокировки структуры управления контекстами */
  static pthread_mutex_t ak_context_manager_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -61,7 +150,7 @@
  #ifdef _WIN32
    if(( error = ak_random_create_winrtl( &manager->key_generator )) != ak_error_ok )
      return ak_error_message( error, __func__,
-                           __func__, "wrong initialization of crypto provider random generator" );
+                                     "wrong initialization of crypto provider random generator" );
  #else
    #error Using a not defined path of compilation
  #endif
@@ -200,6 +289,11 @@
     ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to context" );
     return ak_error_wrong_handle;
   }
+  if( description == NULL )  {
+    ak_error_message( ak_error_null_pointer, __func__,
+                                                    "using a null pointer to description string" );
+    return ak_error_wrong_handle;
+  }
 
  /* блокируем доступ к структуре управления контекстами */
   pthread_mutex_lock( &ak_context_manager_mutex );
@@ -246,95 +340,121 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*                                 класс ak_context_manager_node                                   */
+/*                                 теперь глобальный ak_context_manager                            */
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция создает новый элемент структуры управления контекстами, заполняя его поля значениями,
-    передаваемыми в качестве аргументов функции.
+ static ak_context_manager libakrypt_manager = NULL;
 
-    @param ctx Контекст, который будет храниться в структуре управленияя контекстами
-    @param id Идентификатор контекста, величина по которой пользовать может получить доступ
-    к функциям, реализующим действия с контекстом.
-    @param engine тип контекста: блочный шифр, функия хеширования, массив с данными и т.п.
-    @param description пользовательское описание контекста
-    @param func функция освоюождения памяти, занимаемой контекстом
-    @return Функция возвращает указатель на созданный элемент структуры управления контекстами.
-    В случае возникновения ошибки возвращается NULL. Код ошибки может быть получен с помощью
-    вызова функции ak_error_get_value().                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- ak_context_node ak_context_node_new( ak_pointer ctx, ak_handle id, ak_oid_engine engine,
-                                            const char *description, ak_function_free_object *func )
+ int ak_libakrypt_create_context_manager( void )
 {
   int error = ak_error_ok;
-  ak_context_node node = NULL;
 
- /* минимальные проверки */
-  if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to context" );
-    return NULL;
-  }
-  if( func == NULL ) {
-    ak_error_message( ak_error_undefined_function, __func__,
-                                         "using a null pointer to context free function" );
-    return NULL;
-  }
+ /* блокируем доступ */
+  pthread_mutex_lock( &ak_context_manager_mutex );
 
- /* создаем контекст */
-  if(( node = malloc( sizeof( struct context_node ))) == NULL ) {
-    ak_error_message( ak_error_out_of_memory, __func__,
-                                  "wrong memory allocation for new context manager node" );
-    return NULL;
-  }
+  if(( libakrypt_manager = malloc( sizeof( struct context_manager ))) == NULL )
+    ak_error_message( error = ak_error_out_of_memory, __func__, "wrong memory allocation" );
+  else {
+         if(( error = ak_context_manager_create( libakrypt_manager )) != ak_error_ok )
+           ak_error_message( error, __func__, "incorrect initialization of context manager" );
+       }
 
- /* инициализируем буффер и присваиваем ему значение */
-  if(( error = ak_buffer_create( &node->description )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "wrong creation of internal buffer" );
-    return ( node = ak_context_node_delete( node ));
-  }
-
-  if(( error = ak_buffer_set_str( &node->description, description )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "wrong initialization of internal buffer" );
-    return ( node = ak_context_node_delete( node ));
-  }
-
- /* присваиваем остальные данные */
-  node->ctx = ctx;
-  node->id = id;
-  node->engine = engine;
-  node->free = func;
-  node->status = node_is_equal;
-
- return node;
+  pthread_mutex_unlock( &ak_context_manager_mutex );
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param pointer указатель на элемент структуры управления контекстами.
-    @return Функция всегда возвращает NULL.                                                        */
-/* ----------------------------------------------------------------------------------------------- */
- ak_pointer ak_context_node_delete( ak_pointer pointer )
+ int ak_libakrypt_destroy_context_manager( void )
 {
-  ak_context_node node = ( ak_context_node ) pointer;
+  int error = ak_error_ok;
 
-  if( node == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__,
-                                       "wrong deleting a null pointer to context manager node" );
+  if( libakrypt_manager == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                 "destroying a null pointer to context manager" );
+
+  pthread_mutex_lock( &ak_context_manager_mutex );
+  if(( error = ak_context_manager_destroy( libakrypt_manager )) != ak_error_ok )
+    ak_error_message( error, __func__, "wrong destroing of context manager" );
+
+  free( libakrypt_manager );
+  pthread_mutex_unlock( &ak_context_manager_mutex );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Проверка корректности дескриптора контекста.
+
+    Функция проверяет, что внутренний массив контекстов содержит в себе отличный от NULL контекст
+    с заданным значеним дескриптора ключа. Функция не экспортируется.
+
+    @param key Дескриптор контекста.
+    @return В случае ошибки возвращается ее код. В случае успеха, возвращается значение
+    \ref ak_error_ok                                                                               */
+/* ----------------------------------------------------------------------------------------------- */
+ static inline int ak_handle_check( ak_handle handle )
+{
+  if(( handle < 0 ) || ( handle >= libakrypt_manager->size ))
+    return ak_error_message( ak_error_wrong_handle, __func__, "invalid handle index" );
+
+  if( libakrypt_manager->array[handle] == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using a pointer to context manager node" );
+
+  if( libakrypt_manager->array[handle]->ctx == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__, "using a pointer to null context" );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Проверка корректности криптографического механизма для заданного дескриптора ключа
+
+    Функция проверяет, что заданный дескриптор ключа соответствует заданному
+    криптографическому алгоритму
+    @param key Дескриптор ключа.
+    @return В случае ошибки возвращается \ref ak_error_oid_engine.
+    В случае успеха, возвращается значение \ref ak_error_ok                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ static inline int ak_handle_check_engine( ak_handle handle, ak_oid_engine engine )
+{
+  if( libakrypt_manager->array[handle]->engine != engine )
+    return ak_error_message( ak_error_oid_engine, __func__, "using wrong engine for given handle" );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_libakrypt_get_context( ak_handle handle , ak_oid_engine engine )
+{
+  int error = ak_error_ok;
+
+  if( libakrypt_manager == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to context manager" );
     return NULL;
   }
 
-  ak_buffer_destroy( &node->description );
-
-  if( node->free != NULL ) {
-    if( node->ctx != NULL ) node->ctx = node->free( node->ctx );
-    node->free = NULL;
+  if(( error = ak_handle_check( handle )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong handle" );
+    return NULL;
   }
-  node->id = ak_error_wrong_handle;
-  node->status = node_undefined;
-  node->engine = undefined_engine;
-  free( node );
 
+  if(( error = ak_handle_check_engine( handle, engine )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong handle engine" );
+    return NULL;
+  }
+
+ return libakrypt_manager->array[handle]->ctx;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_context_manager ak_libakrypt_get_context_manager( void )
+{
+  if( libakrypt_manager != NULL ) return libakrypt_manager;
+
+  ak_error_message( ak_error_null_pointer, __func__, "using null pointer to context manager" );
  return NULL;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \example example-context-manager-node.c                                                        */
 /*! \example example-context-manager.c                                                             */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                           ak_context_manager.c  */

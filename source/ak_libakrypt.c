@@ -27,7 +27,7 @@
 /*                                                                                                 */
 /*   ak_libakrypt.c                                                                                */
 /* ----------------------------------------------------------------------------------------------- */
- #include <libakrypt.h>
+ #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тип данных для хранения значений опций библиотеки */
@@ -166,24 +166,28 @@ return ak_error_ok;
 /* ----------------------------------------------------------------------------------------------- */
  int ak_libakrypt_create( ak_function_log *logger )
 {
- int error = ak_true;
- ak_error_set_value( ak_error_ok );
+ int error;
+   ak_error_set_value( error = ak_error_ok );
 
  /* инициализируем систему аудита (вывод сообщений) */
- if(( error = ak_log_set_function( logger )) != ak_error_ok ) {
-   ak_error_message( error, __func__ , "audit mechanism not started" );
-   return ak_false;
- }
+   if(( error = ak_log_set_function( logger )) != ak_error_ok ) {
+     ak_error_message( error, __func__ , "audit mechanism not started" );
+     return ak_false;
+   }
 
  /* проверяем длины фиксированных типов данных */
- if( ak_libakrypt_test_types( ) != ak_true ) {
-   ak_error_message( ak_error_get_value(), __func__ , "sizes of predefined types is wrong" );
-   return ak_false;
- }
+   if( ak_libakrypt_test_types( ) != ak_true ) {
+     ak_error_message( ak_error_get_value(), __func__ , "sizes of predefined types is wrong" );
+     return ak_false;
+   }
 
  /* считываем настройки криптографических алгоритмов */
 
- /* инициализируем механизм обработки идентификаторов */
+ /* инициализируем структуру управления контекстами */
+  if(( error = ak_libakrypt_create_context_manager()) != ak_error_ok ) {
+    ak_error_message( error, __func__, "initialization of context manager is wrong" );
+    return ak_false;
+  }
 
  /* инициализируем механизм обработки секретных ключей пользователей */
 
@@ -206,7 +210,9 @@ return ak_true;
   if( error != ak_error_ok )
     ak_error_message( error, __func__ , "before destroing library holds an error" );
 
- /* деактивируем механизм обработки секретных ключей */
+ /* деактивируем структуру управления контекстами */
+  if(( error = ak_libakrypt_destroy_context_manager()) != ak_error_ok )
+    ak_error_message( error, __func__, "destroying of context manager is wrong" );
 
  /* деактивируем механизм поддержки OID */
 

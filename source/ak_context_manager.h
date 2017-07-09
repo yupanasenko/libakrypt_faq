@@ -30,9 +30,7 @@
 #define __AK_CONTEXT_MANAGER_H__
 
 /* ----------------------------------------------------------------------------------------------- */
- #include <libakrypt.h>
  #include <ak_buffer.h>
- #include <ak_random.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Класс состояний контекста. */
@@ -119,8 +117,11 @@
  int ak_libakrypt_create_context_manager( void );
 /*! \brief Удаление глобальной структуры управления контекстами. */
  int ak_libakrypt_destroy_context_manager( void );
+
 /*! \brief Получение указателя на глобальную структуру управления контекстами. */
  ak_context_manager ak_libakrypt_get_context_manager( void );
+/*! \brief Получение контекста по заданному десткриптору и типу контекста. */
+ ak_pointer ak_libakrypt_get_context( ak_handle, ak_oid_engine );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

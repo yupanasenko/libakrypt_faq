@@ -106,7 +106,7 @@
 /*! \brief Указатель на произвольный объект библиотеки. */
  typedef void *ak_pointer;
 /*! \brief Дескриптор произвольного объекта библиотеки. */
- typedef ak_uint64 ak_handle;
+ typedef ak_int64 ak_handle;
 /*! \brief Стандартная для языка С функция выделения памяти. */
  typedef ak_pointer ( ak_function_alloc )( size_t );
 /*! \brief Стандартная для языка С функция освобождения памяти. */
@@ -119,24 +119,48 @@
  typedef int ( ak_function_log )( const char * );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Результат, говорящий об отсутствии ошибки */
  #define ak_error_ok                            (0)
 /*! \brief Ошибка выделения оперативной памяти */
  #define ak_error_out_of_memory                (-1)
+/*! \brief Ошибка, возникающая при доступе или передаче в качестве аргумента функции null указателя */
  #define ak_error_null_pointer                 (-2)
+/*! \brief Ошибка, возникащая при передаче аргументов функции или выделении памяти нулевой длины */
  #define ak_error_zero_length                  (-3)
+/*! \brief */
  #define ak_error_wrong_length                 (-4)
+/*! \brief */
  #define ak_error_undefined_value              (-5)
+/*! \brief Ошибка использования неопределенного указателя на функцию (вызов null указателя) */
  #define ak_error_undefined_function           (-6)
+/*! \brief */
  #define ak_error_access_file                 (-10)
+/*! \brief */
  #define ak_error_open_file                   (-11)
+/*! \brief */
  #define ak_error_close_file                  (-12)
+/*! \brief */
  #define ak_error_read_data                   (-13)
+/*! \brief */
  #define ak_error_write_data                  (-14)
+/*! \brief */
  #define ak_error_wrong_handle                (-15)
 /*! \brief Ошибка возникающая в случае неправильного значения размера структуры хранения контекстов */
  #define ak_error_context_manager_size        (-16)
 /*! \brief Ошибка возникающая при превышении числа возможных элементов структуры хранения контекстов */
  #define ak_error_context_manager_max_size    (-17)
+/*! \brief */
+ #define ak_error_oid                         (-18)
+/*! \brief */
+ #define ak_error_oid_engine                  (-19)
+/*! \brief */
+ #define ak_error_oid_mode                    (-20)
+/*! \brief */
+ #define ak_error_oid_name                    (-21)
+/*! \brief */
+ #define ak_error_oid_id                      (-22)
+/*! \brief */
+ #define ak_error_oid_index                   (-23)
 
 /* ----------------------------------------------------------------------------------------------- */
  #define ak_null_string                  ("(null)")
@@ -206,13 +230,18 @@
 } ak_oid_mode;
 
 /* ----------------------------------------------------------------------------------------------- */
+ struct buffer;
+/*! \brief Контекст буффера. */
+ typedef struct buffer *ak_buffer;
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает уровень аудита библиотеки. */
  dll_export int ak_log_get_level( void );
 /*! \brief Прямой вывод сообщения аудита. */
  dll_export int ak_log_set_message( const char * );
 /*! \brief Явное задание функции аудита. */
  dll_export int ak_log_set_function( ak_function_log * );
-#ifdef HAVE_SYSLOG_H
+#ifdef LIBAKRYPT_HAVE_SYSLOG_H
  /*! \brief Функиция вывода сообщения об ошибке с помощью демона операционной системы. */
  int ak_function_log_syslog( const char * );
 #endif
@@ -232,14 +261,30 @@
  dll_export const char *ak_libakrypt_version( void );
 /*! \brief Функция инициализации и тестирования криптографических механизмов библиотеки. */
  dll_export int ak_libakrypt_create( ak_function_log * );
-/*! \brief Функция останавки поддержки криптографических механизмов. */
+/*! \brief Функция остановки поддержки криптографических механизмов. */
  dll_export int ak_libakrypt_destroy( void );
 
 /* ----------------------------------------------------------------------------------------------- */
- struct buffer;
-/*! \brief Контекст буффера */
- typedef struct buffer *ak_buffer;
+/*! \brief Создание дескриптора линейного конгруэнтного генератора. */
+ dll_export ak_handle ak_random_new_lcg( void  );
+/*! \brief Создание дескриптора генератора, предоставляющего доступ к заданному файлу с данными. */
+ dll_export ak_handle ak_random_new_file( const char * );
+#ifdef _WIN32
+/*! \brief Создание дескриптора системного генератора ОС Windows. */
+ dll_export ak_handle ak_random_new_winrtl( void );
+#endif
+/*! \brief Заполнение заданного массива случайными данными. */
+ int ak_random_ptr( ak_handle, const ak_pointer, const size_t );
+/*! \brief Создание буффера заданного размера со случайными данными. */
+ ak_buffer ak_random_buffer( ak_handle, const size_t );
+/*! \brief Выработка одного псевдо-случайного байта. */
+ ak_uint8 ak_random_uint8( ak_handle );
+/*! \brief Выработка одного псевдо-случайного слова размером 8 байт (64 бита). */
+ ak_uint64 ak_random_uint64( ak_handle );
+/*! \brief Инициализация генератора данными, содержащимися в заданной области памяти. */
+ int ak_random_randomize( ak_handle, const ak_pointer, const size_t );
 
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание буффера заданного размера. */
  dll_export ak_buffer ak_buffer_new_size( const size_t );
 /*! \brief Создание буффера с данными. */
@@ -267,16 +312,15 @@
 /*! \brief Получение строки символов с шестнадцатеричным значением буффера. */
  dll_export char *ak_buffer_to_hexstr( const ak_buffer );
 /*! \brief Сравнение двух буфферов. */
- dll_export int ak_buffer_is_equal( const ak_buffer, const ak_buffer );
-
-/* ----------------------------------------------------------------------------------------------- */
-
+ dll_export ak_bool ak_buffer_is_equal( const ak_buffer, const ak_buffer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей значение заданной области памяти. */
  dll_export char *ak_ptr_to_hexstr( const ak_pointer , const size_t , const ak_bool );
 /*! \brief Конвертация строки шестнадцатеричных символов в массив данных. */
  dll_export int ak_hexstr_to_ptr( const char *, ak_pointer , const size_t , const ak_bool );
+/*! \brief Сравнение двух областей памяти. */
+ dll_export ak_bool ak_ptr_is_equal( const ak_pointer, const ak_pointer , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Обобщенная реализация функции snprintf для различных компиляторов. */

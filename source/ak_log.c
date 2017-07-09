@@ -31,10 +31,10 @@
  #include <libakrypt.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-#ifdef HAVE_SYSLOG_H
+#ifdef LIBAKRYPT_HAVE_SYSLOG_H
  #include <syslog.h>
 #endif
-#ifdef HAVE_UNISTD_H
+#ifdef LIBAKRYPT_HAVE_UNISTD_H
  #include <unistd.h>
 #endif
 
@@ -66,7 +66,7 @@
   return ak_errno;
 }
 
-#ifdef HAVE_SYSLOG_H
+#ifdef LIBAKRYPT_HAVE_SYSLOG_H
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param message Выводимое сообщение.
     \return В случае успеха, возвращается ak_error_ok (ноль). В случае возникновения ошибки,
@@ -111,7 +111,7 @@
   pthread_mutex_lock( &ak_function_log_default_mutex );
   if( function != NULL ) ak_function_log_default = function;
    else {
-    #ifdef HAVE_SYSLOG_H
+    #ifdef LIBAKRYPT_HAVE_SYSLOG_H
       ak_function_log_default = ak_function_log_syslog;
     #else
       ak_function_log_default = ak_function_log_stderr;
@@ -186,7 +186,7 @@
   char error_event_string[1024];
   memset( error_event_string, 0, 1024 );
 
-#ifdef HAVE_UNISTD_H
+#ifdef LIBAKRYPT_HAVE_UNISTD_H
   ak_snprintf( error_event_string, 1023, "[%d] %s(): %s (code: %d)",
                                                              getpid(), function, message, code );
 #else

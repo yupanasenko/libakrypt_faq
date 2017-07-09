@@ -28,12 +28,13 @@
 /*   ak_random.c                                                                                   */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_random.h>
+ #include <ak_context_manager.h>
+
  #include <time.h>
  #include <fcntl.h>
- #ifndef _WIN32
+ #ifdef LIBAKRYPT_HAVE_UNISTD_H
   #include <unistd.h>
  #endif
- #include <sys/stat.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция устанавливает значение полей структуры struct random в значения по-умолчанию.
@@ -50,7 +51,6 @@
   }
   rnd->data = NULL;
   rnd->next = NULL;
-  rnd->randomize = NULL;
   rnd->randomize_ptr = NULL;
   rnd->random = NULL;
   rnd->free = free;
@@ -84,7 +84,6 @@
   }
   if( rnd->data != NULL ) rnd->free( rnd->data );
   rnd->next = NULL;
-  rnd->randomize = NULL;
   rnd->randomize_ptr = NULL;
   rnd->random = NULL;
   rnd->free = NULL;
@@ -163,17 +162,6 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_random_lcg_randomize( ak_random rnd )
-{
-  if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
-    return ak_error_null_pointer;
-  }
-  (( ak_random_lcg ) ( rnd->data ))->val = ak_random_value();
- return rnd->next( rnd );
-}
-
-/* ----------------------------------------------------------------------------------------------- */
  static int ak_random_lcg_randomize_ptr( ak_random rnd, const ak_pointer ptr, const size_t size )
 {
   size_t idx = 0;
@@ -201,7 +189,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_random_lcg_random( ak_random rnd, const ak_pointer ptr, const size_t size )
+ static int ak_random_lcg_random( ak_random rnd, const ak_pointer ptr, const size_t size )
 {
   size_t i = 0;
   ak_uint8 *value = ptr;
@@ -244,6 +232,8 @@
  int ak_random_create_lcg( ak_random generator )
 {
   int error = ak_error_ok;
+  ak_uint64 qword = ak_random_value(); /* вырабатываем случайное число */
+
   if(( error = ak_random_create( generator )) != ak_error_ok )
     return ak_error_message( error, __func__ , "wrong initialization of random generator" );
 
@@ -252,12 +242,12 @@
               "incorrect memory allocation for an internal variables of random generator" );
 
   generator->next = ak_random_lcg_next;
-  generator->randomize = ak_random_lcg_randomize;
   generator->randomize_ptr = ak_random_lcg_randomize_ptr;
   generator->random = ak_random_lcg_random;
-  /* функция generator->free уже установлена при вызове ak_random_create */
-  generator->randomize( generator ); /* для генерации случайных значений и корректной работы
-                                                 присваиваем какое-то случайное начальное значение */
+ /* функция generator->free уже установлена при вызове ak_random_create */
+
+ /* для корректной работы присваиваем какое-то случайное начальное значение */
+  ak_random_lcg_randomize_ptr( generator, &qword, sizeof( ak_uint64 ));
  return error;
 }
 
@@ -272,7 +262,7 @@
  typedef struct random_file *ak_random_file;
 
 /* ----------------------------------------------------------------------------------------------- */
- void ak_random_file_free( ak_pointer ptr )
+ static void ak_random_file_free( ak_pointer ptr )
 {
   if( ptr == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "freeing a null pointer to data" );
@@ -284,7 +274,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_random_file_random( ak_random rnd, const ak_pointer ptr, const size_t size )
+ static int ak_random_file_random( ak_random rnd, const ak_pointer ptr, const size_t size )
 {
   ak_uint8 *value = ptr;
   size_t result = 0, count = size;
@@ -354,13 +344,14 @@
 
  /* теперь мы открываем заданный пользователем файл */
   if( ((( ak_random_file ) ( generator->data ))->fd = open( filename, O_RDONLY | O_BINARY )) == -1 ) {
-    ak_error_message( ak_error_open_file, __func__ , "wrong opening a file with random data" );
+    ak_error_message_fmt( ak_error_open_file, __func__ ,
+                                  "wrong opening a file \"%s\" with random data", filename );
+    //generator = ak_random_delete( generator );
     ak_random_destroy( generator );
     return ak_error_open_file;
   }
 
   generator->next = NULL;
-  generator->randomize =NULL;
   generator->randomize_ptr = NULL;
   generator->random = ak_random_file_random;
   generator->free = ak_random_file_free; /* эта функция должна закрыть открытый ранее файл */
@@ -384,7 +375,7 @@
  typedef struct random_winrtl *ak_random_winrtl;
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_random_winrtl_random( ak_random rnd, const ak_pointer ptr, const size_t size )
+ static int ak_random_winrtl_random( ak_random rnd, const ak_pointer ptr, const size_t size )
 {
   if( !CryptGenRandom( (( ak_random_winrtl )rnd->data)->handle, size, ptr ))
     return ak_error_message( ak_error_undefined_value, __func__,
@@ -393,7 +384,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- void ak_random_winrtl_free( ak_pointer ptr )
+ static void ak_random_winrtl_free( ak_pointer ptr )
 {
   if( ptr == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "freeing a null pointer to data" );
@@ -433,19 +424,254 @@
   (( ak_random_winrtl )generator->data)->handle = handle;
 
   generator->next = NULL;
-  generator->randomize =NULL;
   generator->randomize_ptr = NULL;
   generator->random = ak_random_winrtl_random;
   generator->free = ak_random_winrtl_free; /* эта функция должна закрыть открытый ранее криптопровайдер */
 
- return rnd;
+ return error;
 }
 
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
+/*                               реализация интерфейсных функций                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ static ak_handle ak_random_new_handle( ak_random generator )
+{
+  ak_context_manager manager = NULL;
+  ak_handle handle = ak_error_wrong_handle;
+
+ /* получаем доступ к структуре управления контекстами */
+  if(( manager = ak_libakrypt_get_context_manager()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "using a non initialized context manager" );
+    generator = ak_random_delete( generator );
+    return ak_error_wrong_handle;
+  }
+
+ /* создаем элемент структуры управления контекстами */
+  if(( handle = ak_context_manager_add_node(
+           manager, generator, random_generator, "", ak_random_delete )) == ak_error_wrong_handle ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong creation of context manager node" );
+    generator = ak_random_delete( generator );
+    return ak_error_wrong_handle;
+  }
+
+ return handle;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_random_new_lcg( void  )
+{
+  int error = ak_error_ok;
+  ak_random generator = NULL;
+
+ /* создаем генератор */
+  if(( generator = malloc( sizeof( struct random ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ ,
+                                                  "wrong creation of random generator context" );
+    return ak_error_wrong_handle;
+  }
+
+ /* инициализируем его */
+  if(( error = ak_random_create_lcg( generator )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong initialization of random generator" );
+    free( generator );
+    return ak_error_wrong_handle;
+  }
+
+ /* помещаем в стуктуру управления контекстами */
+ return ak_random_new_handle( generator );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_random_new_file( const char *filename  )
+{
+ int error = ak_error_ok;
+ ak_random generator = NULL;
+
+ /* создаем генератор */
+  if(( generator = malloc( sizeof( struct random ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ ,
+                                                  "wrong creation of random generator context" );
+    return ak_error_wrong_handle;
+  }
+
+ /* инициализируем его */
+  if(( error = ak_random_create_file( generator, filename )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong initialization a random generator" );
+    free( generator );
+    return ak_error_wrong_handle;
+  }
+
+ /* помещаем в стуктуру управления контекстами */
+ return ak_random_new_handle( generator );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+#ifdef _WIN32
+ ak_handle ak_random_new_winrtl( void  )
+{
+  int error = ak_error_ok;
+  ak_random generator = NULL;
+
+ /* создаем генератор */
+  if(( generator = malloc( sizeof( struct random ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ ,
+                                                  "wrong creation of random generator context" );
+    return ak_error_wrong_handle;
+  }
+
+ /* инициализируем его */
+  if(( error = ak_random_create_winrtl( generator )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong initialization of random generator" );
+    free( generator );
+    return ak_error_wrong_handle;
+  }
+
+ /* помещаем в стуктуру управления контекстами */
+ return ak_random_new_handle( generator );
+}
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param handle дескриптор генератора псевдо-случайных данных
+    @param ptr указатель на область памяти, в которую помещаются значения
+    @param size размер памяти в байтах
+    @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_random_ptr( ak_handle handle, const ak_pointer ptr, const size_t size )
+{
+  int error = ak_error_ok;
+  ak_random generator = NULL;
+
+  if(( generator = ak_libakrypt_get_context( handle, random_generator )) == NULL )
+    return ak_error_message( error = ak_error_get_value(), __func__ , "wrong handle" );
+
+  if( generator->random != NULL ) {
+    if(( error = generator->random( generator, ptr, size )) != ak_error_ok )
+      ak_error_message( error, __func__, "wrong generation of random data" );
+    return error;
+  }
+ return ak_error_message( ak_error_undefined_function, __func__ ,
+                                                 "use a null pointer to a function " );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param handle дескриптор генератора псевдо-случайных данных
+    @return В случае успеха возвращается псевдо-случайное число.
+    В случае возникновения ошибки возвращается ноль. Код ошибки может быть получен с помощью
+    вызова функции ak_error_get_value().                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_uint64 ak_random_uint64( ak_handle handle )
+{
+  ak_uint64 qword = 0;
+  ak_random generator = NULL;
+
+  if(( generator = ak_libakrypt_get_context( handle, random_generator )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+    return qword;
+  }
+
+  if( generator->random != NULL ) {
+    if( generator->random( generator, &qword, sizeof( ak_uint64 )) != ak_error_ok )
+      ak_error_message( ak_error_get_value(), __func__, "wrong generation of random data" );
+    return qword;
+  } ak_error_message( ak_error_undefined_function, __func__ ,
+                                                    "using a null pointer to a function " );
+ return qword;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param handle дескриптор генератора псевдо-случайных данных
+    @return В случае успеха возвращается псевдо-случайное число.
+    В случае возникновения ошибки возвращается ноль. Код ошибки может быть получен с помощью
+    вызова функции ak_error_get_value().                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_uint8 ak_random_uint8( ak_handle handle )
+{
+  ak_uint64 byte = 0;
+  ak_random generator = NULL;
+
+  if(( generator = ak_libakrypt_get_context( handle, random_generator )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+    return byte;
+  }
+
+  if( generator->random != NULL ) {
+    if( generator->random( generator, &byte, sizeof( ak_uint8 )) != ak_error_ok )
+      ak_error_message( ak_error_get_value(), __func__, "wrong generation of random data" );
+    return byte;
+  } ak_error_message( ak_error_undefined_function, __func__ ,
+                                                    "using a null pointer to a function " );
+ return byte;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param handle дескриптор генератора псевдо-случайных данных
+    @param size размер создаваемого буффера в байтах
+    @return В случае успеха возвращается указатель на созданный буффер. В случае возникновения
+    ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_random_buffer( ak_handle handle, const size_t size )
+{
+ ak_buffer buffer = NULL;
+ ak_random generator = NULL;
+
+ /* получаем контекст */
+  if(( generator = ak_libakrypt_get_context( handle, random_generator )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+    return NULL;
+  }
+
+ /* проверяем, что функция генерации определена */
+  if( generator->random == NULL ) {
+    ak_error_message( ak_error_undefined_function, __func__ , "use a null pointer to a function " );
+    return NULL;
+  }
+
+ /* создаем буффер */
+  if(( buffer = ak_buffer_new_size( size )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong buffer creation" );
+    return NULL;
+  }
+
+ /* вырабатываем псевдо-случайные значения */
+  if( generator->random( generator, buffer->data, buffer->size ) != ak_error_ok )
+    ak_error_message( ak_error_get_value(), __func__, "wrong generation of random data" );
+
+ return buffer;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param handle дескриптор генератора псевдо-случайных данных
+    @param ptr указатель на область памяти, в которую помещаются значения
+    @param size размер памяти в байтах
+    @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_random_randomize( ak_handle handle, const ak_pointer ptr, const size_t size )
+{
+ int error = ak_error_ok;
+ ak_random generator = NULL;
+
+  if(( generator = ak_libakrypt_get_context( handle, random_generator )) == NULL )
+    return ak_error_message( error = ak_error_get_value(), __func__ , "wrong handle" );
+
+  if( generator->randomize_ptr != NULL ) {
+       if(( error = generator->randomize_ptr( generator, ptr, size )) != ak_error_ok )
+         ak_error_message( error, __func__, "wrong randomization of random generator" );
+       return error;
+  }
+ return ak_error_message( ak_error_undefined_function, __func__ ,
+                                                    "use a null pointer to a function " );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \example example-random.c                                                                      */
-/*! \example example-random-sys.c                                                                  */
+/*! \example example-randomize.c                                                                   */
+/*! \example example-random-system.c                                                               */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                    ak_random.c  */
 /* ----------------------------------------------------------------------------------------------- */
