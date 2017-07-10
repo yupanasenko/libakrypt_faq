@@ -587,7 +587,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_uint8 ak_random_uint8( ak_handle handle )
 {
-  ak_uint64 byte = 0;
+  ak_uint8 byte = 0;
   ak_random generator = NULL;
 
   if(( generator = ak_libakrypt_get_context( handle, random_generator )) == NULL ) {

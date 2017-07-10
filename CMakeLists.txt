@@ -30,12 +30,6 @@ option( LIBAKRYPT_SHARED_LIB "Build the shared library" OFF )
 option( LIBAKRYPT_GMP_TESTS "Build test programs with libGMP" OFF)
 
 # -------------------------------------------------------------------------------------------------- #
-# подключаем модули CMake для тонкой настройки параметров сборки
-set( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
-include( DetectHeaders )
-include( DetectFlags )
-
-# -------------------------------------------------------------------------------------------------- #
 # множество исходных текстов библиотеки
 set( MAIN_HEADER   source/libakrypt.h )
 
@@ -68,6 +62,14 @@ set( OTHERS        CMakeLists.txt
                    libakrypt-run.sh )
 
 # -------------------------------------------------------------------------------------------------- #
+# подключаем модули CMake для тонкой настройки параметров сборки
+set( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
+include( DetectHeaders )
+include( DetectLibraries )
+include( DetectFlags )
+
+
+# -------------------------------------------------------------------------------------------------- #
 # сборка библиотек - статической и, если нужно, динамической
 include_directories( "./source" )
 add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
@@ -79,6 +81,7 @@ endif()
 if( LIBAKRYPT_SHARED_LIB )
   add_library( akrypt-shared SHARED ${MAIN_HEADER} ${SOURCES} )
   set_target_properties( akrypt-shared PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
+  target_link_libraries( akrypt-shared ${LIBAKRYPT_LIBS} )
 endif()
 #
 if( LIBAKRYPT_STATIC_LIB )
@@ -98,7 +101,7 @@ set( EXAMPLES_LIST intro
 if( LIBAKRYPT_STATIC_LIB )
   foreach( programm ${EXAMPLES_LIST} )
      add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
-     target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static )
+     target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
   endforeach()
 endif()
 
@@ -106,7 +109,7 @@ endif()
 if( LIBAKRYPT_SHARED_LIB )
   foreach( programm ${EXAMPLES_LIST} )
      add_executable( example-dynamic-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
-     target_link_libraries( example-dynamic-${programm}${LIBAKRYPT_EXT} akrypt-shared )
+     target_link_libraries( example-dynamic-${programm}${LIBAKRYPT_EXT} akrypt-shared ${LIBAKRYPT_LIBS} )
   endforeach()
 endif()
 
