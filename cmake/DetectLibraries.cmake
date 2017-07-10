@@ -5,6 +5,15 @@ if( MSVC )
   if( PTHREAD )
     message("-- Searching pthreadVC2 - done ")
     set( LIBAKRYPT_LIBS pthreadVC2 )
+    check_c_source_compiles("
+       #include <pthread.h>
+        int main( void ) {
+        return 0;
+    }" LIBAKRYPT_HAVE_STRUCT_TIMESPEC )
+    if( LIBAKRYPT_HAVE_STRUCT_TIMESPEC )
+    else()
+      set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_STRUCT_TIMESPEC" )
+    endif()
   else()
     message("-- pthreadVC2 not found")
     exit()
