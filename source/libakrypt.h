@@ -274,15 +274,15 @@
  dll_export ak_handle ak_random_new_winrtl( void );
 #endif
 /*! \brief Заполнение заданного массива случайными данными. */
- int ak_random_ptr( ak_handle, const ak_pointer, const size_t );
+ dll_export int ak_random_ptr( ak_handle, const ak_pointer, const size_t );
 /*! \brief Создание буффера заданного размера со случайными данными. */
- ak_buffer ak_random_buffer( ak_handle, const size_t );
+ dll_export ak_buffer ak_random_buffer( ak_handle, const size_t );
 /*! \brief Выработка одного псевдо-случайного байта. */
- ak_uint8 ak_random_uint8( ak_handle );
+ dll_export ak_uint8 ak_random_uint8( ak_handle );
 /*! \brief Выработка одного псевдо-случайного слова размером 8 байт (64 бита). */
- ak_uint64 ak_random_uint64( ak_handle );
+ dll_export ak_uint64 ak_random_uint64( ak_handle );
 /*! \brief Инициализация генератора данными, содержащимися в заданной области памяти. */
- int ak_random_randomize( ak_handle, const ak_pointer, const size_t );
+ dll_export int ak_random_randomize( ak_handle, const ak_pointer, const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание буффера заданного размера. */
