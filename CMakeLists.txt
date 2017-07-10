@@ -68,7 +68,6 @@ include( DetectHeaders )
 include( DetectLibraries )
 include( DetectFlags )
 
-
 # -------------------------------------------------------------------------------------------------- #
 # сборка библиотек - статической и, если нужно, динамической
 include_directories( "./source" )
@@ -117,13 +116,13 @@ endif()
 set( INTERNAL_EXAMPLES_LIST
                    context-manager-node
                    context-manager )
+
 if( CMAKE_HOST_UNIX )
   foreach( programm ${INTERNAL_EXAMPLES_LIST} )
     add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
     target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static )
   endforeach()
 endif()
-
 
 # -------------------------------------------------------------------------------------------------- #
 if( CMAKE_HOST_UNIX )

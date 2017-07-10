@@ -27,7 +27,6 @@
 /*                                                                                                 */
 /*   ak_random.c                                                                                   */
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_random.h>
  #include <ak_context_manager.h>
 
  #include <time.h>
