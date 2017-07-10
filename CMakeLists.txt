@@ -13,7 +13,7 @@
 # cmake -G "NMake Makefiles" path && nmake
 
 # сборка при MinGW из консоли MSYS (WINDOWS)
-# cmake -G "MinGW Makefiles" path && make
+# cmake -G "MinGW Makefiles" -D CMAKE_C_COMPILER=gcc path && mingw32-make
 # -------------------------------------------------------------------------------------------------- #
 cmake_minimum_required( VERSION 2.8 )
 project( libakrypt )
