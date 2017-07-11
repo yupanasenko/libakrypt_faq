@@ -184,15 +184,15 @@ return ak_error_ok;
 
  /* считываем настройки криптографических алгоритмов */
 
- /* инициализируем механизм обработки идентификаторов библиотеки */
-   if(( error = ak_oids_create()) != ak_error_ok ) {
-     ak_error_message( error, __func__ , "OID's support not started" );
-     return ak_false;
-   }
-
  /* инициализируем структуру управления контекстами */
    if(( error = ak_libakrypt_create_context_manager()) != ak_error_ok ) {
      ak_error_message( error, __func__, "initialization of context manager is wrong" );
+     return ak_false;
+   }
+
+ /* инициализируем механизм обработки идентификаторов (OID) библиотеки */
+   if(( error = ak_oids_create()) != ak_error_ok ) {
+     ak_error_message( error, __func__ , "OID's support not started" );
      return ak_false;
    }
 
@@ -220,10 +220,6 @@ return ak_true;
  /* деактивируем структуру управления контекстами */
   if(( error = ak_libakrypt_destroy_context_manager()) != ak_error_ok )
     ak_error_message( error, __func__, "destroying of context manager is wrong" );
-
- /* деактивируем механизм поддержки OID */
-  if(( error = ak_oids_destroy()) != ak_error_ok )
-    ak_error_message( error, __func__ , "OID's support not properly destroyed" );
 
   ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms successfully destroyed" );
  return ak_error_get_value();

@@ -545,31 +545,35 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param oid Идентификатор генератора псевдо-случайных чисел.
-    @return Функция возвращает десткриптор созданного объекта. Если дескриптор не может быть создан,
-    или oid не соотвествует генератору псевдо-случайных чисел, то возбуждается ошибка и возвращается
-    значение \ref ak_error_wrong_handle. Кош ошибки может быть получен с помощью вызова
-    функции ak_error_get_value().                                                                  */
+/*! @param oid дескриптор OID генератора псевдо-случайных чисел.
+    @return Функция возвращает десткриптор созданного генератора псевдо-случайных чисел.
+    Если дескриптор не может быть создан, или oid не соотвествует генератору псевдо-случайных чисел,
+    то возбуждается ошибка и возвращается значение \ref ak_error_wrong_handle. Кош ошибки может
+    быть получен с помощью вызова функции ak_error_get_value().                                    */
 /* ----------------------------------------------------------------------------------------------- */
- ak_handle ak_random_new_oid( ak_oid oid )
+ ak_handle ak_random_new_oid( ak_handle oid_handle )
 {
-  ak_handle handle = ak_error_wrong_handle;
+  ak_handle random_handle = ak_error_wrong_handle;
+  ak_oid oid = ak_libakrypt_get_context( oid_handle, oid_engine );
 
-  if( oid == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to oid" );
-    return ak_error_wrong_handle;
-  }
-  if( oid->engine != random_generator ) {
-    ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
-    return ak_error_wrong_handle;
-  }
+  /* проверяем, что handle от OID */
+   if( oid == NULL ) {
+     ak_error_message( ak_error_get_value(), __func__ , "using wrong value of handle" );
+     return ak_error_wrong_handle;
+   }
 
-  if(( handle = ((ak_function_random_new *) oid->data)()) == ak_error_wrong_handle )
-    ak_error_message( ak_error_get_value(), __func__ , "wrong creation of random generator handle");
+  /* проверяем, что OID от генератора псевдо-случайных чисел */
+   if( oid->engine != random_generator ) {
+     ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
+     return ak_error_wrong_handle;
+   }
 
- return handle;
+  /* теперь создаем генератор */
+   if(( random_handle = ((ak_function_random_new *) oid->data)()) == ak_error_wrong_handle )
+     ak_error_message( ak_error_get_value(), __func__ , "wrong creation of random generator handle");
+
+ return random_handle;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param handle дескриптор генератора псевдо-случайных данных

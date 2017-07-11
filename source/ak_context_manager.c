@@ -260,11 +260,43 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Получение точного значения дескриптора.
+
+  По заданному значению индекса массива idx функция вычисляет значение дескриптора,
+  доступного пользователю. Обратное преобразование задается функцией
+  ak_context_manager_handle_to_idx().
+
+  @param manager Указатель на структуру управления контекстами
+  @param idx Индекс контекста в массиве
+  @return Функция возвращает значение дескриптора контекста.                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ static ak_handle ak_context_manager_idx_to_handle( ak_context_manager manager, size_t idx )
+{
+  return idx;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Получение точного значения индекса массива.
+
+  По заданному значению дескриптора контекста handle функция вычисляет значение
+  индекса массива, по адресу которого располагается контекст.
+  Обратное преобразование задается функцией ak_context_manager_idx_to_handle().
+
+  @param manager Указатель на структуру управления контекстами
+  @param handle Дескриптор контектса
+  @return Функция возвращает значение дескриптора контекста.                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ static ak_handle ak_context_manager_handle_to_idx( ak_context_manager manager, ak_handle handle )
+{
+  return handle;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция находит первый равный NULL адрес элемента структуры и
     помещает по этому адресу новый элемент. В случае, если текущей объем памяти недостаточен для
     размещения нового элемента, происходит выделение нового фрагмента памяти.
 
-    @param manager Указатель на структуру управления ключами
+    @param manager Указатель на структуру управления контекстами
     @param ctx Контекст, который будет храниться в структуре управленияя контекстами
     @param engine тип контекста: блочный шифр, функия хеширования, массив с данными и т.п.
     @param description пользовательское описание контекста
@@ -279,6 +311,7 @@
   size_t idx = 0;
   int error = ak_error_ok;
   ak_context_node node = NULL;
+  ak_handle handle = ak_error_wrong_handle;
 
  /* минимальные проверки */
   if( manager == NULL ) {
@@ -304,14 +337,15 @@
   }
   if( idx == manager->size ) {
     if(( error =  ak_context_manager_morealloc( manager )) != ak_error_ok ) {
-      ak_error_message( error, __func__, "wrong creation of context descriptor" );
+      ak_error_message( error, __func__, "wrong allocation a new memory for context manager" );
       pthread_mutex_unlock( &ak_context_manager_mutex );
       return ak_error_wrong_handle;
     }
   }
 
  /* адрес найден, теперь размещаем контекст */
-  if(( node = ak_context_node_new( ctx, idx, engine, description, func )) == NULL ) {
+  handle = ak_context_manager_idx_to_handle( manager, idx );
+  if(( node = ak_context_node_new( ctx, handle, engine, description, func )) == NULL ) {
     ak_error_message( ak_error_get_value(), __func__, "wrong creation of context manager node" );
     pthread_mutex_unlock( &ak_context_manager_mutex );
     return ak_error_wrong_handle;
@@ -319,22 +353,59 @@
   manager->array[idx] = node;
   pthread_mutex_unlock( &ak_context_manager_mutex );
 
- return idx;
+ return handle;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_context_manager_delete_node( ak_context_manager manager, ak_handle idx )
+ int ak_context_manager_delete_node( ak_context_manager manager, ak_handle handle )
 {
+  size_t idx = 0;
+
   if( manager == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using a null pointer to context manager" );
-  if(( idx < 0 ) || ( idx >= manager->size ))
-    return ak_error_message( ak_error_wrong_handle, __func__,
-                                                      "using an unexpected value of secret key" );
-
- /* блокируем доступ и изменяем поля структуры управления контекстами */
+ /* получаем индекс из значения дескриптора */
+  idx = ak_context_manager_handle_to_idx( manager, handle );
+  if( idx >= manager->size ) return ak_error_message( ak_error_wrong_handle, __func__,
+                                                          "using an unexpected value of handle" );
+ /* блокируем доступ и удаляем объект */
   pthread_mutex_lock( &ak_context_manager_mutex );
   manager->array[idx] = ak_context_node_delete( manager->array[idx] );
   pthread_mutex_unlock( &ak_context_manager_mutex );
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Проверка корректности индекса контекста.
+
+    Функция проверяет, что внутренний массив контекстов содержит в себе отличный от NULL контекст
+    с заданным значеним дескриптора ключа. Функция не экспортируется.
+
+    @param manager Контекст структуры управления контекстами.
+    @param key Дескриптор контекста.
+    @return В случае ошибки возвращается ее код. В случае успеха, возвращается значение
+    \ref ak_error_ok                                                                               */
+/* ----------------------------------------------------------------------------------------------- */
+ static inline int ak_context_manager_handle_check( ak_context_manager manager,
+                                                                      ak_handle handle, size_t *idx )
+{
+ /* проверяем менеджер контекстов */
+  if( manager == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                     "using null pointer to context manager" );
+ /* определяем индекс */
+  *idx = ak_context_manager_handle_to_idx( manager, handle );
+
+ /* проеряем границы */
+  if( *idx >= manager->size )
+    return ak_error_message( ak_error_wrong_handle, __func__, "invalid handle index" );
+
+ /* проверяем наличие node */
+  if( manager->array[*idx] == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__,
+                                                 "using a null pointer to context manager node" );
+ /* проверяем наличие контекста */
+  if( manager->array[*idx]->ctx == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__, "using null pointer to context" );
 
  return ak_error_ok;
 }
@@ -382,75 +453,95 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Проверка корректности дескриптора контекста.
-
-    Функция проверяет, что внутренний массив контекстов содержит в себе отличный от NULL контекст
-    с заданным значеним дескриптора ключа. Функция не экспортируется.
-
-    @param key Дескриптор контекста.
-    @return В случае ошибки возвращается ее код. В случае успеха, возвращается значение
-    \ref ak_error_ok                                                                               */
-/* ----------------------------------------------------------------------------------------------- */
- static inline int ak_handle_check( ak_handle handle )
-{
-  if(( handle < 0 ) || ( handle >= libakrypt_manager->size ))
-    return ak_error_message( ak_error_wrong_handle, __func__, "invalid handle index" );
-
-  if( libakrypt_manager->array[handle] == NULL )
-    return ak_error_message( ak_error_null_pointer, __func__,
-                                                      "using a pointer to context manager node" );
-
-  if( libakrypt_manager->array[handle]->ctx == NULL )
-    return ak_error_message( ak_error_null_pointer, __func__, "using a pointer to null context" );
- return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Проверка корректности криптографического механизма для заданного дескриптора ключа
-
-    Функция проверяет, что заданный дескриптор ключа соответствует заданному
-    криптографическому алгоритму
-    @param key Дескриптор ключа.
-    @return В случае ошибки возвращается \ref ak_error_oid_engine.
-    В случае успеха, возвращается значение \ref ak_error_ok                                        */
-/* ----------------------------------------------------------------------------------------------- */
- static inline int ak_handle_check_engine( ak_handle handle, ak_oid_engine engine )
-{
-  if( libakrypt_manager->array[handle]->engine != engine )
-    return ak_error_message( ak_error_oid_engine, __func__, "using wrong engine for given handle" );
- return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
- ak_pointer ak_libakrypt_get_context( ak_handle handle , ak_oid_engine engine )
-{
-  int error = ak_error_ok;
-
-  if( libakrypt_manager == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to context manager" );
-    return NULL;
-  }
-
-  if(( error = ak_handle_check( handle )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "wrong handle" );
-    return NULL;
-  }
-
-  if(( error = ak_handle_check_engine( handle, engine )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "wrong handle engine" );
-    return NULL;
-  }
-
- return libakrypt_manager->array[handle]->ctx;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
  ak_context_manager ak_libakrypt_get_context_manager( void )
 {
   if( libakrypt_manager != NULL ) return libakrypt_manager;
 
   ak_error_message( ak_error_null_pointer, __func__, "using null pointer to context manager" );
  return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_libakrypt_get_context( ak_handle handle , ak_oid_engine engine )
+{
+  size_t idx = 0;
+  int error = ak_context_manager_handle_check( libakrypt_manager, handle, &idx );
+
+  if( error != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong handle" );
+    return NULL;
+  }
+
+  if( libakrypt_manager->array[idx]->engine != engine ) {
+    ak_error_message( ak_error_oid_engine, __func__, "using wrong engine for given handle" );
+    return NULL;
+  }
+
+ return libakrypt_manager->array[idx]->ctx;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @return В случае успеха функция возвращает тип криптографического механизма. В противном случае,
+   возвращается значение \ref undefined_engine. Код ошибки может быть получен с помощью вызова
+   функции ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_oid_engine ak_handle_get_engine( ak_handle handle )
+{
+  size_t idx = 0;
+  int error = ak_context_manager_handle_check( libakrypt_manager, handle, &idx );
+
+  if( error == ak_error_ok ) return libakrypt_manager->array[idx]->engine;
+
+  ak_error_message( error, __func__, "wrong handle" );
+ return undefined_engine;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @return В случае успеха функция возвращает строку символов, содержащую символьное описание
+   типа криптографического механизма. В противном случае,
+   возвращается значение \ref ak_null_string. Код ошибки может быть получен с помощью вызова
+   функции ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ const char *ak_handle_get_engine_str( ak_handle handle )
+{
+  size_t idx = 0;
+  int error = ak_context_manager_handle_check( libakrypt_manager, handle, &idx );
+
+  if( error != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong handle" );
+    return ak_null_string;
+  }
+
+  switch( libakrypt_manager->array[idx]->engine )
+ {
+   case undefined_engine:  return "undefined engine";
+   case identifier:        return "identifier";
+   case block_cipher:      return "block cipher";
+   case stream_cipher:     return "stream cipher";
+   case hybrid_cipher:     return "hybrid cipher";
+   case hash_function:     return "hash function";
+   case mac_function:      return "mac function";
+   case digital_signature: return "digital signature";
+   case random_generator:  return "random generator";
+   case update_engine:     return "update engine";
+   case oid_engine:        return "oid engine";
+   default:                return ak_null_string;
+ }
+
+ return ak_null_string;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция уничтожает дескриптор, а также контекст объекта,
+   связанного с данным дескриптором.
+
+    @param handle Дескриптор уничтожаемого объекта.
+    @return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_handle_delete( ak_handle handle )
+{
+  return ak_context_manager_delete_node( libakrypt_manager, handle );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -12,7 +12,7 @@
 
  /* создаем генератор, предоставляющий интерфейс к системному генератору */
 #ifdef __linux__
-  if(( handle = ak_random_new_file("/dev/random")) == ak_error_wrong_handle )
+  if(( handle = ak_random_new_dev_random( )) == ak_error_wrong_handle )
     return ak_libakrypt_destroy();
 #endif
 #ifdef _WIN32
@@ -33,7 +33,7 @@
   }
 
  /* самостоятельно удаляем дескриптор генератора */
- // ak_hanlde_delete( handle );
+  ak_handle_delete( handle );
 
  return ak_libakrypt_destroy();
 }

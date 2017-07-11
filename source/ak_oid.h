@@ -34,6 +34,9 @@
  #include <ak_buffer.h>
 
 /* ----------------------------------------------------------------------------------------------- */
+ typedef ak_pointer ( ak_function_pointer_void )( void );
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Класс для хранения идентификаторов объектов (криптографических механизмов) и их данных. */
 /*! OID (Object IDentifier) это уникальная последовательность чисел, разделенных точками.
 
@@ -52,29 +55,30 @@
   /*! \brief режим использования криптографического алгоритма */
    ak_oid_mode mode;
   /*! \brief читаемое имя (для пользователя) */
-   ak_buffer name;
+   struct buffer name;
   /*! \brief собственно OID (cтрока чисел, разделенных точками) */
-   ak_buffer id;
+   struct buffer id;
   /*! \brief указатель на данные */
-   ak_pointer data;
+   ak_function_pointer_void *data;
 };
+/*! \brief Контекст идентификатора объекта. */
+ typedef struct oid *ak_oid;
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Инициализация внутреннего массива с OID библиотеки. */
- int ak_oids_create( void );
-/*! \brief Удаление внутреннего массива с OID библиотеки. */
- int ak_oids_destroy( void );
-/*! \brief Инициализация контекста OID. */
- int ak_oid_create( ak_oid oid, ak_oid_engine , ak_oid_mode ,
-                                                        const char * , const char * , ak_pointer );
 /*! \brief Создание контекста OID. */
- ak_oid ak_oid_new( ak_oid_engine , ak_oid_mode , const char * , const char * , ak_pointer );
+ ak_oid ak_oid_new( ak_oid_engine , ak_oid_mode , const char * ,
+                                                         const char * , ak_function_pointer_void );
+/*! \brief Инициализация контекста OID. */
+ int ak_oid_create( ak_oid oid,
+          ak_oid_engine , ak_oid_mode , const char * , const char * , ak_function_pointer_void * );
 /*! \brief Освобождение памяти из под контекста OID. */
  ak_pointer ak_oid_delete( ak_pointer );
 /*! \brief Освобождение памяти из под данных, хранящихся в контексте OID. */
  int ak_oid_destroy( ak_oid );
-/*! \brief Получение указателя на внутренние данные OID. */
- const ak_pointer ak_oid_get_data( ak_oid );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Инициализация внутреннего списка OID библиотеки */
+ int ak_oids_create( void );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */
