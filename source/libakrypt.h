@@ -235,6 +235,11 @@
  typedef struct buffer *ak_buffer;
 
 /* ----------------------------------------------------------------------------------------------- */
+ struct oid;
+/*! \brief Контекст идентификатора объекта. */
+ typedef struct oid *ak_oid;
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает уровень аудита библиотеки. */
  dll_export int ak_log_get_level( void );
 /*! \brief Прямой вывод сообщения аудита. */
@@ -269,10 +274,19 @@
  dll_export ak_handle ak_random_new_lcg( void  );
 /*! \brief Создание дескриптора генератора, предоставляющего доступ к заданному файлу с данными. */
  dll_export ak_handle ak_random_new_file( const char * );
+#ifdef __linux__
+/*! \brief Создание дескриптора генератора, предоставляющего доступ к символьному устройству `/dev/random`. */
+ dll_export ak_handle ak_random_new_dev_random( void );
+/*! \brief Создание дескриптора генератора, предоставляющего доступ к символьному устройству `/dev/urandom`. */
+ dll_export ak_handle ak_random_new_dev_urandom( void );
+#endif
 #ifdef _WIN32
 /*! \brief Создание дескриптора системного генератора ОС Windows. */
  dll_export ak_handle ak_random_new_winrtl( void );
 #endif
+/*! \brief Создание дескриптора генератора по его OID. */
+ dll_export ak_handle ak_random_new_oid( ak_oid );
+
 /*! \brief Заполнение заданного массива случайными данными. */
  dll_export int ak_random_ptr( ak_handle, const ak_pointer, const size_t );
 /*! \brief Создание буффера заданного размера со случайными данными. */
@@ -313,6 +327,26 @@
  dll_export char *ak_buffer_to_hexstr( const ak_buffer );
 /*! \brief Сравнение двух буфферов. */
  dll_export ak_bool ak_buffer_is_equal( const ak_buffer, const ak_buffer );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Получение читаемого имени OID. */
+ dll_export const char *ak_oid_get_name( ak_oid );
+/*! \brief Получение значения OID - последовательности чисел, разделенных точками. */
+ dll_export const char *ak_oid_get_id( ak_oid );
+/*! \brief Получение криптографического механизма OID. */
+ dll_export const ak_oid_engine ak_oid_get_engine( ak_oid );
+/*! \brief Получение словесного описания для криптографического механизма OID. */
+ dll_export const char *ak_oid_get_engine_str( ak_oid );
+/*! \brief Получение режима использования криптографического механизма OID. */
+ dll_export const ak_oid_mode ak_oid_get_mode( ak_oid );
+/*! \brief Получение общего числа доступных OID библиотеки. */
+ dll_export size_t ak_oids_get_count( void );
+/*! \brief Получение OID с заданным индексом. */
+ dll_export const ak_oid ak_oids_get_oid( const size_t );
+/*! \brief Поиск OID по его имени. */
+ dll_export const ak_oid ak_oids_find_by_name( const char * );
+/*! \brief Поиск OID по его идентификатору (строке цифр, разделенных точками). */
+ dll_export const ak_oid ak_oids_find_by_id( const char * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей значение заданной области памяти. */

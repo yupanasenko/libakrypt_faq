@@ -19,7 +19,7 @@ cmake_minimum_required( VERSION 2.8 )
 project( libakrypt )
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 5 )
-set( MINOR_VERSION 1 )
+set( MINOR_VERSION 2 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -36,14 +36,16 @@ set( MAIN_HEADER   source/libakrypt.h )
 set( HEADERS       source/ak_tools.h
                    source/ak_context_manager.h
                    source/ak_buffer.h
-                   source/ak_random.h )
+                   source/ak_random.h
+                   source/ak_oid.h )
 
 set( SOURCES       source/ak_log.c
                    source/ak_libakrypt.c
                    source/ak_tools.c
                    source/ak_context_manager.c
                    source/ak_buffer.c
-                   source/ak_random.c )
+                   source/ak_random.c
+                   source/ak_oid.c )
 
 set( DOCS          doc/libakrypt.dox
                    doc/refman_header.in
@@ -52,7 +54,9 @@ set( DOCS          doc/libakrypt.dox
 
 set( CMAKES        cmake/DetectHeaders.cmake
                    cmake/DetectFlags.cmake
-                   cmake/MakeDoc.cmake )
+                   cmake/DetectLibraries.cmake
+                   cmake/MakeDoc.cmake
+                   cmake/MakeDist.cmake )
 
 set( OTHERS        CMakeLists.txt
                    Readme.md
@@ -94,7 +98,8 @@ set( EXAMPLES_LIST intro
                    log
                    random
                    randomize
-                   random-system )
+                   random-system
+                   oid )
 
 # организуем сборку примеров со статической линковкой
 if( LIBAKRYPT_STATIC_LIB )
@@ -127,6 +132,7 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 if( CMAKE_HOST_UNIX )
   include( MakeDoc )
+  include( MakeDist )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #

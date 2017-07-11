@@ -27,6 +27,7 @@
 /*                                                                                                 */
 /*   ak_random.c                                                                                   */
 /* ----------------------------------------------------------------------------------------------- */
+ #include <ak_oid.h>
  #include <ak_context_manager.h>
 
  #include <time.h>
@@ -504,6 +505,20 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+#ifdef __linux__
+ ak_handle ak_random_new_dev_random( void )
+{
+  return ak_random_new_file( "/dev/random" );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_random_new_dev_urandom( void )
+{
+  return ak_random_new_file( "/dev/urandom" );
+}
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
 #ifdef _WIN32
  ak_handle ak_random_new_winrtl( void  )
 {
@@ -528,6 +543,33 @@
  return ak_random_new_handle( generator );
 }
 #endif
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param oid Идентификатор генератора псевдо-случайных чисел.
+    @return Функция возвращает десткриптор созданного объекта. Если дескриптор не может быть создан,
+    или oid не соотвествует генератору псевдо-случайных чисел, то возбуждается ошибка и возвращается
+    значение \ref ak_error_wrong_handle. Кош ошибки может быть получен с помощью вызова
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_random_new_oid( ak_oid oid )
+{
+  ak_handle handle = ak_error_wrong_handle;
+
+  if( oid == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to oid" );
+    return ak_error_wrong_handle;
+  }
+  if( oid->engine != random_generator ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
+    return ak_error_wrong_handle;
+  }
+
+  if(( handle = ((ak_function_random_new *) oid->data)()) == ak_error_wrong_handle )
+    ak_error_message( ak_error_get_value(), __func__ , "wrong creation of random generator handle");
+
+ return handle;
+}
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param handle дескриптор генератора псевдо-случайных данных
