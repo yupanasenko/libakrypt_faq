@@ -65,24 +65,18 @@
  #include <io.h>
  #include <windows.h>
  #include <process.h>
- typedef signed char ak_int8;
- typedef unsigned char ak_uint8;
  typedef __int32 ak_int32;
  typedef unsigned __int32 ak_uint32;
  typedef __int64 ak_int64;
  typedef unsigned __int64 ak_uint64;
 #endif
 #ifdef __MINGW32__
- typedef __int8 ak_int8;
- typedef unsigned __int8 ak_uint8;
  typedef __int32 ak_int32;
  typedef unsigned __int32 ak_uint32;
  typedef __int64 ak_int64;
  typedef unsigned __int64 ak_uint64;
 #endif
 #ifdef MSYS
- typedef int8_t ak_int8;
- typedef u_int8_t ak_uint8;
  typedef int32_t ak_int32;
  typedef u_int32_t ak_uint32;
  typedef int64_t ak_int64;
@@ -90,13 +84,15 @@
  int snprintf(char *str, size_t size, const char *format, ... );
 #endif
 #ifdef __linux__
- typedef int8_t ak_int8;
- typedef u_int8_t ak_uint8;
- typedef int32_t ak_int32;
- typedef u_int32_t ak_uint32;
- typedef int64_t ak_int64;
- typedef u_int64_t ak_uint64;
+ typedef signed int ak_int32;
+ typedef unsigned int ak_uint32;
+ typedef signed long long int ak_int64;
+ typedef unsigned long long int ak_uint64;
 #endif
+
+/* ----------------------------------------------------------------------------------------------- */
+ typedef signed char ak_int8;
+ typedef unsigned char ak_uint8;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Определение булева типа, принимающего значения либо истина, либо ложь. */
@@ -299,11 +295,23 @@
 /*! \brief Поиск OID по типу криптографического механизма. */
  dll_export ak_handle ak_oid_find_by_engine( ak_oid_engine );
 /*! \brief Продолжение поиска OID по типу криптографического механизма. */
- dll_export ak_handle ak_oid_findnext_by_engine( ak_handle );
+ dll_export ak_handle ak_oid_findnext_by_engine( ak_handle, ak_oid_engine );
 /*! \brief Поиск OID его имени. */
  dll_export ak_handle ak_oid_find_by_name( const char * );
 /*! \brief Поиск OID по его идентификатору (строке цифр, разделенных точками). */
  dll_export ak_handle ak_oid_find_by_id( const char * );
+/*! \brief Получение читаемого имени OID. */
+ dll_export const char *ak_oid_get_name( ak_handle );
+/*! \brief Получение значения OID - последовательности чисел, разделенных точками. */
+ dll_export const char *ak_oid_get_id( ak_handle );
+/*! \brief Получение типа криптографического механизма. */
+ dll_export const ak_oid_engine ak_oid_get_engine( ak_handle );
+/*! \brief Получение словесного описания для типа криптографического механизма. */
+ dll_export const char *ak_oid_get_engine_str( ak_handle );
+/*! \brief Получение режима использования криптографического механизма. */
+ dll_export const ak_oid_mode ak_oid_get_mode( ak_handle );
+/*! \brief Получение словестного описания режима использования криптографического механизма. */
+ dll_export const char *ak_oid_get_mode_str( ak_handle );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Получение типа криптографического механизма. */

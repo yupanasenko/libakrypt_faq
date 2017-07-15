@@ -120,8 +120,8 @@
 
 /*! \brief Получение указателя на глобальную структуру управления контекстами. */
  ak_context_manager ak_libakrypt_get_context_manager( void );
-/*! \brief Получение контекста по заданному десткриптору и типу контекста. */
- ak_pointer ak_libakrypt_get_context( ak_handle, ak_oid_engine );
+/*! \brief Получение контекста по заданному дескриптору и типу контекста. */
+ ak_pointer ak_handle_get_context( ak_handle, ak_oid_engine );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

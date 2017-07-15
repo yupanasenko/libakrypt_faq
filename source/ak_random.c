@@ -554,7 +554,7 @@
  ak_handle ak_random_new_oid( ak_handle oid_handle )
 {
   ak_handle random_handle = ak_error_wrong_handle;
-  ak_oid oid = ak_libakrypt_get_context( oid_handle, oid_engine );
+  ak_oid oid = ak_handle_get_context( oid_handle, oid_engine );
 
   /* проверяем, что handle от OID */
    if( oid == NULL ) {
@@ -569,7 +569,7 @@
    }
 
   /* теперь создаем генератор */
-   if(( random_handle = ((ak_function_random_new *) oid->data)()) == ak_error_wrong_handle )
+   if(( random_handle = ((ak_function_random_new *) oid->func)()) == ak_error_wrong_handle )
      ak_error_message( ak_error_get_value(), __func__ , "wrong creation of random generator handle");
 
  return random_handle;
@@ -587,7 +587,7 @@
   int error = ak_error_ok;
   ak_random generator = NULL;
 
-  if(( generator = ak_libakrypt_get_context( handle, random_generator )) == NULL )
+  if(( generator = ak_handle_get_context( handle, random_generator )) == NULL )
     return ak_error_message( error = ak_error_get_value(), __func__ , "wrong handle" );
 
   if( generator->random != NULL ) {
@@ -610,7 +610,7 @@
   ak_uint64 qword = 0;
   ak_random generator = NULL;
 
-  if(( generator = ak_libakrypt_get_context( handle, random_generator )) == NULL ) {
+  if(( generator = ak_handle_get_context( handle, random_generator )) == NULL ) {
     ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
     return qword;
   }
@@ -635,7 +635,7 @@
   ak_uint8 byte = 0;
   ak_random generator = NULL;
 
-  if(( generator = ak_libakrypt_get_context( handle, random_generator )) == NULL ) {
+  if(( generator = ak_handle_get_context( handle, random_generator )) == NULL ) {
     ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
     return byte;
   }
@@ -662,7 +662,7 @@
  ak_random generator = NULL;
 
  /* получаем контекст */
-  if(( generator = ak_libakrypt_get_context( handle, random_generator )) == NULL ) {
+  if(( generator = ak_handle_get_context( handle, random_generator )) == NULL ) {
     ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
     return NULL;
   }
@@ -698,7 +698,7 @@
  int error = ak_error_ok;
  ak_random generator = NULL;
 
-  if(( generator = ak_libakrypt_get_context( handle, random_generator )) == NULL )
+  if(( generator = ak_handle_get_context( handle, random_generator )) == NULL )
     return ak_error_message( error = ak_error_get_value(), __func__ , "wrong handle" );
 
   if( generator->randomize_ptr != NULL ) {

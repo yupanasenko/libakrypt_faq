@@ -34,7 +34,8 @@
  #include <ak_buffer.h>
 
 /* ----------------------------------------------------------------------------------------------- */
- typedef ak_pointer ( ak_function_pointer_void )( void );
+/*! \brief Класс функций для получения данных OID */
+ typedef ak_pointer ( ak_function_oid )( ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Класс для хранения идентификаторов объектов (криптографических механизмов) и их данных. */
@@ -59,18 +60,17 @@
   /*! \brief собственно OID (cтрока чисел, разделенных точками) */
    struct buffer id;
   /*! \brief указатель на данные */
-   ak_function_pointer_void *data;
+   ak_function_oid *func;
 };
 /*! \brief Контекст идентификатора объекта. */
  typedef struct oid *ak_oid;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание контекста OID. */
- ak_oid ak_oid_new( ak_oid_engine , ak_oid_mode , const char * ,
-                                                         const char * , ak_function_pointer_void );
+ ak_oid ak_oid_new( ak_oid_engine , ak_oid_mode , const char * , const char * , ak_function_oid * );
 /*! \brief Инициализация контекста OID. */
  int ak_oid_create( ak_oid oid,
-          ak_oid_engine , ak_oid_mode , const char * , const char * , ak_function_pointer_void * );
+                    ak_oid_engine , ak_oid_mode , const char * , const char * , ak_function_oid * );
 /*! \brief Освобождение памяти из под контекста OID. */
  ak_pointer ak_oid_delete( ak_pointer );
 /*! \brief Освобождение памяти из под данных, хранящихся в контексте OID. */
@@ -79,6 +79,11 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация внутреннего списка OID библиотеки */
  int ak_oids_create( void );
+
+/*! \brief Получение константного символьного описания типа криптографического механизма */
+ const char *ak_engine_get_str( ak_oid_engine );
+/*! \brief Получения константного символьного описания режима применения криптографического механизма */
+ const char *ak_mode_get_str( ak_oid_mode );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

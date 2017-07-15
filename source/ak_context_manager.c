@@ -26,6 +26,7 @@
 /*                                                                                                 */
 /*   ak_context_manager.c                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
+ #include <ak_oid.h>
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -148,9 +149,14 @@
                              "wrong initialization of /dev/random for random number generation" );
 #else
  #ifdef _WIN32
-   if(( error = ak_random_create_winrtl( &manager->key_generator )) != ak_error_ok )
-     return ak_error_message( error, __func__,
-                                     "wrong initialization of crypto provider random generator" );
+   if(( error = ak_random_create_winrtl( &manager->key_generator )) != ak_error_ok ) {
+     ak_error_message( error, __func__,
+                         "wrong initialization a random generator from default crypto provider" );
+     ak_error_message( ak_error_ok, __func__, "trying to use lcg generator" );
+     if(( error = ak_random_create_lcg( &manager->key_generator )) != ak_error_ok )
+       return ak_error_message( error, __func__,
+                                "wrong initialization of all types of random generators" );
+   }
  #else
    #error Using a not defined path of compilation
  #endif
@@ -462,7 +468,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_pointer ak_libakrypt_get_context( ak_handle handle , ak_oid_engine engine )
+ ak_pointer ak_handle_get_context( ak_handle handle , ak_oid_engine engine )
 {
   size_t idx = 0;
   int error = ak_context_manager_handle_check( libakrypt_manager, handle, &idx );
@@ -512,23 +518,7 @@
     return ak_null_string;
   }
 
-  switch( libakrypt_manager->array[idx]->engine )
- {
-   case undefined_engine:  return "undefined engine";
-   case identifier:        return "identifier";
-   case block_cipher:      return "block cipher";
-   case stream_cipher:     return "stream cipher";
-   case hybrid_cipher:     return "hybrid cipher";
-   case hash_function:     return "hash function";
-   case mac_function:      return "mac function";
-   case digital_signature: return "digital signature";
-   case random_generator:  return "random generator";
-   case update_engine:     return "update engine";
-   case oid_engine:        return "oid engine";
-   default:                return ak_null_string;
- }
-
- return ak_null_string;
+ return ak_engine_get_str( libakrypt_manager->array[idx]->engine );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -543,6 +533,99 @@
 {
   return ak_context_manager_delete_node( libakrypt_manager, handle );
 }
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                                         методы класса ak_oid                                    */
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция ищет в структуре управления контекстами первый OID с заданным значением engine и
+    возвращает его дескриптор.
+    Если такое значение не найдено, возвращается значение \ref ak_error_wrong_handle.
+    Если значение engine равно \ref undefinde_engine, то возвращается
+    первый OID в списке, следовательно, значение \ref undefine_engine может использоваться
+    для перебора всех возможных OID библиотеки.
+
+    @param engine тип криптографического механизма.
+    @return Функция возвращает дескриптор найденного OID. В случае неверного поиска возвращается
+    \ref ak_error_wrong_handle, код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_oid_find_by_engine( ak_oid_engine engine )
+{
+  size_t idx = 0;
+  ak_handle handle = ak_error_wrong_handle;
+
+  if( libakrypt_manager == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to context manager" );
+    return ak_error_wrong_handle;
+  }
+
+ /* переборный цикл с первого элемента массива */
+  for( idx = 0; idx < libakrypt_manager->size; idx++ ) {
+     ak_context_node node = libakrypt_manager->array[idx];
+     if(( node != NULL ) && ( node->engine == oid_engine )) {
+       ak_oid oid = (ak_oid) node->ctx;
+       if( engine == undefined_engine ) break; /* случай поиска первого OID */
+       if( oid->engine == engine ) break; /* случай совпадения engine */
+     }
+  }
+
+  if( idx < libakrypt_manager->size )
+    handle = ak_context_manager_idx_to_handle( libakrypt_manager, idx );
+
+ return handle;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция продолжает поиск  в структуре управления контекстами OID'а с заданным значением engine и
+    возвращает его дескриптор.
+    Если такое значение не найдено, возвращается значение \ref ak_error_wrong_handle.
+    Если значение engine равно \ref undefinde_engine, то возвращается
+    следующий OID в списке, следовательно, значение \ref undefine_engine может использоваться
+    для перебора всех возможных OID библиотеки.
+
+    Пример для перебора всех существующих OID блочного шифрования.
+
+   \code
+     ak_handle handle = ak_oid_find_by_engine( block_cipher );
+
+     while( handle != ak_error_wrong_handle )
+       handle = ak_oid_findnext_by_engine( handle, block_cipher );
+   \endcode
+
+    @param engine тип криптографического механизма.
+    @return Функция возвращает дескриптор найденного OID. В случае неверного поиска возвращается
+    \ref ak_error_wrong_handle, код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_oid_findnext_by_engine( ak_handle handle, ak_oid_engine engine )
+{
+  size_t idx = 0, current = 0;
+  ak_handle retandle = ak_error_wrong_handle;
+  int error = ak_context_manager_handle_check( libakrypt_manager, handle, &current );
+
+ /* мы получили в качестве параметра неверное значение handle */
+  if( error != ak_error_ok ) return ak_error_wrong_handle;
+
+ /* переборный цикл с элемента, следующего за тем, которому соответствует handle */
+  for( idx = current+1; idx < libakrypt_manager->size; idx++ ) {
+     ak_context_node node = libakrypt_manager->array[idx];
+     if(( node != NULL ) && ( node->engine == oid_engine )) {
+       ak_oid oid = (ak_oid) node->ctx;
+       if( engine == undefined_engine ) break; /* случай поиска первого OID */
+       if( oid->engine == engine ) break; /* случай совпадения engine */
+     }
+  }
+
+  if( idx < libakrypt_manager->size )
+    retandle = ak_context_manager_idx_to_handle( libakrypt_manager, idx );
+
+ return retandle;
+}
+
+
+// dll_export ak_handle ak_oid_find_by_name( const char * );
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \example example-context-manager-node.c                                                        */

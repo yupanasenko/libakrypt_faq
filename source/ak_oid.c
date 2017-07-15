@@ -31,6 +31,53 @@
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
+ const char *ak_engine_get_str( ak_oid_engine engine )
+{
+  switch( engine )
+ {
+   case undefined_engine:  return "undefined engine";
+   case identifier:        return "identifier";
+   case block_cipher:      return "block cipher";
+   case stream_cipher:     return "stream cipher";
+   case hybrid_cipher:     return "hybrid cipher";
+   case hash_function:     return "hash function";
+   case mac_function:      return "mac function";
+   case digital_signature: return "digital signature";
+   case random_generator:  return "random generator";
+   case update_engine:     return "update engine";
+   case oid_engine:        return "oid";
+   default:                return ak_null_string;
+ }
+
+ return ak_null_string;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ const char *ak_mode_get_str( ak_oid_mode mode )
+{
+  switch( mode )
+ {
+   case undefined_mode:  return "undefined mode";
+   case algorithm:       return "algorithm";
+   case parameter:       return "parametr";
+   case wcurve_params:   return "wierstrass curve parameters";
+   case ecurve_params:   return "edwards curve parameters";
+   case kbox_params:     return "kboxes";
+   case ecb:             return "ecb mode";
+   case ofb:             return "ofb mode";
+   case ofb_gost:        return "ofb gost 28147-89 mode";
+   case cfb:             return "cfb mode";
+   case cbc:             return "cbc mode";
+   case xts:             return "xts mode";
+   case xts_mac:         return "xts mode with authenication";
+   case xcrypt:          return "xor mode";
+   case a8:              return "addition mode";
+   default:              return ak_null_string;
+ }
+ return ak_null_string;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                             функции класса ak_oid                                               */
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция устанавливает значения внутренних полей структуры, описывающий OID
@@ -46,7 +93,7 @@
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_oid_create( ak_oid oid, ak_oid_engine engine, ak_oid_mode mode,
-                                  const char *name, const char *id, ak_function_pointer_void *data )
+                                          const char *name, const char *id, ak_function_oid *func )
 {
  int error = ak_error_ok;
 
@@ -75,7 +122,7 @@
  /* присваиваем остальные поля */
   oid->engine = engine;
   oid->mode = mode;
-  oid->data = data;
+  oid->func = func;
 
  return ak_error_ok;
 }
@@ -101,7 +148,7 @@
 
   oid->engine = undefined_engine;
   oid->mode = undefined_mode;
-  oid->data = NULL;
+  oid->func = NULL;
 
  return error;
 }
@@ -119,11 +166,11 @@
     возвращается NULL. Код ошибки помещается в переменную ak_errno.                                */
 /* ----------------------------------------------------------------------------------------------- */
  ak_oid ak_oid_new( ak_oid_engine engine, ak_oid_mode mode,
-                                 const char *name, const char *id, ak_function_pointer_void *data )
+                                           const char *name, const char *id, ak_function_oid *func )
 {
   ak_oid oid = ( ak_oid ) malloc( sizeof( struct oid ));
 
-    if( oid != NULL ) ak_oid_create( oid, engine, mode, name, id, data );
+    if( oid != NULL ) ak_oid_create( oid, engine, mode, name, id, func );
       else ak_error_message( ak_error_out_of_memory, __func__ , "invalid creation of a new oid" );
   return oid;
 }
@@ -191,21 +238,21 @@
     значения OID находятся в дереве библиотеки: 1.2.643.2.52.1.1 - генераторы ПСЧ  */
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( random_generator, algorithm, "lcg",
-            "1.2.643.2.52.1.1.1", (ak_function_pointer_void *)ak_random_new_lcg ))) != ak_error_ok )
+                    "1.2.643.2.52.1.1.1", (ak_function_oid *)ak_random_new_lcg ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
 #ifdef __linux__
   if(( error = ak_oids_add_oid( manager, ak_oid_new( random_generator, algorithm, "linux-random",
-     "1.2.643.2.52.1.1.2", (ak_function_pointer_void *)ak_random_new_dev_random ))) != ak_error_ok )
+             "1.2.643.2.52.1.1.2", (ak_function_oid *)ak_random_new_dev_random ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( random_generator, algorithm, "linux-urandom",
-    "1.2.643.2.52.1.1.3", (ak_function_pointer_void *)ak_random_new_dev_urandom ))) != ak_error_ok )
+            "1.2.643.2.52.1.1.3", (ak_function_oid *)ak_random_new_dev_urandom ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 #endif
 #ifdef _WIN32
   if(( error = ak_oids_add_oid( manager, ak_oid_new( random_generator, algorithm, "winrtl",
-         "1.2.643.2.52.1.1.4", (ak_function_pointer_void *)ak_random_new_winrtl ))) != ak_error_ok )
+                 "1.2.643.2.52.1.1.4", (ak_function_oid *)ak_random_new_winrtl ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 #endif
 
@@ -214,6 +261,84 @@
     из используемых перечней КриптоПро                                                             */
 
  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ const char *ak_oid_get_name( ak_handle handle )
+{
+  ak_oid oid = ak_handle_get_context( handle, oid_engine );
+
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong handle" );
+    return ak_null_string;
+  }
+
+ return ak_buffer_get_str( &oid->name );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ const char *ak_oid_get_id( ak_handle handle )
+{
+  ak_oid oid = ak_handle_get_context( handle, oid_engine );
+
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong handle" );
+    return ak_null_string;
+  }
+
+ return ak_buffer_get_str( &oid->id );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ const char *ak_oid_get_engine_str( ak_handle handle )
+{
+  ak_oid oid = ak_handle_get_context( handle, oid_engine );
+
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong handle" );
+    return ak_null_string;
+  }
+
+ return ak_engine_get_str( oid->engine );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ const ak_oid_engine ak_oid_get_engine( ak_handle handle )
+{
+  ak_oid oid = ak_handle_get_context( handle, oid_engine );
+
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong handle" );
+    return undefined_engine;
+  }
+
+ return oid->engine;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ const char *ak_oid_get_mode_str( ak_handle handle )
+{
+  ak_oid oid = ak_handle_get_context( handle, oid_engine );
+
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong handle" );
+    return ak_null_string;
+  }
+
+ return ak_mode_get_str( oid->mode );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ const ak_oid_mode ak_oid_get_mode( ak_handle handle )
+{
+  ak_oid oid = ak_handle_get_context( handle, oid_engine );
+
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong handle" );
+    return undefined_mode;
+  }
+
+ return oid->mode;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
