@@ -266,33 +266,29 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Получение точного значения дескриптора.
+/*! По заданному значению индекса массива idx функция вычисляет значение дескриптора,
+    доступного пользователю. Обратное преобразование задается функцией
+    ak_context_manager_handle_to_idx().
 
-  По заданному значению индекса массива idx функция вычисляет значение дескриптора,
-  доступного пользователю. Обратное преобразование задается функцией
-  ak_context_manager_handle_to_idx().
-
-  @param manager Указатель на структуру управления контекстами
-  @param idx Индекс контекста в массиве
-  @return Функция возвращает значение дескриптора контекста.                                       */
+    @param manager Указатель на структуру управления контекстами
+    @param idx Индекс контекста в массиве
+    @return Функция возвращает значение дескриптора контекста.                                     */
 /* ----------------------------------------------------------------------------------------------- */
- static ak_handle ak_context_manager_idx_to_handle( ak_context_manager manager, size_t idx )
+ ak_handle ak_context_manager_idx_to_handle( ak_context_manager manager, size_t idx )
 {
   return idx;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Получение точного значения индекса массива.
+/*! По заданному значению дескриптора контекста handle функция вычисляет значение
+    индекса массива, по адресу которого располагается контекст.
+    Обратное преобразование задается функцией ak_context_manager_idx_to_handle().
 
-  По заданному значению дескриптора контекста handle функция вычисляет значение
-  индекса массива, по адресу которого располагается контекст.
-  Обратное преобразование задается функцией ak_context_manager_idx_to_handle().
-
-  @param manager Указатель на структуру управления контекстами
-  @param handle Дескриптор контектса
-  @return Функция возвращает значение дескриптора контекста.                                       */
+    @param manager Указатель на структуру управления контекстами
+    @param handle Дескриптор контектса
+    @return Функция возвращает значение дескриптора контекста.                                     */
 /* ----------------------------------------------------------------------------------------------- */
- static ak_handle ak_context_manager_handle_to_idx( ak_context_manager manager, ak_handle handle )
+ ak_handle ak_context_manager_handle_to_idx( ak_context_manager manager, ak_handle handle )
 {
   return handle;
 }
@@ -382,18 +378,16 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Проверка корректности индекса контекста.
-
-    Функция проверяет, что внутренний массив контекстов содержит в себе отличный от NULL контекст
+/*! Функция проверяет, что внутренний массив контекстов содержит в себе отличный от NULL контекст
     с заданным значеним дескриптора ключа. Функция не экспортируется.
 
     @param manager Контекст структуры управления контекстами.
-    @param key Дескриптор контекста.
+    @param handle Дескриптор контекста.
+    @param idx Указатель на индекс контекста в массиве контекстов.
     @return В случае ошибки возвращается ее код. В случае успеха, возвращается значение
     \ref ak_error_ok                                                                               */
 /* ----------------------------------------------------------------------------------------------- */
- static inline int ak_context_manager_handle_check( ak_context_manager manager,
-                                                                      ak_handle handle, size_t *idx )
+ int ak_context_manager_handle_check( ak_context_manager manager, ak_handle handle, size_t *idx )
 {
  /* проверяем менеджер контекстов */
   if( manager == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -533,99 +527,6 @@
 {
   return ak_context_manager_delete_node( libakrypt_manager, handle );
 }
-
-
-/* ----------------------------------------------------------------------------------------------- */
-/*                                         методы класса ak_oid                                    */
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция ищет в структуре управления контекстами первый OID с заданным значением engine и
-    возвращает его дескриптор.
-    Если такое значение не найдено, возвращается значение \ref ak_error_wrong_handle.
-    Если значение engine равно \ref undefinde_engine, то возвращается
-    первый OID в списке, следовательно, значение \ref undefine_engine может использоваться
-    для перебора всех возможных OID библиотеки.
-
-    @param engine тип криптографического механизма.
-    @return Функция возвращает дескриптор найденного OID. В случае неверного поиска возвращается
-    \ref ak_error_wrong_handle, код ошибки может быть получен с помощью вызова функции
-    ak_error_get_value().                                                                          */
-/* ----------------------------------------------------------------------------------------------- */
- ak_handle ak_oid_find_by_engine( ak_oid_engine engine )
-{
-  size_t idx = 0;
-  ak_handle handle = ak_error_wrong_handle;
-
-  if( libakrypt_manager == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to context manager" );
-    return ak_error_wrong_handle;
-  }
-
- /* переборный цикл с первого элемента массива */
-  for( idx = 0; idx < libakrypt_manager->size; idx++ ) {
-     ak_context_node node = libakrypt_manager->array[idx];
-     if(( node != NULL ) && ( node->engine == oid_engine )) {
-       ak_oid oid = (ak_oid) node->ctx;
-       if( engine == undefined_engine ) break; /* случай поиска первого OID */
-       if( oid->engine == engine ) break; /* случай совпадения engine */
-     }
-  }
-
-  if( idx < libakrypt_manager->size )
-    handle = ak_context_manager_idx_to_handle( libakrypt_manager, idx );
-
- return handle;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция продолжает поиск  в структуре управления контекстами OID'а с заданным значением engine и
-    возвращает его дескриптор.
-    Если такое значение не найдено, возвращается значение \ref ak_error_wrong_handle.
-    Если значение engine равно \ref undefinde_engine, то возвращается
-    следующий OID в списке, следовательно, значение \ref undefine_engine может использоваться
-    для перебора всех возможных OID библиотеки.
-
-    Пример для перебора всех существующих OID блочного шифрования.
-
-   \code
-     ak_handle handle = ak_oid_find_by_engine( block_cipher );
-
-     while( handle != ak_error_wrong_handle )
-       handle = ak_oid_findnext_by_engine( handle, block_cipher );
-   \endcode
-
-    @param engine тип криптографического механизма.
-    @return Функция возвращает дескриптор найденного OID. В случае неверного поиска возвращается
-    \ref ak_error_wrong_handle, код ошибки может быть получен с помощью вызова функции
-    ak_error_get_value().                                                                          */
-/* ----------------------------------------------------------------------------------------------- */
- ak_handle ak_oid_findnext_by_engine( ak_handle handle, ak_oid_engine engine )
-{
-  size_t idx = 0, current = 0;
-  ak_handle retandle = ak_error_wrong_handle;
-  int error = ak_context_manager_handle_check( libakrypt_manager, handle, &current );
-
- /* мы получили в качестве параметра неверное значение handle */
-  if( error != ak_error_ok ) return ak_error_wrong_handle;
-
- /* переборный цикл с элемента, следующего за тем, которому соответствует handle */
-  for( idx = current+1; idx < libakrypt_manager->size; idx++ ) {
-     ak_context_node node = libakrypt_manager->array[idx];
-     if(( node != NULL ) && ( node->engine == oid_engine )) {
-       ak_oid oid = (ak_oid) node->ctx;
-       if( engine == undefined_engine ) break; /* случай поиска первого OID */
-       if( oid->engine == engine ) break; /* случай совпадения engine */
-     }
-  }
-
-  if( idx < libakrypt_manager->size )
-    retandle = ak_context_manager_idx_to_handle( libakrypt_manager, idx );
-
- return retandle;
-}
-
-
-// dll_export ak_handle ak_oid_find_by_name( const char * );
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \example example-context-manager-node.c                                                        */

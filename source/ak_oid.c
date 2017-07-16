@@ -93,7 +93,7 @@
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_oid_create( ak_oid oid, ak_oid_engine engine, ak_oid_mode mode,
-                                          const char *name, const char *id, ak_function_oid *func )
+                          const char *name, const char *id, ak_pointer data, ak_function_oid *func )
 {
  int error = ak_error_ok;
 
@@ -122,6 +122,7 @@
  /* присваиваем остальные поля */
   oid->engine = engine;
   oid->mode = mode;
+  oid->data = data;
   oid->func = func;
 
  return ak_error_ok;
@@ -148,6 +149,7 @@
 
   oid->engine = undefined_engine;
   oid->mode = undefined_mode;
+  oid->data = NULL;
   oid->func = NULL;
 
  return error;
@@ -166,11 +168,11 @@
     возвращается NULL. Код ошибки помещается в переменную ak_errno.                                */
 /* ----------------------------------------------------------------------------------------------- */
  ak_oid ak_oid_new( ak_oid_engine engine, ak_oid_mode mode,
-                                           const char *name, const char *id, ak_function_oid *func )
+                          const char *name, const char *id, ak_pointer data, ak_function_oid *func )
 {
   ak_oid oid = ( ak_oid ) malloc( sizeof( struct oid ));
 
-    if( oid != NULL ) ak_oid_create( oid, engine, mode, name, id, func );
+    if( oid != NULL ) ak_oid_create( oid, engine, mode, name, id, data, func );
       else ak_error_message( ak_error_out_of_memory, __func__ , "invalid creation of a new oid" );
   return oid;
 }
@@ -238,21 +240,21 @@
     значения OID находятся в дереве библиотеки: 1.2.643.2.52.1.1 - генераторы ПСЧ  */
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( random_generator, algorithm, "lcg",
-                    "1.2.643.2.52.1.1.1", (ak_function_oid *)ak_random_new_lcg ))) != ak_error_ok )
+              "1.2.643.2.52.1.1.1", NULL, (ak_function_oid *)ak_random_new_lcg ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
 #ifdef __linux__
   if(( error = ak_oids_add_oid( manager, ak_oid_new( random_generator, algorithm, "linux-random",
-             "1.2.643.2.52.1.1.2", (ak_function_oid *)ak_random_new_dev_random ))) != ak_error_ok )
+       "1.2.643.2.52.1.1.2", NULL, (ak_function_oid *)ak_random_new_dev_random ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( random_generator, algorithm, "linux-urandom",
-            "1.2.643.2.52.1.1.3", (ak_function_oid *)ak_random_new_dev_urandom ))) != ak_error_ok )
+      "1.2.643.2.52.1.1.3", NULL, (ak_function_oid *)ak_random_new_dev_urandom ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 #endif
 #ifdef _WIN32
   if(( error = ak_oids_add_oid( manager, ak_oid_new( random_generator, algorithm, "winrtl",
-                 "1.2.643.2.52.1.1.4", (ak_function_oid *)ak_random_new_winrtl ))) != ak_error_ok )
+           "1.2.643.2.52.1.1.4", NULL, (ak_function_oid *)ak_random_new_winrtl ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 #endif
 
@@ -339,6 +341,150 @@
   }
 
  return oid->mode;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция ищет в структуре управления контекстами первый OID с заданным значением engine и
+    возвращает его дескриптор.
+    Если такое значение не найдено, возвращается значение \ref ak_error_wrong_handle.
+    Если значение engine равно \ref undefinde_engine, то возвращается
+    первый OID в списке, следовательно, значение \ref undefine_engine может использоваться
+    для перебора всех возможных OID библиотеки.
+
+    @param engine тип криптографического механизма.
+    @return Функция возвращает дескриптор найденного OID. В случае неверного поиска возвращается
+    \ref ak_error_wrong_handle, код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_oid_find_by_engine( ak_oid_engine engine )
+{
+  size_t idx = 0;
+  ak_handle handle = ak_error_wrong_handle;
+  ak_context_manager manager = ak_libakrypt_get_context_manager();
+
+  if( manager == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to context manager" );
+    return ak_error_wrong_handle;
+  }
+
+ /* переборный цикл с первого элемента массива */
+  for( idx = 0; idx < manager->size; idx++ ) {
+     ak_context_node node = manager->array[idx];
+     if(( node != NULL ) && ( node->engine == oid_engine )) {
+       ak_oid oid = (ak_oid) node->ctx;
+       if( engine == undefined_engine ) break; /* случай поиска первого OID */
+       if( oid->engine == engine ) break; /* случай совпадения engine */
+     }
+  }
+
+  if( idx < manager->size )
+    handle = ak_context_manager_idx_to_handle( manager, idx );
+
+ return handle;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция продолжает поиск  в структуре управления контекстами OID'а с заданным значением engine и
+    возвращает его дескриптор.
+    Если такое значение не найдено, возвращается значение \ref ak_error_wrong_handle.
+    Если значение engine равно \ref undefinde_engine, то возвращается
+    следующий OID в списке, следовательно, значение \ref undefine_engine может использоваться
+    для перебора всех возможных OID библиотеки.
+
+    Пример для перебора всех существующих OID блочного шифрования.
+
+   \code
+     ak_handle handle = ak_oid_find_by_engine( block_cipher );
+
+     while( handle != ak_error_wrong_handle )
+       handle = ak_oid_findnext_by_engine( handle, block_cipher );
+   \endcode
+
+    @param engine тип криптографического механизма.
+    @return Функция возвращает дескриптор найденного OID. В случае неверного поиска возвращается
+    \ref ak_error_wrong_handle, код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_oid_findnext_by_engine( ak_handle handle, ak_oid_engine engine )
+{
+  size_t idx = 0, current = 0;
+  ak_handle retandle = ak_error_wrong_handle;
+  ak_context_manager manager = ak_libakrypt_get_context_manager();
+  int error = ak_context_manager_handle_check( manager, handle, &current );
+
+ /* мы получили в качестве параметра неверное значение handle */
+  if( error != ak_error_ok ) return ak_error_wrong_handle;
+
+ /* переборный цикл с элемента, следующего за тем, которому соответствует handle */
+  for( idx = current+1; idx < manager->size; idx++ ) {
+     ak_context_node node = manager->array[idx];
+     if(( node != NULL ) && ( node->engine == oid_engine )) {
+       ak_oid oid = (ak_oid) node->ctx;
+       if( engine == undefined_engine ) break; /* случай поиска первого OID */
+       if( oid->engine == engine ) break; /* случай совпадения engine */
+     }
+  }
+
+  if( idx < manager->size )
+    retandle = ak_context_manager_idx_to_handle( manager, idx );
+
+ return retandle;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_oid_find_by_name( const char *name )
+{
+  size_t idx = 0;
+  ak_handle handle = ak_error_wrong_handle;
+  ak_context_manager manager = ak_libakrypt_get_context_manager();
+
+
+  if( manager == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to context manager" );
+    return ak_error_wrong_handle;
+  }
+
+ /* переборный цикл с первого элемента массива */
+  for( idx = 0; idx < manager->size; idx++ ) {
+     ak_context_node node = manager->array[idx];
+     if(( node != NULL ) && ( node->engine == oid_engine )) {
+       ak_oid oid = (ak_oid) node->ctx;
+       if( ak_ptr_is_equal( (void *) name, oid->name.data, oid->name.size )) break;
+     }
+  }
+
+  if( idx < manager->size )
+    handle = ak_context_manager_idx_to_handle( manager, idx );
+
+ return handle;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_oid_find_by_id( const char *id )
+{
+  size_t idx = 0;
+  ak_handle handle = ak_error_wrong_handle;
+  ak_context_manager manager = ak_libakrypt_get_context_manager();
+
+
+  if( manager == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to context manager" );
+    return ak_error_wrong_handle;
+  }
+
+ /* переборный цикл с первого элемента массива */
+  for( idx = 0; idx < manager->size; idx++ ) {
+     ak_context_node node = manager->array[idx];
+     if(( node != NULL ) && ( node->engine == oid_engine )) {
+       ak_oid oid = (ak_oid) node->ctx;
+       if( ak_ptr_is_equal( (void *) id, oid->id.data, oid->id.size )) break;
+     }
+  }
+
+  if( idx < manager->size )
+    handle = ak_context_manager_idx_to_handle( manager, idx );
+
+ return handle;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

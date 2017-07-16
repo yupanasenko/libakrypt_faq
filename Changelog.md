@@ -2,9 +2,11 @@
 Changes in version 0.5.2 (TODO)
 -------------------------
 
+Date:
+
    * Restored ak_oid class & options control system
    * Started akrypt application (Qt Interface for library)
-   * Added support for ppc platform compile & testing
+   * Added support for ppc & arm platform compile with testing
    * Improoved handbook
 
 Changes in version 0.5.1

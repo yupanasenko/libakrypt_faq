@@ -60,6 +60,8 @@
   /*! \brief собственно OID (cтрока чисел, разделенных точками) */
    struct buffer id;
   /*! \brief указатель на данные */
+   ak_pointer *data;
+  /*! \brief указатель на производящую функцию*/
    ak_function_oid *func;
 };
 /*! \brief Контекст идентификатора объекта. */
@@ -67,10 +69,12 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание контекста OID. */
- ak_oid ak_oid_new( ak_oid_engine , ak_oid_mode , const char * , const char * , ak_function_oid * );
+ ak_oid ak_oid_new( ak_oid_engine , ak_oid_mode , const char * , const char * ,
+                                                                   ak_pointer , ak_function_oid * );
 /*! \brief Инициализация контекста OID. */
  int ak_oid_create( ak_oid oid,
-                    ak_oid_engine , ak_oid_mode , const char * , const char * , ak_function_oid * );
+                    ak_oid_engine , ak_oid_mode , const char * , const char * ,
+                                                                   ak_pointer , ak_function_oid * );
 /*! \brief Освобождение памяти из под контекста OID. */
  ak_pointer ak_oid_delete( ak_pointer );
 /*! \brief Освобождение памяти из под данных, хранящихся в контексте OID. */
