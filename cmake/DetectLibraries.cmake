@@ -8,7 +8,7 @@ if( MSVC )
     set( LIBAKRYPT_LIBS pthreadVC2 )
     
     # потом ищем заголовочный файл, если нет - выходим
-    find_file( PTHREAD_H )
+    find_file( PTHREAD_H pthread.h )
     if( PTHREAD_H )
     
       # наконец, проверяем, определена ли структура timespec

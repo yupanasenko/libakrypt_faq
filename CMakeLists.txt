@@ -68,7 +68,9 @@ set( OTHERS         CMakeLists.txt
 set( AKRYPT_SOURCES akrypt/akrypt.c
                     akrypt/akrypt_oid.c )
 set( AKRYPT_FILES   akrypt/akrypt.h
-                    akrypt/akrypt.1 )
+                    akrypt/akrypt.1
+                    akrypt/getopt.h
+                    akrypt/getopt.c )
 
 # -------------------------------------------------------------------------------------------------- #
 # подключаем модули CMake для тонкой настройки параметров сборки

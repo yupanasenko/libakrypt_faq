@@ -24,3 +24,13 @@ if( LIBAKRYPT_HAVE_UNISTD )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
+  #include <getopt.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_GETOPT )
+
+if( LIBAKRYPT_HAVE_GETOPT )
+else()
+  set( AKRYPT_SOURCES ${AKRYPT_SOURCES} akrypt/getopt.c )
+endif()
