@@ -31,26 +31,52 @@
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
+ const size_t ak_engine_count( void )
+{
+ return 11;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  const char *ak_engine_get_str( ak_oid_engine engine )
 {
   switch( engine )
  {
-   case undefined_engine:  return "undefined engine";
+   case undefined_engine:  return "undefined_engine";
    case identifier:        return "identifier";
-   case block_cipher:      return "block cipher";
-   case stream_cipher:     return "stream cipher";
-   case hybrid_cipher:     return "hybrid cipher";
-   case hash_function:     return "hash function";
-   case mac_function:      return "mac function";
-   case digital_signature: return "digital signature";
-   case random_generator:  return "random generator";
-   case update_engine:     return "update engine";
+   case block_cipher:      return "block_cipher";
+   case stream_cipher:     return "stream_cipher";
+   case hybrid_cipher:     return "hybrid_cipher";
+   case hash_function:     return "hash_function";
+   case mac_function:      return "mac_function";
+   case digital_signature: return "digital_signature";
+   case random_generator:  return "random_generator";
+   case update_engine:     return "update_engine";
    case oid_engine:        return "oid";
    default:                return ak_null_string;
  }
 
  return ak_null_string;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_oid_engine ak_engine_str( const char *str )
+{
+  if( ak_ptr_is_equal( "undefined_engine", (void *)str, 16 )) return undefined_engine;
+  if( ak_ptr_is_equal( "identifier", (void *)str, 10 )) return identifier;
+  if( ak_ptr_is_equal( "block_cipher", (void *)str, 12 )) return block_cipher;
+  if( ak_ptr_is_equal( "stream_cipher", (void *)str, 13 )) return stream_cipher;
+  if( ak_ptr_is_equal( "hybrid_cipher", (void *)str, 13 )) return hybrid_cipher;
+  if( ak_ptr_is_equal( "hash_function", (void *)str, 13 )) return hash_function;
+  if( ak_ptr_is_equal( "mac_function", (void *)str, 12 )) return mac_function;
+  if( ak_ptr_is_equal( "digital_signature", (void *)str, 17 )) return digital_signature;
+  if( ak_ptr_is_equal( "random_generator", (void *)str, 16 )) return random_generator;
+  if( ak_ptr_is_equal( "update_engine", (void *)str, 13 )) return update_engine;
+  if( ak_ptr_is_equal( "oid", (void *)str, 3 )) return oid_engine;
+
+  ak_error_message_fmt( ak_error_undefined_value, __func__, "wrong engine description \"%s\"\n", str );
+ return undefined_engine;
+}
+
 
 /* ----------------------------------------------------------------------------------------------- */
  const char *ak_mode_get_str( ak_oid_mode mode )

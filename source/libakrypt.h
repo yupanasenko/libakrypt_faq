@@ -360,6 +360,16 @@
  dll_export ak_bool ak_ptr_is_equal( const ak_pointer, const ak_pointer , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Получение константного символьного описания типа криптографического механизма. */
+ dll_export const char *ak_engine_get_str( ak_oid_engine );
+/*! \brief Получение точного количества типов криптографических механизмов. */
+ dll_export const size_t ak_engine_count( void );
+/*! \brief Получение типа криптографического механизма по его символьному описанию. */
+ dll_export ak_oid_engine ak_engine_str( const char * );
+/*! \brief Получения символьного описания режима применения криптографического механизма. */
+ dll_export const char *ak_mode_get_str( ak_oid_mode );
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Обобщенная реализация функции snprintf для различных компиляторов. */
  dll_export int ak_snprintf( char *str, size_t size, const char *format, ... );
 

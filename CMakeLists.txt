@@ -31,39 +31,44 @@ option( LIBAKRYPT_GMP_TESTS "Build test programs with libGMP" OFF)
 
 # -------------------------------------------------------------------------------------------------- #
 # множество исходных текстов библиотеки
-set( MAIN_HEADER   source/libakrypt.h )
+set( MAIN_HEADER    source/libakrypt.h )
 
-set( HEADERS       source/ak_tools.h
-                   source/ak_context_manager.h
-                   source/ak_buffer.h
-                   source/ak_random.h
-                   source/ak_oid.h )
+set( HEADERS        source/ak_tools.h
+                    source/ak_context_manager.h
+                    source/ak_buffer.h
+                    source/ak_random.h
+                    source/ak_oid.h )
 
-set( SOURCES       source/ak_log.c
-                   source/ak_libakrypt.c
-                   source/ak_tools.c
-                   source/ak_context_manager.c
-                   source/ak_buffer.c
-                   source/ak_random.c
-                   source/ak_oid.c )
+set( SOURCES        source/ak_log.c
+                    source/ak_libakrypt.c
+                    source/ak_tools.c
+                    source/ak_context_manager.c
+                    source/ak_buffer.c
+                    source/ak_random.c
+                    source/ak_oid.c )
 
-set( DOCS          doc/libakrypt.dox
-                   doc/refman_header.in
-                   doc/refman_footer.in
-                   doc/Doxyfile.in )
+set( DOCS           doc/libakrypt.dox
+                    doc/refman_header.in
+                    doc/refman_footer.in
+                    doc/Doxyfile.in )
 
-set( CMAKES        cmake/DetectHeaders.cmake
-                   cmake/DetectFlags.cmake
-                   cmake/DetectLibraries.cmake
-                   cmake/MakeDoc.cmake
-                   cmake/MakeDist.cmake )
+set( CMAKES         cmake/DetectHeaders.cmake
+                    cmake/DetectFlags.cmake
+                    cmake/DetectLibraries.cmake
+                    cmake/MakeDoc.cmake
+                    cmake/MakeDist.cmake )
 
-set( OTHERS        CMakeLists.txt
-                   Readme.md
-                   Changelog.md
-                   libakrypt.rc.in
-                   libakrypt.conf
-                   libakrypt-run.sh )
+set( OTHERS         CMakeLists.txt
+                    Readme.md
+                    Changelog.md
+                    libakrypt.rc.in
+                    libakrypt.conf
+                    libakrypt-run.sh )
+
+set( AKRYPT_SOURCES akrypt/akrypt.c
+                    akrypt/akrypt_oid.c )
+set( AKRYPT_FILES   akrypt/akrypt.h
+                    akrypt/akrypt.1 )
 
 # -------------------------------------------------------------------------------------------------- #
 # подключаем модули CMake для тонкой настройки параметров сборки
@@ -91,6 +96,12 @@ if( LIBAKRYPT_STATIC_LIB )
   add_library( akrypt-static STATIC ${MAIN_HEADER} ${SOURCES} )
   set_target_properties( akrypt-static PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
 endif()
+
+# -------------------------------------------------------------------------------------------------- #
+# сборка консольной утилиты
+add_executable( akrypt${LIBAKRYPT_EXT} ${AKRYPT_SOURCES} )
+target_include_directories( akrypt${LIBAKRYPT_EXT} PUBLIC "./akrypt" )
+target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
 
 # -------------------------------------------------------------------------------------------------- #
 # сборка тестовых примеров
