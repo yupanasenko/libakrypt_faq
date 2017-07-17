@@ -78,6 +78,12 @@ include( DetectLibraries )
 include( DetectFlags )
 
 # -------------------------------------------------------------------------------------------------- #
+if( LIBAKRYPT_CONF )
+else()
+  set( LIBAKRYPT_CONF "/etc" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
 # сборка библиотек - статической и, если нужно, динамической
 include_directories( "./source" )
 add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
@@ -145,6 +151,7 @@ if( CMAKE_HOST_UNIX )
   include( MakeDoc )
   include( MakeDist )
 endif()
+include( MakeInstall )
 
 # -------------------------------------------------------------------------------------------------- #
 

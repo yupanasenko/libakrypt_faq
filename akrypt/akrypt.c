@@ -98,7 +98,9 @@
                                                                          ak_libakrypt_version( ));
   printf("usage \"akrypt command [options] [files]\"\n\n");
   printf("available commands:\n");
-  printf("  oid     show information about libakrypt OID's\n");
+  printf("  oid     show information about libakrypt OID's\n\n");
+  printf("try \"akrypt command --help\" to get information about command options\n");
+  printf("try \"man akrypt\" to get more information about akrypt programm and somw examples\n");
 
  return EXIT_SUCCESS;
 }

@@ -23,7 +23,7 @@
   printf(" -s, --show-engines     show the list of all available engines\n");
   printf(" -n, --name <name>      show OID with given name\n");
   printf(" -i, --id <id>          show OID with given identifier\n");
-  printf("     --logfile <file>   set the file for errors and audit system messages\n");
+  printf("     --audit <file>     set the file for errors and audit system messages\n");
   printf(" -h, --help             show this information\n\n");
   printf("akrypt oid without options show all available OID's\n");
 
@@ -46,7 +46,7 @@
     { "name",             1, NULL,  'n' },
     { "id",               1, NULL,  'i' },
     { "show-engines",     0, NULL,  's' },
-    { "logfile",          1, NULL,  255 },
+    { "audit",            1, NULL,  255 },
     { NULL,               0, NULL,   0  }
   };
 
