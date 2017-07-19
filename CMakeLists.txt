@@ -56,7 +56,8 @@ set( CMAKES         cmake/DetectHeaders.cmake
                     cmake/DetectFlags.cmake
                     cmake/DetectLibraries.cmake
                     cmake/MakeDoc.cmake
-                    cmake/MakeDist.cmake )
+                    cmake/MakeDist.cmake
+                    cmake/MakeInstall.cmake )
 
 set( OTHERS         CMakeLists.txt
                     Readme.md

@@ -46,7 +46,7 @@
     /* удаляем буффер, которому не хватило места в структуре */
        )) == ak_error_wrong_handle ) ak_buffer_delete( buffer );
 
-    /* запоминаем некоторые значение дескриптора */
+    /* запоминаем некоторые значения дескрипторов */
        if(( delcount < 100 ) && ( !(handle%13) )) {
           delarray[delcount] = handle;
           delcount++;

@@ -114,7 +114,7 @@
 {\itshape Принципы реализации}\\[1\baselineskip]
 
 \vspace{0.5\textheight}
-{версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@} (дата сборки \today)\\[1\baselineskip]
+{версия библиотеки @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@} (дата сборки документации \today)\\[1\baselineskip]
 {Axel Kenzo \& The Company Of Belles Lettres (c) 2014 -- 2017}\\[1\baselineskip]
 }% end of vbox
 }% end of parbox
