@@ -13,7 +13,7 @@ if( CMAKE_HOST_UNIX )
              ARCHIVE DESTINATION lib
            )
   endif()
-  install( TARGETS akrypt RUNTIME DESTINATION bin )
+  install( TARGETS akrypt${LIBAKRYPT_EXT} RUNTIME DESTINATION bin )
   install( FILES akrypt/akrypt.1 DESTINATION man/man1 )
   install( FILES ${MAIN_HEADER} DESTINATION include )
   install( FILES libakrypt.conf DESTINATION ${LIBAKRYPT_CONF} )

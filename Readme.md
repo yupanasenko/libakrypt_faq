@@ -3,7 +3,7 @@ Libakrypt
 =========
 
 Libakrypt is free and open source library (crypto module) for OpenSKZI project.
-This library written in C99 and provides some interfaces for 
+This library written in C99 and provides some interfaces for
 key management, data encryption, integrity checking and
 manipulation with digital signatures. The main goal of Libakrypt
 is implementation of many Russian crypto mechanisms, decribed 

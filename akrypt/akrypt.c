@@ -28,28 +28,29 @@
 /*   akrypt.c                                                                                      */
 /* ----------------------------------------------------------------------------------------------- */
  #include <akrypt.h>
- #include <getopt.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /* имя пользовательского файла для вывода аудита */
- char log_filename[1024];
- ak_function_log *logfunc = NULL;
+ char audit_filename[1024];
+ ak_function_log *audit = NULL;
 
 /* ----------------------------------------------------------------------------------------------- */
  int main( int argc, char *argv[] )
 {
  /* проверяем, что пользователем должна быть задана команда */
-  if( argc < 2 ) return show_litehelp();
+  if( argc < 2 ) return akrypt_litehelp();
 
  /* проверяем флаги вывода справочной информации */
-  if( akrypt_check_command( "-h", argv[1] )) return show_help();
-  if( akrypt_check_command( "--help", argv[1] )) return show_help();
-  if( akrypt_check_command( "/?", argv[1] )) return show_help();
+  if( akrypt_check_command( "-h", argv[1] )) return akrypt_help();
+  if( akrypt_check_command( "--help", argv[1] )) return akrypt_help();
+  if( akrypt_check_command( "/?", argv[1] )) return akrypt_help();
 
-  if( akrypt_check_command( "oid", argv[1] )) return oid( argc, argv );
+ /* выполняем команду пользователя */
+  if( akrypt_check_command( "show", argv[1] )) return akrypt_show( argc, argv );
 
  /* ничего не подошло, выводим сообщение об ошибке */
-  printf("wrong command: %s\n", argv[1] );
+  ak_log_set_function( ak_function_log_stderr );
+  ak_error_message_fmt( ak_error_undefined_function, __func__, "unknown command \"%s\"", argv[1] );
 
  return EXIT_FAILURE;
 }
@@ -61,7 +62,6 @@
 
   if( strlen( argv ) != len ) return ak_false;
   if( strncmp( comm, argv, len )) return ak_false;
-
  return ak_true;
 }
 
@@ -69,7 +69,7 @@
 /* вывод сообщений в заданный пользователем файл, а также в стандартный демон вывода сообщений */
  int ak_function_log_user( const char *message )
 {
-  FILE *fp = fopen( log_filename, "a+" );
+  FILE *fp = fopen( audit_filename, "a+" );
    /* функция выводит сообщения в заданный файл */
     if( !fp ) return ak_error_open_file;
     fprintf( fp, "%s\n", message );
@@ -81,9 +81,22 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ void akrypt_set_audit( const char *message )
+{
+  if( ak_ptr_is_equal( "stderr", (void *) message, 6 ))
+       audit = ak_function_log_stderr;
+       /* если задан stderr, то используем готовую функцию */
+      else {
+            memset( audit_filename, 0, 1024 );
+            strncpy( audit_filename, message, 1022 );
+            audit = ak_function_log_user;
+           }
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                 реализация вывода справки                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int show_litehelp( void )
+ int akrypt_litehelp( void )
 {
   printf("akrypt (crypto application based on libakrypt library, version: %s)\n",
                                                                          ak_libakrypt_version( ));
@@ -92,13 +105,13 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int show_help( void )
+ int akrypt_help( void )
 {
   printf("akrypt (crypto application based on libakrypt library, version: %s)\n",
                                                                          ak_libakrypt_version( ));
   printf("usage \"akrypt command [options] [files]\"\n\n");
   printf("available commands:\n");
-  printf("  oid     show information about libakrypt OID's\n\n");
+  printf("  show    show information about user and libakrypt parameters\n\n");
   printf("try \"akrypt command --help\" to get information about command options\n");
   printf("try \"man akrypt\" to get more information about akrypt programm and somw examples\n");
 
@@ -108,58 +121,3 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                       akrypt.c  */
 /* ----------------------------------------------------------------------------------------------- */
-
-
-// int next_option = 0;
-// const struct option long_options[] = {
-//   { "help",             0, NULL, 'h' },
-//   { "logfile",          1, NULL, 255 },
-//   { NULL,               0, NULL,   0 }
-// };
-
-///* случай запуска программы без параметров  */
-// if( argc == 1 ) return show_litehelp();
-
-///* разбираем простейшие опции командной строки */
-// do{
-//     next_option = getopt_long( argc, argv, "h", long_options, NULL );
-//     switch( next_option )
-//    {
-//       case 'h' : return show_help();
-//       case '?' : return show_help();
-//       case 255 : /* получили от пользователя имя файла для вывода аудита */
-//                  if( memcmp( "stderr", optarg, 6 ) == 0 )
-//                    logfunc = ak_function_log_stderr;
-//                    /* если задан stderr, то используем готовую функцию */
-//                   else {
-//                      memset( log_filename, 0, 1024 );
-//                      strncpy( log_filename, optarg, 1022 );
-//                      logfunc = ak_function_log_user;
-//                   }
-//                   break;
-//    }
-//  } while( next_option != -1 );
-
-///* инициализируем библиотеку */
-// if( ak_libakrypt_create( logfunc ) != ak_true ) return ak_libakrypt_destroy();
-
-///* теперь мы можем обработать заданные пользователем команды */
-// if( akrypt_check_command( "oid", argv[1] )) return oid( argc, argv );
-
-//return ak_libakrypt_destroy();
-
-
-// /* флаги вывода справочной информации */
-//   if( akrypt_check_command( "-h", argv[1] )) return show_help();
-//   if( akrypt_check_command( "--help", argv[1] )) return show_help();
-//   if( akrypt_check_command( "/?", argv[1] )) return show_help();
-
-//  printf("unexpected command %s\n", argv[1] );
-// return show_help( );
-
-// /* инициализируем библиотеку. в случае возникновения ошибки завершаем работу */
-//  if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true )
-//    return ak_libakrypt_destroy();
-
-//  printf("Hello world\n");
-// return ak_libakrypt_destroy();

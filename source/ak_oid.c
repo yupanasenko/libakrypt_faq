@@ -31,11 +31,13 @@
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
- const size_t ak_engine_count( void )
-{
- return 11;
-}
+ const size_t ak_engine_count( void ) { return 11; }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param engine тип криптографического механизма
+    @return Функция возвращает указатель на строку, сожержащую описание типа криптографического
+    механизма. Если значение engine неверно, то возбуждается ошибка и возвращается указатель на
+    null-строку                                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
  const char *ak_engine_get_str( ak_oid_engine engine )
 {
@@ -52,32 +54,54 @@
    case random_generator:  return "random_generator";
    case update_engine:     return "update_engine";
    case oid_engine:        return "oid";
-   default:                return ak_null_string;
+   default:                break;
  }
-
+  ak_error_message_fmt( ak_error_undefined_value, __func__,
+                                                "using a non defined engine's value %d", engine );
  return ak_null_string;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! @param str символьное описание, должно в точности совпадать с тем, что возвращает функция
+               ak_engine_get_str().
+    @return В случае успеха, возвращается значение, соответстующее символьному описанию.
+    В случае, если описание неверно, то возбуждается ошибка и возвращается значение
+    \ref undefined_engine.                                                                         */
+/* ----------------------------------------------------------------------------------------------- */
  ak_oid_engine ak_engine_str( const char *str )
 {
-  if( ak_ptr_is_equal( "undefined_engine", (void *)str, 16 )) return undefined_engine;
-  if( ak_ptr_is_equal( "identifier", (void *)str, 10 )) return identifier;
-  if( ak_ptr_is_equal( "block_cipher", (void *)str, 12 )) return block_cipher;
-  if( ak_ptr_is_equal( "stream_cipher", (void *)str, 13 )) return stream_cipher;
-  if( ak_ptr_is_equal( "hybrid_cipher", (void *)str, 13 )) return hybrid_cipher;
-  if( ak_ptr_is_equal( "hash_function", (void *)str, 13 )) return hash_function;
-  if( ak_ptr_is_equal( "mac_function", (void *)str, 12 )) return mac_function;
-  if( ak_ptr_is_equal( "digital_signature", (void *)str, 17 )) return digital_signature;
-  if( ak_ptr_is_equal( "random_generator", (void *)str, 16 )) return random_generator;
-  if( ak_ptr_is_equal( "update_engine", (void *)str, 13 )) return update_engine;
-  if( ak_ptr_is_equal( "oid", (void *)str, 3 )) return oid_engine;
+  if(( strlen( str ) == 16 ) && ak_ptr_is_equal( "undefined_engine", (void *)str, 16 ))
+                                                                            return undefined_engine;
+  if(( strlen( str ) == 10 ) && ak_ptr_is_equal( "identifier", (void *)str, 10 )) return identifier;
+  if(( strlen( str ) == 12 ) && ak_ptr_is_equal( "block_cipher", (void *)str, 12 ))
+                                                                                return block_cipher;
+  if(( strlen( str ) == 13 ) && ak_ptr_is_equal( "stream_cipher", (void *)str, 13 ))
+                                                                               return stream_cipher;
+  if(( strlen( str ) == 13 ) && ak_ptr_is_equal( "hybrid_cipher", (void *)str, 13 ))
+                                                                               return hybrid_cipher;
+  if(( strlen( str ) == 13 ) && ak_ptr_is_equal( "hash_function", (void *)str, 13 ))
+                                                                               return hash_function;
+  if(( strlen( str ) == 12 ) && ak_ptr_is_equal( "mac_function", (void *)str, 12 ))
+                                                                                return mac_function;
+  if(( strlen( str ) == 17 ) && ak_ptr_is_equal( "digital_signature", (void *)str, 17 ))
+                                                                           return digital_signature;
+  if(( strlen( str ) == 16 ) && ak_ptr_is_equal( "random_generator", (void *)str, 16 ))
+                                                                            return random_generator;
+  if(( strlen( str ) == 13 ) && ak_ptr_is_equal( "update_engine", (void *)str, 13 ))
+                                                                               return update_engine;
+  if(( strlen( str ) == 3 ) && ak_ptr_is_equal( "oid", (void *)str, 3 )) return oid_engine;
 
-  ak_error_message_fmt( ak_error_undefined_value, __func__, "wrong engine description \"%s\"\n", str );
+  ak_error_message_fmt( ak_error_undefined_value, __func__,
+                                             "string \"%s\" is not valid engine description", str );
  return undefined_engine;
 }
 
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param mode режим использованиея криптографического механизма
+    @return Функция возвращает указатель на строку, сожержащую описание типа криптографического
+    механизма. Если значение engine неверно, то возбуждается ошибка и возвращается указатель на
+    null-строку                                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
  const char *ak_mode_get_str( ak_oid_mode mode )
 {
@@ -98,8 +122,10 @@
    case xts_mac:         return "xts mode with authenication";
    case xcrypt:          return "xor mode";
    case a8:              return "addition mode";
-   default:              return ak_null_string;
+   default:              break;
  }
+  ak_error_message_fmt( ak_error_undefined_value, __func__,
+                                                      "using a non defined mode's value %d", mode );
  return ak_null_string;
 }
 

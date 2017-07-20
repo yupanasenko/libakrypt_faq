@@ -67,7 +67,7 @@ set( OTHERS         CMakeLists.txt
                     libakrypt-run.sh )
 
 set( AKRYPT_SOURCES akrypt/akrypt.c
-                    akrypt/akrypt_oid.c )
+                    akrypt/akrypt_show.c )
 set( AKRYPT_FILES   akrypt/akrypt.h
                     akrypt/akrypt.1
                     akrypt/getopt.h

@@ -27,6 +27,7 @@
 /*   ak_context_manager.c                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_oid.h>
+ #include <ak_tools.h>
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -158,13 +159,12 @@
                                 "wrong initialization of all types of random generators" );
    }
  #else
-   #error Using a not defined path of compilation
+   #error Using a non defined path of compilation
  #endif
 #endif
 
  /* инициализируем указатели контекстов */
-  manager->size = 4;
-  ak_error_message( ak_error_ok, __func__ , "TODO: load manager->size value from /etc/libakrypt.conf");
+  manager->size = ak_libakrypt_get_context_manager_size();
 
   if(( manager->array = malloc( manager->size*sizeof( ak_pointer ))) == NULL ) {
     ak_context_manager_destroy( manager );
@@ -201,15 +201,16 @@
   if( newsize <= manager->size )
     return ak_error_message( ak_error_context_manager_size, __func__ ,
                                       "unexpected value of new value of context manager's size" );
-  if( newsize > 4096 ) return ak_error_message( ak_error_context_manager_max_size, __func__,
+  if( newsize > ak_libakrypt_get_context_manager_max_size( ))
+    return ak_error_message( ak_error_context_manager_max_size, __func__,
                                    "current size of context manager exceeds permissible bounds" );
-    ak_error_message( ak_error_ok, __func__ ,
-                            "TODO: load maximum of manager->size value from /etc/libakrypt.conf");
+/* это отладочный вывод, который сообщает о выделении новой памяти
+   ak_error_message( ak_error_ok, __func__ ,
+                         "TODO: load maximum of manager->size value from /etc/libakrypt.conf"); */
 
   if(( newarray = malloc( newsize*sizeof( ak_pointer ))) == NULL )
     return ak_error_message( ak_error_out_of_memory, __func__ ,
                                               "wrong memory allocation for context manager nodes" );
-
  /* копируем данные и очищаем память */
   for( idx = 0; idx < manager->size; idx++ ) {
      newarray[idx] = manager->array[idx];

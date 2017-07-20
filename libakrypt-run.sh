@@ -23,7 +23,8 @@ cmake -DCMAKE_C_COMPILER=gcc -DLIBAKRYPT_SHARED_LIB=ON ../../libakrypt-0.x
 make clean && make
 valgrind ./example-intro
 cd ..
-echo -e "\n\n"
+echo -e "\n"
+read -p "press return key ..."
 
 # Сборка Clang под Linux ---------------------
 mkdir -p build-clang
@@ -33,7 +34,8 @@ cmake -DCMAKE_C_COMPILER=clang -DLIBAKRYPT_SHARED_LIB=ON ../../libakrypt-0.x
 make clean && make
 valgrind ./example-intro
 cd ..
-echo -e "\n\n"
+echo -e "\n"
+read -p "press return key ..."
 
 # Сборка TinyCC под Linux ---------------------
 mkdir -p build-tinycc
@@ -43,7 +45,8 @@ cmake -DCMAKE_C_COMPILER=tcc -DLIBAKRYPT_SHARED_LIB=ON ../../libakrypt-0.x
 make clean && make
 valgrind ./example-intro
 cd ..
-echo -e "\n\n"
+echo -e "\n"
+read -p "press return key ..."
 
 # Сборка ellcc под Win32 -----------
 mkdir -p build-mingw32
@@ -54,7 +57,8 @@ cmake -DCMAKE_C_COMPILER=ecc -DCMAKE_C_FLAGS="-target x86_32-w64-mingw32" -DLIBA
 make clean && make
 wine ./example-intro.exe
 cd ..
-echo -e "\n\n"
+echo -e "\n"
+read -p "press return key ..."
 
 # Сборка ellcc под Win64 -----------
 mkdir -p build-mingw64
@@ -65,7 +69,8 @@ cmake -DCMAKE_C_COMPILER=ecc -DCMAKE_C_FLAGS="-target x86_64-w64-mingw32" -DLIBA
 make clean && make
 wine ./example-intro.exe
 cd ..
-echo -e "\n\n"
+echo -e "\n"
+read -p "press return key ..."
 
 # Сборка ellcc под ARMv7 ---------------------
 mkdir -p build-arm32v7
@@ -75,7 +80,8 @@ cmake -DCMAKE_C_COMPILER=ecc -DCMAKE_C_FLAGS="-target arm32v7-linux" ../../libak
 make clean && make
 qemu-arm ./example-intro
 cd ..
-echo -e "\n\n"
+echo -e "\n"
+read -p "press return key ..."
 
 # Сборка ellcc под ARMv7eb ---------------------
 mkdir -p build-arm32v7eb
@@ -85,13 +91,14 @@ cmake -DCMAKE_C_COMPILER=ecc -DCMAKE_C_FLAGS="-target arm32v7eb-linux" ../../lib
 make clean && make
 qemu-armeb ./example-intro
 cd ..
-echo -e "\n\n"
+echo -e "\n"
+read -p "press return key ..."
 
 # Сборка ellcc под PPC32-Linux ---------------------
 mkdir -p build-ppc32
 cd build-ppc32
 rm -f CMakeCache.txt
-echo "Compiling by ecc (ppc32-linux)"
+echo "Compiling by ecc (ppc32-linux, big-endian)"
 cmake -DCMAKE_C_COMPILER=ecc -DCMAKE_C_FLAGS="-target ppc32-linux" ../../libakrypt-0.x
 make clean && make
 qemu-ppc ./example-intro
