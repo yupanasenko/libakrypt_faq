@@ -40,9 +40,9 @@
  int ak_log_set_level( int );
 
 /*! \brief Функция возвращает минимальное количество элементов структуры управления контекстами. */
- int ak_libakrypt_get_context_manager_size( void );
+ size_t ak_libakrypt_get_context_manager_size( void );
 /*! \brief Функция возвращает максимально возможное количество одновременно существующих контекстов. */
- int ak_libakrypt_get_context_manager_max_size( void );
+ size_t ak_libakrypt_get_context_manager_max_size( void );
 
  #endif
 /* ----------------------------------------------------------------------------------------------- */

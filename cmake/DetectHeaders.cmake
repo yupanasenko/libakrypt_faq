@@ -56,3 +56,10 @@ if( LIBAKRYPT_HAVE_GETOPT )
 else()
   set( AKRYPT_SOURCES ${AKRYPT_SOURCES} akrypt/getopt.c )
 endif()
+
+# -------------------------------------------------------------------------------------------------- #
+if( WIN32 )
+  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_WINDOWS_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #

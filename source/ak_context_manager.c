@@ -289,9 +289,9 @@
     @param handle Дескриптор контектса
     @return Функция возвращает значение дескриптора контекста.                                     */
 /* ----------------------------------------------------------------------------------------------- */
- ak_handle ak_context_manager_handle_to_idx( ak_context_manager manager, ak_handle handle )
+ size_t ak_context_manager_handle_to_idx( ak_context_manager manager, ak_handle handle )
 {
-  return handle;
+  return ( size_t )handle;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

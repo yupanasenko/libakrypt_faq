@@ -37,6 +37,9 @@
 #ifdef LIBAKRYPT_HAVE_UNISTD_H
  #include <unistd.h>
 #endif
+#ifdef LIBAKRYPT_HAVE_WINDOWS_H
+ #include <windows.h>
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*!  Переменная, содержащая в себе код последней ошибки                                            */

@@ -61,9 +61,12 @@
  #include <sys/types.h>
 
 /* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_WINDOWS_H
+ #include <windows.h>
+#endif
+
 #ifdef _MSC_VER
  #include <io.h>
- #include <windows.h>
  #include <process.h>
  typedef __int32 ak_int32;
  typedef unsigned __int32 ak_uint32;

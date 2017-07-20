@@ -116,7 +116,7 @@
 /*! \brief Получение точного значения дескриптора по индексу массива. */
  ak_handle ak_context_manager_idx_to_handle( ak_context_manager , size_t );
 /*! \brief Получение точного значения индекса массива по значению декскриптора. */
- ak_handle ak_context_manager_handle_to_idx( ak_context_manager , ak_handle );
+ size_t ak_context_manager_handle_to_idx( ak_context_manager , ak_handle );
 /*! \brief Проверка корректности дескриптора контекста. */
  int ak_context_manager_handle_check( ak_context_manager , ak_handle , size_t * );
 

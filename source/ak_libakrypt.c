@@ -32,9 +32,9 @@
 #endif
 
 #ifdef LIBAKRYPT_HAVE_UNISTD_H
- #include <sys/stat.h>
  #include <unistd.h>
 #endif
+
 #ifdef LIBAKRYPT_HAVE_FCNTL_H
   #include <fcntl.h>
 #endif
@@ -42,6 +42,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  #include <errno.h>
  #include <stdlib.h>
+ #include <sys/stat.h>
 
  #include <ak_oid.h>
  #include <ak_tools.h>
@@ -53,9 +54,9 @@
   /*! \brief Уровень вывода сообщений выполнения функций библиотеки */
    int log_level;
   /*! \brief Минимальное количество контекстов, помещаемых в структуру управления контекстами */
-   int context_manager_size;
+   size_t context_manager_size;
   /*! \brief Максимальное количество одновременно существующих контекстов */
-   int context_manager_max_size;
+   size_t context_manager_max_size;
 }
  libakrypt_options =
 {
@@ -116,11 +117,11 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_libakrypt_get_option( const char *string, const char *field, long long int *value )
+ static int ak_libakrypt_get_option( const char *string, const char *field, ak_uint64 *value )
 {
   char *ptr = NULL, *endptr = NULL;
   if(( ptr = strstr( string, field )) != NULL ) {
-    long long int val = (long long int) strtoll( ptr += strlen(field), &endptr, 10 );
+    ak_uint64 val = (ak_uint64) strtol( ptr += strlen(field), &endptr, 10 ); // strtoll
     if(( endptr != NULL ) && ( ptr == endptr )) {
       ak_error_message_fmt( ak_error_undefined_value, __func__,
                                     "using an undefinded value for variable %s", field );
@@ -130,7 +131,7 @@
       ak_error_message_fmt( ak_error_undefined_value, __func__,
                                                      "%s for field %s", strerror( errno ), field );
     } else {
-             *value = ( long long int ) val;
+             *value = ( ak_uint64 ) val;
              return ak_true;
            }
   }
@@ -156,7 +157,7 @@
  /* проверяем наличие файла и прав доступа к нему */
   if(( fd = open( filename, O_RDONLY | O_BINARY )) < 0 ) {
     ak_error_message_fmt( ak_error_open_file,
-                    __func__, "wrong open file \"%s\" with error %s", filename, strerror( errno ));
+                             __func__, "wrong open file \"%s\" - %s", filename, strerror( errno ));
     return ak_false;
   }
   if( fstat( fd, &st ) ) {
@@ -182,7 +183,7 @@
      }
     if( ch == '\n' ) {
       if((strlen(localbuffer) != 0 ) && ( strchr( localbuffer, '#' ) == 0 )) {
-        long long int value = 0;
+        ak_uint64 value = 0;
 
         /* устанавливаем уровень аудита */
         if( ak_libakrypt_get_option( localbuffer, "log_level = ", &value ))
@@ -230,8 +231,8 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_log_get_level( void ) { return libakrypt_options.log_level; }
- int ak_libakrypt_get_context_manager_size( void ) { return libakrypt_options.context_manager_size; }
- int ak_libakrypt_get_context_manager_max_size( void )
+ size_t ak_libakrypt_get_context_manager_size( void ) { return libakrypt_options.context_manager_size; }
+ size_t ak_libakrypt_get_context_manager_max_size( void )
 {
  return libakrypt_options.context_manager_max_size;
 }
