@@ -56,6 +56,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int akrypt_show( int argc, char *argv[] )
 {
+  size_t i = 0;
   int next_option = 0;
   enum { do_nothing, do_alloids, do_oid, do_engines } work = do_nothing;
   ak_oid_engine engine = undefined_engine;
@@ -143,8 +144,8 @@
                break;
 
      case do_engines:
-               for( next_option = 0; next_option < ak_engine_count(); next_option++ )
-                  printf("%s\n", ak_engine_get_str( next_option ));
+               for( i = 0; i < ak_engine_count(); i++ )
+                  printf("%s\n", ak_engine_get_str( i ));
                break;
 
      default:  break;
