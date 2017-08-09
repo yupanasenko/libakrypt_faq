@@ -28,6 +28,7 @@
 /*   ak_oid.c                                                                                      */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_oid.h>
+ #include <ak_parameters.h>
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -275,8 +276,8 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @return функция возвращает ak_error_ok (ноль) в случае успеха. В случае возникновения ошибки,
-    возвращается ее код.                                                                           */
+/*! @return функция возвращает \ref ak_error_ok (ноль) в случае успеха. В случае возникновения
+    ошибки, возвращается ее код.                                                                   */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_oids_create( void )
 {
@@ -288,8 +289,8 @@
     return ak_error_message( error = ak_error_get_value(), __func__ ,
                                                         "using a non initialized context manager" );
 
- /* добавляем идентификаторы алгоритмов выработки псевдо-случайных последовательностей.
-    значения OID находятся в дереве библиотеки: 1.2.643.2.52.1.1 - генераторы ПСЧ  */
+ /* 1. Добавляем идентификаторы алгоритмов выработки псевдо-случайных последовательностей.
+       значения OID находятся в дереве библиотеки: 1.2.643.2.52.1.1 - генераторы ПСЧ  */
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( random_generator, algorithm, "lcg",
               "1.2.643.2.52.1.1.1", NULL, (ak_function_oid *)ak_random_new_lcg ))) != ak_error_ok )
@@ -310,9 +311,30 @@
     return ak_error_message( error, __func__, "incorrect oid creation" );
 #endif
 
- /* идентификаторы отечественных криптографических алгоритмов
-    взяты согласно перечню OID c http://tk26.ru/methods/OID_TK_26/index.php  и
-    из используемых перечней КриптоПро                                                             */
+
+ /* 2. Добавляем идентификаторы алгоритмов бесключевого хеширования.
+       значения OID взяты из перечней КриптоПро и ТК26 (http://tk26.ru/methods/OID_TK_26/index.php) */
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( hash_function, algorithm, "gosthash94",
+              "1.2.643.2.2.9", NULL,
+                                 ( ak_function_oid * ) ak_hash_new_gosthash94_csp ))) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+ /* 3. Добавляем идентификаторы параметров алгоритма бесключевого хеширования ГОСТ Р 34.11-94. */
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( hash_function, kbox_params,
+    "id-gosthash94-TestParamSet", "1.2.643.2.2.30.0", (ak_pointer) hash_box, NULL ))) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( hash_function, kbox_params,
+    "id-gosthash94-CryptoPro-ParamSetA", "1.2.643.2.2.30.1", (ak_pointer) hash_box_CSPA,
+                                                                             NULL ))) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( hash_function, kbox_params,
+    "id-gosthash94-VerbaO-ParamSet", "1.2.643.2.2.30.2", (ak_pointer) hash_box_VerbaO,
+                                                                             NULL ))) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect oid creation" );
 
  return ak_error_ok;
 }

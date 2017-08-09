@@ -19,7 +19,7 @@ cmake_minimum_required( VERSION 2.8 )
 project( libakrypt )
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 5 )
-set( MINOR_VERSION 2 )
+set( MINOR_VERSION 3 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -37,7 +37,9 @@ set( HEADERS        source/ak_tools.h
                     source/ak_context_manager.h
                     source/ak_buffer.h
                     source/ak_random.h
-                    source/ak_oid.h )
+                    source/ak_parameters.h
+                    source/ak_oid.h
+                    source/ak_hash.h )
 
 set( SOURCES        source/ak_log.c
                     source/ak_libakrypt.c
@@ -45,7 +47,9 @@ set( SOURCES        source/ak_log.c
                     source/ak_context_manager.c
                     source/ak_buffer.c
                     source/ak_random.c
-                    source/ak_oid.c )
+                    source/ak_oid.c
+                    source/ak_hash.c
+                    source/ak_gosthash.c )
 
 set( DOCS           doc/libakrypt.dox
                     doc/refman_header.in
@@ -85,7 +89,7 @@ if( LIBAKRYPT_CONF )
 else()
   if( linux )
     set( LIBAKRYPT_CONF "/etc" )
-  endif()  
+  endif()
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -121,7 +125,8 @@ set( EXAMPLES_LIST intro
                    random
                    randomize
                    random-system
-                   oid )
+                   oid
+                   hash )
 
 # организуем сборку примеров со статической линковкой
 if( LIBAKRYPT_STATIC_LIB )

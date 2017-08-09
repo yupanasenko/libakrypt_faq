@@ -1,6 +1,6 @@
 # -------------------------------------------------------------------------------------------------- #
 # инсталляция библиотеки (только для UNIX)
-if( CMAKE_HOST_UNIX )
+if( linux )
   if( LIBAKRYPT_SHARED_LIB )
     install( TARGETS akrypt-shared
              LIBRARY DESTINATION lib
