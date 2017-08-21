@@ -87,7 +87,7 @@ include( DetectFlags )
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_CONF )
 else()
-  if( linux )
+  if( CMAKE_HOST_UNIX )
     set( LIBAKRYPT_CONF "/etc" )
   endif()
 endif()

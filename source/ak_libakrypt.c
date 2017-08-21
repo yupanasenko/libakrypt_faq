@@ -43,8 +43,8 @@
  #include <errno.h>
  #include <sys/stat.h>
 
- #include <ak_oid.h>
  #include <ak_tools.h>
+ #include <ak_hash.h>
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -60,7 +60,7 @@
  libakrypt_options =
 {
   ak_log_standard, /* по-умолчанию, устанавливается стандартный уровень аудита */
-  16,
+  32,
   4096 /* это значит, что одновременно может существовать не более 4096 контекстов */
 };
 
@@ -325,6 +325,43 @@ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция проверяет корректность реализации алгоритмов хеширования
+    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
+    вызова ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_libakrypt_test_hash_functions( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing hash functions started" );
+
+ /* тестируем функцию ГОСТ Р 34.11-94 */
+  if( ak_hash_test_gosthash94() != ak_true ) {
+   ak_error_message( ak_error_get_value(), __func__ , "incorrect gosthash94 testing" );
+   return ak_false;
+  }
+
+ /* тестируем функцию Стрибог256 */
+//  if( ak_hash_test_streebog256() != ak_true ) {
+//    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog256 testing" );
+//    return ak_false;
+//  }
+
+ /* тестируем функцию Стрибог512 */
+//  if( ak_hash_test_streebog512() != ak_true ) {
+//    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog512 testing" );
+//    return ak_false;
+//  }
+
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing hash functions ended successfully" );
+
+ return ak_true;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция должна вызываться перед использованием криптографических механизмов библиотеки.
 
    Пример использования функции.
@@ -383,9 +420,11 @@ return ak_error_ok;
      return ak_false;
    }
 
- /* инициализируем механизм обработки секретных ключей пользователей */
-
  /* тестируем работу функций хеширования */
+  if( ak_libakrypt_test_hash_functions() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "error while testing hash functions" );
+    return ak_false;
+  }
 
  /* тестируем работу алгоритмов блочного шифрования */
 

@@ -79,7 +79,7 @@
 /*!  Функция преобразует перестановки, заданные двумерным массивом k размера 8x16,
      в двумерный массив размера 4x256, состоящий из 4-х перестановок типа sbox.
      @param k   указатель на двумерный массив, состоящий из 8ми массивов четырех битных перестановок
-     @param prem указатель на массив развернутых перестановок
+     @param perm указатель на массив развернутых перестановок
      @return Функция возвращает либо ak_error_null_pointer, если хотя бы один из
      указателей не определен. В случае успешного преобразования возвращается ak_error_ok.           */
  /* ----------------------------------------------------------------------------------------------- */
@@ -480,6 +480,152 @@
   ctx->update =   ak_hash_gosthash94_update;
   ctx->finalize = ak_hash_gosthash94_finalize;
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*!  @return Если тестирование прошло успешно возвращается ak_true (истина). В противном случае,
+     возвращается ak_false.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_hash_test_gosthash94( void )
+{
+ /* определяем тестовые значения */
+  ak_uint8 test_text1[32] = {
+   0x54, 0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x2c,
+   0x20, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x3d, 0x33, 0x32, 0x20, 0x62, 0x79, 0x74, 0x65, 0x73
+  };
+  ak_uint8 test_text2[50] = {
+   0x53, 0x75, 0x70, 0x70, 0x6f, 0x73, 0x65, 0x20, 0x74, 0x68, 0x65, 0x20, 0x6f, 0x72, 0x69, 0x67,
+   0x69, 0x6e, 0x61, 0x6c, 0x20, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x20, 0x68, 0x61, 0x73,
+   0x20, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x20, 0x3d, 0x20, 0x35, 0x30, 0x20, 0x62, 0x79, 0x74,
+   0x65, 0x73
+  };
+  ak_uint8 test_hash1[32] = {
+   0xb1, 0xc4, 0x66, 0xd3, 0x75, 0x19, 0xb8, 0x2e, 0x83, 0x19, 0x81, 0x9f, 0xf3, 0x25, 0x95, 0xe0,
+   0x47, 0xa2, 0x8c, 0xb6, 0xf8, 0x3e, 0xff, 0x1c, 0x69, 0x16, 0xa8, 0x15, 0xa6, 0x37, 0xff, 0xfa
+  };
+  ak_uint8 test_hash2[32] = {
+   0x47, 0x1a, 0xba, 0x57, 0xa6, 0x0a, 0x77, 0x0d, 0x3a, 0x76, 0x13, 0x06, 0x35, 0xc1, 0xfb, 0xea,
+   0x4e, 0xf1, 0x4d, 0xe5, 0x1f, 0x78, 0xb4, 0xae, 0x57, 0xdd, 0x89, 0x3b, 0x62, 0xf5, 0x52, 0x08
+  };
+  ak_uint8 test_VerbaO_1[32] = {
+   0xb1, 0x85, 0xd2, 0x09, 0x31, 0x1d, 0xc0, 0x82, 0x54, 0x49, 0x90, 0x25, 0x63, 0x08, 0x3d, 0x2e,
+   0x51, 0x1a, 0xb4, 0x7a, 0x8a, 0x2f, 0xaf, 0xe3, 0x88, 0xf2, 0xb4, 0xdf, 0x73, 0x81, 0x20, 0xe2
+  };
+  ak_uint8 test_VerbaO_2[32] = {
+   0x0d, 0x26, 0x67, 0x96, 0xe6, 0x0d, 0x14, 0x67, 0xf5, 0xa1, 0x82, 0x5a, 0x41, 0xc7, 0x4d, 0x9a,
+   0x60, 0x04, 0xe7, 0x94, 0xac, 0x8e, 0x29, 0x37, 0xc8, 0x2b, 0x46, 0x78, 0x5c, 0x15, 0xfc, 0xaf
+  };
+
+ /* определяем локальные переменные */
+  struct hash ctx; /* контекст функции хеширования */
+  ak_uint8 out[32]; /* буффер длиной 32 байта (256 бит) для получения результата */
+  char *str = NULL;
+  int error = ak_error_ok;
+  ak_bool result = ak_true;
+  int audit = ak_log_get_level();
+
+ /* первый пример из ГОСТ Р 34.11-94 */
+  if(( error = ak_hash_create_gosthash94( &ctx,
+                          ak_oid_find_by_name( "id-gosthash94-Test-ParamSet" ))) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong initialization of gosthash94 context" );
+    return ak_false;
+  }
+
+  ak_hash_dataptr( &ctx, test_text1, 32, out );
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "invalid calculation of gosthash94 code" );
+    result = ak_false;
+    goto lab_exit;
+  }
+
+  if(ak_ptr_is_equal( test_hash1, out, 32 )) {
+    if( audit >= ak_log_maximum )
+      ak_error_message( ak_error_ok, __func__ ,
+                                             "the 1st test with id-gosthash94-Test-ParamSet is Ok" );
+  } else {
+           ak_error_message( ak_error_not_equal_data, __func__ ,
+                                          "the 1st test with id-gosthash94-Test-ParamSet is wrong" );
+           ak_log_set_message(( str = ak_ptr_to_hexstr( out, 32, ak_false ))); free( str );
+           ak_log_set_message(( str = ak_ptr_to_hexstr( test_hash1, 32, ak_false ))); free( str );
+           result = ak_false;
+           goto lab_exit;
+         }
+
+ /* второй пример из ГОСТ Р 34.11-94 */
+  ak_hash_dataptr( &ctx, test_text2, 50, out );
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "invalid calculation of gosthash94 code" );
+    result = ak_false;
+    goto lab_exit;
+  }
+
+  if(ak_ptr_is_equal( test_hash2, out, 32 )) {
+    if( audit >= ak_log_maximum )
+      ak_error_message( ak_error_ok, __func__ ,
+                                             "the 2nd test with id-gosthash94-Test-ParamSet is Ok" );
+  } else {
+           ak_error_message( ak_error_not_equal_data, __func__ ,
+                                          "the 2nd test with id-gosthash94-Test-ParamSet is wrong" );
+           ak_log_set_message(( str = ak_ptr_to_hexstr( out, 32, ak_false ))); free( str );
+           ak_log_set_message(( str = ak_ptr_to_hexstr( test_hash2, 32, ak_false ))); free( str );
+           result = ak_false;
+           goto lab_exit;
+         }
+
+ /* уничтожаем контекст c параметрами id-gosthash94-TestParamSet */
+  ak_hash_destroy( &ctx );
+
+ /* первый пример для таблиц замен из Верба-О */
+  if(( error = ak_hash_create_gosthash94( &ctx,
+                         ak_oid_find_by_name( "id-gosthash94-VerbaO-ParamSet" ))) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong initialization of gosthash94 context" );
+    return ak_false;
+  }
+
+  ak_hash_dataptr( &ctx, test_text1, 32, out );
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "invalid calculation of gosthash94 code" );
+    result = ak_false;
+    goto lab_exit;
+  }
+
+  if(ak_ptr_is_equal( test_VerbaO_1, out, 32 )) {
+    if( audit >= ak_log_maximum )
+      ak_error_message( ak_error_ok, __func__ ,
+                                           "the 1st test with id-gosthash94-VerbaO-ParamSet is Ok" );
+  } else {
+           ak_error_message( ak_error_not_equal_data, __func__ ,
+                                        "the 1st test with id-gosthash94-VerbaO-ParamSet is wrong" );
+           ak_log_set_message(( str = ak_ptr_to_hexstr( out, 32, ak_false ))); free( str );
+           ak_log_set_message(( str = ak_ptr_to_hexstr( test_VerbaO_1, 32, ak_false ))); free( str );
+           result = ak_false;
+           goto lab_exit;
+         }
+
+ /* второй пример для таблиц замен из Верба-О */
+  ak_hash_dataptr( &ctx, test_text2, 50, out );
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "invalid calculation of gosthash94 code" );
+    result = ak_false;
+    goto lab_exit;
+  }
+
+  if(ak_ptr_is_equal( test_VerbaO_2, out, 32 )) {
+    if( audit >= ak_log_maximum )
+      ak_error_message( ak_error_ok, __func__ ,
+                                           "the 2nd test with id-gosthash94-VerbaO-ParamSet is Ok" );
+  } else {
+           ak_error_message( ak_error_not_equal_data, __func__ ,
+                                        "the 2nd test with id-gosthash94-VerbaO-ParamSet is wrong" );
+           ak_log_set_message(( str = ak_ptr_to_hexstr( out, 32, ak_false ))); free( str );
+           ak_log_set_message(( str = ak_ptr_to_hexstr( test_VerbaO_2, 32, ak_false ))); free( str );
+           result = ak_false;
+           goto lab_exit;
+         }
+
+ /* уничтожаем контекст */
+  lab_exit: ak_hash_destroy( &ctx );
+ return result;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
