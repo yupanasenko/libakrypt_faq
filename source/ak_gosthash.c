@@ -83,7 +83,8 @@
      @return Функция возвращает либо ak_error_null_pointer, если хотя бы один из
      указателей не определен. В случае успешного преобразования возвращается ak_error_ok.           */
  /* ----------------------------------------------------------------------------------------------- */
- int ak_kbox_to_magma( const ak_kbox k, magma perm ) {
+ int ak_kbox_to_magma( const ak_kbox k, magma perm ) 
+{
   return ak_kbox_to_sbox( k, perm[0], perm[1], perm[2], perm[3] );
 }
 
@@ -105,7 +106,7 @@
     @param k21 указатель на одномерный массив развернутых с помощью функции ak_kbox_to_sbox() перестановок
     @param k43 указатель на одномерный массив
     @param k65 указатель на одномерный массив
-    @param k87 указатель на одномерный массив                                                      */
+    @param k87 указатель на одномерный массив                                                     */
 /* ----------------------------------------------------------------------------------------------- */
  static void ak_gosthash94_encrypt( const ak_uint32 in[2], ak_uint32 out[2],
                             const ak_uint32 key[8], const ak_uint8* k21,
@@ -113,43 +114,43 @@
 {
   register ak_uint32 n1 = in[0], n2 = in[1];
 
-         n2 ^= ak_gosthash94_gostf( n1+key[0], k21, k43, k65, k87 );
-         n1 ^= ak_gosthash94_gostf( n2+key[1], k21, k43, k65, k87 );
-         n2 ^= ak_gosthash94_gostf( n1+key[2], k21, k43, k65, k87 );
-         n1 ^= ak_gosthash94_gostf( n2+key[3], k21, k43, k65, k87 );
-         n2 ^= ak_gosthash94_gostf( n1+key[4], k21, k43, k65, k87 );
-         n1 ^= ak_gosthash94_gostf( n2+key[5], k21, k43, k65, k87 );
-         n2 ^= ak_gosthash94_gostf( n1+key[6], k21, k43, k65, k87 );
-         n1 ^= ak_gosthash94_gostf( n2+key[7], k21, k43, k65, k87 );
+         n2 ^= ak_gosthash94_gostf( n1 + key[0], k21, k43, k65, k87 );
+         n1 ^= ak_gosthash94_gostf( n2 + key[1], k21, k43, k65, k87 );
+         n2 ^= ak_gosthash94_gostf( n1 + key[2], k21, k43, k65, k87 );
+         n1 ^= ak_gosthash94_gostf( n2 + key[3], k21, k43, k65, k87 );
+         n2 ^= ak_gosthash94_gostf( n1 + key[4], k21, k43, k65, k87 );
+         n1 ^= ak_gosthash94_gostf( n2 + key[5], k21, k43, k65, k87 );
+         n2 ^= ak_gosthash94_gostf( n1 + key[6], k21, k43, k65, k87 );
+         n1 ^= ak_gosthash94_gostf( n2 + key[7], k21, k43, k65, k87 );
 
-         n2 ^= ak_gosthash94_gostf( n1+key[0], k21, k43, k65, k87 );
-         n1 ^= ak_gosthash94_gostf( n2+key[1], k21, k43, k65, k87 );
-         n2 ^= ak_gosthash94_gostf( n1+key[2], k21, k43, k65, k87 );
-         n1 ^= ak_gosthash94_gostf( n2+key[3], k21, k43, k65, k87 );
-         n2 ^= ak_gosthash94_gostf( n1+key[4], k21, k43, k65, k87 );
-         n1 ^= ak_gosthash94_gostf( n2+key[5], k21, k43, k65, k87 );
-         n2 ^= ak_gosthash94_gostf( n1+key[6], k21, k43, k65, k87 );
-         n1 ^= ak_gosthash94_gostf( n2+key[7], k21, k43, k65, k87 );
+         n2 ^= ak_gosthash94_gostf( n1 + key[0], k21, k43, k65, k87 );
+         n1 ^= ak_gosthash94_gostf( n2 + key[1], k21, k43, k65, k87 );
+         n2 ^= ak_gosthash94_gostf( n1 + key[2], k21, k43, k65, k87 );
+         n1 ^= ak_gosthash94_gostf( n2 + key[3], k21, k43, k65, k87 );
+         n2 ^= ak_gosthash94_gostf( n1 + key[4], k21, k43, k65, k87 );
+         n1 ^= ak_gosthash94_gostf( n2 + key[5], k21, k43, k65, k87 );
+         n2 ^= ak_gosthash94_gostf( n1 + key[6], k21, k43, k65, k87 );
+         n1 ^= ak_gosthash94_gostf( n2 + key[7], k21, k43, k65, k87 );
 
-         n2 ^= ak_gosthash94_gostf( n1+key[0], k21, k43, k65, k87 );
-         n1 ^= ak_gosthash94_gostf( n2+key[1], k21, k43, k65, k87 );
-         n2 ^= ak_gosthash94_gostf( n1+key[2], k21, k43, k65, k87 );
-         n1 ^= ak_gosthash94_gostf( n2+key[3], k21, k43, k65, k87 );
-         n2 ^= ak_gosthash94_gostf( n1+key[4], k21, k43, k65, k87 );
-         n1 ^= ak_gosthash94_gostf( n2+key[5], k21, k43, k65, k87 );
-         n2 ^= ak_gosthash94_gostf( n1+key[6], k21, k43, k65, k87 );
-         n1 ^= ak_gosthash94_gostf( n2+key[7], k21, k43, k65, k87 );
+         n2 ^= ak_gosthash94_gostf( n1 + key[0], k21, k43, k65, k87 );
+         n1 ^= ak_gosthash94_gostf( n2 + key[1], k21, k43, k65, k87 );
+         n2 ^= ak_gosthash94_gostf( n1 + key[2], k21, k43, k65, k87 );
+         n1 ^= ak_gosthash94_gostf( n2 + key[3], k21, k43, k65, k87 );
+         n2 ^= ak_gosthash94_gostf( n1 + key[4], k21, k43, k65, k87 );
+         n1 ^= ak_gosthash94_gostf( n2 + key[5], k21, k43, k65, k87 );
+         n2 ^= ak_gosthash94_gostf( n1 + key[6], k21, k43, k65, k87 );
+         n1 ^= ak_gosthash94_gostf( n2 + key[7], k21, k43, k65, k87 );
 
-         n2 ^= ak_gosthash94_gostf( n1+key[7], k21, k43, k65, k87 );
-         n1 ^= ak_gosthash94_gostf( n2+key[6], k21, k43, k65, k87 );
-         n2 ^= ak_gosthash94_gostf( n1+key[5], k21, k43, k65, k87 );
-         n1 ^= ak_gosthash94_gostf( n2+key[4], k21, k43, k65, k87 );
-         n2 ^= ak_gosthash94_gostf( n1+key[3], k21, k43, k65, k87 );
-         n1 ^= ak_gosthash94_gostf( n2+key[2], k21, k43, k65, k87 );
-         n2 ^= ak_gosthash94_gostf( n1+key[1], k21, k43, k65, k87 );
-         n1 ^= ak_gosthash94_gostf( n2+key[0], k21, k43, k65, k87 );
+         n2 ^= ak_gosthash94_gostf( n1 + key[7], k21, k43, k65, k87 );
+         n1 ^= ak_gosthash94_gostf( n2 + key[6], k21, k43, k65, k87 );
+         n2 ^= ak_gosthash94_gostf( n1 + key[5], k21, k43, k65, k87 );
+         n1 ^= ak_gosthash94_gostf( n2 + key[4], k21, k43, k65, k87 );
+         n2 ^= ak_gosthash94_gostf( n1 + key[3], k21, k43, k65, k87 );
+         n1 ^= ak_gosthash94_gostf( n2 + key[2], k21, k43, k65, k87 );
+         n2 ^= ak_gosthash94_gostf( n1 + key[1], k21, k43, k65, k87 );
+         n1 ^= ak_gosthash94_gostf( n2 + key[0], k21, k43, k65, k87 );
 
-         out[0] = n2; out[1] = n1;
+        out[0] = n2; out[1] = n1;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -203,9 +204,9 @@
 
     for( i = 0; i < n; i++ )
    {
-     sum = (ak_uint32) left[i] + (ak_uint32) right[i] + carry;
-     left[i] = sum & 0xff;
-     carry = sum>>8;
+     sum = left[i] + right[i] + carry;
+     carry = sum >> 8;
+     left[i] = sum &0xFF;
    }
 }
 
@@ -286,6 +287,7 @@
       // поэтому приходится действовать так ...
          u = (ak_uint32 *) U;
          v = (ak_uint32 *) V;
+
          u[0] = in[0] ^ s[6];
          u[1] = in[1] ^ s[7];
          u[2] = in[2] ^ (s[0] << 16) ^ (s[0] >> 16) ^ (s[0] & 0xffff) ^ (s[1] & 0xffff) ^ (s[1] >> 16) ^ (s[2] << 16) ^ s[6] ^ (s[6] << 16) ^ (s[7] & 0xffff0000) ^ (s[7] >> 16);

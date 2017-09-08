@@ -50,6 +50,8 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тип данных для хранения значений опций библиотеки */
  static struct libakrypt_options_ctx {
+  /*! \brief Little-endian или Big-endian */
+   int big_endian;
   /*! \brief Уровень вывода сообщений выполнения функций библиотеки */
    int log_level;
   /*! \brief Минимальное количество контекстов, помещаемых в структуру управления контекстами */
@@ -59,6 +61,7 @@
 }
  libakrypt_options =
 {
+  ak_false,
   ak_log_standard, /* по-умолчанию, устанавливается стандартный уровень аудита */
   32,
   4096 /* это значит, что одновременно может существовать не более 4096 контекстов */
@@ -237,6 +240,9 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_libakrypt_endian( void ) { return libakrypt_options.big_endian; }
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Установка уровня аудита библиотеки.
 
   Все сообщения библиотеки могут быть разделены на три уровня.
@@ -289,34 +295,59 @@ return ak_error_ok;
 /* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_libakrypt_test_types( void )
 {
- if( sizeof( ak_int8 ) != 1 ) {
-   ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_int8 type" );
-   return ak_false;
- }
- if( sizeof( ak_uint8 ) != 1 ) {
-   ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_uint8 type" );
-   return ak_false;
- }
- if( sizeof( ak_int32 ) != 4 ) {
-   ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_int32 type" );
-   return ak_false;
- }
- if( sizeof( ak_uint32 ) != 4 ) {
-   ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_uint32 type" );
-   return ak_false;
- }
- if( sizeof( ak_int64 ) != 8 ) {
-   ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_int64 type" );
-   return ak_false;
- }
- if( sizeof( ak_uint64 ) != 8 ) {
-   ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_uint64 type" );
-   return ak_false;
- }
+  union {
+    ak_uint8 x[4];
+    ak_uint32 z;
+  } val = { .x = { 0, 1, 2, 3 }};
 
- if( ak_log_get_level() >= ak_log_maximum )
-   ak_error_message_fmt( ak_error_ok, __func__, "size of pointer is %d",
-                                                                     sizeof( ak_pointer ));
+  if( sizeof( ak_int8 ) != 1 ) {
+    ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_int8 type" );
+    return ak_false;
+  }
+  if( sizeof( ak_uint8 ) != 1 ) {
+    ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_uint8 type" );
+    return ak_false;
+  }
+  if( sizeof( ak_int32 ) != 4 ) {
+    ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_int32 type" );
+    return ak_false;
+  }
+  if( sizeof( ak_uint32 ) != 4 ) {
+    ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_uint32 type" );
+    return ak_false;
+  }
+  if( sizeof( ak_int64 ) != 8 ) {
+    ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_int64 type" );
+    return ak_false;
+  }
+  if( sizeof( ak_uint64 ) != 8 ) {
+    ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_uint64 type" );
+    return ak_false;
+  }
+
+  if( ak_log_get_level() >= ak_log_maximum )
+    ak_error_message_fmt( ak_error_ok, __func__, "size of pointer is %d", sizeof( ak_pointer ));
+
+ /* определяем тип платформы: little-endian или big-endian */
+#ifdef LIBAKRYPT_BIG_ENDIAN
+  libakrypt_options.big_endian = ak_true;
+  if( val.z == 50462976 ) {
+    ak_error_message( ak_error_wrong_endian, __func__ ,
+      "library runs on little endian platform, don't use LIBAKRYPT_BIG_ENDIAN flag while compile library" );
+    return ak_false;
+  }
+#else
+  if( val.z == 66051 ) {
+    ak_error_message( ak_error_wrong_endian, __func__ ,
+      "library runs on big endian platform, use LIBAKRYPT_BIG_ENDIAN flag while compile library" );
+    return ak_false;
+  }
+#endif
+
+  if( libakrypt_options.big_endian )
+    ak_error_message( ak_error_ok, __func__ , "library runs on big endian platform" );
+   else ak_error_message( ak_error_ok, __func__ , "library runs on little endian platform" );
+
 #ifdef LIBAKRYPT_HAVE_BUILTIN_XOR_SI128
  if( ak_log_get_level() >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "library applies __m128i base type" );

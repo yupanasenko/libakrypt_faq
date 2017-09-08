@@ -28,6 +28,7 @@ set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 option( LIBAKRYPT_STATIC_LIB "Build the static library" ON )
 option( LIBAKRYPT_SHARED_LIB "Build the shared library" OFF )
 option( LIBAKRYPT_GMP_TESTS "Build test programs with libGMP" OFF)
+option( LIBAKRYPT_BIG_ENDIAN "Using a code for big endian architectures" OFF )
 
 # -------------------------------------------------------------------------------------------------- #
 # множество исходных текстов библиотеки
@@ -85,11 +86,18 @@ include( DetectLibraries )
 include( DetectFlags )
 
 # -------------------------------------------------------------------------------------------------- #
+# определяемся с местом хранения файла с конфигурацией библиотеки
 if( LIBAKRYPT_CONF )
 else()
   if( CMAKE_HOST_UNIX )
     set( LIBAKRYPT_CONF "/etc" )
   endif()
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+# определяемся с архитектурой
+if( LIBAKRYPT_BIG_ENDIAN )
+  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_BIG_ENDIAN" )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #

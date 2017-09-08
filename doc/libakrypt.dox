@@ -360,6 +360,9 @@ gcc -Isource -O3 -DLIBAKRYPT_CONF=\"/etc\" source/*.c examples/example-intro.c -
 \li `LIBAKRYPT_STATIC_LIB = { ON, OFF }` (устанавливает надо или нет собирать статическую версию библиотеки, по умолчанию,
 флаг равен `ON`)
 
+\li `LIBAKRYPT_BIG_ENDIAN = { ON, OFF }` (в случае, когда флаг равен ON, используются фрагметны исходного кода для 
+выполнения на big-endian архитектуре; по умолчанию, флаг равен `OFF`)
+
 \subsection compile_flags_source Флаги исходных кодов
 
 Приведем полный перечень флагов компиляции, передаваемых при сборке исходных кодов библиотеки и примеров
@@ -374,6 +377,8 @@ gcc -Isource -O3 -DLIBAKRYPT_CONF=\"/etc\" source/*.c examples/example-intro.c -
 \li `LIBAKRYPT_HAVE_FCNTL_H` (указывает на то, что при компиляции необходимо использовать заголовочный файл `fcntl.h`)
 \li `LIBAKRYPT_HAVE_LIMITS_H` (указывает на то, что при компиляции необходимо использовать заголовочный файл `limits.h`)
 \li `LIBAKRYPT_HAVE_GETOPT_H` (указывает на то, что при компиляции необходимо использовать заголовочный файл `getopt.h`)
+\li `LIBAKRYPT_BIG_ENDIAN` (указывает на то, что при компиляции необходимо использовать фрагменты кода для 
+выполнения на big-endian архитектуре)
 
 */
 
