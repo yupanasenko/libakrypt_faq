@@ -1,6 +1,7 @@
 Changes in version 0.5.3 (TODO)
 -------------------------
 
+   * Created ak_compress class
    * Restored ak_hash class, gosthash94 & streebog{256,512} algorithms
    * Improoved handbook
 

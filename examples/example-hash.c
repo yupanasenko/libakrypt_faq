@@ -16,8 +16,7 @@
     return ak_libakrypt_destroy();
 
  /* создаем дескриптор функции хеширования */
-  if(( handle = ak_hash_new_gosthash94(
-             ak_oid_find_by_id( "1.2.643.2.2.30.1" ) )) == ak_error_wrong_handle ) {
+  if(( handle = ak_hash_new_streebog256()) == ak_error_wrong_handle ) {
     ak_error_message( ak_error_get_value(), __func__, "wrong descriptor creation");
     return ak_libakrypt_destroy();
   }

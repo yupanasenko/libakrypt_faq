@@ -40,7 +40,8 @@ set( HEADERS        source/ak_tools.h
                     source/ak_random.h
                     source/ak_parameters.h
                     source/ak_oid.h
-                    source/ak_hash.h )
+                    source/ak_hash.h
+                    source/ak_compress.h )
 
 set( SOURCES        source/ak_log.c
                     source/ak_libakrypt.c
@@ -51,7 +52,8 @@ set( SOURCES        source/ak_log.c
                     source/ak_oid.c
                     source/ak_hash.c
                     source/ak_gosthash.c
-                    source/ak_streebog.c )
+                    source/ak_streebog.c
+                    source/ak_compress.c )
 
 set( DOCS           doc/libakrypt.dox
                     doc/refman_header.in
@@ -136,7 +138,8 @@ set( EXAMPLES_LIST intro
                    randomize
                    random-system
                    oid
-                   hash )
+                   hash
+                   hash-oids )
 
 # организуем сборку примеров со статической линковкой
 if( LIBAKRYPT_STATIC_LIB )
@@ -157,7 +160,8 @@ endif()
 # теперь примеры, использующие неэкспортируемые функции
 set( INTERNAL_EXAMPLES_LIST
                    context-manager-node
-                   context-manager )
+                   context-manager
+                   hash-file )
 
 if( CMAKE_HOST_UNIX )
   foreach( programm ${INTERNAL_EXAMPLES_LIST} )

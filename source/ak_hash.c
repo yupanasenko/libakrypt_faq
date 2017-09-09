@@ -26,7 +26,7 @@
 /*                                                                                                 */
 /*  ak_hash.c                                                                                      */
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_hash.h>
+ #include <ak_compress.h>
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -123,7 +123,7 @@
   size_t quot = 0, offset = 0;
 
   if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to context" );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to hash context" );
     return NULL;
   }
   if( in == NULL ) {
@@ -141,6 +141,46 @@
   result = ctx->finalize( ctx, (unsigned char *)in + offset, size - offset, out );
   /* очищаем за собой данные, содержащиеся в контексте */
   ctx->clean( ctx );
+ return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция вычисляет хеш-код от заданного файла. Результат вычислений помещается в область памяти,
+    на которую указывает out. Если out равен NULL, то функция создает новый буффер
+    (структуру struct buffer), помещает в нее вычисленное значение и возвращает на указатель на
+    буффер. Буффер должен позднее быть удален с помощью вызова ak_buffer_delete().
+
+    @param ctx Контекст алгоритма хеширования, должен быть отличен от NULL.
+    @param filename Имя файла, для которого вычисляется значение хеш-кода.
+    @param out Область памяти, куда будет помещен результат.
+    Указатель out может принимать значение NULL.
+
+    @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+    возвращается указатель на буффер, содержащий результат вычислений. В случае возникновения
+    ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_hash_datafile( ak_hash ctx, const char *filename, ak_pointer out )
+{
+  struct compress comp;
+  int error = ak_error_ok;
+  ak_buffer result = NULL;
+
+  if( ctx == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to hash context" );
+    return NULL;
+  }
+
+  if( ak_compress_create_hash( &comp, ctx ) != ak_error_ok ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong creation a compress context" );
+    return NULL;
+  }
+
+  result = ak_compress_file( &comp, filename, out );
+  if(( error = ak_error_get_value( )) != ak_error_ok )
+    ak_error_message( error, __func__ , "incorrect hash code calculation" );
+
+  ak_compress_destroy( &comp );
  return result;
 }
 
@@ -302,6 +342,12 @@
      return ak_error_wrong_handle;
    }
 
+  /* проверяем, что OID от алгоритма, а не от параметров */
+   if( oid->mode != algorithm ) {
+     ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
+     return ak_error_wrong_handle;
+   }
+
   /* теперь создаем контекст функции хеширования */
    if(( hash_handle = ((ak_function_hash *) oid->func)()) == ak_error_wrong_handle )
      ak_error_message( ak_error_get_value(), __func__ , "wrong creation of hash function handle");
@@ -376,8 +422,38 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция вычисляет хеш-код от заданного файла. Результат вычислений помещается в область памяти,
+    на которую указывает out. Если out равен NULL, то функция создает новый буффер
+    (структуру struct buffer), помещает в нее вычисленное значение и возвращает на указатель на
+    буффер. Буффер должен позднее быть удален с помощью вызова ak_buffer_delete().
+
+    @param handle Дескриптор алгоритма хеширования. Должен быть получен с помощью вызова одной из
+    экспортируемых функций `ak_hash_new_<алгоритм>()`.
+    @param filename Имя файла, для которого вычисляется значение хеш-кода.
+    @param out Область памяти, куда будет помещен результат. Память должна быть заранее выделена.
+    Размер выделяемой памяти может быть определен с помощью вызова ak_hash_get_code_size().
+    Указатель out может принимать значение NULL.
+
+    @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+    возвращается указатель на буффер, содержащий результат вычислений. В случае возникновения
+    ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_hash_file( ak_handle handle, const char *filename, ak_pointer out )
+{
+  ak_buffer buffer = NULL;
+  ak_hash ctx = NULL;
+
+  if(( ctx = ak_handle_get_context( handle, hash_function )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+    return NULL;
+  }
+
+  return ( buffer = ak_hash_datafile( ctx, filename, out ));
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \example example-hash.c
-    \example example-hash-parts.c
     \example example-hash-oids.c                                                                   */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_hash.c  */

@@ -98,6 +98,8 @@
  int ak_hash_create_streebog512( ak_hash );
 /*! \brief Хеширование заданной области памяти. */
  ak_buffer ak_hash_dataptr( ak_hash , const ak_pointer , const size_t , ak_pointer );
+/*! \brief Хеширование заданного файла. */
+ ak_buffer ak_hash_datafile( ak_hash , const char*, ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Проверка корректной работы функции хеширования Стрибог-256 */
