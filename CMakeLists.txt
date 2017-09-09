@@ -50,7 +50,8 @@ set( SOURCES        source/ak_log.c
                     source/ak_random.c
                     source/ak_oid.c
                     source/ak_hash.c
-                    source/ak_gosthash.c )
+                    source/ak_gosthash.c
+                    source/ak_streebog.c )
 
 set( DOCS           doc/libakrypt.dox
                     doc/refman_header.in
@@ -72,7 +73,8 @@ set( OTHERS         CMakeLists.txt
                     libakrypt-run.sh )
 
 set( AKRYPT_SOURCES akrypt/akrypt.c
-                    akrypt/akrypt_show.c )
+                    akrypt/akrypt-show.c )
+
 set( AKRYPT_FILES   akrypt/akrypt.h
                     akrypt/akrypt.1
                     akrypt/getopt.h

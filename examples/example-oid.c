@@ -28,6 +28,7 @@
   }
 
  /* ищем OID по его имени */
+  printf("\nsearch results:\n");
   if(( handle = ak_oid_find_by_name( hash )) != ak_error_wrong_handle )
      print_oid_info( handle );
    else printf("oid with name \"%s\" not found\n", hash );

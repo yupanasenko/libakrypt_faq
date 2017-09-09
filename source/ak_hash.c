@@ -171,7 +171,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция создает контекст функции хеширования, регламентируемой ГОСТ Р 34.11-94 (в настоящее
+/*! Функция создает контекст алгоритма хеширования, регламентируемого ГОСТ Р 34.11-94 (в настоящее
     время стандарт выведен из действия) и возвращает пользователю дескриптор созданного
     контекста.
 
@@ -203,9 +203,110 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает контекст функции хеширования, регламентируемой ГОСТ Р 34.11-94 (в настоящее
+    время стандарт выведен из действия) с фиксированным значением таблицам замен,
+    используемых в ранних версиях КриптоПро CSP.
+
+    @return Функция возвращает десткриптор созданного контекста. В случае возникновения ошибки
+    возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_hash_new_gosthash94_csp( void )
 {
  return ak_hash_new_gosthash94( ak_oid_find_by_name( "id-gosthash94-CryptoPro-ParamSetA" ));
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает контекст алгоритма хеширования, регламентируемого ГОСТ Р 34.11-2012,
+    с длиной хэш-кода равной 256 бит (Стрибог256),
+    и возвращает пользователю дескриптор созданного контекста.
+
+    @return Функция возвращает десткриптор созданного контекста. В случае возникновения ошибки
+    возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_hash_new_streebog256( void )
+{
+  ak_hash ctx = NULL;
+  int error = ak_error_ok;
+
+ /* создаем контекст функции хэширования */
+  if(( ctx = malloc( sizeof( struct hash ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ , "wrong creation of hash function context" );
+    return ak_error_wrong_handle;
+  }
+
+ /* инициализируем его */
+  if(( error = ak_hash_create_streebog256( ctx )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong initialization of hash function context" );
+    free( ctx );
+    return ak_error_wrong_handle;
+  }
+
+ /* помещаем в стуктуру управления контекстами */
+ return ak_hash_new_handle( ctx );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает контекст алгоритма хеширования, регламентируемого ГОСТ Р 34.11-2012,
+    с длиной хэш-кода равной 512 бит (Стрибог512),
+    и возвращает пользователю дескриптор созданного контекста.
+
+    @return Функция возвращает десткриптор созданного контекста. В случае возникновения ошибки
+    возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_hash_new_streebog512( void )
+{
+  ak_hash ctx = NULL;
+  int error = ak_error_ok;
+
+ /* создаем контекст функции хэширования */
+  if(( ctx = malloc( sizeof( struct hash ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ , "wrong creation of hash function context" );
+    return ak_error_wrong_handle;
+  }
+
+ /* инициализируем его */
+  if(( error = ak_hash_create_streebog512( ctx )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong initialization of hash function context" );
+    free( ctx );
+    return ak_error_wrong_handle;
+  }
+
+ /* помещаем в стуктуру управления контекстами */
+ return ak_hash_new_handle( ctx );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param oid_handle дескриптор OID бесключевой функции хеширования.
+    @return Функция возвращает дескриптор созданного контекста функции хеширования.
+    Если дескриптор не может быть создан, или oid не соотвествует функции хеширования,
+    то возбуждается ошибка и возвращается значение \ref ak_error_wrong_handle. Кош ошибки может
+    быть получен с помощью вызова функции ak_error_get_value().                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_hash_new_oid( ak_handle oid_handle )
+{
+  ak_handle hash_handle = ak_error_wrong_handle;
+  ak_oid oid = ak_handle_get_context( oid_handle, oid_engine );
+
+  /* проверяем, что handle от OID */
+   if( oid == NULL ) {
+     ak_error_message( ak_error_get_value(), __func__ , "using wrong value of handle" );
+     return ak_error_wrong_handle;
+   }
+
+  /* проверяем, что OID от бесключевой функции хеширования */
+   if( oid->engine != hash_function ) {
+     ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
+     return ak_error_wrong_handle;
+   }
+
+  /* теперь создаем контекст функции хеширования */
+   if(( hash_handle = ((ak_function_hash *) oid->func)()) == ak_error_wrong_handle )
+     ak_error_message( ak_error_get_value(), __func__ , "wrong creation of hash function handle");
+
+ return hash_handle;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

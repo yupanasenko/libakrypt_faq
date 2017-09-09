@@ -318,6 +318,14 @@
  /* 2. Добавляем идентификаторы алгоритмов бесключевого хеширования.
        значения OID взяты из перечней КриптоПро и ТК26 (http://tk26.ru/methods/OID_TK_26/index.php) */
 
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( hash_function, algorithm, "streebog256",
+    "1.2.643.7.1.1.2.2", NULL, ( ak_function_oid * ) ak_hash_new_streebog256 ))) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( hash_function, algorithm, "streebog512",
+    "1.2.643.7.1.1.2.3", NULL, ( ak_function_oid * ) ak_hash_new_streebog512 ))) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
   if(( error = ak_oids_add_oid( manager, ak_oid_new( hash_function, algorithm, "gosthash94",
               "1.2.643.2.2.9", NULL,
                                  ( ak_function_oid * ) ak_hash_new_gosthash94_csp ))) != ak_error_ok )

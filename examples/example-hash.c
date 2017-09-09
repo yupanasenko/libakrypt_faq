@@ -15,14 +15,14 @@
   if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true )
     return ak_libakrypt_destroy();
 
- /* создаем контекст функции хеширования */
+ /* создаем дескриптор функции хеширования */
   if(( handle = ak_hash_new_gosthash94(
              ak_oid_find_by_id( "1.2.643.2.2.30.1" ) )) == ak_error_wrong_handle ) {
     ak_error_message( ak_error_get_value(), __func__, "wrong descriptor creation");
     return ak_libakrypt_destroy();
   }
 
- /* ожидаемый размер жэш-кода */
+ /* ожидаемый размер хэш-кода */
   printf("expected code size: %d bytes\n", (int) ak_hash_get_code_size( handle ));
 
  /* вычисление хэш-кода */

@@ -374,16 +374,16 @@ return ak_error_ok;
   }
 
  /* тестируем функцию Стрибог256 */
-//  if( ak_hash_test_streebog256() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog256 testing" );
-//    return ak_false;
-//  }
+  if( ak_hash_test_streebog256() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog256 testing" );
+    return ak_false;
+  }
 
  /* тестируем функцию Стрибог512 */
-//  if( ak_hash_test_streebog512() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog512 testing" );
-//    return ak_false;
-//  }
+  if( ak_hash_test_streebog512() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog512 testing" );
+    return ak_false;
+  }
 
   if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "testing hash functions ended successfully" );

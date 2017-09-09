@@ -1,8 +1,6 @@
 Changes in version 0.5.3 (TODO)
 -------------------------
 
-Date:
-
    * Restored ak_hash class, gosthash94 & streebog{256,512} algorithms
    * Improoved handbook
 
@@ -24,5 +22,5 @@ Changes in version 0.5.1 (10.07.2017)
    * Started a library handbook (in russian)
 
 
-Since early versions of library has another structure of user interface
-we start a new sequence of changelog messages from version 0.5.1.
+Since early versions of library has another internak structure and user 
+interfaces we start a new sequence of changelog messages from version 0.5.1.
