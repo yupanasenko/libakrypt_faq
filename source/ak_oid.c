@@ -27,7 +27,6 @@
 /*                                                                                                 */
 /*   ak_oid.c                                                                                      */
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_oid.h>
  #include <ak_parameters.h>
  #include <ak_context_manager.h>
 
@@ -523,7 +522,6 @@
   size_t idx = 0;
   ak_handle handle = ak_error_wrong_handle;
   ak_context_manager manager = ak_libakrypt_get_context_manager();
-
 
   if( manager == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__, "using null pointer to context manager" );

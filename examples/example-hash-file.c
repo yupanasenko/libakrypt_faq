@@ -21,6 +21,7 @@
  #include <stdlib.h>
  #include <libakrypt.h>
  #include <ak_compress.h>
+ #include <ak_random.h>
 
 /* ----------------------------------------------------------------------------------------------- */
  int main( void )
@@ -33,6 +34,8 @@
   struct compress comp;
   ak_uint8 out[32];
   char *str = NULL;
+  size_t tail = 0;
+  struct random generator;
 
 #ifndef LIBAKRYPT_HAVE_FCNTL_H
   printf("this test runs only in POSIX system\n"); return 0;
@@ -68,6 +71,7 @@
      ak_uint8 *data = mmap( NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0 );
      ak_hash_dataptr( &ctx, data, st.st_size, out );
      munmap( data, st.st_size );
+     tail = st.st_size;
    }
    ak_hash_destroy( &ctx ); /* уничтожаем контекст функции хеширования */
    close(fd);
@@ -89,6 +93,32 @@
    ak_hash_datafile( &ctx, "data64.dat", out );
    ak_hash_destroy( &ctx );
    printf("hash: %s (using ak_hash_file)\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
+   free( str );
+
+ /* 6. хешируем, используя фрагменты случайной длины, меньшей чем длина обрабатываемого блока */
+   ak_random_create_lcg( &generator );     /* создаем генератор псевдослучайных чисел */
+   ak_hash_create_streebog256( &ctx );     /* создаем контекст функции хеширования */
+   ak_compress_create_hash( &comp, &ctx ); /* создаем контекст сжимающего отображения */
+   fp = fopen( "data64.dat", "rb" );
+
+   memset( out, 0, 32 ); /* очищаем вектор для хранения результата */
+   ak_compress_clean( &comp ); /* очищаем контекст структуры сжатия данных */
+   while( tail > ctx.bsize ) {
+     size_t value;
+     generator.random( &generator, &value, sizeof( size_t ));
+     value %= ctx.bsize;
+
+     fread( buffer, 1, value, fp );
+     ak_compress_update( &comp, buffer, value );
+     tail -= value;
+   }
+   fread( buffer, 1, tail, fp );
+   ak_compress_finalize( &comp, buffer, tail, out );
+   fclose(fp);
+   ak_random_destroy( &generator );
+   ak_compress_destroy( &comp );
+   ak_hash_destroy( &ctx );
+   printf("hash: %s (using small random jumping)\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
    free( str );
 
  return ak_libakrypt_destroy(); /* останавливаем библиотеку и выходим */

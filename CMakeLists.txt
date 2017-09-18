@@ -41,7 +41,8 @@ set( HEADERS        source/ak_tools.h
                     source/ak_parameters.h
                     source/ak_oid.h
                     source/ak_hash.h
-                    source/ak_compress.h )
+                    source/ak_compress.h
+                    source/ak_skey.h )
 
 set( SOURCES        source/ak_log.c
                     source/ak_libakrypt.c
@@ -53,7 +54,8 @@ set( SOURCES        source/ak_log.c
                     source/ak_hash.c
                     source/ak_gosthash.c
                     source/ak_streebog.c
-                    source/ak_compress.c )
+                    source/ak_compress.c
+                    source/ak_skey.c )
 
 set( DOCS           doc/libakrypt.dox
                     doc/refman_header.in

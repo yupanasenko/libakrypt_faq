@@ -120,75 +120,57 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Результат, говорящий об отсутствии ошибки. */
  #define ak_error_ok                            (0)
-
 /*! \brief Ошибка выделения оперативной памяти. */
  #define ak_error_out_of_memory                (-1)
-
 /*! \brief Ошибка, возникающая при доступе или передаче в качестве аргумента функции null указателя. */
  #define ak_error_null_pointer                 (-2)
-
 /*! \brief Ошибка, возникащая при передаче аргументов функции или выделении памяти нулевой длины. */
  #define ak_error_zero_length                  (-3)
-
 /*! \brief Ошибка, возникающая при обработке данных ошибочной длины. */
  #define ak_error_wrong_length                 (-4)
-
 /*! \brief Использование неопределенного значения. */
  #define ak_error_undefined_value              (-5)
-
 /*! \brief Использование неопределенного указателя на функцию (вызов null указателя). */
  #define ak_error_undefined_function           (-6)
-
 /*! \brief Ошибка доступа к файлу (устройству). */
  #define ak_error_access_file                 (-10)
-
 /*! \brief Ошибка открытия файла (устройства). */
  #define ak_error_open_file                   (-11)
-
 /*! \brief Ошибка закрытия файла (устройства). */
  #define ak_error_close_file                  (-12)
-
 /*! \brief Ошибка чтения из файла (устройства). */
  #define ak_error_read_data                   (-13)
-
 /*! \brief Ошибка записи в файл (устройство). */
  #define ak_error_write_data                  (-14)
-
 /*! \brief Неверное значение дескриптора объекта. */
  #define ak_error_wrong_handle                (-15)
-
 /*! \brief Ошибка, возникающая в случае неправильного значения размера структуры хранения контекстов. */
  #define ak_error_context_manager_size        (-16)
-
 /*! \brief Ошибка, возникающая при превышении числа возможных элементов структуры хранения контекстов. */
  #define ak_error_context_manager_max_size    (-17)
-
 /*! \brief Неверный тип криптографического механизма. */
  #define ak_error_oid_engine                  (-19)
-
 /*! \brief Неверный режим использования криптографического механизма. */
  #define ak_error_oid_mode                    (-20)
-
 /*! \brief Ошибочное или не определенное имя криптографического механизма. */
  #define ak_error_oid_name                    (-21)
-
 /*! \brief Ошибочный или неопределенный идентификатор криптографического механизма. */
  #define ak_error_oid_id                      (-22)
-
 /*! \brief Ошибочный индекс идентификатора криптографического механизма. */
  #define ak_error_oid_index                   (-23)
-
 /*! \brief Ошибка при сравнении двух массивов данных. */
  #define ak_error_not_equal_data              (-24)
-
 /*! \brief Ошибка выполнения библиотеки на неверной архитектуре. */
  #define ak_error_wrong_endian                (-25)
 
 /* ----------------------------------------------------------------------------------------------- */
  #define ak_null_string                  ("(null)")
 
+/*! \brief Минимальный уровень аудита */
  #define ak_log_none                            (0)
+/*! \brief Стандартный уровень аудита */
  #define ak_log_standard                        (1)
+/*! \brief Максимальный уровень аудита */
  #define ak_log_maximum                         (2)
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -332,9 +314,19 @@
 /*! \brief Получение длины блока обрабатываемых заданной функцией хеширования данных (в байтах). */
  dll_export size_t ak_hash_get_block_size( ak_handle );
 /*! \brief Хеширование заданной области памяти. */
- dll_export ak_buffer ak_hash_ptr( ak_handle , const ak_pointer , const size_t , ak_pointer );
+ dll_export ak_buffer ak_hash_ptr_handle( ak_handle , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Хеширование заданного файла. */
- dll_export ak_buffer ak_hash_file( ak_handle , const char* , ak_pointer );
+ dll_export ak_buffer ak_hash_file_handle( ak_handle , const char* , ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Создание дескриптора сжимающего отображения */
+ dll_export ak_handle ak_icode_new( ak_handle );
+/*! \brief Очистка внутреннего состояния сжимающего отображения */
+ dll_export int ak_icode_clean( ak_handle );
+/*! \brief Обновление текущего состояния сжимающего отображения */
+ dll_export int ak_icode_update( ak_handle , const ak_pointer , const size_t );
+/*! \brief Вычисление результата действия сжимающего отображения */
+ dll_export ak_buffer ak_icode_finalize( ak_handle, const ak_pointer , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Поиск OID по типу криптографического механизма. */
@@ -355,7 +347,7 @@
  dll_export const char *ak_oid_get_engine_str( ak_handle );
 /*! \brief Получение режима использования криптографического механизма. */
  dll_export const ak_oid_mode ak_oid_get_mode( ak_handle );
-/*! \brief Получение словестного описания режима использования криптографического механизма. */
+/*! \brief Получение словесного описания режима использования криптографического механизма. */
  dll_export const char *ak_oid_get_mode_str( ak_handle );
 
 /* ----------------------------------------------------------------------------------------------- */

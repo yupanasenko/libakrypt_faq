@@ -27,7 +27,6 @@
 /*                                                                                                 */
 /*   ak_streebog.c                                                                                 */
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_hash.h>
  #include <ak_parameters.h>
  #include <ak_context_manager.h>
 

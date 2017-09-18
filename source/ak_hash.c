@@ -187,6 +187,17 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                               реализация интерфейсных функций                                   */
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Создание дескриптора для функции бесключевого хеширования.
+    Для существующего контекста функции бесключевого хеширования, под который ранее выделена память
+    с помощью вызова malloc(), функция создает его дескриптор,
+    и размещает контекст во внутренней структуре хранения контекстов.
+
+    @param generator контекст функции бесключевого хеширования
+    (контекст не должен быть указателем на статическую переменную).
+    @return В случае успешного выполнения возвращается дескриптор контекста. В случае возникновения
+    ошибки возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен
+    с помощью вызова функции ak_error_get_value().                                                 */
+/* ----------------------------------------------------------------------------------------------- */
  static ak_handle ak_hash_new_handle( ak_hash ctx )
 {
   ak_context_manager manager = NULL;
@@ -335,20 +346,24 @@
      ak_error_message( ak_error_get_value(), __func__ , "using wrong value of handle" );
      return ak_error_wrong_handle;
    }
-
   /* проверяем, что OID от бесключевой функции хеширования */
    if( oid->engine != hash_function ) {
      ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
      return ak_error_wrong_handle;
    }
-
   /* проверяем, что OID от алгоритма, а не от параметров */
    if( oid->mode != algorithm ) {
      ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
      return ak_error_wrong_handle;
    }
+  /* проверяем, что производящая функция определена */
+   if( oid->func == NULL ) {
+     ak_error_message( ak_error_undefined_function, __func__ ,
+                                     "using oid with undefined constructor function" );
+     return ak_error_wrong_handle;
+   }
 
-  /* теперь создаем контекст функции хеширования */
+  /* только теперь создаем контекст функции хеширования */
    if(( hash_handle = ((ak_function_hash *) oid->func)()) == ak_error_wrong_handle )
      ak_error_message( ak_error_get_value(), __func__ , "wrong creation of hash function handle");
 
@@ -408,7 +423,8 @@
     ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
     ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_hash_ptr( ak_handle handle, const ak_pointer in, const size_t size, ak_pointer out )
+ ak_buffer ak_hash_ptr_handle( ak_handle handle,
+                                            const ak_pointer in, const size_t size, ak_pointer out )
 {
   ak_buffer buffer = NULL;
   ak_hash ctx = NULL;
@@ -439,7 +455,7 @@
     ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
     ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_hash_file( ak_handle handle, const char *filename, ak_pointer out )
+ ak_buffer ak_hash_file_handle( ak_handle handle, const char *filename, ak_pointer out )
 {
   ak_buffer buffer = NULL;
   ak_hash ctx = NULL;

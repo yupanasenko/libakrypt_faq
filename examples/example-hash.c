@@ -25,7 +25,7 @@
   printf("expected code size: %d bytes\n", (int) ak_hash_get_code_size( handle ));
 
  /* вычисление хэш-кода */
-  if(( buffer = ak_hash_ptr( handle, data, sizeof( data ), NULL )) == NULL ) {
+  if(( buffer = ak_hash_ptr_handle( handle, data, sizeof( data ), NULL )) == NULL ) {
     ak_error_message( ak_error_get_value(), __func__, "wrong hash code calculation" );
     return ak_libakrypt_destroy();
   }
