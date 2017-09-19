@@ -45,7 +45,8 @@
  size_t ak_libakrypt_get_context_manager_size( void );
 /*! \brief Функция возвращает максимально возможное количество одновременно существующих контекстов. */
  size_t ak_libakrypt_get_context_manager_max_size( void );
-
+/*! \brief Функция возвращает длину номера ключа в байтах */
+int ak_libakrypt_get_key_number_length( void );
 
 
  #endif

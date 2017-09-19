@@ -58,13 +58,17 @@
    size_t context_manager_size;
   /*! \brief Максимальное количество одновременно существующих контекстов */
    size_t context_manager_max_size;
+  /*! \brief Размер номера ключа (в байтах) */
+   int key_number_length;
+
 }
  libakrypt_options =
 {
   ak_false,
   ak_log_standard, /* по-умолчанию, устанавливается стандартный уровень аудита */
   32,
-  4096 /* это значит, что одновременно может существовать не более 4096 контекстов */
+  4096, /* это значит, что одновременно может существовать не более 4096 контекстов */
+  16 /* по-умолчанию, длина номера ключа составляет 16 байт*/
 };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -212,6 +216,17 @@
             libakrypt_options.context_manager_max_size = libakrypt_options.context_manager_size;
         }
 
+       /* устанавливаем максимально возможный размер структуры управления контекстами */
+        if( ak_libakrypt_get_option( localbuffer, "key_number_length = ", &value )) {
+          if( value < 16 ) value = 16;
+          if( value >32 ) value = 32;
+          libakrypt_options.key_number_length = value;
+         /* проверяем, чтобы размеры соответствовали друг другу */
+          if( libakrypt_options.context_manager_max_size < libakrypt_options.context_manager_size )
+            libakrypt_options.context_manager_max_size = libakrypt_options.context_manager_size;
+        }
+
+
       } /* далее мы очищаем строку независимо от ее содержимого */
       off = 0;
       memset( localbuffer, 0, 1024 );
@@ -227,17 +242,26 @@
      ak_error_message_fmt( ak_error_ok, __func__, "log level is %u", libakrypt_options.log_level );
      ak_error_message_fmt( ak_error_ok, __func__, "context manager size in [%d .. %d]",
                libakrypt_options.context_manager_size, libakrypt_options.context_manager_max_size );
+     ak_error_message_fmt( ak_error_ok, __func__, "length of key number: %d",
+                                                              libakrypt_options.key_number_length );
   }
   return ak_true;
  }
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_log_get_level( void ) { return libakrypt_options.log_level; }
+
+/* ----------------------------------------------------------------------------------------------- */
  size_t ak_libakrypt_get_context_manager_size( void ) { return libakrypt_options.context_manager_size; }
+
+/* ----------------------------------------------------------------------------------------------- */
  size_t ak_libakrypt_get_context_manager_max_size( void )
 {
  return libakrypt_options.context_manager_max_size;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_libakrypt_get_key_number_length( void ) { return libakrypt_options.key_number_length; }
 
 /* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_libakrypt_endian( void ) { return libakrypt_options.big_endian; }
