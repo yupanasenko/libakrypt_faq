@@ -42,7 +42,8 @@ set( HEADERS        source/ak_tools.h
                     source/ak_oid.h
                     source/ak_hash.h
                     source/ak_compress.h
-                    source/ak_skey.h )
+                    source/ak_skey.h
+                    source/ak_hmac.h )
 
 set( SOURCES        source/ak_log.c
                     source/ak_libakrypt.c
@@ -55,7 +56,8 @@ set( SOURCES        source/ak_log.c
                     source/ak_gosthash.c
                     source/ak_streebog.c
                     source/ak_compress.c
-                    source/ak_skey.c )
+                    source/ak_skey.c
+                    source/ak_hmac.c )
 
 set( DOCS           doc/libakrypt.dox
                     doc/refman_header.in
@@ -141,7 +143,8 @@ set( EXAMPLES_LIST intro
                    random-system
                    oid
                    hash
-                   hash-oids )
+                   hash-oids
+                   hmac )
 
 # организуем сборку примеров со статической линковкой
 if( LIBAKRYPT_STATIC_LIB )

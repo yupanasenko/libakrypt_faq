@@ -392,18 +392,21 @@
 {
  /* проверяем менеджер контекстов */
   if( manager == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                     "using null pointer to context manager" );
+                                                      "using null pointer to context manager" );
+ /* проверяем, что значение handle определено */
+  if( handle == ak_error_wrong_handle ) return ak_error_message( ak_error_wrong_handle,
+                                                  __func__, "using an undefined handle value" );
  /* определяем индекс */
   *idx = ak_context_manager_handle_to_idx( manager, handle );
 
- /* проеряем границы */
+ /* проверяем границы */
   if( *idx >= manager->size )
     return ak_error_message( ak_error_wrong_handle, __func__, "invalid handle index" );
 
  /* проверяем наличие node */
   if( manager->array[*idx] == NULL )
     return ak_error_message( ak_error_null_pointer, __func__,
-                                                 "using a null pointer to context manager node" );
+                                               "using a null pointer to context manager node" );
  /* проверяем наличие контекста */
   if( manager->array[*idx]->ctx == NULL )
     return ak_error_message( ak_error_null_pointer, __func__, "using null pointer to context" );
