@@ -64,7 +64,7 @@
  int ak_hmac_key_create_gosthash94( ak_hmac_key , ak_handle );
 
 /*! \brief Уничтожение контекста алгоритма выработки имитовставки hmac. */
- int ak_hmac_key_destroy( ak_hash );
+ int ak_hmac_key_destroy( ak_hmac_key );
 /*! \brief Освобождение памяти из под контекста алгоритма выработки имитовставки. */
  ak_pointer ak_hmac_key_delete( ak_pointer );
 

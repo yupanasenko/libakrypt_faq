@@ -46,8 +46,9 @@
 /*! \brief Функция возвращает максимально возможное количество одновременно существующих контекстов. */
  size_t ak_libakrypt_get_context_manager_max_size( void );
 /*! \brief Функция возвращает длину номера ключа в байтах */
-int ak_libakrypt_get_key_number_length( void );
-
+ int ak_libakrypt_get_key_number_length( void );
+/*! \brief Функция возвращает максимальное число использований ключа выработки имитовставки HMAC. */
+ int ak_libakrypt_get_hmac_key_counter_resource( void );
 
  #endif
 /* ----------------------------------------------------------------------------------------------- */

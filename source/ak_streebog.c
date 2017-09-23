@@ -362,7 +362,7 @@
   }
 
  /* первый пример из приложения А (ГОСТ Р 34.11-2012) */
-  ak_hash_dataptr( &ctx, streebog_M1_message, 63, out );
+  ak_hash_ptr_context( &ctx, streebog_M1_message, 63, out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__ , "invalid calculation of streebog256 code" );
     result = ak_false;
@@ -382,7 +382,7 @@
     }
 
  /* второй пример из приложения А (ГОСТ Р 34.11-2012) */
-  ak_hash_dataptr( &ctx, streebog_M2_message, 72, out );
+  ak_hash_ptr_context( &ctx, streebog_M2_message, 72, out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__ , "invalid calculation of streebog256 code" );
     result = ak_false;
@@ -402,7 +402,7 @@
     }
 
  /* первый пример из Википедии */
-  ak_hash_dataptr( &ctx, "The quick brown fox jumps over the lazy dog", 43, out );
+  ak_hash_ptr_context( &ctx, "The quick brown fox jumps over the lazy dog", 43, out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__ , "invalid calculation of streebog256 code" );
     result = ak_false;
@@ -422,7 +422,7 @@
     }
 
  /* второй пример из Википедии */
-  ak_hash_dataptr( &ctx, "The quick brown fox jumps over the lazy dog.", 44, out );
+  ak_hash_ptr_context( &ctx, "The quick brown fox jumps over the lazy dog.", 44, out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__ , "invalid calculation of streebog256 code" );
     result = ak_false;
@@ -443,7 +443,7 @@
     }
 
  /* хеширование пустого вектора */
-  ak_hash_dataptr( &ctx, "", 0, out );
+  ak_hash_ptr_context( &ctx, "", 0, out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__ , "invalid calculation of streebog256 code" );
     result = ak_false;
@@ -486,7 +486,7 @@
   }
 
  /* первый пример из приложения А (ГОСТ Р 34.11-2012) */
-  ak_hash_dataptr( &ctx, streebog_M1_message, 63, out );
+  ak_hash_ptr_context( &ctx, streebog_M1_message, 63, out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__ , "invalid calculation of streebog256 code" );
     result = ak_false;
@@ -506,7 +506,7 @@
     }
 
  /* второй пример из приложения А (ГОСТ Р 34.11-2012) */
-  ak_hash_dataptr( &ctx, streebog_M2_message, 72, out );
+  ak_hash_ptr_context( &ctx, streebog_M2_message, 72, out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__ , "invalid calculation of streebog256 code" );
     result = ak_false;
@@ -526,7 +526,7 @@
     }
 
  /* хеширование пустого вектора */
-  ak_hash_dataptr( &ctx, "", 0, out );
+  ak_hash_ptr_context( &ctx, "", 0, out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__ , "invalid calculation of streebog256 code" );
     result = ak_false;

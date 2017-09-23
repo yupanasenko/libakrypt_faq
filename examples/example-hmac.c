@@ -13,6 +13,7 @@
   }
 
   ak_hmac_key_create_streebog256( &hctx );
+  ak_hmac_key_destroy( &hctx );
 
  return ak_libakrypt_destroy();
 }

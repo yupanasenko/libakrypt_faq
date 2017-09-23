@@ -314,9 +314,9 @@
 /*! \brief Получение длины блока обрабатываемых заданной функцией хеширования данных (в байтах). */
  dll_export size_t ak_hash_get_block_size( ak_handle );
 /*! \brief Хеширование заданной области памяти. */
- dll_export ak_buffer ak_hash_ptr_handle( ak_handle , const ak_pointer , const size_t , ak_pointer );
+ dll_export ak_buffer ak_hash_ptr( ak_handle , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Хеширование заданного файла. */
- dll_export ak_buffer ak_hash_file_handle( ak_handle , const char* , ak_pointer );
+ dll_export ak_buffer ak_hash_file( ak_handle , const char* , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание дескриптора сжимающего отображения */

@@ -36,7 +36,7 @@
       printf(" name: %s (%s)\n", ak_oid_get_name( handle ), ak_oid_get_id( handle ));
 
          time = clock();
-         if(( buff = ak_hash_file_handle( ctx_handle, "data.dat", NULL )) == NULL ) continue;
+         if(( buff = ak_hash_file( ctx_handle, "data.dat", NULL )) == NULL ) continue;
          time = clock() - time;
              /* мы не знаем длину хешкода, */
              /* поэтому помещаем результат в динамический буффер */

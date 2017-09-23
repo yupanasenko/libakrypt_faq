@@ -60,6 +60,8 @@
    size_t context_manager_max_size;
   /*! \brief Размер номера ключа (в байтах) */
    int key_number_length;
+  /*! \brief Ресурс ключа выработки имитовставки (алгоритм HMAC) */
+   size_t hmac_key_count_resource;
 
 }
  libakrypt_options =
@@ -68,7 +70,8 @@
   ak_log_standard, /* по-умолчанию, устанавливается стандартный уровень аудита */
   32,
   4096, /* это значит, что одновременно может существовать не более 4096 контекстов */
-  16 /* по-умолчанию, длина номера ключа составляет 16 байт*/
+  16, /* по-умолчанию, длина номера ключа составляет 16 байт*/
+  16384
 };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -216,16 +219,19 @@
             libakrypt_options.context_manager_max_size = libakrypt_options.context_manager_size;
         }
 
-       /* устанавливаем максимально возможный размер структуры управления контекстами */
+       /* устанавливаем длину номера ключа */
         if( ak_libakrypt_get_option( localbuffer, "key_number_length = ", &value )) {
           if( value < 16 ) value = 16;
           if( value >32 ) value = 32;
           libakrypt_options.key_number_length = value;
-         /* проверяем, чтобы размеры соответствовали друг другу */
-          if( libakrypt_options.context_manager_max_size < libakrypt_options.context_manager_size )
-            libakrypt_options.context_manager_max_size = libakrypt_options.context_manager_size;
         }
 
+       /* устанавливаем ресурс ключа выработки имитовставки для алгоритма HMAC */
+        if( ak_libakrypt_get_option( localbuffer, "hmac_key_counter_resource = ", &value )) {
+          if( value < 1024 ) value = 1024;
+          if( value > 2147483647 ) value = 2147483647;
+          libakrypt_options.hmac_key_count_resource = value;
+        }
 
       } /* далее мы очищаем строку независимо от ее содержимого */
       off = 0;
@@ -244,6 +250,8 @@
                libakrypt_options.context_manager_size, libakrypt_options.context_manager_max_size );
      ak_error_message_fmt( ak_error_ok, __func__, "length of key number: %d",
                                                               libakrypt_options.key_number_length );
+     ak_error_message_fmt( ak_error_ok, __func__, "hmac key resource counter: %u",
+                                                        libakrypt_options.hmac_key_count_resource );
   }
   return ak_true;
  }
@@ -262,6 +270,12 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_libakrypt_get_key_number_length( void ) { return libakrypt_options.key_number_length; }
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_libakrypt_get_hmac_key_counter_resource( void )
+{
+ return libakrypt_options.hmac_key_count_resource;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_libakrypt_endian( void ) { return libakrypt_options.big_endian; }

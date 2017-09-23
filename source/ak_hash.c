@@ -117,7 +117,7 @@
     ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
     ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_hash_dataptr( ak_hash ctx, const ak_pointer in, const size_t size, ak_pointer out )
+ ak_buffer ak_hash_ptr_context( ak_hash ctx, const ak_pointer in, const size_t size, ak_pointer out )
 {
   ak_buffer result = NULL;
   size_t quot = 0, offset = 0;
@@ -160,7 +160,7 @@
     ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
     ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_hash_datafile( ak_hash ctx, const char *filename, ak_pointer out )
+ ak_buffer ak_hash_file_context( ak_hash ctx, const char *filename, ak_pointer out )
 {
   struct compress comp;
   int error = ak_error_ok;
@@ -423,8 +423,7 @@
     ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
     ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_hash_ptr_handle( ak_handle handle,
-                                            const ak_pointer in, const size_t size, ak_pointer out )
+ ak_buffer ak_hash_ptr( ak_handle handle, const ak_pointer in, const size_t size, ak_pointer out )
 {
   ak_buffer buffer = NULL;
   ak_hash ctx = NULL;
@@ -434,7 +433,7 @@
     return NULL;
   }
 
-  return ( buffer = ak_hash_dataptr( ctx, in, size, out ));
+  return ( buffer = ak_hash_ptr_context( ctx, in, size, out ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -455,7 +454,7 @@
     ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
     ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_hash_file_handle( ak_handle handle, const char *filename, ak_pointer out )
+ ak_buffer ak_hash_file( ak_handle handle, const char *filename, ak_pointer out )
 {
   ak_buffer buffer = NULL;
   ak_hash ctx = NULL;
@@ -465,7 +464,7 @@
     return NULL;
   }
 
-  return ( buffer = ak_hash_datafile( ctx, filename, out ));
+  return ( buffer = ak_hash_file_context( ctx, filename, out ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -69,7 +69,7 @@
      struct stat st;
      fstat( fd, &st );
      ak_uint8 *data = mmap( NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0 );
-     ak_hash_dataptr( &ctx, data, st.st_size, out );
+     ak_hash_ptr_context( &ctx, data, st.st_size, out );
      munmap( data, st.st_size );
      tail = st.st_size;
    }
@@ -90,9 +90,9 @@
 
  /* 5. хешируем, используя функцию класса hash */
    ak_hash_create_streebog256( &ctx );
-   ak_hash_datafile( &ctx, "data64.dat", out );
+   ak_hash_file_context( &ctx, "data64.dat", out );
    ak_hash_destroy( &ctx );
-   printf("hash: %s (using ak_hash_file)\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
+   printf("hash: %s (using ak_hash_file_context)\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
    free( str );
 
  /* 6. хешируем, используя фрагменты случайной длины, меньшей чем длина обрабатываемого блока */

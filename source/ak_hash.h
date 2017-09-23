@@ -97,9 +97,9 @@
 /*! \brief Инициализация контекста функции бесключевого хеширования ГОСТ Р 34.11-2012 (Стрибог512). */
  int ak_hash_create_streebog512( ak_hash );
 /*! \brief Хеширование заданной области памяти. */
- ak_buffer ak_hash_dataptr( ak_hash , const ak_pointer , const size_t , ak_pointer );
+ ak_buffer ak_hash_ptr_context( ak_hash , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Хеширование заданного файла. */
- ak_buffer ak_hash_datafile( ak_hash , const char*, ak_pointer );
+ ak_buffer ak_hash_file_context( ak_hash , const char*, ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Проверка корректной работы функции хеширования Стрибог-256 */
