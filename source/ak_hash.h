@@ -56,9 +56,9 @@
 /*! \brief Тип функции создания дескриптора контекста хеширования. */
  typedef ak_handle ( ak_function_hash )( void );
 /*! \brief Функция очистки контекста хеширования. */
- typedef void ( ak_function_hash_clean )( ak_pointer );
+ typedef int ( ak_function_hash_clean )( ak_pointer );
 /*! \brief Итерационная функция хеширования. */
- typedef void ( ak_function_hash_update )( ak_pointer, const ak_pointer , const size_t );
+ typedef int ( ak_function_hash_update )( ak_pointer, const ak_pointer , const size_t );
 /*! \brief Функция завершения вычислений и получения конечного результата. */
  typedef ak_buffer ( ak_function_hash_finalize ) ( ak_pointer,
                                                       const ak_pointer , const size_t, ak_pointer );

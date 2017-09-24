@@ -44,7 +44,7 @@
  #include <sys/stat.h>
 
  #include <ak_tools.h>
- #include <ak_hash.h>
+ #include <ak_hmac.h>
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -429,6 +429,29 @@ return ak_error_ok;
  return ak_true;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция проверяет корректность реализации алгоритмов выработки имитовставки
+    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
+    вызова ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_libakrypt_test_mac_functions( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing mac functions started" );
+
+ /* тестируем функции hmac-streebog согласно Р 50.1.113-2016 */
+  if( ak_hmac_key_test_streebog() != ak_true ) {
+   ak_error_message( ak_error_get_value(), __func__ , "incorrect hmac testing" );
+   return ak_false;
+  }
+
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing mac functions ended successfully" );
+
+ return ak_true;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция должна вызываться перед использованием криптографических механизмов библиотеки.
@@ -498,6 +521,10 @@ return ak_error_ok;
  /* тестируем работу алгоритмов блочного шифрования */
 
  /* тестируем работу алгоритмов выработки имитовставки */
+  if( ak_libakrypt_test_mac_functions() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "error while testing mac functions" );
+    return ak_false;
+  }
 
  /* тестируем корректность реализации операций с эллиптическими кривыми в короткой форме Вейерштрасса */
 

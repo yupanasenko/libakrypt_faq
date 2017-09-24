@@ -56,17 +56,32 @@
  typedef struct hmac_key *ak_hmac_key;
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Инициализация секретного ключа алгоритма выработки имитовставки hmac-streebog256. */
+/*! \brief Инициализация контекста ключа алгоритма выработки имитовставки hmac-streebog256. */
  int ak_hmac_key_create_streebog256( ak_hmac_key );
-/*! \brief Инициализация секретного ключа алгоритма выработки имитовставки hmac-streebog512. */
+/*! \brief Инициализация контекста ключа алгоритма выработки имитовставки hmac-streebog512. */
  int ak_hmac_key_create_streebog512( ak_hmac_key );
-/*! \brief Инициализация секретного ключа алгоритма выработки имитовставки hmac-gosthash94. */
+/*! \brief Инициализация контекста ключа алгоритма выработки имитовставки hmac-gosthash94. */
  int ak_hmac_key_create_gosthash94( ak_hmac_key , ak_handle );
 
-/*! \brief Уничтожение контекста алгоритма выработки имитовставки hmac. */
+/*! \brief Уничтожение контекста ключа алгоритма выработки имитовставки hmac. */
  int ak_hmac_key_destroy( ak_hmac_key );
-/*! \brief Освобождение памяти из под контекста алгоритма выработки имитовставки. */
+/*! \brief Освобождение памяти из под контекста ключа алгоритма выработки имитовставки hmac. */
  ak_pointer ak_hmac_key_delete( ak_pointer );
+
+/*! \brief Присвоение контексту ключа алгоритма выработки имитовставки hmac константного значения. */
+ int ak_hmac_key_assign_ptr( ak_hmac_key , const ak_pointer , const size_t );
+
+/*! \brief Очистка и начальная инициализация контекста ключа алгоритма выработки имитовставки hmac. */
+ int ak_hmac_key_clean( ak_hmac_key );
+/*! \brief Обновление контекста ключа алгоритма вычисления имитовставки hmac. */
+ int ak_hmac_key_update( ak_hmac_key , const ak_pointer , const size_t );
+/*! \brief Завершение алгоритма вычисления имитовставки hmac и получение результата вычислений. */
+ ak_buffer ak_hmac_key_finalize( ak_hmac_key , const ak_pointer , const size_t , ak_pointer );
+/*! \brief Вычисление имитовставки алгоритмом hmac для заданной области памяти известной длины. */
+ ak_buffer ak_hmac_key_ptr_context( ak_hmac_key , const ak_pointer , const size_t , ak_pointer );
+
+/*! \brief Тестирование корректности реализации алгоритма выработки имитовставки HMAC. */
+ ak_bool ak_hmac_key_test_streebog( void );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

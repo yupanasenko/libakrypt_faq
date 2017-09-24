@@ -118,40 +118,37 @@
 /*! Функция очистки контекста.
     @param ctx указатель на контекст структуры struct hash                                         */
 /* ----------------------------------------------------------------------------------------------- */
- static void ak_hash_streebog_clean( ak_pointer ctx )
+ static int ak_hash_streebog_clean( ak_pointer ctx )
 {
   struct streebog *sx = NULL;
-  if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
-    return;
-  }
+  if( ctx == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                    __func__ , "using null pointer to a context" );
+
   sx = ( struct streebog * ) (( ak_hash ) ctx )->data;
   memset( sx->N, 0, 64 );
   memset( sx->SIGMA, 0, 64 );
   if( (( ak_hash ) ctx )->hsize == 32 ) memset( sx->H, 1, 64 );
      else memset( sx->H, 0, 64 );
+
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Основное циклическое преобразование (Этап 2)                                                   */
- static void ak_hash_streebog_update( ak_pointer ctx, const ak_pointer in, const size_t size )
+ static int ak_hash_streebog_update( ak_pointer ctx, const ak_pointer in, const size_t size )
 {
   ak_uint64 quot = 0, *dt = NULL;
   struct streebog *sx = NULL;
 
-  if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
-    return;
-  }
-  if( !size ) {
-    ak_error_message( ak_error_zero_length, __func__ , "using zero length for hash data" );
-    return;
-  }
+  if( ctx == NULL ) return  ak_error_message( ak_error_null_pointer,
+                                                 __func__ , "using null pointer to a context" );
+  if( !size ) return ak_error_message( ak_error_zero_length,
+                                                 __func__ , "using zero length for hash data" );
+
   quot = size/(( ak_hash ) ctx )->bsize;
-  if( size - quot*(( ak_hash ) ctx )->bsize ) { /* длина данных должна быть кратна ctx->bsize */
-    ak_error_message( ak_error_wrong_length, __func__ , "using data with wrong length" );
-    return;
-  }
+  if( size - quot*(( ak_hash ) ctx )->bsize ) /* длина данных должна быть кратна ctx->bsize */
+    return ak_error_message( ak_error_wrong_length, __func__ , "using data with wrong length" );
+
   dt = ( ak_uint64 *) in;
   sx = ( struct streebog * ) (( ak_hash ) ctx )->data;
   do{
@@ -160,6 +157,8 @@
       streebog_sadd( sx, dt );
       quot--; dt += 8;
   } while( quot > 0 );
+
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -183,7 +182,8 @@
 
   /* формируем временный текст */
   memset( m, 0, 64 );
-  memcpy( m, in, ( ak_uint32 )size ); // здесь приведение типов корректно, поскольку 0 <= size < 64
+  if( in != NULL )
+    memcpy( m, in, ( ak_uint32 )size ); // здесь приведение типов корректно, поскольку 0 <= size < 64
   mhide = ( unsigned char * )m;
   mhide[size] = 1; /* дополнение */
 
@@ -196,8 +196,11 @@
 
  /* определяем указатель на область памяти, в которую будет помещен результат вычислений */
   if( out != NULL ) pout = out;
-   else
+   else {
      if(( result = ak_buffer_new_size((( ak_hash )ctx)->hsize )) != NULL ) pout = result->data;
+      else ak_error_message( ak_error_get_value( ), __func__ ,
+                                                  "wrong creation og result buffer" );
+   }
 
  /* копируем нужную часть результирующего массива или выдаем сообщение об ошибке */
   if( pout != NULL ) {
@@ -371,10 +374,10 @@
 
   if( ak_ptr_is_equal( streebog256_testM1, out, 32 )) {
     if( audit >= ak_log_maximum )
-      ak_error_message( ak_error_ok, __func__ , "the 1st test from GOST R 34.22-2012 is Ok" );
+      ak_error_message( ak_error_ok, __func__ , "the 1st test from GOST R 34.11-2012 is Ok" );
   } else {
       ak_error_message( ak_error_not_equal_data, __func__ ,
-                                             "the 1st test from GOST R 34.22-2012 is wrong" );
+                                             "the 1st test from GOST R 34.11-2012 is wrong" );
       ak_log_set_message(( str = ak_ptr_to_hexstr( out, 32, ak_false ))); free( str );
       ak_log_set_message(( str = ak_ptr_to_hexstr( streebog256_testM1, 32, ak_false ))); free( str );
       result = ak_false;
@@ -391,10 +394,10 @@
 
   if( ak_ptr_is_equal( streebog256_testM2, out, 32 )) {
     if( audit >= ak_log_maximum )
-      ak_error_message( ak_error_ok, __func__ , "the 2nd test from GOST R 34.22-2012 is Ok" );
+      ak_error_message( ak_error_ok, __func__ , "the 2nd test from GOST R 34.11-2012 is Ok" );
   } else {
       ak_error_message( ak_error_not_equal_data, __func__ ,
-                                             "the 2nd test from GOST R 34.22-2012 is wrong" );
+                                             "the 2nd test from GOST R 34.11-2012 is wrong" );
       ak_log_set_message(( str = ak_ptr_to_hexstr( out, 32, ak_false ))); free( str );
       ak_log_set_message(( str = ak_ptr_to_hexstr( streebog256_testM2, 32, ak_false ))); free( str );
       result = ak_false;
@@ -481,24 +484,24 @@
 
  /* инициализируем контекст функции хешиирования */
   if(( error = ak_hash_create_streebog512( &ctx )) != ak_error_ok ) {
-    ak_error_message( error, __func__ , "wrong initialization of streenbog256 context" );
+    ak_error_message( error, __func__ , "wrong initialization of streenbog512 context" );
     return ak_false;
   }
 
  /* первый пример из приложения А (ГОСТ Р 34.11-2012) */
   ak_hash_ptr_context( &ctx, streebog_M1_message, 63, out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
-    ak_error_message( error, __func__ , "invalid calculation of streebog256 code" );
+    ak_error_message( error, __func__ , "invalid calculation of streebog512 code" );
     result = ak_false;
     goto lab_exit;
   }
 
   if( ak_ptr_is_equal( streebog512_testM1, out, 64 )) {
     if( audit >= ak_log_maximum )
-      ak_error_message( ak_error_ok, __func__ , "the 1st test from GOST R 34.22-2012 is Ok" );
+      ak_error_message( ak_error_ok, __func__ , "the 1st test from GOST R 34.11-2012 is Ok" );
   } else {
       ak_error_message( ak_error_not_equal_data, __func__ ,
-                                             "the 1st test from GOST R 34.22-2012 is wrong" );
+                                             "the 1st test from GOST R 34.11-2012 is wrong" );
       ak_log_set_message(( str = ak_ptr_to_hexstr( out, 64, ak_false ))); free( str );
       ak_log_set_message(( str = ak_ptr_to_hexstr( streebog512_testM1, 64, ak_false ))); free( str );
       result = ak_false;
@@ -508,17 +511,17 @@
  /* второй пример из приложения А (ГОСТ Р 34.11-2012) */
   ak_hash_ptr_context( &ctx, streebog_M2_message, 72, out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
-    ak_error_message( error, __func__ , "invalid calculation of streebog256 code" );
+    ak_error_message( error, __func__ , "invalid calculation of streebog512 code" );
     result = ak_false;
     goto lab_exit;
   }
 
   if( ak_ptr_is_equal( streebog512_testM2, out, 64 )) {
     if( audit >= ak_log_maximum )
-      ak_error_message( ak_error_ok, __func__ , "the 2nd test from GOST R 34.22-2012 is Ok" );
+      ak_error_message( ak_error_ok, __func__ , "the 2nd test from GOST R 34.11-2012 is Ok" );
   } else {
       ak_error_message( ak_error_not_equal_data, __func__ ,
-                                             "the 2nd test from GOST R 34.22-2012 is wrong" );
+                                             "the 2nd test from GOST R 34.11-2012 is wrong" );
       ak_log_set_message(( str = ak_ptr_to_hexstr( out, 64, ak_false ))); free( str );
       ak_log_set_message(( str = ak_ptr_to_hexstr( streebog512_testM2, 64, ak_false ))); free( str );
       result = ak_false;
@@ -528,7 +531,7 @@
  /* хеширование пустого вектора */
   ak_hash_ptr_context( &ctx, "", 0, out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
-    ak_error_message( error, __func__ , "invalid calculation of streebog256 code" );
+    ak_error_message( error, __func__ , "invalid calculation of streebog512 code" );
     result = ak_false;
     goto lab_exit;
   }

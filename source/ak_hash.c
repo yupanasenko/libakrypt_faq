@@ -171,8 +171,8 @@
     return NULL;
   }
 
-  if( ak_compress_create_hash( &comp, ctx ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), __func__ , "wrong creation a compress context" );
+  if(( error = ak_compress_create_hash( &comp, ctx )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong creation a compress context" );
     return NULL;
   }
 

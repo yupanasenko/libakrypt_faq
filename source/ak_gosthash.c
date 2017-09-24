@@ -170,18 +170,19 @@
 /*! Функция очистки контекста.
     @param ctx указатель на контекст структуры struct hash                                         */
 /* ----------------------------------------------------------------------------------------------- */
- static void ak_hash_gosthash94_clean( ak_pointer ctx )
+ static int ak_hash_gosthash94_clean( ak_pointer ctx )
 {
   struct gosthash94 *sx = NULL;
-  if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to hash context" );
-    return;
-  }
+  if( ctx == NULL ) return ak_error_message( ak_error_null_pointer,
+                                             __func__ , "using null pointer to hash context" );
+
   sx = ( struct gosthash94 * ) (( ak_hash ) ctx )->data;
   /* мы очищаем данные, не трогая таблицы замен */
   memset( sx->sum, 0, 32 );
   memset( sx->len, 0, 32 );
   memset( sx->hvec, 0, 32 );
+
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -340,31 +341,23 @@
     @param size длина блока обрабатываемых данных в байтах; данное значение должно быть кратно
     длине блока обрабатываемых данных                                                              */
 /* ----------------------------------------------------------------------------------------------- */
- static void ak_hash_gosthash94_update( ak_pointer ctx, const ak_pointer in, const size_t size )
+ static int ak_hash_gosthash94_update( ak_pointer ctx, const ak_pointer in, const size_t size )
 {
   ak_uint64 quot = 0, offset = 0;
   struct gosthash94 *sx = NULL;
   size_t bsize = 0;
 
-  if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
-    return;
-  }
-  if( in == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to hashing data" );
-    return;
-  }
-  if( !size ) {
-    ak_error_message( ak_error_zero_length, __func__ , "using zero length for hash data" );
-    return;
-  }
+  if( ctx == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                 __func__ , "using null pointer to a context" );
+  if( in == NULL ) return ak_error_message( ak_error_null_pointer,
+                                              __func__ , "using null pointer to hashing data" );
+  if( !size ) return ak_error_message( ak_error_zero_length,
+                                                 __func__ , "using zero length for hash data" );
 
   bsize = (( ak_hash ) ctx )->bsize;
   quot = size/bsize;
-  if( size - quot*bsize ) { /* длина данных должна быть кратна ctx->bsize */
-    ak_error_message( ak_error_wrong_length, __func__ , "using data with wrong length" );
-    return;
-  }
+  if( size - quot*bsize ) /* длина данных должна быть кратна ctx->bsize */
+    return ak_error_message( ak_error_wrong_length, __func__ , "using data with wrong length" );
 
   sx = ( struct gosthash94 * ) (( ak_hash ) ctx )->data;
   do{
@@ -376,6 +369,8 @@
       offset += bsize;
     }
   while( offset < size );
+
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -31,8 +31,6 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_hash.h>
- #include <ak_random.h>
- #include <ak_buffer.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /* Предварительные описания ключевых структур */
@@ -105,7 +103,7 @@
  int ak_skey_assign_unique_number( ak_skey );
 
 /*! \brief Присвоение секретному ключу константного значения. */
-// int ak_skey_assign_ptr( ak_skey , const ak_pointer , const size_t , const ak_bool );
+ int ak_skey_assign_ptr( ak_skey , const ak_pointer , const size_t , const ak_bool );
 /*! \brief Присвоение секретному ключу случайного значения. */
 // int ak_skey_assign_random( ak_skey , ak_random );
 /*! \brief Присвоение секретному ключу значения, выработанного из пароля. */
