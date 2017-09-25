@@ -26,7 +26,6 @@
 /*                                                                                                 */
 /*   ak_hmac.c                                                                                     */
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_hmac.h>
  #include <ak_tools.h>
  #include <ak_compress.h>
  #include <ak_context_manager.h>
@@ -36,7 +35,7 @@
     @return В случае успеха функция возвращает ноль (\ref ak_error_ok). В случае возникновения
     ошибки возвращается ее код.                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_key_create_streebog256( ak_hmac_key hctx )
+ int ak_hmac_create_streebog256( ak_hmac hctx )
 {
  int error = ak_error_ok;
 
@@ -72,7 +71,7 @@
     @return В случае успеха функция возвращает ноль (\ref ak_error_ok). В случае возникновения
     ошибки возвращается ее код.                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_key_create_streebog512( ak_hmac_key hctx )
+ int ak_hmac_create_streebog512( ak_hmac hctx )
 {
  int error = ak_error_ok;
 
@@ -109,7 +108,7 @@
     @return В случае успеха функция возвращает ноль (\ref ak_error_ok). В случае возникновения
     ошибки возвращается ее код.                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_key_create_gosthash94( ak_hmac_key hctx, ak_handle handle )
+ int ak_hmac_create_gosthash94( ak_hmac hctx, ak_handle handle )
 {
  int error = ak_error_ok;
 
@@ -145,7 +144,7 @@
     @return В случае успеха возвращается ноль (\ref ak_error_ok). В противном случае возвращается
     код ошибки.                                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_key_destroy( ak_hmac_key hctx )
+ int ak_hmac_destroy( ak_hmac hctx )
 {
   int error = ak_error_ok;
   if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
@@ -163,10 +162,10 @@
     @return Функция возвращает NULL. В случае возникновения ошибки, ее код может быть получен с
     помощью вызова функции ak_error_get_value().                                                   */
 /* ----------------------------------------------------------------------------------------------- */
- ak_pointer ak_hmac_key_delete( ak_pointer hctx )
+ ak_pointer ak_hmac_delete( ak_pointer hctx )
 {
   if( hctx != NULL ) {
-      ak_hmac_key_destroy(( ak_hmac_key ) hctx );
+      ak_hmac_destroy(( ak_hmac ) hctx );
       free( hctx );
      } else ak_error_message( ak_error_null_pointer, __func__ ,
                                                        "using null pointer to hmac key context" );
@@ -192,7 +191,7 @@
     возвращается NULL. Код возникшей ошибки может быть получен с помощью вызова функции
     ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_key_assign_ptr( ak_hmac_key hctx, const ak_pointer ptr, const size_t size )
+ int ak_hmac_set_ptr( ak_hmac hctx, const ak_pointer ptr, const size_t size )
 {
   int error = ak_error_ok;
 
@@ -202,7 +201,7 @@
                                                     "using a null pointer to constant key value" );
  /* присваиваем ключевой буффер */
   if(( error =
-      ak_skey_assign_ptr( &hctx->key, ptr, ak_min( size, hctx->ctx.bsize ), ak_true )) != ak_error_ok )
+      ak_skey_set_ptr( &hctx->key, ptr, ak_min( size, hctx->ctx.bsize ), ak_true )) != ak_error_ok )
     return ak_error_message( error, __func__ , "incorrect assigning of key data" );
 
   if( size > hctx->ctx.bsize ) {
@@ -219,10 +218,41 @@
   }
 
  /* инициализируем начальное состояние */
-  if(( error = ak_hmac_key_clean( hctx )) != ak_error_ok )
+  if(( error = ak_hmac_clean( hctx )) != ak_error_ok )
     return ak_error_message( error, __func__, "invalid cleaning a hmac key context ");
 
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает ключу алгоритма выработки имитовставки hmac случайное (псевдо-случайное)
+    значение, размер которого определяется размером блока обрабатываемых данных используемой
+    функции хеширования. Способ выработки ключевого значения определяется используемым
+    генератором случайных (псевдо-случайных) чисел.
+
+    @param hctx Контекст ключа алгоритма hmac. К моменту вызова функции контекст должен быть
+    инициализирован.
+    @param generator контекст генератора псевдо-случайных чисел.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_hmac_set_random( ak_hmac hctx, ak_random generator )
+{
+  int error = ak_error_ok;
+
+ /* выполняем необходимые проверки */
+  if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                         "using a null pointer to hmac context" );
+  if( hctx->key.key.size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                           "using non initialized hmac context" );
+  if( generator == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                              "using a null pointer to random number generator" );
+ /* присваиваем буффер и маскируем его */
+  if(( error = ak_skey_set_random( &hctx->key, generator )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "wrong generation a secret key for hmac context" );
+
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -230,14 +260,16 @@
     @return В случае успеха функция возвращает \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_key_clean( ak_pointer ctx )
+ int ak_hmac_clean( ak_pointer ctx )
 {
-  ak_hmac_key hctx = ( ak_hmac_key ) ctx;
+  ak_hmac hctx = ( ak_hmac ) ctx;
   int error = ak_error_ok;
   size_t idx = 0, count = 0;
 
   if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using a null pointer to hmac key context" );
+  if( hctx->key.resource.counter <= 0 ) return ak_error_message( ak_error_resource_counter,
+                                          __func__, "using a hmac key context with low resource" );
 
  /* инициализируем начальное состояние контекста хеширования */
   if(( error = hctx->ctx.clean( &hctx->ctx )) != ak_error_ok )
@@ -258,6 +290,7 @@
      ((ak_uint64 *)hctx->key.key.data)[idx] ^= 0x3636363636363636LL;
   }
   hctx->key.remask( &hctx->key );
+  hctx->key.resource.counter--;
 
  return error;
 }
@@ -270,12 +303,14 @@
     @return В случае успеха функция возвращает \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_key_update( ak_pointer ctx, const ak_pointer data, const size_t size )
+ int ak_hmac_update( ak_pointer ctx, const ak_pointer data, const size_t size )
 {
-  ak_hmac_key hctx = ( ak_hmac_key ) ctx;
+  ak_hmac hctx = ( ak_hmac ) ctx;
 
   if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using a null pointer to hmac key context" );
+  if( hctx->key.resource.counter <= 0 ) return ak_error_message( ak_error_resource_counter,
+                                          __func__, "using a hmac key context with low resource" );
   if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
                                                       "using zero length for authenticated data" );
   if( size%hctx->ctx.bsize ) return ak_error_message( ak_error_wrong_length, __func__ ,
@@ -294,7 +329,7 @@
            возвращается NULL. В случае возникновения ошибки возывращается NULL. Код ошибки может
            быть получен c помощью вызова функции ak_error_get_value().                             */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_hmac_key_finalize( ak_pointer ctx, const ak_pointer data,
+ ak_buffer ak_hmac_finalize( ak_pointer ctx, const ak_pointer data,
                                                                const size_t size, ak_pointer out )
 {
   int error = ak_error_ok;
@@ -302,19 +337,26 @@
   size_t idx = 0, count = 0;
   const unsigned int temporary_size = 128;
   ak_uint8 temporary[temporary_size]; /* буфер для хранения промежуточных результатов */
-  ak_hmac_key hctx = ( ak_hmac_key ) ctx;
+  ak_hmac hctx = ( ak_hmac ) ctx;
 
  /* выполняем проверки */
   if( hctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to hmac context" );
     return NULL;
   }
+  if( hctx->key.resource.counter <= 0 ) {
+    ak_error_message( ak_error_resource_counter,
+                                       __func__, "using a hmac key context with low resource" );
+    return NULL;
+  }
   if( hctx->ctx.hsize > 64 ) { /* ограничение в связи с константным размером временного буффера */
-    ak_error_message( ak_error_wrong_length, __func__, "using a hash context with large code size" );
+    ak_error_message( ak_error_wrong_length,
+                                        __func__, "using a hash context with large code size" );
     return NULL;
   }
   if( size >= hctx->ctx.bsize ) {
-    ak_error_message( ak_error_zero_length, __func__ , "using wrong length for authenticated data" );
+    ak_error_message( ak_error_zero_length,
+                                       __func__ , "using wrong length for authenticated data" );
     return NULL;
   }
 
@@ -349,6 +391,7 @@
      ((ak_uint64 *)hctx->key.key.data)[idx] ^= 0x5C5C5C5C5C5C5C5CLL;
   }
   hctx->key.remask( &hctx->key );
+  hctx->key.resource.counter--;
 
  /* последний update/finalize и возврат результата */
   if( hctx->ctx.bsize == hctx->ctx.hsize ) {
@@ -371,13 +414,13 @@
     @param in указатель на входные данные для которых вычисляется хеш-код.
     @param size размер входных данных в байтах.
     @param out область памяти, куда будет помещен рещультат. Память должна быть заранее выделена.
-    Размер выделяемой памяти может быть определен с помощью вызова ak_hmac_key_get_code_size().
+    Размер выделяемой памяти может быть определен с помощью вызова ak_hmac_get_code_size().
     Указатель out может принимать значение NULL.
 
     @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
     возвращается указатель на буффер, содержащий результат вычислений.                             */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_hmac_key_ptr_context( ak_hmac_key hctx, const ak_pointer in,
+ ak_buffer ak_hmac_ptr_context( ak_hmac hctx, const ak_pointer in,
                                                                  const size_t size, ak_pointer out )
 {
   int error = ak_error_ok;
@@ -394,7 +437,7 @@
   }
 
  /* вычищаем результаты предыдущих вычислений */
-  if(( error = ak_hmac_key_clean( hctx )) != ak_error_ok ) {
+  if(( error = ak_hmac_clean( hctx )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong initialization of hmac key context" );
     return NULL;
   }
@@ -404,13 +447,13 @@
   offset = quot*hctx->ctx.bsize;
   /* вызываем, если длина сообщения не менее одного полного блока */
   if( quot > 0 )
-    if(( error = ak_hmac_key_update( hctx, in, offset )) != ak_error_ok ) {
+    if(( error = ak_hmac_update( hctx, in, offset )) != ak_error_ok ) {
       ak_error_message( error, __func__ , "wrong caclucation of hmac function" );
       return NULL;
     }
 
   /* обрабатываем хвост */
-  result = ak_hmac_key_finalize( hctx, (unsigned char *)in + offset, size - offset, out );
+  result = ak_hmac_finalize( hctx, (unsigned char *)in + offset, size - offset, out );
   /* очищаем за собой данные, содержащиеся в контексте функции хеширования */
   hctx->ctx.clean( &hctx->ctx );
  return result;
@@ -433,7 +476,7 @@
     ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
     ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_hmac_key_file_context( ak_hmac_key hctx, const char *filename, ak_pointer out )
+ ak_buffer ak_hmac_file_context( ak_hmac hctx, const char *filename, ak_pointer out )
 {
   struct compress comp;
   int error = ak_error_ok;
@@ -458,7 +501,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_hmac_key_test_streebog( void )
+ ak_bool ak_hmac_test_streebog( void )
 {
   ak_uint8 key[32] = {
    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -483,23 +526,23 @@
 
   char *str = NULL;
   ak_uint8 out[64];
-  struct hmac_key hkey;
+  struct hmac hkey;
   int error = ak_error_ok;
   ak_bool result = ak_true;
   int audit = ak_log_get_level();
 
  /* 1. тестируем HMAC на основе Стрибог 256 */
-  if(( error = ak_hmac_key_create_streebog256( &hkey )) != ak_error_ok ) {
+  if(( error = ak_hmac_create_streebog256( &hkey )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong creation of hmac-streebog256 key context" );
     return ak_false;
   }
-  if(( error = ak_hmac_key_assign_ptr( &hkey, key, 32 )) != ak_error_ok ) {
+  if(( error = ak_hmac_set_ptr( &hkey, key, 32 )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong assigning a constant hmac key value" );
     result = ak_false;
     goto lab_exit;
   }
   memset( out, 0, 64 );
-  ak_hmac_key_ptr_context( &hkey, data, 16, out );
+  ak_hmac_ptr_context( &hkey, data, 16, out );
   if( ak_error_get_value() != ak_error_ok ) {
     ak_error_message( error, __func__ , "incorrect calculation of hmac code" );
     result = ak_false;
@@ -516,20 +559,20 @@
 
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                                      "test for hmac-streebog256 from R 50.1.113-2016 is Ok" );
-  ak_hmac_key_destroy( &hkey );
+  ak_hmac_destroy( &hkey );
 
  /* 2. тестируем HMAC на основе Стрибог 512 */
-  if(( error = ak_hmac_key_create_streebog512( &hkey )) != ak_error_ok ) {
+  if(( error = ak_hmac_create_streebog512( &hkey )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong creation of hmac-streebog512 key context" );
     return ak_false;
   }
-  if(( error = ak_hmac_key_assign_ptr( &hkey, key, 32 )) != ak_error_ok ) {
+  if(( error = ak_hmac_set_ptr( &hkey, key, 32 )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong assigning a constant hmac key value" );
     result = ak_false;
     goto lab_exit;
   }
   memset( out, 0, 64 );
-  ak_hmac_key_ptr_context( &hkey, data, 16, out );
+  ak_hmac_ptr_context( &hkey, data, 16, out );
   if( ak_error_get_value() != ak_error_ok ) {
     ak_error_message( error, __func__ , "incorrect calculation of hmac code" );
     result = ak_false;
@@ -547,7 +590,7 @@
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                                      "test for hmac-streebog512 from R 50.1.113-2016 is Ok" );
  lab_exit:
-  ak_hmac_key_destroy( &hkey );
+  ak_hmac_destroy( &hkey );
  return result;
 }
 

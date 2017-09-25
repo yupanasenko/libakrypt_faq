@@ -88,7 +88,7 @@
     @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
     возвращается ее код.                                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_compress_create_hmac( ak_compress comp, ak_hmac_key hctx )
+ int ak_compress_create_hmac( ak_compress comp, ak_hmac hctx )
 {
  /* вначале, необходимые проверки */
   if( comp == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
@@ -106,9 +106,9 @@
  /* устанавливаем значения и полей и методы из контекста функции хеширования */
   comp->ctx = hctx;
   comp->hsize = hctx->ctx.hsize;
-  comp->clean = ak_hmac_key_clean;
-  comp->update = ak_hmac_key_update;
-  comp->finalize = ak_hmac_key_finalize;
+  comp->clean = ak_hmac_clean;
+  comp->update = ak_hmac_update;
+  comp->finalize = ak_hmac_finalize;
 
  return ak_error_ok;
 }

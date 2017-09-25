@@ -34,7 +34,8 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Секретный ключ алгоритма выработки имитовставки HMAC. */
-/*!  Алгоритм HMAC описывается рекомендациями IETF RFC 2104 и
+/*!  Алгоритм выработки имитовставки HMAC основан на двукратном применении бесключевой функции
+     хеширования. Алгоритм описывается рекомендациями IETF RFC 2104 и
      стандартизован отечественными рекомендациями по стандартизации Р 50.1.113-2016.
      Алгоритм предназначен, в основном, для выработки имитовставки и
      преобразования ключевой информации.
@@ -44,7 +45,7 @@
      использоваться только совместно с функцией хеширования Стрибог
      (с длиной хеш кода как 256 бит, так и 512 бит).                                              */
 /* ----------------------------------------------------------------------------------------------- */
- struct hmac_key {
+ struct hmac {
  /*! \brief контекст секретного ключа */
   struct skey key;
  /*! \brief контекст функции хеширования */
@@ -53,37 +54,38 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Указатель на структуру ключа алгоритма выработки имитовставки HMAC. */
- typedef struct hmac_key *ak_hmac_key;
+ typedef struct hmac *ak_hmac;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация контекста ключа алгоритма выработки имитовставки hmac-streebog256. */
- int ak_hmac_key_create_streebog256( ak_hmac_key );
+ int ak_hmac_create_streebog256( ak_hmac );
 /*! \brief Инициализация контекста ключа алгоритма выработки имитовставки hmac-streebog512. */
- int ak_hmac_key_create_streebog512( ak_hmac_key );
+ int ak_hmac_create_streebog512( ak_hmac );
 /*! \brief Инициализация контекста ключа алгоритма выработки имитовставки hmac-gosthash94. */
- int ak_hmac_key_create_gosthash94( ak_hmac_key , ak_handle );
-
+ int ak_hmac_create_gosthash94( ak_hmac , ak_handle );
 /*! \brief Уничтожение контекста ключа алгоритма выработки имитовставки hmac. */
- int ak_hmac_key_destroy( ak_hmac_key );
+ int ak_hmac_destroy( ak_hmac );
 /*! \brief Освобождение памяти из под контекста ключа алгоритма выработки имитовставки hmac. */
- ak_pointer ak_hmac_key_delete( ak_pointer );
+ ak_pointer ak_hmac_delete( ak_pointer );
 
 /*! \brief Присвоение контексту ключа алгоритма выработки имитовставки hmac константного значения. */
- int ak_hmac_key_assign_ptr( ak_hmac_key , const ak_pointer , const size_t );
+ int ak_hmac_set_ptr( ak_hmac , const ak_pointer , const size_t );
+/*! \brief Присвоение контексту ключа алгоритма выработки имитовставки hmac случайного значения. */
+ int ak_hmac_set_random( ak_hmac , ak_random );
 
 /*! \brief Очистка и начальная инициализация контекста ключа алгоритма выработки имитовставки hmac. */
- int ak_hmac_key_clean( ak_pointer );
+ int ak_hmac_clean( ak_pointer );
 /*! \brief Обновление контекста ключа алгоритма вычисления имитовставки hmac. */
- int ak_hmac_key_update( ak_pointer , const ak_pointer , const size_t );
+ int ak_hmac_update( ak_pointer , const ak_pointer , const size_t );
 /*! \brief Завершение алгоритма вычисления имитовставки hmac и получение результата вычислений. */
- ak_buffer ak_hmac_key_finalize( ak_pointer , const ak_pointer , const size_t , ak_pointer );
+ ak_buffer ak_hmac_finalize( ak_pointer , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Вычисление имитовставки алгоритмом hmac для заданной области памяти известной длины. */
- ak_buffer ak_hmac_key_ptr_context( ak_hmac_key , const ak_pointer , const size_t , ak_pointer );
+ ak_buffer ak_hmac_ptr_context( ak_hmac , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Вычисление имитовставки алгоритмом hmac для заданного файла. */
- ak_buffer ak_hmac_key_file_context( ak_hmac_key , const char *, ak_pointer );
+ ak_buffer ak_hmac_file_context( ak_hmac , const char *, ak_pointer );
 
 /*! \brief Тестирование корректности реализации алгоритма выработки имитовставки HMAC. */
- ak_bool ak_hmac_key_test_streebog( void );
+ ak_bool ak_hmac_test_streebog( void );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

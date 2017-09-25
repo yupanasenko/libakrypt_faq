@@ -95,7 +95,7 @@
     ak_skey_destroy( skey );
     return error;
   }
-  if(( error = ak_skey_assign_unique_number( skey )) != ak_error_ok ) {
+  if(( error = ak_skey_set_unique_number( skey )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "invalid creation of key number" );
     ak_skey_destroy( skey );
     return error;
@@ -166,7 +166,7 @@
     @return В случае успеха функция возвращает k_error_ok (ноль). В противном случае, возвращается
     номер ошибки.                                                                                  */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_skey_assign_unique_number( ak_skey skey )
+ int ak_skey_set_unique_number( ak_skey skey )
 {
   time_t tm = 0;
   size_t len = 0;
@@ -433,7 +433,7 @@
     @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_skey_assign_ptr( ak_skey skey, const ak_pointer ptr, const size_t size, const ak_bool cflag )
+ int ak_skey_set_ptr( ak_skey skey, const ak_pointer ptr, const size_t size, const ak_bool cflag )
 {
   int error = ak_error_ok;
 
@@ -451,6 +451,41 @@
     return ak_error_message( error, __func__ , "wrong assigning a secret key data" );
 
  /* маскируем ключ и вычисляем контрольную сумму */
+  if(( error = skey->set_mask( skey )) != ak_error_ok ) return  ak_error_message( error,
+                                                           __func__ , "wrong secret key masking" );
+
+  if(( error = skey->set_icode( skey )) != ak_error_ok ) return ak_error_message( error,
+                                                __func__ , "wrong calculation of integrity code" );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает ключу случайное (псевдо-случайное) значение, размер которого определяется
+    размером секретного ключа. Способ выработки ключевого значения определяется используемым
+    генератором случайных (псевдо-случайных) чисел.
+
+    @param skey контекст секретного ключа. К моменту вызова функции контекст должен быть
+    инициализирован.
+    @param generator контекст генератора псевдо-случайных чисел.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_set_random( ak_skey skey, ak_random generator )
+{
+  int error = ak_error_ok;
+
+ /* выполняем необходимые проверки */
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                             "using a null pointer to secret key" );
+  if( skey->key.size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                       "using non initialized secret key context" );
+  if( generator == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                "using a null pointer to random number generator" );
+ /* присваиваем буффер и маскируем его */
+  if(( error = ak_buffer_set_random( &skey->key, generator )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "wrong generation a secret key data" );
+
   if(( error = skey->set_mask( skey )) != ak_error_ok ) return  ak_error_message( error,
                                                            __func__ , "wrong secret key masking" );
 

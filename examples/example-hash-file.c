@@ -37,7 +37,7 @@
   char *str = NULL;
   size_t tail = 0;
   struct random generator;
-  struct hmac_key hctx;
+  struct hmac hctx;
   ak_uint8 key[12] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l' };
 
 #ifndef LIBAKRYPT_HAVE_FCNTL_H
@@ -78,11 +78,11 @@
    printf("hash: %s (using mmap)\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
    free( str );
 
-   if( ak_hmac_key_create_streebog256( &hctx ) == ak_error_ok ) {
-     ak_hmac_key_assign_ptr( &hctx, key, 12 );
-     ak_hmac_key_ptr_context( &hctx, data, st.st_size, out );
+   if( ak_hmac_create_streebog256( &hctx ) == ak_error_ok ) {
+     ak_hmac_set_ptr( &hctx, key, 12 );
+     ak_hmac_ptr_context( &hctx, data, st.st_size, out );
    }
-   ak_hmac_key_destroy( &hctx ); /* уничтожаем контекст выработки имитовставки */
+   ak_hmac_destroy( &hctx ); /* уничтожаем контекст выработки имитовставки */
    printf("hmac: %s (using mmap)\n\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
    free( str );
 
@@ -100,12 +100,12 @@
    printf("hash: %s (using ak_compress_file)\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
    free( str );
 
-   ak_hmac_key_create_streebog256( &hctx );
-   ak_hmac_key_assign_ptr( &hctx, key, 12 );
+   ak_hmac_create_streebog256( &hctx );
+   ak_hmac_set_ptr( &hctx, key, 12 );
    ak_compress_create_hmac( &comp, &hctx );
    ak_compress_file( &comp, "data64.dat", out );
    ak_compress_destroy( &comp );
-   ak_hmac_key_destroy( &hctx );
+   ak_hmac_destroy( &hctx );
    printf("hmac: %s (using ak_compress_file)\n\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
    free( str );
 
@@ -116,11 +116,11 @@
    printf("hash: %s (using ak_hash_file_context)\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
    free( str );
 
-   ak_hmac_key_create_streebog256( &hctx );
-   ak_hmac_key_assign_ptr( &hctx, key, 12 );
-   ak_hmac_key_file_context( &hctx, "data64.dat", out );
-   ak_hmac_key_destroy( &hctx );
-   printf("hmac: %s (using ak_hmac_key_file_context)\n\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
+   ak_hmac_create_streebog256( &hctx );
+   ak_hmac_set_ptr( &hctx, key, 12 );
+   ak_hmac_file_context( &hctx, "data64.dat", out );
+   ak_hmac_destroy( &hctx );
+   printf("hmac: %s (using ak_hmac_file_context)\n\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
    free( str );
 
  /* 6. хешируем, используя фрагменты случайной длины, меньшей чем длина обрабатываемого блока */
@@ -129,8 +129,8 @@
    ak_compress_create_hash( &comp, &ctx ); /* создаем контекст сжимающего отображения */
    fp = fopen( "data64.dat", "rb" );
 
-   ak_hmac_key_create_streebog256( &hctx );
-   ak_hmac_key_assign_ptr( &hctx, key, 12 );
+   ak_hmac_create_streebog256( &hctx );
+   ak_hmac_set_ptr( &hctx, key, 12 );
    ak_compress_create_hmac( &comp2, &hctx ); /* создаем контекст сжимающего отображения */
 
    memset( out, 0, 32 ); /* очищаем вектор для хранения результата */
@@ -158,8 +158,9 @@
 
    ak_compress_finalize( &comp2, buffer, tail, out );
    ak_compress_destroy( &comp2 );
-   ak_hmac_key_destroy( &hctx );
-   printf("hmac: %s (using small random jumping)\n\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
+   printf("hmac: %s (using small random jumping, key resource: %lld)\n\n",
+       str = ak_ptr_to_hexstr( out, 32, ak_false ), hctx.key.resource.counter );
+   ak_hmac_destroy( &hctx );
    free( str );
 
 

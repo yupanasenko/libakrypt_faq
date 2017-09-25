@@ -71,7 +71,7 @@
   32,
   4096, /* это значит, что одновременно может существовать не более 4096 контекстов */
   16, /* по-умолчанию, длина номера ключа составляет 16 байт*/
-  16384
+  65536
 };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -442,7 +442,7 @@ return ak_error_ok;
     ak_error_message( ak_error_ok, __func__ , "testing mac functions started" );
 
  /* тестируем функции hmac-streebog согласно Р 50.1.113-2016 */
-  if( ak_hmac_key_test_streebog() != ak_true ) {
+  if( ak_hmac_test_streebog() != ak_true ) {
    ak_error_message( ak_error_get_value(), __func__ , "incorrect hmac testing" );
    return ak_false;
   }

@@ -74,7 +74,7 @@
 /*! \brief Зачистка данных, хранящихся в буффере. */
  int ak_buffer_wipe( ak_buffer, ak_random );
 ///*! \brief Заполнение буффера случайными данными. */
-// int ak_buffer_set_random( ak_buffer , ak_random );
+ int ak_buffer_set_random( ak_buffer , ak_random );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

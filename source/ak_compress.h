@@ -62,7 +62,7 @@
 /*! \brief Инициализация контекста сжимающего отображения, реализуемого при помощи функции хеширования. */
  int ak_compress_create_hash( ak_compress , ak_hash );
 /*! \brief Инициализация контекста сжимающего отображения, реализуемого при помощи функции хеширования. */
- int ak_compress_create_hmac( ak_compress , ak_hmac_key );
+ int ak_compress_create_hmac( ak_compress , ak_hmac );
 /*! \brief Уничтожение контекста сжимающего отображения. */
  int ak_compress_destroy( ak_compress );
 /*! \brief Освобождение памяти из под контекста сжимающего отображения. */

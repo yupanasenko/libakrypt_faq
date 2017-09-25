@@ -100,12 +100,12 @@
 /*! \brief Очистка структуры секретного ключа. */
  int ak_skey_destroy( ak_skey );
 /*! \brief Присвоение секретному ключу уникального номера. */
- int ak_skey_assign_unique_number( ak_skey );
+ int ak_skey_set_unique_number( ak_skey );
 
 /*! \brief Присвоение секретному ключу константного значения. */
- int ak_skey_assign_ptr( ak_skey , const ak_pointer , const size_t , const ak_bool );
+ int ak_skey_set_ptr( ak_skey , const ak_pointer , const size_t , const ak_bool );
 /*! \brief Присвоение секретному ключу случайного значения. */
-// int ak_skey_assign_random( ak_skey , ak_random );
+ int ak_skey_set_random( ak_skey , ak_random );
 /*! \brief Присвоение секретному ключу значения, выработанного из пароля. */
 // int ak_skey_assign_password( ak_skey , const ak_pointer , const size_t );
 
