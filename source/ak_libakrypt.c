@@ -60,6 +60,8 @@
    size_t context_manager_max_size;
   /*! \brief Размер номера ключа (в байтах) */
    int key_number_length;
+  /*! \brief Количество циклов в алгоритме PBKDF2 выработки ключа из пароля */
+   int pbkdf2_iteration_count;
   /*! \brief Ресурс ключа выработки имитовставки (алгоритм HMAC) */
    size_t hmac_key_count_resource;
 
@@ -71,6 +73,7 @@
   32,
   4096, /* это значит, что одновременно может существовать не более 4096 контекстов */
   16, /* по-умолчанию, длина номера ключа составляет 16 байт*/
+  2000, /* pbkdf2 */
   65536
 };
 
@@ -222,8 +225,15 @@
        /* устанавливаем длину номера ключа */
         if( ak_libakrypt_get_option( localbuffer, "key_number_length = ", &value )) {
           if( value < 16 ) value = 16;
-          if( value >32 ) value = 32;
+          if( value > 32 ) value = 32;
           libakrypt_options.key_number_length = value;
+        }
+
+       /* устанавливаем количество циклов в алгоритме pbkdf2 */
+        if( ak_libakrypt_get_option( localbuffer, "pbkdf2_iteration_count = ", &value )) {
+          if( value < 1000 ) value = 1000;
+          if( value > 2147483647 ) value = 2147483647;
+          libakrypt_options.pbkdf2_iteration_count = value;
         }
 
        /* устанавливаем ресурс ключа выработки имитовставки для алгоритма HMAC */
@@ -250,6 +260,8 @@
                libakrypt_options.context_manager_size, libakrypt_options.context_manager_max_size );
      ak_error_message_fmt( ak_error_ok, __func__, "length of key number: %d",
                                                               libakrypt_options.key_number_length );
+     ak_error_message_fmt( ak_error_ok, __func__, "pbkdf2 iteration count: %u",
+                                                         libakrypt_options.pbkdf2_iteration_count );
      ak_error_message_fmt( ak_error_ok, __func__, "hmac key resource counter: %u",
                                                         libakrypt_options.hmac_key_count_resource );
   }
@@ -270,6 +282,9 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_libakrypt_get_key_number_length( void ) { return libakrypt_options.key_number_length; }
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_libakrypt_get_pbkdf2_count( void ) { return libakrypt_options.pbkdf2_iteration_count; }
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_libakrypt_get_hmac_key_counter_resource( void )
@@ -443,6 +458,12 @@ return ak_error_ok;
 
  /* тестируем функции hmac-streebog согласно Р 50.1.113-2016 */
   if( ak_hmac_test_streebog() != ak_true ) {
+   ak_error_message( ak_error_get_value(), __func__ , "incorrect hmac testing" );
+   return ak_false;
+  }
+
+ /* тестируем алгоритм pbkdf2 согласно Р 50.1.111-2016 */
+  if( ak_hmac_test_pbkdf2() != ak_true ) {
    ak_error_message( ak_error_get_value(), __func__ , "incorrect hmac testing" );
    return ak_false;
   }

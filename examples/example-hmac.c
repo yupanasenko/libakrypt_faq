@@ -16,8 +16,11 @@
   }
 
   ak_hmac_create_streebog256( &hctx );
-  hctx.key.generator.randomize_ptr( &hctx.key.generator, &seed, sizeof( seed ));
-  ak_hmac_set_random(  &hctx, &hctx.key.generator );
+  ak_hmac_set_password( &hctx, "password", 8, "saltsalt", 8 );
+
+  /*
+     hctx.key.generator.randomize_ptr( &hctx.key.generator, &seed, sizeof( seed ));
+     ak_hmac_set_random(  &hctx, &hctx.key.generator ); */
 
   memset( data, 1, 13 );
   ak_hmac_ptr_context( &hctx, data, 13, out );

@@ -107,8 +107,8 @@
 /*! \brief Присвоение секретному ключу случайного значения. */
  int ak_skey_set_random( ak_skey , ak_random );
 /*! \brief Присвоение секретному ключу значения, выработанного из пароля. */
-// int ak_skey_assign_password( ak_skey , const ak_pointer , const size_t );
-
+ int ak_skey_set_password( ak_skey , const ak_pointer , const size_t ,
+                                                                 const ak_pointer , const size_t );
 /*! \brief Наложение в пространстве векторов \f$ \mathbb V^n \f$ аддитивной маски на ключ. */
  int ak_skey_set_mask_xor( ak_skey );
 /*! \brief Смена в пространстве векторов \f$ \mathbb V^n \f$ значения аддитивной маски ключа. */

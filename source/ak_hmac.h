@@ -72,6 +72,8 @@
  int ak_hmac_set_ptr( ak_hmac , const ak_pointer , const size_t );
 /*! \brief Присвоение контексту ключа алгоритма выработки имитовставки hmac случайного значения. */
  int ak_hmac_set_random( ak_hmac , ak_random );
+/*! \brief Присвоение контексту ключа алгоритма выработки имитовставки hmac значения, выработанного из пароля. */
+ int ak_hmac_set_password( ak_hmac , const ak_pointer , const size_t , const ak_pointer , const size_t );
 
 /*! \brief Очистка и начальная инициализация контекста ключа алгоритма выработки имитовставки hmac. */
  int ak_hmac_clean( ak_pointer );
@@ -84,8 +86,14 @@
 /*! \brief Вычисление имитовставки алгоритмом hmac для заданного файла. */
  ak_buffer ak_hmac_file_context( ak_hmac , const char *, ak_pointer );
 
-/*! \brief Тестирование корректности реализации алгоритма выработки имитовставки HMAC. */
+/*! \brief Развертка ключевого вектора из пароля (согласно Р 50.1.111-2016, раздел 4) */
+ int ak_hmac_pbkdf2_streebog512( const ak_pointer , const size_t ,
+                   const ak_pointer , const size_t, const size_t , const size_t , ak_pointer );
+
+/*! \brief Тестирование корректности реализации алгоритма выработки имитовставки hmac. */
  ak_bool ak_hmac_test_streebog( void );
+/*! \brief Тестирование корректности реализации алгоритма развертки ключа из пароля на основе hmac-streebog. */
+ ak_bool ak_hmac_test_pbkdf2( void );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

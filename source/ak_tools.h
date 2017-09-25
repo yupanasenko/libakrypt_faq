@@ -47,8 +47,10 @@
  size_t ak_libakrypt_get_context_manager_max_size( void );
 /*! \brief Функция возвращает длину номера ключа в байтах */
  int ak_libakrypt_get_key_number_length( void );
-/*! \brief Функция возвращает максимальное число использований ключа выработки имитовставки HMAC. */
+/*! \brief Функция возвращает максимальное число использований ключа выработки имитовставки hmac. */
  int ak_libakrypt_get_hmac_key_counter_resource( void );
+/*! \brief Функция возвращает количество итераций в алгоритме pbkdf2 выработки ключа из пароля. */
+ int ak_libakrypt_get_pbkdf2_count( void );
 
  #endif
 /* ----------------------------------------------------------------------------------------------- */

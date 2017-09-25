@@ -27,8 +27,8 @@
 /*   ak_skey.c                                                                                     */
 /* ----------------------------------------------------------------------------------------------- */
  #include <time.h>
- #include <ak_skey.h>
  #include <ak_tools.h>
+ #include <ak_hmac.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция инициализирует поля структуры, выделяя необходимую память. Всем полям
@@ -488,11 +488,52 @@
 
   if(( error = skey->set_mask( skey )) != ak_error_ok ) return  ak_error_message( error,
                                                            __func__ , "wrong secret key masking" );
-
   if(( error = skey->set_icode( skey )) != ak_error_ok ) return ak_error_message( error,
                                                 __func__ , "wrong calculation of integrity code" );
- return ak_error_ok;
+ return error;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает ключу значение, выработанное из заданного пароля при помощи алгоритма,
+    описанного  в рекомендациях по стандартизации Р 50.1.111-2016.
+    Пароль должен быть не пустой строкой символов в формате utf8.
+
+    @param skey контекст секретного ключа. К моменту вызова функции контекст должен быть
+    инициализирован.
+    @param pass пароль, представленный в виде строки символов.
+    @param pass_size длина пароля в байтах
+    @param salt пароль, представленный в виде строки символов.
+    @param salt_size длина пароля в байтах
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_set_password( ak_skey skey, const ak_pointer pass, const size_t pass_size,
+                                                     const ak_pointer salt, const size_t salt_size )
+{
+  int error = ak_error_ok;
+
+ /* выполняем необходимые проверки */
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                             "using a null pointer to secret key" );
+  if( skey->key.size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                       "using non initialized secret key context" );
+  if( pass == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                               "using a null pointer to password" );
+  if( !pass_size ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                              "using a password with zero length" );
+ /* присваиваем буффер и маскируем его */
+  if(( error = ak_hmac_pbkdf2_streebog512( pass, pass_size, salt, salt_size,
+        ak_libakrypt_get_pbkdf2_count(), skey->key.size, skey->key.data )) != ak_error_ok )
+                  return ak_error_message( error, __func__ , "wrong generation a secret key data" );
+
+  if(( error = skey->set_mask( skey )) != ak_error_ok ) return  ak_error_message( error,
+                                                           __func__ , "wrong secret key masking" );
+  if(( error = skey->set_icode( skey )) != ak_error_ok ) return ak_error_message( error,
+                                                __func__ , "wrong calculation of integrity code" );
+ return error;
+}
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_skey.c  */
