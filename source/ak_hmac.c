@@ -28,6 +28,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_hmac.h>
  #include <ak_tools.h>
+ #include <ak_compress.h>
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -229,12 +230,13 @@
     @return В случае успеха функция возвращает \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_key_clean( ak_hmac_key hctx )
+ int ak_hmac_key_clean( ak_pointer ctx )
 {
+  ak_hmac_key hctx = ( ak_hmac_key ) ctx;
   int error = ak_error_ok;
   size_t idx = 0, count = 0;
 
-  if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+  if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using a null pointer to hmac key context" );
 
  /* инициализируем начальное состояние контекста хеширования */
@@ -268,8 +270,10 @@
     @return В случае успеха функция возвращает \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_key_update( ak_hmac_key hctx, const ak_pointer data, const size_t size )
+ int ak_hmac_key_update( ak_pointer ctx, const ak_pointer data, const size_t size )
 {
+  ak_hmac_key hctx = ( ak_hmac_key ) ctx;
+
   if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using a null pointer to hmac key context" );
   if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
@@ -290,7 +294,7 @@
            возвращается NULL. В случае возникновения ошибки возывращается NULL. Код ошибки может
            быть получен c помощью вызова функции ak_error_get_value().                             */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_hmac_key_finalize( ak_hmac_key hctx, const ak_pointer data,
+ ak_buffer ak_hmac_key_finalize( ak_pointer ctx, const ak_pointer data,
                                                                const size_t size, ak_pointer out )
 {
   int error = ak_error_ok;
@@ -298,6 +302,7 @@
   size_t idx = 0, count = 0;
   const unsigned int temporary_size = 128;
   ak_uint8 temporary[temporary_size]; /* буфер для хранения промежуточных результатов */
+  ak_hmac_key hctx = ( ak_hmac_key ) ctx;
 
  /* выполняем проверки */
   if( hctx == NULL ) {
@@ -361,10 +366,11 @@
     (структуру struct buffer), помещает в нее вычисленное значение и возвращает на указатель на
     буффер. Буффер должен позднее быть удален с помощью вызова ak_buffer_delete().
 
-    @param hctx Контекст ключа алгоритма вычисления имитовставки HMAC, должен быть отличен от NULL.
-    @param in Указатель на входные данные для которых вычисляется хеш-код.
-    @param size Размер входных данных в байтах.
-    @param out Область памяти, куда будет помещен рещультат. Память должна быть заранее выделена.
+    @param hctx контекст ключа алгоритма вычисления имитовставки HMAC, должен быть инициализирован
+    и содержать в себе ключ.
+    @param in указатель на входные данные для которых вычисляется хеш-код.
+    @param size размер входных данных в байтах.
+    @param out область памяти, куда будет помещен рещультат. Память должна быть заранее выделена.
     Размер выделяемой памяти может быть определен с помощью вызова ak_hmac_key_get_code_size().
     Указатель out может принимать значение NULL.
 
@@ -407,6 +413,47 @@
   result = ak_hmac_key_finalize( hctx, (unsigned char *)in + offset, size - offset, out );
   /* очищаем за собой данные, содержащиеся в контексте функции хеширования */
   hctx->ctx.clean( &hctx->ctx );
+ return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция вычисляет имитовставку по алгоритму HMAC от заданного файла. Результат вычислений
+    помещается в область памяти, на которую указывает out. Если out равен NULL, то функция создает
+    новый буффер (структуру struct buffer), помещает в нее вычисленное значение и возвращает указатель на
+    созданный буффер. Буффер должен позднее быть удален с помощью вызова ak_buffer_delete().
+
+    @param hctx контекст ключа алгоритма вычисления имитовставки HMAC, должен быть инициализирован
+    и содержать в себе ключ.
+    @param filename имя файла, для которого вычисляется имитовставка.
+    @param out область памяти, куда будет помещен результат.
+    Указатель out может принимать значение NULL.
+
+    @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+    возвращается указатель на буффер, содержащий результат вычислений. В случае возникновения
+    ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_hmac_key_file_context( ak_hmac_key hctx, const char *filename, ak_pointer out )
+{
+  struct compress comp;
+  int error = ak_error_ok;
+  ak_buffer result = NULL;
+
+  if( hctx == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to hash context" );
+    return NULL;
+  }
+
+  if(( error = ak_compress_create_hmac( &comp, hctx )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong creation a compress context" );
+    return NULL;
+  }
+
+  result = ak_compress_file( &comp, filename, out );
+  if(( error = ak_error_get_value( )) != ak_error_ok )
+    ak_error_message( error, __func__ , "incorrect hash code calculation" );
+
+  ak_compress_destroy( &comp );
  return result;
 }
 

@@ -72,13 +72,15 @@
  int ak_hmac_key_assign_ptr( ak_hmac_key , const ak_pointer , const size_t );
 
 /*! \brief Очистка и начальная инициализация контекста ключа алгоритма выработки имитовставки hmac. */
- int ak_hmac_key_clean( ak_hmac_key );
+ int ak_hmac_key_clean( ak_pointer );
 /*! \brief Обновление контекста ключа алгоритма вычисления имитовставки hmac. */
- int ak_hmac_key_update( ak_hmac_key , const ak_pointer , const size_t );
+ int ak_hmac_key_update( ak_pointer , const ak_pointer , const size_t );
 /*! \brief Завершение алгоритма вычисления имитовставки hmac и получение результата вычислений. */
- ak_buffer ak_hmac_key_finalize( ak_hmac_key , const ak_pointer , const size_t , ak_pointer );
+ ak_buffer ak_hmac_key_finalize( ak_pointer , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Вычисление имитовставки алгоритмом hmac для заданной области памяти известной длины. */
  ak_buffer ak_hmac_key_ptr_context( ak_hmac_key , const ak_pointer , const size_t , ak_pointer );
+/*! \brief Вычисление имитовставки алгоритмом hmac для заданного файла. */
+ ak_buffer ak_hmac_key_file_context( ak_hmac_key , const char *, ak_pointer );
 
 /*! \brief Тестирование корректности реализации алгоритма выработки имитовставки HMAC. */
  ak_bool ak_hmac_key_test_streebog( void );

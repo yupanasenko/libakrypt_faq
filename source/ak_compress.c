@@ -48,7 +48,7 @@
     заданным контекстом функции хеширования.
 
     @param comp указатель на структуру struct compress
-    @param hctx Контекст бесключевой функции хеширования
+    @param hctx контекст бесключевой функции хеширования
     @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
     возвращается ее код.                                                                           */
 /* ----------------------------------------------------------------------------------------------- */
@@ -75,6 +75,40 @@
   comp->clean = hctx->clean;
   comp->update = hctx->update;
   comp->finalize = hctx->finalize;
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция устанавливает значение полей структуры struct compress в значения, определяемые
+    заданным контекстом люча алгоритма выработки имитовставки hmac.
+
+    @param comp указатель на структуру struct compress.
+    @param hctx контекст ключа алгоритма выработки hmac.
+    @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_compress_create_hmac( ak_compress comp, ak_hmac_key hctx )
+{
+ /* вначале, необходимые проверки */
+  if( comp == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                       "using null pointer to compress context" );
+  if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                           "using null pointer to hash context" );
+
+ /* теперь собственно инициализация */
+  if(( comp->data = (ak_uint8 *) malloc( comp->bsize = hctx->ctx.bsize )) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ ,
+                                     "wrong memory alllocation for a new temporary data buffer" );
+  } else memset( comp->data, 0, hctx->ctx.bsize );
+  comp->length = 0;
+
+ /* устанавливаем значения и полей и методы из контекста функции хеширования */
+  comp->ctx = hctx;
+  comp->hsize = hctx->ctx.hsize;
+  comp->clean = ak_hmac_key_clean;
+  comp->update = ak_hmac_key_update;
+  comp->finalize = ak_hmac_key_finalize;
 
  return ak_error_ok;
 }
