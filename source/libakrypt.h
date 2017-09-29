@@ -334,7 +334,7 @@
 /*! \brief Создание дескриптора ключа алгоритма выработки имитовставки hmac-gosthash94 с таблицами замен из CSP. */
  dll_export ak_handle ak_hmac_new_gosthash94_csp( const char * );
 /*! \brief Создание дескриптора ключа алгоритма выработки имитовставки hmac по OID алгоритма. */
- dll_export ak_handle ak_hmac_new_oid( ak_handle );
+ dll_export ak_handle ak_hmac_new_oid( ak_handle , const char * );
 /*! \brief Присвоение ключу алгоритма выработки имитовставки hmac случайного значения. */
  dll_export int ak_hmac_set_random( ak_handle  );
 /*! \brief Присвоение ключу алгоритма выработки имитовставки hmac значения, выработанного из пароля. */

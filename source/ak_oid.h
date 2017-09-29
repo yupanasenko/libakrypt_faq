@@ -34,8 +34,8 @@
  #include <ak_buffer.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Класс функций для получения данных OID */
- typedef ak_pointer ( ak_function_oid )( ak_pointer );
+/*! \brief Класс функций без параметра */
+ typedef ak_pointer ( ak_function_void )( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Класс для хранения идентификаторов объектов (криптографических механизмов) и их данных. */
@@ -62,7 +62,7 @@
   /*! \brief указатель на данные */
    ak_pointer *data;
   /*! \brief указатель на производящую функцию*/
-   ak_function_oid *func;
+   ak_function_void *func;
 };
 /*! \brief Контекст идентификатора объекта. */
  typedef struct oid *ak_oid;
@@ -70,11 +70,11 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание контекста OID. */
  ak_oid ak_oid_new( ak_oid_engine , ak_oid_mode , const char * , const char * ,
-                                                                   ak_pointer , ak_function_oid * );
+                                                                 ak_pointer , ak_function_void * );
 /*! \brief Инициализация контекста OID. */
  int ak_oid_create( ak_oid oid,
                     ak_oid_engine , ak_oid_mode , const char * , const char * ,
-                                                                   ak_pointer , ak_function_oid * );
+                                                                 ak_pointer , ak_function_void * );
 /*! \brief Освобождение памяти из под контекста OID. */
  ak_pointer ak_oid_delete( ak_pointer );
 /*! \brief Освобождение памяти из под данных, хранящихся в контексте OID. */

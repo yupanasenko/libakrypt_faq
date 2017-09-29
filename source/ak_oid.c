@@ -149,7 +149,7 @@
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_oid_create( ak_oid oid, ak_oid_engine engine, ak_oid_mode mode,
-                          const char *name, const char *id, ak_pointer data, ak_function_oid *func )
+                        const char *name, const char *id, ak_pointer data, ak_function_void *func )
 {
  int error = ak_error_ok;
 
@@ -225,7 +225,7 @@
     возвращается NULL. Код ошибки помещается в переменную ak_errno.                                */
 /* ----------------------------------------------------------------------------------------------- */
  ak_oid ak_oid_new( ak_oid_engine engine, ak_oid_mode mode,
-                          const char *name, const char *id, ak_pointer data, ak_function_oid *func )
+                        const char *name, const char *id, ak_pointer data, ak_function_void *func )
 {
   ak_oid oid = ( ak_oid ) malloc( sizeof( struct oid ));
 
@@ -299,21 +299,21 @@
        значения OID находятся в дереве библиотеки: 1.2.643.2.52.1.1 - генераторы ПСЧ  */
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( random_generator, algorithm, "lcg",
-              "1.2.643.2.52.1.1.1", NULL, (ak_function_oid *)ak_random_new_lcg ))) != ak_error_ok )
+              "1.2.643.2.52.1.1.1", NULL, (ak_function_void *) ak_random_new_lcg ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
 #ifdef __linux__
   if(( error = ak_oids_add_oid( manager, ak_oid_new( random_generator, algorithm, "linux-random",
-       "1.2.643.2.52.1.1.2", NULL, (ak_function_oid *)ak_random_new_dev_random ))) != ak_error_ok )
+       "1.2.643.2.52.1.1.2", NULL, (ak_function_void *) ak_random_new_dev_random ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( random_generator, algorithm, "linux-urandom",
-      "1.2.643.2.52.1.1.3", NULL, (ak_function_oid *)ak_random_new_dev_urandom ))) != ak_error_ok )
+      "1.2.643.2.52.1.1.3", NULL, (ak_function_void *) ak_random_new_dev_urandom ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 #endif
 #ifdef _WIN32
   if(( error = ak_oids_add_oid( manager, ak_oid_new( random_generator, algorithm, "winrtl",
-           "1.2.643.2.52.1.1.4", NULL, (ak_function_oid *)ak_random_new_winrtl ))) != ak_error_ok )
+           "1.2.643.2.52.1.1.4", NULL, (ak_function_void *) ak_random_new_winrtl ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 #endif
 
@@ -323,16 +323,16 @@
       значения OID взяты из перечней КриптоПро и ТК26 (http://tk26.ru/methods/OID_TK_26/index.php) */
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( hash_function, algorithm, "streebog256",
-    "1.2.643.7.1.1.2.2", NULL, ( ak_function_oid * ) ak_hash_new_streebog256 ))) != ak_error_ok )
+    "1.2.643.7.1.1.2.2", NULL, ( ak_function_void * ) ak_hash_new_streebog256 ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( hash_function, algorithm, "streebog512",
-    "1.2.643.7.1.1.2.3", NULL, ( ak_function_oid * ) ak_hash_new_streebog512 ))) != ak_error_ok )
+    "1.2.643.7.1.1.2.3", NULL, ( ak_function_void * ) ak_hash_new_streebog512 ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( hash_function, algorithm, "gosthash94",
               "1.2.643.2.2.9", NULL,
-                                 ( ak_function_oid * ) ak_hash_new_gosthash94_csp ))) != ak_error_ok )
+                            ( ak_function_void * ) ak_hash_new_gosthash94_csp ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -356,15 +356,16 @@
 /* 4. Добавляем идентификаторы алгоритмов HMAC согласно Р 50.1.113-2016 */
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( hmac_function, algorithm, "hmac-streebog256",
-    "1.2.643.7.1.1.4.1", NULL, ( ak_function_oid * ) ak_hmac_new_streebog256 ))) != ak_error_ok )
+    "1.2.643.7.1.1.4.1", NULL, ( ak_function_void * ) ak_hmac_new_streebog256 ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( hmac_function, algorithm, "hmac-streebog512",
-    "1.2.643.7.1.1.4.2", NULL, ( ak_function_oid * ) ak_hmac_new_streebog512 ))) != ak_error_ok )
+    "1.2.643.7.1.1.4.2", NULL, ( ak_function_void * ) ak_hmac_new_streebog512 ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( hmac_function, algorithm, "hmac-gosthash94",
-    "1.2.643.2.52.1.1.1.4.0", NULL, ( ak_function_oid * ) ak_hmac_new_gosthash94_csp ))) != ak_error_ok )
+    "1.2.643.2.52.1.1.1.4.0", NULL,
+                            ( ak_function_void * ) ak_hmac_new_gosthash94_csp ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
  return ak_error_ok;

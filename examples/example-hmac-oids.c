@@ -32,7 +32,7 @@
   while( handle != ak_error_wrong_handle ) {
     if( ak_oid_get_mode( handle ) == algorithm ) {
       ak_buffer buff = NULL;
-      ak_handle ctx_handle = ak_hmac_new_oid( handle );
+      ak_handle ctx_handle = ak_hmac_new_oid( handle, ak_oid_get_name( handle ));
       printf(" name: %s (%s)\n", ak_oid_get_name( handle ), ak_oid_get_id( handle ));
 
         /* устанавливаем фиксированный ключ */

@@ -31,6 +31,10 @@
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Тип функции создания дескриптора контекста хеширования. */
+ typedef ak_handle ( ak_function_hmac )( const char * );
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! @param hctx контекст ключа алгоритма hmac.
     @return В случае успеха функция возвращает ноль (\ref ak_error_ok). В случае возникновения
     ошибки возвращается ее код.                                                                    */
@@ -776,7 +780,7 @@
     то возбуждается ошибка и возвращается значение \ref ak_error_wrong_handle. Кош ошибки может
     быть получен с помощью вызова функции ak_error_get_value().                                    */
 /* ----------------------------------------------------------------------------------------------- */
- ak_handle ak_hmac_new_oid( ak_handle oid_handle )
+ ak_handle ak_hmac_new_oid( ak_handle oid_handle, const char *description )
 {
   ak_handle hmac_handle = ak_error_wrong_handle;
   ak_oid oid = ak_handle_get_context( oid_handle, oid_engine );
@@ -804,7 +808,7 @@
    }
 
   /* только теперь создаем контекст ключа алгориитма выработки имитовставки */
-   if(( hmac_handle = (( ak_function_hash *) oid->func)()) == ak_error_wrong_handle )
+   if(( hmac_handle = (( ak_function_hmac *) oid->func)( description )) == ak_error_wrong_handle )
      ak_error_message( ak_error_get_value(), __func__ , "wrong creation of hash function handle");
 
  return hmac_handle;
