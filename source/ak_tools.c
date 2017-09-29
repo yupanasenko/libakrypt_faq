@@ -28,6 +28,14 @@
 /*   ak_tools.c                                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_tools.h>
+ #include <ak_buffer.h>
+
+#ifdef LIBAKRYPT_HAVE_TERMIOS_H
+ #include <termios.h>
+#endif
+#ifdef LIBAKRYPT_HAVE_UNISTD_H
+ #include <unistd.h>
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция рассматривает область памяти, на которую указывает указатель ptr, как массив
@@ -205,6 +213,112 @@
      if( lp[i] != rp[i] ) result = ak_false;
 
   return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция принимает два параметра:
+    @param pass Строка, в которую будет помещен пароль. Память под данную строку должна быть
+    выделена заранее. Если в данной памяти хранились какие-либо данные, то они будут уничтожены.
+    @param psize Максимально возможная длина пароля. Предполагается, что именно
+    это значение задает размер области памяти, на которую указывает pass.
+
+    Отметим, что в случае ввода пароля нулевой длины функция возвращает ошибку с кодом
+    \ref ak_error_terminal
+
+    @return В случае успеха функция возвращает значение \ref ak_error_ok. В случае возникновения
+    ошибки возвращается ее код.                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_password_read( char *pass, const size_t psize )
+{
+   size_t len = 0;
+   int error = ak_error_ok;
+
+ #ifndef LIBAKRYPT_HAVE_TERMIOS_H
+  #ifdef _WIN32
+   char c = 0;
+   DWORD mode, count;
+   HANDLE ih = GetStdHandle( STD_INPUT_HANDLE  );
+   if( !GetConsoleMode( ih, &mode ))
+     return ak_error_message( ak_error_terminal, __func__, "not connected to a console" );
+   SetConsoleMode( ih, mode & ~( ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT ));
+
+   memset( pass, 0, psize );
+   while( ReadConsoleA( ih, &c, 1, &count, NULL) && (c != '\r') && (c != '\n') && (len < psize-1) ) {
+     pass[len]=c;
+     len++;
+   }
+   pass[len]=0;
+
+   /* восстанавливаем настройки консоли */
+   SetConsoleMode( ih, mode );
+   if(( len = strlen( pass )) < 1 )
+     return ak_error_message( ak_error_zero_length, __func__ , "input a very short password");
+   return error;
+
+  #endif
+   return ak_error_undefined_function;
+
+ #else
+  /* обрабатываем терминал */
+   struct termios ts, ots;
+
+   tcgetattr( STDIN_FILENO, &ts);   /* получаем настройки терминала */
+   ots = ts;
+   ts.c_cc[ VTIME ] = 0;
+   ts.c_cc[ VMIN  ] = 1;
+   ts.c_iflag &= ~( BRKINT | INLCR | ISTRIP | IXOFF ); // ICRNL | IUTF8
+   ts.c_iflag |=    IGNBRK;
+   ts.c_oflag &= ~( OPOST );
+   ts.c_cflag &= ~( CSIZE | PARENB);
+   ts.c_cflag |=    CS8;
+   ts.c_lflag &= ~( ECHO | ICANON | IEXTEN | ISIG );
+   tcsetattr( STDIN_FILENO, TCSAFLUSH, &ts );
+   tcgetattr( STDIN_FILENO, &ts ); /* проверяем, что все установилось */
+   if( ts.c_lflag & ECHO ) {
+        ak_error_message( error = ak_error_terminal, __func__, "failed to turn off echo" );
+        goto lab_exit;
+   }
+
+   memset( pass, 0, psize );
+   fgets( pass, psize, stdin );
+   if(( len = strlen( pass )) < 2 )
+     ak_error_message( error = ak_error_zero_length, __func__ , "input a very short password");
+   if( len > 0 ) pass[len-1] = 0;
+    else pass[0] = 0;
+
+  /* убираем за собой и восстанавливаем настройки */
+   lab_exit: tcsetattr( STDIN_FILENO, TCSANOW, &ots );
+   return error;
+ #endif
+
+ /* некорректный путь компиляции исходного текста функции */
+ return ak_error_undefined_function;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param buffer Буфер, в который помещается пароль. Буфер должен быть создан заранее с заданным
+    размером хранящихся в нем данных (с помощью вызова функции ak_buffer_new_size() )
+    Если в буффере хранились данные, то они будут уничтожены.
+
+    Отметим, что в случае ввода пароля нулевой длины функция возвращает ошибку с кодом
+    \ref ak_error_terminal
+
+    @return В случае успеха функция возвращает значение \ref ak_error_ok. В случае возникновения
+    ошибки возвращается ее код.                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_password_read_buffer( ak_buffer password )
+{
+  int error = ak_error_ok;
+  if( password == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                       "using null pointer to password buffer" );
+  if( password->data == NULL ) return ak_error_message( ak_error_zero_length, __func__,
+                                            "using a password buffer with null internal array" );
+  if( password->size == 0 ) return ak_error_message( ak_error_zero_length, __func__,
+                                                    "using a password buffer with zero length" );
+  if(( error = ak_password_read( password->data, password->size )) != ak_error_ok ) {
+    return ak_error_message( error, __func__, "invalind password reading from standard console");
+  }
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

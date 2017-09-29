@@ -78,7 +78,7 @@
     return error;
   }
   skey->data = NULL;
-  memset( &(skey->resource), 0, sizeof( ak_resource ));
+  memset( &(skey->resource), 0, sizeof( union resource ));
 
  /* инициализируем генератор масок */
   if(( error = ak_random_create_lcg( &skey->generator )) != ak_error_ok ) {
@@ -103,11 +103,14 @@
   /* OID ключа устанавливается производящей функцией */
   skey->oid = NULL;
 
+  /* После создания ключа все его флаги не определены */
+  skey->flags = 0;
+
  /* в заключение определяем указатели на методы.
     по умолчанию используются механизмы для работы с аддитивной по модулю 2 маской.
 
-    Отличные от данных указатели должны устанавливаться при создании конкретного
-    типа ключа, например, конкретного блочного алгоритма шифрования */
+    Указатели на функции, отличные от данных, должны устанавливаться при создании
+    конкретного типа ключа, например, конкретного алгоритма блочного шифрования */
   skey->set_mask = ak_skey_set_mask_xor;
   skey->remask = ak_skey_remask_xor;
   skey->set_icode = ak_skey_set_icode_xor;
@@ -148,7 +151,8 @@
 
   ak_buffer_destroy( &skey->number );
   skey->oid = NULL;
-  memset( &(skey->resource), 0, sizeof( ak_resource ));
+  memset( &(skey->resource), 0, sizeof( union resource ));
+  skey->flags = 0;
 
  /* обнуляем указатели */
   skey->set_mask = NULL;
@@ -456,6 +460,11 @@
 
   if(( error = skey->set_icode( skey )) != ak_error_ok ) return ak_error_message( error,
                                                 __func__ , "wrong calculation of integrity code" );
+
+ /* устанавливаем флаг того, что ключевое значение определено.
+    теперь ключ можно использовать в криптографических алгоритмах */
+  skey->flags |= ak_skey_flag_set_key;
+
  return ak_error_ok;
 }
 
@@ -490,6 +499,11 @@
                                                            __func__ , "wrong secret key masking" );
   if(( error = skey->set_icode( skey )) != ak_error_ok ) return ak_error_message( error,
                                                 __func__ , "wrong calculation of integrity code" );
+
+ /* устанавливаем флаг того, что ключевое значение определено.
+    теперь ключ можно использовать в криптографических алгоритмах */
+  skey->flags |= ak_skey_flag_set_key;
+
  return error;
 }
 
@@ -531,9 +545,13 @@
                                                            __func__ , "wrong secret key masking" );
   if(( error = skey->set_icode( skey )) != ak_error_ok ) return ak_error_message( error,
                                                 __func__ , "wrong calculation of integrity code" );
+
+ /* устанавливаем флаг того, что ключевое значение определено.
+    теперь ключ можно использовать в криптографических алгоритмах */
+  skey->flags |= ak_skey_flag_set_key;
+
  return error;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_skey.c  */

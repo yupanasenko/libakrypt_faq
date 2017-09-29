@@ -353,18 +353,15 @@
 /* 4. Добавляем идентификаторы алгоритмов HMAC согласно Р 50.1.113-2016 */
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( mac_function, algorithm, "hmac-streebog256",
-    "1.2.643.7.1.1.4.1", NULL, ( ak_function_oid * ) NULL ))) != ak_error_ok )
-                              /* ^^^^^^^^^^^^^^^^^^^^^^^^ имя функции должно быть ak_hmac_key_new_streebog256 */
+    "1.2.643.7.1.1.4.1", NULL, ( ak_function_oid * ) ak_hmac_new_streebog256 ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( mac_function, algorithm, "hmac-streebog512",
-    "1.2.643.7.1.1.4.2", NULL, ( ak_function_oid * ) NULL ))) != ak_error_ok )
-                              /* ^^^^^^^^^^^^^^^^^^^^^^^^ имя функции должно быть ak_hmac_key_new_streebog256 */
+    "1.2.643.7.1.1.4.2", NULL, ( ak_function_oid * ) ak_hmac_new_streebog512 ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( mac_function, algorithm, "hmac-gosthash94",
-    "1.2.643.2.52.1.1.1.4.2", NULL, ( ak_function_oid * ) NULL ))) != ak_error_ok )
-                              /* ^^^^^^^^^^^^^^^^^^^^^^^^ имя функции должно быть ak_hmac_key_new_gosthash94 */
+    "1.2.643.2.52.1.1.1.4.0", NULL, ( ak_function_oid * ) ak_hmac_new_gosthash94_csp ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
  return ak_error_ok;

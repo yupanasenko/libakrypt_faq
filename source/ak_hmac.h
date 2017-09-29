@@ -69,12 +69,12 @@
  ak_pointer ak_hmac_delete( ak_pointer );
 
 /*! \brief Присвоение контексту ключа алгоритма выработки имитовставки hmac константного значения. */
- int ak_hmac_set_ptr( ak_hmac , const ak_pointer , const size_t );
+ int ak_hmac_set_ptr_context( ak_hmac , const ak_pointer , const size_t );
 /*! \brief Присвоение контексту ключа алгоритма выработки имитовставки hmac случайного значения. */
- int ak_hmac_set_random( ak_hmac , ak_random );
+ int ak_hmac_set_random_context( ak_hmac , ak_random );
 /*! \brief Присвоение контексту ключа алгоритма выработки имитовставки hmac значения, выработанного из пароля. */
- int ak_hmac_set_password( ak_hmac , const ak_pointer , const size_t , const ak_pointer , const size_t );
-
+ int ak_hmac_set_password_context( ak_hmac , const ak_pointer , const size_t ,
+                                                             const ak_pointer , const size_t );
 /*! \brief Очистка и начальная инициализация контекста ключа алгоритма выработки имитовставки hmac. */
  int ak_hmac_clean( ak_pointer );
 /*! \brief Обновление контекста ключа алгоритма вычисления имитовставки hmac. */

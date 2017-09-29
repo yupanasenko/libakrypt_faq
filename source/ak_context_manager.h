@@ -127,6 +127,9 @@
 
 /*! \brief Получение указателя на глобальную структуру управления контекстами. */
  ak_context_manager ak_libakrypt_get_context_manager( void );
+/*! \brief Помещение созданного объекта в глоюальную структуру управления контекстами. */
+ ak_handle ak_libakrypt_new_handle( ak_pointer , ak_oid_engine , const char * ,
+                                                                        ak_function_free_object * );
 /*! \brief Получение контекста по заданному дескриптору и типу контекста. */
  ak_pointer ak_handle_get_context( ak_handle, ak_oid_engine );
 

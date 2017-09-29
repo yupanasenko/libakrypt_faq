@@ -1,32 +1,32 @@
 #include <stdio.h>
 #include <libakrypt.h>
-#include <ak_hmac.h>
 
  int main( void )
 {
- struct hmac hctx;
- ak_uint8 out[32];
- ak_uint8 data[13];
- char *str = NULL;
- ak_uint64 seed = 12345678;
+ size_t size = 64;
+ char password[64];
+ ak_uint8 data[15] = "this is my data";
+ ak_handle handle = ak_error_wrong_handle;
 
  /* инициализируем библиотеку. в случае возникновения ошибки завершаем работу */
-  if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true ) {
+  if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true )
     return ak_libakrypt_destroy();
-  }
 
-  ak_hmac_create_streebog256( &hctx );
-  ak_hmac_set_password( &hctx, "password", 8, "saltsalt", 8 );
+ /* создаем дескриптор ключа выработки имитовставки */
+  if(( handle = ak_hmac_new_streebog256( "my new hmac key" )) == ak_error_wrong_handle )
+    return ak_libakrypt_destroy();
 
-  /*
-     hctx.key.generator.randomize_ptr( &hctx.key.generator, &seed, sizeof( seed ));
-     ak_hmac_set_random(  &hctx, &hctx.key.generator ); */
+ /* ожидаемый размер имитовставки */
+  printf("expected integrity code size: %d bytes\n", (int) ak_hmac_get_icode_size( handle ));
 
-  memset( data, 1, 13 );
-  ak_hmac_ptr_context( &hctx, data, 13, out );
-  printf("%s\n", str = ak_ptr_to_hexstr( out, 32, ak_false )); free( str );
+ /* инициализируем ключ выработанным из пароля значением */
+  printf("input a password: ");
+  ak_password_read( password, size );
+  printf("[password: %s (max size: %u, strlen: %u)]\n",
+                            password, (unsigned int) size, (unsigned int) strlen(password) );
+  ak_hmac_set_password( handle, password, strlen(password), "random initial value", 20 );
 
-  ak_hmac_destroy( &hctx );
+ /* вычисляем имитовставку */
 
  return ak_libakrypt_destroy();
 }

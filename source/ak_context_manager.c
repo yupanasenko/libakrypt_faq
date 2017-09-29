@@ -304,7 +304,7 @@
     @param engine тип контекста: блочный шифр, функия хеширования, массив с данными и т.п.
     @param description пользовательское описание контекста
     @param func функция освобождения памяти, занимаемой контекстом
-    @return Функция возвращает идентификатор созданного контекста. В случае
+    @return Функция возвращает дескриптор созданного контекста. В случае
     возникновения ошибки возвращается значение \ref ak_error_wrong_handle. Код ошибки может быть
     получен с помощью вызова функции ak_error_get_value().                                         */
 /* ----------------------------------------------------------------------------------------------- */
@@ -463,6 +463,44 @@
 
   ak_error_message( ak_error_null_pointer, __func__, "using null pointer to context manager" );
  return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Для существующего контекста, под который ранее выделена память с помощью вызова malloc(),
+    функция создает его дескриптор, и размещает контекст в глобальной структуре управления контекстами.
+    Данная функция используется производящими функциями пользовательского интерфейса.
+
+    @param ctx контекст функции бесключевого хеширования
+    (контекст не должен быть указателем на статическую переменную).
+    @param engine тип контекста: блочный шифр, функия хеширования, массив с данными и т.п.
+    @param description пользовательское описание контекста
+    @param func функция освобождения памяти, занимаемой контекстом
+    @return Функция возвращает дескриптор созданного контекста. В случае
+    возникновения ошибки возвращается значение \ref ak_error_wrong_handle. Код ошибки может быть
+    получен с помощью вызова функции ak_error_get_value().                                         */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_libakrypt_new_handle( ak_pointer ctx,
+          ak_oid_engine engine, const char *description, ak_function_free_object *delete_function )
+{
+  ak_context_manager manager = NULL;
+  ak_handle handle = ak_error_wrong_handle;
+
+ /* получаем доступ к структуре управления контекстами */
+  if(( manager = ak_libakrypt_get_context_manager()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "using a non initialized context manager" );
+    ctx = delete_function( ctx );
+    return ak_error_wrong_handle;
+  }
+
+ /* создаем элемент структуры управления контекстами */
+  if(( handle = ak_context_manager_add_node(
+           manager, ctx, engine, description, delete_function )) == ak_error_wrong_handle ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong creation of context manager node" );
+    ctx = delete_function( ctx );
+    return ak_error_wrong_handle;
+  }
+
+ return handle;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

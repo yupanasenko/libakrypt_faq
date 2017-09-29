@@ -191,7 +191,7 @@
     возвращается NULL. Код возникшей ошибки может быть получен с помощью вызова функции
     ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_set_ptr( ak_hmac hctx, const ak_pointer ptr, const size_t size )
+ int ak_hmac_set_ptr_context( ak_hmac hctx, const ak_pointer ptr, const size_t size )
 {
   int error = ak_error_ok;
 
@@ -233,7 +233,7 @@
     @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_set_random( ak_hmac hctx, ak_random generator )
+ int ak_hmac_set_random_context( ak_hmac hctx, ak_random generator )
 {
   int error = ak_error_ok;
 
@@ -266,7 +266,7 @@
     @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_set_password( ak_hmac hctx, const ak_pointer pass, const size_t pass_size,
+ int ak_hmac_set_password_context( ak_hmac hctx, const ak_pointer pass, const size_t pass_size,
                                                      const ak_pointer salt, const size_t salt_size )
 {
   int error = ak_error_ok;
@@ -297,8 +297,11 @@
 
   if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using a null pointer to hmac key context" );
+ /* проверяем наличие ключа и его ресурс */
+  if( !hctx->key.flags&ak_skey_flag_set_key ) return ak_error_message( ak_error_key_value,
+                                               __func__ , "using hmac key with unassigned value" );
   if( hctx->key.resource.counter <= 0 ) return ak_error_message( ak_error_resource_counter,
-                                          __func__, "using a hmac key context with low resource" );
+                                            __func__, "using hmac key context with low resource" );
 
  /* инициализируем начальное состояние контекста хеширования */
   if(( error = hctx->ctx.clean( &hctx->ctx )) != ak_error_ok )
@@ -338,12 +341,16 @@
 
   if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using a null pointer to hmac key context" );
-  if( hctx->key.resource.counter <= 0 ) return ak_error_message( ak_error_resource_counter,
-                                          __func__, "using a hmac key context with low resource" );
   if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
                                                       "using zero length for authenticated data" );
   if( size%hctx->ctx.bsize ) return ak_error_message( ak_error_wrong_length, __func__ ,
                                                                   "using data with wrong length" );
+ /* проверяем наличие ключа и его ресурс */
+  if( !hctx->key.flags&ak_skey_flag_set_key ) return ak_error_message( ak_error_key_value,
+                                               __func__ , "using hmac key with unassigned value" );
+  if( hctx->key.resource.counter <= 0 ) return ak_error_message( ak_error_resource_counter,
+                                            __func__, "using hmac key context with low resource" );
+
   return hctx->ctx.update( &hctx->ctx, data, size );
 }
 
@@ -373,11 +380,6 @@
     ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to hmac context" );
     return NULL;
   }
-  if( hctx->key.resource.counter <= 0 ) {
-    ak_error_message( ak_error_resource_counter,
-                                       __func__, "using a hmac key context with low resource" );
-    return NULL;
-  }
   if( hctx->ctx.hsize > 64 ) { /* ограничение в связи с константным размером временного буффера */
     ak_error_message( ak_error_wrong_length,
                                         __func__, "using a hash context with large code size" );
@@ -386,6 +388,16 @@
   if( size >= hctx->ctx.bsize ) {
     ak_error_message( ak_error_zero_length,
                                        __func__ , "using wrong length for authenticated data" );
+    return NULL;
+  }
+ /* проверяем наличие ключа и его ресурс */
+  if( !hctx->key.flags&ak_skey_flag_set_key ) {
+    ak_error_message( ak_error_key_value, __func__ , "using hmac key with unassigned value" );
+    return NULL;
+  }
+  if( hctx->key.resource.counter <= 0 ) {
+    ak_error_message( ak_error_resource_counter,
+                                         __func__, "using hmac key context with low resource" );
     return NULL;
   }
 
@@ -575,7 +587,7 @@
  /* создаем контекст алгоритма hmac и определяем его ключ */
   if(( error = ak_hmac_create_streebog512( &hctx )) != ak_error_ok )
     return ak_error_message( error, __func__, "wrong creation of hmac-streebog512 key context" );
-  if(( error = ak_hmac_set_ptr( &hctx, pass, pass_size )) != ak_error_ok ) {
+  if(( error = ak_hmac_set_ptr_context( &hctx, pass, pass_size )) != ak_error_ok ) {
     ak_error_message( error, __func__, "wrong initialization of hmac secret key" );
     goto lab_exit;
   }
@@ -603,6 +615,150 @@
 
   lab_exit: ak_hmac_destroy( &hctx );
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                               реализация интерфейсных функций                                   */
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает контекст ключа алгоритма выработки имитовставки hmac-streebog256,
+    регламентированного национальными рекомендациями по стандартизации Р 50.1.111-2016.
+    Ключ позволяет вырабатывать имитовставку длины 256 бит. Пользователю возвращается дескриптор
+    созданного контекста.
+
+    @param description пользовательское описание ключа, произвольная null-строка.
+
+    @return Функция возвращает десткриптор созданного контекста. В случае возникновения ошибки
+    возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_hmac_new_streebog256( const char *description )
+{
+  ak_hmac ctx = NULL;
+  int error = ak_error_ok;
+
+ /* создаем контекст функции хэширования */
+  if(( ctx = malloc( sizeof( struct hmac ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ , "wrong creation of hmac key context" );
+    return ak_error_wrong_handle;
+  }
+
+ /* инициализируем его */
+  if(( error = ak_hmac_create_streebog256( ctx )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong initialization of hmac key context" );
+    free( ctx );
+    return ak_error_wrong_handle;
+  }
+
+ /* помещаем в стуктуру управления контекстами */
+ return ak_libakrypt_new_handle( ctx, mac_function, description, ak_hmac_delete );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает контекст ключа алгоритма выработки имитовставки hmac-streebog512,
+    регламентированного национальными рекомендациями по стандартизации Р 50.1.111-2016.
+    Ключ позволяет вырабатывать имитовставку длины 512 бит. Пользователю возвращается дескриптор
+    созданного контекста.
+
+    @param description пользовательское описание ключа, произвольная null-строка.
+
+    @return Функция возвращает десткриптор созданного контекста. В случае возникновения ошибки
+    возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_hmac_new_streebog512( const char *description )
+{
+  ak_hmac ctx = NULL;
+  int error = ak_error_ok;
+
+ /* создаем контекст функции хэширования */
+  if(( ctx = malloc( sizeof( struct hmac ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ , "wrong creation of hmac key context" );
+    return ak_error_wrong_handle;
+  }
+
+ /* инициализируем его */
+  if(( error = ak_hmac_create_streebog512( ctx )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong initialization of hmac key context" );
+    free( ctx );
+    return ak_error_wrong_handle;
+  }
+
+ /* помещаем в стуктуру управления контекстами */
+ return ak_libakrypt_new_handle( ctx, mac_function, description, ak_hmac_delete );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает контекст ключа алгоритма выработки имитовставки hmac-gosthash94,
+    с использованием заданных таблиц замен. Отметим, что данный способ выработки имитовставки
+    не регламентирован национальными стандартами или рекомендациями по стандартизации.
+    Созданный ключ позволяет вырабатывать имитовставку длины 256 бит. Пользователю возвращается
+    дескриптор созданного контекста.
+
+    @param description пользовательское описание ключа, произвольная null-строка.
+    @param oid дескриптор OID таблиц замен, используемых в функции
+    хеширования gosthash94 (ГОСТ Р 34.11-94).
+
+    @return Функция возвращает десткриптор созданного контекста. В случае возникновения ошибки
+    возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_hmac_new_gosthash94( ak_handle oid, const char *description )
+{
+  ak_hmac ctx = NULL;
+  int error = ak_error_ok;
+
+ /* создаем контекст функции хэширования */
+  if(( ctx = malloc( sizeof( struct hmac ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ , "wrong creation of hmac key context" );
+    return ak_error_wrong_handle;
+  }
+
+ /* инициализируем его */
+  if(( error = ak_hmac_create_gosthash94( ctx, oid )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong initialization of hmac key context" );
+    free( ctx );
+    return ak_error_wrong_handle;
+  }
+
+ /* помещаем в стуктуру управления контекстами */
+ return ak_libakrypt_new_handle( ctx, mac_function, description, ak_hmac_delete );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает контекст ключа алгоритма выработки имитовставки hmac-gosthash94,
+    с использованием с фиксированных значений таблиц замен, используемых в ранних версиях
+    КриптоПро CSP. Отметим, что данный способ выработки имитовставки
+    не регламентирован национальными стандартами или рекомендациями по стандартизации.
+    Созданный ключ позволяет вырабатывать имитовставку длины 256 бит. Пользователю возвращается
+    дескриптор созданного контекста.
+
+    @param description пользовательское описание ключа, произвольная null-строка.
+
+    @return Функция возвращает десткриптор созданного контекста. В случае возникновения ошибки
+    возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_hmac_new_gosthash94_csp( const char *description )
+{
+ return ak_hmac_new_gosthash94(
+                         ak_oid_find_by_name( "id-gosthash94-CryptoPro-ParamSetA" ), description );
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param handle Дескриптор контекста ключа алгоритма выработки имитовставки.
+    @return Функция возвращает количество байт, которые занимает результат примения алгоритма
+    выработки имитоставки. В случае, если дескриптор задан неверно, то возвращаемое значение не определено.
+    В этом случае код ошибки моет быть получен с помощью вызова функции ak_error_get_value().      */
+/* ----------------------------------------------------------------------------------------------- */
+ size_t ak_hmac_get_icode_size( ak_handle handle )
+{
+  ak_hmac hctx = NULL;
+
+  if(( hctx = ak_handle_get_context( handle, mac_function )) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+
+ return hctx->ctx.hsize;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -643,7 +799,7 @@
     ak_error_message( error, __func__ , "wrong creation of hmac-streebog256 key context" );
     return ak_false;
   }
-  if(( error = ak_hmac_set_ptr( &hkey, key, 32 )) != ak_error_ok ) {
+  if(( error = ak_hmac_set_ptr_context( &hkey, key, 32 )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong assigning a constant hmac key value" );
     result = ak_false;
     goto lab_exit;
@@ -673,7 +829,7 @@
     ak_error_message( error, __func__ , "wrong creation of hmac-streebog512 key context" );
     return ak_false;
   }
-  if(( error = ak_hmac_set_ptr( &hkey, key, 32 )) != ak_error_ok ) {
+  if(( error = ak_hmac_set_ptr_context( &hkey, key, 32 )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong assigning a constant hmac key value" );
     result = ak_false;
     goto lab_exit;
@@ -809,6 +965,8 @@
  return ak_true;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \example example-hmac.c                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_hmac.c  */
 /* ----------------------------------------------------------------------------------------------- */

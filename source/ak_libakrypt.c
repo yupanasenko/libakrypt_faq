@@ -255,12 +255,14 @@
   /* выводим сообщение об установленных параметрах библиотеки */
   if( libakrypt_options.log_level > ak_log_standard ) {
      ak_error_message_fmt( ak_error_ok, __func__, "libakrypt version: %s", ak_libakrypt_version( ));
-     ak_error_message_fmt( ak_error_ok, __func__, "log level is %u", libakrypt_options.log_level );
+     ak_error_message_fmt( ak_error_ok, __func__, "log level: %u (%s)",
+              libakrypt_options.log_level, libakrypt_options.log_level == 0 ? "none" :
+                                     ( libakrypt_options.log_level == 1 ? "standard" : "maximum" ));
      ak_error_message_fmt( ak_error_ok, __func__, "context manager size in [%d .. %d]",
                libakrypt_options.context_manager_size, libakrypt_options.context_manager_max_size );
      ak_error_message_fmt( ak_error_ok, __func__, "length of key number: %d",
                                                               libakrypt_options.key_number_length );
-     ak_error_message_fmt( ak_error_ok, __func__, "pbkdf2 iteration count: %u",
+     ak_error_message_fmt( ak_error_ok, __func__, "pbkdf2 algorithm iteration count: %u",
                                                          libakrypt_options.pbkdf2_iteration_count );
      ak_error_message_fmt( ak_error_ok, __func__, "hmac key resource counter: %u",
                                                         libakrypt_options.hmac_key_count_resource );
@@ -397,9 +399,11 @@ return ak_error_ok;
   }
 #endif
 
-  if( libakrypt_options.big_endian )
-    ak_error_message( ak_error_ok, __func__ , "library runs on big endian platform" );
-   else ak_error_message( ak_error_ok, __func__ , "library runs on little endian platform" );
+  if( ak_log_get_level() >= ak_log_maximum ) {
+    if( libakrypt_options.big_endian )
+      ak_error_message( ak_error_ok, __func__ , "library runs on big endian platform" );
+    else ak_error_message( ak_error_ok, __func__ , "library runs on little endian platform" );
+  }
 
 #ifdef LIBAKRYPT_HAVE_BUILTIN_XOR_SI128
  if( ak_log_get_level() >= ak_log_maximum )

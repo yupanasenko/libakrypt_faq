@@ -419,41 +419,6 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                               реализация интерфейсных функций                                   */
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание дескриптора для генератора псевдослучайных чисел.
-    Для существующего контекста генератора псевдослучайных чисел, под который ранее выделена память
-    с помощью вызова malloc(), функция создает его дескриптор,
-    и размещает контекст во внутренней структуре хранения контекстов.
-
-    @param generator контекст генератора псевдослучайных чисел
-    (контекст не должен быть указателем на статическую переменную).
-    @return В случае успешного выполнения возвращается дескриптор контекста. В случае возникновения
-    ошибки возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен
-    с помощью вызова функции ak_error_get_value().                                                 */
-/* ----------------------------------------------------------------------------------------------- */
- static ak_handle ak_random_new_handle( ak_random generator )
-{
-  ak_context_manager manager = NULL;
-  ak_handle handle = ak_error_wrong_handle;
-
- /* получаем доступ к структуре управления контекстами */
-  if(( manager = ak_libakrypt_get_context_manager()) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__ , "using a non initialized context manager" );
-    generator = ak_random_delete( generator );
-    return ak_error_wrong_handle;
-  }
-
- /* создаем элемент структуры управления контекстами */
-  if(( handle = ak_context_manager_add_node(
-           manager, generator, random_generator, "", ak_random_delete )) == ak_error_wrong_handle ) {
-    ak_error_message( ak_error_get_value(), __func__ , "wrong creation of context manager node" );
-    generator = ak_random_delete( generator );
-    return ak_error_wrong_handle;
-  }
-
- return handle;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_random_new_lcg( void  )
 {
   int error = ak_error_ok;
@@ -474,7 +439,7 @@
   }
 
  /* помещаем в стуктуру управления контекстами */
- return ak_random_new_handle( generator );
+ return ak_libakrypt_new_handle( generator, random_generator, "", ak_random_delete );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -498,7 +463,7 @@
   }
 
  /* помещаем в стуктуру управления контекстами */
- return ak_random_new_handle( generator );
+ return ak_libakrypt_new_handle( generator, random_generator, "", ak_random_delete );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -537,7 +502,7 @@
   }
 
  /* помещаем в стуктуру управления контекстами */
- return ak_random_new_handle( generator );
+ return ak_libakrypt_new_handle( generator, random_generator, "", ak_random_delete );
 }
 #endif
 

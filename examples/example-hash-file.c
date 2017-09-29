@@ -79,7 +79,7 @@
    free( str );
 
    if( ak_hmac_create_streebog256( &hctx ) == ak_error_ok ) {
-     ak_hmac_set_ptr( &hctx, key, 12 );
+     ak_hmac_set_ptr_context( &hctx, key, 12 );
      ak_hmac_ptr_context( &hctx, data, st.st_size, out );
    }
    ak_hmac_destroy( &hctx ); /* уничтожаем контекст выработки имитовставки */
@@ -101,7 +101,7 @@
    free( str );
 
    ak_hmac_create_streebog256( &hctx );
-   ak_hmac_set_ptr( &hctx, key, 12 );
+   ak_hmac_set_ptr_context( &hctx, key, 12 );
    ak_compress_create_hmac( &comp, &hctx );
    ak_compress_file( &comp, "data64.dat", out );
    ak_compress_destroy( &comp );
@@ -117,7 +117,7 @@
    free( str );
 
    ak_hmac_create_streebog256( &hctx );
-   ak_hmac_set_ptr( &hctx, key, 12 );
+   ak_hmac_set_ptr_context( &hctx, key, 12 );
    ak_hmac_file_context( &hctx, "data64.dat", out );
    ak_hmac_destroy( &hctx );
    printf("hmac: %s (using ak_hmac_file_context)\n\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
@@ -130,7 +130,7 @@
    fp = fopen( "data64.dat", "rb" );
 
    ak_hmac_create_streebog256( &hctx );
-   ak_hmac_set_ptr( &hctx, key, 12 );
+   ak_hmac_set_ptr_context( &hctx, key, 12 );
    ak_compress_create_hmac( &comp2, &hctx ); /* создаем контекст сжимающего отображения */
 
    memset( out, 0, 32 ); /* очищаем вектор для хранения результата */

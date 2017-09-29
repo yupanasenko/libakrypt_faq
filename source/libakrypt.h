@@ -162,8 +162,12 @@
  #define ak_error_not_equal_data              (-24)
 /*! \brief Ошибка выполнения библиотеки на неверной архитектуре. */
  #define ak_error_wrong_endian                (-25)
+/*! \brief Ошибка чтения из терминала. */
+ #define ak_error_terminal                    (-26)
 /*! \brief Ошибка исчерпания количества возможных использований ключа. */
- #define ak_error_resource_counter            (-26)
+ #define ak_error_resource_counter            (-27)
+/*! \brief Ошибка, возникающая при использовании ключа, значение которого не определено. */
+ #define ak_error_key_value                   (-28)
 
 /* ----------------------------------------------------------------------------------------------- */
  #define ak_null_string                  ("(null)")
@@ -301,24 +305,45 @@
  dll_export int ak_random_randomize( ak_handle, const ak_pointer, const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание дескриптора функции хеширования ГОСТ Р 34.11-94 с заданными таблицами замен. */
- dll_export ak_handle ak_hash_new_gosthash94( ak_handle );
-/*! \brief Создание дескриптора функции хеширования ГОСТ Р 34.11-94 с таблицами замен из CSP. */
- dll_export ak_handle ak_hash_new_gosthash94_csp( void );
 /*! \brief Создание дескриптора функции хеширования ГОСТ Р 34.11-2012 (Стрибог256). */
  dll_export ak_handle ak_hash_new_streebog256( void );
 /*! \brief Создание дескриптора функции хеширования ГОСТ Р 34.11-2012 (Стрибог512). */
  dll_export ak_handle ak_hash_new_streebog512( void );
+/*! \brief Создание дескриптора функции хеширования ГОСТ Р 34.11-94 с заданными таблицами замен. */
+ dll_export ak_handle ak_hash_new_gosthash94( ak_handle );
+/*! \brief Создание дескриптора функции хеширования ГОСТ Р 34.11-94 с таблицами замен из CSP. */
+ dll_export ak_handle ak_hash_new_gosthash94_csp( void );
 /*! \brief Создание дескриптора функции хеширования по ее OID. */
  dll_export ak_handle ak_hash_new_oid( ak_handle );
 /*! \brief Получение длины хешкода для заданной функции хеширования (в байтах). */
- dll_export size_t ak_hash_get_code_size( ak_handle );
-/*! \brief Получение длины блока обрабатываемых заданной функцией хеширования данных (в байтах). */
- dll_export size_t ak_hash_get_block_size( ak_handle );
+ dll_export size_t ak_hash_get_icode_size( ak_handle );
 /*! \brief Хеширование заданной области памяти. */
  dll_export ak_buffer ak_hash_ptr( ak_handle , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Хеширование заданного файла. */
  dll_export ak_buffer ak_hash_file( ak_handle , const char* , ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Создание дескриптора ключа алгоритма выработки имитовставки hmac-streebog256. */
+ dll_export ak_handle ak_hmac_new_streebog256( const char * );
+/*! \brief Создание дескриптора ключа алгоритма выработки имитовставки hmac-streebog256. */
+ dll_export ak_handle ak_hmac_new_streebog512( const char * );
+/*! \brief Создание дескриптора ключа алгоритма выработки имитовставки hmac-gosthash94 с заданными таблицами замен. */
+ dll_export ak_handle ak_hmac_new_gosthash94( ak_handle, const char * );
+/*! \brief Создание дескриптора ключа алгоритма выработки имитовставки hmac-gosthash94 с таблицами замен из CSP. */
+ dll_export ak_handle ak_hmac_new_gosthash94_csp( const char * );
+/*! \brief Создание дескриптора ключа алгоритма выработки имитовставки hmac по OID алгоритма. */
+ dll_export ak_handle ak_hmac_new_oid( ak_handle );
+/*! \brief Присвоение ключу алгоритма выработки имитовставки hmac случайного значения. */
+ dll_export int ak_hmac_set_random( ak_handle  );
+/*! \brief Присвоение ключу алгоритма выработки имитовставки hmac значения, выработанного из пароля. */
+ dll_export int ak_hmac_set_password( ak_handle , const ak_pointer , const size_t ,
+                                                                 const ak_pointer , const size_t );
+/*! \brief Получение длины имитовставки для заданного ключа алгоритма hmac. */
+ dll_export size_t ak_hmac_get_icode_size( ak_handle );
+/*! \brief Вычисление имитовставки алгоритмом hmac для заданной области памяти известной длины. */
+ ak_buffer ak_hmac_ptr( ak_handle , const ak_pointer , const size_t , ak_pointer );
+/*! \brief Вычисление имитовставки алгоритмом hmac для заданного файла. */
+ ak_buffer ak_hmac_file( ak_handle , const char *, ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание дескриптора сжимающего отображения */
@@ -407,6 +432,12 @@
  dll_export ak_oid_engine ak_engine_str( const char * );
 /*! \brief Получения символьного описания режима применения криптографического механизма. */
  dll_export const char *ak_mode_get_str( ak_oid_mode );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Чтение пароля из консоли. */
+ dll_export int ak_password_read( char *, const size_t );
+/*! \brief Чтение пароля из консоли в буффер. */
+ dll_export int ak_password_read_buffer( ak_buffer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Обобщенная реализация функции snprintf для различных компиляторов. */
