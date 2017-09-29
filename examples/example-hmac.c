@@ -18,7 +18,7 @@
  /* создаем дескриптор ключа выработки имитовставки */
   if(( handle = ak_hmac_new_streebog256( "my new hmac key" )) == ak_error_wrong_handle )
     return ak_libakrypt_destroy();
-  printf("created %s engine handle: %lld\n", ak_handle_get_engine_str( handle ), handle );
+  printf("created %s engine handle\n", ak_handle_get_engine_str( handle ));
 
  /* ожидаемый размер имитовставки */
   printf("expected integrity code size: %d bytes\n", (int) ak_hmac_get_icode_size( handle ));

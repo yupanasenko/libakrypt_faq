@@ -317,7 +317,11 @@
     return NULL;
   }
  /* теперь обрабатываем файл с данными */
+ #ifdef _WIN32
+  read_label: len = read( fd, localbuffer, (unsigned int) block_size );
+ #else
   read_label: len = read( fd, localbuffer, block_size );
+ #endif
   if( len == block_size ) {
     ak_compress_update( comp, localbuffer, block_size ); /* добавляем считанные данные */
     goto read_label;

@@ -368,11 +368,12 @@
  ak_buffer ak_hmac_finalize( ak_pointer ctx, const ak_pointer data,
                                                                const size_t size, ak_pointer out )
 {
+#define temporary_size_value  (128)
+
   int error = ak_error_ok;
   ak_buffer result = NULL;
   size_t idx = 0, count = 0;
-  const unsigned int temporary_size = 128;
-  ak_uint8 temporary[temporary_size]; /* буфер для хранения промежуточных результатов */
+  ak_uint8 temporary[temporary_size_value]; /* буфер для хранения промежуточных результатов */
   ak_hmac hctx = ( ak_hmac ) ctx;
 
  /* выполняем проверки */
@@ -380,9 +381,10 @@
     ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to hmac context" );
     return NULL;
   }
-  if( hctx->ctx.hsize > 64 ) { /* ограничение в связи с константным размером временного буффера */
+ /* ограничение в связи с константным размером временного буффера */
+  if( hctx->ctx.hsize > temporary_size_value ) {
     ak_error_message( ak_error_wrong_length,
-                                        __func__, "using a hash context with large code size" );
+                  __func__, "using a hash context with unsupported large integrity code size" );
     return NULL;
   }
   if( size >= hctx->ctx.bsize ) {
@@ -402,7 +404,7 @@
   }
 
  /* обрабатываем хвост предыдущих данных */
-  memset( temporary, 0, temporary_size );
+  memset( temporary, 0, temporary_size_value );
   hctx->ctx.finalize( &hctx->ctx, data, size, temporary );
   if(( error = ak_error_get_value( )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong updating of finalized data" );

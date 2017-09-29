@@ -343,9 +343,9 @@
 /*! \brief Получение длины имитовставки для заданного ключа алгоритма hmac. */
  dll_export size_t ak_hmac_get_icode_size( ak_handle );
 /*! \brief Вычисление имитовставки алгоритмом hmac для заданной области памяти известной длины. */
- ak_buffer ak_hmac_ptr( ak_handle , const ak_pointer , const size_t , ak_pointer );
+ dll_export ak_buffer ak_hmac_ptr( ak_handle , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Вычисление имитовставки алгоритмом hmac для заданного файла. */
- ak_buffer ak_hmac_file( ak_handle , const char *, ak_pointer );
+ dll_export ak_buffer ak_hmac_file( ak_handle , const char *, ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание дескриптора сжимающего отображения */

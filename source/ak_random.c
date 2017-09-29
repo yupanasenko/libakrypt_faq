@@ -363,7 +363,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  static int ak_random_winrtl_random( ak_random rnd, const ak_pointer ptr, const size_t size )
 {
-  if( !CryptGenRandom( (( ak_random_winrtl )rnd->data)->handle, size, ptr ))
+  if( !CryptGenRandom( (( ak_random_winrtl )rnd->data)->handle, (DWORD) size, ptr ))
     return ak_error_message( ak_error_undefined_value, __func__,
                                                     "wrong generation of pseudo random sequence" );
  return ak_error_ok;

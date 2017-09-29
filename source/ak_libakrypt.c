@@ -207,7 +207,7 @@
           while( value ) { value>>=1; len++; } /* вычисляем число значащих бит */
           if( len < 2 ) len = 2;
           if( len >= 32 ) len = 31;
-          libakrypt_options.context_manager_size = (1 << len );
+          libakrypt_options.context_manager_size = ((size_t)1 << len );
         }
 
        /* устанавливаем максимально возможный размер структуры управления контекстами */
@@ -216,7 +216,7 @@
           while( value ) { value>>=1; len++; } /* вычисляем число значащих бит */
           if( len < 2 ) len = 2;
           if( len > 63 ) len = 63;
-          libakrypt_options.context_manager_max_size = (1 << len );
+          libakrypt_options.context_manager_max_size = ((size_t)1 << len );
          /* проверяем, чтобы размеры соответствовали друг другу */
           if( libakrypt_options.context_manager_max_size < libakrypt_options.context_manager_size )
             libakrypt_options.context_manager_max_size = libakrypt_options.context_manager_size;
@@ -226,14 +226,14 @@
         if( ak_libakrypt_get_option( localbuffer, "key_number_length = ", &value )) {
           if( value < 16 ) value = 16;
           if( value > 32 ) value = 32;
-          libakrypt_options.key_number_length = value;
+          libakrypt_options.key_number_length = (int) value;
         }
 
        /* устанавливаем количество циклов в алгоритме pbkdf2 */
         if( ak_libakrypt_get_option( localbuffer, "pbkdf2_iteration_count = ", &value )) {
           if( value < 1000 ) value = 1000;
           if( value > 2147483647 ) value = 2147483647;
-          libakrypt_options.pbkdf2_iteration_count = value;
+          libakrypt_options.pbkdf2_iteration_count = (int) value;
         }
 
        /* устанавливаем ресурс ключа выработки имитовставки для алгоритма HMAC */
@@ -289,7 +289,7 @@
  int ak_libakrypt_get_pbkdf2_count( void ) { return libakrypt_options.pbkdf2_iteration_count; }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_get_hmac_key_counter_resource( void )
+ size_t ak_libakrypt_get_hmac_key_counter_resource( void )
 {
  return libakrypt_options.hmac_key_count_resource;
 }
@@ -353,7 +353,7 @@ return ak_error_ok;
   union {
     ak_uint8 x[4];
     ak_uint32 z;
-  } val = { .x = { 0, 1, 2, 3 }};
+  } val;
 
   if( sizeof( ak_int8 ) != 1 ) {
     ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_int8 type" );
@@ -384,6 +384,8 @@ return ak_error_ok;
     ak_error_message_fmt( ak_error_ok, __func__, "size of pointer is %d", sizeof( ak_pointer ));
 
  /* определяем тип платформы: little-endian или big-endian */
+  val.x[0] = 0; val.x[1] = 1; val.x[2] = 2; val.x[3] = 3;
+
 #ifdef LIBAKRYPT_BIG_ENDIAN
   libakrypt_options.big_endian = ak_true;
   if( val.z == 50462976 ) {
