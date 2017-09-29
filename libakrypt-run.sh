@@ -83,24 +83,24 @@ cd ..
 echo -e "\n"
 read -p "press return key ..."
 
-# Сборка ellcc под ARMv7eb ---------------------
-mkdir -p build-arm32v7eb
-cd build-arm32v7eb
-echo "Compiling by ecc (arm32v7eb-linux, big endian)"
-cmake -DCMAKE_C_COMPILER=ecc -DCMAKE_C_FLAGS="-target arm32v7eb-linux" -DLIBAKRYPT_BIG_ENDIAN=ON ../../libakrypt-0.x
-make clean && make
-qemu-armeb ./example-intro
-cd ..
-echo -e "\n"
-read -p "press return key ..."
+## Сборка ellcc под ARMv7eb ---------------------
+#mkdir -p build-arm32v7eb
+#cd build-arm32v7eb
+#echo "Compiling by ecc (arm32v7eb-linux, big endian)"
+#cmake -DCMAKE_C_COMPILER=ecc -DCMAKE_C_FLAGS="-target arm32v7eb-linux" -DLIBAKRYPT_BIG_ENDIAN=ON ../../libakrypt-0.x
+#make clean && make
+#qemu-armeb ./example-intro
+#cd ..
+#echo -e "\n"
+#read -p "press return key ..."
 
-# Сборка ellcc под PPC32-Linux ---------------------
-mkdir -p build-ppc32
-cd build-ppc32
-rm -f CMakeCache.txt
-echo "Compiling by ecc (ppc32-linux, big-endian)"
-cmake -DCMAKE_C_COMPILER=ecc -DCMAKE_C_FLAGS="-target ppc32-linux" -DLIBAKRYPT_BIG_ENDIAN=ON ../../libakrypt-0.x
-make clean && make
-qemu-ppc ./example-intro
-cd ..
-echo -e "\n\n"
+## Сборка ellcc под PPC32-Linux ---------------------
+#mkdir -p build-ppc32
+#cd build-ppc32
+#rm -f CMakeCache.txt
+#echo "Compiling by ecc (ppc32-linux, big-endian)"
+#cmake -DCMAKE_C_COMPILER=ecc -DCMAKE_C_FLAGS="-target ppc32-linux" -DLIBAKRYPT_BIG_ENDIAN=ON ../../libakrypt-0.x
+#make clean && make
+#qemu-ppc ./example-intro
+#cd ..
+#echo -e "\n\n"

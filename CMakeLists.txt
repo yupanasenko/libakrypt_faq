@@ -144,7 +144,8 @@ set( EXAMPLES_LIST intro
                    oid
                    hash
                    hash-oids
-                   hmac )
+                   hmac
+                   hmac-oids )
 
 # организуем сборку примеров со статической линковкой
 if( LIBAKRYPT_STATIC_LIB )

@@ -28,29 +28,33 @@
  printf("\n");
 
  /* 3. Прямой поиск: от OID к дескриптору функции хеширования */
-  handle = ak_oid_find_by_engine( hash_function );
+  handle = ak_oid_find_by_engine( hmac_function );
   while( handle != ak_error_wrong_handle ) {
     if( ak_oid_get_mode( handle ) == algorithm ) {
       ak_buffer buff = NULL;
-      ak_handle ctx_handle = ak_hash_new_oid( handle );
+      ak_handle ctx_handle = ak_hmac_new_oid( handle );
       printf(" name: %s (%s)\n", ak_oid_get_name( handle ), ak_oid_get_id( handle ));
 
+        /* устанавливаем фиксированный ключ */
+         ak_hmac_set_password( ctx_handle, "password", 8, "initial vector", 14 );
+
+        /* вычисляем имитовставку */
          time = clock();
-         if(( buff = ak_hash_file( ctx_handle, "data.dat", NULL )) == NULL ) continue;
+         if(( buff = ak_hmac_file( ctx_handle, "data.dat", NULL )) == NULL ) goto while_exit;
          time = clock() - time;
              /* мы не знаем длину хешкода, */
              /* поэтому помещаем результат в динамический буффер */
-         printf(" hash: %s\n time: %fs, per 1MB = %fs\n\n", str = ak_buffer_to_hexstr( buff ),
+         printf(" hmac: %s\n time: %fs, per 1MB = %fs\n\n", str = ak_buffer_to_hexstr( buff ),
                (double) time / (double) CLOCKS_PER_SEC,
                (double) time / ( (double) CLOCKS_PER_SEC * mbsize ));
 
          if( buff != NULL ) { free( str ); str = NULL; }
          buff = ak_buffer_delete( buff );
 
-      ak_handle_delete( ctx_handle );
+      while_exit: ak_handle_delete( ctx_handle );
     }
    /* ищем следующий OID с тем же типом криптографического механизма */
-    handle = ak_oid_findnext_by_engine( handle, hash_function );
+    handle = ak_oid_findnext_by_engine( handle, hmac_function );
   }
 
  return ak_libakrypt_destroy();

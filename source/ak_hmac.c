@@ -260,8 +260,8 @@
     инициализирован.
     @param pass пароль, представленный в виде строки символов.
     @param pass_size длина пароля в байтах
-    @param salt пароль, представленный в виде строки символов.
-    @param salt_size длина пароля в байтах
+    @param salt инициализационный вектор, представленный в виде строки символов.
+    @param salt_size длина инициализационного вектора в байтах
 
     @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
@@ -455,7 +455,7 @@
     @param in указатель на входные данные для которых вычисляется хеш-код.
     @param size размер входных данных в байтах.
     @param out область памяти, куда будет помещен рещультат. Память должна быть заранее выделена.
-    Размер выделяемой памяти может быть определен с помощью вызова ak_hmac_get_code_size().
+    Размер выделяемой памяти может быть определен с помощью вызова ak_hmac_get_icode_size().
     Указатель out может принимать значение NULL.
 
     @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
@@ -474,6 +474,17 @@
   }
   if( in == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to input data" );
+    return NULL;
+  }
+
+ /* проверяем наличие ключа и его ресурс */
+  if( !hctx->key.flags&ak_skey_flag_set_key ) {
+    ak_error_message( ak_error_key_value, __func__ , "using hmac key with unassigned value" );
+    return NULL;
+  }
+  if( hctx->key.resource.counter <= 0 ) {
+    ak_error_message( ak_error_resource_counter,
+                                       __func__, "using hmac key context with low resource" );
     return NULL;
   }
 
@@ -525,6 +536,17 @@
 
   if( hctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to hmac key context" );
+    return NULL;
+  }
+
+ /* проверяем наличие ключа и его ресурс */
+  if( !hctx->key.flags&ak_skey_flag_set_key ) {
+    ak_error_message( ak_error_key_value, __func__ , "using hmac key with unassigned value" );
+    return NULL;
+  }
+  if( hctx->key.resource.counter <= 0 ) {
+    ak_error_message( ak_error_resource_counter,
+                                       __func__, "using hmac key context with low resource" );
     return NULL;
   }
 
@@ -627,7 +649,7 @@
 
     @param description пользовательское описание ключа, произвольная null-строка.
 
-    @return Функция возвращает десткриптор созданного контекста. В случае возникновения ошибки
+    @return Функция возвращает дескриптор созданного контекста. В случае возникновения ошибки
     возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова
     функции ak_error_get_value().                                                                  */
 /* ----------------------------------------------------------------------------------------------- */
@@ -650,7 +672,7 @@
   }
 
  /* помещаем в стуктуру управления контекстами */
- return ak_libakrypt_new_handle( ctx, mac_function, description, ak_hmac_delete );
+ return ak_libakrypt_new_handle( ctx, hmac_function, description, ak_hmac_delete );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -661,7 +683,7 @@
 
     @param description пользовательское описание ключа, произвольная null-строка.
 
-    @return Функция возвращает десткриптор созданного контекста. В случае возникновения ошибки
+    @return Функция возвращает дескриптор созданного контекста. В случае возникновения ошибки
     возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова
     функции ak_error_get_value().                                                                  */
 /* ----------------------------------------------------------------------------------------------- */
@@ -684,7 +706,7 @@
   }
 
  /* помещаем в стуктуру управления контекстами */
- return ak_libakrypt_new_handle( ctx, mac_function, description, ak_hmac_delete );
+ return ak_libakrypt_new_handle( ctx, hmac_function, description, ak_hmac_delete );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -698,7 +720,7 @@
     @param oid дескриптор OID таблиц замен, используемых в функции
     хеширования gosthash94 (ГОСТ Р 34.11-94).
 
-    @return Функция возвращает десткриптор созданного контекста. В случае возникновения ошибки
+    @return Функция возвращает дескриптор созданного контекста. В случае возникновения ошибки
     возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова
     функции ak_error_get_value().                                                                  */
 /* ----------------------------------------------------------------------------------------------- */
@@ -721,7 +743,7 @@
   }
 
  /* помещаем в стуктуру управления контекстами */
- return ak_libakrypt_new_handle( ctx, mac_function, description, ak_hmac_delete );
+ return ak_libakrypt_new_handle( ctx, hmac_function, description, ak_hmac_delete );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -734,7 +756,7 @@
 
     @param description пользовательское описание ключа, произвольная null-строка.
 
-    @return Функция возвращает десткриптор созданного контекста. В случае возникновения ошибки
+    @return Функция возвращает дескриптор созданного контекста. В случае возникновения ошибки
     возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова
     функции ak_error_get_value().                                                                  */
 /* ----------------------------------------------------------------------------------------------- */
@@ -744,6 +766,108 @@
                          ak_oid_find_by_name( "id-gosthash94-CryptoPro-ParamSetA" ), description );
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param oid_handle дескриптор OID алгоритма выработки имитовставки hmac.
+    @return Функция возвращает дескриптор созданного контекста ключа алгоритма выработки
+    имитовставки hmac.
+    Если дескриптор не может быть создан, или аргумент функции oid не соотвествует алгоритму hmac,
+    то возбуждается ошибка и возвращается значение \ref ak_error_wrong_handle. Кош ошибки может
+    быть получен с помощью вызова функции ak_error_get_value().                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_hmac_new_oid( ak_handle oid_handle )
+{
+  ak_handle hmac_handle = ak_error_wrong_handle;
+  ak_oid oid = ak_handle_get_context( oid_handle, oid_engine );
+
+  /* проверяем, что handle от OID */
+   if( oid == NULL ) {
+     ak_error_message( ak_error_get_value(), __func__ , "using wrong value of handle" );
+     return ak_error_wrong_handle;
+   }
+  /* проверяем, что OID от бесключевой функции хеширования */
+   if( oid->engine != hmac_function ) {
+     ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
+     return ak_error_wrong_handle;
+   }
+  /* проверяем, что OID от алгоритма, а не от параметров */
+   if( oid->mode != algorithm ) {
+     ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
+     return ak_error_wrong_handle;
+   }
+  /* проверяем, что производящая функция определена */
+   if( oid->func == NULL ) {
+     ak_error_message( ak_error_undefined_function, __func__ ,
+                                     "using oid with undefined constructor function" );
+     return ak_error_wrong_handle;
+   }
+
+  /* только теперь создаем контекст ключа алгориитма выработки имитовставки */
+   if(( hmac_handle = (( ak_function_hash *) oid->func)()) == ak_error_wrong_handle )
+     ak_error_message( ak_error_get_value(), __func__ , "wrong creation of hash function handle");
+
+ return hmac_handle;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает контексту ключа алгоритма выработки имитовставки hmac случайное значение.
+    Для генерации случайного значения используется биологический датчик псевдо-случайных чисел.
+
+    @param handle дескриптор контекста ключа алгоритма hmac. Предварительно
+    дескриптор должен быть создан производящей функцией `ak_hmac_new_<...>`.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_hmac_set_random( ak_handle handle )
+{
+  ak_hmac hctx = NULL;
+  int error = ak_error_ok;
+  ak_context_manager manager = NULL;
+
+ /* получаем доступ к структуре управления контекстами */
+  if(( manager = ak_libakrypt_get_context_manager()) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__ , "using a non initialized context manager" );
+
+ /* получаем контекст ключа алгоритма hmac */
+  if(( hctx = ak_handle_get_context( handle, hmac_function )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+
+ /* вырабатываем ключ, используя генератор, установленный в context_manager */
+  if(( error = ak_hmac_set_random_context( hctx, &manager->key_generator)) != ak_error_ok )
+    return ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает контексту ключа алгоритма выработки имитовставки hmac значение, выработанное
+    из пароля и инициализационного вектора с помощью алгоритма, регламентированого отечественными
+    рекомендациями по стандартизации Р 50.1.111-2016.
+
+    @param handle дескриптор контекста ключа алгоритма hmac. Предварительно
+    дескриптор должен быть создан производящей функцией `ak_hmac_new_<...>`.
+    @param pass пароль, представленный в виде строки символов.
+    @param pass_size длина пароля в байтах
+    @param salt инициализационный вектор, представленный в виде строки символов.
+    @param salt_size длина инициализационного вектора в байтах
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_hmac_set_password( ak_handle handle, const ak_pointer pass, const size_t pass_size,
+                                                    const ak_pointer salt, const size_t salt_size )
+{
+  ak_hmac hctx = NULL;
+  int error = ak_error_ok;
+
+  if(( hctx = ak_handle_get_context( handle, hmac_function )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+
+  if(( error = ak_hmac_set_password_context( hctx, pass, pass_size, salt, salt_size )) != ak_error_ok )
+    return ak_error_message( error, __func__, "wrong assigning a hmac key value" );
+
+ return error;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param handle Дескриптор контекста ключа алгоритма выработки имитовставки.
@@ -755,10 +879,91 @@
 {
   ak_hmac hctx = NULL;
 
-  if(( hctx = ak_handle_get_context( handle, mac_function )) == NULL )
+  if(( hctx = ak_handle_get_context( handle, hmac_function )) == NULL )
       return ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
 
  return hctx->ctx.hsize;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*!  Функция вычисляет имитовставку по алгоритму HMAC от заданной области памяти на которую
+     указывает in. Размер памяти задается в байтах в переменной size. Результат вычислений помещается
+     в область памяти, на которую указывает out. Если out равен NULL, то функция создает новый буффер
+     (структуру struct buffer), помещает в нее вычисленное значение и возвращает на указатель на
+     буффер. Буффер должен позднее быть удален с помощью вызова ak_buffer_delete().
+
+     @param handle дескриптор контекста ключа алгоритма выработки имитовставки.
+     Предварительно дескриптор должен быть создан производящей функцией `ak_hmac_new_<...>` и
+     проинициализирован некоторым значением ключа с помощью функций `ak_hmac_set_<..>`.
+
+     @param in указатель на входные данные для которых вычисляется хеш-код.
+     @param size размер входных данных в байтах.
+     @param out область памяти, куда будет помещен рещультат. Память должна быть заранее выделена.
+     Размер выделяемой памяти может быть определен с помощью вызова ak_hmac_get_icode_size().
+     Указатель out может принимать значение NULL.
+
+     @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+     возвращается указатель на буффер, содержащий результат вычислений.                             */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_hmac_ptr( ak_handle handle, const ak_pointer in, const size_t size, ak_pointer out )
+{
+  ak_hmac hctx = NULL;
+  ak_buffer result = NULL;
+  int error = ak_error_ok;
+
+  if(( hctx = ak_handle_get_context( handle, hmac_function )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+    return NULL;
+  }
+
+  result = ak_hmac_ptr_context( hctx, in, size, out );
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong calculation of hmac integrity code" );
+    if( result != NULL ) result = ak_buffer_delete( result );
+    return NULL;
+  }
+
+ return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция вычисляет имитовставку по алгоритму HMAC от заданного файла. Результат вычислений
+    помещается в область памяти, на которую указывает out. Если out равен NULL, то функция создает
+    новый буффер (структуру struct buffer), помещает в нее вычисленное значение и возвращает указатель на
+    созданный буффер. Буффер должен позднее быть удален с помощью вызова ak_buffer_delete().
+
+    @param handle дескриптор контекста ключа алгоритма выработки имитовставки.
+    Предварительно дескриптор должен быть создан производящей функцией `ak_hmac_new_<...>` и
+    проинициализирован некоторым значением ключа с помощью функций `ak_hmac_set_<..>`.
+
+    @param filename имя файла, для которого вычисляется имитовставка.
+    @param out область памяти, куда будет помещен результат.
+    Указатель out может принимать значение NULL.
+
+    @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+    возвращается указатель на буффер, содержащий результат вычислений. В случае возникновения
+    ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_hmac_file( ak_handle handle, const char *filename , ak_pointer out )
+{
+  ak_hmac hctx = NULL;
+  ak_buffer result = NULL;
+  int error = ak_error_ok;
+
+  if(( hctx = ak_handle_get_context( handle, hmac_function )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+    return NULL;
+  }
+
+  result = ak_hmac_file_context( hctx, filename, out );
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong calculation of hmac integrity code" );
+    if( result != NULL ) result = ak_buffer_delete( result );
+    return NULL;
+  }
+
+ return result;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

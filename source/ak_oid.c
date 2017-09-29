@@ -49,6 +49,7 @@
    case stream_cipher:     return "stream_cipher";
    case hybrid_cipher:     return "hybrid_cipher";
    case hash_function:     return "hash_function";
+   case hmac_function:     return "hmac_function";
    case mac_function:      return "mac_function";
    case digital_signature: return "digital_signature";
    case random_generator:  return "random_generator";
@@ -81,6 +82,8 @@
                                                                                return hybrid_cipher;
   if(( strlen( str ) == 13 ) && ak_ptr_is_equal( "hash_function", (void *)str, 13 ))
                                                                                return hash_function;
+  if(( strlen( str ) == 13 ) && ak_ptr_is_equal( "hmac_function", (void *)str, 12 ))
+                                                                               return hmac_function;
   if(( strlen( str ) == 12 ) && ak_ptr_is_equal( "mac_function", (void *)str, 12 ))
                                                                                 return mac_function;
   if(( strlen( str ) == 17 ) && ak_ptr_is_equal( "digital_signature", (void *)str, 17 ))
@@ -352,15 +355,15 @@
 /* ----------------------------------------------------------------------------------------------- */
 /* 4. Добавляем идентификаторы алгоритмов HMAC согласно Р 50.1.113-2016 */
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( mac_function, algorithm, "hmac-streebog256",
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( hmac_function, algorithm, "hmac-streebog256",
     "1.2.643.7.1.1.4.1", NULL, ( ak_function_oid * ) ak_hmac_new_streebog256 ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( mac_function, algorithm, "hmac-streebog512",
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( hmac_function, algorithm, "hmac-streebog512",
     "1.2.643.7.1.1.4.2", NULL, ( ak_function_oid * ) ak_hmac_new_streebog512 ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( mac_function, algorithm, "hmac-gosthash94",
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( hmac_function, algorithm, "hmac-gosthash94",
     "1.2.643.2.52.1.1.1.4.0", NULL, ( ak_function_oid * ) ak_hmac_new_gosthash94_csp ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
