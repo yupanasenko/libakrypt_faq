@@ -336,9 +336,9 @@
 /*! \brief Создание дескриптора ключа алгоритма выработки имитовставки hmac по OID алгоритма. */
  dll_export ak_handle ak_hmac_new_oid( ak_handle , const char * );
 /*! \brief Присвоение ключу алгоритма выработки имитовставки hmac случайного значения. */
- dll_export int ak_hmac_set_random( ak_handle  );
+ dll_export int ak_hmac_set_key_random( ak_handle  );
 /*! \brief Присвоение ключу алгоритма выработки имитовставки hmac значения, выработанного из пароля. */
- dll_export int ak_hmac_set_password( ak_handle , const ak_pointer , const size_t ,
+ dll_export int ak_hmac_set_key_password( ak_handle , const ak_pointer , const size_t ,
                                                                  const ak_pointer , const size_t );
 /*! \brief Получение длины имитовставки для заданного ключа алгоритма hmac. */
  dll_export size_t ak_hmac_get_icode_size( ak_handle );

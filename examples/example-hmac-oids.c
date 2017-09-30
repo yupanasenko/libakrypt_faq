@@ -36,7 +36,7 @@
       printf(" name: %s (%s)\n", ak_oid_get_name( handle ), ak_oid_get_id( handle ));
 
         /* устанавливаем фиксированный ключ */
-         ak_hmac_set_password( ctx_handle, "password", 8, "initial vector", 14 );
+         ak_hmac_set_key_password( ctx_handle, "password", 8, "initial vector", 14 );
 
         /* вычисляем имитовставку */
          time = clock();

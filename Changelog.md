@@ -1,8 +1,9 @@
-Changes in version 0.5.3 (TODO)
--------------------------
+Changes in version 0.5.3
+------------------------------------
 
-   * Created ak_compress class
-   * Restored ak_hash class, gosthash94 & streebog{256,512} algorithms
+   * Created ak_compress class for iterated maps
+   * Restored ak_hash, ak_hmac classes, and 
+     gosthash94 & streebog{256,512} algorithms
    * Improoved handbook
 
 
@@ -23,5 +24,5 @@ Changes in version 0.5.1 (10.07.2017)
    * Started a library handbook (in russian)
 
 
-Since early versions of library has another internak structure and user 
+Since early versions of library has another internal structure and user 
 interfaces we start a new sequence of changelog messages from version 0.5.1.

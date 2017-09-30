@@ -195,7 +195,7 @@
     возвращается NULL. Код возникшей ошибки может быть получен с помощью вызова функции
     ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_set_ptr_context( ak_hmac hctx, const ak_pointer ptr, const size_t size )
+ int ak_hmac_context_set_key( ak_hmac hctx, const ak_pointer ptr, const size_t size )
 {
   int error = ak_error_ok;
 
@@ -237,7 +237,7 @@
     @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_set_random_context( ak_hmac hctx, ak_random generator )
+ int ak_hmac_context_set_key_random( ak_hmac hctx, ak_random generator )
 {
   int error = ak_error_ok;
 
@@ -270,7 +270,7 @@
     @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_set_password_context( ak_hmac hctx, const ak_pointer pass, const size_t pass_size,
+ int ak_hmac_context_set_key_password( ak_hmac hctx, const ak_pointer pass, const size_t pass_size,
                                                      const ak_pointer salt, const size_t salt_size )
 {
   int error = ak_error_ok;
@@ -302,7 +302,7 @@
   if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using a null pointer to hmac key context" );
  /* проверяем наличие ключа и его ресурс */
-  if( !hctx->key.flags&ak_skey_flag_set_key ) return ak_error_message( ak_error_key_value,
+  if( !((hctx->key.flags)&ak_skey_flag_set_key )) return ak_error_message( ak_error_key_value,
                                                __func__ , "using hmac key with unassigned value" );
   if( hctx->key.resource.counter <= 0 ) return ak_error_message( ak_error_resource_counter,
                                             __func__, "using hmac key context with low resource" );
@@ -350,7 +350,7 @@
   if( size%hctx->ctx.bsize ) return ak_error_message( ak_error_wrong_length, __func__ ,
                                                                   "using data with wrong length" );
  /* проверяем наличие ключа и его ресурс */
-  if( !hctx->key.flags&ak_skey_flag_set_key ) return ak_error_message( ak_error_key_value,
+  if( !((hctx->key.flags)&ak_skey_flag_set_key )) return ak_error_message( ak_error_key_value,
                                                __func__ , "using hmac key with unassigned value" );
   if( hctx->key.resource.counter <= 0 ) return ak_error_message( ak_error_resource_counter,
                                             __func__, "using hmac key context with low resource" );
@@ -397,7 +397,7 @@
     return NULL;
   }
  /* проверяем наличие ключа и его ресурс */
-  if( !hctx->key.flags&ak_skey_flag_set_key ) {
+  if( !((hctx->key.flags)&ak_skey_flag_set_key )) {
     ak_error_message( ak_error_key_value, __func__ , "using hmac key with unassigned value" );
     return NULL;
   }
@@ -484,7 +484,7 @@
   }
 
  /* проверяем наличие ключа и его ресурс */
-  if( !hctx->key.flags&ak_skey_flag_set_key ) {
+  if( !((hctx->key.flags)&ak_skey_flag_set_key )) {
     ak_error_message( ak_error_key_value, __func__ , "using hmac key with unassigned value" );
     return NULL;
   }
@@ -546,7 +546,7 @@
   }
 
  /* проверяем наличие ключа и его ресурс */
-  if( !hctx->key.flags&ak_skey_flag_set_key ) {
+  if( !((hctx->key.flags)&ak_skey_flag_set_key )) {
     ak_error_message( ak_error_key_value, __func__ , "using hmac key with unassigned value" );
     return NULL;
   }
@@ -615,7 +615,7 @@
  /* создаем контекст алгоритма hmac и определяем его ключ */
   if(( error = ak_hmac_create_streebog512( &hctx )) != ak_error_ok )
     return ak_error_message( error, __func__, "wrong creation of hmac-streebog512 key context" );
-  if(( error = ak_hmac_set_ptr_context( &hctx, pass, pass_size )) != ak_error_ok ) {
+  if(( error = ak_hmac_context_set_key( &hctx, pass, pass_size )) != ak_error_ok ) {
     ak_error_message( error, __func__, "wrong initialization of hmac secret key" );
     goto lab_exit;
   }
@@ -824,7 +824,7 @@
     @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_set_random( ak_handle handle )
+ int ak_hmac_set_key_random( ak_handle handle )
 {
   ak_hmac hctx = NULL;
   int error = ak_error_ok;
@@ -839,7 +839,7 @@
     return ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
 
  /* вырабатываем ключ, используя генератор, установленный в context_manager */
-  if(( error = ak_hmac_set_random_context( hctx, &manager->key_generator)) != ak_error_ok )
+  if(( error = ak_hmac_context_set_key_random( hctx, &manager->key_generator)) != ak_error_ok )
     return ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
 
  return error;
@@ -860,7 +860,7 @@
     @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_set_password( ak_handle handle, const ak_pointer pass, const size_t pass_size,
+ int ak_hmac_set_key_password( ak_handle handle, const ak_pointer pass, const size_t pass_size,
                                                     const ak_pointer salt, const size_t salt_size )
 {
   ak_hmac hctx = NULL;
@@ -869,7 +869,7 @@
   if(( hctx = ak_handle_get_context( handle, hmac_function )) == NULL )
     return ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
 
-  if(( error = ak_hmac_set_password_context( hctx, pass, pass_size, salt, salt_size )) != ak_error_ok )
+  if(( error = ak_hmac_context_set_key_password( hctx, pass, pass_size, salt, salt_size )) != ak_error_ok )
     return ak_error_message( error, __func__, "wrong assigning a hmac key value" );
 
  return error;
@@ -1010,7 +1010,7 @@
     ak_error_message( error, __func__ , "wrong creation of hmac-streebog256 key context" );
     return ak_false;
   }
-  if(( error = ak_hmac_set_ptr_context( &hkey, key, 32 )) != ak_error_ok ) {
+  if(( error = ak_hmac_context_set_key( &hkey, key, 32 )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong assigning a constant hmac key value" );
     result = ak_false;
     goto lab_exit;
@@ -1040,7 +1040,7 @@
     ak_error_message( error, __func__ , "wrong creation of hmac-streebog512 key context" );
     return ak_false;
   }
-  if(( error = ak_hmac_set_ptr_context( &hkey, key, 32 )) != ak_error_ok ) {
+  if(( error = ak_hmac_context_set_key( &hkey, key, 32 )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong assigning a constant hmac key value" );
     result = ak_false;
     goto lab_exit;

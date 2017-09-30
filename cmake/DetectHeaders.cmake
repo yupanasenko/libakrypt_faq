@@ -91,6 +91,17 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
+  #include <windows.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_WINDOWS )
+
+if( LIBAKRYPT_HAVE_WINDOWS )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_WINDOWS_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
   #include <getopt.h>
   int main( void ) {
      return 0;
@@ -102,9 +113,3 @@ else()
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
-if( WIN32 )
-  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_WINDOWS_H" )
-endif()
-
-# -------------------------------------------------------------------------------------------------- #
-

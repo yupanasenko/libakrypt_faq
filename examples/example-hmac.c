@@ -25,7 +25,7 @@
 
  /* тест первый: вырабатываем случайный ключ и вычисляем имитовставку */
   printf("generation of secret key... "); fflush( stdout );
-  if(( error = ak_hmac_set_random( handle )) != ak_error_ok )
+  if(( error = ak_hmac_set_key_random( handle )) != ak_error_ok )
     ak_error_message( error, __func__, "wrong generation of random secret hmac key" );
   else printf("Ok\n");
 
@@ -41,7 +41,7 @@
   ak_password_read( password, size );
   printf("[password: %s (max size: %u, strlen: %u)]\n",
                          password, (unsigned int) size, (unsigned int) strlen( password ));
-  ak_hmac_set_password( handle, password, strlen( password ), "random initial value", 20 );
+  ak_hmac_set_key_password( handle, password, strlen( password ), "random initial value", 20 );
 
   ak_hmac_ptr( handle, data, sizeof( data ), out );
   if(( error = ak_error_get_value()) != ak_error_ok )
