@@ -101,6 +101,51 @@
  int akrypt_find( const char *root , const char *mask,
                                 ak_function_find_handle *function, ak_handle handle, ak_bool tree )
 {
+#ifdef _WIN32
+  _finddata_t fd;
+  long dsp = _findfirst(( root + ak_file_separator() + mask ).c_str(), &fd );
+
+  // поиск файлов
+  if( dsp != -1) do{
+       #ifdef _MSC_VER
+         /*
+           if( fd.attrib ==  6 ) { f( root.c_str(), fd.name ); continue; }
+           if( fd.attrib == 32 ) { f( root.c_str(), fd.name ); continue; }
+           if( fd.attrib == 34 ) { f( root.c_str(), fd.name ); continue; }
+         */
+         if ((fd.attrib & 0x10) == 0) { f( root.c_str(), fd.name ); continue; }
+       #else
+          if( fd.attrib != _A_SUBDIR ) f( root.c_str(), fd.name );
+       #endif
+    } while( _findnext( dsp, &fd ) != -1 );
+  _findclose( dsp );
+
+  // поиск в подкаталогах
+  if( do_tree ) {
+    dsp = _findfirst(( root + ak_file_separator() + "*" ).c_str(), &fd );
+    if( dsp != -1) do {
+        #ifdef _MSC_VER
+          bool inflag = false; // такая петрушка из-за того, что файл io.h
+           if( fd.attrib == 16 ) inflag = true; // не содержит необходимых констант
+           if( fd.attrib == 17 ) inflag = true;
+           if( fd.attrib == 18 ) inflag = true;
+           if( fd.attrib == 19 ) inflag = true;
+           if( fd.attrib == 8214 ) inflag = true;
+           if( inflag ) {
+        #else
+          if( fd.attrib == _A_SUBDIR ) {
+        #endif
+          if( !strcmp( fd.name, "." )) continue;  // отбрасываем лишнее
+          if( !strcmp( fd.name, ".." )) continue;
+          ak_foreach_file( root + ak_file_separator() + fd.name,
+                                                          mask, f, do_tree );
+        }
+      } while( _findnext( dsp, &fd ) != -1 );
+    _findclose( dsp );
+  }
+
+// далее используем механизм функций open/readdir + fnmatch
+#else
   DIR *dp = NULL;
   struct dirent *ent = NULL;
   char filename[FILENAME_MAX];
@@ -136,6 +181,7 @@
   }
   if( closedir( dp )) return ak_error_message_fmt( ak_error_close_file,
                                                                 __func__ , "%s", strerror( errno ));
+#endif
  return ak_error_ok;
 }
 

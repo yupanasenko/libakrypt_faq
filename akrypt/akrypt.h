@@ -38,7 +38,6 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_DIRENT_H
- #define __USE_MISC
  #include <dirent.h>
  #ifndef DT_DIR
   #define DT_DIR (4)
@@ -46,8 +45,6 @@
  #ifndef DT_REG
   #define DT_REG (8)
  #endif
-#else
- #include <msvc-dirent.h>
 #endif
 #ifdef LIBAKRYPT_HAVE_FNMATCH_H
  #include <fnmatch.h>
@@ -56,10 +53,6 @@
  #include <sys/stat.h>
 #endif
 
-#ifdef _WIN32
- #include <windows.h>
- #include <shlwapi.h>
-#endif
 /* ----------------------------------------------------------------------------------------------- */
  extern char audit_filename[1024];
  extern ak_function_log *audit;
