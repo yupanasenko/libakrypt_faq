@@ -91,6 +91,30 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
+  #include <dirent.h>
+  int main( void ) {
+     struct dirent st;
+     st.d_type = 4;
+     return 0;
+  }" LIBAKRYPT_HAVE_DIRENT )
+
+if( LIBAKRYPT_HAVE_DIRENT )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_DIRENT_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
+  #include <fnmatch.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_FNMATCH )
+
+if( LIBAKRYPT_HAVE_FNMATCH )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_FNMATCH_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
   #include <windows.h>
   int main( void ) {
      return 0;

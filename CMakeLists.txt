@@ -19,7 +19,7 @@ cmake_minimum_required( VERSION 2.8 )
 project( libakrypt )
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 5 )
-set( MINOR_VERSION 3 )
+set( MINOR_VERSION 4 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -78,6 +78,16 @@ set( OTHERS         CMakeLists.txt
                     libakrypt.conf
                     libakrypt-run.sh )
 
+set( AKRYPT_SOURCES akrypt/akrypt.c
+                    akrypt/akrypt_show.c
+                    akrypt/akrypt_hash.c )
+
+set( AKRYPT_FILES   akrypt/akrypt.h
+                    akrypt/akrypt.1
+                    akrypt/msvc-dirent.h
+                    akrypt/getopt.h
+                    akrypt/getopt.c )
+
 # -------------------------------------------------------------------------------------------------- #
 # подключаем модули CMake для тонкой настройки параметров сборки
 set( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
@@ -119,6 +129,12 @@ if( LIBAKRYPT_STATIC_LIB )
   add_library( akrypt-static STATIC ${MAIN_HEADER} ${SOURCES} )
   set_target_properties( akrypt-static PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
 endif()
+
+# -------------------------------------------------------------------------------------------------- #
+# сборка консольной утилиты
+add_executable( akrypt${LIBAKRYPT_EXT} ${AKRYPT_SOURCES} )
+target_include_directories( akrypt${LIBAKRYPT_EXT} PUBLIC "./akrypt" )
+target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
 
 # -------------------------------------------------------------------------------------------------- #
 # сборка тестовых примеров

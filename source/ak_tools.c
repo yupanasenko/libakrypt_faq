@@ -68,11 +68,11 @@
   size_t len = 1 + (ptr_size << 1);
 
   if( ptr == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to data" );
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to data" );
     return NULL;
   }
   if( ptr_size <= 0 ) {
-    ak_error_message( ak_error_zero_length, __func__ , "use a data with zero or negative length" );
+    ak_error_message( ak_error_zero_length, __func__ , "using data with zero or negative length" );
     return NULL;
   }
 
@@ -94,6 +94,63 @@
       }
     }
  return nullstr;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция рассматривает область памяти, на которую указывает указатель ptr, как массив
+    последовательно записанных байт фиксированной длины.
+    Символьная (шестнадцатеричная) форма записи массива ptr помещается в заранее выделенный массив out.
+    Если длины недостаточно, то возбуждается ошибка.
+
+    Пример использования.
+  \code
+    ak_uint8 data[5] = { 1, 2, 3, 4, 5 };
+    ak_uint8 data_out[12];
+
+    if( ak_ptr_to_hexstr_static( data, 5, data_out, 12, ak_false ) == ak_error_ok )
+      printf("%s\n", data_out );
+  \endcode
+
+    @param ptr Указатель на область памяти
+    @param ptr_size Размер области памяти (в байтах)
+    @param out Указатель на область памяти, в которую записывается символьное представление данных
+    @param out_size Размер области памяти (в байтах); должен быть не менее, чем
+    величина 1 + 2*`ptr_size`.
+
+    @param reverse Последовательность вывода байт в строку. Если reverse равно \ref ak_false,
+    то байты выводятся начиная с младшего к старшему.  Если reverse равно \ref ak_true, то байты
+    выводятся начиная от старшего к младшему (такой способ вывода принят при стандартном выводе
+    чисел: сначала старшие разряды, потом младшие).
+
+    @return Если преобразование прошло успешно, возвращается \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_ptr_to_hexstr_static( const ak_pointer ptr, const size_t ptr_size,
+                                     ak_pointer out, const size_t out_size, const ak_bool reverse )
+{
+  size_t len = 1 + (ptr_size << 1);
+
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                                     "using null pointer to data" );
+  if( ptr_size <= 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                        "using data with zero or negative length" );
+  if( out_size < len ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                                 "using small size output buffer" );
+
+  size_t idx = 0, js = 0, start = 0, offset = 2;
+  ak_uint8 *data = ( ak_uint8 * ) ptr;
+
+  memset( out, 0, len );
+  if( reverse ) { // движение в обратную сторону - от старшего байта к младшему
+    start = len-3; offset = -2;
+  }
+  for( idx = 0, js = start; idx < ptr_size; idx++, js += offset ) {
+     char str[4];
+     ak_snprintf( str, 3, "%02X", data[idx] );
+     memcpy( (ak_uint8 *)out+js, str, 2 );
+  }
+
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
