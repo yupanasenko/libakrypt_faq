@@ -39,18 +39,24 @@
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_DIRENT_H
  #include <dirent.h>
- #ifndef DT_DIR
-  #define DT_DIR (4)
- #endif
- #ifndef DT_REG
-  #define DT_REG (8)
- #endif
 #endif
 #ifdef LIBAKRYPT_HAVE_FNMATCH_H
  #include <fnmatch.h>
 #endif
 #ifdef LIBAKRYPT_HAVE_SYSSTAT_H
  #include <sys/stat.h>
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
+#ifdef _MSC_VER
+ #define	S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
+ #define	S_ISREG(mode)  (((mode) & S_IFMT) == S_IFREG)
+#endif
+#ifndef DT_DIR
+ #define DT_DIR (4)
+#endif
+#ifndef DT_REG
+ #define DT_REG (8)
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */

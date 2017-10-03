@@ -67,6 +67,7 @@
 
 #ifdef _MSC_VER
  #include <io.h>
+ #include <conio.h>
  #include <process.h>
  typedef __int32 ak_int32;
  typedef unsigned __int32 ak_uint32;

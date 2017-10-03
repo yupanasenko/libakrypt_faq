@@ -128,7 +128,9 @@
  int ak_ptr_to_hexstr_static( const ak_pointer ptr, const size_t ptr_size,
                                      ak_pointer out, const size_t out_size, const ak_bool reverse )
 {
+  ak_uint8 *data = ( ak_uint8 * ) ptr;
   size_t len = 1 + (ptr_size << 1);
+  size_t idx = 0, js = 0, start = 0, offset = 2;
 
   if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                                      "using null pointer to data" );
@@ -136,10 +138,6 @@
                                                         "using data with zero or negative length" );
   if( out_size < len ) return ak_error_message( ak_error_wrong_length, __func__ ,
                                                                  "using small size output buffer" );
-
-  size_t idx = 0, js = 0, start = 0, offset = 2;
-  ak_uint8 *data = ( ak_uint8 * ) ptr;
-
   memset( out, 0, len );
   if( reverse ) { // движение в обратную сторону - от старшего байта к младшему
     start = len-3; offset = -2;

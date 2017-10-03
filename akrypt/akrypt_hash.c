@@ -47,13 +47,20 @@
 /* ----------------------------------------------------------------------------------------------- */
  int akrypt_hash_function( ak_handle handle, const char *filename )
 {
- ak_uint8 out[64], outstr[130];
+  int error = ak_error_ok;
+  ak_uint8 out[64], outstr[130];
 
- ak_hash_file( handle, filename, out );
- ak_ptr_to_hexstr_static( out, ak_hash_get_icode_size( handle ), outstr, 130, ak_false );
- fprintf( stdout, "%s %s\n", outstr, filename );
+  ak_error_set_value( ak_error_ok );
+  ak_hash_file( handle, filename, out );
+  if(( error = ak_error_get_value( )) != ak_error_ok )
+    ak_error_message_fmt( error, __func__, "incorrect hash code for file %s", filename );
+   else {
+          ak_ptr_to_hexstr_static( out, ak_hash_get_icode_size( handle ), outstr, 130, ak_false );
+          fprintf( stdout, "%s %s\n", outstr, filename );
+          ak_error_set_value( ak_error_ok );
+        }
 
- return ak_error_ok;
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -123,14 +130,18 @@
   {
     case do_hash: /* вычисляем контрольную сумму */
                    for( idx = 1; idx < argc; idx++ ) {
-                      int type = akrypt_file_or_directory( argv[idx] );
+                       int type = akrypt_file_or_directory( argv[idx] );
                        switch( type )
                       {
                        case DT_DIR: akrypt_find( argv[idx], pattern, akrypt_hash_function, handle, tree );
                                     break;
                        case DT_REG: akrypt_hash_function( handle, argv[idx] );
                                     break;
-                       default: break;
+                       default:    /* убираем из списка параметры опций */
+                                    if( !strcmp( argv[idx], "-p" )) idx++;
+                                    if( !strcmp( argv[idx], "--pattern" )) idx++;
+                                    if( !strcmp( argv[idx], "--audit" )) idx++;
+                           break;
                       }
                    }
                    break;

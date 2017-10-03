@@ -101,54 +101,57 @@
  int akrypt_find( const char *root , const char *mask,
                                 ak_function_find_handle *function, ak_handle handle, ak_bool tree )
 {
-#ifdef _WIN32
-  _finddata_t fd;
-  long dsp = _findfirst(( root + ak_file_separator() + mask ).c_str(), &fd );
+  int error = ak_error_ok;
+  char filename[FILENAME_MAX];
 
-  // поиск файлов
-  if( dsp != -1) do{
-       #ifdef _MSC_VER
-         /*
-           if( fd.attrib ==  6 ) { f( root.c_str(), fd.name ); continue; }
-           if( fd.attrib == 32 ) { f( root.c_str(), fd.name ); continue; }
-           if( fd.attrib == 34 ) { f( root.c_str(), fd.name ); continue; }
-         */
-         if ((fd.attrib & 0x10) == 0) { f( root.c_str(), fd.name ); continue; }
-       #else
-          if( fd.attrib != _A_SUBDIR ) f( root.c_str(), fd.name );
-       #endif
-    } while( _findnext( dsp, &fd ) != -1 );
+#ifdef _WIN32
+  intptr_t dsp = 0;
+  struct _finddata_t fd;
+
+ /* поиск в текущем каталоге */
+  ak_snprintf( filename, FILENAME_MAX, "%s\\%s", root, mask );
+  if(( dsp = _findfirst( filename, &fd )) != -1 ) {
+    do {
+         #ifdef _MSC_VER
+           if(( fd.attrib & 0x10 ) == 0) {
+         #else
+           if( fd.attrib != _A_SUBDIR ) {
+         #endif
+             memset( filename, 0, FILENAME_MAX );
+             ak_snprintf( filename, FILENAME_MAX, "%s\\%s", root, fd.name );
+             function( handle, filename );
+           }
+    } while ( _findnext( dsp, &fd ) != -1 );
+  } else return ak_error_access_file;
   _findclose( dsp );
 
-  // поиск в подкаталогах
-  if( do_tree ) {
-    dsp = _findfirst(( root + ak_file_separator() + "*" ).c_str(), &fd );
-    if( dsp != -1) do {
-        #ifdef _MSC_VER
-          bool inflag = false; // такая петрушка из-за того, что файл io.h
-           if( fd.attrib == 16 ) inflag = true; // не содержит необходимых констант
-           if( fd.attrib == 17 ) inflag = true;
-           if( fd.attrib == 18 ) inflag = true;
-           if( fd.attrib == 19 ) inflag = true;
-           if( fd.attrib == 8214 ) inflag = true;
-           if( inflag ) {
-        #else
-          if( fd.attrib == _A_SUBDIR ) {
-        #endif
-          if( !strcmp( fd.name, "." )) continue;  // отбрасываем лишнее
-          if( !strcmp( fd.name, ".." )) continue;
-          ak_foreach_file( root + ak_file_separator() + fd.name,
-                                                          mask, f, do_tree );
-        }
-      } while( _findnext( dsp, &fd ) != -1 );
-    _findclose( dsp );
+  if( tree ) { /* поиск во вложенных каталогах */
+    ak_snprintf( filename, FILENAME_MAX, "%s\\*", root );
+    if(( dsp = _findfirst( filename, &fd )) != -1 ) {
+      do {
+           #ifdef _MSC_VER
+            if(( fd.attrib == 16 ) || ( fd.attrib == 17 ) || ( fd.attrib == 18 ) ||
+                  ( fd.attrib == 19 ) || ( fd.attrib == 8210 ) || ( fd.attrib == 9238 )) {
+           #else
+             if( fd.attrib == _A_SUBDIR ) {
+           #endif
+               if( !strcmp( fd.name, "." )) continue;  // пропускаем себя и каталог верхнего уровня
+               if( !strcmp( fd.name, ".." )) continue;
+
+               memset( filename, 0, FILENAME_MAX );
+               ak_snprintf( filename, FILENAME_MAX, "%s\\%s", root, fd.name );
+               if(( error = akrypt_find( filename, mask, function, handle, tree )) != ak_error_ok )
+                 ak_error_message_fmt( error, __func__, "access denied to catalog %s", filename );
+             }
+      } while ( _findnext( dsp, &fd ) != -1 );
+      _findclose( dsp );
+    } else return ak_error_access_file;
   }
 
 // далее используем механизм функций open/readdir + fnmatch
 #else
   DIR *dp = NULL;
   struct dirent *ent = NULL;
-  char filename[FILENAME_MAX];
 
  /* открытваем каталог */
   errno = 0;
@@ -168,7 +171,8 @@
       if( tree ) { // выполняем рекурсию для вложенных каталогов
         memset( filename, 0, FILENAME_MAX );
         ak_snprintf( filename, FILENAME_MAX, "%s/%s", root, ent->d_name );
-        akrypt_find( filename, mask, function, handle, tree );
+        if(( error = akrypt_find( filename, mask, function, handle, tree )) != ak_error_ok )
+          ak_error_message_fmt( error, __func__, "access denied to catalog %s", filename );
       }
     } else
        if( ent->d_type == DT_REG ) { // обрабатываем только обычные файлы
@@ -182,6 +186,7 @@
   if( closedir( dp )) return ak_error_message_fmt( ak_error_close_file,
                                                                 __func__ , "%s", strerror( errno ));
 #endif
+
  return ak_error_ok;
 }
 
