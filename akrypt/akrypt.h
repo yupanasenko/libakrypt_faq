@@ -79,16 +79,16 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /* определение функции для выполнения действий с заданным файлом */
- typedef int ( ak_function_find_handle )( ak_handle , const char * );
+ typedef int ( ak_function_find )( const char * , ak_pointer );
 /* обход каталога с учетом заданной маски */
- int akrypt_find( const char *, const char *, ak_function_find_handle *, ak_handle , ak_bool );
+ int akrypt_find( const char *, const char *, ak_function_find *, ak_pointer , ak_bool );
 /* проверка, является ли заданная стирока файлом или директорией */
  int akrypt_file_or_directory( const char * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /* реализации пользовательских команд */
+ int akrypt_icode( int argc, char *argv[] );
  int akrypt_show( int argc, char *argv[] );
- int akrypt_hash( int argc, char *argv[] );
 
  #endif
 /* ----------------------------------------------------------------------------------------------- */

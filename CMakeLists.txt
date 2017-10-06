@@ -80,11 +80,10 @@ set( OTHERS         CMakeLists.txt
 
 set( AKRYPT_SOURCES akrypt/akrypt.c
                     akrypt/akrypt_show.c
-                    akrypt/akrypt_hash.c )
+                    akrypt/akrypt_icode.c )
 
 set( AKRYPT_FILES   akrypt/akrypt.h
                     akrypt/akrypt.1
-                    akrypt/msvc-dirent.h
                     akrypt/getopt.h
                     akrypt/getopt.c )
 

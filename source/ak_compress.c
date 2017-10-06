@@ -291,12 +291,12 @@
     return NULL;
   }
   if(( fd = open( filename, O_RDONLY | O_BINARY )) < 0 ) {
-    ak_error_message( ak_error_open_file, strerror( errno ), __func__ );
+    ak_error_message( ak_error_open_file, __func__, strerror( errno ));
     return NULL;
   }
   if( fstat( fd, &st ) ) {
     close( fd );
-    ak_error_message( ak_error_access_file, strerror( errno ), __func__ );
+    ak_error_message( ak_error_access_file,  __func__, strerror( errno ));
     return NULL;
   }
 

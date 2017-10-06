@@ -446,6 +446,12 @@
  dll_export int ak_password_read_buffer( ak_buffer );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Тип функции, передаваемой в качестве аргумента в функцию построчного чтения файлов. */
+ typedef int ( ak_file_read_function ) ( char * , ak_pointer );
+/*! \brief Функция построчного чтения данных из заданного файла. */
+ int ak_file_read( const char * , ak_file_read_function * , ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Обобщенная реализация функции snprintf для различных компиляторов. */
  dll_export int ak_snprintf( char *str, size_t size, const char *format, ... );
 

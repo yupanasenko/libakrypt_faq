@@ -29,9 +29,16 @@
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_tools.h>
  #include <ak_buffer.h>
+ #include <errno.h>
 
 #ifdef LIBAKRYPT_HAVE_TERMIOS_H
  #include <termios.h>
+#endif
+#ifdef LIBAKRYPT_HAVE_FCNTL_H
+  #include <fcntl.h>
+#endif
+#ifdef LIBAKRYPT_HAVE_SYSSTAT_H
+ #include <sys/stat.h>
 #endif
 #ifdef LIBAKRYPT_HAVE_UNISTD_H
  #include <unistd.h>
@@ -374,6 +381,52 @@
     return ak_error_message( error, __func__, "invalind password reading from standard console");
   }
  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_file_read( const char *filename, ak_file_read_function *function , ak_pointer ptr )
+{
+  #define buffer_length ( FILENAME_MAX + 160 )
+
+  char ch;
+  struct stat st;
+  size_t idx = 0, off = 0;
+  int fd = 0, error = ak_error_ok;
+  char localbuffer[buffer_length];
+
+ /* проверяем наличие файла и прав доступа к нему */
+  if(( fd = open( filename, O_RDONLY | O_BINARY )) < 0 )
+    return ak_error_message_fmt( ak_error_open_file,
+                             __func__, "wrong open file \"%s\" - %s", filename, strerror( errno ));
+  if( fstat( fd, &st ) ) {
+    close( fd );
+    return ak_error_message_fmt( ak_error_access_file, __func__ ,
+                              "wrong stat file \"%s\" with error %s", filename, strerror( errno ));
+  }
+
+ /* нарезаем входные на строки длиной не более чем buffer_length - 2 символа */
+  memset( localbuffer, 0, buffer_length );
+  for( idx = 0; idx < (size_t) st.st_size; idx++ ) {
+     if( read( fd, &ch, 1 ) != 1 ) {
+       close(fd);
+       return ak_error_message_fmt( ak_error_read_data, __func__ ,
+                                                                "unexpected end of %s", filename );
+     }
+     if( off > buffer_length - 2 ) {
+       close( fd );
+       return ak_error_message_fmt( ak_error_read_data, __func__ ,
+                          "%s has a line with more than %d symbols", filename, buffer_length - 2 );
+     }
+    if( ch == '\n' ) {
+      function( localbuffer, ptr );
+     /* далее мы очищаем строку независимо от ее содержимого */
+      off = 0;
+      memset( localbuffer, 0, buffer_length );
+    } else localbuffer[off++] = ch;
+  }
+
+  close( fd );
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

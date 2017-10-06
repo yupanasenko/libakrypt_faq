@@ -47,7 +47,7 @@
 
  /* выполняем команду пользователя */
   if( akrypt_check_command( "show", argv[1] )) return akrypt_show( argc, argv );
-  if( akrypt_check_command( "hash", argv[1] )) return akrypt_hash( argc, argv );
+  if( akrypt_check_command( "icode", argv[1] )) return akrypt_icode( argc, argv );
 
  /* ничего не подошло, выводим сообщение об ошибке */
   ak_log_set_function( ak_function_log_stderr );
@@ -99,7 +99,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /* выполнение однотипной процедуры с группой файлов */
  int akrypt_find( const char *root , const char *mask,
-                                ak_function_find_handle *function, ak_handle handle, ak_bool tree )
+                                          ak_function_find *function, ak_pointer ptr, ak_bool tree )
 {
   int error = ak_error_ok;
   char filename[FILENAME_MAX];
@@ -119,7 +119,7 @@
          #endif
              memset( filename, 0, FILENAME_MAX );
              ak_snprintf( filename, FILENAME_MAX, "%s\\%s", root, fd.name );
-             function( handle, filename );
+             function( filename, ptr );
            }
     } while ( _findnext( dsp, &fd ) != -1 );
   } else return ak_error_access_file;
@@ -140,7 +140,7 @@
 
                memset( filename, 0, FILENAME_MAX );
                ak_snprintf( filename, FILENAME_MAX, "%s\\%s", root, fd.name );
-               if(( error = akrypt_find( filename, mask, function, handle, tree )) != ak_error_ok )
+               if(( error = akrypt_find( filename, mask, function, ptr, tree )) != ak_error_ok )
                  ak_error_message_fmt( error, __func__, "access denied to catalog %s", filename );
              }
       } while ( _findnext( dsp, &fd ) != -1 );
@@ -171,7 +171,7 @@
       if( tree ) { // выполняем рекурсию для вложенных каталогов
         memset( filename, 0, FILENAME_MAX );
         ak_snprintf( filename, FILENAME_MAX, "%s/%s", root, ent->d_name );
-        if(( error = akrypt_find( filename, mask, function, handle, tree )) != ak_error_ok )
+        if(( error = akrypt_find( filename, mask, function, ptr, tree )) != ak_error_ok )
           ak_error_message_fmt( error, __func__, "access denied to catalog %s", filename );
       }
     } else
@@ -179,7 +179,7 @@
           if( !fnmatch( mask, ent->d_name, FNM_PATHNAME )) {
             memset( filename, 0, FILENAME_MAX );
             ak_snprintf( filename, FILENAME_MAX, "%s/%s", root, ent->d_name );
-            function( handle, filename );
+            function( filename, ptr );
           }
        }
   }
@@ -220,7 +220,7 @@
                                                                          ak_libakrypt_version( ));
   printf("usage \"akrypt command [options] [files]\"\n\n");
   printf("available commands:\n");
-  printf("  hash    calculation and checking control sums\n");
+  printf("  icode   calculation and checking integrity codes\n");
   printf("  show    show useful information\n\n");
   printf("try \"akrypt command --help\" to get information about command options\n");
   printf("try \"man akrypt\" to get more information about akrypt programm and some examples\n");
