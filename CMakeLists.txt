@@ -43,7 +43,8 @@ set( HEADERS        source/ak_tools.h
                     source/ak_hash.h
                     source/ak_compress.h
                     source/ak_skey.h
-                    source/ak_hmac.h )
+                    source/ak_hmac.h
+                    source/ak_mpzn.h )
 
 set( SOURCES        source/ak_log.c
                     source/ak_libakrypt.c
@@ -57,7 +58,8 @@ set( SOURCES        source/ak_log.c
                     source/ak_streebog.c
                     source/ak_compress.c
                     source/ak_skey.c
-                    source/ak_hmac.c )
+                    source/ak_hmac.c
+                    source/ak_mpzn.c )
 
 set( DOCS           doc/libakrypt.dox
                     doc/refman_header.in
@@ -67,6 +69,7 @@ set( DOCS           doc/libakrypt.dox
 set( CMAKES         cmake/DetectHeaders.cmake
                     cmake/DetectFlags.cmake
                     cmake/DetectLibraries.cmake
+                    cmake/DetectIntrinsics.cmake
                     cmake/MakeDoc.cmake
                     cmake/MakeDist.cmake
                     cmake/MakeInstall.cmake )
@@ -93,6 +96,7 @@ set( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
 include( DetectHeaders )
 include( DetectLibraries )
 include( DetectFlags )
+include( DetectIntrinsics )
 
 # -------------------------------------------------------------------------------------------------- #
 # определяемся с местом хранения файла с конфигурацией библиотеки
@@ -164,6 +168,7 @@ if( LIBAKRYPT_SHARED_LIB )
   endforeach()
 endif()
 
+# -------------------------------------------------------------------------------------------------- #
 # теперь примеры, использующие неэкспортируемые функции
 set( INTERNAL_EXAMPLES_LIST
                    context-manager-node
@@ -176,6 +181,29 @@ if( CMAKE_HOST_UNIX )
     target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static )
   endforeach()
 endif()
+
+# -------------------------------------------------------------------------------------------------- #
+# напоследок сборка тестовых примеров с поддержкой libgmp
+if( LIBAKRYPT_GMP_TESTS )
+  find_library( LIBGMP gmp )
+  if( LIBGMP )
+    find_file( LIBGMP_H gmp.h )
+    if( LIBGMP_H )
+      # теперь готовим тесты для GMP
+      set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_GMP_H" )
+      set( ARITHMETIC_TESTS_LIST
+                   mpzn-convert )
+      if( CMAKE_HOST_UNIX )
+        foreach( programm ${ARITHMETIC_TESTS_LIST} )
+          add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
+          target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static gmp )
+        endforeach()
+      endif()
+      message("-- Added examples for integer arithmetic")
+    endif()
+  endif()
+endif()
+
 
 # -------------------------------------------------------------------------------------------------- #
 if( CMAKE_HOST_UNIX )

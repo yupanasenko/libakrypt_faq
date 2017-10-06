@@ -1,9 +1,9 @@
-Changes in version 0.5.3
+
+Changes in version 0.5.3 (06.10.2017)
 ------------------------------------
 
    * Created ak_compress class for iterated maps
-   * Restored ak_hash, ak_hmac classes, and 
-     gosthash94 & streebog{256,512} algorithms
+   * Restored ak_hash, ak_hmac classes and gosthash94 & streebog{256,512} algorithms
    * Improoved handbook
 
 

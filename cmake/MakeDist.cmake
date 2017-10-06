@@ -58,7 +58,7 @@ if( CMAKE_HOST_UNIX )
 
   # вычисляем контрольные суммы всех файлов, включаемых в архив
   file( APPEND ${MYDFILE} "cd libakrypt-${FULL_VERSION}\n")
-  file( APPEND ${MYDFILE} "akrypt icode -r -o ${CMAKE_BINARY_DIR}/libakrypt.streebog256 .\n")
+  file( APPEND ${MYDFILE} "akrypt icode -r -o ${CMAKE_BINARY_DIR}/libakrypt.streebog256 . \n")
   file( APPEND ${MYDFILE} "cd ${CMAKE_BINARY_DIR}\n")
   file( APPEND ${MYDFILE} "cp libakrypt.streebog256 libakrypt-${FULL_VERSION}\n")
 
