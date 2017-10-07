@@ -113,7 +113,7 @@
    case undefined_mode:  return "undefined mode";
    case algorithm:       return "algorithm";
    case parameter:       return "parametr";
-   case wcurve_params:   return "wierstrass curve parameters";
+   case wcurve_params:   return "weierstrass curve parameters";
    case ecurve_params:   return "edwards curve parameters";
    case kbox_params:     return "kboxes";
    case ecb:             return "ecb mode";
@@ -296,7 +296,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /* 1. Добавляем идентификаторы алгоритмов выработки псевдо-случайных последовательностей.
-       значения OID находятся в дереве библиотеки: 1.2.643.2.52.1.1 - генераторы ПСЧ  */
+           значения OID находятся в дереве библиотеки: 1.2.643.2.52.1.1 - генераторы ПСЧ  */
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( random_generator, algorithm, "lcg",
               "1.2.643.2.52.1.1.1", NULL, (ak_function_void *) ak_random_new_lcg ))) != ak_error_ok )
@@ -339,16 +339,16 @@
 /* 3. Добавляем идентификаторы параметров алгоритма бесключевого хеширования ГОСТ Р 34.11-94. */
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( hash_function, kbox_params,
-   "id-gosthash94-Test-ParamSet", "1.2.643.2.2.30.0", (ak_pointer) hash_box, NULL ))) != ak_error_ok )
+   "id-gosthash94-test-paramset", "1.2.643.2.2.30.0", (ak_pointer) hash_box, NULL ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( hash_function, kbox_params,
-    "id-gosthash94-CryptoPro-ParamSetA", "1.2.643.2.2.30.1", (ak_pointer) hash_box_CSPA,
+    "id-gosthash94-cryptopro-paramsetA", "1.2.643.2.2.30.1", (ak_pointer) hash_box_CSPA,
                                                                              NULL ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( hash_function, kbox_params,
-    "id-gosthash94-VerbaO-ParamSet", "1.2.643.2.2.30.2", (ak_pointer) hash_box_VerbaO,
+    "id-gosthash94-verbaO-paramset", "1.2.643.2.2.30.2", (ak_pointer) hash_box_VerbaO,
                                                                              NULL ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
@@ -366,6 +366,66 @@
   if(( error = ak_oids_add_oid( manager, ak_oid_new( hmac_function, algorithm, "hmac-gosthash94",
     "1.2.643.2.52.1.1.1.4.0", NULL,
                             ( ak_function_void * ) ak_hmac_new_gosthash94_csp ))) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+/* ----------------------------------------------------------------------------------------------- */
+/* 5. Добавляем параметры эллиптических кривых в короткой форме Вейерштрасса, в частности, и3 Р 50.1.114-2016 */
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
+    "id-tc26-gost3410-2012-256-test-paramset", "1.2.643.7.1.2.1.1.0",
+       (ak_pointer) &wcurve_gost_3410_2012_test256, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
+    "id-tc26-gost3410-2012-256-paramsetA", "1.2.643.7.1.2.1.1.1",
+       (ak_pointer) &wcurve_tc26_gost_3410_2012_256_paramSetA, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
+    "id-cryptopro-gost3410-2001-paramsetA", "1.2.643.2.2.35.1",
+       (ak_pointer) &wcurve_rfc4357_paramSetA, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
+    "id-cryptopro-gost3410-2001-paramsetB", "1.2.643.2.2.35.2",
+       (ak_pointer) &wcurve_rfc4357_paramSetB, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
+    "id-cryptopro-gost3410-2001-paramsetC", "1.2.643.2.2.35.3",
+       (ak_pointer) &wcurve_rfc4357_paramSetC, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
+    "id-cryptopro-2001dh-paramset", "1.2.643.2.2.36.0",
+       (ak_pointer) &wcurve_rfc4357_paramSetA, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
+    "id-axel-gost3410-2012-256-paramsetA", "1.2.643.2.52.1.25.1.2.1",
+       (ak_pointer) &wcurve_axel_gost_3410_2012_256_paramSetA, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+ // где тестовый пример из госта на 512 бит ?
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
+    "id-tc26-gost3410-2012-512-paramsetA", "1.2.643.7.1.2.1.2.1",
+       (ak_pointer) &wcurve_tc26_gost_3410_2012_512_paramSetA, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
+    "id-tc26-gost3410-2012-512-paramsetB", "1.2.643.7.1.2.1.2.2",
+       (ak_pointer) &wcurve_tc26_gost_3410_2012_512_paramSetB, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
+    "id-tc26-gost3410-2012-512-paramsetC", "1.2.643.7.1.2.1.2.3",
+       (ak_pointer) &wcurve_tc26_gost_3410_2012_512_paramSetC, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
+    "id-axel-gost3410-2012-512-paramsetA", "1.2.643.2.52.1.27.1.2.1",
+       (ak_pointer) &wcurve_axel_gost_3410_2012_512_paramSetA, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
  return ak_error_ok;

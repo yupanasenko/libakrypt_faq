@@ -526,7 +526,7 @@
 
  /* первый пример из ГОСТ Р 34.11-94 */
   if(( error = ak_hash_create_gosthash94( &ctx,
-                          ak_oid_find_by_name( "id-gosthash94-Test-ParamSet" ))) != ak_error_ok ) {
+                          ak_oid_find_by_name( "id-gosthash94-test-paramset" ))) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong initialization of gosthash94 context" );
     return ak_false;
   }
@@ -541,10 +541,10 @@
   if(ak_ptr_is_equal( test_hash1, out, 32 )) {
     if( audit >= ak_log_maximum )
       ak_error_message( ak_error_ok, __func__ ,
-                                             "the 1st test with id-gosthash94-Test-ParamSet is Ok" );
+                                             "the 1st test with id-gosthash94-test-paramset is Ok" );
   } else {
            ak_error_message( ak_error_not_equal_data, __func__ ,
-                                          "the 1st test with id-gosthash94-Test-ParamSet is wrong" );
+                                          "the 1st test with id-gosthash94-test-paramset is wrong" );
            ak_log_set_message(( str = ak_ptr_to_hexstr( out, 32, ak_false ))); free( str );
            ak_log_set_message(( str = ak_ptr_to_hexstr( test_hash1, 32, ak_false ))); free( str );
            result = ak_false;
@@ -562,22 +562,22 @@
   if(ak_ptr_is_equal( test_hash2, out, 32 )) {
     if( audit >= ak_log_maximum )
       ak_error_message( ak_error_ok, __func__ ,
-                                             "the 2nd test with id-gosthash94-Test-ParamSet is Ok" );
+                                             "the 2nd test with id-gosthash94-test-paramset is Ok" );
   } else {
            ak_error_message( ak_error_not_equal_data, __func__ ,
-                                          "the 2nd test with id-gosthash94-Test-ParamSet is wrong" );
+                                          "the 2nd test with id-gosthash94-test-paramset is wrong" );
            ak_log_set_message(( str = ak_ptr_to_hexstr( out, 32, ak_false ))); free( str );
            ak_log_set_message(( str = ak_ptr_to_hexstr( test_hash2, 32, ak_false ))); free( str );
            result = ak_false;
            goto lab_exit;
          }
 
- /* уничтожаем контекст c параметрами id-gosthash94-TestParamSet */
+ /* уничтожаем контекст c параметрами id-gosthash94-test-paramset */
   ak_hash_destroy( &ctx );
 
  /* первый пример для таблиц замен из Верба-О */
   if(( error = ak_hash_create_gosthash94( &ctx,
-                         ak_oid_find_by_name( "id-gosthash94-VerbaO-ParamSet" ))) != ak_error_ok ) {
+                         ak_oid_find_by_name( "id-gosthash94-verbaO-paramset" ))) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong initialization of gosthash94 context" );
     return ak_false;
   }
@@ -592,10 +592,10 @@
   if(ak_ptr_is_equal( test_VerbaO_1, out, 32 )) {
     if( audit >= ak_log_maximum )
       ak_error_message( ak_error_ok, __func__ ,
-                                           "the 1st test with id-gosthash94-VerbaO-ParamSet is Ok" );
+                                           "the 1st test with id-gosthash94-verbaO-paramset is Ok" );
   } else {
            ak_error_message( ak_error_not_equal_data, __func__ ,
-                                        "the 1st test with id-gosthash94-VerbaO-ParamSet is wrong" );
+                                        "the 1st test with id-gosthash94-verbaO-paramset is wrong" );
            ak_log_set_message(( str = ak_ptr_to_hexstr( out, 32, ak_false ))); free( str );
            ak_log_set_message(( str = ak_ptr_to_hexstr( test_VerbaO_1, 32, ak_false ))); free( str );
            result = ak_false;
@@ -613,10 +613,10 @@
   if(ak_ptr_is_equal( test_VerbaO_2, out, 32 )) {
     if( audit >= ak_log_maximum )
       ak_error_message( ak_error_ok, __func__ ,
-                                           "the 2nd test with id-gosthash94-VerbaO-ParamSet is Ok" );
+                                           "the 2nd test with id-gosthash94-verbaO-paramset is Ok" );
   } else {
            ak_error_message( ak_error_not_equal_data, __func__ ,
-                                        "the 2nd test with id-gosthash94-VerbaO-ParamSet is wrong" );
+                                        "the 2nd test with id-gosthash94-verbaO-paramset is wrong" );
            ak_log_set_message(( str = ak_ptr_to_hexstr( out, 32, ak_false ))); free( str );
            ak_log_set_message(( str = ak_ptr_to_hexstr( test_VerbaO_2, 32, ak_false ))); free( str );
            result = ak_false;

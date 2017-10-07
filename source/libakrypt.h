@@ -169,6 +169,14 @@
  #define ak_error_resource_counter            (-27)
 /*! \brief Ошибка, возникающая при использовании ключа, значение которого не определено. */
  #define ak_error_key_value                   (-28)
+/*! \brief Ошибка, возникающая если заданная точка не принадлежит заданной кривой. */
+ #define ak_error_curve_point                 (-30)
+/*! \brief Ошибка, возникающая когда порядок точки неверен. */
+ #define ak_error_curve_point_order           (-31)
+/*! \brief Ошибка, возникающая если дискриминант кривой равен нулю (уравнение не задает кривую). */
+ #define ak_error_curve_discriminant          (-32)
+/*! \brief Ошибка, возникающая простой модуль кривой задае неверно. */
+ #define ak_error_curve_prime_size            (-33)
 
 /* ----------------------------------------------------------------------------------------------- */
  #define ak_null_string                  ("(null)")
@@ -449,7 +457,7 @@
 /*! \brief Тип функции, передаваемой в качестве аргумента в функцию построчного чтения файлов. */
  typedef int ( ak_file_read_function ) ( char * , ak_pointer );
 /*! \brief Функция построчного чтения данных из заданного файла. */
- int ak_file_read( const char * , ak_file_read_function * , ak_pointer );
+ int ak_file_read_by_lines( const char * , ak_file_read_function * , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Обобщенная реализация функции snprintf для различных компиляторов. */

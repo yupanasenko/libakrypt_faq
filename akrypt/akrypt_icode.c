@@ -161,9 +161,10 @@
 
                    break;
     case do_check: /* проверяем контрольную сумму */
-                   ak_file_read( checkfile, akrypt_icode_check_function, &ic );
+                   ak_file_read_by_lines( checkfile, akrypt_icode_check_function, &ic );
                    printf("\ntotal: %lu files, where correct: %lu, wrong: %lu.\n\n",
-                                             ic.total, ic.successed, ic.total - ic.successed );
+                               (unsigned long int)ic.total, (unsigned long int)ic.successed,
+                                                   (unsigned long int)( ic.total - ic.successed ));
                    break;
     default: break;
    }

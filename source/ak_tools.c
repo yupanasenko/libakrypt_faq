@@ -384,7 +384,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_file_read( const char *filename, ak_file_read_function *function , ak_pointer ptr )
+ int ak_file_read_by_lines( const char *filename, ak_file_read_function *function , ak_pointer ptr )
 {
   #define buffer_length ( FILENAME_MAX + 160 )
 

@@ -44,7 +44,8 @@ set( HEADERS        source/ak_tools.h
                     source/ak_compress.h
                     source/ak_skey.h
                     source/ak_hmac.h
-                    source/ak_mpzn.h )
+                    source/ak_mpzn.h
+                    source/ak_curves.h )
 
 set( SOURCES        source/ak_log.c
                     source/ak_libakrypt.c
@@ -59,7 +60,8 @@ set( SOURCES        source/ak_log.c
                     source/ak_compress.c
                     source/ak_skey.c
                     source/ak_hmac.c
-                    source/ak_mpzn.c )
+                    source/ak_mpzn.c
+                    source/ak_curves.c )
 
 set( DOCS           doc/libakrypt.dox
                     doc/refman_header.in
@@ -192,7 +194,11 @@ if( LIBAKRYPT_GMP_TESTS )
       # теперь готовим тесты для GMP
       set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_GMP_H" )
       set( ARITHMETIC_TESTS_LIST
-                   mpzn-convert )
+                   mpzn-convert
+                   mpzn-arithmetic
+                   mpzn-montgomery
+                   mpzn-rem )
+
       if( CMAKE_HOST_UNIX )
         foreach( programm ${ARITHMETIC_TESTS_LIST} )
           add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
@@ -203,7 +209,6 @@ if( LIBAKRYPT_GMP_TESTS )
     endif()
   endif()
 endif()
-
 
 # -------------------------------------------------------------------------------------------------- #
 if( CMAKE_HOST_UNIX )
