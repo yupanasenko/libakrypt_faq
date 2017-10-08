@@ -97,8 +97,8 @@ set( AKRYPT_FILES   akrypt/akrypt.h
 set( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
 include( DetectHeaders )
 include( DetectLibraries )
-include( DetectFlags )
 include( DetectIntrinsics )
+include( DetectFlags )
 
 # -------------------------------------------------------------------------------------------------- #
 # определяемся с местом хранения файла с конфигурацией библиотеки
@@ -134,6 +134,9 @@ if( LIBAKRYPT_STATIC_LIB )
   add_library( akrypt-static STATIC ${MAIN_HEADER} ${SOURCES} )
   set_target_properties( akrypt-static PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
 endif()
+
+# -------------------------------------------------------------------------------------------------- #
+message("-- Additional libraries is ${LIBAKRYPT_LIBS}" )
 
 # -------------------------------------------------------------------------------------------------- #
 # сборка консольной утилиты
@@ -179,35 +182,25 @@ set( INTERNAL_EXAMPLES_LIST
 
 if( CMAKE_HOST_UNIX )
   foreach( programm ${INTERNAL_EXAMPLES_LIST} )
-    add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
-    target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static )
+     add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
+     target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
   endforeach()
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
-# напоследок сборка тестовых примеров с поддержкой libgmp
+# напоследок тестовые примеры для арифметических операций
 if( LIBAKRYPT_GMP_TESTS )
-  find_library( LIBGMP gmp )
-  if( LIBGMP )
-    find_file( LIBGMP_H gmp.h )
-    if( LIBGMP_H )
-      # теперь готовим тесты для GMP
-      set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_GMP_H" )
-      set( ARITHMETIC_TESTS_LIST
+  set( ARITHMETIC_TESTS_LIST
                    mpzn-convert
                    mpzn-arithmetic
                    mpzn-montgomery
                    mpzn-rem )
 
-      if( CMAKE_HOST_UNIX )
-        foreach( programm ${ARITHMETIC_TESTS_LIST} )
-          add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
-          target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static gmp )
-        endforeach()
-      endif()
-      message("-- Added examples for integer arithmetic")
-    endif()
-  endif()
+  foreach( programm ${ARITHMETIC_TESTS_LIST} )
+     add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
+     target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static gmp )
+  endforeach()
+  message("-- Added examples for integer arithmetic")
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -218,6 +211,6 @@ endif()
 include( MakeInstall )
 
 # -------------------------------------------------------------------------------------------------- #
-
 message("-- Compiler options is ${CMAKE_C_FLAGS}" )
+
 # -------------------------------------------------------------------------------------------------- #

@@ -406,7 +406,11 @@
        (ak_pointer) &wcurve_axel_gost_3410_2012_256_paramSetA, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
- // где тестовый пример из госта на 512 бит ?
+ /* значения параметров для 512-ти битных кривых */
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
+    "id-tc26-gost3410-2012-512-test-paramset", "1.2.643.7.1.2.1.2.0",
+       (ak_pointer) &wcurve_gost_3410_2012_test512, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
     "id-tc26-gost3410-2012-512-paramsetA", "1.2.643.7.1.2.1.2.1",

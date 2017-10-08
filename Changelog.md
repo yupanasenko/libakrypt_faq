@@ -1,3 +1,9 @@
+Changes in version 0.5.4
+------------------------------------
+   * Restored arithmetic in prime fields with Montgomery improovments
+   * Restored operations on short Weierstrass form curves.
+   * Added 256bit & 512 bit parameters for useful Weierstrass curves
+   * Improoved handbook
 
 Changes in version 0.5.3 (06.10.2017)
 ------------------------------------

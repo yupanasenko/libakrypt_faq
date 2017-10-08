@@ -32,9 +32,36 @@ if( MSVC )
   endif()
 endif()
     
-# вырабатываем и подключаем файл с ресурсами библиотеки    
+# -------------------------------------------------------------------------------------------------- #
+# вырабатываем и подключаем файл с ресурсами библиотеки
 if( WIN32 )
   configure_file( ${CMAKE_SOURCE_DIR}/libakrypt.rc.in ${CMAKE_SOURCE_DIR}/libakrypt.rc @ONLY )
   set( SOURCES ${SOURCES} libakrypt.rc )
   set( CMAKE_BUILD_TYPE "Release" )
+endif()
+
+
+# -------------------------------------------------------------------------------------------------- #
+# теперь поиск gmp
+if( LIBAKRYPT_GMP_TESTS )
+
+  find_library( LIBGMP gmp )
+  if( LIBGMP )
+    find_file( LIBGMP_H gmp.h )
+    if( LIBGMP_H )
+      # теперь готовим тесты для GMP
+       set( LIBAKRYPT_LIBS ${LIBAKRYPT_LIBS} gmp )
+       set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_GMP_H" )
+
+
+
+
+    else()
+       message("-- gmp.h not found")
+       exit()
+    endif()
+  else()
+    message("-- libgmp not found")
+    exit()
+  endif()
 endif()

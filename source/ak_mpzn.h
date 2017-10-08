@@ -31,6 +31,9 @@
 #define    __AK_MPZN_H__
 
 /* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_GMP_H
+ #include <gmp.h>
+#endif
  #include <ak_random.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -98,12 +101,10 @@
                                                           ak_uint64 *, ak_uint64, const size_t );
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_GMP_H
- #include <gmp.h>
 /*! \brief Преобразование ak_mpznxxx в mpz_t. */
  void ak_mpzn_to_mpz( const ak_uint64 *, const size_t , mpz_t );
 /*! \brief Преобразование mpz_t в ak_mpznxxx. */
  void ak_mpz_to_mpzn( const mpz_t , ak_uint64 *, const size_t );
-
 #endif
 
 #endif
