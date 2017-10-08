@@ -666,6 +666,7 @@
 /*! \example example-mpzn-convert.c
     \example example-mpzn-arithmetic.c
     \example example-mpzn-montgomery.c
+    \example example-mpzn-rem.c
                                                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_mpzn.c  */

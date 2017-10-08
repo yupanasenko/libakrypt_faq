@@ -280,7 +280,6 @@
   ak_uint8 *localbuffer; /* место для локального считывания информации */
   size_t block_size = 4096; /* оптимальная длина блока для Windows пока не ясна */
   ak_buffer result = NULL;
-  char *str = NULL;
 
  /* выполняем необходимые проверки */
   if( comp == NULL ) {
