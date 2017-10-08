@@ -457,7 +457,7 @@
 /*! \brief Тип функции, передаваемой в качестве аргумента в функцию построчного чтения файлов. */
  typedef int ( ak_file_read_function ) ( char * , ak_pointer );
 /*! \brief Функция построчного чтения данных из заданного файла. */
- int ak_file_read_by_lines( const char * , ak_file_read_function * , ak_pointer );
+ dll_export int ak_file_read_by_lines( const char * , ak_file_read_function * , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Обобщенная реализация функции snprintf для различных компиляторов. */

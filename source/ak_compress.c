@@ -280,6 +280,7 @@
   ak_uint8 *localbuffer; /* место для локального считывания информации */
   size_t block_size = 4096; /* оптимальная длина блока для Windows пока не ясна */
   ak_buffer result = NULL;
+  char *str = NULL;
 
  /* выполняем необходимые проверки */
   if( comp == NULL ) {
@@ -290,6 +291,7 @@
     ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to filename" );
     return NULL;
   }
+ 
   if(( fd = open( filename, O_RDONLY | O_BINARY )) < 0 ) {
     ak_error_message( ak_error_open_file, __func__, strerror( errno ));
     return NULL;

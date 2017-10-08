@@ -418,6 +418,9 @@
                           "%s has a line with more than %d symbols", filename, buffer_length - 2 );
      }
     if( ch == '\n' ) {
+      #ifdef _WIN32
+       if( off ) localbuffer[off-1] = 0;  /* удаляем второй символ перехода на новую строку */
+      #endif
       function( localbuffer, ptr );
      /* далее мы очищаем строку независимо от ее содержимого */
       off = 0;

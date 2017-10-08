@@ -100,7 +100,11 @@
                        printf("file %s cannot be created\n", optarg );
                        work = do_nothing;
                      } else {
+                             #ifdef _WIN32
+                              GetFullPathName( optarg, FILENAME_MAX, ic.outfile, NULL );
+                             #else
                               realpath( optarg , ic.outfile );
+                             #endif
                             }
                      break;
 
@@ -187,7 +191,11 @@
 
  /* файл для вывода результатов не хешируем */
   if( ic->outfp != NULL ) {
+   #ifdef _WIN32
+    GetFullPathName( filename, FILENAME_MAX, flongname, NULL );
+   #else
     realpath( filename, flongname );
+   #endif
     if( !strncmp( flongname, ic->outfile, FILENAME_MAX - 2 )) return ak_error_ok;
   }
 
@@ -235,6 +243,7 @@
   memset( out, 0, akrypt_max_icode_size );
   ak_error_set_value( ak_error_ok );
   ak_hash_file( ic->handle, string+offset, out );
+
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     fprintf( ic->outfp, "%s No!\n", string+offset );
     return ak_error_message_fmt( error, __func__ ,
