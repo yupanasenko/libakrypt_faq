@@ -69,6 +69,12 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! @param ec Контекст эллиптической кривой, для которой проверяется, что ее дискриминант
+    отличен от нуля.
+
+    @return Функция возвращает \ref ak_error_ok в случае, если дискриминант отличен от нуля.
+    В противном случае возвращается код ошибки.                                                    */
+/* ----------------------------------------------------------------------------------------------- */
  int ak_wcurve_static_discriminant_is_ok( ak_wcurve_static ec )
 {
   ak_mpznmax d;
@@ -117,13 +123,16 @@
   if( ak_wpoint_static_is_ok( &wp, ec ) != ak_true )
     return ak_error_message( ak_error_curve_point, __func__ ,
                                                "elliptic curve parameters has'nt correct point" );
+  if( ak_wpoint_static_check_order( &wp, ec ) != ak_true )
+    return ak_error_message( ak_error_curve_point_order, __func__ ,
+                                                         "elliptic curve point has wrong order" );
  return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция выводит в файл аудита значения параметров эллиптической кривой                  */
 /* ----------------------------------------------------------------------------------------------- */
- static void ak_wcurve_static_to_log( ak_wcurve_static ec )
+  static void ak_wcurve_static_to_log( ak_wcurve_static ec )
 {
   char message[160];
 
@@ -193,9 +202,6 @@
         result = ak_false;
         goto lab_exit;
       }
-      ak_wcurve_static_to_log( wc );
-
-
       if(( reason = ak_wcurve_static_is_ok( wc )) != ak_error_ok ) {
         char *p = NULL;
         switch( reason ) {
@@ -205,7 +211,7 @@
           case ak_error_curve_prime_size   : p = "prime modulo p"; break;
           default : p = "unexpected parameter";
         }
-        //ak_wcurve_paramset_to_log( wc );
+        ak_wcurve_static_to_log( wc );
         ak_error_message_fmt( reason, __func__ , "curve %s (OID: %s) has wrong %s",
                                                              oid->name.data, oid->id.data, p );
         result = ak_false;
@@ -227,11 +233,15 @@
  return result;
 }
 
-
-
-
+/* ----------------------------------------------------------------------------------------------- */
 /* ----------------------------------------------------------------------------------------------- */
 /*          реализация операций с точками эллиптической кривой в короткой форме Вейерштрасса       */
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param wp точка \f$ P \f$ эллиптической кривой, которой присваивается значение,
+    содержащееся в контексте эллиптической кривой.
+    @param wc эллиптическая кривая, которой принадлежит точка.
+    @return Функция возвращает \ref ak_error_ok. В случае, когда один  из контекстов
+    равен NULL, то возвращается \ref ak_error_null_pointer.                                        */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_wpoint_static_set( ak_wpoint_static wp, ak_wcurve_static wc )
 {
@@ -240,12 +250,51 @@
   if( wc == NULL ) ak_error_message( ak_error_null_pointer, __func__ ,
                                                          "using null pointer to elliptic curve" );
  /* копируем данные */
-  memcpy( wp->x, wc->px, ak_mpzn512_size );
-  memcpy( wp->y, wc->py, ak_mpzn512_size );
-  ak_mpzn_set_ui( wp->y, ak_mpzn512_size, 1 );
+  memcpy( wp->x, wc->px, wc->size*sizeof( ak_uint64 ));
+  memcpy( wp->y, wc->py, wc->size*sizeof( ak_uint64 ));
+  ak_mpzn_set_ui( wp->z, wc->size, 1 );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param wp точка \f$ P \f$ эллиптической кривой, которой присваивается значение
+    бесконечно удаленной точки.
+    @param wc эллиптическая кривая, которой принадлежит точка.
+    @return Функция возвращает \ref ak_error_ok. В случае, когда один  из контекстов
+    равен NULL, то возвращается \ref ak_error_null_pointer.                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_wpoint_static_set_as_unit( ak_wpoint_static wp, ak_wcurve_static wc )
+{
+  if( wp == NULL ) ak_error_message( ak_error_null_pointer, __func__ ,
+                                                   "using null pointer to elliptic curve point" );
+  ak_mpzn_set_ui( wp->x, wc->size, 0 );
+  ak_mpzn_set_ui( wp->y, wc->size, 1 );
+  ak_mpzn_set_ui( wp->z, wc->size, 0 );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param wp точка \f$ P \f$ эллиптической кривой, которой присваивается новое значение.
+    @param wq точка \f$ Q \f$ эллиптической кривой, значение которой присваивается.
+    @param wc эллиптическая кривая, которой принадлежат обе точки.
+    @return Функция возвращает \ref ak_error_ok. В случае, когда один  из контекстов
+    равен NULL, то возвращается \ref ak_error_null_pointer.                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_wpoint_static_set_wpoint( ak_wpoint_static wp, ak_wpoint_static wq, ak_wcurve_static wc )
+{
+  if( wp == NULL ) ak_error_message( ak_error_null_pointer, __func__ ,
+                                                   "using null pointer to elliptic curve point" );
+  if( wq == NULL ) ak_error_message( ak_error_null_pointer, __func__ ,
+                                                   "using null pointer to elliptic curve point" );
+  if( wc == NULL ) ak_error_message( ak_error_null_pointer, __func__ ,
+                                                         "using null pointer to elliptic curve" );
+  memcpy( wp->x, wq->x, wc->size*sizeof( ak_uint64 ));
+  memcpy( wp->y, wq->y, wc->size*sizeof( ak_uint64 ));
+  memcpy( wp->z, wq->z, wc->size*sizeof( ak_uint64 ));
 
  return ak_error_ok;
 }
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Для заданной точки \f$ P = (x:y:z) \f$ функция проверяет,
@@ -261,6 +310,8 @@
  ak_bool ak_wpoint_static_is_ok( ak_wpoint_static wp, ak_wcurve_static ec )
 {
   ak_mpznmax t, s;
+  memset( t, 0, sizeof(ak_uint64)*ak_mpznmax_size );
+  memset( s, 0, sizeof(ak_uint64)*ak_mpznmax_size );
 
  /* Проверяем принадлежность точки заданной кривой */
   ak_mpzn_set( t, ec->a, ec->size );
@@ -282,14 +333,255 @@
   ak_mpzn_mul_montgomery( s, s, s, ec->p, ec->n, ec->size );
   ak_mpzn_mul_montgomery( s, s, wp->z, ec->p, ec->n, ec->size ); // теперь в s величина x^3 + (ax+bz)z^2
 
-  char *str;
-  printf("s = %s\n", str = ak_ptr_to_hexstr( s, ec->size*sizeof( ak_uint64 ), ak_false )); free( str );
-  printf("t = %s\n", str = ak_ptr_to_hexstr( t, ec->size*sizeof( ak_uint64 ), ak_false )); free( str );
-
-
   if( ak_mpzn_cmp( t, s, ec->size )) return ak_false;
  return ak_true;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Точка эллиптической кривой \f$ P = (x:y:z) \f$ заменяется значением \f$ 2P  = (x_3:y_3:z_3)\f$,
+    то есть складывается сама с собой (удваивается).
+    При вычислениях используются соотношения, основанные на результатах работы
+    D.Bernstein, T.Lange, <a href="http://eprint.iacr.org/2007/286">Faster addition and doubling
+     on elliptic curves</a>, 2007.
+
+    \code
+      XX = X^2
+      ZZ = Z^2
+      w = a*ZZ+3*XX
+      s = 2*Y*Z
+      ss = s^2
+      sss = s*ss
+      R = Y*s
+      RR = R^2
+      B = (X+R)^2-XX-RR
+      h = w^2-2*B
+      X3 = h*s
+      Y3 = w*(B-h)-2*RR
+      Z3 = sss
+    \endcode
+
+    @param wp удваиваемая точка \f$ P \f$ эллиптической кривой.
+    @param ec эллиптическая кривая, которой принадлежит точка \f$P\f$.                             */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_wpoint_static_double( ak_wpoint_static wp, ak_wcurve_static ec )
+{
+ ak_mpznmax u1, u2, u3, u4, u5, u6, u7;
+
+ if( ak_mpzn_cmp_ui( wp->z, ec->size, 0 ) == ak_true ) return;
+ if( ak_mpzn_cmp_ui( wp->y, ec->size, 0 ) == ak_true ) {
+   ak_wpoint_static_set_as_unit( wp, ec );
+   return;
+ }
+ // dbl-2007-bl
+ ak_mpzn_mul_montgomery( u1, wp->x, wp->x, ec->p, ec->n, ec->size );
+ ak_mpzn_mul_montgomery( u2, wp->z, wp->z, ec->p, ec->n, ec->size );
+ ak_mpzn_lshift_montgomery( u4, u1, ec->p, ec->size );
+ ak_mpzn_add_montgomery( u4, u4, u1, ec->p, ec->size );
+ ak_mpzn_mul_montgomery( u3, u2, ec->a, ec->p, ec->n, ec->size );
+ ak_mpzn_add_montgomery( u3, u3, u4, ec->p, ec->size );  // u3 = az^2 + 3x^2
+ ak_mpzn_mul_montgomery( u4, wp->y, wp->z, ec->p, ec->n, ec->size );
+ ak_mpzn_lshift_montgomery( u4, u4, ec->p, ec->size );   // u4 = 2yz
+ ak_mpzn_mul_montgomery( u5, wp->y, u4, ec->p, ec->n, ec->size ); // u5 = 2y^2z
+ ak_mpzn_lshift_montgomery( u6, u5, ec->p, ec->size ); // u6 = 2u5
+ ak_mpzn_mul_montgomery( u7, u6, wp->x, ec->p, ec->n, ec->size ); // u7 = 8xy^2z
+ ak_mpzn_lshift_montgomery( u1, u7, ec->p, ec->size );
+ ak_mpzn_sub( u1, ec->p, u1, ec->size );
+ ak_mpzn_mul_montgomery( u2, u3, u3, ec->p, ec->n, ec->size );
+ ak_mpzn_add_montgomery( u2, u2, u1, ec->p, ec->size );
+ ak_mpzn_mul_montgomery( wp->x, u2, u4, ec->p, ec->n, ec->size );
+ ak_mpzn_mul_montgomery( u6, u6, u5, ec->p, ec->n, ec->size );
+ ak_mpzn_sub( u6, ec->p, u6, ec->size );
+ ak_mpzn_sub( u2, ec->p, u2, ec->size );
+ ak_mpzn_add_montgomery( u2, u2, u7, ec->p, ec->size );
+ ak_mpzn_mul_montgomery( wp->y, u2, u3, ec->p, ec->n, ec->size );
+ ak_mpzn_add_montgomery( wp->y, wp->y, u6, ec->p, ec->size );
+ ak_mpzn_mul_montgomery( wp->z, u4, u4, ec->p, ec->n, ec->size );
+ ak_mpzn_mul_montgomery( wp->z, wp->z, u4, ec->p, ec->n, ec->size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Для двух заданных точек эллиптической кривой \f$ P = (x_1: y_1: z_1) \f$ и
+    \f$ Q = (x_2:y_2:z_2)\f$ вычисляется сумма \f$ P+Q = (x_3:y_3:z_3)\f$,
+    которая присваивается точке \f$ P\f$.
+
+    Для вычислений используются соотношения,
+    приведенные в работе H.Cohen, A.Miyaji and T.Ono
+    <a href=http://link.springer.com/chapter/10.1007/3-540-49649-1_6>Efficient elliptic curve
+    exponentiation using mixed coordinates</a>, 1998.
+
+    \code
+      Y1Z2 = Y1*Z2
+      X1Z2 = X1*Z2
+      Z1Z2 = Z1*Z2
+      u = Y2*Z1-Y1Z2
+      uu = u^2
+      v = X2*Z1-X1Z2
+      vv = v^2
+      vvv = v*vv
+      R = vv*X1Z2
+      A = uu*Z1Z2-vvv-2*R
+      X3 = v*A
+      Y3 = u*(R-A)-vvv*Y1Z2
+      Z3 = vvv*Z1Z2
+    \endcode
+
+    Если в качестве точки \f$ Q \f$ передается точка \f$ P \f$,
+    то функция ak_wpoint_add() корректно обрабатывает такую ситуацию и вызывает функцию
+    удвоения точки ak_wpoint_double().
+
+    @param wp1 Точка \f$ P \f$, в которую помещается результат операции сложения; первое слагаемое
+    @param wp2 Точка \f$ Q \f$, второе слагаемое
+    @param ec Эллиптическая кривая, которой принадллежат складываемые точки                        */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_wpoint_static_add( ak_wpoint_static wp1, ak_wpoint_static wp2, ak_wcurve_static ec )
+{
+  ak_mpznmax u1, u2, u3, u4, u5, u6, u7;
+
+  if( ak_mpzn_cmp_ui( wp2->z, ec->size, 0 ) == ak_true ) return;
+  if( ak_mpzn_cmp_ui( wp1->z, ec->size, 0 ) == ak_true ) {
+    ak_wpoint_static_set_wpoint( wp1, wp2, ec );
+    return;
+  }
+  // поскольку удвоение точки с помощью формул сложения дает бесконечно удаленную точку,
+  // необходимо выполнить проверку
+  ak_mpzn_mul_montgomery( u1, wp1->x, wp2->z, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( u2, wp2->x, wp1->z, ec->p, ec->n, ec->size );
+  if( ak_mpzn_cmp( u1, u2, ec->size ) == 0 ) { // случай совпадения х-координат точки
+    ak_mpzn_mul_montgomery( u1, wp1->y, wp2->z, ec->p, ec->n, ec->size );
+    ak_mpzn_mul_montgomery( u2, wp2->y, wp1->z, ec->p, ec->n, ec->size );
+    if( ak_mpzn_cmp( u1, u2, ec->size ) == 0 ) // случай полного совпадения точек
+      ak_wpoint_static_double( wp1, ec );
+     else ak_wpoint_static_set_as_unit( wp1, ec );
+    return;
+  }
+
+  //add-1998-cmo-2
+  ak_mpzn_mul_montgomery( u1, wp1->x, wp2->z, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( u2, wp1->y, wp2->z, ec->p, ec->n, ec->size );
+  ak_mpzn_sub( u2, ec->p, u2, ec->size );
+  ak_mpzn_mul_montgomery( u3, wp1->z, wp2->z, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( u4, wp2->y, wp1->z, ec->p, ec->n, ec->size );
+  ak_mpzn_add_montgomery( u4, u4, u2, ec->p, ec->size );
+  ak_mpzn_mul_montgomery( u5, u4, u4, ec->p, ec->n, ec->size );
+  ak_mpzn_sub( u7, ec->p, u1, ec->size );
+  ak_mpzn_mul_montgomery( wp1->x, wp2->x, wp1->z, ec->p, ec->n, ec->size );
+  ak_mpzn_add_montgomery( wp1->x, wp1->x, u7, ec->p, ec->size );
+  ak_mpzn_mul_montgomery( u7, wp1->x, wp1->x, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( u6, u7, wp1->x, ec->p, ec->n, ec->size);
+  ak_mpzn_mul_montgomery( u1, u7, u1, ec->p, ec->n, ec->size );
+  ak_mpzn_lshift_montgomery( u7, u1, ec->p, ec->size );
+  ak_mpzn_add_montgomery( u7, u7, u6, ec->p, ec->size );
+  ak_mpzn_sub( u7, ec->p, u7, ec->size );
+  ak_mpzn_mul_montgomery( u5, u5, u3, ec->p, ec->n, ec->size );
+  ak_mpzn_add_montgomery( u5, u5, u7, ec->p, ec->size );
+  ak_mpzn_mul_montgomery( wp1->x, wp1->x, u5, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( u2, u2, u6, ec->p, ec->n, ec->size );
+  ak_mpzn_sub( u5, ec->p, u5, ec->size );
+  ak_mpzn_add_montgomery( u1, u1, u5, ec->p, ec->size );
+  ak_mpzn_mul_montgomery( wp1->y, u4, u1, ec->p, ec->n, ec->size );
+  ak_mpzn_add_montgomery( wp1->y, wp1->y, u2, ec->p, ec->size );
+  ak_mpzn_mul_montgomery( wp1->z, u6, u3, ec->p, ec->n, ec->size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Для точки \f$ P = (x:y:z) \f$ функция вычисляет аффинное представление,
+    задаваемое следующим вектором \f$ P = \left( \frac{x}{z} \pmod{p}, \frac{y}{z} \pmod{p}, 1\right) \f$,
+    где \f$ p \f$ модуль эллиптической кривой.
+
+    @param wp Точка кривой, которая приводится к аффинной форме
+    @param ec Эллиптическая кривая, которой принадлежит точка                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_wpoint_static_reduce( ak_wpoint_static wp, ak_wcurve_static ec )
+{
+ ak_mpznmax u, one = ak_mpznmax_one;
+ if( ak_mpzn_cmp_ui( wp->z, ec->size, 0 ) == ak_true ) {
+   ak_wpoint_static_set_as_unit( wp, ec );
+   return;
+ }
+
+ ak_mpzn_set_ui( u, ec->size, 2 );
+ ak_mpzn_sub( u, ec->p, u, ec->size );
+ ak_mpzn_modpow_montgomery( u, wp->z, u, ec->p, ec->n, ec->size ); // u <- z^{p-2} (mod p)
+ ak_mpzn_mul_montgomery( u, u, one, ec->p, ec->n, ec->size );
+
+ ak_mpzn_mul_montgomery( wp->x, wp->x, u, ec->p, ec->n, ec->size );
+ ak_mpzn_mul_montgomery( wp->y, wp->y, u, ec->p, ec->n, ec->size );
+ ak_mpzn_set_ui( wp->z, ec->size, 1 );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Для заданной точки \f$ P = (x:y:z) \f$ и заданного целого числа (вычета) \f$ k \f$
+    функция вычисляет кратную точку \f$ Q \f$, удовлетворяющую
+    равенству \f$  Q = [k]P = \underbrace{P+ \cdots + P}_{k\text{~раз}}\f$.
+
+    Функция не приводит результирующую точку \f$ Q \f$ к аффинной форме.
+
+    @param wq Точка \f$ Q \f$, в которую помещается результат
+    @param wp Точка \f$ P \f$
+    @param k Степень кратности
+    @param size Размер степени \f$ k \f$ в машинных словах - значение, как правило,
+    задаваемое константой \ref ak_mpzn256_size или \ref ak_mpzn512_size. В общем случае
+    может приниимать любое неотрицательное значение.
+    @param ec Эллиптическая кривая, на которой происходят вычисления                               */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_wpoint_static_pow( ak_wpoint_static wq, ak_wpoint_static wp, ak_uint64 *k, size_t size, ak_wcurve_static ec )
+{
+  ak_uint64 uk = 0;
+  size_t s = size-1;
+  long long int i, j;
+
+  ak_wpoint_static_set_as_unit( wq, ec );
+  while( k[s] == 0 ) {
+     if( s > 0 ) --s;
+      else return;
+  }
+
+  for( i = s; i >= 0; i-- ) {
+     uk = k[i];
+     for( j = 0; j < 64; j++ ) {
+        ak_wpoint_static_double( wq, ec );
+        if( uk&0x8000000000000000LL ) ak_wpoint_static_add( wq, wp, ec );
+        uk <<= 1;
+     }
+  }
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Для заданной точки \f$ P = (x:y:z) \f$ функция проверяет
+    что порядок точки действительно есть величина \f$ q \f$, заданная в параметрах
+    эллиптической кривой, то есть проверяется выполнимость равенства \f$ [q]P = \mathcal O\f$,
+    где \f$ \mathcal O \f$ - бесконечно удаленная точка (ноль группы точек эллиптической кривой),
+    а \f$ q \f$ порядок подгруппы, в которой реализуются вычисления.
+
+    @param wp точка \f$ P \f$ эллиптической кривой
+    @param ec эллиптическая кривая, на принадлежность которой проверяется точка \f$P\f$.
+
+    @return Функция возвращает \ref ak_true если все проверки выполнены. В противном случае
+    возвращается \ref ak_false.                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_wpoint_static_check_order( ak_wpoint_static wp, ak_wcurve_static ec )
+{
+  struct wpoint_static ep;
+
+  ak_wpoint_static_set_as_unit( &ep, ec );
+  ak_wpoint_static_pow( &ep, wp, ec->q, ec->size, ec );
+  return ak_mpzn_cmp_ui( ep.z, ec->size, 0 );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

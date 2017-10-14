@@ -204,9 +204,9 @@
 /*! \brief Инициализация и присвоение контексту значения образующей точки эллиптической кривой. */
  int ak_wpoint_static_set( ak_wpoint_static, ak_wcurve_static );
 /*! \brief Инициализация и присвоение контексту значения бесконечно удаленной точки эллиптической кривой. */
- int ak_wpoint_static_set_as_unit( ak_wpoint_static );
+ int ak_wpoint_static_set_as_unit( ak_wpoint_static , ak_wcurve_static );
 /*! \brief Инициализация и присвоение контексту значения заданной точки эллиптической кривой. */
- int ak_wpoint_static_set_wpoint( ak_wpoint_static, ak_wpoint_static );
+ int ak_wpoint_static_set_wpoint( ak_wpoint_static , ak_wpoint_static , ak_wcurve_static );
 
 /*! \brief Проверка принадлежности точки заданной кривой. */
  ak_bool ak_wpoint_static_is_ok( ak_wpoint_static , ak_wcurve_static );

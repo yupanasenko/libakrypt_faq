@@ -560,6 +560,7 @@ return ak_error_ok;
     return ak_false;
   }
 
+ /* тестируем корректность реализации операций с эллиптическими кривыми в короткой форме Вейерштрасса */
   if( ak_wcurve_static_test() != ak_true ) {
     ak_error_message( ak_error_get_value(), __func__ , "error while testing operations with Weierstrass elliptic curves" );
     return ak_false;
