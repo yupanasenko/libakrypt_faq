@@ -32,6 +32,295 @@
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция вычисляерт величину \f$\Delta \equiv -16(4a^3 + 27b^2) \pmod{p} \f$, зависящую
+    от параметров эллиптической кривой
+
+    @param d Вычет, в который помещается вычисленное значение.
+    @param ec Контекст эллиптической кривой, для которой вычисляется ее дискриминант               */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_mpzn_set_wcurve_static_discriminant( ak_uint64 *d, ak_wcurve_static ec )
+{
+  ak_mpznmax s, one = ak_mpznmax_one;
+
+ /* определяем константы 4 и 27 в представлении Монтгомери */
+  ak_mpzn_set_ui( d, ec->size, 4 );
+  ak_mpzn_set_ui( s, ak_mpznmax_size, 27 );
+  ak_mpzn_mul_montgomery( d, d, ec->r2, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( s, s, ec->r2, ec->p, ec->n, ec->size );
+
+ /* вычисляем 4a^3 (mod p) значение в представлении Монтгомери */
+  ak_mpzn_mul_montgomery( d, d, ec->a, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( d, d, ec->a, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( d, d, ec->a, ec->p, ec->n, ec->size );
+
+ /* вычисляем значение 4a^3 + 27b^2 (mod p) в представлении Монтгомери */
+  ak_mpzn_mul_montgomery( s, s, ec->b, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( s, s, ec->b, ec->p, ec->n, ec->size );
+  ak_mpzn_add_montgomery( d, d, s, ec->p, ec->size );
+
+ /* определяем константу -16 в представлении Монтгомери и вычисляем D = -16(4a^3+27b^2) (mod p) */
+  ak_mpzn_set_ui( s, ec->size, 16 );
+  ak_mpzn_sub( s, ec->p, s, ec->size );
+  ak_mpzn_mul_montgomery( s, s, ec->r2, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( d, d, s, ec->p, ec->n, ec->size );
+
+ /* возвращаем результат (в обычном представлении) */
+  ak_mpzn_mul_montgomery( d, d, one, ec->p, ec->n, ec->size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_wcurve_static_discriminant_is_ok( ak_wcurve_static ec )
+{
+  ak_mpznmax d;
+  if( ec == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                               "using a null pointer to elliptic curve context" );
+  ak_mpzn_set_wcurve_static_discriminant( d, ec );
+  if( ak_mpzn_cmp_ui( d, ec->size, 0 ) == ak_true ) return ak_error_curve_discriminant;
+   else return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция принимает на вход контекст эллиптической кривой, заданной в короткой форме Вейерштрасса,
+    и выполняет следующие проверки
+
+     - проверяется, что модуль кривой (простое число \f$ p \f$) удовлетворяет неравенству
+       \f$ 2^{n-32} < p < 2^n \f$, где \f$ n \f$ это либо 256, либо 512 в зависимости от
+       параметров кривой,
+     - проверяется, что дискриминант кривой отличен от нуля по модулю \f$ p \f$,
+     - проверяется, что фиксированная точка кривой, содержащаяся в контексте эллиптической кривой,
+       действительно принадлежит эллиптической кривой,
+     - проверяется, что порядок этой точки кривой равен простому числу \f$ q \f$,
+       содержащемуся в контексте эллиптической кривой.
+
+     @param ec контекст структуры эллиптической кривой, содержащий в себе значения параметров.
+     Константные значения структур, которые могут быть использованы библиотекой,
+     задаются в файле \ref ak_parameters.h
+
+     @return В случае успеха, функция возвращает \ref ak_error_ok. В противном случае,
+     возвращается код ошибки.                                                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_wcurve_static_is_ok( ak_wcurve_static ec )
+{
+  int error = ak_error_ok;
+  struct wpoint_static wp;
+
+ /* создали кривую и проверяем ее параметры */
+  if( ec->p[ ec->size-1 ] < 0x100000000LL )
+    return ak_error_message( ak_error_curve_prime_size, __func__ ,
+                                            "using elliptic curve parameters with wrong module" );
+  if(( error = ak_wcurve_static_discriminant_is_ok( ec )) != ak_error_ok )
+    return ak_error_message( ak_error_curve_discriminant, __func__ ,
+                                       "using elliptic curve parameters with zero discriminant" );
+ /* теперь тестируем точку на кривой */
+  if(( error = ak_wpoint_static_set( &wp, ec )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorect asiigning a temporary point" );
+  if( ak_wpoint_static_is_ok( &wp, ec ) != ak_true )
+    return ak_error_message( ak_error_curve_point, __func__ ,
+                                               "elliptic curve parameters has'nt correct point" );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция выводит в файл аудита значения параметров эллиптической кривой                  */
+/* ----------------------------------------------------------------------------------------------- */
+ static void ak_wcurve_static_to_log( ak_wcurve_static ec )
+{
+  char message[160];
+
+  memset( message, 0, 160 );
+  ak_snprintf( message, 160, " a = " );
+  ak_ptr_to_hexstr_static( ec->a, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
+  ak_log_set_message( message );
+
+  memset( message, 0, 160 );
+  ak_snprintf( message, 160, " b = " );
+  ak_ptr_to_hexstr_static( ec->b, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
+  ak_log_set_message( message );
+
+  memset( message, 0, 160 );
+  ak_snprintf( message, 160, " p = " );
+  ak_ptr_to_hexstr_static( ec->p, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
+  ak_log_set_message( message );
+
+  memset( message, 0, 160 );
+  ak_snprintf( message, 160, " q = " );
+  ak_ptr_to_hexstr_static( ec->q, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
+  ak_log_set_message( message );
+
+  memset( message, 0, 160 );
+  ak_snprintf( message, 160, "px = " );
+  ak_ptr_to_hexstr_static( ec->px, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
+  ak_log_set_message( message );
+
+  memset( message, 0, 160 );
+  ak_snprintf( message, 160, "py = " );
+  ak_ptr_to_hexstr_static( ec->py, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
+  ak_log_set_message( message );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Проверяются параметры всех эллиптических кривых, доступных через механизм OID.
+    Проверка производится путем вызова функции ak_wcurve_is_ok().
+
+    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения
+    ошибки функция возвращает ak_false. Код ошибки можеть быть получен с помощью вызова
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_wcurve_static_test( void )
+{
+  ak_bool result = ak_true;
+  ak_handle handle = ak_error_wrong_handle;
+  int reason = ak_error_ok, audit = ak_log_get_level();
+
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing Weierstrass curves started" );
+
+ /* организуем цикл по перебору всех известных библиотеке параметров эллиптических кривых */
+  handle = ak_oid_find_by_engine( identifier );
+  while( handle != ak_error_wrong_handle ) {
+    if( ak_oid_get_mode( handle ) == ecurve_params ) {
+      ak_oid oid = NULL;
+      ak_wcurve_static wc = NULL;
+
+      if(( oid = ak_handle_get_context( handle, oid_engine )) == NULL ) {
+        ak_error_message( ak_error_get_value(), __func__, "internal error with wrong handle" );
+        result = ak_false;
+        goto lab_exit;
+      }
+      if(( wc = ( ak_wcurve_static ) oid->data ) == NULL )  {
+        ak_error_message( ak_error_null_pointer, __func__,
+                                      "internal error with null poionter to wcurve paramset" );
+        result = ak_false;
+        goto lab_exit;
+      }
+      ak_wcurve_static_to_log( wc );
+
+
+      if(( reason = ak_wcurve_static_is_ok( wc )) != ak_error_ok ) {
+        char *p = NULL;
+        switch( reason ) {
+          case ak_error_curve_discriminant : p = "discriminant"; break;
+          case ak_error_curve_point        : p = "base point"; break;
+          case ak_error_curve_point_order  : p = "base point order"; break;
+          case ak_error_curve_prime_size   : p = "prime modulo p"; break;
+          default : p = "unexpected parameter";
+        }
+        //ak_wcurve_paramset_to_log( wc );
+        ak_error_message_fmt( reason, __func__ , "curve %s (OID: %s) has wrong %s",
+                                                             oid->name.data, oid->id.data, p );
+        result = ak_false;
+        goto lab_exit;
+      } else
+          if( audit > ak_log_standard ) {
+            ak_error_message_fmt( ak_error_ok, __func__ , "curve %s (OID: %s) is Ok",
+                                                                oid->name.data, oid->id.data );
+          }
+    }
+    handle = ak_oid_findnext_by_engine( handle, identifier );
+  }
+
+ lab_exit:
+  if( !result ) ak_error_message( ak_error_get_value(), __func__ ,
+                                                         "incorrect testing Weierstrass curves" );
+   else if( audit >= ak_log_maximum ) ak_error_message( ak_error_get_value(), __func__ ,
+                                                "testing Weierstrass curves ended successfully" );
+ return result;
+}
+
+
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*          реализация операций с точками эллиптической кривой в короткой форме Вейерштрасса       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_wpoint_static_set( ak_wpoint_static wp, ak_wcurve_static wc )
+{
+  if( wp == NULL ) ak_error_message( ak_error_null_pointer, __func__ ,
+                                                   "using null pointer to elliptic curve point" );
+  if( wc == NULL ) ak_error_message( ak_error_null_pointer, __func__ ,
+                                                         "using null pointer to elliptic curve" );
+ /* копируем данные */
+  memcpy( wp->x, wc->px, ak_mpzn512_size );
+  memcpy( wp->y, wc->py, ak_mpzn512_size );
+  ak_mpzn_set_ui( wp->y, ak_mpzn512_size, 1 );
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Для заданной точки \f$ P = (x:y:z) \f$ функция проверяет,
+    что точка принадлежит эллиптической кривой, то есть что выполнено сравнение
+    \f$ yz^2 \equiv x^3 + axz^2 + bz^3 \pmod{p}\f$.
+
+    @param wp точка \f$ P \f$ эллиптической кривой
+    @param ec эллиптическая кривая, на принадлежность которой проверяется точка \f$P\f$.
+
+    @return Функция возвращает \ref ak_true если все проверки выполнены. В противном случае
+    возвращается \ref ak_false.                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_wpoint_static_is_ok( ak_wpoint_static wp, ak_wcurve_static ec )
+{
+  ak_mpznmax t, s;
+
+ /* Проверяем принадлежность точки заданной кривой */
+  ak_mpzn_set( t, ec->a, ec->size );
+  ak_mpzn_mul_montgomery( t, t, wp->x, ec->p, ec->n, ec->size );
+  ak_mpzn_set( s, ec->b, ec->size );
+  ak_mpzn_mul_montgomery( s, s, wp->z, ec->p, ec->n, ec->size );
+  ak_mpzn_add_montgomery( t, t, s, ec->p, ec->size ); // теперь в t величина (ax+bz)
+
+  ak_mpzn_set( s, wp->z, ec->size );
+  ak_mpzn_mul_montgomery( s, s, s, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( t, t, s, ec->p, ec->n, ec->size ); // теперь в t величина (ax+bz)z^2
+
+  ak_mpzn_set( s, wp->x, ec->size );
+  ak_mpzn_mul_montgomery( s, s, s, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( s, s, wp->x, ec->p, ec->n, ec->size );
+  ak_mpzn_add_montgomery( t, t, s, ec->p, ec->size ); // теперь в t величина x^3 + (ax+bz)z^2
+
+  ak_mpzn_set( s, wp->y, ec->size );
+  ak_mpzn_mul_montgomery( s, s, s, ec->p, ec->n, ec->size );
+  ak_mpzn_mul_montgomery( s, s, wp->z, ec->p, ec->n, ec->size ); // теперь в s величина x^3 + (ax+bz)z^2
+
+  char *str;
+  printf("s = %s\n", str = ak_ptr_to_hexstr( s, ec->size*sizeof( ak_uint64 ), ak_false )); free( str );
+  printf("t = %s\n", str = ak_ptr_to_hexstr( t, ec->size*sizeof( ak_uint64 ), ak_false )); free( str );
+
+
+  if( ak_mpzn_cmp( t, s, ec->size )) return ak_false;
+ return ak_true;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция устанавливает значение полей структуры struct wcurve в соответствии со значениями,
     хранящимися в структуре struct wcurve_params
 
