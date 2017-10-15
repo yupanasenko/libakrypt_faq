@@ -653,173 +653,16 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Параметры 256-ти битной эллиптической кривой из тестового примера ГОСТ Р 34.10-2012 (Приложение А.1). */
- static const struct wcurve_paramset wcurve_gost_3410_2012_test256 = {
-  ak_mpzn256_size,
-  "7",                                                                /* a */
-  "5FBFF498AA938CE739B8E022FBAFEF40563F6E6A3472FC2A514C0CE9DAE23B7E", /* b */
-  "8000000000000000000000000000000000000000000000000000000000000431", /* p */
-  "8000000000000000000000000000000150FE8A1892976154C59CFC193ACCF5B3", /* q */
-  "2",                                                                /* px */
-  "8E2A8A0E65147D4BD6316030E16D19C85C97F0A9CA267122B96ABBCEA7E8FC8",  /* py */
-  "464584",                                                           /* r2 */
-  0xDBF951D5883B2B2FLL,                                               /* n */
-  1                                                                   /* d */
-};
-
+/*! \code
+      a = "7",
+      b = "5FBFF498AA938CE739B8E022FBAFEF40563F6E6A3472FC2A514C0CE9DAE23B7E",
+      p = "8000000000000000000000000000000000000000000000000000000000000431",
+      q = "8000000000000000000000000000000150FE8A1892976154C59CFC193ACCF5B3",
+     px = "2",
+     py = "8E2A8A0E65147D4BD6316030E16D19C85C97F0A9CA267122B96ABBCEA7E8FC8"
+    \endcode                                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Параметры 256-ти битной эллиптической кривой из рекомендаций Р 50.1.114-2016 (paramSetA). */
- static const struct wcurve_paramset wcurve_tc26_gost_3410_2012_256_paramSetA = {
-  ak_mpzn256_size,
-  "C2173F1513981673AF4892C23035A27CE25E2013BF95AA33B22C656F277E7335", /* a */
-  "295F9BAE7428ED9CCC20E7C359A9D41A22FCCD9108E17BF7BA9337A6F8AE9513", /* b */
-  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD97", /* p */
-  "400000000000000000000000000000000FD8CDDFC87B6635C115AF556C360C67", /* q */
-  "91E38443A5E82C0D880923425712B2BB658B9196932E02C78B2582FE742DAA28", /* px */
-  "32879423AB1A0375895786C4BB46E9565FDE0B5344766740AF268ADB32322E5C", /* py */
-  "5CF11",                                                            /* r2 */
-  0x46f3234475d5add9LL,                                               /* n */
-  4                                                                   /* d */
-};
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Параметры 256-ти битной эллиптической кривой, определяемые RFC-4357, set А (вариант КриптоПро). */
- static const struct wcurve_paramset wcurve_rfc4357_paramSetA = {
-  ak_mpzn256_size,
-  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD94", /* a */
-  "A6",                                                               /* b */
-  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD97", /* p */
-  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF6C611070995AD10045841B09B761B893", /* q */
-  "1",                                                                /* px */
-  "8D91E471E0989CDA27DF505A453F2B7635294F2DDF23E3B122ACC99C9E9F1E14", /* py */
-  "5CF11",                                                            /* r2 */
-  0x46f3234475d5add9LL,                                               /* n */
-  1                                                                   /* d */
-};
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Параметры 256-ти битной эллиптической кривой, определяемые RFC-4357, set B (вариант КриптоПро). */
- static const struct wcurve_paramset wcurve_rfc4357_paramSetB = {
-  ak_mpzn256_size,
-  "8000000000000000000000000000000000000000000000000000000000000C96", /* a */
-  "3E1AF419A269A5F866A7D3C25C3DF80AE979259373FF2B182F49D4CE7E1BBC8B", /* b */
-  "8000000000000000000000000000000000000000000000000000000000000C99", /* p */
-  "800000000000000000000000000000015F700CFFF1A624E5E497161BCC8A198F", /* q */
-  "1",                                                                /* px */
-  "3FA8124359F96680B83D1C3EB2C070E5C545C9858D03ECFB744BF8D717717EFC", /* py */
-  "27acdc4",                                                          /* r2 */
-  0xbd667ab8a3347857LL,                                               /* n */
-  1                                                                   /* d */
-};
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Параметры 256-ти битной эллиптической кривой, определяемые RFC-4357, set C (вариант КриптоПро). */
- static const struct wcurve_paramset wcurve_rfc4357_paramSetC = {
-  ak_mpzn256_size,
-  "9B9F605F5A858107AB1EC85E6B41C8AACF846E86789051D37998F7B9022D7598", /* a */
-  "805A",                                                             /* b */
-  "9B9F605F5A858107AB1EC85E6B41C8AACF846E86789051D37998F7B9022D759B", /* p */
-  "9B9F605F5A858107AB1EC85E6B41C8AA582CA3511EDDFB74F02F3A6598980BB9", /* q */
-  "0",                                                                /* px */
-  "41ECE55743711A8C3CBF3783CD08C0EE4D4DC440D4641A8F366E550DFDB3BB67", /* py */
-  "807a394ede097652186304212849c07b1017bb39c2d346c5409973b4c427fcea", /* r2 */
-  0xdf6e6c2c727c176dLL,                                               /* n */
-  1                                                                   /* d */
-};
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Параметры 256-ти битной эллиптической кривой выработанные авторами библиотеки (paramSetA). */
- static const struct wcurve_paramset wcurve_axel_gost_3410_2012_256_paramSetA = {
-  ak_mpzn256_size,
-  "80008EAE551953AA1E07CF9A8DCCF9415BB77DE434D0AE9633E33DA2F1EA88D9", /* a */
-  "B2A49D5ADCC33A6693F21A71CD49B376D79B33655D9071CF6DB57BCA67E21B",   /* b */
-  "80008EAE551953AA1E07CF9A8DCCF9415BB77DE434D0AE9633E33DA2F1EA88DB", /* p */
-  "80008EAE551953AA1E07CF9A8DCCF942B24C7D30A656C695299C1ED853D129F1", /* q */
-  "1",                                                                /* px */
-  "50AD006962FA5D1E6C1B6506ACB81C4C7DC1A0B4ECCC5224083AF1D2BBAD5116", /* py */
-  "2303790d5067be5d614cafbadb0cddb4ac7513dbc87fef3193189730fd45fede", /* r2 */
-  0xe39d517a9b49ccadLL,                                               /* n */
-  1                                                                   /* d */
-};
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Параметры 512-ти битной эллиптической кривой из тестового примера ГОСТ Р 34.10-2012 (Приложение А.2). */
- static const struct wcurve_paramset wcurve_gost_3410_2012_test512 = {
-  ak_mpzn512_size,
-  "7",                                                                                                                                /* a */
-  "1CFF0806A31116DA29D8CFA54E57EB748BC5F377E49400FDD788B649ECA1AC4361834013B2AD7322480A89CA58E0CF74BC9E540C2ADD6897FAD0A3084F302ADC", /* b */
-  "4531ACD1FE0023C7550D267B6B2FEE80922B14B2FFB90F04D4EB7C09B5D2D15DF1D852741AF4704A0458047E80E4546D35B8336FAC224DD81664BBF528BE6373", /* p */
-  "4531ACD1FE0023C7550D267B6B2FEE80922B14B2FFB90F04D4EB7C09B5D2D15DA82F2D7ECB1DBAC719905C5EECC423F1D86E25EDBE23C595D644AAF187E6E6DF", /* q */
-  "24D19CC64572EE30F396BF6EBBFD7A6C5213B3B3D7057CC825F91093A68CD762FD60611262CD838DC6B60AA7EEE804E28BC849977FAC33B4B530F1B120248A9A", /* px */
-  "2BB312A43BD2CE6E0D020613C857ACDDCFBF061E91E5F2C3F32447C259F39B2C83AB156D77F1496BF7EB3351E1EE4E43DC1A18B91B24640B6DBB92CB1ADD371E", /* py */
-  "1d887dcd9cd19c1001fde9ca99de0852fcd983cfb7c663d9ca0bc8af77c8690a0815b9eb1e7dd300e417d58d200c2aa04b907a71e647ee63001c10bc2d005b65", /* r2 */
-  0xd6412ff7c29b8645LL,                                               /* n */
-  1                                                                   /* d */
-};
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Параметры 512-ти битной эллиптической кривой из рекомендаций Р 50.1.114-2016 (paramSetA). */
- static const struct wcurve_paramset wcurve_tc26_gost_3410_2012_512_paramSetA = {
-  ak_mpzn512_size,
-  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFDC4", /* a */
-  "E8C2505DEDFC86DDC1BD0B2B6667F1DA34B82574761CB0E879BD081CFD0B6265EE3CB090F30D27614CB4574010DA90DD862EF9D4EBEE4761503190785A71C760", /* b */
-  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFDC7", /* p */
-  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF27E69532F48D89116FF22B8D4E0560609B4B38ABFAD2B85DCACDB1411F10B275", /* q */
-  "3",                  /* px */
-  "7503CFE87A836AE3A61B8816E25450E6CE5E1C93ACF1ABC1778064FDCBEFA921DF1626BE4FD036E93D75E6A50E3A41E98028FE5FC235F5B889A589CB5215F2A4", /* py */
-  "4F0B1",              /* r2 */
-  0x58a1f7e6ce0f4c09LL, /* n */
-  1                     /* d */
-};
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Параметры 512-ти битной эллиптической кривой из рекомендаций Р 50.1.114-2016 (paramSetB). */
- static const struct wcurve_paramset wcurve_tc26_gost_3410_2012_512_paramSetB = {
-  ak_mpzn512_size,
-  "8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006C", /* a */
-  "687D1B459DC841457E3E06CF6F5E2517B97C7D614AF138BCBF85DC806C4B289F3E965D2DB1416D217F8B276FAD1AB69C50F78BEE1FA3106EFB8CCBC7C5140116", /* b */
-  "8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006F", /* p */
-  "800000000000000000000000000000000000000000000000000000000000000149A1EC142565A545ACFDB77BD9D40CFA8B996712101BEA0EC6346C54374F25BD", /* q */
-  "2", /* px */
-  "1A8F7EDA389B094C2C071E3647A8940F3C123B697578C213BE6DD9E6C8EC7335DCB228FD1EDF4A39152CBCAAF8C0398828041055F94CEEEC7E21340780FE41BD", /* py */
-  "C084", /* r2 */
-  0x4e6a171024e6a171, /* n */
-  1                   /* d */
-};
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Параметры 512-ти битной эллиптической кривой из рекомендаций Р 50.1.114-2016 (paramSetC). */
- static const struct wcurve_paramset wcurve_tc26_gost_3410_2012_512_paramSetC = {
-  ak_mpzn512_size,
-  "DC9203E514A721875485A529D2C722FB187BC8980EB866644DE41C68E143064546E861C0E2C9EDD92ADE71F46FCF50FF2AD97F951FDA9F2A2EB6546F39689BD3", /* a */
-  "B4C4EE28CEBC6C2C8AC12952CF37F16AC7EFB6A9F69F4B57FFDA2E4F0DE5ADE038CBC2FFF719D2C18DE0284B8BFEF3B52B8CC7A5F5BF0A3C8D2319A5312557E1", /* b */
-  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFDC7", /* p */
-  "3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC98CDBA46506AB004C33A9FF5147502CC8EDA9E7A769A12694623CEF47F023ED", /* q */
-  "E2E31EDFC23DE7BDEBE241CE593EF5DE2295B7A9CBAEF021D385F7074CEA043AA27272A7AE602BF2A7B9033DB9ED3610C6FB85487EAE97AAC5BC7928C1950148", /* px */
-  "F5CE40D95B5EB899ABBCCFF5911CB8577939804D6527378B8C108C3D2090FF9BE18E2D33E3021ED2EF32D85822423B6304F726AA854BAE07D0396E9A9ADDC40F", /* py */
-  "4F0B1", /* r2 */
-  0x58a1f7e6ce0f4c09LL, /* n */
-  4       /* d */
-};
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Параметры 512-ти битной эллиптической кривой выработанные авторами библиотеки (paramSetA). */
- static const struct wcurve_paramset wcurve_axel_gost_3410_2012_512_paramSetA = {
-  ak_mpzn512_size,
-  "80007C0D100DE1DA4C082D55B224E1F6995C0200BAE1827110D0CE783E5EBD08AFACCA5A732368521E0BAD88865E21DA43DA42B35757B8038768059BE89E36AD", /* a */
-  "7633E0B39500943957990D315BE1F4B2B971527863EB30D9D1A0B52A8489484212502F709F1D067DFC109E06AF608B8DD4F854E4F45DF4309506452C499A102D", /* b */
-  "80007C0D100DE1DA4C082D55B224E1F6995C0200BAE1827110D0CE783E5EBD08AFACCA5A732368521E0BAD88865E21DA43DA42B35757B8038768059BE89E36AF", /* p */
-  "80007C0D100DE1DA4C082D55B224E1F6995C0200BAE1827110D0CE783E5EBD091D1C41E039FB32B9D6115C0919412876018EF3923B4255F8717DB632094F9B5B", /* q */
-  "3",                  /* px */
-  "3F1F3A51B164FFC05E7221D67A01B361870727C3DF007D3A9FDB7A1E9230F0781D69806E0CC5E38CB62B18E2D6D4BCF12112F42600D5783AE109F64B0D2845B5", /* py */
-  "53590545a052051b87fdda647bb639ca73f78460a43b9f6695e660d3b641c6d7693b56cc4d41c7fb42d778a51b701611a5c29e884d86660d10e955e894409333", /* r2 */
-  0x8f69d5c0fd131fb1LL, /* n */
-  1                     /* d */
-};
-
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Параметры 256-ти битной эллиптической кривой из тестового примера ГОСТ Р 34.10-2012 (Приложение А.1). */
- static const struct wcurve_static id_tc26_gost3410_2012_256_test_paramset = {
+ static const struct wcurve id_tc26_gost3410_2012_256_test_paramset = {
   ak_mpzn256_size,
   1,
   { 0xffffffffffffc983, 0xffffffffffffffff, 0xffffffffffffffff, 0x7fffffffffffffff, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000 }, /* a */
@@ -835,7 +678,16 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Параметры 256-ти битной эллиптической кривой из рекомендаций Р 50.1.114-2016 (paramSetA). */
- static const struct wcurve_static id_tc26_gost3410_2012_256_paramsetA = {
+/*! \code
+      a = "C2173F1513981673AF4892C23035A27CE25E2013BF95AA33B22C656F277E7335",
+      b = "295F9BAE7428ED9CCC20E7C359A9D41A22FCCD9108E17BF7BA9337A6F8AE9513",
+      p = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD97",
+      q = "400000000000000000000000000000000FD8CDDFC87B6635C115AF556C360C67",
+     px = "91E38443A5E82C0D880923425712B2BB658B9196932E02C78B2582FE742DAA28",
+     py = "32879423AB1A0375895786C4BB46E9565FDE0B5344766740AF268ADB32322E5C",
+    \endcode                                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ static const struct wcurve id_tc26_gost3410_2012_256_paramsetA = {
   ak_mpzn256_size,
   4,
   { 0x6d0078e62fc81048, 0x94db4f98bfb73698, 0x75e9b60631449efd, 0xca0709cc398e1cd1, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000 }, /* a */
@@ -851,7 +703,16 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Параметры 256-ти битной эллиптической кривой, определяемые RFC-4357, set A (вариант КриптоПро). */
- static const struct wcurve_static id_rfc4357_gost3410_2001_paramsetA = {
+/*! \code
+      a = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD94",
+      b = "A6",
+      p = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD97",
+      q = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF6C611070995AD10045841B09B761B893",
+     px = "1",
+     qx = "8D91E471E0989CDA27DF505A453F2B7635294F2DDF23E3B122ACC99C9E9F1E14"
+    \endcode                                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ static const struct wcurve id_rfc4357_gost3410_2001_paramsetA = {
   ak_mpzn256_size,
   1,
   { 0xfffffffffffff65c, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000 }, /* a */
@@ -867,7 +728,16 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Параметры 256-ти битной эллиптической кривой, определяемые RFC-4357, set B (вариант КриптоПро). */
- static const struct wcurve_static id_rfc4357_gost3410_2001_paramsetB = {
+/*! \code
+      a = "8000000000000000000000000000000000000000000000000000000000000C96",
+      b = "3E1AF419A269A5F866A7D3C25C3DF80AE979259373FF2B182F49D4CE7E1BBC8B",
+      p = "8000000000000000000000000000000000000000000000000000000000000C99",
+      q = "800000000000000000000000000000015F700CFFF1A624E5E497161BCC8A198F",
+     px = "1",
+     py = "3FA8124359F96680B83D1C3EB2C070E5C545C9858D03ECFB744BF8D717717EFC"
+    \endcode                                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ static const struct wcurve id_rfc4357_gost3410_2001_paramsetB = {
   ak_mpzn256_size,
   1,
   { 0x0000000000004b96, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000 }, /* a */
@@ -883,7 +753,16 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Параметры 256-ти битной эллиптической кривой, определяемые RFC-4357, set C (вариант КриптоПро). */
- static const struct wcurve_static id_rfc4357_gost3410_2001_paramsetC = {
+/*! \code
+       a = "9B9F605F5A858107AB1EC85E6B41C8AACF846E86789051D37998F7B9022D7598",
+       b = "805A",
+       p = "9B9F605F5A858107AB1EC85E6B41C8AACF846E86789051D37998F7B9022D759B",
+       q = "9B9F605F5A858107AB1EC85E6B41C8AA582CA3511EDDFB74F02F3A6598980BB9",
+      px = "0",
+      py = "41ECE55743711A8C3CBF3783CD08C0EE4D4DC440D4641A8F366E550DFDB3BB67"
+    \endcode                                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ static const struct wcurve id_rfc4357_gost3410_2001_paramsetC = {
   ak_mpzn256_size,
   1,
   { 0x5ffcd69d0ae34c07, 0x0d9628a05ad19921, 0x5799e9d81848eb56, 0x0a1ce1dcc49b8526, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000 }, /* a */
@@ -899,7 +778,16 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Параметры 256-ти битной эллиптической кривой выработанные авторами библиотеки (paramSetA). */
- static const struct wcurve_static id_axel_gost3410_2012_256_paramsetA = {
+/*! \code
+      a = "80008EAE551953AA1E07CF9A8DCCF9415BB77DE434D0AE9633E33DA2F1EA88D9",
+      b = "B2A49D5ADCC33A6693F21A71CD49B376D79B33655D9071CF6DB57BCA67E21B",
+      p = "80008EAE551953AA1E07CF9A8DCCF9415BB77DE434D0AE9633E33DA2F1EA88DB",
+      q = "80008EAE551953AA1E07CF9A8DCCF942B24C7D30A656C695299C1ED853D129F1",
+     px = "1",
+     qx = "50AD006962FA5D1E6C1B6506ACB81C4C7DC1A0B4ECCC5224083AF1D2BBAD5116"
+    \endcode                                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ static const struct wcurve id_axel_gost3410_2012_256_paramsetA = {
   ak_mpzn256_size,
   1,
   { 0xcf8cf68bc7aa236c, 0x6eddf790d342ba58, 0x781f3e6a3733e505, 0x00023ab954654ea8, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000 }, /* a */
@@ -915,7 +803,16 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Параметры 512-ти битной эллиптической кривой из тестового примера ГОСТ Р 34.10-2012 (Приложение А.2). */
- static const struct wcurve_static id_tc26_gost3410_2012_512_test_paramset = {
+/*! \code
+      a = "7",
+      b = "1CFF0806A31116DA29D8CFA54E57EB748BC5F377E49400FDD788B649ECA1AC4361834013B2AD7322480A89CA58E0CF74BC9E540C2ADD6897FAD0A3084F302ADC",
+      p = "4531ACD1FE0023C7550D267B6B2FEE80922B14B2FFB90F04D4EB7C09B5D2D15DF1D852741AF4704A0458047E80E4546D35B8336FAC224DD81664BBF528BE6373",
+      q = "4531ACD1FE0023C7550D267B6B2FEE80922B14B2FFB90F04D4EB7C09B5D2D15DA82F2D7ECB1DBAC719905C5EECC423F1D86E25EDBE23C595D644AAF187E6E6DF",
+     px = "24D19CC64572EE30F396BF6EBBFD7A6C5213B3B3D7057CC825F91093A68CD762FD60611262CD838DC6B60AA7EEE804E28BC849977FAC33B4B530F1B120248A9A",
+     py = "2BB312A43BD2CE6E0D020613C857ACDDCFBF061E91E5F2C3F32447C259F39B2C83AB156D77F1496BF7EB3351E1EE4E43DC1A18B91B24640B6DBB92CB1ADD371E",
+    \endcode                                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ static const struct wcurve id_tc26_gost3410_2012_512_test_paramset = {
   ak_mpzn512_size,
   1,
   { 0xd029a50f056849c5, 0xc102fa1830a665e5, 0x93678fa569b3c155, 0x61dff2a95e2108c5, 0x3500e30d3e698dd3, 0xb9cafa8506ed8887, 0xb1b73df28851b571, 0x3e261f7e31fc8188 }, /* a */
@@ -932,7 +829,16 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Параметры 512-ти битной эллиптической кривой из рекомендаций Р 50.1.114-2016 (paramSetA). */
- static const struct wcurve_static id_tc26_gost3410_2012_512_paramsetA = {
+/*! \code
+      a = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFDC4",
+      b = "E8C2505DEDFC86DDC1BD0B2B6667F1DA34B82574761CB0E879BD081CFD0B6265EE3CB090F30D27614CB4574010DA90DD862EF9D4EBEE4761503190785A71C760",
+      p = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFDC7",
+      q = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF27E69532F48D89116FF22B8D4E0560609B4B38ABFAD2B85DCACDB1411F10B275",
+     px = "3",
+     py = "7503CFE87A836AE3A61B8816E25450E6CE5E1C93ACF1ABC1778064FDCBEFA921DF1626BE4FD036E93D75E6A50E3A41E98028FE5FC235F5B889A589CB5215F2A4",
+    \endcode                                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ static const struct wcurve id_tc26_gost3410_2012_512_paramsetA = {
   ak_mpzn512_size,
   1,
   { 0xfffffffffffff71c, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff }, /* a */
@@ -948,7 +854,16 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Параметры 512-ти битной эллиптической кривой из рекомендаций Р 50.1.114-2016 (paramSetB). */
- static const struct wcurve_static id_tc26_gost3410_2012_512_paramsetB = {
+/*! \code
+      a = "8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006C",
+      b = "687D1B459DC841457E3E06CF6F5E2517B97C7D614AF138BCBF85DC806C4B289F3E965D2DB1416D217F8B276FAD1AB69C50F78BEE1FA3106EFB8CCBC7C5140116",
+      p = "8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006F",
+      q = "800000000000000000000000000000000000000000000000000000000000000149A1EC142565A545ACFDB77BD9D40CFA8B996712101BEA0EC6346C54374F25BD",
+     px = "2",
+     py = "1A8F7EDA389B094C2C071E3647A8940F3C123B697578C213BE6DD9E6C8EC7335DCB228FD1EDF4A39152CBCAAF8C0398828041055F94CEEEC7E21340780FE41BD",
+    \endcode                                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ static const struct wcurve id_tc26_gost3410_2012_512_paramsetB = {
   ak_mpzn512_size,
   1,
   { 0x000000000000029a, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000 }, /* a */
@@ -964,7 +879,16 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Параметры 512-ти битной эллиптической кривой из рекомендаций Р 50.1.114-2016 (paramSetC). */
- static const struct wcurve_static id_tc26_gost3410_2012_512_paramsetC = {
+/*! \code
+      a = "DC9203E514A721875485A529D2C722FB187BC8980EB866644DE41C68E143064546E861C0E2C9EDD92ADE71F46FCF50FF2AD97F951FDA9F2A2EB6546F39689BD3",
+      b = "B4C4EE28CEBC6C2C8AC12952CF37F16AC7EFB6A9F69F4B57FFDA2E4F0DE5ADE038CBC2FFF719D2C18DE0284B8BFEF3B52B8CC7A5F5BF0A3C8D2319A5312557E1",
+      p = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFDC7",
+      q = "3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC98CDBA46506AB004C33A9FF5147502CC8EDA9E7A769A12694623CEF47F023ED",
+     px = "E2E31EDFC23DE7BDEBE241CE593EF5DE2295B7A9CBAEF021D385F7074CEA043AA27272A7AE602BF2A7B9033DB9ED3610C6FB85487EAE97AAC5BC7928C1950148",
+     py = "F5CE40D95B5EB899ABBCCFF5911CB8577939804D6527378B8C108C3D2090FF9BE18E2D33E3021ED2EF32D85822423B6304F726AA854BAE07D0396E9A9ADDC40F",
+    \endcode                                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ static const struct wcurve id_tc26_gost3410_2012_512_paramsetC = {
   ak_mpzn512_size,
   4,
   { 0xd341ab3699869915, 0x3d6c9273ccebc4c1, 0x486b484c83cb0726, 0x9a8145b812d1a7b0, 0x2003251cadf8effa, 0x6b20d9f8b7db94f1, 0xdd0c19f57c9cc019, 0x408aa82ae77985ca }, /* a */
@@ -978,10 +902,18 @@
   0x0000000000000000 /* nq */
  };
 
-
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Параметры 512-ти битной эллиптической кривой выработанные авторами библиотеки (paramSetA). */
- static const struct wcurve_static id_axel_gost3410_2012_512_paramsetA = {
+/*! \code
+      a = "80007C0D100DE1DA4C082D55B224E1F6995C0200BAE1827110D0CE783E5EBD08AFACCA5A732368521E0BAD88865E21DA43DA42B35757B8038768059BE89E36AD",
+      b = "7633E0B39500943957990D315BE1F4B2B971527863EB30D9D1A0B52A8489484212502F709F1D067DFC109E06AF608B8DD4F854E4F45DF4309506452C499A102D",
+      p = "80007C0D100DE1DA4C082D55B224E1F6995C0200BAE1827110D0CE783E5EBD08AFACCA5A732368521E0BAD88865E21DA43DA42B35757B8038768059BE89E36AF",
+      q = "80007C0D100DE1DA4C082D55B224E1F6995C0200BAE1827110D0CE783E5EBD091D1C41E039FB32B9D6115C0919412876018EF3923B4255F8717DB632094F9B5B",
+     px = "3",
+     py = "3F1F3A51B164FFC05E7221D67A01B361870727C3DF007D3A9FDB7A1E9230F0781D69806E0CC5E38CB62B18E2D6D4BCF12112F42600D5783AE109F64B0D2845B5",
+    \endcode                                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ static const struct wcurve id_axel_gost3410_2012_512_paramsetA = {
   ak_mpzn512_size,
   1,
   { 0x1da0166fa278dabc, 0x0f690acd5d5ee00e, 0x782eb62219788769, 0xbeb32969cc8da148, 0x434339e0f97af422, 0x65700802eb8609c4, 0x3020b556c89387da, 0x0001f03440378769 }, /* a */

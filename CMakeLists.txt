@@ -194,8 +194,7 @@ if( LIBAKRYPT_GMP_TESTS )
                    mpzn-convert
                    mpzn-arithmetic
                    mpzn-montgomery
-                   mpzn-rem
-                   mpzn-wcurve )
+                   mpzn-rem )
 
   foreach( programm ${ARITHMETIC_TESTS_LIST} )
      add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )

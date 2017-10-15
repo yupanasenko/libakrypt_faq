@@ -373,128 +373,61 @@
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
     "id-tc26-gost3410-2012-256-test-paramset", "1.2.643.7.1.2.1.1.0",
-       (ak_pointer) &wcurve_gost_3410_2012_test256, NULL )) != ak_error_ok ))
-    return ak_error_message( error, __func__, "incorrect oid creation" );
-
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
-    "id-tc26-gost3410-2012-256-paramsetA", "1.2.643.7.1.2.1.1.1",
-       (ak_pointer) &wcurve_tc26_gost_3410_2012_256_paramSetA, NULL )) != ak_error_ok ))
-    return ak_error_message( error, __func__, "incorrect oid creation" );
-
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
-    "id-cryptopro-gost3410-2001-paramsetA", "1.2.643.2.2.35.1",
-       (ak_pointer) &wcurve_rfc4357_paramSetA, NULL )) != ak_error_ok ))
-    return ak_error_message( error, __func__, "incorrect oid creation" );
-
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
-    "id-cryptopro-gost3410-2001-paramsetB", "1.2.643.2.2.35.2",
-       (ak_pointer) &wcurve_rfc4357_paramSetB, NULL )) != ak_error_ok ))
-    return ak_error_message( error, __func__, "incorrect oid creation" );
-
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
-    "id-cryptopro-gost3410-2001-paramsetC", "1.2.643.2.2.35.3",
-       (ak_pointer) &wcurve_rfc4357_paramSetC, NULL )) != ak_error_ok ))
-    return ak_error_message( error, __func__, "incorrect oid creation" );
-
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
-    "id-cryptopro-2001dh-paramset", "1.2.643.2.2.36.0",
-       (ak_pointer) &wcurve_rfc4357_paramSetA, NULL )) != ak_error_ok ))
-    return ak_error_message( error, __func__, "incorrect oid creation" );
-
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
-    "id-axel-gost3410-2012-256-paramsetA", "1.2.643.2.52.1.25.1.2.1",
-       (ak_pointer) &wcurve_axel_gost_3410_2012_256_paramSetA, NULL )) != ak_error_ok ))
-    return ak_error_message( error, __func__, "incorrect oid creation" );
-
- /* значения параметров для 512-ти битных кривых */
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
-    "id-tc26-gost3410-2012-512-test-paramset", "1.2.643.7.1.2.1.2.0",
-       (ak_pointer) &wcurve_gost_3410_2012_test512, NULL )) != ak_error_ok ))
-    return ak_error_message( error, __func__, "incorrect oid creation" );
-
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
-    "id-tc26-gost3410-2012-512-paramsetA", "1.2.643.7.1.2.1.2.1",
-       (ak_pointer) &wcurve_tc26_gost_3410_2012_512_paramSetA, NULL )) != ak_error_ok ))
-    return ak_error_message( error, __func__, "incorrect oid creation" );
-
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
-    "id-tc26-gost3410-2012-512-paramsetB", "1.2.643.7.1.2.1.2.2",
-       (ak_pointer) &wcurve_tc26_gost_3410_2012_512_paramSetB, NULL )) != ak_error_ok ))
-    return ak_error_message( error, __func__, "incorrect oid creation" );
-
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
-    "id-tc26-gost3410-2012-512-paramsetC", "1.2.643.7.1.2.1.2.3",
-       (ak_pointer) &wcurve_tc26_gost_3410_2012_512_paramSetC, NULL )) != ak_error_ok ))
-    return ak_error_message( error, __func__, "incorrect oid creation" );
-
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
-    "id-axel-gost3410-2012-512-paramsetA", "1.2.643.2.52.1.27.1.2.1",
-       (ak_pointer) &wcurve_axel_gost_3410_2012_512_paramSetA, NULL )) != ak_error_ok ))
-    return ak_error_message( error, __func__, "incorrect oid creation" );
-
-
-
-
-
-
-
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, ecurve_params,
-    "id-tc26-gost3410-2012-256-test-paramset", "1.2.643.7.1.2.1.1.0",
        (ak_pointer) &id_tc26_gost3410_2012_256_test_paramset, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, ecurve_params,
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
     "id-tc26-gost3410-2012-256-paramsetA", "1.2.643.7.1.2.1.1.1",
        (ak_pointer) &id_tc26_gost3410_2012_256_paramsetA, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, ecurve_params,
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
     "id-rfc4357-gost3410-2001-paramsetA", "1.2.643.2.2.35.1",
        (ak_pointer) &id_rfc4357_gost3410_2001_paramsetA, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, ecurve_params,
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
     "id-rfc4357-gost3410-2001-paramsetB", "1.2.643.2.2.35.2",
        (ak_pointer) &id_rfc4357_gost3410_2001_paramsetB, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, ecurve_params,
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
     "id-rfc4357-gost3410-2001-paramsetC", "1.2.643.2.2.35.3",
        (ak_pointer) &id_rfc4357_gost3410_2001_paramsetC, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, ecurve_params,
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
     "id-rfc4357-2001dh-paramset", "1.2.643.2.2.36.0",
        (ak_pointer) &id_rfc4357_gost3410_2001_paramsetA, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, ecurve_params,
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
     "id-axel-gost3410-2012-256-paramsetA", "1.2.643.2.52.1.25.1.2.1",
        (ak_pointer) &id_axel_gost3410_2012_256_paramsetA, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
  /* значения параметров для 512-ти битных кривых */
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, ecurve_params,
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
     "id-tc26-gost3410-2012-512-test-paramset", "1.2.643.7.1.2.1.2.0",
        (ak_pointer) &id_tc26_gost3410_2012_512_test_paramset, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, ecurve_params,
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
     "id-tc26-gost3410-2012-512-paramsetA", "1.2.643.7.1.2.1.2.1",
        (ak_pointer) &id_tc26_gost3410_2012_512_paramsetA, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, ecurve_params,
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
     "id-tc26-gost3410-2012-512-paramsetB", "1.2.643.7.1.2.1.2.2",
        (ak_pointer) &id_tc26_gost3410_2012_512_paramsetB, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, ecurve_params,
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
     "id-tc26-gost3410-2012-512-paramsetC", "1.2.643.7.1.2.1.2.3",
        (ak_pointer) &id_tc26_gost3410_2012_512_paramsetC, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, ecurve_params,
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( identifier, wcurve_params,
     "id-axel-gost3410-2012-512-paramsetA", "1.2.643.2.52.1.27.1.2.1",
        (ak_pointer) &id_axel_gost3410_2012_512_paramsetA, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );

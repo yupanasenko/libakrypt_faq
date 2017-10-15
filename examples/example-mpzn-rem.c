@@ -5,11 +5,12 @@
  #include <gmp.h>
 
 /* ----------------------------------------------------------------------------------------------- */
- int mpzn_rem_test( ak_wcurve_paramset wc, size_t count )
+ int mpzn_rem_test( ak_wcurve wc, size_t count )
 {
   int rescount = 0;
   size_t j = 0, mycount = 0, mpzcount = 0;
-  ak_mpznmax x, r, p, l;
+  ak_mpznmax x, r, l;
+  ak_uint64 *p = wc->p;
   mpz_t xp, rp, pp;
   struct random generator;
 
@@ -19,8 +20,7 @@
   ak_random_create_lcg( &generator );
 
  /* первый тест - модуль p */
-  ak_mpzn_set_hexstr( p, wc->size, wc->cp );
-  mpz_set_str( pp, wc->cp, 16 );
+  ak_mpzn_to_mpz( p, wc->size, pp );
   printf(" - p: "); mpz_out_str( stdout, 16, pp ); printf("\n");
 
   for( j = 0; j < count; j++ ) {
@@ -38,8 +38,7 @@
 
 
  /* второй тест - модуль q */
-  ak_mpzn_set_hexstr( p, wc->size, wc->cq );
-  mpz_set_str( pp, wc->cq, 16 );
+  ak_mpzn_to_mpz( wc->q, wc->size, pp );
   printf(" - q: "); mpz_out_str( stdout, 16, pp ); printf("\n");
 
   mpzcount = mycount = 0;
@@ -64,8 +63,6 @@
  return rescount;
 }
 
-
-
 /* ----------------------------------------------------------------------------------------------- */
 /* основная тестирующая программа */
  int main( void )
@@ -81,7 +78,7 @@
     if( ak_oid_get_mode( handle ) == wcurve_params ) {
      /* достаем простое число */
       ak_oid oid = ak_handle_get_context( handle, oid_engine );
-      ak_wcurve_paramset wc = ( ak_wcurve_paramset ) oid->data;
+      ak_wcurve wc = ( ak_wcurve ) oid->data;
 
       totalmany += 2;
       howmany += mpzn_rem_test( wc, 1000000 );

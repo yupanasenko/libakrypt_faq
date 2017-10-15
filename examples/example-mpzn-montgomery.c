@@ -232,6 +232,7 @@
   int totalmany = 0, howmany = 0;
   size_t count = 1000000;
   ak_handle handle = ak_error_wrong_handle;
+  char *str = NULL;
 
   ak_libakrypt_create( ak_function_log_stderr );
 
@@ -242,28 +243,29 @@
     if( ak_oid_get_mode( handle ) == wcurve_params ) {
      /* достаем простое число */
       ak_oid oid = ak_handle_get_context( handle, oid_engine );
-      ak_wcurve_paramset wc = ( ak_wcurve_paramset ) oid->data;
+      ak_wcurve wc = ( ak_wcurve ) oid->data;
       if( wc->size == ak_mpzn256_size ) {
-        printf(" - p: %s\n", wc->cp );
+        printf(" - p: %s\n", str = ak_mpzn_to_hexstr( wc->p, wc->size ));
         printf(" - ak_mpzn_add_montgomery() function test for ak_mpzn256 started\n");
         totalmany++;
-        if( add_montgomery_test( wc->size, wc->cp, count )) howmany++;
+        if( add_montgomery_test( wc->size, str, count )) howmany++;
         printf(" - ak_mpzn_mul_montgomery() function test for ak_mpzn256 started\n");
         totalmany++;
-        if( mul_montgomery_test( wc->size, wc->cp, wc->cn, count )) howmany++;
+        if( mul_montgomery_test( wc->size, str, wc->n, count )) howmany++;
+        free( str );
 
   // добавить modpow!!
 
       }
       if( wc->size == ak_mpzn512_size ) {
-        printf(" - p: %s\n", wc->cp );
+        printf(" - p: %s\n", str = ak_mpzn_to_hexstr( wc->p, wc->size ));
         printf(" - ak_mpzn_add_montgomery() function test for ak_mpzn512 started\n");
         totalmany++;
-        if( add_montgomery_test( wc->size, wc->cp, count )) howmany++;
+        if( add_montgomery_test( wc->size, str, count )) howmany++;
         printf(" - ak_mpzn_mul_montgomery() function test for ak_mpzn512 started\n");
         totalmany++;
-        if( mul_montgomery_test( wc->size, wc->cp, wc->cn, count )) howmany++;
-
+        if( mul_montgomery_test( wc->size, str, wc->n, count )) howmany++;
+        free( str );
       }
     }
     handle = ak_oid_findnext_by_engine( handle, identifier );
