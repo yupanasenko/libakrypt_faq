@@ -1,12 +1,22 @@
-Changes in version 0.5.4
-------------------------------------
+
+Changes in version 0.5.5 (15.10.2017)
+-------------------------------------
+
+  * Changed internal realization of elliptic curves and points
+  * Improoved handbook
+
+
+Changes in version 0.5.4 (10.10.2017)
+-------------------------------------
+
    * Restored arithmetic in prime fields with Montgomery improovments
-   * Restored operations on short Weierstrass form curves.
-   * Added 256bit & 512 bit parameters for useful Weierstrass curves
+   * Restored operations on short Weierstrass elliptic curves.
+   * Added 256 & 512 bits parameters for useful Weierstrass curves
    * Improoved handbook
 
-Changes in version 0.5.3 (06.10.2017)
-------------------------------------
+
+Changes in version 0.5.3 (30.09.2017)
+-------------------------------------
 
    * Created ak_compress class for iterated maps
    * Restored ak_hash, ak_hmac classes and gosthash94 & streebog{256,512} algorithms

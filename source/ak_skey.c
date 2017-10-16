@@ -29,6 +29,7 @@
  #include <time.h>
  #include <ak_tools.h>
  #include <ak_hmac.h>
+ #include <ak_curves.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция инициализирует поля структуры, выделяя необходимую память. Всем полям
@@ -147,7 +148,9 @@
   memset( &(skey->icode), 0, sizeof( struct buffer ));
 
   ak_random_destroy( &skey->generator );
-  if( skey->data != NULL ) free( skey->data );
+  if( skey->data != NULL )
+   /* удаляем память только при установленном флаге */
+    if( !((skey->flags)&ak_skey_flag_data_nonfree )) free( skey->data );
 
   ak_buffer_destroy( &skey->number );
   skey->oid = NULL;
@@ -269,6 +272,43 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция вырабатывает случайный вычет \f$ v \f$ из кольца вычетов \$f \mathbb Z_q\$f
+    и заменяет значение ключа \f$ k \f$ на величину \f$ k + v \pmod{q} \f$.
+    Величина \f$ q \f$ должна быть простым числом, помещенным в параметры эллиптической кривой,
+    на которые указывает `skey->data`.
+
+    @param skey Указатель на контекст секретного ключа. Длина ключа (в байтах)
+    должна быть кратна 8.
+
+    @return В случае успеха функция возвращает ak_error_ok. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_set_mask_ladditive( ak_skey skey )
+{
+  ak_wcurve wc = NULL;
+  int error = ak_error_ok;
+
+ /* выполняем стандартные проверки */
+  if(( error = ak_skey_check( skey )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "using invalid secret key" );
+
+ /* создаем маску*/
+  if(( error = skey->generator.random( &skey->generator,
+                                           skey->mask.data, skey->mask.size )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "wrong mask generation for key buffer" );
+
+ /* накладываем маску на ключ */
+  wc = ( ak_wcurve ) skey->data;
+  ak_mpzn_rem( (ak_uint64 *)skey->key.data, (ak_uint64 *)skey->key.data, wc->q, wc->size );
+  ak_mpzn_mul_montgomery( (ak_uint64 *)skey->key.data, (ak_uint64 *)skey->key.data, wc->r2q,
+                                                                           wc->q, wc->nq, wc->size);
+  ak_mpzn_rem( (ak_uint64 *)skey->mask.data, (ak_uint64 *)skey->mask.data, wc->q, wc->size );
+  ak_mpzn_add_montgomery( (ak_uint64 *)skey->key.data, (ak_uint64 *)skey->key.data,
+                                                    (ak_uint64 *)skey->mask.data, wc->q, wc->size );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция вычисляет новый случайный вектор \f$ v \f$ и изменяет значение
     значение ключа, снимая старую маску и накладывая новую.
 
@@ -301,6 +341,32 @@
 
  /* удаляем старое */
   memset( &newmask, 0, sizeof( ak_uint64 ));
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_remask_ladditive( ak_skey skey )
+{
+  ak_wcurve wc = NULL;
+  int error = ak_error_ok;
+  ak_uint64 zeta[ak_mpzn512_size];
+
+ /* выполняем стандартные проверки */
+  if(( error = ak_skey_check( skey )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "using invalid secret key" );
+
+ /* создаем маску */
+  if(( error = skey->generator.random( &skey->generator, zeta, skey->mask.size )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "wrong mask generation for key buffer" );
+
+ /* меняем маску */
+  wc = ( ak_wcurve ) skey->data;
+  ak_mpzn_rem( zeta, zeta, wc->q, wc->size );
+  ak_mpzn_sub( skey->mask.data, wc->q, skey->mask.data, wc->size );
+  ak_mpzn_add_montgomery( skey->key.data, skey->key.data, zeta, wc->q, wc->size );
+  ak_mpzn_add_montgomery( skey->key.data, skey->key.data, skey->mask.data, wc->q, wc->size );
+  ak_mpzn_set( skey->mask.data, zeta, wc->size );
+
  return ak_error_ok;
 }
 
@@ -379,6 +445,13 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_set_icode_ladditive( ak_skey skey )
+{
+ return ak_error_ok;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! @param skey Указатель на контекст секретного ключа. Длина ключа (в байтах)
     должна быть кратна 8.
 
@@ -405,6 +478,12 @@
  /* и сравнение */
   if( memcmp( skey->icode.data, &result, 8 )) return ak_false;
    else return ak_true;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_skey_check_icode_ladditive( ak_skey skey )
+{
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -49,6 +49,8 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Флаг установки ключевого значения (0 - значение не определено, 1 - определено ). */
  #define ak_skey_flag_set_key       (0x1)
+/*! \brief Флаг отмены очистки дополнительных данных (0 - для указателя вызывается free, 1 - очистка не производится). */
+ #define ak_skey_flag_data_nonfree  (0x2)
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура для хранения интервала времени использования ключа. */
@@ -116,13 +118,21 @@
  int ak_skey_set_password( ak_skey , const ak_pointer , const size_t ,
                                                                  const ak_pointer , const size_t );
 /*! \brief Наложение в пространстве векторов \f$ \mathbb V^n \f$ аддитивной маски на ключ. */
- int ak_skey_set_mask_xor( ak_skey );
+ int ak_skey_set_mask_xor( ak_skey ); 
+/*! \brief Наложение в кольце \f$ \mathbb Z_q \f$ аддитивной маски на ключ. */
+ int ak_skey_set_mask_ladditive( ak_skey skey );
+
 /*! \brief Смена в пространстве векторов \f$ \mathbb V^n \f$ значения аддитивной маски ключа. */
  int ak_skey_remask_xor( ak_skey );
+ int ak_skey_remask_ladditive( ak_skey );
+
 /*! \brief Вычисление значения контрольной суммы ключа. */
  int ak_skey_set_icode_xor( ak_skey );
+ int ak_skey_set_icode_ladditive( ak_skey );
+
 /*! \brief Проверка значения контрольной суммы ключа. */
  ak_bool ak_skey_check_icode_xor( ak_skey );
+ ak_bool ak_skey_check_icode_ladditive( ak_skey );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */
