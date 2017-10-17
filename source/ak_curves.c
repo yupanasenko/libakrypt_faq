@@ -158,12 +158,17 @@
 
   memset( message, 0, 160 );
   ak_snprintf( message, 160, "px = " );
-  ak_ptr_to_hexstr_static( ec->px, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
+  ak_ptr_to_hexstr_static( ec->point.x, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
   ak_log_set_message( message );
 
   memset( message, 0, 160 );
   ak_snprintf( message, 160, "py = " );
-  ak_ptr_to_hexstr_static( ec->py, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
+  ak_ptr_to_hexstr_static( ec->point.y, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
+  ak_log_set_message( message );
+
+  memset( message, 0, 160 );
+  ak_snprintf( message, 160, "pz = " );
+  ak_ptr_to_hexstr_static( ec->point.z, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
   ak_log_set_message( message );
 }
 
@@ -250,9 +255,9 @@
   if( wc == NULL ) ak_error_message( ak_error_null_pointer, __func__ ,
                                                          "using null pointer to elliptic curve" );
  /* копируем данные */
-  memcpy( wp->x, wc->px, wc->size*sizeof( ak_uint64 ));
-  memcpy( wp->y, wc->py, wc->size*sizeof( ak_uint64 ));
-  ak_mpzn_set_ui( wp->z, wc->size, 1 );
+  memcpy( wp->x, wc->point.x, wc->size*sizeof( ak_uint64 ));
+  memcpy( wp->y, wc->point.y, wc->size*sizeof( ak_uint64 ));
+  memcpy( wp->z, wc->point.z, wc->size*sizeof( ak_uint64 ));
  return ak_error_ok;
 }
 

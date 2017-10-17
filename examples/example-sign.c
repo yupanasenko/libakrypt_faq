@@ -47,9 +47,9 @@
   printf("\ncreate: %d (size bytes: %ld)\n",
                     ak_signkey_create_streebog256( &sk, wc ), wc->size*sizeof( ak_uint64 ));
 
-  ak_signkey_context_set_key( &sk, &key, sizeof(ak_uint64)*ak_mpzn256_size);
+  ak_signkey_context_set_key( &sk, &key, 32 );
   print_skey( &sk.key );
-  sk.key.remask( &sk.key );
+/*  sk.key.remask( &sk.key );
   print_skey( &sk.key );
 
   printf("hash   (e): %s\n", str = ak_ptr_to_hexstr( e, 32, ak_true )); free( str );
@@ -60,7 +60,7 @@
 
   printf("sign: %s\n\n", str = ak_ptr_to_hexstr( out, 64, ak_true )); free( str );
   print_skey( &sk.key );
-
+*/
   ak_signkey_destroy( &sk );
  return ak_libakrypt_destroy();
 }
