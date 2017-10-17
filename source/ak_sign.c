@@ -69,8 +69,38 @@
  return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param sctx контекст секретного ключа алгоритма электронной подписи.
+    @return В случае успеха возвращается ноль (\ref ak_error_ok). В противном случае возвращается
+    код ошибки.                                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_signkey_destroy( ak_signkey sctx )
+{
+  int error = ak_error_ok;
+  if( sctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                           "destroying a null pointer to digital signature secret key context" );
+  if(( error = ak_skey_destroy( &sctx->key )) != ak_error_ok )
+    ak_error_message( error, __func__ , "incorrect destroying of digital signature secret key" );
+  if(( error = ak_hash_destroy( &sctx->ctx )) != ak_error_ok )
+    ak_error_message( error, __func__ , "incorrect destroying hash function context" );
 
+ return error;
+}
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param sctx контекст секретного ключа алгоритма электронной подписи.
+    @return Функция возвращает NULL. В случае возникновения ошибки, ее код может быть получен с
+    помощью вызова функции ak_error_get_value().                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_signkey_delete( ak_pointer sctx )
+{
+  if( sctx != NULL ) {
+      ak_signkey_destroy(( ak_signkey ) sctx );
+      free( sctx );
+     } else ak_error_message( ak_error_null_pointer, __func__ ,
+                                   "using null pointer to digital signature secret key context" );
+ return NULL;
+}
 
 
 
@@ -94,6 +124,74 @@
 
  return error;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция вырабатывает электронную подпись для хеш-кода подписываемого сообщения \f$ e \f$
+    и случайного числа \f$ k \f$. Для этого
+
+     - вычисляется точка \f$ C = [k]P\f$, где \f$ P \f$ точка, порождающая подгруппу простого
+       порядка \f$ q \f$.
+     - точка приводитя к аффинной форме и для х-координаты точки \f$ C \f$ вычисляется значение
+       \f$ r \equiv x \pmod{q}\f$.
+     - вычисляется вторая половинка подписи  \f$ s \f$,
+       удовлетворяющая сравнению \f$ s \equiv rd + ke \pmod{q}\f$.
+
+    После этого
+    формируется электронная подпись, представляющая собой конкатенацию \f$ r||s \f$.
+
+    \b Внимание! Входные параметры функции не проверяются.
+
+    @param sctx контекст секретного ключа алгоритма электронной подписи.
+    @param k степень кратности точки \f$ P \f$.
+    @param e хеш-код сообщения, для которого вырабатывается электронная подпись.
+    @param out массив, куда помещается результат. Память под массив должна быть выделена заранее.
+
+    @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+    возвращается указатель на буффер, содержащий вектор с электронной подписью. В случае
+    возникновения ошибки возвращается NULL, при этом код ошибки может быть получен с помощью
+    вызова функции ak_error_get_value().                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_signkey_context_sign_values( ak_signkey sctx, ak_uint64 *k,
+                                                                      ak_pointer e, ak_pointer out )
+{
+ /* поскольку функция не экспортируется, мы оставляем все проверки функциям верхнего уровня */
+  struct wpoint wp, wr;
+  ak_wcurve wc = ( ak_wcurve ) sctx->key.data;
+  char *str = NULL;
+
+ /* вычисляем r */
+  ak_wpoint_set( &wp, wc );
+  ak_wpoint_pow( &wr, &wp, k, wc->size, wc );
+
+  printf("point  (x): %s\n", str = ak_ptr_to_hexstr( wp.x, 32, ak_true )); free( str );
+  printf("point  (y): %s\n", str = ak_ptr_to_hexstr( wp.y, 32, ak_true )); free( str );
+  printf("point  (z): %s\n", str = ak_ptr_to_hexstr( wp.z, 32, ak_true )); free( str );
+
+  ak_wpoint_reduce( &wr, wc );
+  ak_mpzn_rem( wr.x, wr.x, wc->q, wc->size );
+  printf("point  (r): %s\n", str = ak_ptr_to_hexstr( wr.x, 32, ak_true )); free( str );
+
+ /* вычисляем s */
+  ak_mpzn_mul_montgomery( wr.x, wr.x, wc->r2q, wc->q, wc->nq, wc->size );
+  ak_mpzn_mul_montgomery( wr.x, wr.x, sctx->key.data, wc->q, wc->nq, wc->size ); /* wr.x <- r*d */
+
+  ak_mpzn_mul_montgomery( wr.y, k, wc->r2q, wc->q, wc->nq, wc->size );
+  ak_mpzn_mul_montgomery( wr.z, (ak_uint64 *)e, wc->r2q, wc->q, wc->nq, wc->size );
+  ak_mpzn_mul_montgomery( wr.y, wr.y, wr.z, wc->q, wc->nq, wc->size ); /* wr.y <- k*e */
+
+ /*
+     ^
+     |
+
+    неверный код !!!
+ */
+ /* завершаемся */
+  sctx->key.remask( &sctx->key );
+
+ return NULL;
+}
+
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_sign.c  */
