@@ -157,37 +157,35 @@
  /* поскольку функция не экспортируется, мы оставляем все проверки функциям верхнего уровня */
   struct wpoint wp, wr;
   ak_wcurve wc = ( ak_wcurve ) sctx->key.data;
+  ak_uint64 *r = (ak_uint64 *)out, *s = ( ak_uint64 *)out + wc->size;
+  ak_mpznmax one = ak_mpznmax_one;
   char *str = NULL;
 
  /* вычисляем r */
   ak_wpoint_set( &wp, wc );
   ak_wpoint_pow( &wr, &wp, k, wc->size, wc );
-
-  printf("point  (x): %s\n", str = ak_ptr_to_hexstr( wp.x, 32, ak_true )); free( str );
-  printf("point  (y): %s\n", str = ak_ptr_to_hexstr( wp.y, 32, ak_true )); free( str );
-  printf("point  (z): %s\n", str = ak_ptr_to_hexstr( wp.z, 32, ak_true )); free( str );
-
   ak_wpoint_reduce( &wr, wc );
-  ak_mpzn_rem( wr.x, wr.x, wc->q, wc->size );
-  printf("point  (r): %s\n", str = ak_ptr_to_hexstr( wr.x, 32, ak_true )); free( str );
+  ak_mpzn_rem( r, wr.x, wc->q, wc->size );
+  printf("sign   (r): %s\n", str = ak_ptr_to_hexstr( r, 32, ak_true )); free( str );
 
  /* вычисляем s */
-  ak_mpzn_mul_montgomery( wr.x, wr.x, wc->r2q, wc->q, wc->nq, wc->size );
-  ak_mpzn_mul_montgomery( wr.x, wr.x, sctx->key.data, wc->q, wc->nq, wc->size ); /* wr.x <- r*d */
+  ak_mpzn_mul_montgomery( wr.x, r, wc->r2q, wc->q, wc->nq, wc->size );
+  ak_mpzn_mul_montgomery( s, wr.x, sctx->key.key.data, wc->q, wc->nq, wc->size ); /* s <- r*d */
 
   ak_mpzn_mul_montgomery( wr.y, k, wc->r2q, wc->q, wc->nq, wc->size );
   ak_mpzn_mul_montgomery( wr.z, (ak_uint64 *)e, wc->r2q, wc->q, wc->nq, wc->size );
   ak_mpzn_mul_montgomery( wr.y, wr.y, wr.z, wc->q, wc->nq, wc->size ); /* wr.y <- k*e */
+  ak_mpzn_add_montgomery( s, s, wr.y, wc->q, wc->size );
 
- /*
-     ^
-     |
+  ak_mpzn_mul_montgomery( wr.x, wr.x, sctx->key.mask.data, wc->q, wc->nq, wc->size );
+  ak_mpzn_sub( wr.y, wc->q, wr.x, wc->size );
+  ak_mpzn_add_montgomery( s, s, wr.y, wc->q, wc->size );
 
-    неверный код !!!
- */
+  ak_mpzn_mul_montgomery( s, s, one, wc->q, wc->nq, wc->size );
+  printf("sign   (s): %s\n", str = ak_ptr_to_hexstr( s, 32, ak_true )); free( str );
+
  /* завершаемся */
   sctx->key.remask( &sctx->key );
-
  return NULL;
 }
 
