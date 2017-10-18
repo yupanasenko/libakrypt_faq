@@ -343,7 +343,7 @@
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( hash_function, kbox_params,
-    "id-gosthash94-cryptopro-paramsetA", "1.2.643.2.2.30.1", (ak_pointer) hash_box_CSPA,
+    "id-gosthash94-rfc4357-paramsetA", "1.2.643.2.2.30.1", (ak_pointer) hash_box_CSPA,
                                                                              NULL ))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect oid creation" );
 

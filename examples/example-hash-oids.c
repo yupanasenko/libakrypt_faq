@@ -36,7 +36,7 @@
       printf(" name: %s (%s)\n", ak_oid_get_name( handle ), ak_oid_get_id( handle ));
 
          time = clock();
-         if(( buff = ak_hash_file( ctx_handle, "data.dat", NULL )) == NULL ) continue;
+         if(( buff = ak_hash_file( ctx_handle, "data.dat", NULL )) == NULL ) goto while_exit;
          time = clock() - time;
              /* мы не знаем длину хешкода, */
              /* поэтому помещаем результат в динамический буффер */
@@ -47,7 +47,7 @@
          if( buff != NULL ) { free( str ); str = NULL; }
          buff = ak_buffer_delete( buff );
 
-      ak_handle_delete( ctx_handle );
+      while_exit: ak_handle_delete( ctx_handle );
     }
    /* ищем следующий OID с тем же типом криптографического механизма */
     handle = ak_oid_findnext_by_engine( handle, hash_function );

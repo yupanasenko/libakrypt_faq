@@ -229,7 +229,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_hash_new_gosthash94_csp( void )
 {
- return ak_hash_new_gosthash94( ak_oid_find_by_name( "id-gosthash94-CryptoPro-ParamSetA" ));
+ return ak_hash_new_gosthash94( ak_oid_find_by_name( "id-gosthash94-rfc4357-paramsetA" ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */

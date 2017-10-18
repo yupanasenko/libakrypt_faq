@@ -102,11 +102,6 @@
  return NULL;
 }
 
-
-
-
-
-
 /* ----------------------------------------------------------------------------------------------- */
  int ak_signkey_context_set_key( ak_signkey sctx, const ak_pointer ptr, const size_t size )
 {
@@ -158,14 +153,13 @@
   struct wpoint wr;
   ak_wcurve wc = ( ak_wcurve ) sctx->key.data;
   ak_uint64 *r = (ak_uint64 *)out, *s = ( ak_uint64 *)out + wc->size;
-  ak_mpznmax one = ak_mpznmax_one;
-  char *str = NULL;
+
+  memset( out, 0, ( wc->size*sizeof( ak_uint64 )) << 1 );
 
  /* вычисляем r */
   ak_wpoint_pow( &wr, &wc->point, k, wc->size, wc );
   ak_wpoint_reduce( &wr, wc );
   ak_mpzn_rem( r, wr.x, wc->q, wc->size );
-  printf("sign   (r): %s\n", str = ak_ptr_to_hexstr( r, 32, ak_true )); free( str );
 
  /* вычисляем s */
   ak_mpzn_mul_montgomery( wr.x, r, wc->r2q, wc->q, wc->nq, wc->size );
@@ -180,9 +174,8 @@
   ak_mpzn_sub( wr.y, wc->q, wr.x, wc->size );
   ak_mpzn_add_montgomery( s, s, wr.y, wc->q, wc->size );
 
-  ak_mpzn_mul_montgomery( s, s, one, wc->q, wc->nq, wc->size );
-  printf("sign   (s): %s\n", str = ak_ptr_to_hexstr( s, 32, ak_true )); free( str );
-
+  ak_mpzn_mul_montgomery( s, s,  wc->point.z, /* для экономии памяти пользуемся равенством z = 1 */
+                                 wc->q, wc->nq, wc->size );
  /* завершаемся */
   sctx->key.remask( &sctx->key );
  return NULL;

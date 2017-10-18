@@ -300,11 +300,11 @@
  /* накладываем маску на ключ */
   wc = ( ak_wcurve ) skey->data;
   ak_mpzn_rem( (ak_uint64 *)skey->key.data, (ak_uint64 *)skey->key.data, wc->q, wc->size );
-//  ak_mpzn_mul_montgomery( (ak_uint64 *)skey->key.data, (ak_uint64 *)skey->key.data, wc->r2q,
-//                                                                           wc->q, wc->nq, wc->size);
-//  ak_mpzn_rem( (ak_uint64 *)skey->mask.data, (ak_uint64 *)skey->mask.data, wc->q, wc->size );
-//  ak_mpzn_add_montgomery( (ak_uint64 *)skey->key.data, (ak_uint64 *)skey->key.data,
-//                                                    (ak_uint64 *)skey->mask.data, wc->q, wc->size );
+  ak_mpzn_mul_montgomery( (ak_uint64 *)skey->key.data, (ak_uint64 *)skey->key.data, wc->r2q,
+                                                                           wc->q, wc->nq, wc->size);
+  ak_mpzn_rem( (ak_uint64 *)skey->mask.data, (ak_uint64 *)skey->mask.data, wc->q, wc->size );
+  ak_mpzn_add_montgomery( (ak_uint64 *)skey->key.data, (ak_uint64 *)skey->key.data,
+                                                    (ak_uint64 *)skey->mask.data, wc->q, wc->size );
  return error;
 }
 

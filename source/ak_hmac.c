@@ -769,7 +769,7 @@
  ak_handle ak_hmac_new_gosthash94_csp( const char *description )
 {
  return ak_hmac_new_gosthash94(
-                         ak_oid_find_by_name( "id-gosthash94-CryptoPro-ParamSetA" ), description );
+                         ak_oid_find_by_name( "id-gosthash94-rfc4357-paramsetA" ), description );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
