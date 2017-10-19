@@ -154,8 +154,6 @@
   ak_wcurve wc = ( ak_wcurve ) sctx->key.data;
   ak_uint64 *r = (ak_uint64 *)out, *s = ( ak_uint64 *)out + wc->size;
 
-  memset( out, 0, ( wc->size*sizeof( ak_uint64 )) << 1 );
-
  /* вычисляем r */
   ak_wpoint_pow( &wr, &wc->point, k, wc->size, wc );
   ak_wpoint_reduce( &wr, wc );
@@ -179,6 +177,94 @@
  /* завершаемся */
   sctx->key.remask( &sctx->key );
  return NULL;
+}
+
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                       Функции для работы с открытыми ключами                                    */
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param pctx контекст секретного ключа алгоритма электронной подписи.
+    @param wc контекст эллиптической кривой.
+
+    @return В случае успеха возвращается ноль (\ref ak_error_ok). В противном случае возвращается
+    код ошибки.                                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_pubkey_create_streebog256( ak_pubkey pctx, ak_wcurve wc )
+{
+  int error = ak_error_ok;
+
+  if( pctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                     "using null pointer to digital signature public key context" );
+  if( wc == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                   "using null pointer to elliptic curve context" );
+  if( wc->size != 4 ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                        "elliptic curve defined over wrong field" );
+ /* инициализируем контекст функции хеширования */
+  if(( error = ak_hash_create_streebog256( &pctx->ctx )) != ak_error_ok )
+    return ak_error_message( error, __func__, "invalid creation of hash function context");
+
+ /* устанавливаем эллиптическую кривую */
+  pctx->wc = wc;
+
+ /* устанавливаем OID алгоритма */
+  pctx->oid = NULL;
+
+ return ak_error_ok;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_pubkey_create_signkey( ak_pubkey pctx, ak_signkey sctx )
+{
+  struct wpoint tpoint;
+  int error = ak_error_ok;
+  ak_bool result = ak_false;
+
+  if( pctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                     "using null pointer to digital signature public key context" );
+  if( sctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using a null pointer to hmac key context" );
+ /* инициализируем контекст функции хеширования */
+  if( strncmp( "streebog256", sctx->ctx.oid->name.data, 11 ) == 0 ) {
+    if(( error = ak_hash_create_streebog256( &pctx->ctx )) != ak_error_ok )
+      return ak_error_message( error, __func__, "invalid creation of hash function context");
+    result = ak_true;
+  }
+  if( strncmp( "streebog512", sctx->ctx.oid->name.data, 11 ) == 0 ) {
+    if(( error = ak_hash_create_streebog512( &pctx->ctx )) != ak_error_ok )
+      return ak_error_message( error, __func__, "invalid creation of hash function context");
+    result = ak_true;
+  }
+  if( strncmp( "gosthash94", sctx->ctx.oid->name.data, 10 ) == 0 ) {
+    if(( error = ak_hash_create_gosthash94( &pctx->ctx,
+                 ak_oid_find_by_name( "id-gosthash94-rfc4357-paramsetA" ))) != ak_error_ok )
+      return ak_error_message( error, __func__, "invalid creation of hash function context");
+    result = ak_true;
+  }
+  if( !result ) return ak_error_message( ak_error_undefined_value , __func__ ,
+                                                    "using undefined hash function context");
+
+ /* устанавливаем эллиптическую кривую */
+  pctx->wc = ( ak_wcurve )sctx->key.data;
+
+ /* устанавливаем OID алгоритма */
+  pctx->oid = NULL;
+
+ /* теперь определяем открытый ключ */
+  ak_mpzn512 t;
+
+  ak_mpzn_mul_montgomery( t, (ak_uint64 *)sctx->key.key.data, pctx->wc->point.z, pctx->wc->q, pctx->wc->nq, pctx->wc->size );
+  ak_wpoint_pow( &pctx->qpoint, &pctx->wc->point, t, sctx->key.key.size, pctx->wc );
+
+  ak_mpzn_mul_montgomery( t, (ak_uint64 *)sctx->key.mask.data, pctx->wc->point.z, pctx->wc->q, pctx->wc->nq, pctx->wc->size );
+  ak_wpoint_pow( &tpoint, &pctx->wc->point, t, sctx->key.mask.size, pctx->wc );
+
+  ak_mpzn_sub( tpoint.y, pctx->wc->p, tpoint.y, pctx->wc->size );
+  ak_wpoint_add( &pctx->qpoint, &tpoint, pctx->wc );
+  ak_wpoint_reduce( &pctx->qpoint, pctx->wc );
+
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

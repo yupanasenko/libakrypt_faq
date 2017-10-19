@@ -39,12 +39,13 @@
 
   ak_wcurve wc = (ak_wcurve) &id_tc26_gost3410_2012_256_test_paramset;
   struct signkey sk;
+  struct pubkey pk;
   ak_uint8 out[64];
   char *str = NULL;
 
   ak_libakrypt_create( ak_function_log_stderr );
 
-  printf("\ncreate: %d (size bytes: %ld)\n",
+  printf("\nsecret key create: %d (size bytes: %ld)\n",
                     ak_signkey_create_streebog256( &sk, wc ), wc->size*sizeof( ak_uint64 ));
 
   ak_signkey_context_set_key( &sk, &key, 32 );
@@ -64,6 +65,16 @@
   printf("sign: %s\n\n", str = ak_ptr_to_hexstr( out, 64, ak_true )); free( str );
   print_skey( &sk.key );
 
+
+  printf("\npublic key create: %d\n", ak_pubkey_create_signkey( &pk, &sk ));
+  printf("public key hash: %s\n\n", ak_buffer_get_str( &pk.ctx.oid->name ));
+
+
+  printf("public.x: %s\n", str = ak_ptr_to_hexstr( &pk.qpoint.x, 32, ak_true )); free( str );
+  printf("public.y: %s\n", str = ak_ptr_to_hexstr( &pk.qpoint.y, 32, ak_true )); free( str );
+  printf("public.z: %s\n", str = ak_ptr_to_hexstr( &pk.qpoint.z, 32, ak_true )); free( str );
+
   ak_signkey_destroy( &sk );
+
  return ak_libakrypt_destroy();
 }

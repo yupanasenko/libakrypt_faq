@@ -120,7 +120,7 @@
 /*! \brief Наложение в пространстве векторов \f$ \mathbb V^n \f$ аддитивной маски на ключ. */
  int ak_skey_set_mask_xor( ak_skey ); 
 /*! \brief Наложение в кольце \f$ \mathbb Z_q \f$ аддитивной маски на ключ. */
- int ak_skey_set_mask_ladditive( ak_skey skey );
+ int ak_skey_set_mask_ladditive( ak_skey );
 
 /*! \brief Смена в пространстве векторов \f$ \mathbb V^n \f$ значения аддитивной маски ключа. */
  int ak_skey_remask_xor( ak_skey );
