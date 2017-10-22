@@ -219,31 +219,15 @@
 {
   struct wpoint tpoint;
   int error = ak_error_ok;
-  ak_bool result = ak_false;
+  ak_mpzn512 t = ak_mpzn512_zero;
 
   if( pctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                     "using null pointer to digital signature public key context" );
+                            "using null pointer to digital signature public key context" );
   if( sctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                      "using a null pointer to hmac key context" );
- /* инициализируем контекст функции хеширования */
-  if( strncmp( "streebog256", sctx->ctx.oid->name.data, 11 ) == 0 ) {
-    if(( error = ak_hash_create_streebog256( &pctx->ctx )) != ak_error_ok )
-      return ak_error_message( error, __func__, "invalid creation of hash function context");
-    result = ak_true;
-  }
-  if( strncmp( "streebog512", sctx->ctx.oid->name.data, 11 ) == 0 ) {
-    if(( error = ak_hash_create_streebog512( &pctx->ctx )) != ak_error_ok )
-      return ak_error_message( error, __func__, "invalid creation of hash function context");
-    result = ak_true;
-  }
-  if( strncmp( "gosthash94", sctx->ctx.oid->name.data, 10 ) == 0 ) {
-    if(( error = ak_hash_create_gosthash94( &pctx->ctx,
-                 ak_oid_find_by_name( "id-gosthash94-rfc4357-paramsetA" ))) != ak_error_ok )
-      return ak_error_message( error, __func__, "invalid creation of hash function context");
-    result = ak_true;
-  }
-  if( !result ) return ak_error_message( ak_error_undefined_value , __func__ ,
-                                                    "using undefined hash function context");
+                                              "using a null pointer to hmac key context" );
+
+  if(( error = ak_hash_create_oid( &pctx->ctx, sctx->ctx.oid )) != ak_error_ok )
+    return ak_error_message( error, __func__, "invalid creation of hash function context");
 
  /* устанавливаем эллиптическую кривую */
   pctx->wc = ( ak_wcurve )sctx->key.data;
@@ -252,19 +236,68 @@
   pctx->oid = NULL;
 
  /* теперь определяем открытый ключ */
-  ak_mpzn512 t;
+  ak_mpzn_mul_montgomery( t, (ak_uint64 *)sctx->key.key.data, pctx->wc->point.z, /* пользуемся z = 1 */
+                             pctx->wc->q, pctx->wc->nq, pctx->wc->size );
+  ak_wpoint_pow( &pctx->qpoint, &pctx->wc->point, t, pctx->wc->size, pctx->wc );
 
-  ak_mpzn_mul_montgomery( t, (ak_uint64 *)sctx->key.key.data, pctx->wc->point.z, pctx->wc->q, pctx->wc->nq, pctx->wc->size );
-  ak_wpoint_pow( &pctx->qpoint, &pctx->wc->point, t, sctx->key.key.size, pctx->wc );
-
-  ak_mpzn_mul_montgomery( t, (ak_uint64 *)sctx->key.mask.data, pctx->wc->point.z, pctx->wc->q, pctx->wc->nq, pctx->wc->size );
-  ak_wpoint_pow( &tpoint, &pctx->wc->point, t, sctx->key.mask.size, pctx->wc );
-
+  ak_mpzn_mul_montgomery( t, (ak_uint64 *)sctx->key.mask.data, pctx->wc->point.z, /* пользуемся z = 1 */
+                             pctx->wc->q, pctx->wc->nq, pctx->wc->size );
+  ak_wpoint_pow( &tpoint, &pctx->wc->point, t, pctx->wc->size, pctx->wc );
   ak_mpzn_sub( tpoint.y, pctx->wc->p, tpoint.y, pctx->wc->size );
   ak_wpoint_add( &pctx->qpoint, &tpoint, pctx->wc );
   ak_wpoint_reduce( &pctx->qpoint, pctx->wc );
+  sctx->key.remask( &sctx->key );
 
  return ak_error_ok;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*!
+    \b Внимание! Входные параметры функции не проверяются.
+
+    @param pctx контекст открытого ключа.
+    @param sign электронная подпись, для которой выполняется проверка.
+    @param e хеш-код сообщения, для которого проверяется электронная подпись.
+    @return Функция возыращает истину, если подпись верна. Если функция не верна или если
+    возникла ошибка, то возвращается ложь. Код шибки может получен с помощью
+    вызова функции ak_error_get_value().                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_pubkey_context_verify_values( ak_pubkey pctx, ak_pointer sign, ak_pointer e )
+{
+  ak_mpzn512 v, z1, z2, u;
+  struct wpoint cpoint, tpoint;
+  ak_uint64 *r = (ak_uint64 *)sign, *s = ( ak_uint64 *)sign + pctx->wc->size;
+
+  ak_mpzn_set( v, e, pctx->wc->size );
+  ak_mpzn_rem( v, v, pctx->wc->q, pctx->wc->size );
+  ak_mpzn_mul_montgomery( v, v, pctx->wc->r2q, pctx->wc->q, pctx->wc->nq, pctx->wc->size );
+
+  /* вычисляем v (в представлении Монтгомери) */
+  ak_mpzn_set_ui( u, pctx->wc->size, 2 );
+  ak_mpzn_sub( u, pctx->wc->q, u, pctx->wc->size );
+  ak_mpzn_modpow_montgomery( v, v, u, pctx->wc->q, pctx->wc->nq, pctx->wc->size ); // v <- v^{q-2} (mod q)
+
+  /* вычисляем z1 */
+  ak_mpzn_mul_montgomery( z1, s, pctx->wc->r2q, pctx->wc->q, pctx->wc->nq, pctx->wc->size );
+  ak_mpzn_mul_montgomery( z1, z1, v, pctx->wc->q, pctx->wc->nq, pctx->wc->size );
+  ak_mpzn_mul_montgomery( z1, z1, pctx->wc->point.z, pctx->wc->q, pctx->wc->nq, pctx->wc->size );
+
+  /* вычисляем z2 */
+  ak_mpzn_mul_montgomery( z2, r, pctx->wc->r2q, pctx->wc->q, pctx->wc->nq, pctx->wc->size );
+  ak_mpzn_sub( z2, pctx->wc->q, z2, pctx->wc->size );
+  ak_mpzn_mul_montgomery( z2, z2, v, pctx->wc->q, pctx->wc->nq, pctx->wc->size );
+  ak_mpzn_mul_montgomery( z2, z2, pctx->wc->point.z, pctx->wc->q, pctx->wc->nq, pctx->wc->size );
+
+ /* сложение точек и проверка */
+  ak_wpoint_pow( &cpoint, &pctx->wc->point, z1, pctx->wc->size, pctx->wc );
+  ak_wpoint_pow( &tpoint, &pctx->qpoint, z2, pctx->wc->size, pctx->wc );
+  ak_wpoint_add( &cpoint, &tpoint, pctx->wc );
+  ak_wpoint_reduce( &cpoint, pctx->wc );
+  ak_mpzn_rem( cpoint.x, cpoint.x, pctx->wc->q, pctx->wc->size );
+
+  if( ak_mpzn_cmp( cpoint.x, r, pctx->wc->size )) return ak_false;
+ return ak_true;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

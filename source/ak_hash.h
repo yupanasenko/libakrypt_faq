@@ -156,6 +156,8 @@
  int ak_hash_create_streebog256( ak_hash );
 /*! \brief Инициализация контекста функции бесключевого хеширования ГОСТ Р 34.11-2012 (Стрибог512). */
  int ak_hash_create_streebog512( ak_hash );
+/*! \brief Инициализация контекста функции бесключевого хеширования по заданному OID алгоритма. */
+ int ak_hash_create_oid( ak_hash, ak_oid );
 /*! \brief Хеширование заданной области памяти. */
  ak_buffer ak_hash_ptr_context( ak_hash , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Хеширование заданного файла. */

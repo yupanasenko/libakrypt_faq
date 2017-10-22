@@ -99,6 +99,58 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! В случае инициализации контекста алгоритма ГОСТ Р 34.11-94 (в настоящее врем я выведен из
+    действия) используются фиксированные таблицы замен, определяемые константой
+    \ref id-gosthash94-rfc4357-paramsetA. Для создания контекста с другими таблиуами замен
+    нужно пользоваться функцией ak_hash_create_gosthash94().
+
+    @param ctx указатель на структуру struct hash
+    @param oid OID алгоритма бесключевого хешированияю.
+
+    @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_hash_create_oid( ak_hash ctx, ak_oid oid )
+{
+  int error = ak_error_ok;
+  ak_bool result = ak_false;
+
+ /* выполняем проверку */
+  if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using null pointer to hash context" );
+  if( oid == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                 "using null pointer to hash function OID" );
+
+ /* проверяем, что OID от бесключевой функции хеширования */
+  if( oid->engine != hash_function )
+    return ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
+ /* проверяем, что OID от алгоритма, а не от параметров */
+  if( oid->mode != algorithm )
+    return ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
+
+ /* инициализируем контекст функции хеширования */
+  if( strncmp( "streebog256", oid->name.data, 11 ) == 0 ) {
+    if(( error = ak_hash_create_streebog256( ctx )) != ak_error_ok )
+      return ak_error_message( error, __func__, "invalid creation of hash function context");
+    result = ak_true;
+  }
+  if( strncmp( "streebog512", oid->name.data, 11 ) == 0 ) {
+    if(( error = ak_hash_create_streebog512( ctx )) != ak_error_ok )
+      return ak_error_message( error, __func__, "invalid creation of hash function context");
+    result = ak_true;
+  }
+  if( strncmp( "gosthash94", oid->name.data, 10 ) == 0 ) {
+    if(( error = ak_hash_create_gosthash94( ctx,
+                 ak_oid_find_by_name( "id-gosthash94-rfc4357-paramsetA" ))) != ak_error_ok )
+      return ak_error_message( error, __func__, "invalid creation of hash function context");
+    result = ak_true;
+  }
+  if( !result ) return ak_error_message( ak_error_undefined_value, __func__ ,
+                                           "using hash function OID with unsupported name" );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция вычисляет хеш-код от заданной области памяти на которую указывает in. Размер памяти
     задается в байтах в переменной size. Результат вычислений помещается в область памяти,
     на которую указывает out. Если out равен NULL, то функция создает новый буффер

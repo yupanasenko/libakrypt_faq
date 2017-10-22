@@ -90,6 +90,9 @@
 /*! \brief Инициализация контекста открытого ключа алгоритма ГОСТ Р 34.10-2012. */
  int ak_pubkey_create_signkey( ak_pubkey , ak_signkey );
 
+
+ ak_bool ak_pubkey_context_verify_values( ak_pubkey , ak_pointer , ak_pointer );
+
 #endif
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_sign.h  */

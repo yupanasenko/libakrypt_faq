@@ -74,6 +74,9 @@
   printf("public.y: %s\n", str = ak_ptr_to_hexstr( &pk.qpoint.y, 32, ak_true )); free( str );
   printf("public.z: %s\n", str = ak_ptr_to_hexstr( &pk.qpoint.z, 32, ak_true )); free( str );
 
+  if( ak_pubkey_context_verify_values( &pk, out, e )) printf("Sign Ok\n");
+    else printf("Sign Wrong\n");
+
   ak_signkey_destroy( &sk );
 
  return ak_libakrypt_destroy();
