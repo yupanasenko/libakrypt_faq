@@ -47,6 +47,7 @@
  #include <ak_hmac.h>
  #include <ak_curves.h>
  #include <ak_context_manager.h>
+ #include <ak_sign.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тип данных для хранения значений опций библиотеки */
@@ -482,6 +483,38 @@ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция проверяет корректность реализации алгоритмов электронной подписи
+    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
+    вызова ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_libakrypt_test_sign_functions( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing digital signature mechanisms started" );
+
+ /* тестируем корректность реализации операций с эллиптическими кривыми в короткой форме Вейерштрасса */
+  if( ak_wcurve_test() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                           "error while testing operations with Weierstrass elliptic curves" );
+    return ak_false;
+  }
+
+ /* тестируем корректность реализации алгоритмов электронной подписи */
+  if( ak_signkey_test() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "error while testing digital signatures" );
+    return ak_false;
+  }
+
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ ,
+                                   "testing digital signature mechanisms ended successfully" );
+
+ return ak_true;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция должна вызываться перед использованием криптографических механизмов библиотеки.
 
    Пример использования функции.
@@ -554,12 +587,12 @@ return ak_error_ok;
     return ak_false;
   }
 
- /* тестируем корректность реализации операций с эллиптическими кривыми в короткой форме Вейерштрасса */
-  if( ak_wcurve_test() != ak_true ) {
-    ak_error_message( ak_error_get_value(), __func__ , "error while testing operations with Weierstrass elliptic curves" );
+ /* тестируем работу алгоритмов выработки и проверки электронной подписи */
+  if( ak_libakrypt_test_sign_functions() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                        "error while testing digital signature mechanisms" );
     return ak_false;
   }
-
 
  ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms tested successfully" );
 return ak_true;

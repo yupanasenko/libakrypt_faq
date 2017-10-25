@@ -28,6 +28,7 @@
 /*   ak_sign.c                                                                                     */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_sign.h>
+ #include <ak_parameters.h>
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_signkey_create_streebog256( ak_signkey sctx, ak_wcurve wc )
@@ -251,6 +252,38 @@
  return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param pctx контекст открытого ключа алгоритма электронной подписи.
+    @return В случае успеха возвращается ноль (\ref ak_error_ok). В противном случае возвращается
+    код ошибки.                                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_pubkey_destroy( ak_pubkey pctx )
+{
+  int error = ak_error_ok;
+
+  if( pctx == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                      "using null pointer to public key context" );
+  if(( error = ak_hash_destroy( &pctx->ctx )) != ak_error_ok )
+    ak_error_message( error, __func__ , "incorrect destroying hash function context" );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param pctx контекст открытого ключа алгоритма электронной подписи.
+    @return Функция возвращает NULL. В случае возникновения ошибки, ее код может быть получен с
+    помощью вызова функции ak_error_get_value().                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_pubkey_delete( ak_pointer pctx )
+{
+  if( pctx != NULL ) {
+      ak_pubkey_destroy(( ak_pubkey ) pctx );
+      free( pctx );
+     } else ak_error_message( ak_error_null_pointer, __func__ ,
+                                   "using null pointer to digital signature public key context" );
+ return NULL;
+}
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*!
@@ -298,6 +331,108 @@
 
   if( ak_mpzn_cmp( cpoint.x, r, pctx->wc->size )) return ak_false;
  return ak_true;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_signkey_test( void )
+{
+ /* d = "7A929ADE789BB9BE10ED359DD39A72C11B60961F49397EEE1D19CE9891EC3B28"; */
+  const ak_uint64 key256[ak_mpzn256_size]  =
+    { 0x1D19CE9891EC3B28LL, 0x1B60961F49397EEELL, 0x10ED359DD39A72C1LL, 0x7A929ADE789BB9BELL };
+
+ /* d = BA6048AADAE241BA40936D47756D7C93091A0E8514669700EE7508E508B102072E8123B2200A0563322DAD2827E2714A2636B7BFD18AADFC62967821FA18DD4 */
+  const ak_uint64 key512[ak_mpzn512_size]  =
+    { 0xC62967821FA18DD4LL, 0xA2636B7BFD18AADFLL, 0x3322DAD2827E2714LL, 0x72E8123B2200A056LL,
+      0x0EE7508E508B1020LL, 0x3091A0E851466970LL, 0xA40936D47756D7C9LL, 0x0BA6048AADAE241BLL };
+
+ /* е = 2DFBC1B372D89A1188C09C52E0EEC61FCE52032AB1022E8E67ECE6672B043EE5 */
+  const ak_uint64 e256[ak_mpzn256_size]  =
+    { 0x67ECE6672B043EE5LL, 0xCE52032AB1022E8ELL, 0x88C09C52E0EEC61FLL, 0x2DFBC1B372D89A11LL };
+
+ /* k = 77105C9B20BCD3122823C8CF6FCC7B956DE33814E95B7FE64FED924594DCEAB3 */
+  const ak_uint64 k256[ak_mpzn256_size]  =
+    { 0x4FED924594DCEAB3LL, 0x6DE33814E95B7FE6LL, 0x2823C8CF6FCC7B95LL, 0x77105C9B20BCD312LL };
+
+  const ak_uint8 sign256[64] =
+    { 0x93, 0x04, 0xDC, 0x39, 0xFD, 0x43, 0xD0, 0x3A, 0xB8, 0x67, 0x27, 0xA4, 0x54, 0x35, 0x05, 0x74,
+      0x19, 0xA4, 0xED, 0x6F, 0xD5, 0x9E, 0xCD, 0x80, 0x82, 0x14, 0xAB, 0xF1, 0xD2, 0x28, 0xAA, 0x41,
+      0x40, 0x9C, 0xBF, 0xC5, 0xF6, 0x14, 0x80, 0x92, 0xDF, 0x31, 0xB6, 0x46, 0xF7, 0xD3, 0xD6, 0xBC,
+      0x49, 0x02, 0xA6, 0x98, 0x5A, 0x23, 0x3C, 0x65, 0xA1, 0x42, 0x46, 0xBA, 0x64, 0x6C, 0x45, 0x01 };
+
+  int error = ak_error_ok, audit = ak_log_get_level();
+  ak_bool result = ak_true;
+  struct signkey sk;
+  struct pubkey pk;
+  ak_uint8 sign[128];
+  char *str = NULL;
+
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing digital signatures started" );
+
+ /* первый пример из приложения А ГОСТ Р 34.10-2012. */
+  if(( error = ak_signkey_create_streebog256( &sk,
+    (ak_wcurve) &id_tc26_gost3410_2012_256_test_paramset )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "incorrect creation of digital signature secret key" );
+    return ak_false;
+  }
+
+  if(( error = ak_signkey_context_set_key( &sk, ( ak_pointer )key256, 32 )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect assigning of key" );
+    ak_signkey_destroy( &sk );
+    return ak_false;
+  }
+
+  memset( sign, 0, 64 );
+  ak_signkey_context_sign_values( &sk, ( ak_pointer )k256, ( ak_pointer )e256, sign );
+  if( ak_ptr_is_equal( sign, ( ak_pointer )sign256, 64 )) {
+    if( audit >= ak_log_maximum )
+      ak_error_message( ak_error_ok, __func__ ,
+             "digital signature generation from GOST R 34.10-2012 (for 256 bit curve) is Ok" );
+  } else {
+      ak_error_message( ak_error_not_equal_data, __func__ ,
+          "digital signature generation from GOST R 34.10-2012 (for 256 bit curve) is wrong" );
+      ak_log_set_message(( str = ak_ptr_to_hexstr( sign, 64, ak_true ))); free( str );
+      ak_log_set_message(( str = ak_ptr_to_hexstr(( ak_pointer )sign256, 64, ak_true ))); free( str );
+      ak_signkey_destroy( &sk );
+      return ak_false;
+    }
+
+  if(( error = ak_pubkey_create_signkey( &pk, &sk )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "incorrect creation of digital signature public key" );
+    ak_signkey_destroy( &sk );
+    return ak_false;
+  }
+
+  ak_signkey_destroy( &sk );
+  if( ak_pubkey_context_verify_values( &pk, sign, ( ak_pointer )e256 )) {
+    if( audit >= ak_log_maximum )
+      ak_error_message( ak_error_ok, __func__ ,
+             "digital signature verification from GOST R 34.10-2012 (for 256 bit curve) is Ok" );
+  } else {
+      ak_error_message( ak_error_not_equal_data, __func__ ,
+          "digital signature verification from GOST R 34.10-2012 (for 256 bit curve) is wrong" );
+      ak_log_set_message(( str = ak_ptr_to_hexstr( sign, 64, ak_true ))); free( str );
+      ak_pubkey_destroy( &pk );
+      return ak_false;
+  }
+  ak_pubkey_destroy( &pk );
+
+ /* второй пример из приложения А ГОСТ Р 34.10-2012. */
+  if(( error = ak_signkey_create_streebog512( &sk,
+    (ak_wcurve) &id_tc26_gost3410_2012_512_test_paramset )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "incorrect creation of digital signature secret key" );
+    return ak_false;
+  }
+
+  ak_signkey_destroy( &sk );
+
+
+  if( !result ) ak_error_message( ak_error_get_value(), __func__ ,
+                                                         "incorrect testing digital signatures" );
+   else if( audit >= ak_log_maximum ) ak_error_message( ak_error_get_value(), __func__ ,
+                                                "testing digital signatures ended successfully" );
+ return result;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
