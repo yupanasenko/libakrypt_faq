@@ -85,6 +85,38 @@
    else return ak_error_ok;
 }
 
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Для проведения проверки функция вырабатывает случайное число \f$ t \pmod{q} \f$ и проверяет
+    выполнимость равенства \f$ t \cdot t^{-1} \equiv 1 \pmod{q}\f$.
+
+    @param ec Контекст эллиптической кривой.
+
+    @return Функция возвращает \ref ak_error_ok в случае, если параметры определены корректно.
+    В противном случае возвращается код ошибки.                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_wcurve_check_order_parameters( ak_wcurve ec )
+{
+  ak_mpzn512 r, s, t;
+  struct random generator;
+
+  ak_random_create_lcg( &generator );
+  ak_mpzn_set_random( t, ec->size, &generator );
+  ak_mpzn_rem( t, t, ec->q, ec->size );
+  ak_random_destroy( &generator );
+
+  ak_mpzn_set_ui( r, ec->size, 2 );
+  ak_mpzn_sub( r, ec->q, r, ec->size );
+  ak_mpzn_modpow_montgomery( s, t, r, ec->q, ec->nq, ec->size );
+  ak_mpzn_mul_montgomery( t, s, t, ec->q, ec->nq, ec->size );
+
+  ak_mpzn_mul_montgomery( t, t, ec->r2q, ec->q, ec->nq, ec->size );
+  ak_mpzn_mul_montgomery( t, t, ec->point.z, ec->q, ec->nq, ec->size );
+  ak_mpzn_mul_montgomery( t, t, ec->point.z, ec->q, ec->nq, ec->size );
+  if( ak_mpzn_cmp_ui( t, ec->size, 1 )) return ak_error_ok;
+   else return ak_error_curve_order_parameters;
+}
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция принимает на вход контекст эллиптической кривой, заданной в короткой форме Вейерштрасса,
     и выполняет следующие проверки
@@ -126,6 +158,10 @@
   if( ak_wpoint_check_order( &wp, ec ) != ak_true )
     return ak_error_message( ak_error_curve_point_order, __func__ ,
                                                          "elliptic curve point has wrong order" );
+ /* тестируем параметры порядка группы точек, используемые для выработки и проверки электронной подписи */
+  if(( error = ak_wcurve_check_order_parameters( ec )) != ak_error_ok )
+    return ak_error_message( error, __func__ ,
+                  "elliptic curve has wrong parameters for calculation in prime field modulo q" );
  return error;
 }
 
@@ -210,10 +246,11 @@
       if(( reason = ak_wcurve_is_ok( wc )) != ak_error_ok ) {
         char *p = NULL;
         switch( reason ) {
-          case ak_error_curve_discriminant : p = "discriminant"; break;
-          case ak_error_curve_point        : p = "base point"; break;
-          case ak_error_curve_point_order  : p = "base point order"; break;
-          case ak_error_curve_prime_size   : p = "prime modulo p"; break;
+          case ak_error_curve_discriminant     : p = "discriminant"; break;
+          case ak_error_curve_point            : p = "base point"; break;
+          case ak_error_curve_point_order      : p = "base point order"; break;
+          case ak_error_curve_prime_size       : p = "prime modulo p"; break;
+          case ak_error_curve_order_parameters : p = "prime order parameters"; break;
           default : p = "unexpected parameter";
         }
         ak_wcurve_to_log( wc );

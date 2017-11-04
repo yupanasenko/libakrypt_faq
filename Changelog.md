@@ -1,3 +1,8 @@
+Changes in version 0.5.6 (  .11.2017)
+-------------------------------------
+  * Added support for digital signatures (signing & verifying)
+
+
 
 Changes in version 0.5.5 (15.10.2017)
 -------------------------------------

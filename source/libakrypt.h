@@ -175,8 +175,10 @@
  #define ak_error_curve_point_order           (-31)
 /*! \brief Ошибка, возникающая если дискриминант кривой равен нулю (уравнение не задает кривую). */
  #define ak_error_curve_discriminant          (-32)
+/*! \brief Ошибка, возникающая когда неверно определены вспомогательные параметры эллиптической кривой. */
+ #define ak_error_curve_order_parameters      (-33)
 /*! \brief Ошибка, возникающая простой модуль кривой задае неверно. */
- #define ak_error_curve_prime_size            (-33)
+ #define ak_error_curve_prime_size            (-34)
 
 /* ----------------------------------------------------------------------------------------------- */
  #define ak_null_string                  ("(null)")

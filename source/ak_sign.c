@@ -557,16 +557,6 @@
       0xF5, 0x2F, 0xD5, 0x33, 0xE9, 0xFB, 0x0B, 0x1C, 0x08, 0xBC, 0xAD, 0x8A, 0x77, 0x56, 0x5F, 0x32,
       0xB6, 0x26, 0x2D, 0x36, 0xA9, 0xE7, 0x85, 0x65, 0x8E, 0xFE, 0x6F, 0x69, 0x94, 0xB3, 0x81, 0x10 };
 
-/*
-  int i = 0;
-  ak_hexstr_to_ptr( "1081B394696FFE8E6585E7A9362D26B6325F56778AADBC081C0BFBE933D52FF5823CE288E8C4F362526080DF7F70CE406A6EEB1F56919CB92A9853BDE73E5B4A2F86FA60A081091A23DD795E1E3C689EE512A3C82EE0DCC2643C78EEA8FCACD35492558486B20F1C9EC197C90699850260C93BCBCD9C5C3317E19344E173AE36",
-   sign512, 128, ak_true );
-  for( i = 0; i < 128; i++ ) {
-     if( i%16 == 0 ) printf("\n");
-     printf("0x%02X, ", sign512[i] );
-  }
-*/
-
   int error = ak_error_ok, audit = ak_log_get_level();
   ak_bool result = ak_true;
   struct signkey sk;
