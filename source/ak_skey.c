@@ -298,7 +298,9 @@
     return ak_error_message( error, __func__ , "wrong mask generation for key buffer" );
 
  /* накладываем маску на ключ */
-  wc = ( ak_wcurve ) skey->data;
+  if(( wc = ( ak_wcurve ) skey->data ) == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__ ,
+                                      "using internal null pointer to elliptic curve" );
   ak_mpzn_rem( (ak_uint64 *)skey->key.data, (ak_uint64 *)skey->key.data, wc->q, wc->size );
   ak_mpzn_mul_montgomery( (ak_uint64 *)skey->key.data, (ak_uint64 *)skey->key.data, wc->r2q,
                                                                            wc->q, wc->nq, wc->size);
@@ -360,7 +362,9 @@
     return ak_error_message( error, __func__ , "wrong mask generation for key buffer" );
 
  /* меняем маску */
-  wc = ( ak_wcurve ) skey->data;
+  if(( wc = ( ak_wcurve ) skey->data ) == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__ ,
+                                      "using internal null pointer to elliptic curve" );
   ak_mpzn_rem( zeta, zeta, wc->q, wc->size );
   ak_mpzn_sub( skey->mask.data, wc->q, skey->mask.data, wc->size );
   ak_mpzn_add_montgomery( skey->key.data, skey->key.data, zeta, wc->q, wc->size );

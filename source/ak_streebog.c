@@ -199,7 +199,7 @@
    else {
      if(( result = ak_buffer_new_size((( ak_hash )ctx)->hsize )) != NULL ) pout = result->data;
       else ak_error_message( ak_error_get_value( ), __func__ ,
-                                                  "wrong creation og result buffer" );
+                                                  "wrong creation of result buffer" );
    }
 
  /* копируем нужную часть результирующего массива или выдаем сообщение об ошибке */

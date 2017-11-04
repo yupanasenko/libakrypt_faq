@@ -112,7 +112,7 @@
  {
    case undefined_mode:  return "undefined mode";
    case algorithm:       return "algorithm";
-   case parameter:       return "parametr";
+   case parameter:       return "parameter";
    case wcurve_params:   return "weierstrass curve parameters";
    case ecurve_params:   return "edwards curve parameters";
    case kbox_params:     return "kboxes";
@@ -125,6 +125,8 @@
    case xts_mac:         return "xts mode with authenication";
    case xcrypt:          return "xor mode";
    case a8:              return "addition mode";
+   case sign:            return "sign mode";
+   case verify:          return "verify mode";
    default:              break;
  }
   ak_error_message_fmt( ak_error_undefined_value, __func__,
@@ -432,6 +434,32 @@
        (ak_pointer) &id_axel_gost3410_2012_512_paramsetA, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
+/* ----------------------------------------------------------------------------------------------- */
+/* 6. Добавляем алгоритмы выработки и проверки электронной подписи */
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( digital_signature, sign,
+    "sign256", "1.2.643.7.1.1.1.1", NULL, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( digital_signature, sign,
+    "sign256-gosthash94", "1.2.643.2.52.1.2.0.1", NULL, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( digital_signature, sign,
+    "sign512", "1.2.643.7.1.1.1.2", NULL, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( digital_signature, verify,
+    "verify256", "1.2.643.2.52.1.2.1.2", NULL, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( digital_signature, verify,
+    "verify256-gosthash94", "1.2.643.2.52.1.2.0.2", NULL, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( digital_signature, verify,
+    "verify512", "1.2.643.2.52.1.2.2.2", NULL, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
 
  return ak_error_ok;
 }

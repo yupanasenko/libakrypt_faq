@@ -483,16 +483,16 @@ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция проверяет корректность реализации алгоритмов электронной подписи
+/*! \brief Функция проверяет корректность реализации асимметричных криптографических алгоритмов
     @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
     функция возвращает ak_false. Код ошибки можеть быть получен с помощью
     вызова ak_error_get_value()                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_libakrypt_test_sign_functions( void )
+ ak_bool ak_libakrypt_test_asymmetric_functions( void )
 {
   int audit = ak_log_get_level();
   if( audit >= ak_log_maximum )
-    ak_error_message( ak_error_ok, __func__ , "testing digital signature mechanisms started" );
+    ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms started" );
 
  /* тестируем корректность реализации операций с эллиптическими кривыми в короткой форме Вейерштрасса */
   if( ak_wcurve_test() != ak_true ) {
@@ -508,8 +508,7 @@ return ak_error_ok;
   }
 
   if( audit >= ak_log_maximum )
-   ak_error_message( ak_error_ok, __func__ ,
-                                   "testing digital signature mechanisms ended successfully" );
+   ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms ended successfully" );
 
  return ak_true;
 }
@@ -588,7 +587,7 @@ return ak_error_ok;
   }
 
  /* тестируем работу алгоритмов выработки и проверки электронной подписи */
-  if( ak_libakrypt_test_sign_functions() != ak_true ) {
+  if( ak_libakrypt_test_asymmetric_functions() != ak_true ) {
     ak_error_message( ak_error_get_value(), __func__ ,
                                         "error while testing digital signature mechanisms" );
     return ak_false;

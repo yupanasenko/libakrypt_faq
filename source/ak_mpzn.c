@@ -114,7 +114,7 @@
   if( x == NULL ) return ak_error_message( ak_error_null_pointer,
                                                       __func__ , "using a null pointer to mpzn" );
   if( !size ) return ak_error_message( ak_error_zero_length,
-                                                  __func__ , "using a zero legth of input data" );
+                                                 __func__ , "using a zero length of input data" );
   if( generator == NULL ) return ak_error_message( ak_error_undefined_value,
                                                 __func__, "using an undefined random generator" );
 
@@ -130,7 +130,7 @@
   if( p == NULL ) return ak_error_message( ak_error_null_pointer,
                                                      __func__ , "using a null pointer to modulo" );
   if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
-                                                         "using a zero legth for generated data" );
+                                                        "using a zero length for generated data" );
   if( generator == NULL ) return ak_error_message( ak_error_undefined_value,
                                                 __func__ , "using an undefined random generator" );
 

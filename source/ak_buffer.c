@@ -581,31 +581,45 @@
 
     @param buff Буффер, данные которого уничтожаются
     @param generator Генератор псевдо-случайных чисел, используемый для генерации случайного мусора.
-    @return Функция возвращает ak_error_ok  случае успешного уничтожения данных. В противном случае
+    @return Функция возвращает ak_error_ok в случае успешного уничтожения данных. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_buffer_wipe( ak_buffer buff, ak_random generator )
 {
+  if( buff == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                   __func__, "use a null pointer to a buffer" );
+ return ak_ptr_wipe( buff->data, buff->size, generator );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция заполняет заданную область памяти случайными данными, выработанными заданным
+    генератором псевдослучайных чисел.
+
+    @param ptr Область данных, которая заполняется случайным мусором.
+    @param size Размер заполняемой области в байтах.
+    @param generator Генератор псевдо-случайных чисел, используемый для генерации случайного мусора.
+    @return Функция возвращает ak_error_ok в случае успешного уничтожения данных. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_ptr_wipe( ak_pointer ptr, size_t size, ak_random generator )
+{
   size_t idx = 0;
-  ak_uint8 *ptr = NULL;
   int result = ak_error_ok;
 
-  if( buff == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
-    return ak_error_null_pointer;
-  }
-  if( generator == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a random generator" );
-    return ak_error_null_pointer;
-  }
-  if( generator->random( generator, buff->data, buff->size ) != ak_error_ok ) {
-    ak_error_message( ak_error_write_data, __func__, "incorrect wiping a buffer data" );
-    memset( buff->data, 0, buff->size );
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                __func__, "using null pointer to wipe memory" );
+  if( size == 0 ) return ak_error_message( ak_error_zero_length,
+                                                  __func__ , "wiping memory with zero length" );
+  if( generator == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                   "use a null pointer to a random generator" );
+
+  if( generator->random( generator, ptr, size ) != ak_error_ok ) {
+    ak_error_message( ak_error_write_data, __func__, "incorrect memory wiping" );
+    memset( ptr, 0, size );
     result = ak_error_write_data;
   }
-  /* запись в память при чтении => необходим вызов функции чтения данных из buff->data */
-  ptr = (ak_uint8 *) buff->data;
-  for( idx = 0; idx < buff->size; idx++ ) ptr[idx] += ptr[buff->size - 1 - idx];
+  /* запись в память при чтении => необходим вызов функции чтения данных из ptr */
+  for( idx = 0; idx < size; idx++ ) ((ak_uint8 *)ptr)[idx] += ((ak_uint8 *)ptr)[size - 1 - idx];
   return result;
 }
 
