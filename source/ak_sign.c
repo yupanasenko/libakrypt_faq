@@ -221,6 +221,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_signkey_context_set_key( ak_signkey sctx, const ak_pointer ptr, const size_t size )
 {
+  ak_wcurve wc = NULL;
   int error = ak_error_ok;
 
   if( sctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -232,6 +233,76 @@
  /* присваиваем ключевой буффер */
   if(( error = ak_skey_set_ptr( &sctx->key, ptr, size, ak_true )) != ak_error_ok )
     return ak_error_message( error, __func__ , "incorrect assigning of key data" );
+
+ /* приводим полученное значение по модулю */
+  wc = (ak_wcurve )sctx->key.data;
+  ak_mpzn_rem( sctx->key.key.data, sctx->key.key.data, wc->q, wc->size );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param sctx контекст секретного ключа алгоритма электронной подписи.
+    @param generator контекст генератора случайных чисел.
+    @return В случае успеха возвращается ноль (\ref ak_error_ok). В противном случае возвращается
+    код ошибки.                                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_signkey_context_set_key_random( ak_signkey sctx, ak_random generator )
+{
+  ak_wcurve wc = NULL;
+  int error = ak_error_ok;
+
+ /* выполняем необходимые проверки */
+  if( sctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                     "using null pointer to secret key context" );
+  if( sctx->key.key.size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                     "using non initialized secret key context" );
+  if( generator == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                "using null pointer to random number generator" );
+ /* присваиваем секретный ключ */
+  if(( error = ak_skey_set_random( &sctx->key, generator )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "wrong generation a secret key context" );
+
+ /* приводим полученное значение по модулю */
+  wc = (ak_wcurve )sctx->key.data;
+  ak_mpzn_rem( sctx->key.key.data, sctx->key.key.data, wc->q, wc->size );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает секретному ключу электронной подписи значение, выработанное из
+    пароля и инициализационного вектора с помощью алгоритма, регламентированого отечественными
+    рекомендациями по стандартизации Р 50.1.111-2016.
+
+    @param sctx контекст секретного ключа алгоритма электронной подписи.
+    @param pass пароль, представленный в виде строки символов.
+    @param pass_size длина пароля в байтах
+    @param salt инициализационный вектор, представленный в виде строки символов.
+    @param salt_size длина инициализационного вектора в байтах
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_signkey_context_set_key_password( ak_signkey sctx, const ak_pointer pass,
+                            const size_t pass_size, const ak_pointer salt, const size_t salt_size )
+{
+  ak_wcurve wc = NULL;
+  int error = ak_error_ok;
+
+ /* выполняем необходимые проверки */
+  if( sctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                     "using null pointer to secret key context" );
+  if( sctx->key.key.size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                     "using non initialized secret key context" );
+ /* вырабатываем секретный ключ */
+  if(( error =
+           ak_skey_set_password( &sctx->key, pass, pass_size, salt, salt_size )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "wrong generation a secret key for hmac context" );
+
+ /* приводим полученное значение по модулю */
+  wc = (ak_wcurve )sctx->key.data;
+  ak_mpzn_rem( sctx->key.key.data, sctx->key.key.data, wc->q, wc->size );
 
  return error;
 }
@@ -295,13 +366,21 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*!
+/*! @param sctx контекст секретного ключа алгоритма электронной подписи.
+    @param hash последовательность байт, содержащая в себе хеш-код
+    подписываемого сообщения.
+    @param size размер хеш-кода, в байтах.
+    @param out Область памяти, куда будет помещен результат. Память должна быть заранее выделена.
+    Размер выделяемой памяти может быть определен с помощью вызова ak_hash_get_code_size().
+    Указатель out может принимать значение NULL.
+
     @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
     возвращается указатель на буффер, содержащий вектор с электронной подписью. В случае
     возникновения ошибки возвращается NULL, при этом код ошибки может быть получен с помощью
     вызова функции ak_error_get_value().                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_signkey_context_sign_hash( ak_signkey sctx, ak_pointer hash, ak_pointer out )
+ ak_buffer ak_signkey_context_sign_hash( ak_signkey sctx,
+                                                      ak_pointer hash, size_t size, ak_pointer out )
 {
   ak_pointer pout = out;
   ak_buffer result = NULL;
@@ -311,11 +390,15 @@
 
   if( sctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__,
-                                               "using a null pointer to secret key context" );
+                                                 "using null pointer to secret key context" );
     return NULL;
   }
   if( hash == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to hash value" );
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to hash value" );
+    return NULL;
+  }
+  if( size != sizeof( ak_uint64 )*(( ak_wcurve )sctx->key.data)->size ) {
+    ak_error_message( ak_error_wrong_length, __func__, "using hash value with wrong length" );
     return NULL;
   }
 
@@ -336,8 +419,7 @@
 
  /* определяем указатель на область памяти, в которую будет помещен результат вычислений */
   if( pout == NULL ) {
-    if(( result = ak_buffer_new_size(
-                       2*sizeof( ak_uint64 )*(( ak_wcurve )sctx->key.data)->size )) != NULL )
+    if(( result = ak_buffer_new_size( 2*size )) != NULL )
       pout = result->data;
      else {
       ak_error_message( ak_error_get_value( ), __func__ , "wrong creation of result buffer" );
@@ -353,6 +435,96 @@
  return result;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param sctx контекст секретного ключа алгоритма электронной подписи.
+    @param in Указатель на входные данные для которых вычисляется хеш-код.
+    @param size Размер входных данных в байтах.
+    @param out Область памяти, куда будет помещен результат. Память должна быть заранее выделена.
+    Размер выделяемой памяти может быть определен с помощью вызова ak_signkey_get_code_size().
+    Указатель out может принимать значение NULL.
+
+    @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+    возвращается указатель на буффер, содержащий вектор с электронной подписью. В случае
+    возникновения ошибки возвращается NULL, при этом код ошибки может быть получен с помощью
+    вызова функции ak_error_get_value().                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_signkey_context_sign_ptr( ak_signkey sctx,
+                                           const ak_pointer in, const size_t size, ak_pointer out )
+{
+  ak_uint8 hash[64];
+  int error = ak_error_ok;
+
+ /* необходимые проверки */
+  if( sctx == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__,
+                                                 "using null pointer to secret key context" );
+    return NULL;
+  }
+  if( in == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__,
+                                                   "using null pointer to signifying value" );
+    return NULL;
+  }
+  if( sctx->ctx.hsize > 64 ) {
+    ak_error_message( ak_error_wrong_length, __func__,
+                                            "using hash function with large hash code size" );
+    return NULL;
+  }
+
+ /* вычисляем значение хеш-кода, а после подписываем его */
+  memset( hash, 0, 64 );
+  ak_hash_context_ptr( &sctx->ctx, in, size, hash );
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong calculation of hash value" );
+    return NULL;
+  }
+
+ return ak_signkey_context_sign_hash( sctx, hash, sctx->ctx.hsize, out );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param sctx контекст секретного ключа алгоритма электронной подписи.
+    @param filename Строка с именем файла для которого вычисляется электронная подпись.
+    @param out Область памяти, куда будет помещен результат. Память должна быть заранее выделена.
+    Размер выделяемой памяти может быть определен с помощью вызова ak_signkey_get_code_size().
+    Указатель out может принимать значение NULL.
+
+    @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+    возвращается указатель на буффер, содержащий вектор с электронной подписью. В случае
+    возникновения ошибки возвращается NULL, при этом код ошибки может быть получен с помощью
+    вызова функции ak_error_get_value().                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_signkey_context_sign_file( ak_signkey sctx, const char *filename, ak_pointer out )
+{
+  ak_uint8 hash[64];
+  int error = ak_error_ok;
+
+ /* необходимые проверки */
+  if( sctx == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__,
+                                                 "using null pointer to secret key context" );
+    return NULL;
+  }
+  if( filename == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to file" );
+    return NULL;
+  }
+  if( sctx->ctx.hsize > 64 ) {
+    ak_error_message( ak_error_wrong_length, __func__,
+                                            "using hash function with large hash code size" );
+    return NULL;
+  }
+
+ /* вычисляем значение хеш-кода, а после подписываем его */
+  memset( hash, 0, 64 );
+  ak_hash_context_file( &sctx->ctx, filename, hash );
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong calculation of hash value" );
+    return NULL;
+  }
+
+ return ak_signkey_context_sign_hash( sctx, hash, sctx->ctx.hsize, out );
+}
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_verifykey_create_signkey( ak_verifykey pctx, ak_signkey sctx )
@@ -444,17 +616,16 @@
 
 
 /* ----------------------------------------------------------------------------------------------- */
-/*!
-    \b Внимание! Входные параметры функции не проверяются.
-
-    @param pctx контекст открытого ключа.
+/*! @param pctx контекст открытого ключа.
+    @param hash хеш-код сообщения, для которого проверяется электронная подпись.
+    @param size размер хеш-кода, в байтах.
     @param sign электронная подпись, для которой выполняется проверка.
-    @param e хеш-код сообщения, для которого проверяется электронная подпись.
     @return Функция возыращает истину, если подпись верна. Если функция не верна или если
     возникла ошибка, то возвращается ложь. Код шибки может получен с помощью
     вызова функции ak_error_get_value().                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_verifykey_context_verify_hash( ak_verifykey pctx, ak_pointer hash, ak_pointer sign )
+ ak_bool ak_verifykey_context_verify_hash( ak_verifykey pctx,
+                                        const ak_pointer hash, const size_t size, ak_pointer sign )
 {
   ak_mpzn512 v, z1, z2, u;
   struct wpoint cpoint, tpoint;
@@ -467,6 +638,10 @@
   }
   if( hash == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to hash value" );
+    return ak_false;
+  }
+  if( size != sizeof( ak_uint64 )*(pctx->wc->size )) {
+    ak_error_message( ak_error_wrong_length, __func__, "using hash value with wrong length" );
     return ak_false;
   }
   if( sign == NULL ) {
@@ -508,6 +683,371 @@
  return ak_true;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param pctx контекст открытого ключа.
+    @param in область памяти для которой проверяется электронная подпись.
+    @param size размер области памяти в байтах.
+    @param sign электронная подпись, для которой выполняется проверка.
+    @return Функция возыращает истину, если подпись верна. Если функция не верна или если
+    возникла ошибка, то возвращается ложь. Код шибки может получен с помощью
+    вызова функции ak_error_get_value().                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_verifykey_context_verify_ptr( ak_verifykey pctx, const ak_pointer in,
+                                                               const size_t size, ak_pointer sign )
+{
+  ak_uint8 hash[64];
+  int error = ak_error_ok;
+
+ /* необходимые проверки */
+  if( pctx == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__,
+                                                 "using null pointer to secret key context" );
+    return ak_false;
+  }
+  if( in == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__,
+                                                    "using null pointer to verifying value" );
+    return ak_false;
+  }
+  if( pctx->ctx.hsize > 64 ) {
+    ak_error_message( ak_error_wrong_length, __func__,
+                                            "using hash function with large hash code size" );
+    return ak_false;
+  }
+
+ /* вычисляем значение хеш-кода, а после подписываем его */
+  memset( hash, 0, 64 );
+  ak_hash_context_ptr( &pctx->ctx, in, size, hash );
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong calculation of hash value" );
+    return ak_false;
+  }
+
+ return ak_verifykey_context_verify_hash( pctx, hash, pctx->ctx.hsize, sign );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param pctx контекст открытого ключа.
+    @param in область памяти для которой проверяется электронная подпись.
+    @param size размер области памяти в байтах.
+    @param sign электронная подпись, для которой выполняется проверка.
+    @return Функция возыращает истину, если подпись верна. Если функция не верна или если
+    возникла ошибка, то возвращается ложь. Код шибки может получен с помощью
+    вызова функции ak_error_get_value().                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_verifykey_context_verify_file( ak_verifykey pctx, const char *filename, ak_pointer sign )
+{
+  ak_uint8 hash[64];
+  int error = ak_error_ok;
+
+ /* необходимые проверки */
+  if( pctx == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__,
+                                                 "using null pointer to secret key context" );
+    return ak_false;
+  }
+  if( filename == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to filename" );
+    return ak_false;
+  }
+  if( pctx->ctx.hsize > 64 ) {
+    ak_error_message( ak_error_wrong_length, __func__,
+                                            "using hash function with large hash code size" );
+    return ak_false;
+  }
+  memset( hash, 0, 64 );
+  ak_hash_context_file( &pctx->ctx, filename, hash );
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong calculation of hash value" );
+    return ak_false;
+  }
+
+ return ak_verifykey_context_verify_hash( pctx, hash, pctx->ctx.hsize, sign );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                                      интерфейсные функции                                       */
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция возвращает указатель на параметры эллиптической кривой по их дескриптору.
+
+    @param ec_handle дескриптор параметров эллиптической кривой.
+    @return Функция возвращает указатель на параметры. В случае возникновения ошибки
+    возвращается NULL, а код ошибки может быть получен с помощью функции ak_error_get_value().     */
+/* ----------------------------------------------------------------------------------------------- */
+ static ak_wcurve ak_signkey_get_wcurve( const ak_handle ec_handle )
+{
+  ak_oid oid = ak_handle_get_context( ec_handle, oid_engine );
+
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                          "using a wrong handle to elliptic curve parameters" );
+    return NULL;
+  }
+  if( oid->engine != identifier ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "using OID handle with wrong engine" );
+    return NULL;
+  }
+  if( oid->mode != wcurve_params ) {
+    ak_error_message( ak_error_oid_mode, __func__ , "using OID handle with wrong mode" );
+    return NULL;
+  }
+
+ return ( ak_wcurve ) oid->data;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает контекст ключа подписи (секретного ключа) алгоритма выработки
+    электронной подписи согласно ГОСТ Р 34.10-2012. Пользователю возвращается дескриптор
+    созданного контекста.
+
+    @param ec_handle дескриптор параметров эллиптической кривой, на которой будет
+    вырабатываться электронная подпись.
+    @param description пользовательское описание ключа, произвольная null-строка.
+
+    @return Функция возвращает дескриптор созданного контекста. В случае возникновения ошибки
+    возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_signkey_new_streebog256( ak_handle ec_handle, const char *description )
+{
+  ak_signkey sctx = NULL;
+  int error = ak_error_ok;
+  ak_wcurve ec = ak_signkey_get_wcurve( ec_handle );
+
+ /* проверяем корректность определения параметров кривой */
+  if( ec == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "using wrong handle" );
+    return ak_error_wrong_handle;
+  }
+
+ /* создаем контекст */
+  if(( sctx = malloc( sizeof( struct signkey ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ , "wrong creation of secret key context" );
+    return ak_error_wrong_handle;
+  }
+
+ /* инициализируем его */
+  if(( error = ak_signkey_create_streebog256( sctx, ec )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong initialization of secret key context" );
+    free( sctx );
+    return ak_error_wrong_handle;
+  }
+
+ /* помещаем в стуктуру управления контекстами */
+ return ak_libakrypt_new_handle( sctx, sign_function, description, ak_signkey_delete );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает контекст ключа подписи (секретного ключа) алгоритма выработки
+    электронной подписи согласно ГОСТ Р 34.10-2012. Пользователю возвращается дескриптор
+    созданного контекста.
+
+    @param ec_handle дескриптор параметров эллиптической кривой, на которой будет
+    вырабатываться электронная подпись.
+    @param description пользовательское описание ключа, произвольная null-строка.
+
+    @return Функция возвращает дескриптор созданного контекста. В случае возникновения ошибки
+    возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_signkey_new_streebog512( ak_handle ec_handle, const char *description )
+{
+  ak_signkey sctx = NULL;
+  int error = ak_error_ok;
+  ak_wcurve ec = ak_signkey_get_wcurve( ec_handle );
+
+ /* проверяем корректность определения параметров кривой */
+  if( ec == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "using wrong handle" );
+    return ak_error_wrong_handle;
+  }
+
+ /* создаем контекст */
+  if(( sctx = malloc( sizeof( struct signkey ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ , "wrong creation of secret key context" );
+    return ak_error_wrong_handle;
+  }
+
+ /* инициализируем его */
+  if(( error = ak_signkey_create_streebog512( sctx, ec )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong initialization of secret key context" );
+    free( sctx );
+    return ak_error_wrong_handle;
+  }
+
+ /* помещаем в стуктуру управления контекстами */
+ return ak_libakrypt_new_handle( sctx, sign_function, description, ak_signkey_delete );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает контексту ключа электронной подписи (секретному ключу) случайное значение.
+    Для генерации случайного значения используется биологический датчик псевдо-случайных чисел.
+
+    @param handle дескриптор контекста ключа. Предварительно
+    дескриптор должен быть создан производящей функцией `ak_signkey_new_<...>`.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_signkey_set_key_random( ak_handle handle )
+{
+  ak_signkey sctx = NULL;
+  int error = ak_error_ok;
+  ak_context_manager manager = NULL;
+
+ /* получаем доступ к структуре управления контекстами */
+  if(( manager = ak_libakrypt_get_context_manager()) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__ , "using a non initialized context manager" );
+
+ /* получаем контекст ключа алгоритма hmac */
+  if(( sctx = ak_handle_get_context( handle, sign_function )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+
+ /* вырабатываем ключ, используя генератор, установленный в context_manager */
+  if(( error = ak_signkey_context_set_key_random( sctx, &manager->key_generator)) != ak_error_ok )
+    return ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает контексту ключа электронной подписи (секретному ключу) значение,
+    выработанное из пароля и инициализационного вектора с помощью алгоритма, регламентированого
+    отечественными рекомендациями по стандартизации Р 50.1.111-2016.
+
+    @param handle дескриптор контекста ключа. Предварительно
+    дескриптор должен быть создан производящей функцией `ak_signkey_new_<...>`.
+    @param pass пароль, представленный в виде строки символов.
+    @param pass_size длина пароля в байтах
+    @param salt инициализационный вектор, представленный в виде строки символов.
+    @param salt_size длина инициализационного вектора в байтах
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_signkey_set_key_password( ak_handle handle, const ak_pointer pass, const size_t pass_size,
+                                                    const ak_pointer salt, const size_t salt_size )
+{
+  ak_signkey sctx = NULL;
+  int error = ak_error_ok;
+
+  if(( sctx = ak_handle_get_context( handle, sign_function )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+
+  if(( error = ak_signkey_context_set_key_password( sctx, pass, pass_size, salt, salt_size )) != ak_error_ok )
+    return ak_error_message( error, __func__, "wrong assigning secret key value" );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param handle Дескриптор контекста ключа электронной подписи.
+    @return Функция возвращает количество байт, которые занимает электронная подпись.
+    В случае, если дескриптор задан неверно, то возвращаемое значение не определено.
+    В этом случае код ошибки моет быть получен с помощью вызова функции ak_error_get_value().      */
+/* ----------------------------------------------------------------------------------------------- */
+ size_t ak_signkey_get_icode_size( ak_handle handle )
+{
+  ak_signkey sctx = NULL;
+
+  if(( sctx = ak_handle_get_context( handle, sign_function )) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+
+ return 2*sctx->ctx.hsize;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*!  Функция вычисляет электронную подпись согласно ГОСТ Р 34.10 от заданной области памяти на которую
+     указывает in. Размер памяти задается в байтах в переменной size. Результат вычислений помещается
+     в область памяти, на которую указывает out. Если out равен NULL, то функция создает новый буффер
+     (структуру struct buffer), помещает в нее вычисленное значение и возвращает на указатель на
+     буффер. Буффер должен позднее быть удален с помощью вызова ak_buffer_delete().
+
+     @param handle дескриптор контекста ключа электронной подписи (секретного ключа).
+     Предварительно дескриптор должен быть создан производящей функцией `ak_signkey_new_<...>` и
+     проинициализирован некоторым значением ключа с помощью функций `ak_signkey_set_<..>`.
+
+     @param in указатель на входные данные для которых вычисляется хеш-код.
+     @param size размер входных данных в байтах.
+     @param out область памяти, куда будет помещен рещультат. Память должна быть заранее выделена.
+     Размер выделяемой памяти может быть определен с помощью вызова ak_signkey_get_icode_size().
+     Указатель out может принимать значение NULL.
+
+     @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+     возвращается указатель на буффер, содержащий результат вычислений.                             */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_signkey_ptr( ak_handle handle, const ak_pointer in, const size_t size, ak_pointer out )
+{
+  ak_signkey sctx = NULL;
+  ak_buffer result = NULL;
+  int error = ak_error_ok;
+
+  if(( sctx = ak_handle_get_context( handle, sign_function )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+    return NULL;
+  }
+
+  result = ak_signkey_context_sign_ptr( sctx, in, size, out );
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong calculation of hmac integrity code" );
+    if( result != NULL ) result = ak_buffer_delete( result );
+    return NULL;
+  }
+
+ return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает контекст ключа проверки электронной подписи (открытого ключа) алгоритма
+    электронной подписи согласно ГОСТ Р 34.10. Пользователю возвращается дескриптор
+    созданного контекста.
+
+    @param secretkey дескриптор секретного ключа подписи,
+    из которого вырабатывается открытый ключ проверки подписи.
+    @param description пользовательское описание ключа, произвольная null-строка.
+
+    @return Функция возвращает дескриптор созданного контекста. В случае возникновения ошибки
+    возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_verifykey_new_signkey( ak_handle secretkey, const char *description )
+{
+  ak_signkey sctx = NULL;
+  ak_verifykey pctx = NULL;
+  int error = ak_error_ok;
+
+ /* получеаем существующий контекст секретного ключа */
+  if(( sctx = ak_handle_get_context( secretkey, sign_function )) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+
+ /* создаем новый контекст открытого ключа */
+  if(( pctx = malloc( sizeof( struct verifykey ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ , "wrong creation of public key context" );
+    return ak_error_wrong_handle;
+  }
+
+ /* инициализируем новый контекст */
+  if(( error = ak_verifykey_create_signkey( pctx, sctx )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong initialization of public key context" );
+    free( pctx );
+    return ak_error_wrong_handle;
+  }
+
+ /* помещаем в стуктуру управления контекстами */
+ return ak_libakrypt_new_handle( pctx, verify_function, description, ak_verifykey_delete );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_verifykey_ptr( ak_handle publickey, const ak_pointer in, const size_t size,
+                                                                             const ak_pointer sign )
+{
+  ak_verifykey pctx = NULL;
+
+  if(( pctx = ak_handle_get_context( publickey, verify_function )) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+
+  return ak_verifykey_context_verify_ptr( pctx, in, size, sign );
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                         тестовые примеры                                        */
@@ -602,7 +1142,7 @@
   }
 
   ak_signkey_destroy( &sk );
-  if( ak_verifykey_context_verify_hash( &pk, e256,  sign )) {
+  if( ak_verifykey_context_verify_hash( &pk, e256, sizeof(e256), sign )) {
     if( audit >= ak_log_maximum )
       ak_error_message( ak_error_ok, __func__ ,
              "digital signature verification from GOST R 34.10-2012 (for 256 bit curve) is Ok" );
@@ -650,7 +1190,7 @@
   }
 
   ak_signkey_destroy( &sk );
-  if( ak_verifykey_context_verify_hash( &pk, e512,  sign )) {
+  if( ak_verifykey_context_verify_hash( &pk, e512, sizeof(e512),  sign )) {
     if( audit >= ak_log_maximum )
       ak_error_message( ak_error_ok, __func__ ,
              "digital signature verification from GOST R 34.10-2012 (for 512 bit curve) is Ok" );

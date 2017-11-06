@@ -159,9 +159,9 @@
 /*! \brief Инициализация контекста функции бесключевого хеширования по заданному OID алгоритма. */
  int ak_hash_create_oid( ak_hash, ak_oid );
 /*! \brief Хеширование заданной области памяти. */
- ak_buffer ak_hash_ptr_context( ak_hash , const ak_pointer , const size_t , ak_pointer );
+ ak_buffer ak_hash_context_ptr( ak_hash , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Хеширование заданного файла. */
- ak_buffer ak_hash_file_context( ak_hash , const char*, ak_pointer );
+ ak_buffer ak_hash_context_file( ak_hash , const char*, ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Проверка корректной работы функции хеширования Стрибог-256 */

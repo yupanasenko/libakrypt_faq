@@ -169,7 +169,7 @@
     ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
     ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_hash_ptr_context( ak_hash ctx, const ak_pointer in, const size_t size, ak_pointer out )
+ ak_buffer ak_hash_context_ptr( ak_hash ctx, const ak_pointer in, const size_t size, ak_pointer out )
 {
   ak_buffer result = NULL;
   size_t quot = 0, offset = 0;
@@ -212,7 +212,7 @@
     ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
     ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_hash_file_context( ak_hash ctx, const char *filename, ak_pointer out )
+ ak_buffer ak_hash_context_file( ak_hash ctx, const char *filename, ak_pointer out )
 {
   struct compress comp;
   int error = ak_error_ok;
@@ -433,7 +433,7 @@
     return NULL;
   }
 
-  return ( buffer = ak_hash_ptr_context( ctx, in, size, out ));
+  return ( buffer = ak_hash_context_ptr( ctx, in, size, out ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -464,7 +464,7 @@
     return NULL;
   }
 
-  return ( buffer = ak_hash_file_context( ctx, filename, out ));
+  return ( buffer = ak_hash_context_file( ctx, filename, out ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */

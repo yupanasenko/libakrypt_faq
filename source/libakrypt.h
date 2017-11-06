@@ -209,8 +209,12 @@
      hmac_function,
    /*! \brief ключевая функция хеширования (функция вычисления имитовставки) */
      mac_function,
-   /*! \brief электронная цифровая подпись */
+   /*! \brief электронная подпись */
      digital_signature,
+   /*! \brief функция выработки электронной подписи */
+     sign_function,
+   /*! \brief функция проверки электронной подписи */
+     verify_function,
    /*! \brief генератор случайных и псевдо-случайных последовательностей */
      random_generator,
    /*! \brief механизм итерационного вычисления сжимающих отображений */
@@ -351,7 +355,7 @@
 /*! \brief Создание дескриптора ключа алгоритма выработки имитовставки hmac по OID алгоритма. */
  dll_export ak_handle ak_hmac_new_oid( ak_handle , const char * );
 /*! \brief Присвоение ключу алгоритма выработки имитовставки hmac случайного значения. */
- dll_export int ak_hmac_set_key_random( ak_handle  );
+ dll_export int ak_hmac_set_key_random( ak_handle );
 /*! \brief Присвоение ключу алгоритма выработки имитовставки hmac значения, выработанного из пароля. */
  dll_export int ak_hmac_set_key_password( ak_handle , const ak_pointer , const size_t ,
                                                                  const ak_pointer , const size_t );
@@ -361,6 +365,28 @@
  dll_export ak_buffer ak_hmac_ptr( ak_handle , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Вычисление имитовставки алгоритмом hmac для заданного файла. */
  dll_export ak_buffer ak_hmac_file( ak_handle , const char *, ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Создание дескриптора ключа электронной подписи длиной 256 бит для алгоритма ГОСТ Р 34.10-2012. */
+ dll_export ak_handle ak_signkey_new_streebog256( ak_handle , const char * );
+/*! \brief Создание дескриптора ключа электронной подписи длиной 512 бит для алгоритма ГОСТ Р 34.10-2012. */
+ dll_export ak_handle ak_signkey_new_streebog512( ak_handle , const char * );
+/*! \brief Присвоение ключу электронной подписи случайного значения. */
+ dll_export int ak_signkey_set_key_random( ak_handle );
+/*! \brief Присвоение ключу электронной подписи значения, выработанного из пароля. */
+ dll_export int ak_signkey_set_key_password( ak_handle , const ak_pointer , const size_t ,
+                                                                 const ak_pointer , const size_t );
+/*! \brief Получение длины электронной подписи для заданного ключа. */
+ dll_export size_t ak_signkey_get_icode_size( ak_handle );
+/*! \brief Вычисление электронной подписи для заданной области памяти известной длины. */
+ dll_export ak_buffer ak_signkey_ptr( ak_handle , const ak_pointer , const size_t , ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Создание дескриптора ключа проверки электронной подписи (открытого ключа) из заданного секретного ключа. */
+ dll_export ak_handle ak_verifykey_new_signkey( ak_handle , const char * );
+/*! \brief Проверка электронной подписи для заданной области памяти известной длины. */
+ dll_export ak_bool ak_verifykey_ptr( ak_handle , const ak_pointer , const size_t ,
+                                                                               const ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание дескриптора сжимающего отображения */

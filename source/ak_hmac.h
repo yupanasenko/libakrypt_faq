@@ -82,9 +82,9 @@
 /*! \brief Завершение алгоритма вычисления имитовставки hmac и получение результата вычислений. */
  ak_buffer ak_hmac_finalize( ak_pointer , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Вычисление имитовставки алгоритмом hmac для заданной области памяти известной длины. */
- ak_buffer ak_hmac_ptr_context( ak_hmac , const ak_pointer , const size_t , ak_pointer );
+ ak_buffer ak_hmac_context_ptr( ak_hmac , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Вычисление имитовставки алгоритмом hmac для заданного файла. */
- ak_buffer ak_hmac_file_context( ak_hmac , const char *, ak_pointer );
+ ak_buffer ak_hmac_context_file( ak_hmac , const char *, ak_pointer );
 
 /*! \brief Развертка ключевого вектора из пароля (согласно Р 50.1.111-2016, раздел 4) */
  int ak_hmac_pbkdf2_streebog512( const ak_pointer , const size_t ,

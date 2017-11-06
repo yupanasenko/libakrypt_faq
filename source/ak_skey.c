@@ -199,7 +199,7 @@
   if( len < 32 ) skey->generator.random( &skey->generator, out+len, 32 - len );
 
  /* вычисляем номер и очищаем память */
-  ak_hash_ptr_context( &ctx, out, 32, out );
+  ak_hash_context_ptr( &ctx, out, 32, out );
   if(( ak_buffer_set_str( &skey->number, number =
          ak_ptr_to_hexstr( out, ak_libakrypt_get_key_number_length(), ak_false ))) != ak_error_ok )
     return ak_error_message( ak_error_write_data, __func__ , "wrong assigning key number" );

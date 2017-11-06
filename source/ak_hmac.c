@@ -210,7 +210,7 @@
 
   if( size > hctx->ctx.bsize ) {
     size_t i = 0;
-    ak_buffer buffer = ak_hash_ptr_context( &hctx->ctx, ptr, size, NULL );
+    ak_buffer buffer = ak_hash_context_ptr( &hctx->ctx, ptr, size, NULL );
     if( buffer == NULL ) return ak_error_message( ak_error_get_value(), __func__ ,
                                                                       "wrong hashing a long key" );
       else {
@@ -467,7 +467,7 @@
     @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
     возвращается указатель на буффер, содержащий результат вычислений.                             */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_hmac_ptr_context( ak_hmac hctx, const ak_pointer in,
+ ak_buffer ak_hmac_context_ptr( ak_hmac hctx, const ak_pointer in,
                                                                  const size_t size, ak_pointer out )
 {
   int error = ak_error_ok;
@@ -534,7 +534,7 @@
     ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
     ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_hmac_file_context( ak_hmac hctx, const char *filename, ak_pointer out )
+ ak_buffer ak_hmac_context_file( ak_hmac hctx, const char *filename, ak_pointer out )
 {
   struct compress comp;
   int error = ak_error_ok;
@@ -636,7 +636,7 @@
 
  /* теперь основной цикл по значению аргумента c */
   for( idx = 1; idx < c; idx++ ) {
-     ak_hmac_ptr_context( &hctx, result, 64, result );
+     ak_hmac_context_ptr( &hctx, result, 64, result );
      for( jdx = 0; jdx < dklen; jdx++ ) ((ak_uint8 *)out)[jdx] ^= result[64-dklen+jdx];
   }
   memset( result, 0, 64 );
@@ -922,7 +922,7 @@
     return NULL;
   }
 
-  result = ak_hmac_ptr_context( hctx, in, size, out );
+  result = ak_hmac_context_ptr( hctx, in, size, out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__, "wrong calculation of hmac integrity code" );
     if( result != NULL ) result = ak_buffer_delete( result );
@@ -962,7 +962,7 @@
     return NULL;
   }
 
-  result = ak_hmac_file_context( hctx, filename, out );
+  result = ak_hmac_context_file( hctx, filename, out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__, "wrong calculation of hmac integrity code" );
     if( result != NULL ) result = ak_buffer_delete( result );
@@ -1016,7 +1016,7 @@
     goto lab_exit;
   }
   memset( out, 0, 64 );
-  ak_hmac_ptr_context( &hkey, data, 16, out );
+  ak_hmac_context_ptr( &hkey, data, 16, out );
   if( ak_error_get_value() != ak_error_ok ) {
     ak_error_message( error, __func__ , "incorrect calculation of hmac code" );
     result = ak_false;
@@ -1046,7 +1046,7 @@
     goto lab_exit;
   }
   memset( out, 0, 64 );
-  ak_hmac_ptr_context( &hkey, data, 16, out );
+  ak_hmac_context_ptr( &hkey, data, 16, out );
   if( ak_error_get_value() != ak_error_ok ) {
     ak_error_message( error, __func__ , "incorrect calculation of hmac code" );
     result = ak_false;

@@ -145,7 +145,7 @@
                                             "using a null pointer to context manager structure" );
  /* инициализируем генератор ключей */
 #ifdef __linux__
-  if(( error = ak_random_create_file( &manager->key_generator, "/dev/random" )) != ak_error_ok )
+  if(( error = ak_random_create_file( &manager->key_generator, "/dev/urandom" )) != ak_error_ok )
     return ak_error_message( error, __func__,
                              "wrong initialization of /dev/random for random number generation" );
 #else

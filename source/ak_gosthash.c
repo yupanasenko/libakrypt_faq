@@ -531,7 +531,7 @@
     return ak_false;
   }
 
-  ak_hash_ptr_context( &ctx, test_text1, 32, out );
+  ak_hash_context_ptr( &ctx, test_text1, 32, out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__ , "invalid calculation of gosthash94 code" );
     result = ak_false;
@@ -552,7 +552,7 @@
          }
 
  /* второй пример из ГОСТ Р 34.11-94 */
-  ak_hash_ptr_context( &ctx, test_text2, 50, out );
+  ak_hash_context_ptr( &ctx, test_text2, 50, out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__ , "invalid calculation of gosthash94 code" );
     result = ak_false;
@@ -582,7 +582,7 @@
     return ak_false;
   }
 
-  ak_hash_ptr_context( &ctx, test_text1, 32, out );
+  ak_hash_context_ptr( &ctx, test_text1, 32, out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__ , "invalid calculation of gosthash94 code" );
     result = ak_false;
@@ -603,7 +603,7 @@
          }
 
  /* второй пример для таблиц замен из Верба-О */
-  ak_hash_ptr_context( &ctx, test_text2, 50, out );
+  ak_hash_context_ptr( &ctx, test_text2, 50, out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__ , "invalid calculation of gosthash94 code" );
     result = ak_false;

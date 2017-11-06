@@ -59,13 +59,21 @@
 /*! \brief Освобождение памяти из под контекста секретного ключа. */
  ak_pointer ak_signkey_delete( ak_pointer );
 
-/*! \brief Присвоение секретному ключу константного (заранее заданного) значения. */
+/*! \brief Присвоение секретному ключу электронной подписи константного (заранее заданного) значения. */
  int ak_signkey_context_set_key( ak_signkey sctx, const ak_pointer , const size_t );
-
+/*! \brief Присвоение секретному ключу электронной подписи случайного значения. */
+ int ak_signkey_context_set_key_random( ak_signkey , ak_random );
+/*! \brief Присвоение секретному ключу электронной подписи значения, выработанного из пароля. */
+ int ak_signkey_context_set_key_password( ak_signkey , const ak_pointer , const size_t ,
+                                                             const ak_pointer , const size_t );
 /*! \brief Выработка электронной подписи для фиксированного случайного значения \f$ k \f$ и вычисленного заранее значения хеш-функции. */
  void ak_signkey_context_sign_values( ak_signkey , ak_uint64 *, ak_pointer , ak_pointer );
-/*! \brief Выработка электронной пподписи для вычисленного заранее значения хеш-функции. */
- ak_buffer ak_signkey_context_sign_hash( ak_signkey , ak_pointer , ak_pointer );
+/*! \brief Выработка электронной подписи для вычисленного заранее значения хеш-функции. */
+ ak_buffer ak_signkey_context_sign_hash( ak_signkey , ak_pointer , size_t , ak_pointer );
+/*! \brief Выработка электронной подписи для заданной области памяти. */
+ ak_buffer ak_signkey_context_sign_ptr( ak_signkey , const ak_pointer , const size_t , ak_pointer );
+/*! \brief Выработка электронной подписи для заданного файла. */
+ ak_buffer ak_signkey_context_sign_file( ak_signkey , const char * , ak_pointer );
 /*! \brief Выполнение тестовых примеров для алгоритмов выработки и проверки электронной подписи */
  ak_bool ak_signkey_test( void );
 
@@ -94,8 +102,13 @@
  ak_pointer ak_verifykey_delete( ak_pointer );
 
 /*! \brief Проверка электронной подписи для вычисленного заранее значения хеш-функции. */
- ak_bool ak_verifykey_context_verify_hash( ak_verifykey , ak_pointer , ak_pointer );
-
+ ak_bool ak_verifykey_context_verify_hash( ak_verifykey , const ak_pointer ,
+                                                                       const size_t , ak_pointer );
+/*! \brief Проверка электронной подписи для заданной области памяти. */
+ ak_bool ak_verifykey_context_verify_ptr( ak_verifykey , const ak_pointer ,
+                                                                       const size_t , ak_pointer );
+/*! \brief Проверка электронной подписи для заданного файла. */
+ ak_bool ak_verifykey_context_verify_file( ak_verifykey , const char * , ak_pointer );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

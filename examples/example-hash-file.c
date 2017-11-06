@@ -73,7 +73,7 @@
    ak_uint8 *data = mmap( NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0 );
 
    if( ak_hash_create_streebog256( &ctx ) == ak_error_ok ) {
-     ak_hash_ptr_context( &ctx, data, st.st_size, out );
+     ak_hash_context_ptr( &ctx, data, st.st_size, out );
    }
    ak_hash_destroy( &ctx ); /* уничтожаем контекст функции хеширования */
    printf("hash: %s (using mmap)\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
@@ -81,7 +81,7 @@
 
    if( ak_hmac_create_streebog256( &hctx ) == ak_error_ok ) {
      ak_hmac_context_set_key( &hctx, key, 12 );
-     ak_hmac_ptr_context( &hctx, data, st.st_size, out );
+     ak_hmac_context_ptr( &hctx, data, st.st_size, out );
    }
    ak_hmac_destroy( &hctx ); /* уничтожаем контекст выработки имитовставки */
    printf("hmac: %s (using mmap)\n\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
@@ -113,14 +113,14 @@
 
  /* 5. хешируем, используя функцию класса hash */
    ak_hash_create_streebog256( &ctx );
-   ak_hash_file_context( &ctx, "data64.dat", out );
+   ak_hash_context_file( &ctx, "data64.dat", out );
    ak_hash_destroy( &ctx );
    printf("hash: %s (using ak_hash_file_context)\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
    free( str );
 
    ak_hmac_create_streebog256( &hctx );
    ak_hmac_context_set_key( &hctx, key, 12 );
-   ak_hmac_file_context( &hctx, "data64.dat", out );
+   ak_hmac_context_file( &hctx, "data64.dat", out );
    ak_hmac_destroy( &hctx );
    printf("hmac: %s (using ak_hmac_file_context)\n\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
    free( str );

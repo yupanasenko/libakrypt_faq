@@ -181,7 +181,8 @@ endif()
 set( INTERNAL_EXAMPLES_LIST
                    context-manager-node
                    context-manager
-                   hash-file )
+                   hash-file
+                   sign-internal )
 
 if( CMAKE_HOST_UNIX )
   foreach( programm ${INTERNAL_EXAMPLES_LIST} )

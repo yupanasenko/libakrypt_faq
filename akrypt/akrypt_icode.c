@@ -266,7 +266,7 @@
 {
   printf("akrypt icode [options] [directories or files]  - calculation and checking integrity codes for given files\n\n");
   printf("available options:\n");
-  printf(" -a, --algorithm <ni>    set the algorithm, where \"ni\" is name or identifier of hash or mac function\n");
+  printf(" -a, --algorithm <ni>    set the algorithm, where \"ni\" is name or identifier of hash, mac or sign function\n");
   printf("                         default algorithm is icode function \"streebog256\"\n");
   printf(" -c, --check <file>      check previously generated integrity codes\n");
   printf(" -o, --output <file>     set the output file for generated integrity codes\n");
