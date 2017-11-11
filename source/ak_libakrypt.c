@@ -242,7 +242,7 @@
         if( ak_libakrypt_get_option( localbuffer, "hmac_key_counter_resource = ", &value )) {
           if( value < 1024 ) value = 1024;
           if( value > 2147483647 ) value = 2147483647;
-          libakrypt_options.hmac_key_count_resource = value;
+          libakrypt_options.hmac_key_count_resource = (size_t) value;
         }
 
       } /* далее мы очищаем строку независимо от ее содержимого */

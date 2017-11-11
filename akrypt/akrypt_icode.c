@@ -35,7 +35,7 @@
  #include <akrypt.h>
 
 /* ----------------------------------------------------------------------------------------------- */
- #define akrypt_max_icode_size     (64)
+ #define akrypt_max_icode_size     (128)
 
 /* ----------------------------------------------------------------------------------------------- */
  int akrypt_icode_help( void );
@@ -126,13 +126,14 @@
  /* начинаем работу с криптографическими примитивами */
    if( ak_libakrypt_create( audit ) != ak_true ) return ak_libakrypt_destroy();
 
- /* проверяем заданный пользователем алгоритм*/
+ /* проверяем заданный пользователем алгоритм */
    if(( ohandle = ak_oid_find_by_name( algorithm_ni )) == ak_error_wrong_handle ) {
       if(( ohandle = ak_oid_find_by_id( algorithm_ni )) == ak_error_wrong_handle ) {
         printf("string \"%s\" is not valid name or identifier of icode function\n", algorithm_ni );
         goto lab_exit;
       }
    }
+
  /* создаем дескриптор алгоритма (пока только хеширования) */
    if(( ic.handle = ak_hash_new_oid( ohandle )) == ak_error_wrong_handle ) {
      printf("incorrect descriptor of \"%s\" icode function\n", algorithm_ni );
@@ -266,7 +267,7 @@
 {
   printf("akrypt icode [options] [directories or files]  - calculation and checking integrity codes for given files\n\n");
   printf("available options:\n");
-  printf(" -a, --algorithm <ni>    set the algorithm, where \"ni\" is name or identifier of hash, mac or sign function\n");
+  printf(" -a, --algorithm <ni>    set the algorithm, where \"ni\" is name or identifier of hash or mac function\n");
   printf("                         default algorithm is icode function \"streebog256\"\n");
   printf(" -c, --check <file>      check previously generated integrity codes\n");
   printf(" -o, --output <file>     set the output file for generated integrity codes\n");
