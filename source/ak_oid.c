@@ -52,6 +52,8 @@
    case hmac_function:     return "hmac_function";
    case mac_function:      return "mac_function";
    case digital_signature: return "digital_signature";
+   case sign_function:     return "sign_function";
+   case verify_function:   return "verify_function";
    case random_generator:  return "random_generator";
    case update_engine:     return "update_engine";
    case oid_engine:        return "oid";

@@ -164,7 +164,7 @@
 #endif
 
  /* инициализируем указатели контекстов */
-  manager->size = ak_libakrypt_get_context_manager_size();
+  manager->size = ak_libakrypt_get_option("context_manager_size"); //ak_libakrypt_get_context_manager_size();
 
   if(( manager->array = malloc( manager->size*sizeof( ak_pointer ))) == NULL ) {
     ak_context_manager_destroy( manager );
@@ -201,7 +201,7 @@
   if( newsize <= manager->size )
     return ak_error_message( ak_error_context_manager_size, __func__ ,
                                       "unexpected value of new value of context manager's size" );
-  if( newsize > ak_libakrypt_get_context_manager_max_size( ))
+  if( newsize > ak_libakrypt_get_option("context_manager_max_size"))
     return ak_error_message( ak_error_context_manager_max_size, __func__,
                                    "current size of context manager exceeds permissible bounds" );
 /* это отладочный вывод, который сообщает о выделении новой памяти

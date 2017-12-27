@@ -91,7 +91,7 @@
  /* номер ключа генерится случайным образом. изменяется позднее, например,
                                                            при считывания с файлового носителя */
   if(( error = ak_buffer_create_size( &skey->number,
-                                   ak_libakrypt_get_key_number_length()+1 )) != ak_error_ok ) {
+                           ak_libakrypt_get_option("key_number_length")+1 )) != ak_error_ok ) {
     ak_error_message( error, __func__ ,"wrong creation key number buffer" );
     ak_skey_destroy( skey );
     return error;
@@ -201,7 +201,7 @@
  /* вычисляем номер и очищаем память */
   ak_hash_context_ptr( &ctx, out, 32, out );
   if(( ak_buffer_set_str( &skey->number, number =
-         ak_ptr_to_hexstr( out, ak_libakrypt_get_key_number_length(), ak_false ))) != ak_error_ok )
+         ak_ptr_to_hexstr( out, ak_libakrypt_get_option("key_number_length"), ak_false ))) != ak_error_ok )
     return ak_error_message( ak_error_write_data, __func__ , "wrong assigning key number" );
 
   if( number ) free( number );
@@ -621,7 +621,8 @@
                                                               "using a password with zero length" );
  /* присваиваем буффер и маскируем его */
   if(( error = ak_hmac_pbkdf2_streebog512( pass, pass_size, salt, salt_size,
-        ak_libakrypt_get_pbkdf2_count(), skey->key.size, skey->key.data )) != ak_error_ok )
+                                  ak_libakrypt_get_option("pbkdf2_iteraction_count"),
+                                                 skey->key.size, skey->key.data )) != ak_error_ok )
                   return ak_error_message( error, __func__ , "wrong generation a secret key data" );
 
   if(( error = skey->set_mask( skey )) != ak_error_ok ) return  ak_error_message( error,

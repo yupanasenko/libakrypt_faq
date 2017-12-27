@@ -133,6 +133,8 @@
  #define ak_error_undefined_value              (-5)
 /*! \brief Использование неопределенного указателя на функцию (вызов null указателя). */
  #define ak_error_undefined_function           (-6)
+/*! \brief Попытка доступа к неопределенной опции библиотеки. */
+ #define ak_error_wrong_option                 (-7)
 /*! \brief Ошибка доступа к файлу (устройству). */
  #define ak_error_access_file                 (-10)
 /*! \brief Ошибка открытия файла (устройства). */
@@ -478,6 +480,14 @@
  dll_export ak_oid_engine ak_engine_str( const char * );
 /*! \brief Получения символьного описания режима применения криптографического механизма. */
  dll_export const char *ak_mode_get_str( ak_oid_mode );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Получение общего количества опций библиотеки */
+ dll_export size_t ak_libakrypt_options_count( void );
+/*! \brief Получение имени опции по ее номеру. */
+ dll_export const char *ak_libakrypt_get_option_name( const size_t index );
+/*! \brief Получение значения опции по ее номеру. */
+ dll_export int ak_libakrypt_get_option_value( const size_t index );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Чтение пароля из консоли. */

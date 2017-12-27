@@ -50,34 +50,105 @@
  #include <ak_sign.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Тип данных для хранения значений опций библиотеки */
- static struct libakrypt_options_ctx {
-  /*! \brief Little-endian или Big-endian */
-   int big_endian;
-  /*! \brief Уровень вывода сообщений выполнения функций библиотеки */
-   int log_level;
-  /*! \brief Минимальное количество контекстов, помещаемых в структуру управления контекстами */
-   size_t context_manager_size;
-  /*! \brief Максимальное количество одновременно существующих контекстов */
-   size_t context_manager_max_size;
-  /*! \brief Размер номера ключа (в байтах) */
-   int key_number_length;
-  /*! \brief Количество циклов в алгоритме PBKDF2 выработки ключа из пароля */
-   int pbkdf2_iteration_count;
-  /*! \brief Ресурс ключа выработки имитовставки (алгоритм HMAC) */
-   size_t hmac_key_count_resource;
+/*! \brief Тип данных для хранения одной опции библиотеки */
+ typedef struct {
+  /*! \brief Человекочитаемое имя опции, используется для поиска и установки значения */
+   const char *name;
+  /*! \brief Численное значение опции (целое неотрицательное число) */
+   int value;
+ } ak_libakrypt_option;
 
-}
- libakrypt_options =
+/* ----------------------------------------------------------------------------------------------- */
+/*! Константные значения опций (значения по-умолчанию) */
+ ak_libakrypt_option options[] = {
+     { "big_endian_architecture", ak_false },
+     { "log_level", ak_log_standard },
+     { "context_manager_size", 32 },
+     { "context_manager_max_size", 4096 },
+     { "key_number_length", 16 },
+     { "pbkdf2_iteration_count", 2000 },
+     { "hmac_key_count_resource", 65536 },
+     { NULL, 0 } /* завершающая константа, должна всегда принимать нулевые значения */
+ };
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция возвращает общее количество опций библиотеки.
+    \return Общее количество опций библиотеки.                                                     */
+/* ----------------------------------------------------------------------------------------------- */
+ size_t ak_libakrypt_options_count( void )
 {
-  ak_false,
-  ak_log_standard, /* по-умолчанию, устанавливается стандартный уровень аудита */
-  32,
-  4096, /* это значит, что одновременно может существовать не более 4096 контекстов */
-  16, /* по-умолчанию, длина номера ключа составляет 16 байт*/
-  2000, /* pbkdf2 */
-  65536
-};
+  return ( sizeof( options )/( sizeof( ak_libakrypt_option ))-1 );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция возвращает значение опции с заданным именем.
+
+    \param name Имя опции
+    \return Значение опции с заданным именем. Если имя указано неверно, то возвращается
+    ошибка \ref ak_error_wrong_option.                                                             */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_libakrypt_get_option( const char *name )
+{
+  size_t i = 0;
+  int result = ak_error_wrong_option;
+  for( i = 0; i < ak_libakrypt_options_count(); i++ ) {
+     if( strncmp( name, options[i].name, strlen( options[i].name )) == 0 ) result = options[i].value;
+  }
+ return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция устанавливает значение опции с заданным именем.
+
+    \param name Имя опции
+    \param value Значение опции
+
+    \return В случае удачного установления значения опции возввращается \ref ak_error_ok.
+     Если имя опции указано неверно, то возвращается ошибка \ref ak_error_wrong_option.            */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_libakrypt_set_option( const char *name, const int value )
+{
+  size_t i = 0;
+  int result = ak_error_wrong_option;
+  for( i = 0; i < ak_libakrypt_options_count(); i++ ) {
+     if( strncmp( name, options[i].name, strlen( options[i].name )) == 0 ) {
+       options[i].value = value;
+       result = ak_error_ok;
+     }
+  }
+ return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция возвращает указатель на константную строку, содержащую
+    человекочитаемое имя опции библиотеки.
+
+    \param index Индекс опции, должен быть от нуля до значения,
+    возвращаемого функцией ak_libakrypt_options_count().
+
+    \return Строка симовлов, содержащая имя функции, в случае правильно определенного индекса.
+    В противном случае, возвращается констанный указатель на (null).                              */
+/* ----------------------------------------------------------------------------------------------- */
+ const char *ak_libakrypt_get_option_name( const size_t index )
+{
+ if( index >= ak_libakrypt_options_count() ) return ak_null_string;
+  else return options[index].name;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция возвращает значение опции библиотеки с заданным индексом.
+
+    \param index Индекс опции, должен быть от нуля до значения,
+    возвращаемого функцией ak_libakrypt_options_count().
+
+    \return Целое неотрицательное число, содержащее значение опции с заданным индексом.
+    В случае неправильно определенного индекса возвращается значение \ref ak_error_wrong_option.   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_libakrypt_get_option_value( const size_t index )
+{
+ if( index >= ak_libakrypt_options_count() ) return ak_error_wrong_option;
+  else return options[index].value;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция создает имя файла в котором содержатся настройки библиотеки.
@@ -131,7 +202,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_libakrypt_get_option( const char *string, const char *field, ak_uint64 *value )
+ static int ak_libakrypt_load_option( const char *string, const char *field, ak_uint64 *value )
 {
   char *ptr = NULL, *endptr = NULL;
   if(( ptr = strstr( string, field )) != NULL ) {
@@ -197,52 +268,55 @@
      }
     if( ch == '\n' ) {
       if((strlen(localbuffer) != 0 ) && ( strchr( localbuffer, '#' ) == 0 )) {
-        ak_uint64 value = 0;
+        ak_uint64 value = 0, value2 = 0;
 
         /* устанавливаем уровень аудита */
-        if( ak_libakrypt_get_option( localbuffer, "log_level = ", &value ))
-          libakrypt_options.log_level = ( int )value;
+        if( ak_libakrypt_load_option( localbuffer, "log_level = ", &value ))
+          // libakrypt_options.log_level = ( int )value;
+          ak_libakrypt_set_option( "log_level", value );
 
         /* устанавливаем минимальный размер структуры управления контекстами */
-        if( ak_libakrypt_get_option( localbuffer, "context_manager_size = ", &value )) {
+        if( ak_libakrypt_load_option( localbuffer, "context_manager_size = ", &value )) {
           int len = 0;
           while( value ) { value>>=1; len++; } /* вычисляем число значащих бит */
           if( len < 2 ) len = 2;
           if( len >= 32 ) len = 31;
-          libakrypt_options.context_manager_size = ((size_t)1 << len );
+          // libakrypt_options.context_manager_size = ((size_t)1 << len );
+          ak_libakrypt_set_option( "context_manager_size", value2 = ( 1 << len ));
         }
 
        /* устанавливаем максимально возможный размер структуры управления контекстами */
-        if( ak_libakrypt_get_option( localbuffer, "context_manager_max_size = ", &value )) {
+        if( ak_libakrypt_load_option( localbuffer, "context_manager_max_size = ", &value )) {
           int len = 0;
           while( value ) { value>>=1; len++; } /* вычисляем число значащих бит */
           if( len < 2 ) len = 2;
           if( len > 63 ) len = 63;
-          libakrypt_options.context_manager_max_size = ((size_t)1 << len );
-         /* проверяем, чтобы размеры соответствовали друг другу */
-          if( libakrypt_options.context_manager_max_size < libakrypt_options.context_manager_size )
-            libakrypt_options.context_manager_max_size = libakrypt_options.context_manager_size;
+          // libakrypt_options.context_manager_max_size = ((size_t)1 << len );
+          ak_libakrypt_set_option( "context_manager_max_size", ak_max( value2, 1 << len ));
         }
 
        /* устанавливаем длину номера ключа */
-        if( ak_libakrypt_get_option( localbuffer, "key_number_length = ", &value )) {
+        if( ak_libakrypt_load_option( localbuffer, "key_number_length = ", &value )) {
           if( value < 16 ) value = 16;
           if( value > 32 ) value = 32;
-          libakrypt_options.key_number_length = (int) value;
+          // libakrypt_options.key_number_length = (int) value;
+          ak_libakrypt_set_option( "key_number_length", value );
         }
 
        /* устанавливаем количество циклов в алгоритме pbkdf2 */
-        if( ak_libakrypt_get_option( localbuffer, "pbkdf2_iteration_count = ", &value )) {
+        if( ak_libakrypt_load_option( localbuffer, "pbkdf2_iteration_count = ", &value )) {
           if( value < 1000 ) value = 1000;
           if( value > 2147483647 ) value = 2147483647;
-          libakrypt_options.pbkdf2_iteration_count = (int) value;
+          // libakrypt_options.pbkdf2_iteration_count = (int) value;
+          ak_libakrypt_set_option( "pbkdf2_iteration_count", value );
         }
 
        /* устанавливаем ресурс ключа выработки имитовставки для алгоритма HMAC */
-        if( ak_libakrypt_get_option( localbuffer, "hmac_key_counter_resource = ", &value )) {
+        if( ak_libakrypt_load_option( localbuffer, "hmac_key_counter_resource = ", &value )) {
           if( value < 1024 ) value = 1024;
           if( value > 2147483647 ) value = 2147483647;
-          libakrypt_options.hmac_key_count_resource = (size_t) value;
+          // libakrypt_options.hmac_key_count_resource = (size_t) value;
+          ak_libakrypt_set_option( "hmac_key_count_resource", value );
         }
 
       } /* далее мы очищаем строку независимо от ее содержимого */
@@ -255,49 +329,20 @@
   close(fd);
 
   /* выводим сообщение об установленных параметрах библиотеки */
-  if( libakrypt_options.log_level > ak_log_standard ) {
-     ak_error_message_fmt( ak_error_ok, __func__, "libakrypt version: %s", ak_libakrypt_version( ));
-     ak_error_message_fmt( ak_error_ok, __func__, "log level: %u (%s)",
-              libakrypt_options.log_level, libakrypt_options.log_level == 0 ? "none" :
-                                     ( libakrypt_options.log_level == 1 ? "standard" : "maximum" ));
-     ak_error_message_fmt( ak_error_ok, __func__, "context manager size in [%d .. %d]",
-               libakrypt_options.context_manager_size, libakrypt_options.context_manager_max_size );
-     ak_error_message_fmt( ak_error_ok, __func__, "length of key number: %d",
-                                                              libakrypt_options.key_number_length );
-     ak_error_message_fmt( ak_error_ok, __func__, "pbkdf2 algorithm iteration count: %u",
-                                                         libakrypt_options.pbkdf2_iteration_count );
-     ak_error_message_fmt( ak_error_ok, __func__, "hmac key resource counter: %u",
-                                                        libakrypt_options.hmac_key_count_resource );
+  if( ak_libakrypt_get_option( "log_level" ) > ak_log_standard ) {
+    int i = 0;
+
+    ak_error_message_fmt( ak_error_ok, __func__, "libakrypt version: %s", ak_libakrypt_version( ));
+    /* далее мы пропускаем вывод информации об архитектуре,
+       поскольку она будет далее тестироваться отдельно     */
+    for( i = 1; i < ak_libakrypt_options_count(); i++ )
+       ak_error_message_fmt( ak_error_ok, __func__, "option [%s = %d]", options[i].name, options[i].value );
   }
   return ak_true;
  }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_log_get_level( void ) { return libakrypt_options.log_level; }
-
-/* ----------------------------------------------------------------------------------------------- */
- size_t ak_libakrypt_get_context_manager_size( void ) { return libakrypt_options.context_manager_size; }
-
-/* ----------------------------------------------------------------------------------------------- */
- size_t ak_libakrypt_get_context_manager_max_size( void )
-{
- return libakrypt_options.context_manager_max_size;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_get_key_number_length( void ) { return libakrypt_options.key_number_length; }
-
-/* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_get_pbkdf2_count( void ) { return libakrypt_options.pbkdf2_iteration_count; }
-
-/* ----------------------------------------------------------------------------------------------- */
- size_t ak_libakrypt_get_hmac_key_counter_resource( void )
-{
- return libakrypt_options.hmac_key_count_resource;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_libakrypt_endian( void ) { return libakrypt_options.big_endian; }
+ int ak_log_get_level( void ) { return ak_libakrypt_get_option("log_level"); }
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Установка уровня аудита библиотеки.
@@ -323,16 +368,12 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_log_set_level( int level )
 {
- if( level >= ak_log_maximum ) {
-   libakrypt_options.log_level = ak_log_maximum;
-   return ak_error_ok;
- }
- if( level <= ak_log_none ) {
-   libakrypt_options.log_level = ak_log_none;
-   return ak_error_ok;
- }
- libakrypt_options.log_level = ak_log_standard;
-return ak_error_ok;
+ if( level >= ak_log_maximum )
+   return ak_libakrypt_set_option("log_level", ak_log_maximum );
+ if( level <= ak_log_none )
+   return ak_libakrypt_set_option("log_level", ak_log_none );
+
+ return ak_libakrypt_set_option("log_level", ak_log_standard );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -389,7 +430,7 @@ return ak_error_ok;
   val.x[0] = 0; val.x[1] = 1; val.x[2] = 2; val.x[3] = 3;
 
 #ifdef LIBAKRYPT_BIG_ENDIAN
-  libakrypt_options.big_endian = ak_true;
+  ak_libakrypt_set_option("big_endian_architecture", ak_true );
   if( val.z == 50462976 ) {
     ak_error_message( ak_error_wrong_endian, __func__ ,
       "library runs on little endian platform, don't use LIBAKRYPT_BIG_ENDIAN flag while compile library" );
@@ -404,7 +445,7 @@ return ak_error_ok;
 #endif
 
   if( ak_log_get_level() >= ak_log_maximum ) {
-    if( libakrypt_options.big_endian )
+    if( ak_libakrypt_get_option( "big_endian_architecture" ) )
       ak_error_message( ak_error_ok, __func__ , "library runs on big endian platform" );
     else ak_error_message( ak_error_ok, __func__ , "library runs on little endian platform" );
   }

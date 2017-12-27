@@ -63,7 +63,7 @@
    }
 
   /* устанавливаем ресурс ключа */
-   hctx->key.resource.counter = ak_libakrypt_get_hmac_key_counter_resource();
+   hctx->key.resource.counter = ak_libakrypt_get_option("hmac_key_count_resource");
 
   /* hctx->key.data не изменяется */
   /* также мы используем методы секретного ключа, установленные по-умолчанию */
@@ -99,7 +99,7 @@
    }
 
   /* устанавливаем ресурс ключа */
-   hctx->key.resource.counter = ak_libakrypt_get_hmac_key_counter_resource();
+   hctx->key.resource.counter = ak_libakrypt_get_option("hmac_key_count_resource");
 
   /* hctx->key.data не изменяется */
   /* также мы используем методы секретного ключа, установленные по-умолчанию */
@@ -136,7 +136,7 @@
    }
 
   /* устанавливаем ресурс ключа */
-   hctx->key.resource.counter = ak_libakrypt_get_hmac_key_counter_resource();
+   hctx->key.resource.counter = ak_libakrypt_get_option("hmac_key_count_resource");
 
   /* hctx->key.data не изменяется */
   /* также мы используем методы секретного ключа, установленные по-умолчанию */

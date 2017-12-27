@@ -30,7 +30,7 @@ read -p "press return key ..."
 mkdir -p build-clang
 cd build-clang
 echo "Compiling by clang (native linux)"
-cmake -DCMAKE_C_COMPILER=clang -DLIBAKRYPT_SHARED_LIB=ON ../../libakrypt-0.x
+cmake -DCMAKE_C_COMPILER=clang-5.0 -DLIBAKRYPT_SHARED_LIB=ON ../../libakrypt-0.x
 make clean && make
 valgrind ./example-intro
 cd ..
@@ -53,7 +53,7 @@ mkdir -p build-mingw32
 cd build-mingw32
 rm -f CMakeCache.txt
 echo "Compiling by ecc (mingw32 on Windows)"
-cmake -DCMAKE_C_COMPILER=ecc -DCMAKE_C_FLAGS="-target x86_32-w64-mingw32" -DLIBAKRYPT_EXT=".exe" -DLIBAKRYPT_CONF="C:/Documents and Settings/All Users/Application Data/libakrypt" ../../libakrypt-0.x
+cmake -DCMAKE_C_COMPILER=ecc -DCMAKE_C_FLAGS="-target x86_32-w64-mingw32" -DLIBAKRYPT_EXT=".exe" -DLIBAKRYPT_CONF="C:/Program Files/akrypt" ../../libakrypt-0.x
 make clean && make
 wine ./example-intro.exe
 cd ..
@@ -65,7 +65,7 @@ mkdir -p build-mingw64
 cd build-mingw64
 rm -f CMakeCache.txt
 echo "Compiling by ecc (mingw64 on Windows)"
-cmake -DCMAKE_C_COMPILER=ecc -DCMAKE_C_FLAGS="-target x86_64-w64-mingw32" -DLIBAKRYPT_EXT=".exe" -DLIBAKRYPT_CONF="C:/Users/Default/AppData/Roaming/libakrypt" ../../libakrypt-0.x
+cmake -DCMAKE_C_COMPILER=ecc -DCMAKE_C_FLAGS="-target x86_64-w64-mingw32" -DLIBAKRYPT_EXT=".exe" -DLIBAKRYPT_CONF="C:/Program Files/akrypt" ../../libakrypt-0.x
 make clean && make
 wine ./example-intro.exe
 cd ..
@@ -81,17 +81,17 @@ make clean && make
 qemu-arm ./example-intro
 cd ..
 echo -e "\n"
-read -p "press return key ..."
+#read -p "press return key ..."
 
 ## Сборка ellcc под ARMv7eb ---------------------
-#mkdir -p build-arm32v7eb
-#cd build-arm32v7eb
-#echo "Compiling by ecc (arm32v7eb-linux, big endian)"
-#cmake -DCMAKE_C_COMPILER=ecc -DCMAKE_C_FLAGS="-target arm32v7eb-linux" -DLIBAKRYPT_BIG_ENDIAN=ON ../../libakrypt-0.x
-#make clean && make
-#qemu-armeb ./example-intro
-#cd ..
-#echo -e "\n"
+mkdir -p build-arm32v7eb
+cd build-arm32v7eb
+echo "Compiling by ecc (arm32v7eb-linux, big endian)"
+cmake -DCMAKE_C_COMPILER=ecc -DCMAKE_C_FLAGS="-target arm32v7eb-linux" -DLIBAKRYPT_BIG_ENDIAN=ON ../../libakrypt-0.x
+make clean && make
+qemu-armeb ./example-intro
+cd ..
+echo -e "\n"
 #read -p "press return key ..."
 
 ## Сборка ellcc под PPC32-Linux ---------------------

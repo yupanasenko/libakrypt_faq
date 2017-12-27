@@ -1,8 +1,12 @@
-Changes in version 0.5.6 (  .11.2017)
+Changes in version 0.5.7
+-------------------------------------
+  * Changed internal structure of libakrypt options.
+    Now we can read their values from userspace (see libakrypt.h).
+
+
+Changes in version 0.5.6 (29.11.2017)
 -------------------------------------
   * Added support for digital signatures (signing & verifying)
-
-
 
 Changes in version 0.5.5 (15.10.2017)
 -------------------------------------
@@ -45,5 +49,5 @@ Changes in version 0.5.1 (10.07.2017)
    * Started a library handbook (in russian)
 
 
-Since early versions of library has another internal structure and user 
+Since early versions of library has another internal structure and user
 interfaces we start a new sequence of changelog messages from version 0.5.1.

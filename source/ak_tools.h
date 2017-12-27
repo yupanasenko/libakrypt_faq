@@ -39,18 +39,10 @@
 /*! \brief Неэкспортируемая функция установления уровня аудита. */
  int ak_log_set_level( int );
 
-/*! \brief Функция возвращает истину, если платформа big-endian. В противном случае возвращается ложь. */
- ak_bool ak_libakrypt_endian( void );
-/*! \brief Функция возвращает минимальное количество элементов структуры управления контекстами. */
- size_t ak_libakrypt_get_context_manager_size( void );
-/*! \brief Функция возвращает максимально возможное количество одновременно существующих контекстов. */
- size_t ak_libakrypt_get_context_manager_max_size( void );
-/*! \brief Функция возвращает длину номера ключа в байтах */
- int ak_libakrypt_get_key_number_length( void );
-/*! \brief Функция возвращает максимальное число использований ключа выработки имитовставки hmac. */
- size_t ak_libakrypt_get_hmac_key_counter_resource( void );
-/*! \brief Функция возвращает количество итераций в алгоритме pbkdf2 выработки ключа из пароля. */
- int ak_libakrypt_get_pbkdf2_count( void );
+/*! \brief Функция устанавливает значение опции с заданным именем. */
+ int ak_libakrypt_set_option( const char *name, const int value );
+/*! \brief Функция возвращает значение опции с заданным именем. */
+ int ak_libakrypt_get_option( const char *name );
 
  #endif
 /* ----------------------------------------------------------------------------------------------- */

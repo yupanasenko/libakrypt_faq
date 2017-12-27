@@ -46,6 +46,7 @@
   printf("     --oid <eni>         show one or more OID's, where \"eni\" is engine, name or identifier of OID\n");
   printf("                         (if engine is \"undefined_engine\" then show list of all available OID's)\n");
   printf("     --oids              show the list of all available libakrypt's OIDs\n");
+  printf("     --options           show the list of all libakrypt's cryptographic options and their values\n");
   printf("     --audit <file>      set the output file for errors and audit system messages\n");
   printf(" -h, --help              show this information\n\n");
 
@@ -57,7 +58,7 @@
 {
   size_t i = 0;
   int next_option = 0;
-  enum { do_nothing, do_alloids, do_oid, do_engines } work = do_nothing;
+  enum { do_nothing, do_alloids, do_oid, do_engines, do_options } work = do_nothing;
   ak_oid_engine engine = undefined_engine;
   ak_handle handle = ak_error_wrong_handle;
   char *value = NULL;
@@ -68,6 +69,7 @@
      { "oids",             0, NULL,  254 },
      { "oid",              1, NULL,  253 },
      { "engines",          0, NULL,  252 },
+     { "options",          0, NULL,  251 },
      { NULL,               0, NULL,   0  }
   };
 
@@ -92,6 +94,10 @@
          case 252 : /* выводим список всех типов криптографических механизмов */
                      work = do_engines;
                      break;
+         case 251 : /* выводим список всех опций библиотеки и их значений */
+                     work = do_options;
+                     break;
+
          default:   /* обрабатываем ошибочные параметры */
                      if( next_option != -1 ) work = do_nothing;
                      break;
@@ -145,6 +151,12 @@
      case do_engines:
                for( i = 0; i < ak_engine_count(); i++ )
                   printf("%s\n", ak_engine_get_str( i ));
+               break;
+
+     case do_options:
+               for( i = 0; i < ak_libakrypt_options_count(); i++ )
+                  printf("[%s = %d]\n",
+                         ak_libakrypt_get_option_name( i ), ak_libakrypt_get_option_value( i ));
                break;
 
      default:  break;
