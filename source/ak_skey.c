@@ -621,7 +621,7 @@
                                                               "using a password with zero length" );
  /* присваиваем буффер и маскируем его */
   if(( error = ak_hmac_pbkdf2_streebog512( pass, pass_size, salt, salt_size,
-                                  ak_libakrypt_get_option("pbkdf2_iteraction_count"),
+                                  ak_libakrypt_get_option("pbkdf2_iteration_count"),
                                                  skey->key.size, skey->key.data )) != ak_error_ok )
                   return ak_error_message( error, __func__ , "wrong generation a secret key data" );
 
