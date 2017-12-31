@@ -15,7 +15,7 @@
 # сборка при MinGW из консоли MSYS (WINDOWS)
 # cmake -G "MinGW Makefiles" -D CMAKE_C_COMPILER=gcc path && mingw32-make
 # -------------------------------------------------------------------------------------------------- #
-cmake_minimum_required( VERSION 2.8 )
+cmake_minimum_required( VERSION 3.2 )
 project( libakrypt )
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 5 )
@@ -46,7 +46,8 @@ set( HEADERS        source/ak_tools.h
                     source/ak_hmac.h
                     source/ak_mpzn.h
                     source/ak_curves.h
-                    source/ak_sign.h )
+                    source/ak_sign.h
+                    source/ak_bckey.h )
 
 set( SOURCES        source/ak_log.c
                     source/ak_libakrypt.c
@@ -63,7 +64,9 @@ set( SOURCES        source/ak_log.c
                     source/ak_hmac.c
                     source/ak_mpzn.c
                     source/ak_curves.c
-                    source/ak_sign.c )
+                    source/ak_sign.c
+                    source/ak_bckey.c
+                    source/ak_magma.c )
 
 set( DOCS           doc/libakrypt.dox
                     doc/refman_header.in
@@ -182,7 +185,8 @@ set( INTERNAL_EXAMPLES_LIST
                    context-manager-node
                    context-manager
                    hash-file
-                   sign-internal )
+                   sign-internal
+                   bckey-internal )
 
 if( CMAKE_HOST_UNIX )
   foreach( programm ${INTERNAL_EXAMPLES_LIST} )

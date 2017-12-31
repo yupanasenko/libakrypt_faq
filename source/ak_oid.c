@@ -439,28 +439,39 @@
 /* ----------------------------------------------------------------------------------------------- */
 /* 6. Добавляем алгоритмы выработки и проверки электронной подписи */
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( digital_signature, sign,
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( sign_function, algorithm,
     "sign256", "1.2.643.7.1.1.1.1", NULL, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( digital_signature, sign,
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( sign_function, algorithm,
     "sign256-gosthash94", "1.2.643.2.52.1.2.0.1", NULL, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( digital_signature, sign,
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( sign_function, algorithm,
     "sign512", "1.2.643.7.1.1.1.2", NULL, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( digital_signature, verify,
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( verify_function, algorithm,
     "verify256", "1.2.643.2.52.1.2.1.2", NULL, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( digital_signature, verify,
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( verify_function, algorithm,
     "verify256-gosthash94", "1.2.643.2.52.1.2.0.2", NULL, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
-  if(( error = ak_oids_add_oid( manager, ak_oid_new( digital_signature, verify,
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( verify_function, algorithm,
     "verify512", "1.2.643.2.52.1.2.2.2", NULL, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+/* ----------------------------------------------------------------------------------------------- */
+/* 7. Добавляем алгоритмы блочного шифрования */
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( block_cipher, algorithm,
+                                       "magma", "1.2.643.2.2.21", NULL, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( block_cipher, algorithm,
+                                "kuznechik", "1.2.643.7.1.1.5.1", NULL, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
  return ak_error_ok;

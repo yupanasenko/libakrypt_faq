@@ -68,6 +68,7 @@
      { "key_number_length", 16 },
      { "pbkdf2_iteration_count", 2000 },
      { "hmac_key_count_resource", 65536 },
+     { "magma_cipher_resource", 4194304 },
      { NULL, 0 } /* завершающая константа, должна всегда принимать нулевые значения */
  };
 
