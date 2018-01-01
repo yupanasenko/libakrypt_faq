@@ -76,7 +76,22 @@
  int ak_bckey_context_set_random( ak_bckey , ak_random );
 /*! \brief Присвоение контексту ключа алгоритма блочного шифрования значения, выработанного из пароля. */
  int ak_bckey_context_set_password( ak_bckey , const ak_pointer , const size_t ,
-                                                                 const ak_pointer , const size_t );
+                                                                  const ak_pointer , const size_t );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Зашифрование данных в режиме простой замены. */
+ int ak_bckey_context_encrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
+/*! \brief Расшифрование данных в режиме простой замены. */
+ int ak_bckey_context_decrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
+/*! \brief Зашифрование/расшифрование данных в режиме гаммирования из ГОСТ Р 34.13-2015. */
+ int ak_bckey_context_xcrypt( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
+/*! \brief Дальнейшее зашифрование/расшифрование в режиме гаммирования из ГОСТ Р 34.13-2015. */
+ int ak_bckey_context_xcrypt_update( ak_bckey , ak_pointer , ak_pointer , size_t );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция выполняет тестирование корректной работы алгоритма блочного шифрования Магма. */
+ ak_bool ak_bckey_test_magma( void );
+
 #endif
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                     ak_bckey.h  */

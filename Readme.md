@@ -21,7 +21,7 @@ Compilation
 -----------
 
 This library can be compiled with many compilers,
-such as gcc, clang, Microsoft Visual C, TinyCC.
+such as gcc, clang, Microsoft Visual C, TinyCC, icc.
 You can get the last version of source codes from github.com
 
     git clone https://github.com/axelkenzo/libakrypt-0.x

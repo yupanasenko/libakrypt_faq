@@ -186,7 +186,8 @@ set( INTERNAL_EXAMPLES_LIST
                    context-manager
                    hash-file
                    sign-internal
-                   bckey-internal )
+                   bckey-internal
+                   xcrypt-internal )
 
 if( CMAKE_HOST_UNIX )
   foreach( programm ${INTERNAL_EXAMPLES_LIST} )

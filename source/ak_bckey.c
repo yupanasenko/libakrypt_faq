@@ -241,5 +241,270 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*                                        теперь режимы шифрования                                 */
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param bkey Ключ алгоритма блочного шифрования, на котором происходит зашифрование информации
+    @param in Указатель на область памяти, где хранятся входные (зашифровываемые) данные
+    @param out Указатель на область памяти, куда помещаются зашифрованные данные
+    (этот указатель может совпадать с in)
+    @param size Размер зашировываемых данных (в байтах). Для режима простой замены
+    длина зашифровываемых данных должна быть кратна длине блока.
+
+    @return В случае возникновения ошибки функция возвращает ее код, в противном случае
+    возвращается ak_error_ok (ноль)                                                                */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_bckey_context_encrypt_ecb( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size )
+{
+  ak_uint64 blocks = 0, *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
+
+ /* выполняем проверку размера входных данных */
+  if( size%bkey->ivector.size != 0 )
+    return ak_error_message( ak_error_wrong_block_cipher_length,
+                            __func__ , "the length of input data is not divided by block length" );
+
+ /* проверяем целостность ключа */
+  if( bkey->key.check_icode( &bkey->key ) != ak_true )
+    return ak_error_message( ak_error_wrong_key_icode,
+                                        __func__, "incorrect integrity code of secret key value" );
+ /* уменьшаем значение ресурса ключа */
+  blocks = (ak_uint64 ) size/bkey->ivector.size;
+  if( bkey->key.resource.counter < blocks )
+    return ak_error_message( ak_error_low_key_resource,
+                                                   __func__ , "low resource of block cipher key" );
+   else bkey->key.resource.counter -= blocks;
+
+ /* теперь приступаем к зашифрованию данных */
+  if( bkey->ivector.size == 8 ) { /* здесь длина блока равна 64 бита */
+    do {
+        bkey->encrypt( &bkey->key, inptr++, outptr++ );
+    } while( --blocks > 0 );
+  }
+  if( bkey->ivector.size == 16 ) { /* здесь длина блока равна 128 бит */
+    do {
+        bkey->encrypt( &bkey->key, inptr, outptr );
+        inptr+=2; outptr+=2;
+    } while( --blocks > 0 );
+  }
+
+  /* перемаскируем ключ */
+  if( bkey->key.remask( &bkey->key ) != ak_error_ok )
+    ak_error_message( ak_error_get_value(), __func__ , "wrong remasking of secret key" );
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param bkey Ключ алгоритма блочного шифрования, на котором происходит расшифрование информации
+    @param in Указатель на область памяти, где хранятся входные (расшифровываемые) данные
+    @param out Указатель на область памяти, куда помещаются расшифрованные данные
+    (этот указатель может совпадать с in)
+    @param size Размер расшировываемых данных (в байтах). Для режима простой замены
+    длина расшифровываемых данных должна быть кратна длине блока.
+
+    @return В случае возникновения ошибки функция возвращает ее код, в противном случае
+    возвращается ak_error_ok (ноль)                                                                */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_bckey_context_decrypt_ecb( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size )
+{
+  ak_uint64 blocks = 0, *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
+
+ /* выполняем проверку размера входных данных */
+  if( size%bkey->ivector.size != 0 )
+    return ak_error_message( ak_error_wrong_block_cipher_length,
+                            __func__ , "the length of input data is not divided by block length" );
+
+ /* проверяем целостность ключа */
+  if( bkey->key.check_icode( &bkey->key ) != ak_true )
+    return ak_error_message( ak_error_wrong_key_icode,
+                                        __func__, "incorrect integrity code of secret key value" );
+ /* уменьшаем значение ресурса ключа */
+  blocks = (ak_uint64 ) size/bkey->ivector.size;
+  if( bkey->key.resource.counter < blocks )
+    return ak_error_message( ak_error_low_key_resource,
+                                                   __func__ , "low resource of block cipher key" );
+   else bkey->key.resource.counter -= blocks;
+
+ /* теперь приступаем к расшифрованию данных */
+  if( bkey->ivector.size == 8 ) { /* здесь длина блока равна 64 бита */
+    do {
+        bkey->decrypt( &bkey->key, inptr++, outptr++ );
+    } while( --blocks > 0 );
+  }
+  if( bkey->ivector.size == 16 ) { /* здесь длина блока равна 128 бит */
+    do {
+        bkey->decrypt( &bkey->key, inptr, outptr );
+        inptr+=2; outptr+=2;
+    } while( --blocks > 0 );
+  }
+
+  /* перемаскируем ключ */
+  if( bkey->key.remask( &bkey->key ) != ak_error_ok )
+    ak_error_message( ak_error_get_value(), __func__ , "wrong remasking of secret key" );
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Поскольку операцией заширования является гаммирование (сложение открытого текста по модулю два
+    с последовательностью, вырабатываемой шифром), то операция расшифрования производится также
+    наложением гаммы по модулю два. Таким образом, для зашифрования и расшифрования
+    информациии используется одна и таже функция.
+
+    @param bkey Ключ алгоритма блочного шифрования, на котором происходит зашифрование/расшифрование информации.
+    @param in Указатель на область памяти, где хранятся входные (открытые) данные.
+    @param out Указатель на область памяти, куда помещаются зашифрованные данные
+    (этот указатель может совпадать с in).
+    @param size Размер зашировываемых данных (в байтах).
+    @param iv Синхропосылка. Согласно  стандарту ГОСТ Р 34.13-2015 длина синхропосылки должна быть
+    ровно в два раза меньше, чем длина блока, то есть 4 байта для Магмы и 8 байт для Кузнечика.
+    @param iv_size Длина синхропосылки (в байтах).
+
+    Значение синхропосылки преобразуется и сохраняется в контексте секретного ключа. Данное значение
+    может быть использовано в дальнейшем при вызове функции ak_bckey_xcrypt_update().
+
+    @return В случае возникновения ошибки функция возвращает ее код, в противном случае
+    возвращается ak_error_ok (ноль)                                                                */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_bckey_context_xcrypt( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size,
+                                                                     ak_pointer iv, size_t iv_size )
+{
+  ak_uint64 blocks = (ak_uint64)size/bkey->ivector.size,
+            tail = (ak_uint64)size%bkey->ivector.size;
+  ak_uint64 yaout[2], *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
+
+ /* проверяем целостность ключа */
+  if( bkey->key.check_icode( &bkey->key ) != ak_true )
+    return ak_error_message( ak_error_wrong_key_icode, __func__,
+                                                   "incorrect integrity code of secret key value" );
+ /* проверяем длину синхропосылки */
+  if( iv_size != (bkey->ivector.size >> 1 ))
+    return ak_error_message( ak_error_wrong_iv_length, __func__,
+                                                              "incorrect length of initial value" );
+ /* уменьшаем значение ресурса ключа */
+  if( bkey->key.resource.counter < ( blocks + ( tail > 0 )))
+    return ak_error_message( ak_error_low_key_resource,
+                                                    __func__ , "low resource of block cipher key" );
+   else bkey->key.resource.counter -= ( blocks + ( tail > 0 )); /* уменьшаем ресурс ключа */
+
+ /* теперь приступаем к зашифрованию данных */
+  if( bkey->key.flags&ak_flag_xcrypt_update ) bkey->key.flags ^= ak_flag_xcrypt_update;
+  memset( bkey->ivector.data, 0, bkey->ivector.size );
+
+  if( blocks ) {
+   /* здесь длина блока равна 64 бита */
+    if( bkey->ivector.size == 8 ) {
+      memcpy( ((ak_uint8 *)bkey->ivector.data)+4, iv, 4 );
+      do {
+          bkey->encrypt( &bkey->key, bkey->ivector.data, yaout );
+          *outptr = *inptr ^ yaout[0];
+          outptr++; inptr++; ((ak_uint64 *)bkey->ivector.data)[0]++;
+      } while( --blocks > 0 );
+    }
+
+   /* здесь длина блока равна 128 бит */
+    if( bkey->ivector.size == 16 ) {
+      memcpy( ((ak_uint8 *)bkey->ivector.data)+8, iv, 8 );
+      do {
+          bkey->encrypt( &bkey->key, bkey->ivector.data, yaout );
+          *outptr = *inptr ^ yaout[0]; outptr++; inptr++;
+          *outptr = *inptr ^ yaout[1]; outptr++; inptr++;
+          ((ak_uint64 *)bkey->ivector.data)[0]++; // здесь мы не учитываем знак переноса
+                                                  // потому что объем данных на одном ключе ее должен превышать
+                                                  // 2^64 блоков (контролируется через ресурс ключа)
+      } while( --blocks > 0 );
+    }
+  }
+
+  if( tail ) { /* на последок, мы обрабатываем хвост сообщения */
+    size_t i;
+    bkey->encrypt( &bkey->key, bkey->ivector.data, yaout );
+    for( i = 0; i < tail; i++ )
+        ( (ak_uint8*)outptr )[i] = ( (ak_uint8*)inptr )[i]^( (ak_uint8 *)yaout)[i];
+   /* запрещаем дальнейшее использование xcrypt_update для данных, длина которых не кратна длине блока */
+    memset( bkey->ivector.data, 0, bkey->ivector.size );
+    bkey->key.flags |= ak_flag_xcrypt_update;
+  }
+
+ /* перемаскируем ключ */
+  if( bkey->key.remask( &bkey->key ) != ak_error_ok )
+    return ak_error_message( ak_error_get_value(), __func__ , "wrong remasking of secret key" );
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция позволяет зашифровывать/расшифровывать данные после вызова функции ak_bckey_xcrypt()
+    со значением синхропосылки, выработанной в ходе предыдущего вызова. Это позволяет
+    зашифровывать/расшифровывать данные поступающие блоками, длина которых кратна длине блока
+    используемого алгоритма блочного шифрования.
+
+    @param bkey Ключ алгоритма блочного шифрования, на котором происходит зашифрование информации
+    @param in Указатель на область памяти, где хранятся входные (открытые) данные
+    @param out Указатель на область памяти, куда помещаются зашифрованные данные
+    (этот указатель может совпадать с in)
+    @param size Размер зашировываемых данных (в байтах)
+
+    @return В случае возникновения ошибки функция возвращает ее код, в противном случае
+    возвращается ak_error_ok (ноль)                                                                */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_bckey_context_xcrypt_update( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size )
+{
+  ak_uint64 blocks = (ak_uint64)size/bkey->ivector.size,
+            tail = (ak_uint64)size%bkey->ivector.size;
+  ak_uint64 yaout[2], *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
+
+ /* проверяем, что мы можем использовать данный режим */
+  if( bkey->key.flags&ak_flag_xcrypt_update )
+    return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
+                                  "using this function with previously incorrect xcrypt operation");
+ /* проверяем целостность ключа */
+  if( bkey->key.check_icode( &bkey->key ) != ak_true )
+    return ak_error_message( ak_error_wrong_key_icode, __func__,
+                                                   "incorrect integrity code of secret key value" );
+ /* уменьшаем значение ресурса ключа */
+  if( bkey->key.resource.counter < ( blocks + ( tail > 0 )))
+    return ak_error_message( ak_error_low_key_resource,
+                                                    __func__ , "low resource of block cipher key" );
+   else bkey->key.resource.counter -= ( blocks + ( tail > 0 )); /* уменьшаем ресурс ключа */
+
+ /* теперь приступаем к зашифрованию данных */
+  if( blocks ) {
+    if( bkey->ivector.size == 8 ) { /* здесь длина блока равна 64 бита */
+      do {
+          bkey->encrypt( &bkey->key, bkey->ivector.data, yaout );
+          *outptr = *inptr ^ yaout[0];
+          outptr++; inptr++; ((ak_uint64 *)bkey->ivector.data)[0]++;
+      } while( --blocks > 0 );
+    }
+
+    if( bkey->ivector.size == 16 ) { /* здесь длина блока равна 128 бит */
+      do {
+          bkey->encrypt( &bkey->key, bkey->ivector.data, yaout );
+          *outptr = *inptr ^ yaout[0]; outptr++; inptr++;
+          *outptr = *inptr ^ yaout[1]; outptr++; inptr++;
+          ((ak_uint64 *)bkey->ivector.data)[0]++;
+        } while( --blocks > 0 );
+    }
+  }
+
+  if( tail ) { /* на последок, мы обрабатываем хвост сообщения */
+    size_t i;
+    bkey->encrypt( &bkey->key, bkey->ivector.data, yaout );
+    for( i = 0; i < tail; i++ )
+        ( (ak_uint8*)outptr )[i] = ( (ak_uint8*)inptr )[i]^( (ak_uint8 *)yaout)[i];
+    memset( bkey->ivector.data, 0, bkey->ivector.size );
+    bkey->key.flags |= ak_flag_xcrypt_update;
+  }
+
+ /* перемаскируем ключ */
+  if( bkey->key.remask( &bkey->key ) != ak_error_ok )
+    return ak_error_message( ak_error_get_value(), __func__ , "wrong remasking of secret key" );
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \example example-bckey-internal.c                                                              */
+/* ----------------------------------------------------------------------------------------------- */
 /*                                                                                     ak_bckey.c  */
 /* ----------------------------------------------------------------------------------------------- */

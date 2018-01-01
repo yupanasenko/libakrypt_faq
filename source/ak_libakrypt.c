@@ -43,11 +43,12 @@
  #include <errno.h>
  #include <sys/stat.h>
 
- #include <ak_tools.h>
  #include <ak_hmac.h>
+ #include <ak_sign.h>
+ #include <ak_bckey.h>
+ #include <ak_tools.h>
  #include <ak_curves.h>
  #include <ak_context_manager.h>
- #include <ak_sign.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тип данных для хранения одной опции библиотеки */
@@ -556,6 +557,25 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_libakrypt_test_block_ciphers( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing block ciphers started" );
+
+ /* тестируем корректность реализации блочного шифра Магма */
+  if( ak_bckey_test_magma() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "error while testing block cipher magma" );
+    return ak_false;
+  }
+
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing block ciphers ended successfully" );
+
+ return ak_true;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция должна вызываться перед использованием криптографических механизмов библиотеки.
 
    Пример использования функции.
@@ -621,6 +641,10 @@
   }
 
  /* тестируем работу алгоритмов блочного шифрования */
+  if( ak_libakrypt_test_block_ciphers() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "error while testing block ciphers" );
+    return ak_false;
+  }
 
  /* тестируем работу алгоритмов выработки имитовставки */
   if( ak_libakrypt_test_mac_functions() != ak_true ) {

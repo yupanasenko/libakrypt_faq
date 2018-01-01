@@ -104,7 +104,11 @@
  };
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция реализует один такт шифрующего преобразования ГОСТ 34.12-2015 (Mагма) */
+/*! \brief Функция реализует один такт шифрующего преобразования ГОСТ 34.12-2015 (Mагма).
+
+    @param x Обрабатываемая половина блока (более детально смотри описание сети Фейстеля).
+    @return Результат криптографического преобразования.                                           */
+/* ----------------------------------------------------------------------------------------------- */
  static ak_uint32 ak_magma_gostf( ak_uint32 x )
 {
   x = magma_boxes[3][x>>24 & 255] << 24 | magma_boxes[2][x>>16 & 255] << 16 |
@@ -113,7 +117,12 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция зашифрования одного блока информации алгоритмом ГОСТ 34.12-2015 (Магма) */
+/*! \brief Функция зашифрования одного блока информации алгоритмом ГОСТ 34.12-2015 (Магма).
+
+    @param skey Контекст секретного ключа.
+    @param in Блок входной информации (открытый текст).
+    @param out Блок выходной информации (шифртекст).                                               */
+/* ----------------------------------------------------------------------------------------------- */
  static void ak_magma_encrypt_with_mask( ak_skey skey, ak_pointer in, ak_pointer out )
 {
   ak_uint32 *kp = (ak_uint32 *) skey->key.data, *mp = (ak_uint32 *) skey->mask.data, p = 0;
@@ -160,7 +169,12 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция расшифрования одного блока информации алгоритмом ГОСТ 34.12-2015 (Магма) */
+/*! \brief Функция расшифрования одного блока информации алгоритмом ГОСТ 34.12-2015 (Магма).
+
+    @param skey Контекст секретного ключа.
+    @param in Блок входной информации (шифртекст).
+    @param out Блок выходной информации (открытый текст).                                               */
+/* ----------------------------------------------------------------------------------------------- */
  static void ak_magma_decrypt_with_mask( ak_skey skey, ak_pointer in, ak_pointer out )
 {
   ak_uint32 *kp = (ak_uint32 *) skey->key.data, *mp = (ak_uint32 *) skey->mask.data, p = 0;
@@ -209,10 +223,9 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция инициализируете контекст ключа блочного алгоритма шифрования Магма.
     После инициализации устанавливаются обработчики (функции класса). Однако само значение
-    ключу не присваивается - поле `bkey->key` остается равным NULL.
+    ключу не присваивается - поле `bkey->key` остается неопределенным.
 
-    \b Внимание. Данная функция предназначена для использования другими функциями и не должна
-    вызываться напрямую.
+    @param bkey Контекст секретного ключа алгоритма блочного шифрования.
 
     @return Функция возвращает код ошибки. В случаее успеха возвращается \ref ak_error_ok.         */
 /* ----------------------------------------------------------------------------------------------- */
@@ -251,6 +264,153 @@
   bkey->decrypt = ak_magma_decrypt_with_mask;
 
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Тестирование производится в соответствии с примерами из ГОСТ Р 34.12-2015 и ГОСТ Р 34.13-2015. */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_bckey_test_magma( void )
+{
+  char *str = NULL;
+  ak_uint8 out[32];
+  struct bckey bkey; /* контекст используемого для тестов ключа */
+  int error = ak_error_ok, audit = ak_log_get_level();
+  ak_bool result = ak_true;
+
+  ak_uint8 gost3412_2015_key[32] = { /* тестовый ключ из ГОСТ Р 34.12-2015, приложение А.2 */
+     0xff, 0xfe, 0xfd, 0xfc, 0xfb, 0xfa, 0xf9, 0xf8, 0xf7, 0xf6, 0xf5, 0xf4, 0xf3, 0xf2, 0xf1, 0xf0,
+     0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
+  };
+
+ /* подлежащий зашифрованию открытый текст из ГОСТ Р 34.12-2015, приложение А.2 */
+  ak_uint8 a[8] = { 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe };
+ /* зашифрованный текст из ГОСТ Р 34.12-2015 */
+  ak_uint8 b[8] = { 0x3d, 0xca, 0xd8, 0xc2, 0xe5, 0x01, 0xe9, 0x4e };
+
+ /* открытый текст из ГОСТ Р 34.13-2015, приложение А.2 */
+  ak_uint64 in_3413_2015_text[4] = {
+                  0x92def06b3c130a59, 0xdb54c704f8189d20, 0x4a98fb2e67a8024c, 0x8912409b17b57e41 };
+ /* зашифрованный в режиме простой замены текст из ГОСТ Р 34.13-2015, приложение А.2 */
+  ak_uint64 out_3413_2015_ecb_text[4] = {
+                  0x2b073f0494f372a0, 0xde70e715d3556e48, 0x11d8d9e9eacfbc1e, 0x7c68260996c67efb };
+
+ /* синхропосылка и зашифрованный в режиме гаммирования текст из ГОСТ Р 34.13-2015, приложение А.2 */
+  ak_uint8 ctr_iv[4] = { 0x78, 0x56, 0x34, 0x12 };
+  ak_uint64 out_3413_2015_ctr_text[4] = {
+                  0x4e98110c97b7b93c, 0x3e250d93d6e85d69, 0x136d868807b2dbef, 0x568eb680ab52a12d };
+
+
+ /* 1. Инициализируем ключ алгоритма Магма */
+  if(( error = ak_bckey_create_magma( &bkey )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong initialization of magma secret key" );
+    return ak_false;
+  }
+
+ /* 2. Присваиваем ключу константное значение */
+  if( ak_bckey_context_set_ptr( &bkey, gost3412_2015_key, 32, ak_false ) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong assigning a predefined value to magma secret key " );
+    return ak_false;
+  }
+
+ /* 3. Тестируем зашифрование/расшифрование одного блока согласно ГОСТ Р34.12-2015 */
+  bkey.encrypt( &bkey.key, a, out );
+  if( !ak_ptr_is_equal( out, b, 8 )) {
+    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                  "the one block encryption test from GOST R 34.12-2015 is wrong");
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, 8, ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( b, 8, ak_true )); free( str );
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                    "the one block encryption test from GOST R 34.12-2015 is Ok" );
+  bkey.decrypt( &bkey.key, b, out );
+  if( !ak_ptr_is_equal( out, a, 8 )) {
+    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                  "the one block decryption test from GOST R 34.12-2015 is wrong");
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, 8, ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( a, 8, ak_true )); free( str );
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                    "the one block decryption test from GOST R 34.12-2015 is Ok" );
+
+ /* 4. Тестируем режим простой замены согласно ГОСТ Р34.13-2015 */
+  if(( error = ak_bckey_context_encrypt_ecb( &bkey, in_3413_2015_text, out, 32 )) != ak_error_ok )
+  {
+    ak_error_message_fmt( error, __func__ , "wrong plain text encryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( out, out_3413_2015_ecb_text, 32 ) != 0 ) {
+    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                   "the ecb mode encryption test from GOST R 34.13-2015 is wrong");
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free(str);
+    ak_log_set_message( str = ak_ptr_to_hexstr( out_3413_2015_ecb_text, 32, ak_true )); free(str);
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                     "the ecb mode encryption test from GOST R 34.13-2015 is Ok" );
+
+  if(( error = ak_bckey_context_decrypt_ecb( &bkey, out_3413_2015_ecb_text, out, 32 )) != ak_error_ok )
+  {
+    ak_error_message_fmt( error, __func__ , "wrong cipher text decryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( out, in_3413_2015_text, 32 ) != 0 ) {
+    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                   "the ecb mode decryption test from GOST R 34.13-2015 is wrong");
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free(str);
+    ak_log_set_message( str = ak_ptr_to_hexstr( in_3413_2015_text, 32, ak_true )); free(str);
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                     "the ecb mode decryption test from GOST R 34.13-2015 is Ok" );
+
+ /* 5. Тестируем режим гаммирования (счетчика) согласно ГОСТ Р34.13-2015 */
+  if( ak_bckey_context_xcrypt( &bkey, in_3413_2015_text, out, 32, ctr_iv, sizeof( ctr_iv )) != ak_error_ok ) {
+    ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong plain text encryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( out, out_3413_2015_ctr_text, 32 )) {
+    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                   "the ctr mode encryption test from GOST R 34.13-2015 is wrong");
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( out_3413_2015_ctr_text, 32, ak_true )); free(str);
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                     "the ctr mode encryption test from GOST R 34.13-2015 is Ok" );
+
+  if( ak_bckey_context_xcrypt( &bkey, out_3413_2015_ctr_text, out, 32, ctr_iv, sizeof( ctr_iv )) != ak_error_ok ) {
+    ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong cipher text decryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( out, in_3413_2015_text, 32 )) {
+    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                   "the ctr mode decryption test from GOST R 34.13-2015 is wrong");
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( in_3413_2015_text, 32, ak_true )); free( str );
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                     "the ctr mode decryption test from GOST R 34.13-2015 is Ok" );
+ /* освобождаем ключ и выходим */
+  exit:
+  if(( error = ak_bckey_destroy( &bkey )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong destroying of magma secret key" );
+    return ak_false;
+  }
+
+ return result;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

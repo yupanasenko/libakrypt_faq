@@ -171,16 +171,26 @@
  #define ak_error_resource_counter            (-27)
 /*! \brief Ошибка, возникающая при использовании ключа, значение которого не определено. */
  #define ak_error_key_value                   (-28)
+/*! \brief Ошибка, возникающая при зашифровании/расшифровании данных, длина которых не кратна длине блока. */
+ #define ak_error_wrong_block_cipher_length   (-29)
+/*! \brief Ошибка, возникающая при неверном значении кода целостности ключа. */
+ #define ak_error_wrong_key_icode             (-30)
+/*! \brief Ошибка, возникающая при недостаточном ресурсе ключа. */
+ #define ak_error_low_key_resource            (-31)
+/*! \brief Ошибка, возникающая при использовании синхропосылки (инициализационного вектора) неверной длины. */
+ #define ak_error_wrong_iv_length             (-32)
+/*! \brief Ошибка, возникающая при неправильном использовании функций зашифрования/расшифрования данных. */
+ #define ak_error_wrong_block_cipher_function (-33)
 /*! \brief Ошибка, возникающая если заданная точка не принадлежит заданной кривой. */
- #define ak_error_curve_point                 (-30)
+ #define ak_error_curve_point                 (-40)
 /*! \brief Ошибка, возникающая когда порядок точки неверен. */
- #define ak_error_curve_point_order           (-31)
+ #define ak_error_curve_point_order           (-41)
 /*! \brief Ошибка, возникающая если дискриминант кривой равен нулю (уравнение не задает кривую). */
- #define ak_error_curve_discriminant          (-32)
+ #define ak_error_curve_discriminant          (-42)
 /*! \brief Ошибка, возникающая когда неверно определены вспомогательные параметры эллиптической кривой. */
- #define ak_error_curve_order_parameters      (-33)
+ #define ak_error_curve_order_parameters      (-43)
 /*! \brief Ошибка, возникающая простой модуль кривой задае неверно. */
- #define ak_error_curve_prime_size            (-34)
+ #define ak_error_curve_prime_size            (-44)
 
 /* ----------------------------------------------------------------------------------------------- */
  #define ak_null_string                  ("(null)")
