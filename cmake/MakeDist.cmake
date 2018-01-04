@@ -27,6 +27,13 @@ if( CMAKE_HOST_UNIX )
      "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/examples/example-${file}.c libakrypt-${FULL_VERSION}/examples\n")
   endforeach()
 
+  # создаем каталог asn1 и копируем файлы с реализацией asn1
+  file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/asn1\n" )
+  foreach( file ${ASN1_HEADERS} ${ASN1_SOURCES} ${ASN1_FILES} )
+    file( APPEND ${MYDFILE}
+     "cp -fL --preserve=all ${file} libakrypt-${FULL_VERSION}/asn1\n")
+  endforeach()
+
   # создаем каталог doc и копируем файлы с документацией
   file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/doc\n" )
   foreach( file ${DOCS} )

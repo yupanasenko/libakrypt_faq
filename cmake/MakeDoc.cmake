@@ -13,7 +13,7 @@ if( CMAKE_HOST_UNIX )
     file( WRITE ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh "#/bin/bash\n" )
     file( APPEND ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh "doxygen Doxyfile\n" )
 
-   # получаем документацию в формате  PDF
+   # получаем документацию в формате PDF
     file( APPEND ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh "cd doc/latex\n" )
     file( APPEND ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh "make\n" )
     file( APPEND ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh

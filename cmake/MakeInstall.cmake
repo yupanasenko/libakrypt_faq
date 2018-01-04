@@ -13,6 +13,7 @@ if( CMAKE_HOST_UNIX )
              ARCHIVE DESTINATION lib
            )
   endif()
+  install( CODE "execute_process( COMMAND strip -s akrypt${LIBAKRYPT_EXT} )" )
   install( TARGETS akrypt${LIBAKRYPT_EXT} RUNTIME DESTINATION bin )
   install( FILES akrypt/akrypt.1 DESTINATION man/man1 )
   install( FILES ${MAIN_HEADER} DESTINATION include )

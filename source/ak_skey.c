@@ -91,7 +91,7 @@
  /* номер ключа генерится случайным образом. изменяется позднее, например,
                                                            при считывания с файлового носителя */
   if(( error = ak_buffer_create_size( &skey->number,
-                           ak_libakrypt_get_option("key_number_length")+1 )) != ak_error_ok ) {
+                           ak_libakrypt_get_option( "key_number_length" ))) != ak_error_ok ) {
     ak_error_message( error, __func__ ,"wrong creation key number buffer" );
     ak_skey_destroy( skey );
     return error;
@@ -179,7 +179,6 @@
   size_t len = 0;
   struct hash ctx;
   ak_uint8 out[32];
-  char *number = NULL;
   int error = ak_error_ok;
   const char *version =  ak_libakrypt_version();
 
@@ -196,15 +195,14 @@
   tm = time( NULL );
   memcpy( out+len, &tm, sizeof(tm) ); /* потом время генерации номера ключа */
   len += sizeof( time_t );
-  if( len < 32 ) skey->generator.random( &skey->generator, out+len, 32 - len );
+  if( len < 32 ) skey->generator.random( &skey->generator, out+len, 32 - len ); /* добавляем мусор */
 
  /* вычисляем номер и очищаем память */
   ak_hash_context_ptr( &ctx, out, 32, out );
-  if(( ak_buffer_set_str( &skey->number, number =
-         ak_ptr_to_hexstr( out, ak_libakrypt_get_option("key_number_length"), ak_false ))) != ak_error_ok )
+  if(( error = ak_buffer_set_ptr( &skey->number,
+                          out, ak_min( 32, skey->number.size ), ak_true )) != ak_error_ok )
     return ak_error_message( ak_error_write_data, __func__ , "wrong assigning key number" );
 
-  if( number ) free( number );
   ak_hash_destroy( &ctx );
  return ak_error_ok;
 }

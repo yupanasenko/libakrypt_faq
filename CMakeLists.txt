@@ -68,6 +68,12 @@ set( SOURCES        source/ak_log.c
                     source/ak_bckey.c
                     source/ak_magma.c )
 
+file( GLOB ASN1_HEADERS ${CMAKE_SOURCE_DIR}/asn1/*.h )
+file( GLOB ASN1_SOURCES ${CMAKE_SOURCE_DIR}/asn1/*.c )
+
+set( ASN1_FILES     ${CMAKE_SOURCE_DIR}/asn1/Makefile.initial
+                    ${CMAKE_SOURCE_DIR}/asn1/KeyContainer.asn1 )
+
 set( DOCS           doc/libakrypt.dox
                     doc/refman_header.in
                     doc/refman_footer.in
@@ -85,8 +91,7 @@ set( OTHERS         CMakeLists.txt
                     Readme.md
                     Changelog.md
                     libakrypt.rc.in
-                    libakrypt.conf
-                    libakrypt-run.sh )
+                    libakrypt.conf )
 
 set( AKRYPT_SOURCES akrypt/akrypt.c
                     akrypt/akrypt_show.c
@@ -122,7 +127,8 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # сборка библиотек - статической и, если нужно, динамической
-include_directories( "./source" )
+include_directories( "source " )
+include_directories( "asn1 " )
 add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
 if( LIBAKRYPT_CONF )
     message("-- Path for libakrypt.conf is ${LIBAKRYPT_CONF}")
@@ -130,13 +136,13 @@ if( LIBAKRYPT_CONF )
 endif()
 
 if( LIBAKRYPT_SHARED_LIB )
-  add_library( akrypt-shared SHARED ${MAIN_HEADER} ${SOURCES} )
+  add_library( akrypt-shared SHARED ${MAIN_HEADER} ${SOURCES} ${ASN1_SOURCES})
   set_target_properties( akrypt-shared PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
   target_link_libraries( akrypt-shared ${LIBAKRYPT_LIBS} )
 endif()
 #
 if( LIBAKRYPT_STATIC_LIB )
-  add_library( akrypt-static STATIC ${MAIN_HEADER} ${SOURCES} )
+  add_library( akrypt-static STATIC ${MAIN_HEADER} ${SOURCES} ${ASN1_SOURCES})
   set_target_properties( akrypt-static PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
 endif()
 
@@ -187,7 +193,8 @@ set( INTERNAL_EXAMPLES_LIST
                    hash-file
                    sign-internal
                    bckey-internal
-                   xcrypt-internal )
+                   xcrypt-internal
+                   bckey-container )
 
 if( CMAKE_HOST_UNIX )
   foreach( programm ${INTERNAL_EXAMPLES_LIST} )

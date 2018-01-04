@@ -224,7 +224,7 @@
 
  /* проверяем входные данные */
   if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                        "using null pointer to secret key context" );
+                                                  "using null pointer to block cipher key context" );
   if( pass == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                                   "using null pointer to password" );
   if( pass_size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
@@ -409,7 +409,7 @@
           *outptr = *inptr ^ yaout[0]; outptr++; inptr++;
           *outptr = *inptr ^ yaout[1]; outptr++; inptr++;
           ((ak_uint64 *)bkey->ivector.data)[0]++; // здесь мы не учитываем знак переноса
-                                                  // потому что объем данных на одном ключе ее должен превышать
+                                                  // потому что объем данных на одном ключе не должен превышать
                                                   // 2^64 блоков (контролируется через ресурс ключа)
       } while( --blocks > 0 );
     }

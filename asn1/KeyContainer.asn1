@@ -1,0 +1,71 @@
+-----------------------------------------------------------------------------------------------
+--  Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru
+-----------------------------------------------------------------------------------------------
+KeyContainer DEFINITIONS ::=
+BEGIN
+
+ -- секретные данные, помещаемые в контейнер
+  KeyValue ::= SEQUENCE {
+     key OCTET STRING,  -- собственно ключевое значение,
+     mask OCTET STRING  -- маска ключа
+  }
+
+ -- зашифрованный ключ
+  EncodedKeyValue ::= OCTET STRING
+
+ -- ресурс ключа блочного алгоритма шифрования (в блоках)
+  CipherKeyResource ::= INTEGER (0 .. 4294967295)
+
+ -- временной интервал валидности ключа асимметричного алгоритма
+  Validity ::= SEQUENCE {
+     notBefore  GeneralizedTime, -- не валиден ранее указанной даты
+     notAfter  GeneralizedTime -- не валиден после указанной даты
+  }
+
+ -- ресурс ключа асимметричного алгоритма
+  AsymmetricKeyResource ::= Validity
+
+ -- ресурс секретного ключа
+  KeyResource ::= SEQUENCE {
+     counter CipherKeyResource OPTIONAL, -- ресурс ключа блочного аллгоритма шифрования
+     time AsymmetricKeyResource OPTIONAL -- ресурс ключа асимметричного алгоритма
+  }
+
+ -- параметры алгоритмов шифрования и имитозащиты ключа
+  KeyProtectParameters ::= SEQUENCE {
+     iterationCount INTEGER (0 .. 65535), -- число итераций алгоритма PBKDF2
+     encryptionSalt OCTET STRING, -- инициализационный вектор для алгоритма PBKDF2
+                                  -- генерации ключа шифрования
+     integritySalt OCTET STRING, -- инициализационный вектор для алгоритма PBKDF2
+                                 -- генерации ключа имитозащиты
+     cipher OBJECT IDENTIFIER, -- блочный шифр
+     encryptionMode OBJECT IDENTIFIER, -- режим шифрования
+     encryptionIV OCTET STRING, -- инициализационный вектор для режима шифрования
+     integrityMode OBJECT IDENTIFIER, -- режим имитозащиты,
+     integrityIV OCTET STRING OPTIONAL -- инициализационный вектор для режима имитозащиты
+  }
+
+ -- секретный ключ
+  SecretKey ::= SEQUENCE {
+     value EncodedKeyValue, -- зашифрованное DER-представление типа KeyValue
+     engine OBJECT IDENTIFIER, -- тип криптографического механизма, для которого предназначен ключ
+     number OCTET STRING, -- номер, по которому производится поиск ключа
+     parameters KeyProtectParameters, -- параметры алгоритмов шифрования и имитозащиты ключа
+     resource KeyResource OPTIONAL, -- ресурс ключа
+     description OCTET STRING OPTIONAL -- человекочитаемое описание ключа (в кодировке UTF8)
+  }
+
+ -- секретный ключ, содержащий дополнительные данные и код целостности
+  SecretKeyData ::= SEQUENCE {
+    data SecretKey, -- собственно секретный ключ и его данные
+    integrityCode OCTET STRING -- код целостности, вычисляется от DER-представления поля data
+                               -- с использованием алгоритма, определенного data.parameters.integrityMode
+  }
+
+ -- ключевой контейнер
+  KeyContainer ::= SEQUENCE {
+     version INTEGER (0..255) DEFAULT 1, -- версия ключевого контейнера
+     keys SEQUENCE OF SecretKeyData -- последовательность ключей и их данных
+  }
+
+END

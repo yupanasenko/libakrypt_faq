@@ -343,7 +343,7 @@
     result = ak_false;
     goto exit;
   }
-  if( !ak_ptr_is_equal( out, out_3413_2015_ecb_text, 32 ) != 0 ) {
+  if( !ak_ptr_is_equal( out, out_3413_2015_ecb_text, 32 )) {
     ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
                                    "the ecb mode encryption test from GOST R 34.13-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free(str);
@@ -360,7 +360,7 @@
     result = ak_false;
     goto exit;
   }
-  if( !ak_ptr_is_equal( out, in_3413_2015_text, 32 ) != 0 ) {
+  if( !ak_ptr_is_equal( out, in_3413_2015_text, 32 )) {
     ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
                                    "the ecb mode decryption test from GOST R 34.13-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free(str);
@@ -379,14 +379,14 @@
   }
   if( !ak_ptr_is_equal( out, out_3413_2015_ctr_text, 32 )) {
     ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                   "the ctr mode encryption test from GOST R 34.13-2015 is wrong");
+                                   "the counter mode encryption test from GOST R 34.13-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( out_3413_2015_ctr_text, 32, ak_true )); free(str);
     result = ak_false;
     goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
-                                     "the ctr mode encryption test from GOST R 34.13-2015 is Ok" );
+                                     "the counter mode encryption test from GOST R 34.13-2015 is Ok" );
 
   if( ak_bckey_context_xcrypt( &bkey, out_3413_2015_ctr_text, out, 32, ctr_iv, sizeof( ctr_iv )) != ak_error_ok ) {
     ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong cipher text decryption" );
@@ -395,14 +395,14 @@
   }
   if( !ak_ptr_is_equal( out, in_3413_2015_text, 32 )) {
     ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                   "the ctr mode decryption test from GOST R 34.13-2015 is wrong");
+                                   "the counter mode decryption test from GOST R 34.13-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( in_3413_2015_text, 32, ak_true )); free( str );
     result = ak_false;
     goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
-                                     "the ctr mode decryption test from GOST R 34.13-2015 is Ok" );
+                                     "the counter mode decryption test from GOST R 34.13-2015 is Ok" );
  /* освобождаем ключ и выходим */
   exit:
   if(( error = ak_bckey_destroy( &bkey )) != ak_error_ok ) {

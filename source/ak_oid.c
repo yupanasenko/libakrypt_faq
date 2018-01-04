@@ -120,12 +120,12 @@
    case kbox_params:     return "kboxes";
    case ecb:             return "ecb mode";
    case ofb:             return "ofb mode";
-   case ofb_gost:        return "ofb gost 28147-89 mode";
+   case ofb_gost:        return "gost 28147-89 mode";
    case cfb:             return "cfb mode";
    case cbc:             return "cbc mode";
    case xts:             return "xts mode";
    case xts_mac:         return "xts mode with authenication";
-   case xcrypt:          return "xor mode";
+   case counter:         return "counter mode";
    case a8:              return "addition mode";
    case sign:            return "sign mode";
    case verify:          return "verify mode";
@@ -472,6 +472,40 @@
 
   if(( error = ak_oids_add_oid( manager, ak_oid_new( block_cipher, algorithm,
                                 "kuznechik", "1.2.643.7.1.1.5.1", NULL, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+/* ----------------------------------------------------------------------------------------------- */
+/* 8. Добавляем режимы работы блочных шифров. Значения OID находятся в
+      дереве библиотеки: 1.2.643.2.52.1.3 - режимы работы блочных шифров.  */
+
+  /* режим простой замены, см. ГОСТ Р 34.13-2015, раздел 5.1 */
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( block_cipher, ecb,
+                                       "ecb", "1.2.643.2.52.1.3.1", NULL, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  /* режим гаммирования, см. ГОСТ Р 34.13-2015, раздел 5.2 */
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( block_cipher, counter,
+                                       "counter", "1.2.643.2.52.1.3.2", NULL, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  /* режим гаммирования с обратной связью по выходу, см. ГОСТ Р 34.13-2015, раздел 5.3 */
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( block_cipher, cfb,
+                                       "cfb", "1.2.643.2.52.1.3.3", NULL, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  /* режим простой замены с зацеплением, см. ГОСТ Р 34.13-2015, раздел 5.4 */
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( block_cipher, cbc,
+                                       "cbc", "1.2.643.2.52.1.3.4", NULL, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  /* режим гаммирования с обратной связью шифртексту, см. ГОСТ Р 34.13-2015, раздел 5.5 */
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( block_cipher, ofb,
+                                       "ofb", "1.2.643.2.52.1.3.5", NULL, NULL )) != ak_error_ok ))
+    return ak_error_message( error, __func__, "incorrect oid creation" );
+
+  /* режим XTS */
+  if(( error = ak_oids_add_oid( manager, ak_oid_new( block_cipher, xts,
+                                       "xts", "1.2.643.2.52.1.3.6", NULL, NULL )) != ak_error_ok ))
     return ak_error_message( error, __func__, "incorrect oid creation" );
 
  return ak_error_ok;
