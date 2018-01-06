@@ -1,13 +1,17 @@
 Changes in version 0.5.7
 -------------------------------------
-  * Restored block cipher Magma and ecb, xcrypt encryption modes
+
+  * Added mechanism for storing secret keys with ASN1 support
+  * Restored block cipher Magma, ecb & counter encryption modes
   * Changed internal structure of libakrypt options
     Now we can read their values from userspace (see libakrypt.h)
 
 
 Changes in version 0.5.6 (29.11.2017)
 -------------------------------------
+
   * Added support for digital signatures (signing & verifying)
+
 
 Changes in version 0.5.5 (15.10.2017)
 -------------------------------------

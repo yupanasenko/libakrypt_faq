@@ -27,7 +27,7 @@ BEGIN
 
  -- ресурс секретного ключа
   KeyResource ::= SEQUENCE {
-     counter CipherKeyResource OPTIONAL, -- ресурс ключа блочного аллгоритма шифрования
+     counter CipherKeyResource OPTIONAL, -- ресурс ключа блочного алгоритма шифрования
      time AsymmetricKeyResource OPTIONAL -- ресурс ключа асимметричного алгоритма
   }
 

@@ -95,9 +95,17 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция для итерационного вычисления хеш-кода от der-представления ключа */
+ static int ak_skey_der_encode_update( const void *buffer, size_t size, void *app_key )
+{
+  return ak_compress_update(( ak_compress )app_key,
+                                       ( const ak_pointer )buffer, size ) != ak_error_ok ? -1 : 0;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Преобразование ключа блочного алгоритма шифрования в ASN1 структуру. */
 /*! Перед преобразованием контекст ключа должен быть инициализирован и содержать
-    в себе ключевое значение. В результате выполнения функции создается структура `SecretKey`,
+    в себе ключевое значение. В результате выполнения функции создается структура `SecretKeyData`,
     за удаление которой отвечает пользователь, вызвавший данную функцию.
 
     @param bkey Контекст ключа блочного алгоритма шифрования, который будет преобразован
@@ -110,7 +118,7 @@
     @return В случае успеха возвращается указатель на созданную структуру. В случае ошибки
     возвращается NULL. Код ошибки модет быть получен с помощью вызова функции ak_error_get_value() */
 /* ----------------------------------------------------------------------------------------------- */
- SecretKeyData_t *ak_bckey_to_asn1_secret_key( ak_bckey bkey,
+ SecretKeyData_t *ak_skey_to_asn1_secret_key( ak_skey skey,
                             const ak_pointer pass, const size_t pass_size, const char *description )
 {
  #define temporary_size (1024)
@@ -119,14 +127,13 @@
  asn_enc_rval_t ec;
  KeyValue_t keyValue;
  struct hmac hmacKey;
- struct random generator;
  int error = ak_error_ok;
  struct bckey encryptionKey; /* ключ шифрования */
  ak_uint8 temporary[temporary_size]; /* массив для хранения EncodedKeyValue */
  SecretKeyData_t *secretKeyData = NULL;
 
  /* проверяем входные данные */
-  if( bkey == NULL ) {
+  if( skey == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__,
                                         "using null pointer to block cipher key context" );
     return NULL;
@@ -139,29 +146,22 @@
     ak_error_message( ak_error_zero_length, __func__ , "using password with zero length" );
     return NULL;
   }
-  if( bkey->key.key.size + bkey->key.mask.size + 6 > temporary_size ) {
+  if( skey->key.size + skey->mask.size + 6 > temporary_size ) {
     ak_error_message( ak_error_wrong_length, __func__ ,
                   "size of internal temporary buffer is small for this block cipher key" );
     return NULL;
   }
 
  /* перемаскируем текущее значение сохраняемого ключа */
-  if( bkey->key.remask == NULL ) {
+  if( skey->remask == NULL ) {
     ak_error_message( ak_error_undefined_function, __func__,
                                    "using not masked bclock cipher key (internal error)" );
     return NULL;
-  } else bkey->key.remask( &bkey->key );
+  } else skey->remask( skey );
 
- /* создаем генератор случайных чисел и вырабатываем случайное значение,
+ /* вырабатываем случайное значение,
   * которое будет использовано для определения всех инициализационных векторов */
-  if(( error = ak_random_create_lcg( &generator )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "wrong creation of random generator context" );
-    return NULL;
-  }
-
-  error = generator.random( &generator, salt, 64 );
-  ak_random_destroy( &generator );
-  if( error != ak_error_ok ) {
+  if(( error = skey->generator.random( &skey->generator, salt, 64 )) != ak_error_ok ) {
     ak_error_message( error, __func__, "wrong generation a temporary salt value" );
     return NULL;
   }
@@ -172,8 +172,8 @@
                             "wrong initialization of temporary block cipher key context" );
     return NULL;
   }
-  if(( error =
-    ak_bckey_context_set_password( &encryptionKey, pass, pass_size, salt, 16 )) != ak_error_ok ) {
+  if(( error = ak_bckey_context_set_password( &encryptionKey, pass, pass_size,
+                                                              salt, 16 )) != ak_error_ok ) {
     ak_error_message( error, __func__, "wrong generation a temporary block cipher value" );
     ak_bckey_destroy( &encryptionKey );
     return NULL;
@@ -181,13 +181,13 @@
 
  /* создаем вектор, содержащий зашифрованное значение ключа и маски, и формируем указатели */
   memset( &keyValue, 0, sizeof( struct KeyValue ));
-  keyValue.key.buf = bkey->key.key.data; keyValue.key.size = bkey->key.key.size;
-  keyValue.mask.buf = bkey->key.mask.data; keyValue.mask.size = bkey->key.mask.size;
+  keyValue.key.buf = skey->key.data; keyValue.key.size = skey->key.size;
+  keyValue.mask.buf = skey->mask.data; keyValue.mask.size = skey->mask.size;
 
   /* кодируем в DER-представление и отсоединяем указатели на ключевые данные */
   memset( temporary, 0, temporary_size );
   ec = der_encode_to_buffer(  &asn_DEF_KeyValue, &keyValue, temporary, temporary_size );
-  bkey->key.remask( &bkey->key );
+  skey->remask( skey );
   memset( &keyValue, 0, sizeof( struct KeyValue ));
 
   if( ec.encoded < 0 ) {
@@ -224,7 +224,7 @@
   }
 
  /* устанавливаем engine */
-  if(( error = ak_oid_to_asn1_object_identifier( bkey->key.oid,
+  if(( error = ak_oid_to_asn1_object_identifier( skey->oid,
                    (OBJECT_IDENTIFIER_t *) &secretKeyData->data.engine )) != ak_error_ok ) {
     ak_error_message( error, __func__,
                                "incorrect secret key engine assigning to asn1 structure" );
@@ -233,8 +233,8 @@
   }
 
  /* устанавливаем номер ключа */
-  if(( error = ak_ptr_to_asn1_octet_string( bkey->key.number.data,
-                    bkey->key.number.size, &secretKeyData->data.number )) != ak_error_ok ) {
+  if(( error = ak_ptr_to_asn1_octet_string( skey->number.data,
+                    skey->number.size, &secretKeyData->data.number )) != ak_error_ok ) {
     ak_error_message( error, __func__,
                              "incorrect secret key's number assigning to asn1 structure" );
     SEQUENCE_free( &asn_DEF_SecretKeyData, secretKeyData, 0 );
@@ -244,13 +244,16 @@
  /* устанавливаем ресурс ключа */
   secretKeyData->data.resource = malloc( sizeof( struct KeyResource ));
   memset( secretKeyData->data.resource, 0 , sizeof( struct KeyResource ));
+  /* TODO: здесь надо проверить, что ресурс содержит либо численное значение,
+   * либо не временной интервал - в зависимости от типа ключа */
   secretKeyData->data.resource->counter = malloc( sizeof( unsigned long ));
-  *(secretKeyData->data.resource->counter) = bkey->key.resource.counter;
+  *(secretKeyData->data.resource->counter) = skey->resource.counter;
 
- /* устанавливаем ресурс ключа */
+ /* устанавливаем описание ключа */
   if( description != NULL ) {
     secretKeyData->data.description = malloc( sizeof( struct OCTET_STRING ));
     memset( secretKeyData->data.description, 0, sizeof( struct OCTET_STRING ));
+    /* внимание, оно может быть непредусмотрительно длинным! */
     if(( error = ak_ptr_to_asn1_octet_string( (void *)description,
                 strlen( description ), secretKeyData->data.description )) != ak_error_ok ) {
       ak_error_message( error, __func__,
@@ -262,7 +265,8 @@
 
  /* устанавливаем параметры алгоритма защиты */
   /* 1. число итераций алгоритма PBKDF2 */
-  secretKeyData->data.parameters.iterationCount = ak_libakrypt_get_option( "pbkdf2_iteration_count" );
+  secretKeyData->data.parameters.iterationCount =
+                                       ak_libakrypt_get_option( "pbkdf2_iteration_count" );
 
   /* 2. инициализационный вектор для PBKDF2 (ключ шифрования) */
   if(( error = ak_ptr_to_asn1_octet_string( salt, 16,
@@ -321,21 +325,10 @@
     return NULL;
   }
 
-  /* 8. инициализационный вектор для режима шифрования */
+  /* 8. инициализационный вектор для режима имитозащиты */
 
- /* на-последок, вычисляем имитовставку */
-  /* 1. вычисляем вектор для контроля целостности */
-  memset( temporary, 0, temporary_size );
-  ec = der_encode_to_buffer(  &asn_DEF_SecretKey, &secretKeyData->data,
-                                                               temporary, temporary_size );
-  if( ec.encoded < 0 ) {
-    ak_error_message( ak_error_wrong_asn1_encode, __func__,
-                                            "incorect SecretKey's ASN1 structure encoding");
-    SEQUENCE_free( &asn_DEF_SecretKeyData, secretKeyData, 0 );
-    return NULL;
-  }
-
-  /* 2. формируем ключ имитозащиты */
+ /* вычисляем имитовставку */
+  /* 1. формируем ключ имитозащиты */
   if(( error = ak_hmac_create_streebog256( &hmacKey )) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect creation of integrity key" );
     SEQUENCE_free( &asn_DEF_SecretKeyData, secretKeyData, 0 );
@@ -350,16 +343,46 @@
     return NULL;
   }
 
-  /* 3. вычисляем имитовставку */
-  ak_hmac_context_ptr( &hmacKey, temporary, ec.encoded, temporary );
-  error = ak_error_get_value( );
-  ak_hmac_destroy( &hmacKey );
+//  /* 2. вычисляем вектор для контроля целостности */
+//  memset( temporary, 0, temporary_size );
+//  ec = der_encode_to_buffer(  &asn_DEF_SecretKey, &secretKeyData->data,
+//                                                               temporary, temporary_size );
+//  if( ec.encoded < 0 ) {
+//    ak_error_message( ak_error_wrong_asn1_encode, __func__,
+//                                       "incorect SecretKeyData's ASN1 structure encoding");
+//    SEQUENCE_free( &asn_DEF_SecretKeyData, secretKeyData, 0 );
+//    return NULL;
+//  }
 
-  if( error != ak_error_ok ) {
-    ak_error_message( error, __func__, "wrong generation of integrity code" );
-    SEQUENCE_free( &asn_DEF_SecretKeyData, secretKeyData, 0 );
-    return NULL;
-   }
+//  /* 3. вычисляем имитовставку */
+
+//  char *str = NULL;
+//  printf("t %s\n", str = ak_ptr_to_hexstr( temporary, ec.encoded, ak_false )); free( str );
+
+//  ak_hmac_context_ptr( &hmacKey, temporary, ec.encoded, temporary );
+//  error = ak_error_get_value( );
+// // ak_hmac_destroy( &hmacKey );
+
+//  if( error != ak_error_ok ) {
+//    ak_error_message( error, __func__, "wrong generation of integrity code" );
+//    SEQUENCE_free( &asn_DEF_SecretKeyData, secretKeyData, 0 );
+//    return NULL;
+//   }
+
+//  printf("t %s\n", str = ak_ptr_to_hexstr( temporary, 32, ak_false )); free( str );
+
+//  ak_uint8 result[32];
+//  memset( result, 0, 32 );
+
+  struct compress ctx;
+  ak_compress_create_hmac( &ctx, &hmacKey );
+  ak_compress_clean( &ctx );
+  ec = der_encode( &asn_DEF_SecretKey, &secretKeyData->data, ak_skey_der_encode_update, &ctx );
+  ak_compress_finalize( &ctx, NULL, 0, temporary );
+  ak_compress_destroy( &ctx );
+
+//  printf("r %s\n", str = ak_ptr_to_hexstr( result, 32, ak_false )); free( str );
+
 
   /* 4. присваиваем значение */
   if(( error = ak_ptr_to_asn1_octet_string( temporary, 32,
@@ -368,6 +391,17 @@
                               "incorrect assignment of integrity code to asn1 structure" );
     SEQUENCE_free( &asn_DEF_SecretKeyData, secretKeyData, 0 );
     return NULL;
+  }
+
+ /* на-последок, выполняем проверку созданной структуры */
+  if( asn_check_constraints( &asn_DEF_SecretKeyData, secretKeyData, NULL, NULL ) < 0 ) {
+    ak_error_message( ak_error_wrong_asn1_encode, __func__,
+                                              "unsuccessful checking the asn1 structure" );
+    SEQUENCE_free( &asn_DEF_SecretKeyData, secretKeyData, 0 );
+    /* так тоже можно освобождать память - более универсальный способ из документации
+      asn_DEF_SecretKeyData.free_struct( &asn_DEF_SecretKeyData, secretKeyData, 0); */
+    return NULL;
+
   }
 
  return secretKeyData;
@@ -401,7 +435,7 @@
   printf("(pass %s, len: %ld)\n\n", password, strlen( password ));
 
   SecretKeyData_t *secretKeyData =
-    ak_bckey_to_asn1_secret_key( bkey, password, strlen( password ), "This is my first key" );
+    ak_skey_to_asn1_secret_key( &bkey->key, password, strlen( password ), "This is my first key" );
 
  //  asn_fprint( stdout, &asn_DEF_SecretKeyData, secretKeyData );
 
@@ -415,9 +449,15 @@
   asn_set_add( &keyContainer->keys.list, secretKeyData );
 
   secretKeyData =
-    ak_bckey_to_asn1_secret_key( bkey, password, strlen( password ), "This is my second key" );
-  asn_set_add( &keyContainer->keys.list, secretKeyData );
+    ak_skey_to_asn1_secret_key( &bkey->key, password, strlen( password ), "This is my second key jhdgl\
+ehg lkhgq sv qwlhgflqwkhgl kwhgf lkhwgef    l   whegf     l    whgf lk wdlfjkwerf wf e werg ewrgwerge\
+qwi8763284716234786129738461928364519286354129364512795419275419723459127451927451927354912745912745921754291374\
+qwyertquewtrquiwtriquwtrqiwugrkjdhbkjqhwqwefqjwvfqjwvflqjwvfljqwhvflqjwhfvqljwhfvlqjwfvlqjwfvqlwjhfvlqwjfvlqjwhfv\
+qkhfdkqwfdkqwejqkwhefqwefqwefqwef.mqwef.,mqwf.,mqwef.,mqwf.,mwqf.,wmf.,wmf.,wfm.,wqefm.q,wefm.q,wefm.q,wefm.qw,efm.q,\
+qwhehfqlwhfqwfmnqwmfnqw fqw feqwef,.n   wqefljkqwef,mbn,qwmefnq,m.wfn.qwnf.qwmfn.qwmfn.qmwnf.qmwfn.qwmfn.qwmfn.qwmfn\
+q,fnq,wfmbq,wfbq,wfmbq,wfb,qwfb,qwnfbq,wnfbqw,nfbwq,nfb,qwnefbqw,nefb,qwnefb,qnwfb,qwnfb,wqnfb,nwfb,qwnbf,nwqfb,qwnfb" );
 
+  asn_set_add( &keyContainer->keys.list, secretKeyData );
   asn_fprint( stdout, &asn_DEF_KeyContainer, keyContainer );
 
   asn_enc_rval_t ec;
@@ -427,18 +467,32 @@
   fclose(fp);
 
   SEQUENCE_free( &asn_DEF_KeyContainer, keyContainer, 0 );
+  memset( buffer, 0, 1024 );
 
 
-//  SEQUENCE_free( &asn_DEF_SecretKeyData, secretKeyData, 0 );
+/* теперь создаем файл с защищенным ключом */
+  fp = fopen( "twokeycontainer.key", "rb" );
+  size_t len = fread( buffer, 1, 1024, fp );
+  printf("\n\n loaded len: %ld\n", len );
+  fclose(fp);
 
-// /* теперь создаем файл с защищенным ключом */
-////  printf("key storing: %d\n",
-////   ak_bckey_context_to_keyfile( bkey, password, strlen( password ), "key.file" ));
+  keyContainer = malloc ( sizeof( struct KeyContainer ));
+  memset( keyContainer, 0, sizeof( struct KeyContainer ));
+
+  asn_dec_rval_t ret = ber_decode( 0, &asn_DEF_KeyContainer, (void **)&keyContainer, buffer, len );
+  if( ret.consumed != len || ret.code != RC_OK ) printf("decoding error\n");
+
+  asn_fprint( stdout, &asn_DEF_KeyContainer, keyContainer );
+  printf("count of keys: %d\n", keyContainer->keys.list.count );
+
+  SEQUENCE_free( &asn_DEF_KeyContainer, keyContainer, 0 );
+  memset( buffer, 0, 1024 );
+  //free( keyContainer );
 
 
 /* выводим ключ сохраненный */
-  printf("\nkey after transformation:\n");
-  print_bckey( bkey );
+//  printf("\nkey after transformation:\n");
+//  print_bckey( bkey );
 
 
 /* освобождаем пямять и завершаем работу */

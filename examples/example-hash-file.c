@@ -158,6 +158,7 @@
    printf("hash: %s (using small random jumping)\n", str = ak_ptr_to_hexstr( out, 32, ak_false ));
    free( str );
 
+   memset( out, 0, 32 );
    ak_compress_finalize( &comp2, buffer, tail, out );
    ak_compress_destroy( &comp2 );
    printf("hmac: %s (using small random jumping, key resource: %lld)\n\n",
