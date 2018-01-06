@@ -129,17 +129,17 @@
     return ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
 
  /* инициализируем контекст функции хеширования */
-  if( strncmp( "streebog256", oid->name.data, 11 ) == 0 ) {
+  if( strncmp( "streebog256", oid->name, 11 ) == 0 ) {
     if(( error = ak_hash_create_streebog256( ctx )) != ak_error_ok )
       return ak_error_message( error, __func__, "invalid creation of hash function context");
     result = ak_true;
   }
-  if( strncmp( "streebog512", oid->name.data, 11 ) == 0 ) {
+  if( strncmp( "streebog512", oid->name, 11 ) == 0 ) {
     if(( error = ak_hash_create_streebog512( ctx )) != ak_error_ok )
       return ak_error_message( error, __func__, "invalid creation of hash function context");
     result = ak_true;
   }
-  if( strncmp( "gosthash94", oid->name.data, 10 ) == 0 ) {
+  if( strncmp( "gosthash94", oid->name, 10 ) == 0 ) {
     if(( error = ak_hash_create_gosthash94( ctx,
                  ak_oid_find_by_name( "id-gosthash94-rfc4357-paramsetA" ))) != ak_error_ok )
       return ak_error_message( error, __func__, "invalid creation of hash function context");

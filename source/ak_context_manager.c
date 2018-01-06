@@ -554,7 +554,7 @@
     return ak_null_string;
   }
 
- return ak_engine_get_str( libakrypt_manager->array[idx]->engine );
+ return ak_libakrypt_get_engine_str( libakrypt_manager->array[idx]->engine );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -539,19 +539,19 @@
                           "using a null pointer to digital signature secret key context" );
 
  /* устанавливаем OID алгоритма */
-  if( strncmp( "sign256", sctx->key.oid->name.data, 7 ) == 0 ) {
+  if( strncmp( "sign256", sctx->key.oid->name, 7 ) == 0 ) {
     if(( pctx->oid =
         ak_handle_get_context( ak_oid_find_by_name( "verify256" ), oid_engine )) == NULL )
       ak_error_message( ak_error_get_value(), __func__ ,
                                              "incorrect initialization of algorithm OID" );
   }
-  if( strncmp( "sign512", sctx->key.oid->name.data, 7 ) == 0 ) {
+  if( strncmp( "sign512", sctx->key.oid->name, 7 ) == 0 ) {
     if(( pctx->oid =
         ak_handle_get_context( ak_oid_find_by_name( "verify512" ), oid_engine )) == NULL )
       ak_error_message( ak_error_get_value(), __func__ ,
                                              "incorrect initialization of algorithm OID" );
   }
-  if( strncmp( "sign256-gosthash94", sctx->key.oid->name.data, 18 ) == 0 ) {
+  if( strncmp( "sign256-gosthash94", sctx->key.oid->name, 18 ) == 0 ) {
     if(( pctx->oid =
         ak_handle_get_context( ak_oid_find_by_name( "verify256-gosthash94" ), oid_engine )) == NULL )
       ak_error_message( ak_error_get_value(), __func__ ,

@@ -77,7 +77,7 @@
 /*! \brief Функция возвращает общее количество опций библиотеки.
     \return Общее количество опций библиотеки.                                                     */
 /* ----------------------------------------------------------------------------------------------- */
- size_t ak_libakrypt_options_count( void )
+ const size_t ak_libakrypt_options_count( void )
 {
   return ( sizeof( options )/( sizeof( ak_libakrypt_option ))-1 );
 }
@@ -625,12 +625,6 @@
  /* инициализируем структуру управления контекстами */
    if(( error = ak_libakrypt_create_context_manager()) != ak_error_ok ) {
      ak_error_message( error, __func__, "initialization of context manager is wrong" );
-     return ak_false;
-   }
-
- /* инициализируем механизм обработки идентификаторов (OID) библиотеки */
-   if(( error = ak_oids_create()) != ak_error_ok ) {
-     ak_error_message( error, __func__ , "OID's support not started" );
      return ak_false;
    }
 

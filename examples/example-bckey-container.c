@@ -12,8 +12,7 @@
 {
   char *str = NULL;
 
-  printf("key ---> %s (%s)\n",
-                 ak_buffer_get_str( &bkey->key.oid->name ), ak_buffer_get_str(& bkey->key.oid->id ));
+  printf("key ---> %s (%s)\n", bkey->key.oid->name, bkey->key.oid->id );
   printf("  number: %s\n", str = ak_buffer_to_hexstr( &bkey->key.number )); free( str );
   printf("   flags: %016llx\n", bkey->key.flags );
   printf(" counter: %016llx (%llu)\n", bkey->key.resource.counter, bkey->key.resource.counter );
@@ -56,7 +55,7 @@
                                                                       "using null pointer to OID");
   if( oidt == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using null pointer to OBJECT_IDENTIFIER_t");
-  if(( cnt = OBJECT_IDENTIFIER_parse_arcs( oid->id.data, -1, arcs, 24, NULL )) < 0 )
+  if(( cnt = OBJECT_IDENTIFIER_parse_arcs( oid->id, -1, arcs, 24, NULL )) < 0 )
     return ak_error_message( ak_error_oid_id, __func__,
                              "incorrect transformation of OID's constant value to array of longs");
   if(( cnt = OBJECT_IDENTIFIER_set_arcs( oidt, arcs, sizeof( arcs[0] ), cnt )) < 0 )

@@ -134,7 +134,7 @@
                }
                /* в заключение - поиск по типу криптографического механизма */
                ak_error_set_value( ak_error_ok );
-               engine = ak_engine_str( value );
+               engine = ak_libakrypt_get_engine( value );
                if( ak_error_get_value() == ak_error_ok ) {
                  handle = ak_oid_find_by_engine( engine );
                  while( handle != ak_error_wrong_handle ) {
@@ -149,8 +149,8 @@
                break;
 
      case do_engines:
-               for( i = 0; i < ak_engine_count(); i++ )
-                  printf("%s\n", ak_engine_get_str( i ));
+               for( i = 0; i < ak_libakrypt_engines_count(); i++ )
+                  printf("%s\n", ak_libakrypt_get_engine_str( i ));
                break;
 
      case do_options:

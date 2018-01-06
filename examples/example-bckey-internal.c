@@ -95,8 +95,7 @@
 {
   char *str = NULL;
 
-  printf("key ---> %s (%s)\n",
-                 ak_buffer_get_str( &bkey->key.oid->name ), ak_buffer_get_str(& bkey->key.oid->id ));
+  printf("key ---> %s (%s)\n", bkey->key.oid->name, bkey->key.oid->id );
   printf("  number: %s\n", str = ak_buffer_to_hexstr( &bkey->key.number )); free( str );
   printf("   flags: %016llx\n", bkey->key.flags );
   printf(" counter: %016llx (%llu)\n", bkey->key.resource.counter, bkey->key.resource.counter );

@@ -272,11 +272,7 @@
    /*! \brief режим гаммирования поточного шифра (сложение по модулю 2) */
      counter,
    /*! \brief гаммирование по модулю \f$ 2^8 \f$ поточного шифра */
-     a8,
-   /*! \brief режим выработки электронной подписи */
-     sign,
-   /*! \brief режим проверки электронной подписи */
-     verify
+     a8
 } ak_oid_mode;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -416,6 +412,9 @@
  dll_export ak_buffer ak_icode_finalize( ak_handle, const ak_pointer , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Получение количества доступных OID библиотеки. */
+ dll_export const size_t ak_libakrypt_oids_count( void );
+
 /*! \brief Поиск OID по типу криптографического механизма. */
  dll_export ak_handle ak_oid_find_by_engine( ak_oid_engine );
 /*! \brief Продолжение поиска OID по типу криптографического механизма. */
@@ -487,22 +486,21 @@
  dll_export ak_bool ak_ptr_is_equal( const ak_pointer, const ak_pointer , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Получение константного символьного описания типа криптографического механизма. */
- dll_export const char *ak_engine_get_str( ak_oid_engine );
-/*! \brief Получение точного количества типов криптографических механизмов. */
- dll_export const size_t ak_engine_count( void );
-/*! \brief Получение типа криптографического механизма по его символьному описанию. */
- dll_export ak_oid_engine ak_engine_str( const char * );
-/*! \brief Получения символьного описания режима применения криптографического механизма. */
- dll_export const char *ak_mode_get_str( ak_oid_mode );
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Получение общего количества опций библиотеки */
- dll_export size_t ak_libakrypt_options_count( void );
+ dll_export const size_t ak_libakrypt_options_count( void );
 /*! \brief Получение имени опции по ее номеру. */
  dll_export const char *ak_libakrypt_get_option_name( const size_t index );
 /*! \brief Получение значения опции по ее номеру. */
  dll_export int ak_libakrypt_get_option_value( const size_t index );
+
+/*! \brief Получение точного количества типов криптографических механизмов. */
+ dll_export const size_t ak_libakrypt_engines_count( void );
+/*! \brief Получение константного символьного описания типа криптографического механизма. */
+ dll_export const char *ak_libakrypt_get_engine_str( ak_oid_engine );
+/*! \brief Получение типа криптографического механизма по его символьному описанию. */
+ dll_export ak_oid_engine ak_libakrypt_get_engine( const char * );
+/*! \brief Получения символьного описания режима применения криптографического механизма. */
+ dll_export const char *ak_libakrypt_get_mode_str( ak_oid_mode );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Чтение пароля из консоли. */

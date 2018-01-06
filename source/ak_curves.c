@@ -255,13 +255,13 @@
         }
         ak_wcurve_to_log( wc );
         ak_error_message_fmt( reason, __func__ , "curve %s (OID: %s) has wrong %s",
-                                                             oid->name.data, oid->id.data, p );
+                                                             oid->name, oid->id, p );
         result = ak_false;
         goto lab_exit;
       } else
           if( audit > ak_log_standard ) {
             ak_error_message_fmt( ak_error_ok, __func__ , "curve %s (OID: %s) is Ok",
-                                                                oid->name.data, oid->id.data );
+                                                                oid->name, oid->id );
           }
     }
     handle = ak_oid_findnext_by_engine( handle, identifier );
