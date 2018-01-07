@@ -57,12 +57,13 @@
     ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to context" );
     return NULL;
   }
+ /* для добавления ссылок на константы, нам пришлось убрать эту проверку
   if( func == NULL ) {
     ak_error_message( ak_error_undefined_function, __func__,
                                          "using a null pointer to context free function" );
     return NULL;
   }
-
+ */
  /* создаем контекст */
   if(( node = malloc( sizeof( struct context_node ))) == NULL ) {
     ak_error_message( ak_error_out_of_memory, __func__,

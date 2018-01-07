@@ -50,12 +50,12 @@
   /* 2. идентификаторы алгоритмов бесключевого хеширования,
         значения OID взяты из перечней КриптоПро и ТК26 (http://tk26.ru/methods/OID_TK_26/index.php)
         в дереве библиотеки: 1.2.643.2.52.1.2 - функции бесключевого хеширования */
-   { hash_function, algorithm, "streebog256", "1.2.643.7.1.1.2.2", NULL,
-                                                     (ak_function_void *) ak_hash_new_streebog256 },
-   { hash_function, algorithm, "streebog512", "1.2.643.7.1.1.2.3", NULL,
-                                                     (ak_function_void *) ak_hash_new_streebog512 },
-   { hash_function, algorithm, "streebog512", "1.2.643.2.2.9", NULL,
-                                                  (ak_function_void *) ak_hash_new_gosthash94_csp },
+   { hash_function, algorithm, "streebog256", "1.2.643.7.1.1.2.2", NULL, NULL },
+                                                     //(ak_function_void *) ak_hash_new_streebog256 },
+   { hash_function, algorithm, "streebog512", "1.2.643.7.1.1.2.3", NULL, NULL },
+                                                     // (ak_function_void *) ak_hash_new_streebog512 },
+   { hash_function, algorithm, "streebog512", "1.2.643.2.2.9", NULL, NULL },
+                                                  // (ak_function_void *) ak_hash_new_gosthash94_csp },
 
   /* 3. идентификаторы параметров алгоритма бесключевого хеширования ГОСТ Р 34.11-94.
         в дереве библиотеки: 1.2.643.2.52.1.3 - параметры функций бесключевого хеширования */
@@ -69,12 +69,12 @@
   /* 4. идентификаторы алгоритмов HMAC согласно Р 50.1.113-2016
         в дереве библиотеки: 1.2.643.2.52.1.4 - функции ключевого хеширования (имитозащиты)
         в дереве библиотеки: 1.2.643.2.52.1.5 - параметры функций ключевого хеширования (имитозащиты) */
-   { hmac_function, algorithm, "hmac-streebog256", "1.2.643.7.1.1.4.1", NULL,
-                                                     (ak_function_void *) ak_hmac_new_streebog256 },
-   { hmac_function, algorithm, "hmac-streebog512", "1.2.643.7.1.1.4.2", NULL,
-                                                     (ak_function_void *) ak_hmac_new_streebog512 },
-   { hmac_function, algorithm, "hmac-gosthash94", "1.2.643.2.52.1.4.1", NULL,
-                                                  (ak_function_void *) ak_hmac_new_gosthash94_csp },
+   { hmac_function, algorithm, "hmac-streebog256", "1.2.643.7.1.1.4.1", NULL, NULL },
+                                                     // (ak_function_void *) ak_hmac_new_streebog256 },
+   { hmac_function, algorithm, "hmac-streebog512", "1.2.643.7.1.1.4.2", NULL, NULL},
+                                                     // (ak_function_void *) ak_hmac_new_streebog512 },
+   { hmac_function, algorithm, "hmac-gosthash94", "1.2.643.2.52.1.4.1", NULL, NULL },
+                                                  // (ak_function_void *) ak_hmac_new_gosthash94_csp },
 
   /* 6. идентификаторы алгоритмов блочного шифрования
         в дереве библиотеки: 1.2.643.2.52.1.6 - алгоритмы блочного шифрования
@@ -158,48 +158,71 @@
 /* ----------------------------------------------------------------------------------------------- */
  const char *ak_oid_get_name( ak_handle handle )
 {
-
- return NULL;
+  ak_oid oid = ak_handle_get_context( handle, oid_engine );
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong handle" );
+    return ak_null_string;
+  }
+ return oid->name;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
  const char *ak_oid_get_id( ak_handle handle )
 {
-
- return NULL;
+  ak_oid oid = ak_handle_get_context( handle, oid_engine );
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong handle" );
+    return ak_null_string;
+  }
+ return oid->id;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
  const char *ak_oid_get_engine_str( ak_handle handle )
 {
-
- return NULL;
+  ak_oid oid = ak_handle_get_context( handle, oid_engine );
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong handle" );
+    return ak_null_string;
+  }
+ return ak_libakrypt_get_engine_str( oid->engine );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
  const ak_oid_engine ak_oid_get_engine( ak_handle handle )
 {
-
- return undefined_engine;
+  ak_oid oid = ak_handle_get_context( handle, oid_engine );
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong handle" );
+    return undefined_engine;
+  }
+ return oid->engine;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
  const char *ak_oid_get_mode_str( ak_handle handle )
 {
-
- return NULL;
+  ak_oid oid = ak_handle_get_context( handle, oid_engine );
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong handle" );
+    return ak_null_string;
+  }
+ return ak_libakrypt_get_mode_str( oid->mode );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
  const ak_oid_mode ak_oid_get_mode( ak_handle handle )
 {
-
- return undefined_mode;
+  ak_oid oid = ak_handle_get_context( handle, oid_engine );
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong handle" );
+    return undefined_mode;
+  }
+ return oid->mode;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция ищет в структуре управления контекстами первый OID с заданным значением engine и
-    возвращает его дескриптор.
+/*! Функция ищет первый OID с заданным значением engine и возвращает его дескриптор.
     Если такое значение не найдено, возвращается значение \ref ak_error_wrong_handle.
     Если значение engine равно \ref undefined_engine, то возвращается
     первый OID в списке, следовательно, значение \ref undefined_engine может использоваться
@@ -212,7 +235,23 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_oid_find_by_engine( ak_oid_engine engine )
 {
+  size_t idx = 0;
   ak_handle handle = ak_error_wrong_handle;
+
+  if( engine != undefined_engine ) {
+    /* переборный цикл с первого элемента массива */
+    do{
+      if( libakrypt_oids[idx].engine == engine ) break; /* случай совпадения engine */
+    } while( ++idx < ak_libakrypt_oids_count( ));
+    if( idx == ak_libakrypt_oids_count( )) return handle;
+  }
+
+ /* создаем дескриптор */
+  if(( handle = ak_context_manager_add_node( ak_libakrypt_get_context_manager(),
+                         &libakrypt_oids[idx], oid_engine, "", NULL )) == ak_error_wrong_handle ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong creation of context manager node" );
+    return ak_error_wrong_handle;
+  }
 
  return handle;
 }
@@ -242,9 +281,42 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_oid_findnext_by_engine( ak_handle handle, ak_oid_engine engine )
 {
-  ak_handle retandle = ak_error_wrong_handle;
+  size_t idx = 0;
+  ak_oid oid = NULL;
+  int error = ak_error_ok;
+  ak_context_manager manager = ak_libakrypt_get_context_manager();
 
- return retandle;
+ /* для того чтобы не создавать новый дескриптор, приходится эмулировать
+    работу функции ak_handle_get_context() */
+  if( manager == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "null pointer to internal context manager");
+    return ak_error_wrong_handle;
+  }
+  if(( error = ak_context_manager_handle_check( manager, handle, &idx ))!= ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong handle" );
+    return ak_error_wrong_handle;
+  }
+  if( manager->array[idx]->engine != oid_engine ) {
+    ak_error_message( ak_error_oid_engine, __func__, "using wrong engine for given handle" );
+    return ak_error_wrong_handle;
+  }
+
+ /* получаем рабочий указатель на элемент массива OID */
+  if(( oid = (ak_oid) manager->array[idx]->ctx ) == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__,
+                                           "using null pointer in handle to internal structure" );
+    return ak_error_wrong_handle;
+  }
+
+ /* сдвигаемся по массиву вперед */
+  while( (++oid)->engine != undefined_engine ) {
+   /* в случае успешного поиска устанавливаем новое значение контекста OID */
+    if( engine == undefined_engine ) { manager->array[idx]->ctx = oid; return handle; }
+    if( oid->engine == engine ) { manager->array[idx]->ctx = oid; return handle; }
+  }
+  if(( error = ak_handle_delete( handle )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect handle destroying");
+ return ak_error_wrong_handle;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -261,18 +333,6 @@
   ak_handle handle = ak_error_wrong_handle;
 
  return handle;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*                                 функции для типа ak_indexed_oid                                 */
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param io указатель на созданный ранее при помощи функции malloc() контекст индексированного OID.
-    @return Функция всегда возвращает NULL. */
-/* ----------------------------------------------------------------------------------------------- */
- ak_pointer ak_indexed_oid_delete( ak_indexed_oid io )
-{
- if( io != NULL ) free( io );
- return NULL;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
