@@ -127,8 +127,8 @@
    if( ak_libakrypt_create( audit ) != ak_true ) return ak_libakrypt_destroy();
 
  /* проверяем заданный пользователем алгоритм */
-   if(( ohandle = ak_oid_find_by_name( algorithm_ni )) == ak_error_wrong_handle ) {
-      if(( ohandle = ak_oid_find_by_id( algorithm_ni )) == ak_error_wrong_handle ) {
+   if(( ohandle = ak_libakrypt_find_oid_by_name( algorithm_ni )) == ak_error_wrong_handle ) {
+      if(( ohandle = ak_libakrypt_find_oid_by_id( algorithm_ni )) == ak_error_wrong_handle ) {
         printf("string \"%s\" is not valid name or identifier of icode function\n", algorithm_ni );
         goto lab_exit;
       }

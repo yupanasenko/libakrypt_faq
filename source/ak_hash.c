@@ -99,10 +99,10 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! В случае инициализации контекста алгоритма ГОСТ Р 34.11-94 (в настоящее врем я выведен из
+/*! В случае инициализации контекста алгоритма ГОСТ Р 34.11-94 (в настоящее время выведен из
     действия) используются фиксированные таблицы замен, определяемые константой
-    \ref id-gosthash94-rfc4357-paramsetA. Для создания контекста с другими таблиуами замен
-    нужно пользоваться функцией ak_hash_create_gosthash94().
+    \ref id-gosthash94-rfc4357-paramsetA. Для создания контекста функции хеширования ГОСТ Р 34.11-94
+    с другими таблицами замен нужно пользоваться функцией ak_hash_create_gosthash94().
 
     @param ctx указатель на структуру struct hash
     @param oid OID алгоритма бесключевого хешированияю.
@@ -129,17 +129,17 @@
     return ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
 
  /* инициализируем контекст функции хеширования */
-  if( strncmp( "streebog256", oid->name, 11 ) == 0 ) {
+  if( strncmp( "streebog256", oid->name, strlen( oid->name )) == 0 ) {
     if(( error = ak_hash_create_streebog256( ctx )) != ak_error_ok )
       return ak_error_message( error, __func__, "invalid creation of hash function context");
     result = ak_true;
   }
-  if( strncmp( "streebog512", oid->name, 11 ) == 0 ) {
+  if( strncmp( "streebog512", oid->name, strlen( oid->name )) == 0 ) {
     if(( error = ak_hash_create_streebog512( ctx )) != ak_error_ok )
       return ak_error_message( error, __func__, "invalid creation of hash function context");
     result = ak_true;
   }
-  if( strncmp( "gosthash94", oid->name, 10 ) == 0 ) {
+  if( strncmp( "gosthash94", oid->name, strlen( oid->name )) == 0 ) {
     if(( error = ak_hash_create_gosthash94( ctx,
                  ak_oid_find_by_name( "id-gosthash94-rfc4357-paramsetA" ))) != ak_error_ok )
       return ak_error_message( error, __func__, "invalid creation of hash function context");
@@ -243,15 +243,30 @@
     ГОСТ Р 34.11-94 (в настоящее время стандарт выведен из действия) и возвращает пользователю
     дескриптор созданного контекста.
 
-    @param oid Дескриптор таблиц замен, используемых в алгорииме хэширования.
+    @param handle Дескриптор таблиц замен, используемых в алгорииме хэширования.
     @return Функция возвращает десткриптор созданного контекста. В случае возникновения ошибки
     возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова
     функции ak_error_get_value().                                                                  */
 /* ----------------------------------------------------------------------------------------------- */
- ak_handle ak_hash_new_gosthash94( ak_handle oid )
+ ak_handle ak_hash_new_gosthash94( ak_handle handle )
 {
   ak_hash ctx = NULL;
   int error = ak_error_ok;
+  ak_oid oid = ak_handle_get_context( handle, oid_engine );
+
+ /* получаем oid таблиц замен (указатель на данные) */
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "using broken OID" );
+    return ak_error_wrong_handle;
+  }
+  if( oid->engine != hash_function ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "using not hash function OID" );
+    return ak_error_wrong_handle;
+  }
+  if( oid->mode != kbox_params ) {
+    ak_error_message( ak_error_oid_mode, __func__ , "using a wrong mode hash function OID" );
+    return ak_error_wrong_handle;
+  }
 
  /* создаем контекст функции хэширования */
   if(( ctx = malloc( sizeof( struct hash ))) == NULL ) {
@@ -281,7 +296,13 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_hash_new_gosthash94_csp( void )
 {
- return ak_hash_new_gosthash94( ak_oid_find_by_name( "id-gosthash94-rfc4357-paramsetA" ));
+ ak_handle oid_handle = ak_libakrypt_find_oid_by_name( "id-gosthash94-rfc4357-paramsetA" );
+ ak_handle handle = ak_hash_new_gosthash94( oid_handle );
+  /* в принципе, общий механизм сам удалит этот дескриптор,
+     но правильнее самостоятельно вычищать за собой  */
+  ak_handle_delete( oid_handle );
+
+ return handle;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

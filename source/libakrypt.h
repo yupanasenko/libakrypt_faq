@@ -412,39 +412,6 @@
  dll_export ak_buffer ak_icode_finalize( ak_handle, const ak_pointer , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Получение количества доступных OID библиотеки. */
- dll_export const size_t ak_libakrypt_oids_count( void );
-
-/*! \brief Поиск OID по типу криптографического механизма. */
- dll_export ak_handle ak_oid_find_by_engine( ak_oid_engine );
-/*! \brief Продолжение поиска OID по типу криптографического механизма. */
- dll_export ak_handle ak_oid_findnext_by_engine( ak_handle, ak_oid_engine );
-/*! \brief Поиск OID его имени. */
- dll_export ak_handle ak_oid_find_by_name( const char * );
-/*! \brief Поиск OID по его идентификатору (строке цифр, разделенных точками). */
- dll_export ak_handle ak_oid_find_by_id( const char * );
-/*! \brief Получение читаемого имени OID. */
- dll_export const char *ak_oid_get_name( ak_handle );
-/*! \brief Получение значения OID - последовательности чисел, разделенных точками. */
- dll_export const char *ak_oid_get_id( ak_handle );
-/*! \brief Получение типа криптографического механизма. */
- dll_export const ak_oid_engine ak_oid_get_engine( ak_handle );
-/*! \brief Получение словесного описания для типа криптографического механизма. */
- dll_export const char *ak_oid_get_engine_str( ak_handle );
-/*! \brief Получение режима использования криптографического механизма. */
- dll_export const ak_oid_mode ak_oid_get_mode( ak_handle );
-/*! \brief Получение словесного описания режима использования криптографического механизма. */
- dll_export const char *ak_oid_get_mode_str( ak_handle );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Получение типа криптографического механизма. */
- dll_export ak_oid_engine ak_handle_get_engine( ak_handle );
-/*! \brief Получение символьного описания (null-строки) типа криптографического механизма. */
- dll_export const char *ak_handle_get_engine_str( ak_handle handle );
-/*! \brief Удаление дескриптора объекта. */
- dll_export int ak_handle_delete( ak_handle );
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание буффера заданного размера. */
  dll_export ak_buffer ak_buffer_new_size( const size_t );
 /*! \brief Создание буффера с данными. */
@@ -501,6 +468,39 @@
  dll_export ak_oid_engine ak_libakrypt_get_engine( const char * );
 /*! \brief Получения символьного описания режима применения криптографического механизма. */
  dll_export const char *ak_libakrypt_get_mode_str( ak_oid_mode );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Получение количества доступных OID библиотеки. */
+ dll_export const size_t ak_libakrypt_oids_count( void );
+/*! \brief Поиск OID по типу криптографического механизма. */
+ dll_export ak_handle ak_libakrypt_find_oid_by_engine( ak_oid_engine );
+/*! \brief Продолжение поиска OID по типу криптографического механизма. */
+ dll_export ak_handle ak_libakrypt_findnext_oid_by_engine( ak_handle, ak_oid_engine );
+/*! \brief Поиск OID его имени. */
+ dll_export ak_handle ak_libakrypt_find_oid_by_name( const char * );
+/*! \brief Поиск OID по его идентификатору (строке цифр, разделенных точками). */
+ dll_export ak_handle ak_libakrypt_find_oid_by_id( const char * );
+
+/*! \brief Получение читаемого имени OID. */
+ dll_export const char *ak_libakrypt_oid_get_name( ak_handle );
+/*! \brief Получение значения OID - последовательности чисел, разделенных точками. */
+ dll_export const char *ak_libakrypt_oid_get_id( ak_handle );
+/*! \brief Получение типа криптографического механизма. */
+ dll_export const ak_oid_engine ak_libakrypt_oid_get_engine( ak_handle );
+/*! \brief Получение словесного описания для типа криптографического механизма. */
+ dll_export const char *ak_libakrypt_oid_get_engine_str( ak_handle );
+/*! \brief Получение режима использования криптографического механизма. */
+ dll_export const ak_oid_mode ak_libakrypt_oid_get_mode( ak_handle );
+/*! \brief Получение словесного описания режима использования криптографического механизма. */
+ dll_export const char *ak_libakrypt_oid_get_mode_str( ak_handle );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Получение типа криптографического механизма. */
+ dll_export ak_oid_engine ak_handle_get_engine( ak_handle );
+/*! \brief Получение символьного описания (null-строки) типа криптографического механизма. */
+ dll_export const char *ak_handle_get_engine_str( ak_handle handle );
+/*! \brief Удаление дескриптора объекта. */
+ dll_export int ak_handle_delete( ak_handle );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Чтение пароля из консоли. */

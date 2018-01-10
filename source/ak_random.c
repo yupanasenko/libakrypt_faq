@@ -398,7 +398,7 @@
 
   /* теперь мы открываем криптопровайдер для доступа к генерации случайных значений */
   if( !CryptAcquireContext( &handle, NULL, NULL,
-                                         PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT )) {
+                                         PROV_RSA_FULL, CRYPT_NEWKEYSET )) { // CRYPT_VERIFYCONTEXT | CRYPT_SILENT
      ak_error_message_fmt( ak_error_ok, __func__,
                       "wrong opening a system crypto provider with error: %x", GetLastError( ));
      ak_random_destroy( generator );

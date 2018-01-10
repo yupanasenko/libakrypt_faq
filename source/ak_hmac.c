@@ -54,8 +54,7 @@
    }
 
   /* доопределяем поля секретного ключа */
-   if(( hctx->key.oid = ak_handle_get_context(
-                        ak_oid_find_by_name( "hmac-streebog256" ), oid_engine )) == NULL ) {
+   if(( hctx->key.oid = ak_oid_find_by_name( "hmac-streebog256" )) == NULL ) {
      error = ak_error_get_value();
      ak_hash_destroy( &hctx->ctx );
      ak_skey_destroy( &hctx->key );
@@ -90,8 +89,7 @@
    }
 
   /* доопределяем поля секретного ключа */
-   if(( hctx->key.oid = ak_handle_get_context(
-                        ak_oid_find_by_name( "hmac-streebog512" ), oid_engine )) == NULL ) {
+   if(( hctx->key.oid = ak_oid_find_by_name( "hmac-streebog512" )) == NULL ) {
      error = ak_error_get_value();
      ak_hash_destroy( &hctx->ctx );
      ak_skey_destroy( &hctx->key );
@@ -112,12 +110,12 @@
     @return В случае успеха функция возвращает ноль (\ref ak_error_ok). В случае возникновения
     ошибки возвращается ее код.                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_create_gosthash94( ak_hmac hctx, ak_handle handle )
+ int ak_hmac_create_gosthash94( ak_hmac hctx, ak_oid oid )
 {
  int error = ak_error_ok;
 
   /* инициализируем контекст функции хеширования */
-   if(( error = ak_hash_create_gosthash94( &hctx->ctx, handle )) != ak_error_ok )
+   if(( error = ak_hash_create_gosthash94( &hctx->ctx, oid )) != ak_error_ok )
      return ak_error_message( error, __func__, "invalid creation of hash function context");
 
   /* инициализируем контекст секретного ключа */
@@ -127,8 +125,7 @@
    }
 
   /* доопределяем поля секретного ключа */
-   if(( hctx->key.oid = ak_handle_get_context(
-                        ak_oid_find_by_name( "hmac-gosthash94" ), oid_engine )) == NULL ) {
+   if(( hctx->key.oid = ak_oid_find_by_name( "hmac-gosthash94" )) == NULL ) {
      error = ak_error_get_value();
      ak_hash_destroy( &hctx->ctx );
      ak_skey_destroy( &hctx->key );
@@ -730,10 +727,25 @@
     возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова
     функции ak_error_get_value().                                                                  */
 /* ----------------------------------------------------------------------------------------------- */
- ak_handle ak_hmac_new_gosthash94( ak_handle oid, const char *description )
+ ak_handle ak_hmac_new_gosthash94( ak_handle handle, const char *description )
 {
+  ak_oid oid = NULL;
   ak_hmac ctx = NULL;
   int error = ak_error_ok;
+
+ /* проверяем handle */
+  if(( oid = ak_handle_get_context( handle, oid_engine )) == NULL )
+    return ak_error_message( ak_error_wrong_handle, __func__, "using wrong handle");
+
+  if( oid->engine != hash_function ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "using not hash function OID" );
+    return ak_error_wrong_handle;
+  }
+
+  if( oid->mode != kbox_params ) {
+    ak_error_message( ak_error_oid_mode, __func__ , "using a wrong mode hash function OID" );
+    return ak_error_wrong_handle;
+  }
 
  /* создаем контекст функции хэширования */
   if(( ctx = malloc( sizeof( struct hmac ))) == NULL ) {
@@ -769,7 +781,7 @@
  ak_handle ak_hmac_new_gosthash94_csp( const char *description )
 {
  return ak_hmac_new_gosthash94(
-                         ak_oid_find_by_name( "id-gosthash94-rfc4357-paramsetA" ), description );
+                 ak_libakrypt_find_oid_by_name( "id-gosthash94-rfc4357-paramsetA" ), description );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

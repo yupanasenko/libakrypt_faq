@@ -151,7 +151,7 @@
  ak_pointer ak_hash_delete( ak_pointer );
 
 /*! \brief Инициализация контекста функции бесключевого хеширования ГОСТ Р 34.11-94. */
- int ak_hash_create_gosthash94( ak_hash , ak_handle );
+ int ak_hash_create_gosthash94( ak_hash , ak_oid );
 /*! \brief Инициализация контекста функции бесключевого хеширования ГОСТ Р 34.11-2012 (Стрибог256). */
  int ak_hash_create_streebog256( ak_hash );
 /*! \brief Инициализация контекста функции бесключевого хеширования ГОСТ Р 34.11-2012 (Стрибог512). */

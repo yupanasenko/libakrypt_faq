@@ -28,12 +28,12 @@
  printf("\n");
 
  /* 3. Прямой поиск: от OID к дескриптору функции хеширования */
-  handle = ak_oid_find_by_engine( hash_function );
+  handle = ak_libakrypt_find_oid_by_engine( hash_function );
   while( handle != ak_error_wrong_handle ) {
-    if( ak_oid_get_mode( handle ) == algorithm ) {
+    if( ak_libakrypt_oid_get_mode( handle ) == algorithm ) {
       ak_buffer buff = NULL;
       ak_handle ctx_handle = ak_hash_new_oid( handle );
-      printf(" name: %s (%s)\n", ak_oid_get_name( handle ), ak_oid_get_id( handle ));
+      printf(" name: %s (%s)\n", ak_libakrypt_oid_get_name( handle ), ak_libakrypt_oid_get_id( handle ));
 
          time = clock();
          if(( buff = ak_hash_file( ctx_handle, "data.dat", NULL )) == NULL ) goto while_exit;
@@ -50,7 +50,7 @@
       while_exit: ak_handle_delete( ctx_handle );
     }
    /* ищем следующий OID с тем же типом криптографического механизма */
-    handle = ak_oid_findnext_by_engine( handle, hash_function );
+    handle = ak_libakrypt_findnext_oid_by_engine( handle, hash_function );
   }
 
  return ak_libakrypt_destroy();

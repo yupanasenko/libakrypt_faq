@@ -13,7 +13,7 @@
 
  /* создаем ключ */
   if(( secretkey = ak_signkey_new_streebog256(
-    ak_oid_find_by_name( "id-tc26-gost3410-2012-256-paramsetA" ),
+    ak_libakrypt_find_oid_by_name( "id-tc26-gost3410-2012-256-paramsetA" ),
                 "my secret DS key" )) == ak_error_wrong_handle ) {
     printf("wrong secret key creation\n");
     return ak_libakrypt_destroy();

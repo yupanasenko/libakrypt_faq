@@ -16,19 +16,9 @@ BEGIN
  -- ресурс ключа блочного алгоритма шифрования (в блоках)
   CipherKeyResource ::= INTEGER (0 .. 4294967295)
 
- -- временной интервал валидности ключа асимметричного алгоритма
-  Validity ::= SEQUENCE {
-     notBefore  GeneralizedTime, -- не валиден ранее указанной даты
-     notAfter  GeneralizedTime -- не валиден после указанной даты
-  }
-
- -- ресурс ключа асимметричного алгоритма
-  AsymmetricKeyResource ::= Validity
-
  -- ресурс секретного ключа
-  KeyResource ::= SEQUENCE {
-     counter CipherKeyResource OPTIONAL, -- ресурс ключа блочного алгоритма шифрования
-     time AsymmetricKeyResource OPTIONAL -- ресурс ключа асимметричного алгоритма
+  KeyResource ::= CHOICE {
+     counter CipherKeyResource -- ресурс ключа блочного алгоритма шифрования
   }
 
  -- параметры алгоритмов шифрования и имитозащиты ключа

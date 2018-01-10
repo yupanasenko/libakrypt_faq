@@ -94,7 +94,20 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция для итерационного вычисления хеш-кода от der-представления ключа */
+/*! \brief Функция для итерационного вычисления сжимающего отображения при der-кодировании.
+
+   Функция передается в качестве параметра в функцию der_encode(), что позволяет
+   итеративно вычислять значение сжимающего отображения, как правило, hmac от секретного ключа.
+   При этом на вход функции могут подаваться фрагменты произвольного размера.
+
+   @param buffer Указатель на буффер, в котором хранятся обрабатываемые данные
+   @param size Размер данных (в байтах)
+   @param app_key Указательь на струтуру криптографического преобразования ak_compress.
+
+   @return В соответствии с соглашением функции der_encode, данная функция возвращает ноль, если
+   все усспешно, и -1 если произошла ошибка. Код ошибки можно получить с помощью вызова функции
+   ak_error_get_value().                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
  static int ak_skey_der_encode_update( const void *buffer, size_t size, void *app_key )
 {
   return ak_compress_update(( ak_compress )app_key,
@@ -102,13 +115,22 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Преобразование ключа блочного алгоритма шифрования в ASN1 структуру. */
-/*! Перед преобразованием контекст ключа должен быть инициализирован и содержать
+/*! \brief Функция для итерационной записи данных, полученных при der-кодировании. */
+ static int write_out( const void *buffer, size_t size, void *app_key ) {
+  FILE *out_fp = app_key;
+  size_t wrote = fwrite( buffer, 1, size, out_fp );
+  return (wrote == size) ? 0 : -1;
+ }
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Преобразование секретного ключа в ASN1 структуру `SecretKeyData`.
+
+    Перед преобразованием контекст ключа должен быть инициализирован и содержать
     в себе ключевое значение. В результате выполнения функции создается структура `SecretKeyData`,
     за удаление которой отвечает пользователь, вызвавший данную функцию.
 
-    @param bkey Контекст ключа блочного алгоритма шифрования, который будет преобразован
-           в ASN1 структуру.
+    @param bkey Контекст секретного ключа, который будет преобразован в ASN1 структуру.
     @param pass Пароль, представленный в виде строки символов в формате utf8.
     @param pass_size Длина пароля в байтах.
     @param description Человекочитаемое описание ключа (если описание не определено,
@@ -128,6 +150,7 @@
  struct hmac hmacKey;
  int error = ak_error_ok;
  struct bckey encryptionKey; /* ключ шифрования */
+ struct compress compressCtx; /* структура для итеративного сжатия */
  ak_uint8 temporary[temporary_size]; /* массив для хранения EncodedKeyValue */
  SecretKeyData_t *secretKeyData = NULL;
 
@@ -244,9 +267,9 @@
   secretKeyData->data.resource = malloc( sizeof( struct KeyResource ));
   memset( secretKeyData->data.resource, 0 , sizeof( struct KeyResource ));
   /* TODO: здесь надо проверить, что ресурс содержит либо численное значение,
-   * либо не временной интервал - в зависимости от типа ключа */
-  secretKeyData->data.resource->counter = malloc( sizeof( unsigned long ));
-  *(secretKeyData->data.resource->counter) = skey->resource.counter;
+   * либо временной интервал - в зависимости от типа ключа */
+  secretKeyData->data.resource->present = KeyResource_PR_counter;
+  secretKeyData->data.resource->choice.counter = skey->resource.counter;
 
  /* устанавливаем описание ключа */
   if( description != NULL ) {
@@ -286,8 +309,7 @@
   }
 
   /* 4. блочный шифр */
-  if(( error = ak_oid_to_asn1_object_identifier(
-                  ak_handle_get_context( ak_oid_find_by_name( "magma" ), oid_engine ),
+  if(( error = ak_oid_to_asn1_object_identifier( ak_oid_find_by_name( "magma" ),
         (OBJECT_IDENTIFIER_t *) &secretKeyData->data.parameters.cipher )) != ak_error_ok ) {
     ak_error_message( error, __func__,
                              "incorrect block cipher engine assigning to asn1 structure" );
@@ -296,8 +318,7 @@
   }
 
   /* 5. режим работы блочного шифра */
-  if(( error = ak_oid_to_asn1_object_identifier(
-                  ak_handle_get_context( ak_oid_find_by_name( "counter" ), oid_engine ),
+  if(( error = ak_oid_to_asn1_object_identifier( ak_oid_find_by_name( "counter" ),
           (OBJECT_IDENTIFIER_t *) &secretKeyData->data.parameters.encryptionMode )) != ak_error_ok ) {
     ak_error_message( error, __func__,
                                   "incorrect encryption mode assigning to asn1 structure" );
@@ -315,8 +336,7 @@
   }
 
   /* 7. алгоритм вычисления имитовставки */
-  if(( error = ak_oid_to_asn1_object_identifier(
-            ak_handle_get_context( ak_oid_find_by_name( "hmac-streebog256" ), oid_engine ),
+  if(( error = ak_oid_to_asn1_object_identifier( ak_oid_find_by_name( "hmac-streebog256" ),
               (OBJECT_IDENTIFIER_t *) &secretKeyData->data.parameters.integrityMode )) != ak_error_ok ) {
     ak_error_message( error, __func__,
                                   "incorrect integrity mode assigning to asn1 structure" );
@@ -342,46 +362,26 @@
     return NULL;
   }
 
-//  /* 2. вычисляем вектор для контроля целостности */
-//  memset( temporary, 0, temporary_size );
-//  ec = der_encode_to_buffer(  &asn_DEF_SecretKey, &secretKeyData->data,
-//                                                               temporary, temporary_size );
-//  if( ec.encoded < 0 ) {
-//    ak_error_message( ak_error_wrong_asn1_encode, __func__,
-//                                       "incorect SecretKeyData's ASN1 structure encoding");
-//    SEQUENCE_free( &asn_DEF_SecretKeyData, secretKeyData, 0 );
-//    return NULL;
-//  }
+  /* 2. создаем структуру для итеративного вычисления значений функции hmac */
+  if(( error = ak_compress_create_hmac( &compressCtx, &hmacKey )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong hmac compress structure creation" );
+    ak_hmac_destroy( &hmacKey );
+    SEQUENCE_free( &asn_DEF_SecretKeyData, secretKeyData, 0 );
+    return NULL;
+  }
 
-//  /* 3. вычисляем имитовставку */
+  /* 3. кодируем данные и одновременно вычисляем имитовставку */
+  ak_compress_clean( &compressCtx );
+  ec = der_encode( &asn_DEF_SecretKey, &secretKeyData->data, ak_skey_der_encode_update, &compressCtx );
+  ak_compress_finalize( &compressCtx, NULL, 0, temporary ); /* результат вычислений помещается в temporary */
+  ak_compress_destroy( &compressCtx );
+  ak_hmac_destroy( &hmacKey );
 
-//  char *str = NULL;
-//  printf("t %s\n", str = ak_ptr_to_hexstr( temporary, ec.encoded, ak_false )); free( str );
-
-//  ak_hmac_context_ptr( &hmacKey, temporary, ec.encoded, temporary );
-//  error = ak_error_get_value( );
-// // ak_hmac_destroy( &hmacKey );
-
-//  if( error != ak_error_ok ) {
-//    ak_error_message( error, __func__, "wrong generation of integrity code" );
-//    SEQUENCE_free( &asn_DEF_SecretKeyData, secretKeyData, 0 );
-//    return NULL;
-//   }
-
-//  printf("t %s\n", str = ak_ptr_to_hexstr( temporary, 32, ak_false )); free( str );
-
-//  ak_uint8 result[32];
-//  memset( result, 0, 32 );
-
-  struct compress ctx;
-  ak_compress_create_hmac( &ctx, &hmacKey );
-  ak_compress_clean( &ctx );
-  ec = der_encode( &asn_DEF_SecretKey, &secretKeyData->data, ak_skey_der_encode_update, &ctx );
-  ak_compress_finalize( &ctx, NULL, 0, temporary );
-  ak_compress_destroy( &ctx );
-
-//  printf("r %s\n", str = ak_ptr_to_hexstr( result, 32, ak_false )); free( str );
-
+  if( ec.encoded < 0 ) {
+    ak_error_message( error, __func__, "wrong hmac compress structure creation" );
+    SEQUENCE_free( &asn_DEF_SecretKeyData, secretKeyData, 0 );
+    return NULL;
+  }
 
   /* 4. присваиваем значение */
   if(( error = ak_ptr_to_asn1_octet_string( temporary, 32,
@@ -461,25 +461,29 @@ q,fnq,wfmbq,wfbq,wfmbq,wfb,qwfb,qwnfbq,wnfbqw,nfbwq,nfb,qwnefbqw,nefb,qwnefb,qnw
 
   asn_enc_rval_t ec;
   FILE *fp = fopen( "twokeycontainer.key", "wb" );
-  ec = der_encode_to_buffer(  &asn_DEF_KeyContainer, keyContainer, buffer, 1024);
-  fwrite( buffer, 1, ec.encoded, fp );
+  ec = der_encode( &asn_DEF_KeyContainer, keyContainer, write_out, fp );
   fclose(fp);
+  printf("created twokeycontainer.key file (%ld bytes)\n", ec.encoded );
 
   SEQUENCE_free( &asn_DEF_KeyContainer, keyContainer, 0 );
   memset( buffer, 0, 1024 );
 
 
-/* теперь создаем файл с защищенным ключом */
+/* теперь считываем файл с защищенным ключом */
+  size_t len = 0;
+  asn_dec_rval_t ret;
   fp = fopen( "twokeycontainer.key", "rb" );
-  size_t len = fread( buffer, 1, 1024, fp );
-  printf("\n\n loaded len: %ld\n", len );
-  fclose(fp);
 
   keyContainer = malloc ( sizeof( struct KeyContainer ));
   memset( keyContainer, 0, sizeof( struct KeyContainer ));
 
-  asn_dec_rval_t ret = ber_decode( 0, &asn_DEF_KeyContainer, (void **)&keyContainer, buffer, len );
-  if( ret.consumed != len || ret.code != RC_OK ) printf("decoding error\n");
+   do{
+      len = fread( buffer, 1, 1024, fp );
+      ret = ber_decode( 0, &asn_DEF_KeyContainer, (void **)&keyContainer, buffer, len );
+   } while(( ret.consumed != len ) || ( ret.code == RC_WMORE ));
+  fclose(fp);
+
+  if( ret.code != RC_OK ) printf("decoding error, consumed: %ld\n", ret.consumed );
 
   asn_fprint( stdout, &asn_DEF_KeyContainer, keyContainer );
   printf("count of keys: %d\n", keyContainer->keys.list.count );

@@ -62,7 +62,7 @@
 /*! \brief Инициализация контекста ключа алгоритма выработки имитовставки hmac-streebog512. */
  int ak_hmac_create_streebog512( ak_hmac );
 /*! \brief Инициализация контекста ключа алгоритма выработки имитовставки hmac-gosthash94. */
- int ak_hmac_create_gosthash94( ak_hmac , ak_handle );
+ int ak_hmac_create_gosthash94( ak_hmac , ak_oid );
 /*! \brief Уничтожение контекста ключа алгоритма выработки имитовставки hmac. */
  int ak_hmac_destroy( ak_hmac );
 /*! \brief Освобождение памяти из под контекста ключа алгоритма выработки имитовставки hmac. */

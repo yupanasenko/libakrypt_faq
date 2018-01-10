@@ -7,8 +7,6 @@ struct asn_TYPE_descriptor_s;	/* Forward declaration */
 extern struct asn_TYPE_descriptor_s asn_DEF_KeyValue;
 extern struct asn_TYPE_descriptor_s asn_DEF_EncodedKeyValue;
 extern struct asn_TYPE_descriptor_s asn_DEF_CipherKeyResource;
-extern struct asn_TYPE_descriptor_s asn_DEF_Validity;
-extern struct asn_TYPE_descriptor_s asn_DEF_AsymmetricKeyResource;
 extern struct asn_TYPE_descriptor_s asn_DEF_KeyResource;
 extern struct asn_TYPE_descriptor_s asn_DEF_KeyProtectParameters;
 extern struct asn_TYPE_descriptor_s asn_DEF_SecretKey;
@@ -21,8 +19,6 @@ struct asn_TYPE_descriptor_s *asn_pdu_collection[] = {
 	&asn_DEF_KeyValue,	
 	&asn_DEF_EncodedKeyValue,	
 	&asn_DEF_CipherKeyResource,	
-	&asn_DEF_Validity,	
-	&asn_DEF_AsymmetricKeyResource,	
 	&asn_DEF_KeyResource,	
 	&asn_DEF_KeyProtectParameters,	
 	&asn_DEF_SecretKey,	

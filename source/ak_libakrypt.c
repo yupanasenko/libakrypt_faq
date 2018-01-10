@@ -467,30 +467,30 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_libakrypt_test_hash_functions( void )
 {
-//  int audit = ak_log_get_level();
-//  if( audit >= ak_log_maximum )
-//    ak_error_message( ak_error_ok, __func__ , "testing hash functions started" );
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing hash functions started" );
 
-// /* тестируем функцию ГОСТ Р 34.11-94 */
-//  if( ak_hash_test_gosthash94() != ak_true ) {
-//   ak_error_message( ak_error_get_value(), __func__ , "incorrect gosthash94 testing" );
-//   return ak_false;
-//  }
+ /* тестируем функцию ГОСТ Р 34.11-94 */
+  if( ak_hash_test_gosthash94() != ak_true ) {
+   ak_error_message( ak_error_get_value(), __func__ , "incorrect gosthash94 testing" );
+   return ak_false;
+  }
 
-// /* тестируем функцию Стрибог256 */
-//  if( ak_hash_test_streebog256() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog256 testing" );
-//    return ak_false;
-//  }
+ /* тестируем функцию Стрибог256 */
+  if( ak_hash_test_streebog256() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog256 testing" );
+    return ak_false;
+  }
 
-// /* тестируем функцию Стрибог512 */
-//  if( ak_hash_test_streebog512() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog512 testing" );
-//    return ak_false;
-//  }
+ /* тестируем функцию Стрибог512 */
+  if( ak_hash_test_streebog512() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog512 testing" );
+    return ak_false;
+  }
 
-//  if( audit >= ak_log_maximum )
-//   ak_error_message( ak_error_ok, __func__ , "testing hash functions ended successfully" );
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing hash functions ended successfully" );
 
  return ak_true;
 }
@@ -503,24 +503,24 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_libakrypt_test_mac_functions( void )
 {
-//  int audit = ak_log_get_level();
-//  if( audit >= ak_log_maximum )
-//    ak_error_message( ak_error_ok, __func__ , "testing mac functions started" );
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing mac functions started" );
 
-// /* тестируем функции hmac-streebog согласно Р 50.1.113-2016 */
-//  if( ak_hmac_test_streebog() != ak_true ) {
-//   ak_error_message( ak_error_get_value(), __func__ , "incorrect hmac testing" );
-//   return ak_false;
-//  }
+ /* тестируем функции hmac-streebog согласно Р 50.1.113-2016 */
+  if( ak_hmac_test_streebog() != ak_true ) {
+   ak_error_message( ak_error_get_value(), __func__ , "incorrect hmac testing" );
+   return ak_false;
+  }
 
-// /* тестируем алгоритм pbkdf2 согласно Р 50.1.111-2016 */
-//  if( ak_hmac_test_pbkdf2() != ak_true ) {
-//   ak_error_message( ak_error_get_value(), __func__ , "incorrect hmac testing" );
-//   return ak_false;
-//  }
+ /* тестируем алгоритм pbkdf2 согласно Р 50.1.111-2016 */
+  if( ak_hmac_test_pbkdf2() != ak_true ) {
+   ak_error_message( ak_error_get_value(), __func__ , "incorrect hmac testing" );
+   return ak_false;
+  }
 
-//  if( audit >= ak_log_maximum )
-//   ak_error_message( ak_error_ok, __func__ , "testing mac functions ended successfully" );
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing mac functions ended successfully" );
 
  return ak_true;
 }
@@ -533,25 +533,25 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_libakrypt_test_asymmetric_functions( void )
 {
-//  int audit = ak_log_get_level();
-//  if( audit >= ak_log_maximum )
-//    ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms started" );
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms started" );
 
-// /* тестируем корректность реализации операций с эллиптическими кривыми в короткой форме Вейерштрасса */
-//  if( ak_wcurve_test() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ ,
-//                           "error while testing operations with Weierstrass elliptic curves" );
-//    return ak_false;
-//  }
+ /* тестируем корректность реализации операций с эллиптическими кривыми в короткой форме Вейерштрасса */
+  if( ak_wcurve_test() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                           "error while testing operations with Weierstrass elliptic curves" );
+    return ak_false;
+  }
 
-// /* тестируем корректность реализации алгоритмов электронной подписи */
-//  if( ak_signkey_test() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ , "error while testing digital signatures" );
-//    return ak_false;
-//  }
+ /* тестируем корректность реализации алгоритмов электронной подписи */
+  if( ak_signkey_test() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "error while testing digital signatures" );
+    return ak_false;
+  }
 
-//  if( audit >= ak_log_maximum )
-//   ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms ended successfully" );
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms ended successfully" );
 
  return ak_true;
 }
@@ -559,18 +559,18 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_libakrypt_test_block_ciphers( void )
 {
-//  int audit = ak_log_get_level();
-//  if( audit >= ak_log_maximum )
-//    ak_error_message( ak_error_ok, __func__ , "testing block ciphers started" );
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing block ciphers started" );
 
-// /* тестируем корректность реализации блочного шифра Магма */
-//  if( ak_bckey_test_magma() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ , "error while testing block cipher magma" );
-//    return ak_false;
-//  }
+ /* тестируем корректность реализации блочного шифра Магма */
+  if( ak_bckey_test_magma() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "error while testing block cipher magma" );
+    return ak_false;
+  }
 
-//  if( audit >= ak_log_maximum )
-//   ak_error_message( ak_error_ok, __func__ , "testing block ciphers ended successfully" );
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing block ciphers ended successfully" );
 
  return ak_true;
 }
@@ -634,24 +634,24 @@
     return ak_false;
   }
 
-// /* тестируем работу алгоритмов блочного шифрования */
-//  if( ak_libakrypt_test_block_ciphers() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ , "error while testing block ciphers" );
-//    return ak_false;
-//  }
+ /* тестируем работу алгоритмов блочного шифрования */
+  if( ak_libakrypt_test_block_ciphers() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "error while testing block ciphers" );
+    return ak_false;
+  }
 
-// /* тестируем работу алгоритмов выработки имитовставки */
-//  if( ak_libakrypt_test_mac_functions() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ , "error while testing mac functions" );
-//    return ak_false;
-//  }
+ /* тестируем работу алгоритмов выработки имитовставки */
+  if( ak_libakrypt_test_mac_functions() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "error while testing mac functions" );
+    return ak_false;
+  }
 
-// /* тестируем работу алгоритмов выработки и проверки электронной подписи */
-//  if( ak_libakrypt_test_asymmetric_functions() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ ,
-//                                        "error while testing digital signature mechanisms" );
-//    return ak_false;
-//  }
+ /* тестируем работу алгоритмов выработки и проверки электронной подписи */
+  if( ak_libakrypt_test_asymmetric_functions() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                        "error while testing digital signature mechanisms" );
+    return ak_false;
+  }
 
  ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms tested successfully" );
 return ak_true;

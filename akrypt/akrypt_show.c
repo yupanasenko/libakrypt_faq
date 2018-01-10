@@ -33,8 +33,9 @@
 /* вывод в консоль информации об OID */
  void akrypt_show_oid( ak_handle handle )
 {
-  printf("%s (%s) ", ak_oid_get_name( handle ), ak_oid_get_id( handle ));
-  printf("[%s, %s]\n", ak_oid_get_engine_str( handle ), ak_oid_get_mode_str( handle ));
+  printf("%s (%s) ", ak_libakrypt_oid_get_name( handle ), ak_libakrypt_oid_get_id( handle ));
+  printf("[%s, %s]\n", ak_libakrypt_oid_get_engine_str( handle ),
+                                                        ak_libakrypt_get_mode_str( handle ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -112,23 +113,23 @@
     switch( work )
    {
      case do_alloids: /* выводим список всех доступных oid */
-               handle = ak_oid_find_by_engine( undefined_engine );
+               handle = ak_libakrypt_find_oid_by_engine( undefined_engine );
                while( handle != ak_error_wrong_handle ) {
                 /* выводим найденное */
                   akrypt_show_oid( handle );
                 /* ищем следующий OID с тем же типом криптографического механизма */
-                  handle = ak_oid_findnext_by_engine( handle, engine );
+                  handle = ak_libakrypt_findnext_oid_by_engine( handle, engine );
                }
                break;
 
      case do_oid:
                /* сначала поиск по имени */
-               if(( handle = ak_oid_find_by_name( value )) != ak_error_wrong_handle ) {
+               if(( handle = ak_libakrypt_find_oid_by_name( value )) != ak_error_wrong_handle ) {
                  akrypt_show_oid( handle );
                  break;
                }
                /* потом поиск по идентификатору */
-               if(( handle = ak_oid_find_by_id( value )) != ak_error_wrong_handle ) {
+               if(( handle = ak_libakrypt_find_oid_by_id( value )) != ak_error_wrong_handle ) {
                  akrypt_show_oid( handle );
                  break;
                }
@@ -136,12 +137,12 @@
                ak_error_set_value( ak_error_ok );
                engine = ak_libakrypt_get_engine( value );
                if( ak_error_get_value() == ak_error_ok ) {
-                 handle = ak_oid_find_by_engine( engine );
+                 handle = ak_libakrypt_find_oid_by_engine( engine );
                  while( handle != ak_error_wrong_handle ) {
                   /* выводим найденное */
                    akrypt_show_oid( handle );
                   /* ищем следующий OID с тем же типом криптографического механизма */
-                   handle = ak_oid_findnext_by_engine( handle, engine );
+                   handle = ak_libakrypt_findnext_oid_by_engine( handle, engine );
                  }
                  break;
                }

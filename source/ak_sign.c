@@ -61,8 +61,7 @@
    }
 
   /* устанавливаем OID алгоритма */
-   if(( sctx->key.oid
-                = ak_handle_get_context( ak_oid_find_by_name( "sign256" ), oid_engine )) == NULL )
+   if(( sctx->key.oid = ak_oid_find_by_name( "sign256" )) == NULL )
      ak_error_message( ak_error_get_value(), __func__ ,
                                                      "incorrect initialization of algorithm OID" );
   /* устанавливаем эллиптическую кривую */
@@ -110,8 +109,7 @@
    }
 
   /* устанавливаем OID алгоритма */
-   if(( sctx->key.oid
-                = ak_handle_get_context( ak_oid_find_by_name( "sign512" ), oid_engine )) == NULL )
+   if(( sctx->key.oid = ak_oid_find_by_name( "sign512" )) == NULL )
      ak_error_message( ak_error_get_value(), __func__ ,
                                                      "incorrect initialization of algorithm OID" );
   /* устанавливаем эллиптическую кривую */
@@ -136,7 +134,7 @@
     @return Функция возвращает ноль (\ref ak_error_ok) в случае успешной иниициализации контекста.
     В случае возникновения ошибки возвращается ее код.                                             */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_signkey_create_gosthash94( ak_signkey sctx, ak_handle handle, ak_wcurve wc )
+ int ak_signkey_create_gosthash94( ak_signkey sctx, ak_oid oid, ak_wcurve wc )
 {
  int error = ak_error_ok;
 
@@ -150,7 +148,7 @@
    if( wc->size != ak_mpzn256_size ) return ak_error_message( ak_error_wrong_length, __func__ ,
                                                        "elliptic curve defined over wrong field" );
   /* инициализируем контекст функции хеширования */
-   if(( error = ak_hash_create_gosthash94( &sctx->ctx, handle )) != ak_error_ok )
+   if(( error = ak_hash_create_gosthash94( &sctx->ctx, oid )) != ak_error_ok )
      return ak_error_message( error, __func__, "invalid creation of hash function context");
 
   /* инициализируем контекст секретного ключа */
@@ -160,8 +158,7 @@
    }
 
   /* устанавливаем OID алгоритма */
-   if(( sctx->key.oid
-          = ak_handle_get_context( ak_oid_find_by_name( "sign256-gosthash94" ), oid_engine )) == NULL )
+   if(( sctx->key.oid = ak_oid_find_by_name( "sign256-gosthash94" )) == NULL )
      ak_error_message( ak_error_get_value(), __func__ ,
                                                      "incorrect initialization of algorithm OID" );
   /* устанавливаем эллиптическую кривую */
@@ -540,20 +537,17 @@
 
  /* устанавливаем OID алгоритма */
   if( strncmp( "sign256", sctx->key.oid->name, 7 ) == 0 ) {
-    if(( pctx->oid =
-        ak_handle_get_context( ak_oid_find_by_name( "verify256" ), oid_engine )) == NULL )
+    if(( pctx->oid = ak_oid_find_by_name( "verify256" )) == NULL )
       ak_error_message( ak_error_get_value(), __func__ ,
                                              "incorrect initialization of algorithm OID" );
   }
   if( strncmp( "sign512", sctx->key.oid->name, 7 ) == 0 ) {
-    if(( pctx->oid =
-        ak_handle_get_context( ak_oid_find_by_name( "verify512" ), oid_engine )) == NULL )
+    if(( pctx->oid = ak_oid_find_by_name( "verify512" )) == NULL )
       ak_error_message( ak_error_get_value(), __func__ ,
                                              "incorrect initialization of algorithm OID" );
   }
   if( strncmp( "sign256-gosthash94", sctx->key.oid->name, 18 ) == 0 ) {
-    if(( pctx->oid =
-        ak_handle_get_context( ak_oid_find_by_name( "verify256-gosthash94" ), oid_engine )) == NULL )
+    if(( pctx->oid = ak_oid_find_by_name( "verify256-gosthash94" )) == NULL )
       ak_error_message( ak_error_get_value(), __func__ ,
                                              "incorrect initialization of algorithm OID" );
   }

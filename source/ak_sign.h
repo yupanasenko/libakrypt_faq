@@ -53,7 +53,7 @@
 /*! \brief Инициализация контекста секретного ключа алгоритма ГОСТ Р 34.10-2012. */
  int ak_signkey_create_streebog512( ak_signkey , ak_wcurve );
 /*! \brief Инициализация контекста секретного ключа алгоритма ГОСТ Р 34.10-2001. */
- int ak_signkey_create_gosthash94( ak_signkey , ak_handle , ak_wcurve );
+ int ak_signkey_create_gosthash94( ak_signkey , ak_oid , ak_wcurve );
 /*! \brief Уничтожение контекста секретного ключа. */
  int ak_signkey_destroy( ak_signkey );
 /*! \brief Освобождение памяти из под контекста секретного ключа. */

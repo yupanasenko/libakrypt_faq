@@ -218,25 +218,18 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_wcurve_test( void )
 {
+  ak_oid oid = NULL;
   ak_bool result = ak_true;
-  ak_handle handle = ak_error_wrong_handle;
   int reason = ak_error_ok, audit = ak_log_get_level();
 
   if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "testing Weierstrass curves started" );
 
  /* организуем цикл по перебору всех известных библиотеке параметров эллиптических кривых */
-  handle = ak_oid_find_by_engine( identifier );
-  while( handle != ak_error_wrong_handle ) {
-    if( ak_oid_get_mode( handle ) == wcurve_params ) {
-      ak_oid oid = NULL;
+  oid = ak_oid_find_by_engine( identifier );
+  while( oid != NULL ) {
+    if( oid->mode == wcurve_params ) {
       ak_wcurve wc = NULL;
-
-      if(( oid = ak_handle_get_context( handle, oid_engine )) == NULL ) {
-        ak_error_message( ak_error_get_value(), __func__, "internal error with wrong handle" );
-        result = ak_false;
-        goto lab_exit;
-      }
       if(( wc = ( ak_wcurve ) oid->data ) == NULL )  {
         ak_error_message( ak_error_null_pointer, __func__,
                                       "internal error with null poionter to wcurve paramset" );
@@ -264,7 +257,7 @@
                                                                 oid->name, oid->id );
           }
     }
-    handle = ak_oid_findnext_by_engine( handle, identifier );
+    oid = ak_oid_findnext_by_engine( oid, identifier );
   }
 
  lab_exit:

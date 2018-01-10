@@ -7,63 +7,52 @@
 
 #include "KeyResource.h"
 
+#define	myoffsetof(s, m)	((ptrdiff_t)&(((s *)0)->m) - (ptrdiff_t)((s *)0))
+
+
 static asn_TYPE_member_t asn_MBR_KeyResource_1[] = {
-	{ ATF_POINTER, 2, offsetof(struct KeyResource, counter),
-		(ASN_TAG_CLASS_UNIVERSAL | (2 << 2)),
-		0,
-		&asn_DEF_CipherKeyResource,
-		0,	/* Defer constraints checking to the member type */
-		0,	/* PER is not compiled, use -gen-PER */
-		0,
-		"counter"
-		},
-	{ ATF_POINTER, 1, offsetof(struct KeyResource, time),
-		(ASN_TAG_CLASS_UNIVERSAL | (16 << 2)),
-		0,
-		&asn_DEF_AsymmetricKeyResource,
-		0,	/* Defer constraints checking to the member type */
-		0,	/* PER is not compiled, use -gen-PER */
-		0,
-		"time"
-		},
-};
-static const ber_tlv_tag_t asn_DEF_KeyResource_tags_1[] = {
-	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
+    { ATF_NOFLAGS, 0, myoffsetof(struct KeyResource, choice.counter),
+        (ASN_TAG_CLASS_UNIVERSAL | (2 << 2)),
+        0,
+        &asn_DEF_CipherKeyResource,
+        0,	/* Defer constraints checking to the member type */
+        0,	/* PER is not compiled, use -gen-PER */
+        0,
+        "counter"
+        },
 };
 static const asn_TYPE_tag2member_t asn_MAP_KeyResource_tag2el_1[] = {
-    { (ASN_TAG_CLASS_UNIVERSAL | (2 << 2)), 0, 0, 0 }, /* counter */
-    { (ASN_TAG_CLASS_UNIVERSAL | (16 << 2)), 1, 0, 0 } /* time */
+    { (ASN_TAG_CLASS_UNIVERSAL | (2 << 2)), 0, 0, 0 } /* counter */
 };
-static asn_SEQUENCE_specifics_t asn_SPC_KeyResource_specs_1 = {
-	sizeof(struct KeyResource),
-	offsetof(struct KeyResource, _asn_ctx),
-	asn_MAP_KeyResource_tag2el_1,
-	2,	/* Count of tags in the map */
-	0, 0, 0,	/* Optional elements (not needed) */
-	-1,	/* Start extensions */
-	-1	/* Stop extensions */
+static asn_CHOICE_specifics_t asn_SPC_KeyResource_specs_1 = {
+    sizeof(struct KeyResource),
+    offsetof(struct KeyResource, _asn_ctx),
+    offsetof(struct KeyResource, present),
+    sizeof(((struct KeyResource *)0)->present),
+    asn_MAP_KeyResource_tag2el_1,
+    1,	/* Count of tags in the map */
+    0,
+    -1	/* Extensions start */
 };
 asn_TYPE_descriptor_t asn_DEF_KeyResource = {
-	"KeyResource",
-	"KeyResource",
-	SEQUENCE_free,
-	SEQUENCE_print,
-	SEQUENCE_constraint,
-	SEQUENCE_decode_ber,
-	SEQUENCE_encode_der,
-	SEQUENCE_decode_xer,
-	SEQUENCE_encode_xer,
-	0, 0,	/* No PER support, use "-gen-PER" to enable */
-	0,	/* Use generic outmost tag fetcher */
-	asn_DEF_KeyResource_tags_1,
-	sizeof(asn_DEF_KeyResource_tags_1)
-		/sizeof(asn_DEF_KeyResource_tags_1[0]), /* 1 */
-	asn_DEF_KeyResource_tags_1,	/* Same as above */
-	sizeof(asn_DEF_KeyResource_tags_1)
-		/sizeof(asn_DEF_KeyResource_tags_1[0]), /* 1 */
-	0,	/* No PER visible constraints */
-	asn_MBR_KeyResource_1,
-	2,	/* Elements count */
-	&asn_SPC_KeyResource_specs_1	/* Additional specs */
+    "KeyResource",
+    "KeyResource",
+    CHOICE_free,
+    CHOICE_print,
+    CHOICE_constraint,
+    CHOICE_decode_ber,
+    CHOICE_encode_der,
+    CHOICE_decode_xer,
+    CHOICE_encode_xer,
+    0, 0,	/* No PER support, use "-gen-PER" to enable */
+    CHOICE_outmost_tag,
+    0,	/* No effective tags (pointer) */
+    0,	/* No effective tags (count) */
+    0,	/* No tags (pointer) */
+    0,	/* No tags (count) */
+    0,	/* No PER visible constraints */
+    asn_MBR_KeyResource_1,
+    1,	/* Elements count */
+    &asn_SPC_KeyResource_specs_1	/* Additional specs */
 };
 

@@ -50,12 +50,12 @@
   /* 2. идентификаторы алгоритмов бесключевого хеширования,
         значения OID взяты из перечней КриптоПро и ТК26 (http://tk26.ru/methods/OID_TK_26/index.php)
         в дереве библиотеки: 1.2.643.2.52.1.2 - функции бесключевого хеширования */
-   { hash_function, algorithm, "streebog256", "1.2.643.7.1.1.2.2", NULL, NULL },
-                                                     //(ak_function_void *) ak_hash_new_streebog256 },
-   { hash_function, algorithm, "streebog512", "1.2.643.7.1.1.2.3", NULL, NULL },
-                                                     // (ak_function_void *) ak_hash_new_streebog512 },
-   { hash_function, algorithm, "streebog512", "1.2.643.2.2.9", NULL, NULL },
-                                                  // (ak_function_void *) ak_hash_new_gosthash94_csp },
+   { hash_function, algorithm, "streebog256", "1.2.643.7.1.1.2.2", NULL,
+                                                     (ak_function_void *) ak_hash_new_streebog256 },
+   { hash_function, algorithm, "streebog512", "1.2.643.7.1.1.2.3", NULL,
+                                                     (ak_function_void *) ak_hash_new_streebog512 },
+   { hash_function, algorithm, "gosthash94", "1.2.643.2.2.9", NULL,
+                                                  (ak_function_void *) ak_hash_new_gosthash94_csp },
 
   /* 3. идентификаторы параметров алгоритма бесключевого хеширования ГОСТ Р 34.11-94.
         в дереве библиотеки: 1.2.643.2.52.1.3 - параметры функций бесключевого хеширования */
@@ -69,12 +69,12 @@
   /* 4. идентификаторы алгоритмов HMAC согласно Р 50.1.113-2016
         в дереве библиотеки: 1.2.643.2.52.1.4 - функции ключевого хеширования (имитозащиты)
         в дереве библиотеки: 1.2.643.2.52.1.5 - параметры функций ключевого хеширования (имитозащиты) */
-   { hmac_function, algorithm, "hmac-streebog256", "1.2.643.7.1.1.4.1", NULL, NULL },
-                                                     // (ak_function_void *) ak_hmac_new_streebog256 },
-   { hmac_function, algorithm, "hmac-streebog512", "1.2.643.7.1.1.4.2", NULL, NULL},
-                                                     // (ak_function_void *) ak_hmac_new_streebog512 },
-   { hmac_function, algorithm, "hmac-gosthash94", "1.2.643.2.52.1.4.1", NULL, NULL },
-                                                  // (ak_function_void *) ak_hmac_new_gosthash94_csp },
+   { hmac_function, algorithm, "hmac-streebog256", "1.2.643.7.1.1.4.1", NULL,
+                                                     (ak_function_void *) ak_hmac_new_streebog256 },
+   { hmac_function, algorithm, "hmac-streebog512", "1.2.643.7.1.1.4.2", NULL,
+                                                     (ak_function_void *) ak_hmac_new_streebog512 },
+   { hmac_function, algorithm, "hmac-gosthash94", "1.2.643.2.52.1.4.1", NULL,
+                                                  (ak_function_void *) ak_hmac_new_gosthash94_csp },
 
   /* 6. идентификаторы алгоритмов блочного шифрования
         в дереве библиотеки: 1.2.643.2.52.1.6 - алгоритмы блочного шифрования
@@ -151,12 +151,8 @@
  return ( sizeof( libakrypt_oids )/( sizeof( struct oid )) - 1 );
 }
 
-
-
-
-
 /* ----------------------------------------------------------------------------------------------- */
- const char *ak_oid_get_name( ak_handle handle )
+ const char *ak_libakrypt_oid_get_name( ak_handle handle )
 {
   ak_oid oid = ak_handle_get_context( handle, oid_engine );
   if( oid == NULL ) {
@@ -167,7 +163,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- const char *ak_oid_get_id( ak_handle handle )
+ const char *ak_libakrypt_oid_get_id( ak_handle handle )
 {
   ak_oid oid = ak_handle_get_context( handle, oid_engine );
   if( oid == NULL ) {
@@ -178,7 +174,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- const char *ak_oid_get_engine_str( ak_handle handle )
+ const char *ak_libakrypt_oid_get_engine_str( ak_handle handle )
 {
   ak_oid oid = ak_handle_get_context( handle, oid_engine );
   if( oid == NULL ) {
@@ -189,7 +185,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- const ak_oid_engine ak_oid_get_engine( ak_handle handle )
+ const ak_oid_engine ak_libakrypt_oid_get_engine( ak_handle handle )
 {
   ak_oid oid = ak_handle_get_context( handle, oid_engine );
   if( oid == NULL ) {
@@ -200,7 +196,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- const char *ak_oid_get_mode_str( ak_handle handle )
+ const char *ak_libakrypt_oid_get_mode_str( ak_handle handle )
 {
   ak_oid oid = ak_handle_get_context( handle, oid_engine );
   if( oid == NULL ) {
@@ -211,7 +207,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- const ak_oid_mode ak_oid_get_mode( ak_handle handle )
+ const ak_oid_mode ak_libakrypt_oid_get_mode( ak_handle handle )
 {
   ak_oid oid = ak_handle_get_context( handle, oid_engine );
   if( oid == NULL ) {
@@ -233,7 +229,7 @@
     \ref ak_error_wrong_handle, код ошибки может быть получен с помощью вызова функции
     ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- ak_handle ak_oid_find_by_engine( ak_oid_engine engine )
+ ak_handle ak_libakrypt_find_oid_by_engine( ak_oid_engine engine )
 {
   size_t idx = 0;
   ak_handle handle = ak_error_wrong_handle;
@@ -267,10 +263,10 @@
     Пример для перебора всех существующих OID блочного шифрования.
 
    \code
-     ak_handle handle = ak_oid_find_by_engine( block_cipher );
+     ak_handle handle = ak_libakrypt_find_oid_by_engine( block_cipher );
 
      while( handle != ak_error_wrong_handle )
-       handle = ak_oid_findnext_by_engine( handle, block_cipher );
+       handle = ak_libakrypt_findnext_oid_by_engine( handle, block_cipher );
    \endcode
 
     @param handle Дескриптор, начиная с которого производится поиск.
@@ -279,7 +275,7 @@
     \ref ak_error_wrong_handle, код ошибки может быть получен с помощью вызова функции
     ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- ak_handle ak_oid_findnext_by_engine( ak_handle handle, ak_oid_engine engine )
+ ak_handle ak_libakrypt_findnext_oid_by_engine( ak_handle handle, ak_oid_engine engine )
 {
   size_t idx = 0;
   ak_oid oid = NULL;
@@ -301,16 +297,16 @@
     return ak_error_wrong_handle;
   }
 
- /* получаем рабочий указатель на элемент массива OID */
+ /* получаем рабочий указатель на OID в качестве элемента глобального массива контекстов */
   if(( oid = (ak_oid) manager->array[idx]->ctx ) == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__,
                                            "using null pointer in handle to internal structure" );
     return ak_error_wrong_handle;
   }
 
- /* сдвигаемся по массиву вперед */
+ /* сдвигаемся по массиву OID вперед */
   while( (++oid)->engine != undefined_engine ) {
-   /* в случае успешного поиска устанавливаем новое значение контекста OID */
+   /* в случае успешного поиска устанавливаем новое значение контекста в глобальном массиве */
     if( engine == undefined_engine ) { manager->array[idx]->ctx = oid; return handle; }
     if( oid->engine == engine ) { manager->array[idx]->ctx = oid; return handle; }
   }
@@ -320,20 +316,128 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_handle ak_oid_find_by_name( const char *name )
+/*! @param name Человекочитаемое имя разыскиваемого идентификатора.
+    @return Функция возвращает дескриптор найденного OID. В случае неверного поиска возвращается
+    \ref ak_error_wrong_handle, код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_libakrypt_find_oid_by_name( const char *name )
 {
+  size_t idx = 0;
   ak_handle handle = ak_error_wrong_handle;
+
+ /* переборный цикл с первого элемента массива */
+  do{
+     if( ak_ptr_is_equal( (void *) name,
+                      (void *)libakrypt_oids[idx].name, strlen( libakrypt_oids[idx].name ))) break;
+  } while( ++idx < ak_libakrypt_oids_count( ));
+  if( idx == ak_libakrypt_oids_count( )) return handle;
+
+ /* создаем дескриптор */
+  if(( handle = ak_context_manager_add_node( ak_libakrypt_get_context_manager(),
+                         &libakrypt_oids[idx], oid_engine, "", NULL )) == ak_error_wrong_handle ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong creation of context manager node" );
+    return ak_error_wrong_handle;
+  }
 
  return handle;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_handle ak_oid_find_by_id( const char *id )
+/*! @param id Идентификатор, заданный в виде последовательности чисел, разделенных точками
+    @return Функция возвращает дескриптор найденного OID. В случае неверного поиска возвращается
+    \ref ak_error_wrong_handle, код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_libakrypt_find_oid_by_id( const char *id )
 {
+  size_t idx = 0;
   ak_handle handle = ak_error_wrong_handle;
+
+ /* переборный цикл с первого элемента массива */
+  do{
+     if( ak_ptr_is_equal( (void *) id,
+                        (void *)libakrypt_oids[idx].id, strlen( libakrypt_oids[idx].id ))) break;
+  } while( ++idx < ak_libakrypt_oids_count( ));
+  if( idx == ak_libakrypt_oids_count( )) return handle;
+
+ /* создаем дескриптор */
+  if(( handle = ak_context_manager_add_node( ak_libakrypt_get_context_manager(),
+                         &libakrypt_oids[idx], oid_engine, "", NULL )) == ak_error_wrong_handle ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong creation of context manager node" );
+    return ak_error_wrong_handle;
+  }
 
  return handle;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                          поиск OID - функции внутреннего интерфейса                             */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_oid ak_oid_find_by_name( const char *name )
+{
+  size_t idx = 0;
+  if( name == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to oid name" );
+    return NULL;
+  }
+  do{
+     if( ak_ptr_is_equal( (char *)name, (char *)libakrypt_oids[idx].name,
+                                strlen( libakrypt_oids[idx].name ))) return &libakrypt_oids[idx];
+  } while( ++idx < ak_libakrypt_oids_count( ));
+  ak_error_message( ak_error_oid_name, __func__, "searching oid with wrong name" );
+
+ return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_oid ak_oid_find_by_id( const char *id )
+{
+  size_t idx = 0;
+  if( id == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to oid name" );
+    return NULL;
+  }
+
+  do{
+     if( ak_ptr_is_equal( (char *)id, (char *)libakrypt_oids[idx].id,
+                                strlen( libakrypt_oids[idx].id ))) return &libakrypt_oids[idx];
+  } while( ++idx < ak_libakrypt_oids_count( ));
+  ak_error_message( ak_error_oid_id, __func__, "searching oid with wrong idetifier" );
+
+ return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_oid ak_oid_find_by_engine( ak_oid_engine engine )
+{
+  size_t idx = 0;
+  do{
+     if( libakrypt_oids[idx].engine == engine ) return &libakrypt_oids[idx];
+  } while( ++idx < ak_libakrypt_oids_count( ));
+  ak_error_message( ak_error_oid_name, __func__, "searching oid with wrong engine" );
+
+ return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_oid ak_oid_findnext_by_engine( ak_oid startoid, ak_oid_engine engine )
+{
+ ak_oid oid = startoid;
+
+ if( oid == NULL) {
+   ak_error_message( ak_error_null_pointer, __func__, "using null pointer to oid" );
+   return NULL;
+ }
+
+ /* сдвигаемся по массиву OID вперед */
+  while( (++oid)->engine != undefined_engine ) {
+    if( oid->engine == engine ) return oid;
+  }
+
+ return NULL;
+}
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                 вспомогательные функции для типов ak_oid_engine и ak_oid_mode                   */

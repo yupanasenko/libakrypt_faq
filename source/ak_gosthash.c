@@ -83,7 +83,7 @@
      @return Функция возвращает либо ak_error_null_pointer, если хотя бы один из
      указателей не определен. В случае успешного преобразования возвращается ak_error_ok.           */
  /* ----------------------------------------------------------------------------------------------- */
- int ak_kbox_to_magma( const ak_kbox k, magma perm ) 
+ int ak_kbox_to_magma( const ak_kbox k, magma perm )
 {
   return ak_kbox_to_sbox( k, perm[0], perm[1], perm[2], perm[3] );
 }
@@ -440,22 +440,20 @@
            таблицы замен
     @return Функция возвращает код ошибки или \ref ak_error_ok (в случае успеха)                   */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hash_create_gosthash94( ak_hash ctx, ak_handle handle )
+ int ak_hash_create_gosthash94( ak_hash ctx, ak_oid oid )
 {
-  ak_oid oid = NULL;
   int error = ak_error_ok;
   struct gosthash94 *sx = NULL;
 
  /* выполняем многочисленные проверки */
   if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                              "using null pointer to hash context" );
-  if(( oid = ak_handle_get_context( handle, oid_engine )) == NULL )
-     return ak_error_message( ak_error_get_value(), __func__, "using wrong handle to OID" );
-
+  if( oid == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                                      "using null pointer to OID" );
   if( oid->engine != hash_function ) return ak_error_message( ak_error_oid_engine, __func__ ,
                                                                     "using not hash function OID" );
   if( oid->mode != kbox_params ) return ak_error_message( ak_error_oid_mode, __func__ ,
-                                                           "using a wrong mode hash functoin OID" );
+                                                           "using a wrong mode hash function OID" );
 
  /* инициализируем контекст */
   if(( error = ak_hash_create( ctx, sizeof( struct gosthash94 ), 32 )) != ak_error_ok )
@@ -468,8 +466,7 @@
   ak_kbox_to_sbox( (const ak_kbox) oid->data, sx->k21, sx->k43, sx->k65, sx->k87 );
 
  /* устанавливаем OID алгоритма хеширования */
-  if(( ctx->oid = ak_handle_get_context( ak_oid_find_by_name( "gosthash94" ),
-                                                                  oid_engine )) == NULL )
+  if(( ctx->oid = ak_oid_find_by_name( "gosthash94" )) == NULL )
     return ak_error_message( ak_error_get_value(), __func__, "internal OID search error");
 
  /* устанавливаем функции - обработчики событий */

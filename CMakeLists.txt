@@ -40,14 +40,14 @@ set( HEADERS        source/ak_tools.h
                     source/ak_random.h
                     source/ak_parameters.h
                     source/ak_oid.h
-#                    source/ak_hash.h
-#                    source/ak_compress.h
-#                    source/ak_skey.h
-#                    source/ak_hmac.h
-#                    source/ak_mpzn.h
-#                    source/ak_curves.h
-#                    source/ak_sign.h
-#                    source/ak_bckey.h
+                    source/ak_hash.h
+                    source/ak_compress.h
+                    source/ak_skey.h
+                    source/ak_hmac.h
+                    source/ak_mpzn.h
+                    source/ak_curves.h
+                    source/ak_sign.h
+                    source/ak_bckey.h
 )
 
 set( SOURCES        source/ak_log.c
@@ -57,25 +57,21 @@ set( SOURCES        source/ak_log.c
                     source/ak_buffer.c
                     source/ak_random.c
                     source/ak_oid.c
- #                   source/ak_hash.c
- #                   source/ak_gosthash.c
- #                   source/ak_streebog.c
-#                    source/ak_compress.c
-#                    source/ak_skey.c
-#                    source/ak_hmac.c
-#                    source/ak_mpzn.c
-#                    source/ak_curves.c
-#                    source/ak_sign.c
-#                    source/ak_bckey.c
-#                    source/ak_magma.c
+                    source/ak_hash.c
+                    source/ak_gosthash.c
+                    source/ak_streebog.c
+                    source/ak_compress.c
+                    source/ak_skey.c
+                    source/ak_hmac.c
+                    source/ak_mpzn.c
+                    source/ak_curves.c
+                    source/ak_sign.c
+                    source/ak_bckey.c
+                    source/ak_magma.c
 )
 
-#file( GLOB ASN1_HEADERS ${CMAKE_SOURCE_DIR}/asn1/*.h )
-#file( GLOB ASN1_SOURCES ${CMAKE_SOURCE_DIR}/asn1/*.c )
-
-set( ASN1_HEADERS )
-set( ASN1_SOURCES )
-
+file( GLOB ASN1_HEADERS ${CMAKE_SOURCE_DIR}/asn1/*.h )
+file( GLOB ASN1_SOURCES ${CMAKE_SOURCE_DIR}/asn1/*.c )
 
 set( ASN1_FILES     ${CMAKE_SOURCE_DIR}/asn1/Makefile.initial
                     ${CMAKE_SOURCE_DIR}/asn1/KeyContainer.asn1 )
@@ -157,9 +153,9 @@ message("-- Additional libraries is ${LIBAKRYPT_LIBS}" )
 
 # -------------------------------------------------------------------------------------------------- #
 # сборка консольной утилиты
-#add_executable( akrypt${LIBAKRYPT_EXT} ${AKRYPT_SOURCES} )
-#target_include_directories( akrypt${LIBAKRYPT_EXT} PUBLIC "./akrypt" )
-#target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+add_executable( akrypt${LIBAKRYPT_EXT} ${AKRYPT_SOURCES} )
+target_include_directories( akrypt${LIBAKRYPT_EXT} PUBLIC "./akrypt" )
+target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
 
 # -------------------------------------------------------------------------------------------------- #
 # сборка тестовых примеров
@@ -169,11 +165,11 @@ set( EXAMPLES_LIST intro
                    randomize
                    random-system
                    oid
-#                   hash
-#                   hash-oids
-#                   hmac
-#                   hmac-oids
-#                   sign
+                   hash
+                   hash-oids
+                   hmac
+                   hmac-oids
+                   sign
 )
 
 # организуем сборку примеров со статической линковкой
@@ -197,11 +193,11 @@ endif()
 set( INTERNAL_EXAMPLES_LIST
                    context-manager-node
                    context-manager
-#                   hash-file
-#                   sign-internal
-#                   bckey-internal
-#                   xcrypt-internal
-#                   bckey-container
+                   hash-file
+                   sign-internal
+                   bckey-internal
+                   xcrypt-internal
+                   bckey-container
 )
 
 if( CMAKE_HOST_UNIX )

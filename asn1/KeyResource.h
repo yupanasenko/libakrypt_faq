@@ -13,19 +13,24 @@
 
 /* Including external dependencies */
 #include "CipherKeyResource.h"
-#include <constr_SEQUENCE.h>
+#include <constr_CHOICE.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Forward declarations */
-struct Validity;
+/* Dependencies */
+typedef enum KeyResource_PR {
+	KeyResource_PR_NOTHING,	/* No components present */
+	KeyResource_PR_counter
+} KeyResource_PR;
 
 /* KeyResource */
 typedef struct KeyResource {
-	CipherKeyResource_t	*counter	/* OPTIONAL */;
-	struct Validity	*time	/* OPTIONAL */;
+	KeyResource_PR present;
+	union KeyResource_u {
+		CipherKeyResource_t	 counter;
+	} choice;
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
@@ -37,9 +42,6 @@ extern asn_TYPE_descriptor_t asn_DEF_KeyResource;
 #ifdef __cplusplus
 }
 #endif
-
-/* Referred external types */
-#include "AsymmetricKeyResource.h"
 
 #endif	/* _KeyResource_H_ */
 #include <asn_internal.h>

@@ -9,9 +9,15 @@
 #ifndef	ASN_SYSTEM_H
 #define	ASN_SYSTEM_H
 
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE /* for snprintf() on some linux systems  */
+#ifdef	HAVE_CONFIG_H
+#include "config.h"
 #endif
+
+//#ifndef _BSD_SOURCE
+//#define _BSD_SOURCE /* for snprintf() on some linux systems  */
+//#endif
+
+#define _DEFAULT_SOURCE
 
 #include <stdio.h>	/* For snprintf(3) */
 #include <stdlib.h>	/* For *alloc(3) */
@@ -33,9 +39,9 @@
 
 /* To avoid linking with ws2_32.lib, here's the definition of ntohl() */
 #define sys_ntohl(l)	((((l) << 24)  & 0xff000000)	\
-			| (((l) << 8) & 0xff0000)	\
-			| (((l) >> 8)  & 0xff00)	\
-			| ((l >> 24) & 0xff))
+            | (((l) << 8) & 0xff0000)	\
+            | (((l) >> 8)  & 0xff00)	\
+            | ((l >> 24) & 0xff))
 
 #ifdef _MSC_VER			/* MSVS.Net */
 #ifndef __cplusplus
@@ -128,7 +134,7 @@ typedef	unsigned int	uint32_t;
 #ifndef	MIN		/* Suitable for comparing primitive types (integers) */
 #if defined(__GNUC__)
 #define	MIN(a,b)	({ __typeof a _a = a; __typeof b _b = b;	\
-	((_a)<(_b)?(_a):(_b)); })
+    ((_a)<(_b)?(_a):(_b)); })
 #else	/* !__GNUC__ */
 #define	MIN(a,b)	((a)<(b)?(a):(b))	/* Unsafe variant */
 #endif /* __GNUC__ */

@@ -28,12 +28,12 @@
  printf("\n");
 
  /* 3. Прямой поиск: от OID к дескриптору функции хеширования */
-  handle = ak_oid_find_by_engine( hmac_function );
+  handle = ak_libakrypt_find_oid_by_engine( hmac_function );
   while( handle != ak_error_wrong_handle ) {
-    if( ak_oid_get_mode( handle ) == algorithm ) {
+    if( ak_libakrypt_oid_get_mode( handle ) == algorithm ) {
       ak_buffer buff = NULL;
-      ak_handle ctx_handle = ak_hmac_new_oid( handle, ak_oid_get_name( handle ));
-      printf(" name: %s (%s)\n", ak_oid_get_name( handle ), ak_oid_get_id( handle ));
+      ak_handle ctx_handle = ak_hmac_new_oid( handle, ak_libakrypt_oid_get_name( handle ));
+      printf(" name: %s (%s)\n", ak_libakrypt_oid_get_name( handle ), ak_libakrypt_oid_get_id( handle ));
 
         /* устанавливаем фиксированный ключ */
          ak_hmac_set_key_password( ctx_handle, "password", 8, "initial vector", 14 );
@@ -54,7 +54,7 @@
       while_exit: ak_handle_delete( ctx_handle );
     }
    /* ищем следующий OID с тем же типом криптографического механизма */
-    handle = ak_oid_findnext_by_engine( handle, hmac_function );
+    handle = ak_libakrypt_findnext_oid_by_engine( handle, hmac_function );
   }
 
  return ak_libakrypt_destroy();

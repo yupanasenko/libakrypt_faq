@@ -231,8 +231,7 @@
 
  /* устанавливаем размер хешхода и OID алгоритма хеширования */
   ctx->hsize = 32; /* длина хешкода составляет 256 бит */
-  if(( ctx->oid = ak_handle_get_context(
-                          ak_oid_find_by_name( "streebog256" ), oid_engine )) == NULL )
+  if(( ctx->oid = ak_oid_find_by_name( "streebog256" )) == NULL )
       return ak_error_message( ak_error_get_value(), __func__, "internal OID search error");
 
  /* устанавливаем функции - обработчики событий */
@@ -265,8 +264,7 @@
 
  /* устанавливаем размер хешхода и OID алгоритма хеширования */
   ctx->hsize = 64; /* длина хешкода составляет 512 бит */
-  if(( ctx->oid = ak_handle_get_context(
-                          ak_oid_find_by_name( "streebog512" ), oid_engine )) == NULL )
+  if(( ctx->oid = ak_oid_find_by_name( "streebog512" )) == NULL )
       return ak_error_message( ak_error_get_value(), __func__, "internal OID search error");
 
  /* устанавливаем функции - обработчики событий */

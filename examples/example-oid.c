@@ -16,7 +16,7 @@
 
  /* выводим информацию о всех доступных OID библиотеки
     (для поиска всех используется параметр undefined_engine) */
-  handle = ak_oid_find_by_engine( undefined_engine );
+  handle = ak_libakrypt_find_oid_by_engine( undefined_engine );
   while( handle != ak_error_wrong_handle ) {
 
     /* если мы действительно нашли OID - выводим информацию о нем */
@@ -24,17 +24,20 @@
       else printf("broken handle\n");
 
     /* ищем следующий OID с тем же типом криптографического механизма */
-     handle = ak_oid_findnext_by_engine( handle, undefined_engine );
+     handle = ak_libakrypt_findnext_oid_by_engine( handle, undefined_engine );
   }
+
+ /* выводим информацию об общем колбичестве OID библиотеки */
+ printf("total count of oid's: %ld\n", ak_libakrypt_oids_count( ));
 
  /* ищем OID по его имени */
   printf("\nsearch results:\n");
-  if(( handle = ak_oid_find_by_name( good )) != ak_error_wrong_handle )
+  if(( handle = ak_libakrypt_find_oid_by_name( good )) != ak_error_wrong_handle )
      print_oid_info( handle );
    else printf("oid with name \"%s\" not found\n", good );
 
  /* ищем OID по его цифровому идентификатору (последовательности чисел, разделенных точками */
-  if(( handle = ak_oid_find_by_id( wrong )) != ak_error_wrong_handle )
+  if(( handle = ak_libakrypt_find_oid_by_id( wrong )) != ak_error_wrong_handle )
     print_oid_info( handle );
   else printf("oid with id \"%s\" not found\n", wrong );
 
@@ -44,7 +47,11 @@
 /* реализация функции вывода информации об OID */
  void print_oid_info( ak_handle handle )
 {
-  printf("%s: ", ak_handle_get_engine_str( handle ));
-  printf("%s (%s) ", ak_oid_get_name( handle ), ak_oid_get_id( handle ));
-  printf("[%s, %s]\n", ak_oid_get_engine_str( handle ), ak_oid_get_mode_str( handle ));
+  printf("%s: %s (%s) [%s, %s]\n",
+    ak_handle_get_engine_str( handle ),
+    ak_libakrypt_oid_get_name( handle ),
+    ak_libakrypt_oid_get_id( handle ),
+    ak_libakrypt_oid_get_engine_str( handle ),
+    ak_libakrypt_oid_get_mode_str( handle )
+  );
 }

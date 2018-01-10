@@ -240,8 +240,7 @@
     return ak_error_message( error, __func__, "wrong initalization of block cipher key context" );
 
  /* устанавливаем OID алгоритма шифрования */
-  if(( bkey->key.oid =
-         ak_handle_get_context( ak_oid_find_by_name( "magma" ), oid_engine )) == NULL ) {
+  if(( bkey->key.oid = ak_oid_find_by_name( "magma" )) == NULL ) {
     error = ak_error_get_value();
     ak_error_message( error, __func__, "wrong search of predefined magma block cipher OID" );
     ak_bckey_destroy( bkey );
