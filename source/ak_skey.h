@@ -32,6 +32,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_hash.h>
  #include <ak_buffer.h>
+ #include <SecretKeyData.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /* Предварительные описания ключевых структур */
@@ -148,6 +149,13 @@
  ak_bool ak_skey_check_icode_ladditive( ak_skey );
 /*! \brief Проверка значения контрольной суммы ключа. */
  ak_bool ak_skey_check_icode_additive( ak_skey );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Преобразование секретного ключа в ASN1 структуру `SecretKeyData`. */
+ int ak_skey_to_asn1_secret_key_data( ak_skey , SecretKeyData_t * ,
+                                                  const ak_pointer , const size_t , const char * );
+/*! \brief Сохранение секретного ключа в заданном файле. */
+ int ak_skey_to_der_file( ak_skey , const char *, const ak_pointer , const size_t, const char * );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

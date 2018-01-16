@@ -5,36 +5,36 @@
  * 	`asn1c -fwide-types -findirect-choice`
  */
 
-#ifndef	_SecretKeyData_H_
-#define	_SecretKeyData_H_
+#ifndef	_AlgorithmIdentifier_H_
+#define	_AlgorithmIdentifier_H_
 
 
 #include <asn_application.h>
 
 /* Including external dependencies */
-#include "SecretKey.h"
-#include <OCTET_STRING.h>
+#include <OBJECT_IDENTIFIER.h>
+#include <ANY.h>
 #include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* SecretKeyData */
-typedef struct SecretKeyData {
-	SecretKey_t	 data;
-	OCTET_STRING_t	 integrityCode;
+/* AlgorithmIdentifier */
+typedef struct AlgorithmIdentifier {
+	OBJECT_IDENTIFIER_t	 algorithm;
+	ANY_t	*parameters	/* OPTIONAL */;
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
-} SecretKeyData_t;
+} AlgorithmIdentifier_t;
 
 /* Implementation */
-extern asn_TYPE_descriptor_t asn_DEF_SecretKeyData;
+extern asn_TYPE_descriptor_t asn_DEF_AlgorithmIdentifier;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* _SecretKeyData_H_ */
+#endif	/* _AlgorithmIdentifier_H_ */
 #include <asn_internal.h>

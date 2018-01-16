@@ -31,6 +31,56 @@ akrypt \- консольная утилита для реализации рос
 В случае, когда опция -a не задана, используется алгоритм "Стрибог256", регламентированный
 национальным стандартом ГОСТ Р 34.11-2012.
 
+.B Сравнение с утилитами с аналогичной функциональностью
+
+Для сравнения были выьраны утилиты gostsum и rhash, позволяющие вычислять
+
+
+user@host:~$ echo -n hello > test.file
+user@host:~$ gostsum test.file
+
+ea50649ed8d4cf1925bd2ed2a84aa2171215d78f271f65f30d0240afdb6dea92 test.file
+
+Генерация такого же значения, как и у утилиты gosthash
+
+user@host:~$ akrypt icode -a gosthash94 --reverse-order test.file
+
+EA50649ED8D4CF1925BD2ED2A84AA2171215D78F271F65F30D0240AFDB6DEA92 test.file
+
+Проверка значения, выработанного gosthash
+
+user@host:~$ gostsum test.file > test.checksum
+
+user@host:~$ akrypt icode -a gosthash94 --reverse-order -c test.checksum
+
+test.file Ok
+
+total: 1 files, where: correct 1, wrong 0.
+
+
+Генерация такого же значения, как и у утилиты rhash
+
+user@host:~$ rhash --gost-cryptopro test.file
+
+92ea6ddbaf40020df3651f278fd7151217a24aa8d22ebd2519cfd4d89e6450ea  test.file
+
+user@host:~$ akrypt icode -a gosthash94 test.file
+
+92EA6DDBAF40020DF3651F278FD7151217A24AA8D22EBD2519CFD4D89E6450EA test.file
+
+
+А вот на более современном алгоритме ни чего разворачивать не приходится
+
+gost12sum test.file
+
+3fb0700a41ce6e41413ba764f98bf2135ba6ded516bea2fae8429cc5bdd46d6d test.file
+
+alex@kenzo:~/Works/lib/akrypt/build-libakrypt-0.x-gcc-Release$ akrypt icode test.file
+
+3FB0700A41CE6E41413BA764F98BF2135BA6DED516BEA2FAE8429CC5BDD46D6D test.file
+
+
+
 .SH ВСПОМОГАТЕЛЬНЫЕ И ИНФОРМАЦИОННЫЕ КОМАНДЫ
 
 .SH ОПЦИИ
@@ -57,7 +107,7 @@ akrypt \- консольная утилита для реализации рос
  - ГОСТ Р 34.12-2015,
  - ГОСТ Р 34.13-2015.
 
-Методические рекомендации Росстандарта 
+Методические рекомендации Росстандарта
  - Р 50.1.111-2016,
  - Р 50.1.113-2016
 

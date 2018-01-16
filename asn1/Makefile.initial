@@ -1,6 +1,8 @@
 # первичная генерация исполняемых файлов
 all:
 	mv -v asn_system.h asn_system.h.old
-	asn1c -fwide-types KeyContainer.asn1
+	rm -f *.c *.h
+	asn1c -fwide-types -findirect-choice KeyContainer.asn1
 	rm converter-sample.c Makefile.am.sample asn_system.h
 	mv -v asn_system.h.old asn_system.h
+

@@ -145,12 +145,14 @@
  #define ak_error_read_data                   (-13)
 /*! \brief Ошибка записи в файл (устройство). */
  #define ak_error_write_data                  (-14)
+/*! \brief Ошибка записи в файл - файл существует */
+ #define ak_error_file_exists                 (-15)
 /*! \brief Неверное значение дескриптора объекта. */
- #define ak_error_wrong_handle                (-15)
+ #define ak_error_wrong_handle                (-16)
 /*! \brief Ошибка, возникающая в случае неправильного значения размера структуры хранения контекстов. */
- #define ak_error_context_manager_size        (-16)
+ #define ak_error_context_manager_size        (-17)
 /*! \brief Ошибка, возникающая при превышении числа возможных элементов структуры хранения контекстов. */
- #define ak_error_context_manager_max_size    (-17)
+ #define ak_error_context_manager_max_size    (-18)
 /*! \brief Неверный тип криптографического механизма. */
  #define ak_error_oid_engine                  (-19)
 /*! \brief Неверный режим использования криптографического механизма. */

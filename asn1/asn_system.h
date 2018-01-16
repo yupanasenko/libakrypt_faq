@@ -9,14 +9,6 @@
 #ifndef	ASN_SYSTEM_H
 #define	ASN_SYSTEM_H
 
-#ifdef	HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-//#ifndef _BSD_SOURCE
-//#define _BSD_SOURCE /* for snprintf() on some linux systems  */
-//#endif
-
 #define _DEFAULT_SOURCE
 
 #include <stdio.h>	/* For snprintf(3) */
@@ -130,6 +122,8 @@ typedef	unsigned int	uint32_t;
 #ifndef	offsetof	/* If not defined by <stddef.h> */
 #define	offsetof(s, m)	((ptrdiff_t)&(((s *)0)->m) - (ptrdiff_t)((s *)0))
 #endif	/* offsetof */
+
+#define	myoffsetof(s, m)	((ptrdiff_t)&(((s *)0)->m) - (ptrdiff_t)((s *)0))
 
 #ifndef	MIN		/* Suitable for comparing primitive types (integers) */
 #if defined(__GNUC__)

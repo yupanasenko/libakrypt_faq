@@ -80,13 +80,15 @@
         в дереве библиотеки: 1.2.643.2.52.1.6 - алгоритмы блочного шифрования
         в дереве библиотеки: 1.2.643.2.52.1.7 - параметры алгоритмов блочного шифрования */
    { block_cipher, algorithm, "magma", "1.2.643.2.2.21", NULL, NULL },
-   { block_cipher, algorithm,  "kuznechik", "1.2.643.7.1.1.5.1", NULL, NULL },
+   { block_cipher, algorithm,  "kuznechik", "1.2.643.7.1.1.5.2", NULL, NULL }, // или "1.2.643.7.1.1.5.1" ?
 
   /* 8. идентификаторы режимов работы блочных шифров.
         в дереве библиотеки: 1.2.643.2.52.1.8 - режимы работы блочных шифров
         в дереве библиотеки: 1.2.643.2.52.1.9 - параметры режимов работы блочных шифров  */
    { block_cipher, ecb, "ecb", "1.2.643.2.52.1.8.1", NULL, NULL },
-   { block_cipher, counter, "counter", "1.2.643.2.52.1.8.2", NULL, NULL },
+   { block_cipher, counter, "counter-magma", "1.2.643.2.52.1.8.2.1", NULL, NULL },
+   { block_cipher, counter, "counter-kuznechik", "1.2.643.2.52.1.8.2.2", NULL, NULL },
+
    // { block_cipher, cfb, "cfb", "1.2.643.2.52.1.8.3", NULL, NULL },
    // { block_cipher, cbc, "cbc", "1.2.643.2.52.1.8.4", NULL, NULL },
    // { block_cipher, ofb, "ofb", "1.2.643.2.52.1.8.5", NULL, NULL },
@@ -438,6 +440,33 @@
  return NULL;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \b Внимание. Структура OBJECT_IDENTIFIER_t должна быть предварительно создана.
+
+    @param oid Идентификтор объекта, содержащий символьное (строковое) представление OID
+    @param oidt Контекст типа OBJECT_IDENTIFIER_t, используемый в ASN1 нотациях
+    @return В случае успеха возвращается \ref ak_error_ok. В противном случае,
+    возвращается код ошибки, в частности, если символьное представление OID содержит
+    более 24 разделенных точками чисел, то возбуждается ошибка.                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_oid_to_asn1_object_identifier( ak_oid oid, OBJECT_IDENTIFIER_t *oidt )
+{
+  int cnt = 0;
+  long arcs[24]; /* массив для хранения временных значений */
+
+  if( oid == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                                      "using null pointer to OID");
+  if( oidt == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using null pointer to OBJECT_IDENTIFIER_t");
+  if(( cnt = OBJECT_IDENTIFIER_parse_arcs( oid->id, -1, arcs, 24, NULL )) < 0 )
+    return ak_error_message_fmt( ak_error_oid_id, __func__,
+       "incorrect transformation of OID's constant value to array of longs (structure has %d numbers)",
+                                                                                             cnt );
+  if(( cnt = OBJECT_IDENTIFIER_set_arcs( oidt, arcs, sizeof( arcs[0] ), cnt )) < 0 )
+    return ak_error_message( ak_error_oid_id, __func__,
+                                "incorrect transformation array of longs to OBJECT_IDENTIFIER_t" );
+ return ak_error_ok;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                 вспомогательные функции для типов ak_oid_engine и ak_oid_mode                   */

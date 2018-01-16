@@ -19,7 +19,7 @@ cmake_minimum_required( VERSION 3.2 )
 project( libakrypt )
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 5 )
-set( MINOR_VERSION 7 )
+set( MINOR_VERSION 8 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -209,13 +209,14 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # напоследок тестовые примеры для арифметических операций
-if( LIBAKRYPT_GMP_TESTS )
-  set( ARITHMETIC_TESTS_LIST
+set( ARITHMETIC_TESTS_LIST
                    mpzn-convert
                    mpzn-arithmetic
                    mpzn-montgomery
-                   mpzn-rem )
+                   mpzn-rem
+)
 
+if( LIBAKRYPT_GMP_TESTS )
   foreach( programm ${ARITHMETIC_TESTS_LIST} )
      add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
      target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static gmp )

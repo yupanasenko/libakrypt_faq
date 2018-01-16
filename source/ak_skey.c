@@ -29,7 +29,10 @@
  #include <time.h>
  #include <ak_tools.h>
  #include <ak_hmac.h>
+ #include <ak_bckey.h>
  #include <ak_curves.h>
+ #include <ak_compress.h>
+ #include <KeyValue.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция инициализирует поля структуры, выделяя необходимую память. Всем полям
@@ -784,6 +787,319 @@
  /* устанавливаем флаг того, что ключевое значение определено.
     теперь ключ можно использовать в криптографических алгоритмах */
   skey->flags |= ak_skey_flag_set_key;
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                    Функциии для сохранения/чтения ключеврой информации                          */
+/* ----------------------------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция для итерационного вычисления сжимающего отображения при der-кодировании.
+
+   Функция передается в качестве параметра в функцию der_encode(), что позволяет
+   итеративно вычислять значение сжимающего отображения, как правило, hmac от секретного ключа.
+   При этом на вход функции могут подаваться фрагменты произвольного размера.
+
+   @param buffer Указатель на буффер, в котором хранятся обрабатываемые данные
+   @param size Размер данных (в байтах)
+   @param app_key Указатель на струтуру криптографического преобразования ak_compress
+   (может использоваться как для функций хеширования, так и для вычисления имитовставки)
+
+   @return В соответствии с соглашением функции der_encode, данная функция возвращает ноль, если
+   все усспешно, и -1 если произошла ошибка. Код ошибки можно получить с помощью вызова функции
+   ak_error_get_value().                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_skey_der_encode_update( const void *buffer, size_t size, void *app_key )
+{
+  return ak_compress_update(
+               ( ak_compress )app_key, ( const ak_pointer ) buffer, size ) != ak_error_ok ? -1 : 0;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Перед преобразованием контекст ключа и структура `SecretKeyData` должны быть инициализированы.
+    Контекст ключа должен содержать в себе ключевое значение.
+
+    @param skey Контекст секретного ключа, который будет преобразован в ASN1 структуру.
+    @param pass Пароль, представленный в виде строки символов в формате utf8.
+    @param pass_size Длина пароля в байтах.
+    @param description Человекочитаемое описание ключа (если описание не определено,
+           должен передаваться NULL).
+
+    @return В случае успеха возвращается \ref ak_error_ok. В случае возникновения ошибки
+           возвращается ее код.                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_to_asn1_secret_key_data( ak_skey skey, SecretKeyData_t *secretKeyData,
+                            const ak_pointer pass, const size_t pass_size, const char *description )
+{
+ #define temporary_size (1024)
+
+ ak_uint8 salt[64]; /* массив для хранения случайных инициализационных данных */
+ asn_enc_rval_t ec;
+ size_t kivsize = 0;
+ KeyValue_t keyValue;
+ struct hmac hmacKey;
+ int error = ak_error_ok;
+ struct bckey encryptionKey; /* ключ шифрования */
+ struct compress compressCtx; /* структура для итеративного сжатия */
+ ak_uint8 temporary[temporary_size]; /* массив для хранения EncodedKeyValue */
+
+ /* проверяем входные данные */
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                        "using null pointer to block cipher key context" );
+  if( secretKeyData == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                    "using null pointer to asn1 secretKeyData structure" );
+
+  if( pass == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                        "using null pointer to password" );
+  if( pass_size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                       "using password with zero length" );
+  if( skey->key.size + skey->mask.size + 6 > temporary_size )
+    return ak_error_message( ak_error_wrong_length, __func__ ,
+              "size of internal temporary buffer is smaller than given block cipher key" );
+  /* Примечание: здесь мы по-умолчанию считаем, то дополнительные данные
+     для шифрования в структуре KeyValue отсутствуют. Дополнительные 6 байтов
+     требуются для кодирования ASN1 структуры */
+
+ /* перемаскируем текущее значение сохраняемого ключа */
+  if( skey->remask == NULL ) return ak_error_message( ak_error_undefined_function,
+                         __func__, "using not masked bclock cipher key (internal error)" );
+    else skey->remask( skey );
+
+ /* вырабатываем случайное значение,
+  * которое будет использовано для определения всех инициализационных векторов */
+  if(( error = skey->generator.random( &skey->generator, salt, 64 )) != ak_error_ok )
+    return ak_error_message( error, __func__, "wrong generation a temporary salt value" );
+
+ /* создаем ключ шифрования ключа (пока алгоритм Магма, потом можно и Кузнечик) */
+  if(( error = ak_bckey_create_magma( &encryptionKey )) != ak_error_ok )
+    return ak_error_message( error , __func__ ,
+                            "wrong initialization of temporary block cipher key context" );
+
+ /* вырабатываем значение ключа из пароля пользователя */
+  if(( error = ak_bckey_context_set_password( &encryptionKey, pass, pass_size,
+                                                              salt, 16 )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong generation a temporary block cipher value" );
+    ak_bckey_destroy( &encryptionKey );
+    return error;
+  }
+
+ /* создаем вектор, содержащий зашифрованное значение ключа и маски, и формируем указатели */
+  memset( &keyValue, 0, sizeof( struct KeyValue ));
+  keyValue.key.buf = skey->key.data; keyValue.key.size = skey->key.size;
+  keyValue.mask.buf = skey->mask.data; keyValue.mask.size = skey->mask.size;
+
+  /* кодируем в DER-представление и отсоединяем указатели на ключевые данные */
+  memset( temporary, 0, temporary_size );
+  ec = der_encode_to_buffer(  &asn_DEF_KeyValue, &keyValue, temporary, temporary_size );
+  skey->remask( skey );
+  memset( &keyValue, 0, sizeof( struct KeyValue ));
+
+  if( ec.encoded < 0 ) {
+    ak_error_message( error = ak_error_wrong_asn1_encode, __func__,
+                                            "incorect KeyValue's ASN1 structure encoding");
+    ak_ptr_wipe( temporary, temporary_size, &encryptionKey.key.generator );
+    ak_bckey_destroy( &encryptionKey );
+    return error;
+  }
+
+  /* зашифровываем вектор в режиме гаммирования и уничтожаем ключ защиты */
+  if(( error = ak_bckey_context_xcrypt( &encryptionKey, temporary, temporary, ec.encoded,
+                   salt+32, kivsize = (encryptionKey.ivector.size >> 1 ))) != ak_error_ok )
+  {
+    ak_error_message( error, __func__, "wrong encryption of temporary buffer" );
+    ak_bckey_destroy( &encryptionKey );
+    return error;
+  }
+  ak_bckey_destroy( &encryptionKey );
+
+ /* переходим к формированию ASN1 структуры */
+  memset( secretKeyData, 0, sizeof( struct SecretKeyData ));
+
+ /* добавляем зашифрованный ключ */
+  if(( error = ak_ptr_to_asn1_octet_string( temporary,
+                                ec.encoded, &secretKeyData->data.value )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong assignment a secret key to asn1 structure" );
+    goto exit;
+  }
+
+ /* устанавливаем engine */
+  if(( error = ak_oid_to_asn1_object_identifier( skey->oid,
+                   (OBJECT_IDENTIFIER_t *) &secretKeyData->data.engine )) != ak_error_ok ) {
+    ak_error_message( error, __func__,
+                               "incorrect secret key engine assigning to asn1 structure" );
+    goto exit;
+  }
+
+ /* устанавливаем номер ключа */
+  if(( error = ak_ptr_to_asn1_octet_string( skey->number.data,
+                    skey->number.size, &secretKeyData->data.number )) != ak_error_ok ) {
+    ak_error_message( error, __func__,
+                             "incorrect secret key's number assigning to asn1 structure" );
+    goto exit;
+  }
+
+ /* устанавливаем ресурс ключа */
+  if(( secretKeyData->data.resource = malloc( sizeof( struct KeyResource ))) == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "incorrect memory allocation for key resource");
+    goto exit;
+  } else memset( secretKeyData->data.resource, 0 , sizeof( struct KeyResource ));
+  /* TODO: здесь надо проверить, что ресурс содержит либо численное значение,
+   * либо временной интервал - в зависимости от типа ключа */
+  secretKeyData->data.resource->present = KeyResource_PR_counter;
+  secretKeyData->data.resource->choice.counter = skey->resource.counter;
+
+ /* устанавливаем описание ключа
+    внимание, оно может быть непредусмотрительно длинным! */
+  if( description != NULL ) {
+    secretKeyData->data.description = malloc( sizeof( struct OCTET_STRING ));
+    memset( secretKeyData->data.description, 0, sizeof( struct OCTET_STRING ));
+    if(( error = ak_ptr_to_asn1_octet_string( (void *)description,
+                strlen( description ), secretKeyData->data.description )) != ak_error_ok ) {
+      ak_error_message( error, __func__,
+                        "incorrect secret key's description assigning to asn1 structure" );
+      goto exit;
+    }
+  }
+
+ /* устанавливаем параметры алгоритмов защиты */
+  /* 1. число итераций алгоритма PBKDF2 */
+  secretKeyData->data.parameters.iterationCount =
+                                       ak_libakrypt_get_option( "pbkdf2_iteration_count" );
+
+  /* 2. инициализационный вектор для PBKDF2 (ключ шифрования) */
+  if(( error = ak_ptr_to_asn1_octet_string( salt, 16,
+                        &secretKeyData->data.parameters.encryptionSalt )) != ak_error_ok ) {
+    ak_error_message( error, __func__,
+      "incorrect initial vector for PBKDF2 assigning to asn1 structure (encryption key)" );
+    goto exit;
+  }
+
+  /* 3. режим шифрования и блочный шифр */
+  if(( error = ak_oid_to_asn1_object_identifier( ak_oid_find_by_name( "counter-magma" ),
+        (OBJECT_IDENTIFIER_t *) &secretKeyData->data.parameters.encryptionMode.algorithm )) != ak_error_ok ) {
+    ak_error_message( error, __func__,
+                             "incorrect block cipher engine assigning to asn1 structure" );
+    goto exit;
+  }
+
+  /* 4. инициализационный вектор для режима шифрования */
+  if(( error = ak_ptr_to_asn1_octet_string( salt+32, kivsize,
+                          &secretKeyData->data.parameters.encryptionIV )) != ak_error_ok ) {
+    ak_error_message( error, __func__,
+          "incorrect assignment of initial vector for encryption mode to asn1 structure" );
+    goto exit;
+  }
+
+  /* 5. инициализационный вектор для PBKDF2 (ключ имитозащиты) */
+  if(( error = ak_ptr_to_asn1_octet_string( salt+16, 16,
+                         &secretKeyData->data.parameters.integritySalt )) != ak_error_ok ) {
+    ak_error_message( error, __func__,
+       "incorrect initial vector for PBKDF2 assigning to asn1 structure (integrity key)" );
+    goto exit;
+  }
+
+  /* 6. алгоритм вычисления имитовставки */
+  if(( error = ak_oid_to_asn1_object_identifier( ak_oid_find_by_name( "hmac-streebog256" ),
+              (OBJECT_IDENTIFIER_t *) &secretKeyData->data.parameters.integrityMode.algorithm )) != ak_error_ok ) {
+    ak_error_message( error, __func__,
+                                  "incorrect integrity mode assigning to asn1 structure" );
+    goto exit;
+  }
+
+  /* 8. инициализационный вектор для режима имитозащиты */
+
+ /* вычисляем имитовставку */
+  /* 1. формируем ключ имитозащиты */
+  if(( error = ak_hmac_create_streebog256( &hmacKey )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect creation of integrity key" );
+    goto exit;
+  }
+
+  if(( error = ak_hmac_context_set_key_password( &hmacKey,
+                                          pass, pass_size, salt+16, 16 )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong generation of integrity key value" );
+    ak_hmac_destroy( &hmacKey );
+    goto exit;
+  }
+
+  /* 2. создаем структуру для итеративного вычисления значений функции hmac */
+  if(( error = ak_compress_create_hmac( &compressCtx, &hmacKey )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong hmac compress structure creation" );
+    ak_hmac_destroy( &hmacKey );
+    goto exit;
+  }
+
+  /* 3. кодируем данные и одновременно вычисляем имитовставку */
+  ak_compress_clean( &compressCtx );
+  ec = der_encode( &asn_DEF_SecretKey, &secretKeyData->data,
+                                             ak_skey_der_encode_update, &compressCtx );
+  /* результат вычислений помещается в temporary */
+  ak_compress_finalize( &compressCtx, NULL, 0, temporary );
+  ak_compress_destroy( &compressCtx );
+  ak_hmac_destroy( &hmacKey );
+
+  if( ec.encoded < 0 ) {
+    ak_error_message( error = ak_error_wrong_asn1_encode, __func__,
+                                                      "wrong integrity code calculation" );
+    goto exit;
+  }
+
+  /* 4. присваиваем значение */
+  if(( error = ak_ptr_to_asn1_octet_string( temporary, 32, /* 32 - длина имитовставки */
+                                         &secretKeyData->integrityCode )) != ak_error_ok ) {
+    ak_error_message( error, __func__,
+                              "incorrect assignment of integrity code to asn1 structure" );
+    goto exit;
+  }
+
+ /* на-последок, выполняем проверку созданной структуры */
+  if( asn_check_constraints( &asn_DEF_SecretKeyData, secretKeyData, NULL, NULL ) < 0 ) {
+    ak_error_message( ak_error_wrong_asn1_encode, __func__,
+                                              "unsuccessful checking the asn1 structure" );
+    goto exit;
+  }
+
+ return ak_error_ok;
+ exit:
+  SEQUENCE_free( &asn_DEF_SecretKeyData, secretKeyData, 0 );
+ /* так тоже можно освобождать память - более универсальный способ из документации
+    asn_DEF_SecretKeyData.free_struct( &asn_DEF_SecretKeyData, secretKeyData, 0); */
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param skey Контекст секретного ключа, который будет сохранен в файле.
+    @param pass Пароль, представленный в виде строки символов в формате utf8.
+    @param pass_size Длина пароля в байтах.
+    @param filename Имя файла, в который будет сохранен ключ.
+
+    @return В случае успеха возвращается \ref ak_error_ok. В случае возникновения ошибки
+            возвращается ее код.                                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_to_der_file( ak_skey skey, const char *filename,
+                            const ak_pointer pass, const size_t pass_size, const char *description )
+{
+ int error = ak_error_ok;
+ SecretKeyData_t secretKeyData; /* asn1 структура */
+
+ /* проверяем имя заданного файла */
+  if( filename == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                                "using null pointer to file name" );
+ /* вычисляем asn1 представление ключа */
+  if(( error = ak_skey_to_asn1_secret_key_data( skey, &secretKeyData,
+                                                   pass, pass_size, description )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect creation of secret key's asn1 structure");
+
+  /* delme */ asn_fprint( stdout, &asn_DEF_SecretKeyData, &secretKeyData );
+
+ /* сохраняем файл */
+  if(( error = ak_asn1_save_to_der_file( &asn_DEF_SecretKeyData, &secretKeyData, filename )) != ak_error_ok )
+    ak_error_message_fmt( error, __func__, "incorrect saving secret key to \"%s\" file", filename );
+
+ /* освобождаем память */
+  ak_asn1_secret_key_data_destroy( &secretKeyData );
 
  return error;
 }

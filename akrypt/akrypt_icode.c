@@ -49,6 +49,7 @@
   char outfile[FILENAME_MAX]; /* имя файла для вывода результатов */
   size_t total;  /* общее количество обработанных файлов */
   size_t successed; /* количество корректных кодов */
+  ak_bool oreverse; /* флаг разворота выводимых результатов */
  };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -69,12 +70,14 @@
      { "pattern",          1, NULL,  'p' },
      { "output",           1, NULL,  'o' },
      { "recursive",        0, NULL,  'r' },
+     { "reverse-order",    0, NULL,  254 },
      { NULL,               0, NULL,   0  }
   };
 
  /* инициализируем переменную */
   memset( &ic, 0, sizeof( struct icode_info ));
   ic.outfp = stdout;
+  ic.oreverse = ak_false;
 
  /* разбираем опции командной строки */
   do {
@@ -84,6 +87,10 @@
          case 'h' : return akrypt_icode_help();
          case 255 : /* получили от пользователя имя файла для вывода аудита */
                      akrypt_set_audit( optarg );
+                     break;
+
+         case 254 : /* установить обратный порядок вывода байт */
+                     ic.oreverse = ak_true;
                      break;
 
          case 'a' : /* устанавливаем алгоритм хеширования */
@@ -167,7 +174,7 @@
                    break;
     case do_check: /* проверяем контрольную сумму */
                    ak_file_read_by_lines( checkfile, akrypt_icode_check_function, &ic );
-                   printf("\ntotal: %lu files, where correct: %lu, wrong: %lu.\n\n",
+                   printf("\ntotal: %lu files, where: correct %lu, wrong %lu.\n\n",
                                (unsigned long int)ic.total, (unsigned long int)ic.successed,
                                                    (unsigned long int)( ic.total - ic.successed ));
                    break;
@@ -207,7 +214,7 @@
     ak_error_message_fmt( error, __func__, "incorrect integrity code for file %s", filename );
    else {
           ak_ptr_to_hexstr_static( out, ak_hash_get_icode_size( ic->handle ),
-                                                outstr, 2*akrypt_max_icode_size+2, ak_false );
+                                                outstr, 2*akrypt_max_icode_size+2, ic->oreverse );
           fprintf( ic->outfp, "%s %s\n", outstr, filename );
           ak_error_set_value( ak_error_ok );
         }
@@ -237,7 +244,7 @@
  /* получаем хеш из файла */
   string[offset] = 0;
   memset( preout, 0, akrypt_max_icode_size );
-  ak_hexstr_to_ptr( string, preout, offset, ak_false );
+  ak_hexstr_to_ptr( string, preout, offset, ic->oreverse );
   offset++;
 
  /* вычисляем хеш и проверяем равенство */
@@ -265,15 +272,16 @@
 /* ----------------------------------------------------------------------------------------------- */
  int akrypt_icode_help( void )
 {
-  printf("akrypt icode [options] [directories or files]  - calculation and checking integrity codes for given files\n\n");
+  printf("akrypt icode [options] [directories or files]  - calculation or checking integrity codes for given files\n\n");
   printf("available options:\n");
   printf(" -a, --algorithm <ni>    set the algorithm, where \"ni\" is name or identifier of hash or mac function\n");
   printf("                         default algorithm is icode function \"streebog256\"\n");
+  printf("     --audit <file>      set the output file for errors and libakrypt audit system messages\n");
   printf(" -c, --check <file>      check previously generated integrity codes\n");
   printf(" -o, --output <file>     set the output file for generated integrity codes\n");
   printf(" -p, --pattern <str>     set the pattern which is used to find files\n");
   printf(" -r, --recursive         recursive search of files\n");
-  printf("     --audit <file>      set the output file for errors and libakrypt audit system messages\n");
+  printf("     --reverse-order     output integrity code in reverse byte order\n" );
   printf(" -h, --help              show this information\n\n");
 
  return EXIT_SUCCESS;

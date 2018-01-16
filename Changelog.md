@@ -1,10 +1,17 @@
-Changes in version 0.5.7
+Changes in version 0.5.8
 -------------------------------------
 
-  * Added mechanism for storing secret keys with ASN1 support
-  * Restored block cipher Magma, ecb & counter encryption modes
+  *
+
+
+Changes in version 0.5.7 (11.01.2018)
+-------------------------------------
+
   * Changed internal structure of libakrypt options
     Now we can read their values from userspace (see libakrypt.h)
+  * Changed internal realization of OID's mechanism & API for ak_oid class
+  * Restored block cipher Magma, ecb & counter encryption modes
+  * Added simple ASN1 support for storing secret keys (experimental)
 
 
 Changes in version 0.5.6 (29.11.2017)
