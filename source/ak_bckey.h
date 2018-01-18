@@ -69,6 +69,8 @@
 /*! \brief Инициализация контекста секретного ключа алгоритма блочного шифрования Магма. */
  int ak_bckey_create_magma( ak_bckey );
 
+// int ak_bckey_create_from_file( ak_bckey, )
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Присвоение контексту ключа алгоритма блочного шифрования константного значения. */
  int ak_bckey_context_set_ptr( ak_bckey, const ak_pointer , const size_t , const ak_bool );

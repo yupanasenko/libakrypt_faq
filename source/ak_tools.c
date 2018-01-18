@@ -463,63 +463,10 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                               Функции для работы с asn1 структурами                             */
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция освобождает память, созданную в процессе преобразования секретного ключа
-    в структуру `SecretKeyData`. Функция должна использоваться для статически выделенной структуры.
-    В случае динамического выделения структуры `SecretKeyData` с помощью malloc()
-    целесообразнее использовать вызов
-
-    \code
-      asn_DEF_SecretKeyData.free_struct( &asn_DEF_SecretKeyData, secretKeyData, 0);
-    \endcode
-
-    @param secretKeyData ссылка на статическую структуру типа SecretKeyData_t.
-
-    @return В случае успеха функция возвращает \ref ak_error_ok. В противном случае
-    возвращается код ошибки.                                                                       */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_asn1_secret_key_data_destroy( SecretKeyData_t *secretKeyData )
-{
-  if( secretKeyData == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                    "using null pointer to asn1 secretKeyData structure" );
-
- /* освобождаем память */
-  if( secretKeyData->data.value.buf != NULL ) free( secretKeyData->data.value.buf );
-  if( secretKeyData->data.engine.buf != NULL ) free( secretKeyData->data.engine.buf );
-  if( secretKeyData->data.number.buf != NULL ) free( secretKeyData->data.number.buf );
-
-  if( secretKeyData->data.parameters.encryptionSalt.buf != NULL )
-                                              free( secretKeyData->data.parameters.encryptionSalt.buf );
-  if( secretKeyData->data.parameters.encryptionMode.algorithm.buf != NULL )
-                                    free( secretKeyData->data.parameters.encryptionMode.algorithm.buf );
-  if( secretKeyData->data.parameters.encryptionMode.parameters != NULL )
-   asn_DEF_ANY.free_struct( &asn_DEF_ANY, secretKeyData->data.parameters.encryptionMode.parameters, 0 );
-  if( secretKeyData->data.parameters.encryptionIV.buf != NULL )
-                                                free( secretKeyData->data.parameters.encryptionIV.buf );
-
-  if( secretKeyData->data.parameters.integritySalt.buf != NULL )
-                                               free( secretKeyData->data.parameters.integritySalt.buf );
-  if( secretKeyData->data.parameters.integrityMode.algorithm.buf != NULL )
-                                     free( secretKeyData->data.parameters.integrityMode.algorithm.buf );
-  if( secretKeyData->data.parameters.integrityMode.parameters != NULL )
-    asn_DEF_ANY.free_struct( &asn_DEF_ANY, secretKeyData->data.parameters.integrityMode.parameters, 0 );
-  if(  secretKeyData->data.parameters.integrityIV != NULL )
-    asn_DEF_OCTET_STRING.free_struct( &asn_DEF_OCTET_STRING,
-                                                        secretKeyData->data.parameters.integrityIV, 0 );
-  if( secretKeyData->data.resource != NULL )
-    asn_DEF_KeyResource.free_struct( &asn_DEF_KeyResource, secretKeyData->data.resource, 0 );
-  if( secretKeyData->data.description != NULL )
-    asn_DEF_OCTET_STRING.free_struct( &asn_DEF_OCTET_STRING, secretKeyData->data.description, 0 );
-
-  if( secretKeyData->integrityCode.buf != NULL ) free( secretKeyData->integrityCode.buf );
-
- /* обнуляем указатели */
-  memset( secretKeyData, 0, sizeof( struct SecretKeyData ));
-
- return ak_error_ok;
-}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция для итерационной записи данных, получаемых при кодировании asn1 структуры. */
+/* ----------------------------------------------------------------------------------------------- */
  static int ak_asn1_save_write_out( const void *buffer, size_t size, void *app_key )
 {
   int *fd = app_key;
@@ -528,22 +475,27 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция сохраняет der-представление созданной ранее asn1 структуры `struct_ptr` в
+    заданном файле. Файл, в который сохраняется ключ, создается заного, при этом старое значение
+    уничтожается. После создания,
+    файлу присваиваются права на чтение и запись только для владельца файла.
+
+    @param type_descriptor Указатель на структуру, содержащую описание ASN1 типа данных.
+    @param struct_ptr Указатель на конкретную структуру с данными.
+    @param filename Имя файла в который происходит сохранение структуры.
+
+    @return В случае успеха, функция возвращает ak_error_ok. В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_save_to_der_file( struct asn_TYPE_descriptor_s *type_descriptor,
                                                            void *struct_ptr, const char *filename )
 {
- struct stat st;
- asn_enc_rval_t ec;
- int fd = 0, error = ak_error_ok;
+  struct stat st;
+  asn_enc_rval_t ec;
+  int fd = 0, error = ak_error_ok;
 
   if( filename == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                                 "use a null pointer to filename" );
- /* проверяем, что файл не существует */
-  if(( fd = open( filename, O_RDONLY | O_BINARY )) != -1 ) {
-   close( fd );
-   return ak_error_message_fmt( ak_error_file_exists, __func__,
-                                                          "file \"%s\" already exists", filename );
- }
-
  /* создаем файл */
   if(( fd = creat( filename, S_IRUSR|S_IWUSR )) < 0 )
     return ak_error_message( ak_error_open_file, __func__, strerror( errno ));
@@ -560,6 +512,84 @@
 
   close(fd);
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_load_from_der_file( struct asn_TYPE_descriptor_s *type_descriptor,
+                                                           void *struct_ptr, const char *filename )
+{
+ size_t len = 0;
+ struct stat st;
+ asn_dec_rval_t ret;
+ ak_uint8 buffer[1024];
+ int fd = 0, error = ak_error_ok;
+
+  if( filename == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                                "use a null pointer to filename" );
+ /* проверяем существование файла и права доступа к нему */
+  if(( fd = open( filename, O_RDONLY | O_BINARY )) < 0 )
+    return ak_error_message( ak_error_open_file, __func__, strerror( errno ));
+
+  if( fstat( fd, &st ) != 0 ) {
+    close( fd );
+    return ak_error_message( ak_error_access_file,  __func__, strerror( errno ));
+  }
+
+ /* считываем данные в структуру */
+  memset( buffer, 0, 1024 );
+  do{
+      len = read( fd, buffer, 1024 );
+      ret = ber_decode( 0, type_descriptor, (void *)&struct_ptr, buffer, len );
+      if( ret.code == RC_FAIL ) {
+        close( fd );
+        /* освобождаем то, что уже частично разобрали */
+        type_descriptor->free_struct( type_descriptor, struct_ptr, 1 );
+        return ak_error_message( ak_error_wrong_asn1_decode, __func__ ,
+                                                          "incorrect decoding of asn1 structure" );
+      }
+  } while(( ret.consumed != len ) || ( ret.code == RC_WMORE ));
+
+  memset( buffer, 0, 1024 );
+  close(fd);
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param buffer Буффер, куда будет помещаться строка с описанием идентификатора.
+    Память под буффер должна быть выденеа заранее.
+
+    @param size Размер буффера (максимальная длина строки, включая завершающий ноль)
+    @param oidt Указатель на структуру идентификатора
+
+    @return В случае успешного преобразования, возвращается ноль. В противном случае
+                                                                          возвращается код ошибки. */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_static_str_from_object_identifier( char *buffer, size_t size, const OBJECT_IDENTIFIER_t *oidt )
+{
+  long arcs[24];
+  char *bufptr = buffer;
+  size_t lostsize = size;
+  int cnt = 0, pv = 0, i = 0;
+
+ /* получаем массив чисел */
+  if(( cnt = OBJECT_IDENTIFIER_get_arcs( oidt, arcs, sizeof( arcs[0] ), 24 )) < 0 )
+    return ak_error_message( ak_error_wrong_asn1_encode, __func__,
+                                           "incorrect value os asn1 object identifier structure" );
+  if(( cnt > 24 ) || ( !cnt )) return ak_error_message_fmt( ak_error_oid_id, __func__,
+     "incorrect transformation of OID's asn1 representation to array of longs (structure has %d numbers)", cnt );
+
+ /* преобразуем полученный массив в строковое представление */
+  memset( buffer, 0, size );
+  for( i = 0; i < cnt; i++ ) {
+    if(( pv = snprintf( bufptr, lostsize, "%ld.", arcs[i] )) < 0 )
+       return ak_error_message( ak_error_wrong_length, __func__,
+                                                        "incorrect transformation arc to string" );
+    bufptr += pv; lostsize -= pv;
+    if( lostsize < 2 ) return ak_error_message( ak_error_zero_length, __func__,
+                                                        "incorrect transformation arc to string" );
+  }
+  buffer[ strlen(buffer)-1 ] = 0;
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

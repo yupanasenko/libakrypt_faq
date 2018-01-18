@@ -27,6 +27,7 @@
 /*                                                                                                 */
 /*   ak_oid.c                                                                                      */
 /* ----------------------------------------------------------------------------------------------- */
+ #include <ak_tools.h>
  #include <ak_parameters.h>
  #include <ak_context_manager.h>
 
@@ -384,7 +385,8 @@
     return NULL;
   }
   do{
-     if( ak_ptr_is_equal( (char *)name, (char *)libakrypt_oids[idx].name,
+     if(( strlen( name ) == strlen( libakrypt_oids[idx].name )) &&
+            ak_ptr_is_equal( (char *)name, (char *)libakrypt_oids[idx].name,
                                 strlen( libakrypt_oids[idx].name ))) return &libakrypt_oids[idx];
   } while( ++idx < ak_libakrypt_oids_count( ));
   ak_error_message( ak_error_oid_name, __func__, "searching oid with wrong name" );
@@ -397,12 +399,13 @@
 {
   size_t idx = 0;
   if( id == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to oid name" );
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to oid identifier" );
     return NULL;
   }
 
   do{
-     if( ak_ptr_is_equal( (char *)id, (char *)libakrypt_oids[idx].id,
+     if(( strlen( id ) == strlen( libakrypt_oids[idx].id )) &&
+            ak_ptr_is_equal( (char *)id, (char *)libakrypt_oids[idx].id,
                                 strlen( libakrypt_oids[idx].id ))) return &libakrypt_oids[idx];
   } while( ++idx < ak_libakrypt_oids_count( ));
   ak_error_message( ak_error_oid_id, __func__, "searching oid with wrong idetifier" );
@@ -438,6 +441,20 @@
   }
 
  return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_oid ak_oid_find_by_object_identifier( const OBJECT_IDENTIFIER_t *oidt )
+{
+  char buffer[256];
+  int error = ak_error_ok;
+
+  if(( error = ak_static_str_from_object_identifier( buffer, 256, oidt )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect transformation asn1 structure to string");
+    return NULL;
+  }
+
+ return ak_oid_find_by_id( buffer );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

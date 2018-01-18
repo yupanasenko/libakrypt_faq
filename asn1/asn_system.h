@@ -9,7 +9,9 @@
 #ifndef	ASN_SYSTEM_H
 #define	ASN_SYSTEM_H
 
-#define _DEFAULT_SOURCE
+#ifndef _DEFAULT_SOURCE
+ #define _DEFAULT_SOURCE
+#endif
 
 #include <stdio.h>	/* For snprintf(3) */
 #include <stdlib.h>	/* For *alloc(3) */

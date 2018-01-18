@@ -46,12 +46,14 @@
  int ak_libakrypt_get_option( const char *name );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция выделяет память для указателя OCTET_STRING_t и копирует в нее данные, хранящиеся в ptr */
+/*! \brief Функция выделяет память для указателя OCTET_STRING_t и копирует в нее данные, хранящиеся в ptr. */
  int ak_ptr_to_asn1_octet_string( const ak_pointer , const size_t , OCTET_STRING_t * );
-/*! \brief Очистка структуры `SecretKeyData` после вызова функции ak_skey_to_asn1_secret_key_data() */
- int ak_asn1_secret_key_data_destroy( SecretKeyData_t * );
-/*! \brief Сохранение asn1 структуры в файле в der-представлении */
+/*! \brief Сохранение asn1 структуры в файле в der-представлении. */
  int ak_asn1_save_to_der_file( struct asn_TYPE_descriptor_s *, void *, const char * );
+/*! \brief Чтение asn1 структуры в der-представлении из заданного файла. */
+ int ak_asn1_load_from_der_file( struct asn_TYPE_descriptor_s *, void *, const char * );
+/*! \brief Преобразование asn1 идентификатора объекта в строку. */
+ int ak_static_str_from_object_identifier( char * , size_t , const OBJECT_IDENTIFIER_t * );
 
  #endif
 /* ----------------------------------------------------------------------------------------------- */

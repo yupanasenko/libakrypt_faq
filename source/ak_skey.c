@@ -1063,9 +1063,9 @@
 
  return ak_error_ok;
  exit:
-  SEQUENCE_free( &asn_DEF_SecretKeyData, secretKeyData, 0 );
+  SEQUENCE_free( &asn_DEF_SecretKeyData, secretKeyData, 1 );
  /* так тоже можно освобождать память - более универсальный способ из документации
-    asn_DEF_SecretKeyData.free_struct( &asn_DEF_SecretKeyData, secretKeyData, 0); */
+    asn_DEF_SecretKeyData.free_struct( &asn_DEF_SecretKeyData, secretKeyData, 1 ); */
  return error;
 }
 
@@ -1092,14 +1092,15 @@
                                                    pass, pass_size, description )) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect creation of secret key's asn1 structure");
 
-  /* delme */ asn_fprint( stdout, &asn_DEF_SecretKeyData, &secretKeyData );
-
  /* сохраняем файл */
   if(( error = ak_asn1_save_to_der_file( &asn_DEF_SecretKeyData, &secretKeyData, filename )) != ak_error_ok )
     ak_error_message_fmt( error, __func__, "incorrect saving secret key to \"%s\" file", filename );
 
- /* освобождаем память */
-  ak_asn1_secret_key_data_destroy( &secretKeyData );
+ /* освобождаем память
+    значение последнего параметра, равное единице означает,
+    что освоождение памяти из под &secretKeyData не происходит */
+  SEQUENCE_free( &asn_DEF_SecretKeyData, &secretKeyData, 1 );
+
 
  return error;
 }

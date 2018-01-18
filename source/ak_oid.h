@@ -79,7 +79,10 @@
  ak_oid ak_oid_findnext_by_engine( ak_oid, ak_oid_engine );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Преобразование OID библиотеки в ASN1 представление. */
+/*! \brief Поиск OID по его asn1 представлению. */
+ ak_oid ak_oid_find_by_object_identifier( const OBJECT_IDENTIFIER_t * );
+
+/*! \brief Преобразование OID библиотеки в asn1 представление. */
  int ak_oid_to_asn1_object_identifier( ak_oid , OBJECT_IDENTIFIER_t * );
 
 #endif
