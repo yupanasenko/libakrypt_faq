@@ -65,9 +65,44 @@
     goto exit;
   }
 
+ /* делать нечего - ключ наш - будем проверять контрольную сумму */
+  /* получаем oid алгоритма выработки имитовставки */
+  /* если ок => вырабатываем ключ */
+  /* потом вычисляем имитовставку */
+  /* если ок, тогда движемся дальше */
+
+
+
+
   /* delme */ asn_fprint( stdout, &asn_DEF_SecretKeyData, &secretKeyData );
 
-  /* вот здесь нужно писать create_oid */
+ /* создаем контекст ключа, используя указатель в oid */
+  if( oid->func != NULL ) {
+    if(( error = ((ak_function_bckey_create *)oid->func)( bkey )) != ak_error_ok ) {
+      ak_error_message(  error, __func__, "incorrect creation of secret key" );
+      goto exit;
+    }
+  } else {
+     ak_error_message( ak_error_undefined_function, __func__,
+                                     "using external null pointer to create secret key function" );
+     goto exit;
+    }
+
+ /* теперь у нас ключ создан, методы определены и мы должны установить значение секретного ключа
+    дальнейший код является аналогом функций семейства ak_bckey_context_set... */
+
+  /* присваиваем ключ */
+
+  /* вычисляем контрольную сумму */
+  /* маска уже есть => перемаскируем */
+  /* проставляем флаг того, что ключ определен */
+
+
+ print_bckey( bkey );
+
+ ak_bckey_destroy( bkey );
+
+
 //  собственно разборщик где?
 
   /* создать структуру секретного ключа */
@@ -108,8 +143,8 @@
   memcpy( password, "hello", 5 );
 
  /* сохраняем ключ в заданном файле */
-  ak_skey_to_der_file( &storedkey->key, "simple.key", password, strlen( password ),
-                                         "The little description of simple key" );
+  ak_skey_to_der_file( &storedkey->key, "simple.key",
+      password, strlen( password ), "The little description of simple key" );
  /* освобождаем память */
   storedkey = ak_bckey_delete( storedkey );
   printf("key destroying: %d\n", ak_error_get_value( ));
