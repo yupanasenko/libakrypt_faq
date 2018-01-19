@@ -345,6 +345,29 @@
  return error;
 }
 
+#ifdef __linux__
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param generator Контекст создаваемого генератора.
+    \return В случае успеха, функция возвращает \ref ak_error_ok. В противном случае
+            возвращается код ошибки.                                                               */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_random_create_random( ak_random generator )
+{
+ return ak_random_create_file( generator, "/dev/random" );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param generator Контекст создаваемого генератора.
+    \return В случае успеха, функция возвращает \ref ak_error_ok. В противном случае
+            возвращается код ошибки.                                                               */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_random_create_urandom( ak_random generator )
+{
+ return ak_random_create_file( generator, "/dev/urandom" );
+}
+#endif
+
+
 /* ----------------------------------------------------------------------------------------------- */
 /*                                         реализация класса winrtl                                */
 /* ----------------------------------------------------------------------------------------------- */
@@ -515,26 +538,38 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_random_new_oid( ak_handle oid_handle )
 {
-  ak_handle random_handle = ak_error_wrong_handle;
+  int error = ak_error_ok;
+  ak_random generator = NULL;
   ak_oid oid = ak_handle_get_context( oid_handle, oid_engine );
 
-  /* проверяем, что handle от OID */
-   if( oid == NULL ) {
-     ak_error_message( ak_error_get_value(), __func__ , "using wrong value of handle" );
-     return ak_error_wrong_handle;
-   }
+ /* проверяем, что handle от OID */
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "using wrong value of handle" );
+    return ak_error_wrong_handle;
+  }
 
-  /* проверяем, что OID от генератора псевдо-случайных чисел */
-   if( oid->engine != random_generator ) {
-     ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
-     return ak_error_wrong_handle;
-   }
+ /* проверяем, что OID от генератора псевдо-случайных чисел */
+  if( oid->engine != random_generator ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
+    return ak_error_wrong_handle;
+  }
 
-  /* теперь создаем генератор */
-   if(( random_handle = ((ak_function_random_new *) oid->func)()) == ak_error_wrong_handle )
-     ak_error_message( ak_error_get_value(), __func__ , "wrong creation of random generator handle");
+ /* теперь создаем генератор */
+  if(( generator = malloc( sizeof( struct random ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ ,
+                                                  "wrong creation of random generator context" );
+    return ak_error_wrong_handle;
+  }
 
- return random_handle;
+ /* инициализируем его */
+  if(( error = ((ak_function_random_create *)oid->func)( generator )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong initialization a random generator" );
+    free( generator );
+    return ak_error_wrong_handle;
+  }
+
+ /* помещаем в стуктуру управления контекстами */
+ return ak_libakrypt_new_handle( generator, random_generator, "", ak_random_delete );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

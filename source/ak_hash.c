@@ -301,7 +301,6 @@
   /* в принципе, общий механизм сам удалит этот дескриптор,
      но правильнее самостоятельно вычищать за собой  */
   ak_handle_delete( oid_handle );
-
  return handle;
 }
 
@@ -376,36 +375,47 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_hash_new_oid( ak_handle oid_handle )
 {
-  ak_handle hash_handle = ak_error_wrong_handle;
+  ak_hash ctx = NULL;
+  int error = ak_error_ok;
   ak_oid oid = ak_handle_get_context( oid_handle, oid_engine );
 
-  /* проверяем, что handle от OID */
-   if( oid == NULL ) {
-     ak_error_message( ak_error_get_value(), __func__ , "using wrong value of handle" );
-     return ak_error_wrong_handle;
-   }
-  /* проверяем, что OID от бесключевой функции хеширования */
-   if( oid->engine != hash_function ) {
-     ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
-     return ak_error_wrong_handle;
-   }
-  /* проверяем, что OID от алгоритма, а не от параметров */
-   if( oid->mode != algorithm ) {
-     ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
-     return ak_error_wrong_handle;
-   }
-  /* проверяем, что производящая функция определена */
-   if( oid->func == NULL ) {
-     ak_error_message( ak_error_undefined_function, __func__ ,
-                                     "using oid with undefined constructor function" );
-     return ak_error_wrong_handle;
-   }
+ /* проверяем, что handle от OID */
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "using wrong value of handle" );
+    return ak_error_wrong_handle;
+  }
+ /* проверяем, что OID от бесключевой функции хеширования */
+  if( oid->engine != hash_function ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
+    return ak_error_wrong_handle;
+  }
+ /* проверяем, что OID от алгоритма, а не от параметров */
+  if( oid->mode != algorithm ) {
+    ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
+    return ak_error_wrong_handle;
+  }
+ /* проверяем, что производящая функция определена */
+  if( oid->func == NULL ) {
+    ak_error_message( ak_error_undefined_function, __func__ ,
+                                    "using oid with undefined constructor function" );
+    return ak_error_wrong_handle;
+  }
 
-  /* только теперь создаем контекст функции хеширования */
-   if(( hash_handle = ((ak_function_hash *) oid->func)()) == ak_error_wrong_handle )
-     ak_error_message( ak_error_get_value(), __func__ , "wrong creation of hash function handle");
+ /* только теперь создаем контекст функции хеширования */
+  if(( ctx = malloc( sizeof( struct hash ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ , "wrong creation of hash function context" );
+    return ak_error_wrong_handle;
+  }
 
- return hash_handle;
+ /* инициализируем его */
+  if(( error = ((ak_function_hash_create *)oid->func)( ctx )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong initialization of hash function context" );
+    free( ctx );
+    return ak_error_wrong_handle;
+  }
+
+ /* помещаем в стуктуру управления контекстами */
+ return ak_libakrypt_new_handle( ctx, hash_function, "", ak_hash_delete );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

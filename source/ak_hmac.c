@@ -106,7 +106,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param hctx контекст ключа алгоритма hmac.
-    @param handle дескриптор таблиц замен алгоритма хеширования ГОСТ Р 34.11-94
+    @param oid oid дескриптора таблиц замен алгоритма хеширования ГОСТ Р 34.11-94
     @return В случае успеха функция возвращает ноль (\ref ak_error_ok). В случае возникновения
     ошибки возвращается ее код.                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
@@ -138,6 +138,20 @@
   /* hctx->key.data не изменяется */
   /* также мы используем методы секретного ключа, установленные по-умолчанию */
  return ak_error_ok;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Значения таблиц определяются в RFC 4357 и связаны с идентикатором объектов с именем
+    `id-gosthash94-rfc4357-paramsetA`.
+
+    @param hctx контекст ключа алгоритма hmac.
+    @return В случае успеха функция возвращает ноль (\ref ak_error_ok). В случае возникновения
+    ошибки возвращается ее код.                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_hmac_create_gosthash94_csp( ak_hmac hctx )
+{
+ return ak_hmac_create_gosthash94( hctx, ak_oid_find_by_name( "id-gosthash94-rfc4357-paramsetA" ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -780,8 +794,12 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_hmac_new_gosthash94_csp( const char *description )
 {
- return ak_hmac_new_gosthash94(
-                 ak_libakrypt_find_oid_by_name( "id-gosthash94-rfc4357-paramsetA" ), description );
+ ak_handle oid_handle = ak_libakrypt_find_oid_by_name( "id-gosthash94-rfc4357-paramsetA" );
+ ak_handle handle = ak_hmac_new_gosthash94( oid_handle, description );
+  /* в принципе, общий механизм сам удалит этот дескриптор,
+     но правильнее самостоятельно вычищать за собой  */
+  ak_handle_delete( oid_handle );
+ return handle;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -794,36 +812,47 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_hmac_new_oid( ak_handle oid_handle, const char *description )
 {
-  ak_handle hmac_handle = ak_error_wrong_handle;
+  ak_hmac ctx = NULL;
+  int error = ak_error_ok;
   ak_oid oid = ak_handle_get_context( oid_handle, oid_engine );
 
-  /* проверяем, что handle от OID */
-   if( oid == NULL ) {
-     ak_error_message( ak_error_get_value(), __func__ , "using wrong value of handle" );
-     return ak_error_wrong_handle;
-   }
-  /* проверяем, что OID от бесключевой функции хеширования */
-   if( oid->engine != hmac_function ) {
-     ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
-     return ak_error_wrong_handle;
-   }
-  /* проверяем, что OID от алгоритма, а не от параметров */
-   if( oid->mode != algorithm ) {
-     ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
-     return ak_error_wrong_handle;
-   }
-  /* проверяем, что производящая функция определена */
-   if( oid->func == NULL ) {
-     ak_error_message( ak_error_undefined_function, __func__ ,
-                                     "using oid with undefined constructor function" );
-     return ak_error_wrong_handle;
-   }
+ /* проверяем, что handle от OID */
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "using wrong value of handle" );
+    return ak_error_wrong_handle;
+  }
+ /* проверяем, что OID от бесключевой функции хеширования */
+  if( oid->engine != hmac_function ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
+    return ak_error_wrong_handle;
+  }
+ /* проверяем, что OID от алгоритма, а не от параметров */
+  if( oid->mode != algorithm ) {
+    ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
+    return ak_error_wrong_handle;
+  }
+ /* проверяем, что производящая функция определена */
+  if( oid->func == NULL ) {
+    ak_error_message( ak_error_undefined_function, __func__ ,
+                                    "using oid with undefined constructor function" );
+    return ak_error_wrong_handle;
+  }
 
-  /* только теперь создаем контекст ключа алгориитма выработки имитовставки */
-   if(( hmac_handle = (( ak_function_hmac *) oid->func)( description )) == ak_error_wrong_handle )
-     ak_error_message( ak_error_get_value(), __func__ , "wrong creation of hash function handle");
+ /* только теперь создаем контекст ключа алгориитма выработки имитовставки */
+  if(( ctx = malloc( sizeof( struct hmac ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ , "wrong creation of hmac key context" );
+    return ak_error_wrong_handle;
+  }
 
- return hmac_handle;
+ /* инициализируем его */
+  if(( error = ((ak_function_hmac_create *)oid->func)( ctx )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong initialization of hmac key context" );
+    free( ctx );
+    return ak_error_wrong_handle;
+  }
+
+ /* помещаем в стуктуру управления контекстами */
+ return ak_libakrypt_new_handle( ctx, hmac_function, description, ak_hmac_delete );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

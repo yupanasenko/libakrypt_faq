@@ -28,6 +28,7 @@
 /*   ak_oid.c                                                                                      */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_tools.h>
+ #include <ak_hmac.h>
  #include <ak_bckey.h>
  #include <ak_parameters.h>
  #include <ak_context_manager.h>
@@ -38,26 +39,26 @@
   /* 1. идентификаторы алгоритмов выработки псевдо-случайных последовательностей,
         значения OID находятся в дереве библиотеки: 1.2.643.2.52.1.1 - генераторы ПСЧ  */
    { random_generator, algorithm, "lcg", "1.2.643.2.52.1.1.1", NULL,
-                                                           (ak_function_void *) ak_random_new_lcg },
+                                                        (ak_function_void *) ak_random_create_lcg },
 #ifdef __linux__
    { random_generator, algorithm, "dev-random", "1.2.643.2.52.1.1.2", NULL,
-                                                    (ak_function_void *) ak_random_new_dev_random },
+                                                     (ak_function_void *) ak_random_create_random },
    { random_generator, algorithm, "dev-urandom", "1.2.643.2.52.1.1.3", NULL,
-                                                   (ak_function_void *) ak_random_new_dev_urandom },
+                                                    (ak_function_void *) ak_random_create_urandom },
 #endif
 #ifdef _WIN32
    { random_generator, algorithm, "winrtl", "1.2.643.2.52.1.1.4", NULL,
-                                                        (ak_function_void *) ak_random_new_winrtl },
+                                                     (ak_function_void *) ak_random_create_winrtl },
 #endif
   /* 2. идентификаторы алгоритмов бесключевого хеширования,
         значения OID взяты из перечней КриптоПро и ТК26 (http://tk26.ru/methods/OID_TK_26/index.php)
         в дереве библиотеки: 1.2.643.2.52.1.2 - функции бесключевого хеширования */
    { hash_function, algorithm, "streebog256", "1.2.643.7.1.1.2.2", NULL,
-                                                     (ak_function_void *) ak_hash_new_streebog256 },
+                                                  (ak_function_void *) ak_hash_create_streebog256 },
    { hash_function, algorithm, "streebog512", "1.2.643.7.1.1.2.3", NULL,
-                                                     (ak_function_void *) ak_hash_new_streebog512 },
+                                                  (ak_function_void *) ak_hash_create_streebog512 },
    { hash_function, algorithm, "gosthash94", "1.2.643.2.2.9", NULL,
-                                                  (ak_function_void *) ak_hash_new_gosthash94_csp },
+                                               (ak_function_void *) ak_hash_create_gosthash94_csp },
 
   /* 3. идентификаторы параметров алгоритма бесключевого хеширования ГОСТ Р 34.11-94.
         в дереве библиотеки: 1.2.643.2.52.1.3 - параметры функций бесключевого хеширования */
@@ -72,11 +73,11 @@
         в дереве библиотеки: 1.2.643.2.52.1.4 - функции ключевого хеширования (имитозащиты)
         в дереве библиотеки: 1.2.643.2.52.1.5 - параметры функций ключевого хеширования (имитозащиты) */
    { hmac_function, algorithm, "hmac-streebog256", "1.2.643.7.1.1.4.1", NULL,
-                                                     (ak_function_void *) ak_hmac_new_streebog256 },
+                                                  (ak_function_void *) ak_hmac_create_streebog256 },
    { hmac_function, algorithm, "hmac-streebog512", "1.2.643.7.1.1.4.2", NULL,
-                                                     (ak_function_void *) ak_hmac_new_streebog512 },
+                                                  (ak_function_void *) ak_hmac_create_streebog512 },
    { hmac_function, algorithm, "hmac-gosthash94", "1.2.643.2.52.1.4.1", NULL,
-                                                  (ak_function_void *) ak_hmac_new_gosthash94_csp },
+                                               (ak_function_void *) ak_hmac_create_gosthash94_csp },
 
   /* 6. идентификаторы алгоритмов блочного шифрования
         в дереве библиотеки: 1.2.643.2.52.1.6 - алгоритмы блочного шифрования

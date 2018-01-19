@@ -42,6 +42,8 @@
  typedef int ( ak_function_random )( ak_random );
  typedef int ( ak_function_random_ptr_const )( ak_random, const ak_pointer, const size_t );
  typedef ak_handle ( ak_function_random_new ) ( void );
+/*! \brief Функция создания контекста генератора псевдо случайных последовательностей. */
+ typedef int ( ak_function_random_create ) ( ak_random );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Класс, реализующий произвольный генератор псевдо-случайных чисел.                       */
@@ -73,6 +75,12 @@
  int ak_random_create_lcg( ak_random );
 /*! \brief Cоздание генератора, считывающего случайные значения из заданного файла. */
  int ak_random_create_file( ak_random , const char * );
+#ifdef __linux__
+/*! \brief Cоздание генератора, считывающего случайные значения из /dev/random. */
+ int ak_random_create_random( ak_random );
+/*! \brief Cоздание генератора, считывающего случайные значения из /dev/urandom. */
+ int ak_random_create_urandom( ak_random );
+#endif
 #ifdef _WIN32
 /*! \brief Интерфейс доступа к генератору псевдо-случайных чисел, предоставляемому ОС Windows. */
  int ak_random_create_winrtl( ak_random );
