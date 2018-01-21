@@ -34,10 +34,10 @@
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Структура, сожержащая указатели на функции зашифрования/расшифрования в режиме счетчика */
+/*! Структура, содержащая указатели на функции зашифрования/расшифрования в режиме счетчика */
  static struct two_pointers block_cipher_counter_functions = {
-  .direct = (ak_function_void *) ak_bckey_context_xcrypt,
-  .reverse = (ak_function_void *) ak_bckey_context_xcrypt
+  (ak_function_void *) ak_bckey_context_xcrypt,
+  (ak_function_void *) ak_bckey_context_xcrypt
  };
 
 /* ----------------------------------------------------------------------------------------------- */
