@@ -792,8 +792,63 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*                    Функциии для сохранения/чтения ключеврой информации                          */
+/*                    Функциии для сохранения/чтения ключевой информации                           */
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Переменная, в которой хранятся указатели на соотвествующие алгоритмы экспорта ключей */
+ static struct key_export_algorithms export_algorithms = {
+  .cipher = NULL,
+  .mode = NULL,
+  .mac = NULL
+};
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_libakrypt_create_key_export_algorithms( void )
+{
+ return ak_libakrypt_set_key_export_algorithm_oids( ak_oid_find_by_name( "magma" ),
+                     ak_oid_find_by_name( "counter" ), ak_oid_find_by_name( "hmac-streebog256" ));
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param cipher дескриптор алгоритма шифрования
+    @param mode дескриптор режима шифрования
+    @param mac дескриптор алгоритма выработки имитовставки
+
+    @return В случае успеха, возвращается \ref ak_error_ok. В случае возникновения ошибки,
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_libakrypt_set_key_export_algorithm_oids( ak_oid cipher, ak_oid mode, ak_oid mac )
+{
+ /* проверяем, что oid cipher является блочным шифром */
+  if(( cipher->engine == block_cipher ) && ( cipher->mode == algorithm ))
+    export_algorithms.cipher = cipher;
+   else return ak_error_message( ak_error_oid_engine, __func__,
+                   "incorrect initialization of cipher oid in key export algorithms context" );
+
+ /* проверяем, что oid mode является режимом работы блочного шифра */
+  if( mode->engine == block_cipher ) {
+    switch( mode->mode ) {
+     case counter:
+     case counter_gost:
+     case cfb:
+     case ofb:
+     case xts:
+     case xts_mac: export_algorithms.mode = mode;
+                   break;
+     default: return ak_error_message( ak_error_oid_mode, __func__,
+                                   "using block cipher oid with unsupported encryption mode" );
+    }
+  }
+  else return ak_error_message( ak_error_oid_engine, __func__,
+          "incorrect initialization of encryption mode oid in key export algorithms context" );
+
+ /* проверяем, что oid mac является алгоритмом выработки hmac */
+  if(( mac->engine == hmac_function ) && ( mac->mode == algorithm ))
+    export_algorithms.mac = mac;
+   else return ak_error_message( ak_error_oid_engine, __func__,
+       "incorrect initialization of authenticated code oid in key export algorithms context" );
+
+ return ak_error_ok;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция для итерационного вычисления сжимающего отображения при der-кодировании.
@@ -821,6 +876,10 @@
 /*! Перед преобразованием контекст ключа и структура `SecretKeyData` должны быть инициализированы.
     Контекст ключа должен содержать в себе ключевое значение.
 
+    Для защиты ключа используются алгоритмы, oid которых определены
+    структурой \ref export_algotithms. Устанвить поля этой структуры можно с помощью функции
+    ak_libakrypt_set_key_export_algorithm_oids().
+
     @param skey Контекст секретного ключа, который будет преобразован в ASN1 структуру.
     @param pass Пароль, представленный в виде строки символов в формате utf8.
     @param pass_size Длина пароля в байтах.
@@ -841,6 +900,7 @@
  KeyValue_t keyValue;
  struct hmac hmacKey;
  int error = ak_error_ok;
+ OBJECT_IDENTIFIER_t cipher;
  struct bckey encryptionKey; /* ключ шифрования */
  struct compress compressCtx; /* структура для итеративного сжатия */
  ak_uint8 temporary[temporary_size]; /* массив для хранения EncodedKeyValue */
@@ -858,13 +918,30 @@
   if( skey->key.size + skey->mask.size + 6 > temporary_size )
     return ak_error_message( ak_error_wrong_length, __func__ ,
               "size of internal temporary buffer is smaller than given block cipher key" );
-  /* Примечание: здесь мы по-умолчанию считаем, то дополнительные данные
-     для шифрования в структуре KeyValue отсутствуют. Дополнительные 6 байтов
-     требуются для кодирования ASN1 структуры */
+ /* примечание: здесь мы по-умолчанию считаем, что дополнительные данные
+    для шифрования в структуре KeyValue отсутствуют. Дополнительные 6 байтов
+    требуются для кодирования ASN1 структуры */
+
+  if( export_algorithms.cipher == NULL )
+    return ak_error_message( ak_error_undefined_function, __func__,
+                                       "using internal null pointer to block cipher oid" );
+  if( export_algorithms.mode == NULL )
+    return ak_error_message( ak_error_undefined_function, __func__,
+                                    "using internal null pointer to encryption mode oid" );
+  if( export_algorithms.mac == NULL )
+    return ak_error_message( ak_error_undefined_function, __func__,
+                                 "using internal null pointer to authenticated code oid" );
+
+ /* очищаем текущее значение ошибки, может быть полезно */
+  ak_error_set_value( ak_error_ok );
+
+ /* delme!!!!
+   skey->generator.randomize_ptr( &skey->generator, "hello", 5 );
+   memset( skey->number.data, 0, skey->number.size ); */
 
  /* перемаскируем текущее значение сохраняемого ключа */
   if( skey->remask == NULL ) return ak_error_message( ak_error_undefined_function,
-                         __func__, "using not masked bclock cipher key (internal error)" );
+                          __func__, "using not masked block cipher key (internal error)" );
     else skey->remask( skey );
 
  /* вырабатываем случайное значение,
@@ -872,8 +949,8 @@
   if(( error = skey->generator.random( &skey->generator, salt, 64 )) != ak_error_ok )
     return ak_error_message( error, __func__, "wrong generation a temporary salt value" );
 
- /* создаем ключ шифрования ключа (пока алгоритм Магма, потом можно и Кузнечик) */
-  if(( error = ak_bckey_create_magma( &encryptionKey )) != ak_error_ok )
+ /* создаем ключ шифрования ключа */
+  if(( error = ((ak_function_bckey_create *) export_algorithms.cipher->func )( &encryptionKey )) != ak_error_ok )
     return ak_error_message( error , __func__ ,
                             "wrong initialization of temporary block cipher key context" );
 
@@ -905,8 +982,9 @@
   }
 
   /* зашифровываем вектор в режиме гаммирования и уничтожаем ключ защиты */
-  if(( error = ak_bckey_context_xcrypt( &encryptionKey, temporary, temporary, ec.encoded,
-                   salt+32, kivsize = (encryptionKey.ivector.size >> 1 ))) != ak_error_ok )
+  if(( error =  ((ak_function_bckey_encrypt *)(( ak_two_pointers ) export_algorithms.mode->data )->direct)
+                   ( &encryptionKey, temporary, temporary, ec.encoded,
+                        salt+32, kivsize = encryptionKey.ivector.size )) != ak_error_ok )
   {
     ak_error_message( error, __func__, "wrong encryption of temporary buffer" );
     ak_bckey_destroy( &encryptionKey );
@@ -942,7 +1020,8 @@
 
  /* устанавливаем ресурс ключа */
   if(( secretKeyData->data.resource = malloc( sizeof( struct KeyResource ))) == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__, "incorrect memory allocation for key resource");
+    ak_error_message( ak_error_null_pointer, __func__,
+                                           "incorrect memory allocation for key resource");
     goto exit;
   } else memset( secretKeyData->data.resource, 0 , sizeof( struct KeyResource ));
   /* TODO: здесь надо проверить, что ресурс содержит либо численное значение,
@@ -976,11 +1055,29 @@
     goto exit;
   }
 
-  /* 3. режим шифрования и блочный шифр */
-  if(( error = ak_oid_to_asn1_object_identifier( ak_oid_find_by_name( "counter-magma" ),
+  /* 3. режим шифрования и блочный шифр (как параметр алгоритма шифрования) */
+  if(( error = ak_oid_to_asn1_object_identifier( export_algorithms.mode,
         (OBJECT_IDENTIFIER_t *) &secretKeyData->data.parameters.encryptionMode.algorithm )) != ak_error_ok ) {
     ak_error_message( error, __func__,
                              "incorrect block cipher engine assigning to asn1 structure" );
+    goto exit;
+  }
+
+  /* создаем asn1 структуру и кодируем ее в der-представление (помещаем параметры в структуру ANY) */
+  memset( &cipher, 0, sizeof( OBJECT_IDENTIFIER_t ));
+  if(( error = ak_oid_to_asn1_object_identifier(
+                                     export_algorithms.cipher, &cipher )) != ak_error_ok ) {
+    ak_error_message( error, __func__,
+                                "incorrect assigning block cipher oid to asn1 structure" );
+    goto exit;
+  }
+  secretKeyData->data.parameters.encryptionMode.parameters =
+                                   ANY_new_fromType( &asn_DEF_OBJECT_IDENTIFIER, &cipher );
+  asn_DEF_OBJECT_IDENTIFIER.free_struct( &asn_DEF_OBJECT_IDENTIFIER, &cipher, 1 );
+
+  if( secretKeyData->data.parameters.encryptionMode.parameters == NULL ) {
+    ak_error_message( error, __func__,
+                       "incorrect assigning encryptionMode parameters to asn1 structure" );
     goto exit;
   }
 
@@ -1001,18 +1098,37 @@
   }
 
   /* 6. алгоритм вычисления имитовставки */
-  if(( error = ak_oid_to_asn1_object_identifier( ak_oid_find_by_name( "hmac-streebog256" ),
+  if(( error = ak_oid_to_asn1_object_identifier( export_algorithms.mac,
               (OBJECT_IDENTIFIER_t *) &secretKeyData->data.parameters.integrityMode.algorithm )) != ak_error_ok ) {
     ak_error_message( error, __func__,
                                   "incorrect integrity mode assigning to asn1 structure" );
     goto exit;
   }
 
+  /* создаем asn1 структуру и кодируем ее в der-представление (помещаем параметры в структуру ANY) */
+  memset( &cipher, 0, sizeof( OBJECT_IDENTIFIER_t ));
+  if(( error = ak_oid_to_asn1_object_identifier(
+                                     export_algorithms.cipher, &cipher )) != ak_error_ok ) {
+    ak_error_message( error, __func__,
+                                "incorrect assigning block cipher oid to asn1 structure" );
+    goto exit;
+  }
+  secretKeyData->data.parameters.integrityMode.parameters =
+                                   ANY_new_fromType( &asn_DEF_OBJECT_IDENTIFIER, &cipher );
+  asn_DEF_OBJECT_IDENTIFIER.free_struct( &asn_DEF_OBJECT_IDENTIFIER, &cipher, 1 );
+
+  if( secretKeyData->data.parameters.integrityMode.parameters == NULL ) {
+    ak_error_message( error, __func__,
+                       "incorrect assigning integrityMode parameters to asn1 structure" );
+    goto exit;
+  }
+
+
   /* 8. инициализационный вектор для режима имитозащиты */
 
  /* вычисляем имитовставку */
   /* 1. формируем ключ имитозащиты */
-  if(( error = ak_hmac_create_streebog256( &hmacKey )) != ak_error_ok ) {
+  if(( error = ((ak_function_hmac_create *) export_algorithms.mac->func )( &hmacKey )) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect creation of integrity key" );
     goto exit;
   }
@@ -1032,6 +1148,7 @@
   }
 
   /* 3. кодируем данные и одновременно вычисляем имитовставку */
+  kivsize = hmacKey.ctx.hsize;
   ak_compress_clean( &compressCtx );
   ec = der_encode( &asn_DEF_SecretKey, &secretKeyData->data,
                                              ak_skey_der_encode_update, &compressCtx );
@@ -1047,7 +1164,7 @@
   }
 
   /* 4. присваиваем значение */
-  if(( error = ak_ptr_to_asn1_octet_string( temporary, 32, /* 32 - длина имитовставки */
+  if(( error = ak_ptr_to_asn1_octet_string( temporary, kivsize,
                                          &secretKeyData->integrityCode )) != ak_error_ok ) {
     ak_error_message( error, __func__,
                               "incorrect assignment of integrity code to asn1 structure" );
@@ -1100,8 +1217,6 @@
     значение последнего параметра, равное единице означает,
     что освоождение памяти из под &secretKeyData не происходит */
   SEQUENCE_free( &asn_DEF_SecretKeyData, &secretKeyData, 1 );
-
-
  return error;
 }
 

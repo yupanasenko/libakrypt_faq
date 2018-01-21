@@ -376,8 +376,9 @@
   if( bkey->key.check_icode( &bkey->key ) != ak_true )
     return ak_error_message( ak_error_wrong_key_icode, __func__,
                                                    "incorrect integrity code of secret key value" );
- /* проверяем длину синхропосылки */
-  if( iv_size != (bkey->ivector.size >> 1 ))
+ /* проверяем длину синхропосылки (если меньше половины блока, то плохо)
+    если больше - то лишнее не используется */
+  if( iv_size < ( bkey->ivector.size >> 1 ))
     return ak_error_message( ak_error_wrong_iv_length, __func__,
                                                               "incorrect length of initial value" );
  /* уменьшаем значение ресурса ключа */

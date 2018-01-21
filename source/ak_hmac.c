@@ -420,6 +420,7 @@
 
  /* обрабатываем хвост предыдущих данных */
   memset( temporary, 0, temporary_size_value );
+  error = ak_error_ok;
   hctx->ctx.finalize( &hctx->ctx, data, size, temporary );
   if(( error = ak_error_get_value( )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong updating of finalized data" );

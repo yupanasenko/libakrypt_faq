@@ -151,6 +151,23 @@
  ak_bool ak_skey_check_icode_additive( ak_skey );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Контекст структуры, содержащей параметры алгорритмов, обеспечивающих защиту ключа при его экспорте. */
+ typedef struct key_export_algorithms {
+  /*! \brief Шифр (блочный или поточный алгоритм шифрования) */
+   ak_oid cipher;
+  /*! \brief Режим зашифрования ключевой информации */
+   ak_oid mode;
+  /*! \brief Алгоритм выработки имитовставки */
+   ak_oid mac;
+} *ak_key_export_algorithms;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Инициализация указателей на алгоритмы, используемые при экспорте ключей. */
+ int ak_libakrypt_create_key_export_algorithms( void );
+/*! \brief Функция устанавливает алгоритмы, используемые при экспорте ключей. */
+ int ak_libakrypt_set_key_export_algorithm_oids( ak_oid , ak_oid , ak_oid );
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Преобразование секретного ключа в ASN1 структуру `SecretKeyData`. */
  int ak_skey_to_asn1_secret_key_data( ak_skey , SecretKeyData_t * ,
                                                   const ak_pointer , const size_t , const char * );

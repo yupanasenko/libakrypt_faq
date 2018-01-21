@@ -43,7 +43,9 @@
  typedef int ( ak_function_bckey_create ) ( ak_bckey );
 /*! \brief Функция зашифрования/расширования одного блока информации. */
  typedef void ( ak_function_bckey )( ak_skey, ak_pointer, ak_pointer );
-
+/*! \brief Функция, предназначенная для зашифрования/расшифрования области памяти заданного размера */
+ typedef int ( ak_function_bckey_encrypt )( ak_bckey, ak_pointer, ak_pointer, size_t,
+                                                                                ak_pointer, size_t );
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Секретный ключ блочного алгоритма шифрования. */
  struct bckey {

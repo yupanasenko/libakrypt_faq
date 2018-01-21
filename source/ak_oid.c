@@ -34,6 +34,13 @@
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Структура, сожержащая указатели на функции зашифрования/расшифрования в режиме счетчика */
+ static struct two_pointers block_cipher_counter_functions = {
+  .direct = (ak_function_void *) ak_bckey_context_xcrypt,
+  .reverse = (ak_function_void *) ak_bckey_context_xcrypt
+ };
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения OID библиотеки (имена, данные + производящие функции) */
  struct oid libakrypt_oids[] = {
   /* 1. идентификаторы алгоритмов выработки псевдо-случайных последовательностей,
@@ -84,14 +91,14 @@
         в дереве библиотеки: 1.2.643.2.52.1.7 - параметры алгоритмов блочного шифрования */
    { block_cipher, algorithm, "magma", "1.2.643.2.2.21", NULL,
                                                        (ak_function_void *) ak_bckey_create_magma },
-   { block_cipher, algorithm,  "kuznechik", "1.2.643.7.1.1.5.2", NULL, NULL }, // или "1.2.643.7.1.1.5.1" ?
+//   { block_cipher, algorithm,  "kuznechik", "1.2.643.7.1.1.5.2", NULL, NULL }, // или "1.2.643.7.1.1.5.1" ?
 
   /* 8. идентификаторы режимов работы блочных шифров.
         в дереве библиотеки: 1.2.643.2.52.1.8 - режимы работы блочных шифров
         в дереве библиотеки: 1.2.643.2.52.1.9 - параметры режимов работы блочных шифров  */
    { block_cipher, ecb, "ecb", "1.2.643.2.52.1.8.1", NULL, NULL },
-   { block_cipher, counter, "counter-magma", "1.2.643.2.52.1.8.2.1", NULL, NULL },
-   { block_cipher, counter, "counter-kuznechik", "1.2.643.2.52.1.8.2.2", NULL, NULL },
+   { block_cipher, counter, "counter", "1.2.643.2.52.1.8.2",
+                                               (ak_pointer )&block_cipher_counter_functions, NULL },
 
    // { block_cipher, cfb, "cfb", "1.2.643.2.52.1.8.3", NULL, NULL },
    // { block_cipher, cbc, "cbc", "1.2.643.2.52.1.8.4", NULL, NULL },
@@ -587,13 +594,14 @@
    case kbox_params:     return "kboxes";
    case ecb:             return "ecb mode";
    case ofb:             return "ofb mode";
-   case ofb_gost:        return "gost 28147-89 mode";
+   case counter:         return "counter mode";
+   case counter_gost:    return "counter mode";
    case cfb:             return "cfb mode";
    case cbc:             return "cbc mode";
    case xts:             return "xts mode";
    case xts_mac:         return "xts mode with authenication";
-   case counter:         return "counter mode";
-   case a8:              return "addition mode";
+   case xcrypt:          return "stream cipher xor mode";
+   case a8:              return "stream cipher addition mode";
    default:              break;
  }
   ak_error_message_fmt( ak_error_undefined_value, __func__,
