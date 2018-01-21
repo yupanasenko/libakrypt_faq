@@ -70,11 +70,8 @@ set( SOURCES        source/ak_log.c
                     source/ak_magma.c
 )
 
-file( GLOB ASN1_HEADERS ${CMAKE_SOURCE_DIR}/asn1/*.h )
-file( GLOB ASN1_SOURCES ${CMAKE_SOURCE_DIR}/asn1/*.c )
-
-set( ASN1_FILES     ${CMAKE_SOURCE_DIR}/asn1/Makefile.initial
-                    ${CMAKE_SOURCE_DIR}/asn1/KeyContainer.asn1 )
+# set( ASN1_FILES     ${CMAKE_SOURCE_DIR}/asn1/Makefile.initial
+#                     ${CMAKE_SOURCE_DIR}/asn1/KeyContainer.asn1 )
 
 set( DOCS           doc/libakrypt.dox
                     doc/refman_header.in
@@ -130,7 +127,7 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 # сборка библиотек - статической и, если нужно, динамической
 include_directories( "source " )
-include_directories( "asn1 " )
+#include_directories( "asn1 " )
 add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
 if( LIBAKRYPT_CONF )
     message("-- Path for libakrypt.conf is ${LIBAKRYPT_CONF}")
@@ -197,7 +194,6 @@ set( INTERNAL_EXAMPLES_LIST
                    sign-internal
                    bckey-internal
                    xcrypt-internal
-                   bckey-container
 )
 
 if( CMAKE_HOST_UNIX )

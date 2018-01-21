@@ -628,12 +628,6 @@
      return ak_false;
    }
 
- /* инициализируем структуру c алгоритмами экспорта ключей */
-   if(( error = ak_libakrypt_create_key_export_algorithms()) != ak_error_ok ) {
-     ak_error_message( error, __func__, "initialization of key export algorithms is wrong" );
-     return ak_false;
-   }
-
  /* тестируем работу функций хеширования */
   if( ak_libakrypt_test_hash_functions() != ak_true ) {
     ak_error_message( ak_error_get_value(), __func__ , "error while testing hash functions" );

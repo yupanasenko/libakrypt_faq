@@ -454,48 +454,6 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_oid ak_oid_find_by_object_identifier( const OBJECT_IDENTIFIER_t *oidt )
-{
-  char buffer[256];
-  int error = ak_error_ok;
-
-  if(( error = ak_static_str_from_object_identifier( buffer, 256, oidt )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "incorrect transformation asn1 structure to string");
-    return NULL;
-  }
-
- return ak_oid_find_by_id( buffer );
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \b Внимание. Структура OBJECT_IDENTIFIER_t должна быть предварительно создана.
-
-    @param oid Идентификтор объекта, содержащий символьное (строковое) представление OID
-    @param oidt Контекст типа OBJECT_IDENTIFIER_t, используемый в ASN1 нотациях
-    @return В случае успеха возвращается \ref ak_error_ok. В противном случае,
-    возвращается код ошибки, в частности, если символьное представление OID содержит
-    более 24 разделенных точками чисел, то возбуждается ошибка.                                    */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_oid_to_asn1_object_identifier( ak_oid oid, OBJECT_IDENTIFIER_t *oidt )
-{
-  int cnt = 0;
-  long arcs[24]; /* массив для хранения временных значений */
-
-  if( oid == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                                      "using null pointer to OID");
-  if( oidt == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                      "using null pointer to OBJECT_IDENTIFIER_t");
-  if(( cnt = OBJECT_IDENTIFIER_parse_arcs( oid->id, -1, arcs, 24, NULL )) < 0 )
-    return ak_error_message_fmt( ak_error_oid_id, __func__,
-       "incorrect transformation of OID's constant value to array of longs (structure has %d numbers)",
-                                                                                             cnt );
-  if(( cnt = OBJECT_IDENTIFIER_set_arcs( oidt, arcs, sizeof( arcs[0] ), cnt )) < 0 )
-    return ak_error_message( ak_error_oid_id, __func__,
-                                "incorrect transformation array of longs to OBJECT_IDENTIFIER_t" );
- return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
 /*                 вспомогательные функции для типов ak_oid_engine и ak_oid_mode                   */
 /* ----------------------------------------------------------------------------------------------- */
  const size_t ak_libakrypt_engines_count( void )
