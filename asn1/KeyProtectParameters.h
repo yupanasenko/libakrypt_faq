@@ -15,6 +15,7 @@
 #include <NativeInteger.h>
 #include <OCTET_STRING.h>
 #include "AlgorithmIdentifier.h"
+#include <OBJECT_IDENTIFIER.h>
 #include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
@@ -28,8 +29,7 @@ typedef struct KeyProtectParameters {
 	AlgorithmIdentifier_t	 encryptionMode;
 	OCTET_STRING_t	 encryptionIV;
 	OCTET_STRING_t	 integritySalt;
-	AlgorithmIdentifier_t	 integrityMode;
-	OCTET_STRING_t	*integrityIV	/* OPTIONAL */;
+	OBJECT_IDENTIFIER_t	 hmacIntegrity;
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;

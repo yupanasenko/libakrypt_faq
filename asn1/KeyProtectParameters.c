@@ -78,23 +78,14 @@ static asn_TYPE_member_t asn_MBR_KeyProtectParameters_1[] = {
 		0,
 		"integritySalt"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct KeyProtectParameters, integrityMode),
-		(ASN_TAG_CLASS_UNIVERSAL | (16 << 2)),
+	{ ATF_NOFLAGS, 0, offsetof(struct KeyProtectParameters, hmacIntegrity),
+		(ASN_TAG_CLASS_UNIVERSAL | (6 << 2)),
 		0,
-		&asn_DEF_AlgorithmIdentifier,
+		&asn_DEF_OBJECT_IDENTIFIER,
 		0,	/* Defer constraints checking to the member type */
 		0,	/* PER is not compiled, use -gen-PER */
 		0,
-		"integrityMode"
-		},
-	{ ATF_POINTER, 1, offsetof(struct KeyProtectParameters, integrityIV),
-		(ASN_TAG_CLASS_UNIVERSAL | (4 << 2)),
-		0,
-		&asn_DEF_OCTET_STRING,
-		0,	/* Defer constraints checking to the member type */
-		0,	/* PER is not compiled, use -gen-PER */
-		0,
-		"integrityIV"
+		"hmacIntegrity"
 		},
 };
 static const ber_tlv_tag_t asn_DEF_KeyProtectParameters_tags_1[] = {
@@ -102,18 +93,17 @@ static const ber_tlv_tag_t asn_DEF_KeyProtectParameters_tags_1[] = {
 };
 static const asn_TYPE_tag2member_t asn_MAP_KeyProtectParameters_tag2el_1[] = {
     { (ASN_TAG_CLASS_UNIVERSAL | (2 << 2)), 0, 0, 0 }, /* iterationCount */
-    { (ASN_TAG_CLASS_UNIVERSAL | (4 << 2)), 1, 0, 3 }, /* encryptionSalt */
-    { (ASN_TAG_CLASS_UNIVERSAL | (4 << 2)), 3, -1, 2 }, /* encryptionIV */
-    { (ASN_TAG_CLASS_UNIVERSAL | (4 << 2)), 4, -2, 1 }, /* integritySalt */
-    { (ASN_TAG_CLASS_UNIVERSAL | (4 << 2)), 6, -3, 0 }, /* integrityIV */
-    { (ASN_TAG_CLASS_UNIVERSAL | (16 << 2)), 2, 0, 1 }, /* encryptionMode */
-    { (ASN_TAG_CLASS_UNIVERSAL | (16 << 2)), 5, -1, 0 } /* integrityMode */
+    { (ASN_TAG_CLASS_UNIVERSAL | (4 << 2)), 1, 0, 2 }, /* encryptionSalt */
+    { (ASN_TAG_CLASS_UNIVERSAL | (4 << 2)), 3, -1, 1 }, /* encryptionIV */
+    { (ASN_TAG_CLASS_UNIVERSAL | (4 << 2)), 4, -2, 0 }, /* integritySalt */
+    { (ASN_TAG_CLASS_UNIVERSAL | (6 << 2)), 5, 0, 0 }, /* hmacIntegrity */
+    { (ASN_TAG_CLASS_UNIVERSAL | (16 << 2)), 2, 0, 0 } /* encryptionMode */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_KeyProtectParameters_specs_1 = {
 	sizeof(struct KeyProtectParameters),
 	offsetof(struct KeyProtectParameters, _asn_ctx),
 	asn_MAP_KeyProtectParameters_tag2el_1,
-	7,	/* Count of tags in the map */
+	6,	/* Count of tags in the map */
 	0, 0, 0,	/* Optional elements (not needed) */
 	-1,	/* Start extensions */
 	-1	/* Stop extensions */
@@ -138,7 +128,7 @@ asn_TYPE_descriptor_t asn_DEF_KeyProtectParameters = {
 		/sizeof(asn_DEF_KeyProtectParameters_tags_1[0]), /* 1 */
 	0,	/* No PER visible constraints */
 	asn_MBR_KeyProtectParameters_1,
-	7,	/* Elements count */
+	6,	/* Elements count */
 	&asn_SPC_KeyProtectParameters_specs_1	/* Additional specs */
 };
 

@@ -16,6 +16,7 @@
 #include <OBJECT_IDENTIFIER.h>
 #include <OCTET_STRING.h>
 #include "KeyProtectParameters.h"
+#include <UTF8String.h>
 #include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
@@ -32,7 +33,7 @@ typedef struct SecretKey {
 	OCTET_STRING_t	 number;
 	KeyProtectParameters_t	 parameters;
 	struct KeyResource	*resource	/* OPTIONAL */;
-	OCTET_STRING_t	*description	/* OPTIONAL */;
+	UTF8String_t	*description	/* OPTIONAL */;
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;

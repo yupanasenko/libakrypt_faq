@@ -58,12 +58,9 @@ KeyProtectParameters ::= SEQUENCE {
      integritySalt         OCTET STRING,
                              -- инициализационный вектор для алгоритма PBKDF2
                              -- при генерации второго ключа - ключа имитозащиты
-     integrityMode         AlgorithmIdentifier,
-                             -- режим выработки имитовставки,
-                             -- в случае использования ГОСТ Р 34.13-2015
-                             -- должен содержать идентификатор блочного шифра
-     integrityIV           OCTET STRING OPTIONAL
-                             -- инициализационный вектор для режима имитозащиты
+     hmacIntegrity         OBJECT IDENTIFIER
+                             -- идентификатор алгоритма hmac, используемого для 
+                             -- контроля целостности секретного ключа
   }
 
 -- Cекретный ключ
@@ -78,7 +75,7 @@ SecretKey ::= SEQUENCE {
                    -- параметры алгоритмов защиты KeyValue
      resource    KeyResource OPTIONAL,
                   -- ресурс ключа
-     description OCTET STRING OPTIONAL
+     description UTF8String OPTIONAL
                   -- человекочитаемое описание ключа (в кодировке UTF8)
   }
 

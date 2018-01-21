@@ -54,9 +54,9 @@ static asn_TYPE_member_t asn_MBR_SecretKey_1[] = {
 		"resource"
 		},
 	{ ATF_POINTER, 1, offsetof(struct SecretKey, description),
-		(ASN_TAG_CLASS_UNIVERSAL | (4 << 2)),
+		(ASN_TAG_CLASS_UNIVERSAL | (12 << 2)),
 		0,
-		&asn_DEF_OCTET_STRING,
+		&asn_DEF_UTF8String,
 		0,	/* Defer constraints checking to the member type */
 		0,	/* PER is not compiled, use -gen-PER */
 		0,
@@ -68,10 +68,10 @@ static const ber_tlv_tag_t asn_DEF_SecretKey_tags_1[] = {
 };
 static const asn_TYPE_tag2member_t asn_MAP_SecretKey_tag2el_1[] = {
     { (ASN_TAG_CLASS_UNIVERSAL | (2 << 2)), 4, 0, 0 }, /* counter */
-    { (ASN_TAG_CLASS_UNIVERSAL | (4 << 2)), 0, 0, 2 }, /* value */
-    { (ASN_TAG_CLASS_UNIVERSAL | (4 << 2)), 2, -1, 1 }, /* number */
-    { (ASN_TAG_CLASS_UNIVERSAL | (4 << 2)), 5, -2, 0 }, /* description */
+    { (ASN_TAG_CLASS_UNIVERSAL | (4 << 2)), 0, 0, 1 }, /* value */
+    { (ASN_TAG_CLASS_UNIVERSAL | (4 << 2)), 2, -1, 0 }, /* number */
     { (ASN_TAG_CLASS_UNIVERSAL | (6 << 2)), 1, 0, 0 }, /* engine */
+    { (ASN_TAG_CLASS_UNIVERSAL | (12 << 2)), 5, 0, 0 }, /* description */
     { (ASN_TAG_CLASS_UNIVERSAL | (16 << 2)), 3, 0, 0 } /* parameters */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_SecretKey_specs_1 = {

@@ -894,7 +894,7 @@
 {
  #define temporary_size (1024)
 
- ak_uint8 salt[64]; /* массив для хранения случайных инициализационных данных */
+ ak_uint8 salt[72]; /* массив для хранения случайных инициализационных данных */
  asn_enc_rval_t ec;
  size_t kivsize = 0;
  KeyValue_t keyValue;
@@ -936,7 +936,7 @@
   ak_error_set_value( ak_error_ok );
 
  /* delme!!!!
-   skey->generator.randomize_ptr( &skey->generator, "hello", 5 );
+   skey->generator.randomize( &skey->generator ); //_ptr( &skey->generator, "heyllop", 6 );
    memset( skey->number.data, 0, skey->number.size ); */
 
  /* перемаскируем текущее значение сохраняемого ключа */
@@ -946,7 +946,7 @@
 
  /* вырабатываем случайное значение,
   * которое будет использовано для определения всех инициализационных векторов */
-  if(( error = skey->generator.random( &skey->generator, salt, 64 )) != ak_error_ok )
+  if(( error = skey->generator.random( &skey->generator, salt, sizeof( salt ))) != ak_error_ok )
     return ak_error_message( error, __func__, "wrong generation a temporary salt value" );
 
  /* создаем ключ шифрования ключа */
@@ -984,7 +984,7 @@
   /* зашифровываем вектор в режиме гаммирования и уничтожаем ключ защиты */
   if(( error =  ((ak_function_bckey_encrypt *)(( ak_two_pointers ) export_algorithms.mode->data )->direct)
                    ( &encryptionKey, temporary, temporary, ec.encoded,
-                        salt+32, kivsize = encryptionKey.ivector.size )) != ak_error_ok )
+                        salt+48, kivsize = encryptionKey.ivector.size )) != ak_error_ok )
   {
     ak_error_message( error, __func__, "wrong encryption of temporary buffer" );
     ak_bckey_destroy( &encryptionKey );
@@ -1082,7 +1082,7 @@
   }
 
   /* 4. инициализационный вектор для режима шифрования */
-  if(( error = ak_ptr_to_asn1_octet_string( salt+32, kivsize,
+  if(( error = ak_ptr_to_asn1_octet_string( salt+48, kivsize,
                           &secretKeyData->data.parameters.encryptionIV )) != ak_error_ok ) {
     ak_error_message( error, __func__,
           "incorrect assignment of initial vector for encryption mode to asn1 structure" );
@@ -1090,7 +1090,7 @@
   }
 
   /* 5. инициализационный вектор для PBKDF2 (ключ имитозащиты) */
-  if(( error = ak_ptr_to_asn1_octet_string( salt+16, 16,
+  if(( error = ak_ptr_to_asn1_octet_string( salt+24, 16,
                          &secretKeyData->data.parameters.integritySalt )) != ak_error_ok ) {
     ak_error_message( error, __func__,
        "incorrect initial vector for PBKDF2 assigning to asn1 structure (integrity key)" );
@@ -1099,30 +1099,11 @@
 
   /* 6. алгоритм вычисления имитовставки */
   if(( error = ak_oid_to_asn1_object_identifier( export_algorithms.mac,
-              (OBJECT_IDENTIFIER_t *) &secretKeyData->data.parameters.integrityMode.algorithm )) != ak_error_ok ) {
+              (OBJECT_IDENTIFIER_t *) &secretKeyData->data.parameters.hmacIntegrity )) != ak_error_ok ) {
     ak_error_message( error, __func__,
                                   "incorrect integrity mode assigning to asn1 structure" );
     goto exit;
   }
-
-  /* создаем asn1 структуру и кодируем ее в der-представление (помещаем параметры в структуру ANY) */
-  memset( &cipher, 0, sizeof( OBJECT_IDENTIFIER_t ));
-  if(( error = ak_oid_to_asn1_object_identifier(
-                                     export_algorithms.cipher, &cipher )) != ak_error_ok ) {
-    ak_error_message( error, __func__,
-                                "incorrect assigning block cipher oid to asn1 structure" );
-    goto exit;
-  }
-  secretKeyData->data.parameters.integrityMode.parameters =
-                                   ANY_new_fromType( &asn_DEF_OBJECT_IDENTIFIER, &cipher );
-  asn_DEF_OBJECT_IDENTIFIER.free_struct( &asn_DEF_OBJECT_IDENTIFIER, &cipher, 1 );
-
-  if( secretKeyData->data.parameters.integrityMode.parameters == NULL ) {
-    ak_error_message( error, __func__,
-                       "incorrect assigning integrityMode parameters to asn1 structure" );
-    goto exit;
-  }
-
 
   /* 8. инициализационный вектор для режима имитозащиты */
 
@@ -1134,7 +1115,7 @@
   }
 
   if(( error = ak_hmac_context_set_key_password( &hmacKey,
-                                          pass, pass_size, salt+16, 16 )) != ak_error_ok ) {
+                                          pass, pass_size, salt+24, 16 )) != ak_error_ok ) {
     ak_error_message( error, __func__, "wrong generation of integrity key value" );
     ak_hmac_destroy( &hmacKey );
     goto exit;

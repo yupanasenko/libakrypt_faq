@@ -128,7 +128,7 @@
   /* Проверяем, корректность кода целостности */
 
   /* 1. формируем ключ имитозащиты */
-  if(( oid = ak_oid_find_by_object_identifier( &secretKeyData.data.parameters.integrityMode.algorithm )) == NULL ) {
+  if(( oid = ak_oid_find_by_object_identifier( &secretKeyData.data.parameters.hmacIntegrity )) == NULL ) {
     ak_error_message( ak_error_get_value(), __func__,
                                  "using undefined integrity mode oid in SecretKeyData structure" );
     goto exit;
