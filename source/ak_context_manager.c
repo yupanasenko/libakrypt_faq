@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2017 by Axel Kenzo, axelkenzo@mail.ru                                            */
+/*  Copyright (c) 2017 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Разрешается повторное распространение и использование как в виде исходного кода, так и         */
 /*  в двоичной форме, с изменениями или без, при соблюдении следующих условий:                     */
@@ -145,7 +145,7 @@
   if( manager == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                             "using a null pointer to context manager structure" );
  /* инициализируем генератор ключей */
-#ifdef __linux__
+#ifdef __unix__
   if(( error = ak_random_create_file( &manager->key_generator, "/dev/urandom" )) != ak_error_ok )
     return ak_error_message( error, __func__,
                              "wrong initialization of /dev/random for random number generation" );
@@ -160,7 +160,7 @@
                                 "wrong initialization of all types of random generators" );
    }
  #else
-   #error Using a non defined path of compilation
+   #error ak_context_manager_create(): using a non defined path of compilation
  #endif
 #endif
 
@@ -196,13 +196,14 @@
 {
   ak_context_node *newarray = NULL;
   size_t idx = 0, newsize = (manager->size << 1);
+  int msize = ak_libakrypt_get_option("context_manager_max_size");
 
   if( manager == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                             "using a null pointer to context manager structure" );
   if( newsize <= manager->size )
     return ak_error_message( ak_error_context_manager_size, __func__ ,
                                       "unexpected value of new value of context manager's size" );
-  if( newsize > ak_libakrypt_get_option("context_manager_max_size"))
+  if(( msize < 0 ) || (( int )newsize > msize ))
     return ak_error_message( ak_error_context_manager_max_size, __func__,
                                    "current size of context manager exceeds permissible bounds" );
 /* это отладочный вывод, который сообщает о выделении новой памяти
@@ -475,7 +476,7 @@
     (контекст не должен быть указателем на статическую переменную).
     @param engine тип контекста: блочный шифр, функия хеширования, массив с данными и т.п.
     @param description пользовательское описание контекста
-    @param func функция освобождения памяти, занимаемой контекстом
+    @param delete_function функция освобождения памяти, занимаемой контекстом
     @return Функция возвращает дескриптор созданного контекста. В случае
     возникновения ошибки возвращается значение \ref ak_error_wrong_handle. Код ошибки может быть
     получен с помощью вызова функции ak_error_get_value().                                         */

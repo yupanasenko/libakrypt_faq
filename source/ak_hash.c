@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2017 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Разрешается повторное распространение и использование как в виде исходного кода, так и         */
 /*  в двоичной форме, с изменениями или без, при соблюдении следующих условий:                     */
@@ -101,7 +101,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! В случае инициализации контекста алгоритма ГОСТ Р 34.11-94 (в настоящее время выведен из
     действия) используются фиксированные таблицы замен, определяемые константой
-    \ref id-gosthash94-rfc4357-paramsetA. Для создания контекста функции хеширования ГОСТ Р 34.11-94
+    `id-gosthash94-rfc4357-paramsetA`. Для создания контекста функции хеширования ГОСТ Р 34.11-94
     с другими таблицами замен нужно пользоваться функцией ak_hash_create_gosthash94().
 
     @param ctx указатель на структуру struct hash
@@ -113,40 +113,26 @@
  int ak_hash_create_oid( ak_hash ctx, ak_oid oid )
 {
   int error = ak_error_ok;
-  ak_bool result = ak_false;
 
  /* выполняем проверку */
   if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using null pointer to hash context" );
   if( oid == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                  "using null pointer to hash function OID" );
-
  /* проверяем, что OID от бесключевой функции хеширования */
   if( oid->engine != hash_function )
     return ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
  /* проверяем, что OID от алгоритма, а не от параметров */
   if( oid->mode != algorithm )
     return ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
+ /* проверяем, что производящая функция определена */
+  if( oid->func == NULL )
+    return ak_error_message( ak_error_undefined_function, __func__ ,
+                                           "using oid with undefined constructor function" );
+ /* инициализируем контекст */
+  if(( error = (( ak_function_hash_create *)oid->func)( ctx )) != ak_error_ok )
+      return ak_error_message( error, __func__, "invalid creation of hash function context");
 
- /* инициализируем контекст функции хеширования */
-  if( strncmp( "streebog256", oid->name, strlen( oid->name )) == 0 ) {
-    if(( error = ak_hash_create_streebog256( ctx )) != ak_error_ok )
-      return ak_error_message( error, __func__, "invalid creation of hash function context");
-    result = ak_true;
-  }
-  if( strncmp( "streebog512", oid->name, strlen( oid->name )) == 0 ) {
-    if(( error = ak_hash_create_streebog512( ctx )) != ak_error_ok )
-      return ak_error_message( error, __func__, "invalid creation of hash function context");
-    result = ak_true;
-  }
-  if( strncmp( "gosthash94", oid->name, strlen( oid->name )) == 0 ) {
-    if(( error = ak_hash_create_gosthash94( ctx,
-                 ak_oid_find_by_name( "id-gosthash94-rfc4357-paramsetA" ))) != ak_error_ok )
-      return ak_error_message( error, __func__, "invalid creation of hash function context");
-    result = ak_true;
-  }
-  if( !result ) return ak_error_message( ak_error_undefined_value, __func__ ,
-                                           "using hash function OID with unsupported name" );
  return error;
 }
 
@@ -288,7 +274,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция создает контекст функции хеширования, регламентируемой ГОСТ Р 34.11-94 (в настоящее
     время стандарт выведен из действия) с фиксированным значением таблицам замен,
-    используемых в ранних версиях КриптоПро CSP.
+    приведенным в RFC 4357 (используется в ранних версиях КриптоПро CSP).
 
     @return Функция возвращает десткриптор созданного контекста. В случае возникновения ошибки
     возвращается \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова
@@ -384,22 +370,6 @@
     ak_error_message( ak_error_get_value(), __func__ , "using wrong value of handle" );
     return ak_error_wrong_handle;
   }
- /* проверяем, что OID от бесключевой функции хеширования */
-  if( oid->engine != hash_function ) {
-    ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
-    return ak_error_wrong_handle;
-  }
- /* проверяем, что OID от алгоритма, а не от параметров */
-  if( oid->mode != algorithm ) {
-    ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
-    return ak_error_wrong_handle;
-  }
- /* проверяем, что производящая функция определена */
-  if( oid->func == NULL ) {
-    ak_error_message( ak_error_undefined_function, __func__ ,
-                                    "using oid with undefined constructor function" );
-    return ak_error_wrong_handle;
-  }
 
  /* только теперь создаем контекст функции хеширования */
   if(( ctx = malloc( sizeof( struct hash ))) == NULL ) {
@@ -407,10 +377,9 @@
     return ak_error_wrong_handle;
   }
 
- /* инициализируем его */
-  if(( error = ((ak_function_hash_create *)oid->func)( ctx )) != ak_error_ok ) {
+  if(( error = ak_hash_create_oid( ctx, oid )) != ak_error_ok ) {
+    ctx = ak_hash_delete( ctx );
     ak_error_message( error, __func__ , "wrong initialization of hash function context" );
-    free( ctx );
     return ak_error_wrong_handle;
   }
 

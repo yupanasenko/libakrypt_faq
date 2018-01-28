@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2017 by Axel Kenzo, axelkenzo@mail.ru                                            */
+/*  Copyright (c) 2017 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Разрешается повторное распространение и использование как в виде исходного кода, так и         */
 /*  в двоичной форме, с изменениями или без, при соблюдении следующих условий:                     */
@@ -81,34 +81,36 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция устанавливает значение полей структуры struct compress в значения, определяемые
-    заданным контекстом люча алгоритма выработки имитовставки hmac.
+    заданным контекстом ключевой функции хеширования.
 
-    @param comp указатель на структуру struct compress.
-    @param hctx контекст ключа алгоритма выработки hmac.
+    @param comp указатель на структуру struct compress
+    @param mac контекст ключевой функции хеширования
     @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
     возвращается ее код.                                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_compress_create_hmac( ak_compress comp, ak_hmac hctx )
+ int ak_compress_create_mac( ak_compress comp, ak_mac mac )
 {
  /* вначале, необходимые проверки */
   if( comp == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                        "using null pointer to compress context" );
-  if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                           "using null pointer to hash context" );
-
+  if( mac == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using null pointer to mac context" );
+  if(( mac->update == NULL ) || ( mac->finalize == NULL ) || ( mac->clean == NULL ))
+    return ak_error_message( ak_error_undefined_function, __func__ ,
+                                                            "using non initialized mac context" );
  /* теперь собственно инициализация */
-  if(( comp->data = (ak_uint8 *) malloc( comp->bsize = hctx->ctx.bsize )) == NULL ) {
+  if(( comp->data = (ak_uint8 *) malloc( comp->bsize = mac->bsize )) == NULL ) {
     ak_error_message( ak_error_out_of_memory, __func__ ,
                                      "wrong memory alllocation for a new temporary data buffer" );
-  } else memset( comp->data, 0, hctx->ctx.bsize );
+  } else memset( comp->data, 0, mac->bsize );
   comp->length = 0;
 
  /* устанавливаем значения и полей и методы из контекста функции хеширования */
-  comp->ctx = hctx;
-  comp->hsize = hctx->ctx.hsize;
-  comp->clean = ak_hmac_clean;
-  comp->update = ak_hmac_update;
-  comp->finalize = ak_hmac_finalize;
+  comp->ctx = ( ak_pointer )&mac->choice;
+  comp->hsize = mac->hsize;
+  comp->clean = mac->clean;
+  comp->update = mac->update;
+  comp->finalize = mac->finalize;
 
  return ak_error_ok;
 }
@@ -290,7 +292,7 @@
     ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to filename" );
     return NULL;
   }
- 
+
   if(( fd = open( filename, O_RDONLY | O_BINARY )) < 0 ) {
     ak_error_message( ak_error_open_file, __func__, strerror( errno ));
     return NULL;

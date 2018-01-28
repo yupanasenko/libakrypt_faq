@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2017 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Разрешается повторное распространение и использование как в виде исходного кода, так и         */
 /*  в двоичной форме, с изменениями или без, при соблюдении следующих условий:                     */
@@ -58,12 +58,13 @@
  typedef int ( ak_function_hash_create ) ( ak_hash );
 /*! \brief Тип функции создания дескриптора контекста хеширования. */
  typedef ak_handle ( ak_function_hash )( void );
+
 /*! \brief Функция очистки контекста хеширования. */
- typedef int ( ak_function_hash_clean )( ak_pointer );
+ typedef int ( ak_function_mac_clean )( ak_pointer );
 /*! \brief Итерационная функция хеширования. */
- typedef int ( ak_function_hash_update )( ak_pointer, const ak_pointer , const size_t );
+ typedef int ( ak_function_mac_update )( ak_pointer, const ak_pointer , const size_t );
 /*! \brief Функция завершения вычислений и получения конечного результата. */
- typedef ak_buffer ( ak_function_hash_finalize ) ( ak_pointer,
+ typedef ak_buffer ( ak_function_mac_finalize ) ( ak_pointer,
                                                       const ak_pointer , const size_t, ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -106,10 +107,10 @@
        ak_hash_create_streebog512( ctx_two );
 
       // вычисляем хеш-код
-       result_one = ak_hash_ptr_context( &ctx_one, some_pointer, size, NULL );
-       ak_hash_file_context( ctx_two, "filename", result_two );
+       result_one = ak_hash_context_ptr( &ctx_one, some_pointer, size, NULL );
+       ak_hash_context_file( ctx_two, "filename", result_two );
 
-      // уничтолжаем объекты
+      // уничтожаем объекты
        ak_hash_destroy( &ctx_one );
        ctx_two  = ak_hash_delete( ctx_two );
      \endcode
@@ -138,11 +139,11 @@
   /*! \brief OID алгоритма хеширования */
    ak_oid oid;
   /*! \brief функция очистки контекста */
-   ak_function_hash_clean *clean;
+   ak_function_mac_clean *clean;
   /*! \brief функция обновления состояния контекста */
-   ak_function_hash_update *update;
+   ak_function_mac_update *update;
   /*! \brief функция завершения вычислений и получения конечного результата */
-   ak_function_hash_finalize *finalize;
+   ak_function_mac_finalize *finalize;
  };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -155,7 +156,7 @@
 
 /*! \brief Инициализация контекста функции бесключевого хеширования ГОСТ Р 34.11-94. */
  int ak_hash_create_gosthash94( ak_hash , ak_oid );
-/*! \brief Инициализация контекста функции бесключевого хеширования ГОСТ Р 34.11-94 с таблицами замен КриптоПро. */
+/*! \brief Инициализация контекста функции бесключевого хеширования ГОСТ Р 34.11-94 с таблицами замен из RFC 4357. */
  int ak_hash_create_gosthash94_csp( ak_hash );
 /*! \brief Инициализация контекста функции бесключевого хеширования ГОСТ Р 34.11-2012 (Стрибог256). */
  int ak_hash_create_streebog256( ak_hash );

@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*   Copyright (c) 2014 - 2017 by Axel Kenzo, axelkenzo@mail.ru                                    */
+/*   Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                    */
 /*   All rights reserved.                                                                          */
 /*                                                                                                 */
 /*  Разрешается повторное распространение и использование как в виде исходного кода, так и         */
@@ -75,7 +75,7 @@
  int ak_random_create_lcg( ak_random );
 /*! \brief Cоздание генератора, считывающего случайные значения из заданного файла. */
  int ak_random_create_file( ak_random , const char * );
-#ifdef __linux__
+#ifdef __unix__
 /*! \brief Cоздание генератора, считывающего случайные значения из /dev/random. */
  int ak_random_create_random( ak_random );
 /*! \brief Cоздание генератора, считывающего случайные значения из /dev/urandom. */

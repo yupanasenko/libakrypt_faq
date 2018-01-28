@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*   Copyright (c) 2014 - 2017 by Axel Kenzo, axelkenzo@mail.ru                                    */
+/*   Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                    */
 /*   All rights reserved.                                                                          */
 /*                                                                                                 */
 /*  Разрешается повторное распространение и использование как в виде исходного кода, так и         */
@@ -27,27 +27,19 @@
 /*                                                                                                 */
 /*   ak_oid.c                                                                                      */
 /* ----------------------------------------------------------------------------------------------- */
+ #include <ak_mac.h>
  #include <ak_tools.h>
- #include <ak_hmac.h>
- #include <ak_bckey.h>
  #include <ak_parameters.h>
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Структура, содержащая указатели на функции зашифрования/расшифрования в режиме счетчика */
- static struct two_pointers block_cipher_counter_functions = {
-  (ak_function_void *) ak_bckey_context_xcrypt,
-  (ak_function_void *) ak_bckey_context_xcrypt
- };
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Константные значения OID библиотеки (имена, данные + производящие функции) */
+/*! Константные значения OID библиотеки */
  struct oid libakrypt_oids[] = {
   /* 1. идентификаторы алгоритмов выработки псевдо-случайных последовательностей,
         значения OID находятся в дереве библиотеки: 1.2.643.2.52.1.1 - генераторы ПСЧ  */
    { random_generator, algorithm, "lcg", "1.2.643.2.52.1.1.1", NULL,
                                                         (ak_function_void *) ak_random_create_lcg },
-#ifdef __linux__
+#ifdef __unix__
    { random_generator, algorithm, "dev-random", "1.2.643.2.52.1.1.2", NULL,
                                                      (ak_function_void *) ak_random_create_random },
    { random_generator, algorithm, "dev-urandom", "1.2.643.2.52.1.1.3", NULL,
@@ -79,78 +71,20 @@
   /* 4. идентификаторы алгоритмов HMAC согласно Р 50.1.113-2016
         в дереве библиотеки: 1.2.643.2.52.1.4 - функции ключевого хеширования (имитозащиты)
         в дереве библиотеки: 1.2.643.2.52.1.5 - параметры функций ключевого хеширования (имитозащиты) */
-   { hmac_function, algorithm, "hmac-streebog256", "1.2.643.7.1.1.4.1", NULL,
-                                                  (ak_function_void *) ak_hmac_create_streebog256 },
-   { hmac_function, algorithm, "hmac-streebog512", "1.2.643.7.1.1.4.2", NULL,
-                                                  (ak_function_void *) ak_hmac_create_streebog512 },
-   { hmac_function, algorithm, "hmac-gosthash94", "1.2.643.2.52.1.4.1", NULL,
-                                               (ak_function_void *) ak_hmac_create_gosthash94_csp },
+   { mac_function, algorithm, "hmac-streebog256", "1.2.643.7.1.1.4.1", NULL,
+                                              (ak_function_void *) ak_mac_create_hmac_streebog256 },
+   { mac_function, algorithm, "hmac-streebog512", "1.2.643.7.1.1.4.2", NULL,
+                                              (ak_function_void *) ak_mac_create_hmac_streebog512 },
+   { mac_function, algorithm, "hmac-gosthash94", "1.2.643.2.52.1.4.1", NULL,
+                                           (ak_function_void *) ak_mac_create_hmac_gosthash94_csp },
 
   /* 6. идентификаторы алгоритмов блочного шифрования
         в дереве библиотеки: 1.2.643.2.52.1.6 - алгоритмы блочного шифрования
         в дереве библиотеки: 1.2.643.2.52.1.7 - параметры алгоритмов блочного шифрования */
    { block_cipher, algorithm, "magma", "1.2.643.2.2.21", NULL,
                                                        (ak_function_void *) ak_bckey_create_magma },
-//   { block_cipher, algorithm,  "kuznechik", "1.2.643.7.1.1.5.2", NULL, NULL }, // или "1.2.643.7.1.1.5.1" ?
-
-  /* 8. идентификаторы режимов работы блочных шифров.
-        в дереве библиотеки: 1.2.643.2.52.1.8 - режимы работы блочных шифров
-        в дереве библиотеки: 1.2.643.2.52.1.9 - параметры режимов работы блочных шифров  */
-   { block_cipher, ecb, "ecb", "1.2.643.2.52.1.8.1", NULL, NULL },
-   { block_cipher, counter, "counter", "1.2.643.2.52.1.8.2",
-                                               (ak_pointer )&block_cipher_counter_functions, NULL },
-
-   // { block_cipher, cfb, "cfb", "1.2.643.2.52.1.8.3", NULL, NULL },
-   // { block_cipher, cbc, "cbc", "1.2.643.2.52.1.8.4", NULL, NULL },
-   // { block_cipher, ofb, "ofb", "1.2.643.2.52.1.8.5", NULL, NULL },
-   // { block_cipher, xts, "xts", "1.2.643.2.52.1.8.6", NULL, NULL },
-
-  /* 10. идентификаторы алгоритмов выработки электронной подписи
-        в дереве библиотеки: 1.2.643.2.52.1.10 - алгоритмы выработки электронной подписи */
-   { sign_function, algorithm, "sign256", "1.2.643.7.1.1.1.1", NULL, NULL },
-   { sign_function, algorithm, "sign512", "1.2.643.7.1.1.1.2", NULL, NULL },
-   { sign_function, algorithm, "sign256-gosthash94", "1.2.643.2.52.1.10.1", NULL, NULL },
-
- /* 11. идентификаторы алгоритмов проверки электронной подписи
-        в дереве библиотеки: 1.2.643.2.52.1.11 - алгоритмы проверки электронной подписи */
-   { verify_function, algorithm, "verify256", "1.2.643.2.52.1.11.2", NULL, NULL },
-   { verify_function, algorithm, "verify512", "1.2.643.2.52.1.11.3", NULL, NULL },
-   { verify_function, algorithm, "verify256-gosthash94", "1.2.643.2.52.1.11.1", NULL, NULL },
-
- /* 12. идентификаторы параметров эллиптических кривых, в частности, из Р 50.1.114-2016
-        в дереве библиотеки: 1.2.643.2.52.1.12 - параметры эллиптических кривых в форме Вейерштрасса
-        в дереве библиотеки: 1.2.643.2.52.1.12.1 - параметры 256 битных кривых
-        в дереве библиотеки: 1.2.643.2.52.1.12.2 - параметры 512 битных кривых */
-   { identifier, wcurve_params, "id-tc26-gost3410-2012-256-test-paramset", "1.2.643.7.1.2.1.1.0",
-                                      (ak_pointer) &id_tc26_gost3410_2012_256_test_paramset, NULL },
-   { identifier, wcurve_params, "id-tc26-gost3410-2012-256-paramsetA", "1.2.643.7.1.2.1.1.1",
-                                          (ak_pointer) &id_tc26_gost3410_2012_256_paramsetA, NULL },
-   { identifier, wcurve_params, "id-rfc4357-gost3410-2001-paramsetA", "1.2.643.2.2.35.1",
-                                           (ak_pointer) &id_rfc4357_gost3410_2001_paramsetA, NULL },
-   { identifier, wcurve_params, "id-rfc4357-gost3410-2001-paramsetB", "1.2.643.2.2.35.2",
-                                           (ak_pointer) &id_rfc4357_gost3410_2001_paramsetB, NULL },
-   { identifier, wcurve_params, "id-rfc4357-gost3410-2001-paramsetC", "1.2.643.2.2.35.3",
-                                           (ak_pointer) &id_rfc4357_gost3410_2001_paramsetC, NULL },
-   { identifier, wcurve_params, "id-rfc4357-2001dh-paramset", "1.2.643.2.2.36.0",
-                                           (ak_pointer) &id_rfc4357_gost3410_2001_paramsetA, NULL },
-   { identifier, wcurve_params, "id-axel-gost3410-2012-256-paramsetA", "1.2.643.2.52.1.12.1.1",
-                                          (ak_pointer) &id_axel_gost3410_2012_256_paramsetA, NULL },
-
-   { identifier, wcurve_params, "id-tc26-gost3410-2012-512-test-paramset", "1.2.643.7.1.2.1.2.0",
-                                      (ak_pointer) &id_tc26_gost3410_2012_512_test_paramset, NULL },
-   { identifier, wcurve_params, "id-tc26-gost3410-2012-512-paramsetA", "1.2.643.7.1.2.1.2.1",
-                                          (ak_pointer) &id_tc26_gost3410_2012_512_paramsetA, NULL },
-   { identifier, wcurve_params, "id-tc26-gost3410-2012-512-paramsetB", "1.2.643.7.1.2.1.2.2",
-                                          (ak_pointer) &id_tc26_gost3410_2012_512_paramsetB, NULL },
-   { identifier, wcurve_params, "id-tc26-gost3410-2012-512-paramsetC", "1.2.643.7.1.2.1.2.3",
-                                          (ak_pointer) &id_tc26_gost3410_2012_512_paramsetC, NULL },
-   { identifier, wcurve_params, "id-axel-gost3410-2012-512-paramsetA", "1.2.643.2.52.1.12.2.1",
-                                          (ak_pointer) &id_axel_gost3410_2012_512_paramsetA, NULL },
-
- /* 13. идентификаторы параметров эллиптических кривых, в частности, из Р 50.1.114-2016
-        в дереве библиотеки: 1.2.643.2.52.1.13 - параметры эллиптических кривых в форме Эдвардса
-        в дереве библиотеки: 1.2.643.2.52.1.13.1 - параметры 256 битных кривых
-        в дереве библиотеки: 1.2.643.2.52.1.13.2 - параметры 512 битных кривых */
+   { block_cipher, algorithm, "kuznechik", "1.2.643.7.1.1.5.2", NULL,
+                                                   (ak_function_void *) ak_bckey_create_kuznechik },
 
   /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */
    { undefined_engine, undefined_mode, NULL, NULL, NULL, NULL }
@@ -471,19 +405,16 @@
 {
   switch( engine )
  {
-   case undefined_engine:  return "undefined_engine";
+   case undefined_engine:  return "undefined engine";
    case identifier:        return "identifier";
-   case block_cipher:      return "block_cipher";
-   case stream_cipher:     return "stream_cipher";
-   case hybrid_cipher:     return "hybrid_cipher";
-   case hash_function:     return "hash_function";
-   case hmac_function:     return "hmac_function";
-   case mac_function:      return "mac_function";
-   case digital_signature: return "digital_signature";
-   case sign_function:     return "sign_function";
-   case verify_function:   return "verify_function";
-   case random_generator:  return "random_generator";
-   case update_engine:     return "update_engine";
+   case block_cipher:      return "block cipher";
+   case stream_cipher:     return "stream cipher";
+   case hybrid_cipher:     return "hybrid cipher";
+   case hash_function:     return "hash function";
+   case mac_function:      return "mac function";
+   case digital_signature: return "digital signature";
+   case random_generator:  return "random generator";
+   case update_engine:     return "update engine";
    case oid_engine:        return "oid";
    default:                break;
  }
@@ -501,30 +432,24 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_oid_engine ak_libakrypt_get_engine( const char *str )
 {
-  if(( strlen( str ) == 16 ) && ak_ptr_is_equal( "undefined_engine", (void *)str, 16 ))
+  if(( strlen( str ) == 16 ) && ak_ptr_is_equal( "undefined engine", (void *)str, 16 ))
                                                                             return undefined_engine;
   if(( strlen( str ) == 10 ) && ak_ptr_is_equal( "identifier", (void *)str, 10 )) return identifier;
-  if(( strlen( str ) == 12 ) && ak_ptr_is_equal( "block_cipher", (void *)str, 12 ))
+  if(( strlen( str ) == 12 ) && ak_ptr_is_equal( "block cipher", (void *)str, 12 ))
                                                                                 return block_cipher;
-  if(( strlen( str ) == 13 ) && ak_ptr_is_equal( "stream_cipher", (void *)str, 13 ))
+  if(( strlen( str ) == 13 ) && ak_ptr_is_equal( "stream cipher", (void *)str, 13 ))
                                                                                return stream_cipher;
-  if(( strlen( str ) == 13 ) && ak_ptr_is_equal( "hybrid_cipher", (void *)str, 13 ))
+  if(( strlen( str ) == 13 ) && ak_ptr_is_equal( "hybrid cipher", (void *)str, 13 ))
                                                                                return hybrid_cipher;
-  if(( strlen( str ) == 13 ) && ak_ptr_is_equal( "hash_function", (void *)str, 13 ))
+  if(( strlen( str ) == 13 ) && ak_ptr_is_equal( "hash function", (void *)str, 13 ))
                                                                                return hash_function;
-  if(( strlen( str ) == 13 ) && ak_ptr_is_equal( "hmac_function", (void *)str, 12 ))
-                                                                               return hmac_function;
-  if(( strlen( str ) == 12 ) && ak_ptr_is_equal( "mac_function", (void *)str, 12 ))
+  if(( strlen( str ) == 12 ) && ak_ptr_is_equal( "mac function", (void *)str, 12 ))
                                                                                 return mac_function;
-  if(( strlen( str ) == 17 ) && ak_ptr_is_equal( "digital_signature", (void *)str, 17 ))
+  if(( strlen( str ) == 17 ) && ak_ptr_is_equal( "digital signature", (void *)str, 17 ))
                                                                            return digital_signature;
-  if(( strlen( str ) == 13 ) && ak_ptr_is_equal( "sign_function", (void *)str, 13 ))
-                                                                           return digital_signature;
-  if(( strlen( str ) == 15 ) && ak_ptr_is_equal( "verify_function", (void *)str, 15 ))
-                                                                           return digital_signature;
-  if(( strlen( str ) == 16 ) && ak_ptr_is_equal( "random_generator", (void *)str, 16 ))
+  if(( strlen( str ) == 16 ) && ak_ptr_is_equal( "random generator", (void *)str, 16 ))
                                                                             return random_generator;
-  if(( strlen( str ) == 13 ) && ak_ptr_is_equal( "update_engine", (void *)str, 13 ))
+  if(( strlen( str ) == 13 ) && ak_ptr_is_equal( "update engine", (void *)str, 13 ))
                                                                                return update_engine;
   if(( strlen( str ) == 3 ) && ak_ptr_is_equal( "oid", (void *)str, 3 )) return oid_engine;
 
@@ -553,13 +478,15 @@
    case ecb:             return "ecb mode";
    case ofb:             return "ofb mode";
    case counter:         return "counter mode";
-   case counter_gost:    return "counter mode";
+   case counter_gost:    return "gost28147-89 counter mode";
    case cfb:             return "cfb mode";
    case cbc:             return "cbc mode";
    case xts:             return "xts mode";
    case xts_mac:         return "xts mode with authenication";
    case xcrypt:          return "stream cipher xor mode";
    case a8:              return "stream cipher addition mode";
+   case signify:         return "signify mode";
+   case verify:          return "verify mode";
    default:              break;
  }
   ak_error_message_fmt( ak_error_undefined_value, __func__,

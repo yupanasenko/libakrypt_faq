@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2017 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Разрешается повторное распространение и использование как в виде исходного кода, так и         */
 /*  в двоичной форме, с изменениями или без, при соблюдении следующих условий:                     */
@@ -165,6 +165,9 @@
   if(( error = ak_skey_set_ptr( &bkey->key, keyptr, size, cflag )) != ak_error_ok )
     return ak_error_message( error, __func__ , "incorrect assigning of key data" );
 
+ /* выполняем развертку раундовых ключей */
+  if( bkey->schedule_keys != NULL ) bkey->schedule_keys( &bkey->key );
+
  return error;
 }
 
@@ -195,6 +198,9 @@
   if(( error = ak_skey_set_random( &bkey->key, generator )) != ak_error_ok )
     return ak_error_message( error, __func__ , "incorrect generation of secret key random value" );
 
+ /* выполняем развертку раундовых ключей */
+  if( bkey->schedule_keys != NULL ) bkey->schedule_keys( &bkey->key );
+
  return error;
 }
 
@@ -203,10 +209,8 @@
     описанного  в рекомендациях по стандартизации Р 50.1.111-2016.
 
     Пароль является секретным значением и должен быть не пустой строкой символов в формате utf8.
-    Используемое при выработке ключа знаечние инициализационного вектора модет быть не секретным.
-
+    Используемое при выработке ключа значение инициализационного вектора может быть не секретным.
     Перед присвоением ключа контекст должен быть инициализирован.
-    После присвоения ключа производится его маскирование и выработка контрольной суммы.
 
     @param bkey Контекст ключа блочного алгоритма шифрования.
     @param pass Пароль, представленный в виде строки символов в формате utf8.
@@ -237,6 +241,9 @@
   if(( error = ak_skey_set_password( &bkey->key, pass, pass_size, salt, salt_size )) != ak_error_ok )
     return ak_error_message( error, __func__ , "incorrect generation of secret key random value" );
 
+ /* выполняем развертку раундовых ключей */
+  if( bkey->schedule_keys != NULL ) bkey->schedule_keys( &bkey->key );
+
  return error;
 }
 
@@ -255,7 +262,8 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_encrypt_ecb( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size )
 {
-  ak_uint64 blocks = 0, *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
+  ak_int64 blocks = 0;
+  ak_uint64 *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
 
  /* выполняем проверку размера входных данных */
   if( size%bkey->ivector.size != 0 )
@@ -306,7 +314,8 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_decrypt_ecb( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size )
 {
-  ak_uint64 blocks = 0, *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
+  ak_int64 blocks = 0;
+  ak_uint64 *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
 
  /* выполняем проверку размера входных данных */
   if( size%bkey->ivector.size != 0 )
@@ -368,8 +377,8 @@
  int ak_bckey_context_xcrypt( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size,
                                                                      ak_pointer iv, size_t iv_size )
 {
-  ak_uint64 blocks = (ak_uint64)size/bkey->ivector.size,
-            tail = (ak_uint64)size%bkey->ivector.size;
+  ak_int64 blocks = (ak_int64)size/bkey->ivector.size,
+            tail = (ak_int64)size%bkey->ivector.size;
   ak_uint64 yaout[2], *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
 
  /* проверяем целостность ключа */
@@ -450,8 +459,8 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_xcrypt_update( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size )
 {
-  ak_uint64 blocks = (ak_uint64)size/bkey->ivector.size,
-            tail = (ak_uint64)size%bkey->ivector.size;
+  ak_int64 blocks = (ak_int64)size/bkey->ivector.size,
+            tail = (ak_int64)size%bkey->ivector.size;
   ak_uint64 yaout[2], *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
 
  /* проверяем, что мы можем использовать данный режим */

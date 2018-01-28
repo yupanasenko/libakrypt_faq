@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2017 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Разрешается повторное распространение и использование как в виде исходного кода, так и         */
 /*  в двоичной форме, с изменениями или без, при соблюдении следующих условий:                     */
@@ -113,41 +113,22 @@
  int ak_skey_destroy( ak_skey );
 /*! \brief Присвоение секретному ключу уникального номера. */
  int ak_skey_set_unique_number( ak_skey );
-
 /*! \brief Присвоение секретному ключу константного значения. */
  int ak_skey_set_ptr( ak_skey , const ak_pointer , const size_t , const ak_bool );
 /*! \brief Присвоение секретному ключу случайного значения. */
  int ak_skey_set_random( ak_skey , ak_random );
-/*! \brief Присвоение секретному ключу значения, выработанного из пароля. */
+/*! \brief Присвоение секретному ключу значения, выработанного из пароля */
  int ak_skey_set_password( ak_skey , const ak_pointer , const size_t ,
                                                                  const ak_pointer , const size_t );
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Наложение в пространстве векторов \f$ \mathbb V^n \f$ аддитивной маски на ключ. */
  int ak_skey_set_mask_xor( ak_skey );
-/*! \brief Наложение в кольце \f$ \mathbb Z_q \f$ аддитивной маски на ключ. */
- int ak_skey_set_mask_ladditive( ak_skey );
-/*! \brief Наложение аддитивной в кольце \f$ \mathbb Z_{2^{32}}\f$ маски на ключ. */
- int ak_skey_set_mask_additive( ak_skey );
-
 /*! \brief Смена в пространстве векторов \f$ \mathbb V^n \f$ значения аддитивной маски ключа. */
  int ak_skey_remask_xor( ak_skey );
-/*! \brief Смена в кольце \f$ \mathbb Z_q \f$ значения аддитивной маски ключа. */
- int ak_skey_remask_ladditive( ak_skey );
-/*! \brief Смена значения аддитивной в кольце \f$ \mathbb Z_{2^{32}}\f$ маски ключа. */
- int ak_skey_remask_additive( ak_skey );
-
 /*! \brief Вычисление значения контрольной суммы ключа. */
  int ak_skey_set_icode_xor( ak_skey );
-/*! \brief Вычисление значения контрольной суммы ключа. */
- int ak_skey_set_icode_ladditive( ak_skey );
-/*! \brief Вычисление значения контрольной суммы ключа. */
- int ak_skey_set_icode_additive( ak_skey );
-
 /*! \brief Проверка значения контрольной суммы ключа. */
  ak_bool ak_skey_check_icode_xor( ak_skey );
-/*! \brief Проверка значения контрольной суммы ключа. */
- ak_bool ak_skey_check_icode_ladditive( ak_skey );
-/*! \brief Проверка значения контрольной суммы ключа. */
- ak_bool ak_skey_check_icode_additive( ak_skey );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

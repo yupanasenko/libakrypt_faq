@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2017 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Разрешается повторное распространение и использование как в виде исходного кода, так и         */
 /*  в двоичной форме, с изменениями или без, при соблюдении следующих условий:                     */
@@ -27,10 +27,8 @@
 /*   ak_skey.c                                                                                     */
 /* ----------------------------------------------------------------------------------------------- */
  #include <time.h>
+ #include <ak_skey.h>
  #include <ak_tools.h>
- #include <ak_hmac.h>
- #include <ak_bckey.h>
- #include <ak_curves.h>
  #include <ak_compress.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -171,7 +169,7 @@
 /*! Выработанный функцией номер является уникальным (в рамках библиотеки) и однозначно идентифицирует
     секретный ключ. Данный идентификатор может сохраняться вместе с ключом.
 
-    @param key контекст секретного ключа, для клоторого вырабатывается уникальный номер
+    @param skey контекст секретного ключа, для клоторого вырабатывается уникальный номер
     @return В случае успеха функция возвращает k_error_ok (ноль). В противном случае, возвращается
     номер ошибки.                                                                                  */
 /* ----------------------------------------------------------------------------------------------- */
@@ -272,77 +270,6 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция вырабатывает случайный вычет \f$ v \f$ из кольца вычетов \$f \mathbb Z_q\$f
-    и заменяет значение ключа \f$ k \f$ на величину \f$ k + v \pmod{q} \f$.
-    Величина \f$ q \f$ должна быть простым числом, помещенным в параметры эллиптической кривой,
-    на которые указывает `skey->data`.
-
-    @param skey Указатель на контекст секретного ключа. Длина ключа (в байтах)
-    должна быть кратна 8.
-
-    @return В случае успеха функция возвращает ak_error_ok. В противном случае,
-    возвращается код ошибки.                                                                       */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_skey_set_mask_ladditive( ak_skey skey )
-{
-  ak_wcurve wc = NULL;
-  int error = ak_error_ok;
-
- /* выполняем стандартные проверки */
-  if(( error = ak_skey_check( skey )) != ak_error_ok )
-    return ak_error_message( error, __func__ , "using invalid secret key" );
-
- /* создаем маску*/
-  if(( error = skey->generator.random( &skey->generator,
-                                           skey->mask.data, skey->mask.size )) != ak_error_ok )
-    return ak_error_message( error, __func__ , "wrong mask generation for key buffer" );
-
- /* накладываем маску на ключ */
-  if(( wc = ( ak_wcurve ) skey->data ) == NULL )
-    return ak_error_message( ak_error_null_pointer, __func__ ,
-                                      "using internal null pointer to elliptic curve" );
-  ak_mpzn_rem( (ak_uint64 *)skey->key.data, (ak_uint64 *)skey->key.data, wc->q, wc->size );
-  ak_mpzn_mul_montgomery( (ak_uint64 *)skey->key.data, (ak_uint64 *)skey->key.data, wc->r2q,
-                                                                           wc->q, wc->nq, wc->size);
-  ak_mpzn_rem( (ak_uint64 *)skey->mask.data, (ak_uint64 *)skey->mask.data, wc->q, wc->size );
-  ak_mpzn_add_montgomery( (ak_uint64 *)skey->key.data, (ak_uint64 *)skey->key.data,
-                                                    (ak_uint64 *)skey->mask.data, wc->q, wc->size );
- return error;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция рассматривает вектор ключа как последовательность \f$ k_1, \ldots, k_n\f$, состоящую
-    из элементов кольца  \f$ \mathbb Z_{2^{32}}\f$. Функция вырабатывает случайный вектор
-    \f$ x_1, \ldots, x_n\f$ и заменяет ключевой вектор на последовательность значений
-    \f$ k_1 + x_1 \pmod{2^{32}}, \ldots, k_n + x_n \pmod{2^{32}}\f$.
-
-    @param skey Указатель на контекст секретного ключа. Длина ключа (в байтах)
-    должна быть в точности равна 32.
-
-    @return В случае успеха функция возвращает ak_error_ok. В противном случае,
-    возвращается код ошибки.                                                                       */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_skey_set_mask_additive( ak_skey skey )
-{
-  size_t idx = 0;
-
-  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                            "using a null pointer to secret key" );
- /* проверяем длину ключа */
-  if( skey->key.size != 32 ) return ak_error_message( ak_error_undefined_value, __func__ ,
-                                                          "using a key buffer with wrong length" );
- /* создаем маску*/
-  if( skey->generator.random( &skey->generator, skey->mask.data, skey->mask.size ) != ak_error_ok )
-    return ak_error_message( ak_error_write_data, __func__ ,
-                                                          "wrong mask generation for key buffer" );
- /* накладываем маску на ключ */
-  for( idx = 0; idx < (skey->key.size >> 2); idx++ )
-     ((ak_uint32 *) skey->key.data)[idx] += ((ak_uint32 *) skey->mask.data)[idx];
-
- return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! Функция вычисляет новый случайный вектор \f$ v \f$ и изменяет значение
     значение ключа, снимая старую маску и накладывая новую.
 
@@ -377,75 +304,6 @@
   memset( &newmask, 0, sizeof( ak_uint64 ));
  return ak_error_ok;
 }
-
-/* ----------------------------------------------------------------------------------------------- */
- int ak_skey_remask_ladditive( ak_skey skey )
-{
-  ak_wcurve wc = NULL;
-  int error = ak_error_ok;
-  ak_uint64 zeta[ak_mpzn512_size];
-
- /* выполняем стандартные проверки */
-  if(( error = ak_skey_check( skey )) != ak_error_ok )
-    return ak_error_message( error, __func__ , "using invalid secret key" );
-
- /* создаем маску */
-  if(( error = skey->generator.random( &skey->generator, zeta, skey->mask.size )) != ak_error_ok )
-    return ak_error_message( error, __func__ , "wrong mask generation for key buffer" );
-
- /* меняем маску */
-  if(( wc = ( ak_wcurve ) skey->data ) == NULL )
-    return ak_error_message( ak_error_null_pointer, __func__ ,
-                                      "using internal null pointer to elliptic curve" );
-  ak_mpzn_rem( zeta, zeta, wc->q, wc->size );
-  ak_mpzn_sub( skey->mask.data, wc->q, skey->mask.data, wc->size );
-  ak_mpzn_add_montgomery( skey->key.data, skey->key.data, zeta, wc->q, wc->size );
-  ak_mpzn_add_montgomery( skey->key.data, skey->key.data, skey->mask.data, wc->q, wc->size );
-  ak_mpzn_set( skey->mask.data, zeta, wc->size );
-
- return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция вычисляет новый случайный вектор \f$ y_1, \ldots, y_n\f$ и изменяет значение
-    значение ключа, снимая старую маску и накладывая новую.
-
-    @param skey Указатель на контекст секретного ключа. Длина ключа (в байтах)
-    должна быть в точности равна 32.
-
-    @return В случае успеха функция возвращает ak_error_ok. В противном случае,
-    возвращается код ошибки.                                                                       */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_skey_remask_additive( ak_skey skey )
-{
-  size_t idx = 0;
-  ak_uint32 newmask[8];
-
- /* выполняем стандартные проверки */
-  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                            "using a null pointer to secret key" );
-  if( skey->key.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                    "using undefined key buffer" );
-  if( skey->key.size != 32 ) return ak_error_message( ak_error_wrong_length, __func__ ,
-                                                                         "key length is too big" );
-  if( skey->mask.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                   "using undefined mask buffer" );
- /* вырабатываем случайные данные */
-  if( skey->generator.random( &skey->generator, newmask, skey->key.size ) != ak_error_ok )
-    return ak_error_message( ak_error_undefined_value, __func__ , "wrong random mask generation" );
-
- /* накладываем маску */
-  for( idx = 0; idx < (skey->key.size >> 2); idx++ ) {
-     ((ak_uint32 *) skey->key.data)[idx] += newmask[idx];
-     ((ak_uint32 *) skey->key.data)[idx] -= ((ak_uint32 *) skey->mask.data)[idx];
-     ((ak_uint32 *) skey->mask.data)[idx] = newmask[idx];
-  }
-
- /* удаляем старое */
-  memset( newmask, 0, 32 );
- return ak_error_ok;
-}
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Нелинейная перестановка в кольце \f$ \mathbb Z_{2^{64}} \f$
@@ -521,60 +379,6 @@
  return ak_error_ok;
 }
 
-/* ----------------------------------------------------------------------------------------------- */
- int ak_skey_set_icode_ladditive( ak_skey skey )
-{
- return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Реализация алгоритма вычисления контрольной суммы для аддитивной маски ключа */
- static void ak_skey_icode_additive_sum( ak_skey skey, ak_uint64 *result )
-{
-  size_t i = 0;
-  for( i = 0; i < (skey->key.size >> 2); i+=4 ) {
-     ak_uint32 x = ((ak_uint32 *) skey->key.data)[i],
-               y = ((ak_uint32 *) skey->key.data)[i+2];
-     x += ((ak_uint32 *) skey->key.data)[i+1];
-     y += ((ak_uint32 *) skey->key.data)[i+3];
-     x -= ((ak_uint32 *) skey->mask.data)[i];
-     x -= ((ak_uint32 *) skey->mask.data)[i+1];
-     y -= ((ak_uint32 *) skey->mask.data)[i+2];
-     y -= ((ak_uint32 *) skey->mask.data)[i+3];
-     *result += ak_skey_icode_permutation( x, y );
-  }
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param skey Указатель на контекст секретного ключа. Длина ключа (в байтах)
-    должна быть в точности равна 32.
-
-    @return В случае успеха функция возвращает ak_error_ok. В противном случае,
-    возвращается код ошибки.                                                                       */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_skey_set_icode_additive( ak_skey skey )
-{
-  ak_uint64 result = 0;
-
-  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                            "using a null pointer to secret key" );
- /* проверяем наличие и длину ключа */
-  if( skey->key.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                    "using undefined key buffer" );
-  if( skey->key.size != 32 ) return ak_error_message( ak_error_wrong_length, __func__ ,
-                                                          "using a key buffer with wrong length" );
-  if( skey->mask.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                   "using undefined mask buffer" );
-  if( skey->icode.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                   "using undefined mask buffer" );
-  if( skey->icode.size != 8 ) return ak_error_message( ak_error_wrong_length, __func__ ,
-                                                 "using integrity code buffer with wrong length" );
-
- /* теперь, собственно вычисление контрольной суммы */
-  ak_skey_icode_additive_sum( skey, &result );
-  memcpy( skey->icode.data, &result, 8 );
- return ak_error_ok;
-}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param skey Указатель на контекст секретного ключа. Длина ключа (в байтах)
@@ -600,44 +404,6 @@
 
  /* теперь, собственно вычисление контрольной суммы */
   ak_skey_icode_xor_sum( skey, &result );
- /* и сравнение */
-  if( memcmp( skey->icode.data, &result, 8 )) return ak_false;
-   else return ak_true;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_skey_check_icode_ladditive( ak_skey skey )
-{
- return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param skey Указатель на контекст секретного ключа. Длина ключа (в байтах)
-    должна быть в точности равна 32.
-
-    @return В случае совпадения контрольной суммы ключа функция возвращает истину (\ref ak_true).
-    В противном случае, возвращается ложь (\ref ak_false).                                         */
-/* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_skey_check_icode_additive( ak_skey skey )
-{
-  ak_uint64 result = 0;
-
-  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                             "using a null pointer to secret key" );
- /* проверяем наличие и длину ключа */
-  if( skey->key.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                     "using undefined key buffer" );
-  if( skey->key.size != 32 ) return ak_error_message( ak_error_wrong_length, __func__ ,
-                                                           "using a key buffer with wrong length" );
-  if( skey->mask.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                    "using undefined mask buffer" );
-  if( skey->icode.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                    "using undefined mask buffer" );
-  if( skey->icode.size != 8 ) return ak_error_message( ak_error_wrong_length, __func__ ,
-                                                  "using integrity code buffer with wrong length" );
-
- /* теперь, собственно вычисление контрольной суммы */
-  ak_skey_icode_additive_sum( skey, &result );
  /* и сравнение */
   if( memcmp( skey->icode.data, &result, 8 )) return ak_false;
    else return ak_true;
@@ -746,7 +512,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция присваивает ключу значение, выработанное из заданного пароля при помощи алгоритма,
     описанного  в рекомендациях по стандартизации Р 50.1.111-2016.
-    Пароль должен быть не пустой строкой символов в формате utf8.
+    Пароль должен быть непустой строкой символов в формате utf8.
 
     @param skey контекст секретного ключа. К моменту вызова функции контекст должен быть
     инициализирован.

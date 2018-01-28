@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2017 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Разрешается повторное распространение и использование как в виде исходного кода, так и         */
 /*  в двоичной форме, с изменениями или без, при соблюдении следующих условий:                     */
@@ -61,10 +61,21 @@
  #include <sys/types.h>
 
 /* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_STDALIGN
+ #include <stdalign.h>
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_BUILTIN_XOR_SI128
+ #include <emmintrin.h>
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_WINDOWS_H
  #include <windows.h>
 #endif
 
+/* ----------------------------------------------------------------------------------------------- */
 #ifdef _MSC_VER
  #include <io.h>
  #include <conio.h>
@@ -87,7 +98,7 @@
  typedef u_int64_t ak_uint64;
  int snprintf(char *str, size_t size, const char *format, ... );
 #endif
-#ifdef __linux__
+#ifdef __unix__
  typedef signed int ak_int32;
  typedef unsigned int ak_uint32;
  typedef signed long long int ak_int64;
@@ -97,6 +108,13 @@
 /* ----------------------------------------------------------------------------------------------- */
  typedef signed char ak_int8;
  typedef unsigned char ak_uint8;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура для обработки 128-ми битных значений. */
+ typedef union {
+    ak_uint8 b[16];
+    ak_uint64 q[2];
+ } ak_uint128;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Определение булева типа, принимающего значения либо истина, либо ложь. */
@@ -135,6 +153,8 @@
  #define ak_error_undefined_function           (-6)
 /*! \brief Попытка доступа к неопределенной опции библиотеки. */
  #define ak_error_wrong_option                 (-7)
+/*! \brief Ошибка создания файла. */
+ #define ak_error_create_file                  (-9)
 /*! \brief Ошибка доступа к файлу (устройству). */
  #define ak_error_access_file                 (-10)
 /*! \brief Ошибка открытия файла (устройства). */
@@ -153,6 +173,7 @@
  #define ak_error_context_manager_size        (-17)
 /*! \brief Ошибка, возникающая при превышении числа возможных элементов структуры хранения контекстов. */
  #define ak_error_context_manager_max_size    (-18)
+
 /*! \brief Неверный тип криптографического механизма. */
  #define ak_error_oid_engine                  (-19)
 /*! \brief Неверный режим использования криптографического механизма. */
@@ -163,26 +184,29 @@
  #define ak_error_oid_id                      (-22)
 /*! \brief Ошибочный индекс идентификатора криптографического механизма. */
  #define ak_error_oid_index                   (-23)
+/*! \brief Ошибка с обращением к oid. */
+ #define ak_error_wrong_oid                   (-24)
+
 /*! \brief Ошибка при сравнении двух массивов данных. */
- #define ak_error_not_equal_data              (-24)
+ #define ak_error_not_equal_data              (-25)
 /*! \brief Ошибка выполнения библиотеки на неверной архитектуре. */
- #define ak_error_wrong_endian                (-25)
+ #define ak_error_wrong_endian                (-26)
 /*! \brief Ошибка чтения из терминала. */
- #define ak_error_terminal                    (-26)
+ #define ak_error_terminal                    (-27)
 /*! \brief Ошибка исчерпания количества возможных использований ключа. */
- #define ak_error_resource_counter            (-27)
+ #define ak_error_resource_counter            (-28)
 /*! \brief Ошибка, возникающая при использовании ключа, значение которого не определено. */
- #define ak_error_key_value                   (-28)
+ #define ak_error_key_value                   (-29)
 /*! \brief Ошибка, возникающая при зашифровании/расшифровании данных, длина которых не кратна длине блока. */
- #define ak_error_wrong_block_cipher_length   (-29)
+ #define ak_error_wrong_block_cipher_length   (-30)
 /*! \brief Ошибка, возникающая при неверном значении кода целостности ключа. */
- #define ak_error_wrong_key_icode             (-30)
+ #define ak_error_wrong_key_icode             (-31)
 /*! \brief Ошибка, возникающая при недостаточном ресурсе ключа. */
- #define ak_error_low_key_resource            (-31)
+ #define ak_error_low_key_resource            (-32)
 /*! \brief Ошибка, возникающая при использовании синхропосылки (инициализационного вектора) неверной длины. */
- #define ak_error_wrong_iv_length             (-32)
+ #define ak_error_wrong_iv_length             (-33)
 /*! \brief Ошибка, возникающая при неправильном использовании функций зашифрования/расшифрования данных. */
- #define ak_error_wrong_block_cipher_function (-33)
+ #define ak_error_wrong_block_cipher_function (-34)
 /*! \brief Ошибка, возникающая если заданная точка не принадлежит заданной кривой. */
  #define ak_error_curve_point                 (-40)
 /*! \brief Ошибка, возникающая когда порядок точки неверен. */
@@ -224,16 +248,10 @@
      hybrid_cipher,
    /*! \brief функция хеширования */
      hash_function,
-   /*! \brief ключевая функция хеширования hmac (функция вычисления имитовставки) */
-     hmac_function,
    /*! \brief ключевая функция хеширования (функция вычисления имитовставки) */
      mac_function,
    /*! \brief электронная подпись */
      digital_signature,
-   /*! \brief функция выработки электронной подписи */
-     sign_function,
-   /*! \brief функция проверки электронной подписи */
-     verify_function,
    /*! \brief генератор случайных и псевдо-случайных последовательностей */
      random_generator,
    /*! \brief механизм итерационного вычисления сжимающих отображений */
@@ -276,7 +294,11 @@
    /*! \brief режим гаммирования поточного шифра (сложение по модулю 2) */
      xcrypt,
    /*! \brief гаммирование по модулю \f$ 2^8 \f$ поточного шифра */
-     a8
+     a8,
+   /*! \brief вычисление электронной подписи */
+     signify,
+   /*! \brief проверка электронной подписи */
+     verify
 } ak_oid_mode;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -315,11 +337,104 @@
  dll_export int ak_libakrypt_destroy( void );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Получение общего количества опций библиотеки */
+ dll_export const size_t ak_libakrypt_options_count( void );
+/*! \brief Получение имени опции по ее номеру. */
+ dll_export const char *ak_libakrypt_get_option_name( const size_t index );
+/*! \brief Получение значения опции по ее номеру. */
+ dll_export int ak_libakrypt_get_option_value( const size_t index );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Получение точного количества типов криптографических механизмов. */
+ dll_export const size_t ak_libakrypt_engines_count( void );
+/*! \brief Получение константного символьного описания типа криптографического механизма. */
+ dll_export const char *ak_libakrypt_get_engine_str( ak_oid_engine );
+/*! \brief Получение типа криптографического механизма по его символьному описанию. */
+ dll_export ak_oid_engine ak_libakrypt_get_engine( const char * );
+/*! \brief Получения символьного описания режима применения криптографического механизма. */
+ dll_export const char *ak_libakrypt_get_mode_str( ak_oid_mode );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Получение количества доступных OID библиотеки. */
+ dll_export const size_t ak_libakrypt_oids_count( void );
+/*! \brief Поиск OID по типу криптографического механизма. */
+ dll_export ak_handle ak_libakrypt_find_oid_by_engine( ak_oid_engine );
+/*! \brief Продолжение поиска OID по типу криптографического механизма. */
+ dll_export ak_handle ak_libakrypt_findnext_oid_by_engine( ak_handle, ak_oid_engine );
+/*! \brief Поиск OID его имени. */
+ dll_export ak_handle ak_libakrypt_find_oid_by_name( const char * );
+/*! \brief Поиск OID по его идентификатору (строке цифр, разделенных точками). */
+ dll_export ak_handle ak_libakrypt_find_oid_by_id( const char * );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Получение читаемого имени OID. */
+ dll_export const char *ak_libakrypt_oid_get_name( ak_handle );
+/*! \brief Получение значения OID - последовательности чисел, разделенных точками. */
+ dll_export const char *ak_libakrypt_oid_get_id( ak_handle );
+/*! \brief Получение типа криптографического механизма. */
+ dll_export const ak_oid_engine ak_libakrypt_oid_get_engine( ak_handle );
+/*! \brief Получение словесного описания для типа криптографического механизма. */
+ dll_export const char *ak_libakrypt_oid_get_engine_str( ak_handle );
+/*! \brief Получение режима использования криптографического механизма. */
+ dll_export const ak_oid_mode ak_libakrypt_oid_get_mode( ak_handle );
+/*! \brief Получение словесного описания режима использования криптографического механизма. */
+ dll_export const char *ak_libakrypt_oid_get_mode_str( ak_handle );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Получение типа криптографического механизма для существующего дескриптора. */
+ dll_export ak_oid_engine ak_handle_get_engine( ak_handle );
+/*! \brief Получение символьного описания (null-строки) типа криптографического механизма. */
+ dll_export const char *ak_handle_get_engine_str( ak_handle handle );
+/*! \brief Удаление дескриптора объекта. */
+ dll_export int ak_handle_delete( ak_handle );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Создание буффера заданного размера. */
+ dll_export ak_buffer ak_buffer_new_size( const size_t );
+/*! \brief Создание буффера с данными. */
+ dll_export ak_buffer ak_buffer_new_ptr( const ak_pointer , const size_t , const ak_bool );
+/*! \brief Создание буффера с данными, записанными в шестнадцатеричном виде. */
+ dll_export ak_buffer ak_buffer_new_hexstr( const char * );
+/*! \brief Создание буффера заданной длины с данными, записанными в шестнадцатеричном виде. */
+ dll_export ak_buffer ak_buffer_new_hexstr_size( const char * , const size_t , const ak_bool );
+/*! \brief Создание буффера, содержащего строку символов, оканчивающуюся нулем. */
+ dll_export ak_buffer ak_buffer_new_str( const char * );
+/*! \brief Уничтожение буффера. */
+ dll_export ak_pointer ak_buffer_delete( ak_pointer );
+/*! \brief Пощемение двоичных данных в буффер. */
+ dll_export int ak_buffer_set_ptr( ak_buffer , const ak_pointer , const size_t , const ak_bool );
+/*! \brief Пощемение в буффер данных, заданных строкой в  шестнадцатеричном представлении. */
+ dll_export int ak_buffer_set_hexstr( ak_buffer, const char * );
+/*! \brief Помещение в буффер строки, оканчивающейся нулем. */
+ dll_export int ak_buffer_set_str( ak_buffer, const char * );
+/*! \brief Получение указателя на данные (как на строку символов). */
+ dll_export const char *ak_buffer_get_str( ak_buffer );
+/*! \brief Получение указателя на данные. */
+ dll_export ak_pointer ak_buffer_get_ptr( ak_buffer );
+/*! \brief Получение размера буффера. */
+ dll_export const size_t ak_buffer_get_size( ak_buffer );
+/*! \brief Получение строки символов с шестнадцатеричным значением буффера. */
+ dll_export char *ak_buffer_to_hexstr( const ak_buffer );
+/*! \brief Сравнение двух буфферов. */
+ dll_export ak_bool ak_buffer_is_equal( const ak_buffer, const ak_buffer );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Создание строки символов, содержащей значение заданной области памяти. */
+ dll_export char *ak_ptr_to_hexstr( const ak_pointer , const size_t , const ak_bool );
+/*! \brief Преобразование области памяти в символьное представление. */
+ dll_export int ak_ptr_to_hexstr_static( const ak_pointer , const size_t , ak_pointer ,
+                                                                     const size_t , const ak_bool );
+/*! \brief Конвертация строки шестнадцатеричных символов в массив данных. */
+ dll_export int ak_hexstr_to_ptr( const char *, ak_pointer , const size_t , const ak_bool );
+/*! \brief Сравнение двух областей памяти. */
+ dll_export ak_bool ak_ptr_is_equal( const ak_pointer, const ak_pointer , const size_t );
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание дескриптора линейного конгруэнтного генератора. */
  dll_export ak_handle ak_random_new_lcg( void  );
 /*! \brief Создание дескриптора генератора, предоставляющего доступ к заданному файлу с данными. */
  dll_export ak_handle ak_random_new_file( const char * );
-#ifdef __linux__
+#ifdef __unix__
 /*! \brief Создание дескриптора генератора, предоставляющего доступ к символьному устройству `/dev/random`. */
  dll_export ak_handle ak_random_new_dev_random( void );
 /*! \brief Создание дескриптора генератора, предоставляющего доступ к символьному устройству `/dev/urandom`. */
@@ -361,164 +476,10 @@
  dll_export ak_buffer ak_hash_file( ak_handle , const char* , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание дескриптора ключа алгоритма выработки имитовставки hmac-streebog256. */
- dll_export ak_handle ak_hmac_new_streebog256( const char * );
-/*! \brief Создание дескриптора ключа алгоритма выработки имитовставки hmac-streebog256. */
- dll_export ak_handle ak_hmac_new_streebog512( const char * );
-/*! \brief Создание дескриптора ключа алгоритма выработки имитовставки hmac-gosthash94 с заданными таблицами замен. */
- dll_export ak_handle ak_hmac_new_gosthash94( ak_handle, const char * );
-/*! \brief Создание дескриптора ключа алгоритма выработки имитовставки hmac-gosthash94 с таблицами замен из CSP. */
- dll_export ak_handle ak_hmac_new_gosthash94_csp( const char * );
-/*! \brief Создание дескриптора ключа алгоритма выработки имитовставки hmac по OID алгоритма. */
- dll_export ak_handle ak_hmac_new_oid( ak_handle , const char * );
-/*! \brief Присвоение ключу алгоритма выработки имитовставки hmac случайного значения. */
- dll_export int ak_hmac_set_key_random( ak_handle );
-/*! \brief Присвоение ключу алгоритма выработки имитовставки hmac значения, выработанного из пароля. */
- dll_export int ak_hmac_set_key_password( ak_handle , const ak_pointer , const size_t ,
-                                                                 const ak_pointer , const size_t );
-/*! \brief Получение длины имитовставки для заданного ключа алгоритма hmac. */
- dll_export size_t ak_hmac_get_icode_size( ak_handle );
-/*! \brief Вычисление имитовставки алгоритмом hmac для заданной области памяти известной длины. */
- dll_export ak_buffer ak_hmac_ptr( ak_handle , const ak_pointer , const size_t , ak_pointer );
-/*! \brief Вычисление имитовставки алгоритмом hmac для заданного файла. */
- dll_export ak_buffer ak_hmac_file( ak_handle , const char *, ak_pointer );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание дескриптора ключа электронной подписи длиной 256 бит для алгоритма ГОСТ Р 34.10-2012. */
- dll_export ak_handle ak_signkey_new_streebog256( ak_handle , const char * );
-/*! \brief Создание дескриптора ключа электронной подписи длиной 512 бит для алгоритма ГОСТ Р 34.10-2012. */
- dll_export ak_handle ak_signkey_new_streebog512( ak_handle , const char * );
-/*! \brief Присвоение ключу электронной подписи случайного значения. */
- dll_export int ak_signkey_set_key_random( ak_handle );
-/*! \brief Присвоение ключу электронной подписи значения, выработанного из пароля. */
- dll_export int ak_signkey_set_key_password( ak_handle , const ak_pointer , const size_t ,
-                                                                 const ak_pointer , const size_t );
-/*! \brief Получение длины электронной подписи для заданного ключа. */
- dll_export size_t ak_signkey_get_icode_size( ak_handle );
-/*! \brief Вычисление электронной подписи для заданной области памяти известной длины. */
- dll_export ak_buffer ak_signkey_ptr( ak_handle , const ak_pointer , const size_t , ak_pointer );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание дескриптора ключа проверки электронной подписи (открытого ключа) из заданного секретного ключа. */
- dll_export ak_handle ak_verifykey_new_signkey( ak_handle , const char * );
-/*! \brief Проверка электронной подписи для заданной области памяти известной длины. */
- dll_export ak_bool ak_verifykey_ptr( ak_handle , const ak_pointer , const size_t ,
-                                                                               const ak_pointer );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание дескриптора сжимающего отображения */
- dll_export ak_handle ak_icode_new( ak_handle );
-/*! \brief Очистка внутреннего состояния сжимающего отображения */
- dll_export int ak_icode_clean( ak_handle );
-/*! \brief Обновление текущего состояния сжимающего отображения */
- dll_export int ak_icode_update( ak_handle , const ak_pointer , const size_t );
-/*! \brief Вычисление результата действия сжимающего отображения */
- dll_export ak_buffer ak_icode_finalize( ak_handle, const ak_pointer , const size_t );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание буффера заданного размера. */
- dll_export ak_buffer ak_buffer_new_size( const size_t );
-/*! \brief Создание буффера с данными. */
- dll_export ak_buffer ak_buffer_new_ptr( const ak_pointer , const size_t , const ak_bool );
-/*! \brief Создание буффера с данными, записанными в шестнадцатеричном виде. */
- dll_export ak_buffer ak_buffer_new_hexstr( const char * );
-/*! \brief Создание буффера заданной длины с данными, записанными в шестнадцатеричном виде. */
- dll_export ak_buffer ak_buffer_new_hexstr_size( const char * , const size_t , const ak_bool );
-/*! \brief Создание буффера, содержащего строку символов, оканчивающуюся нулем. */
- dll_export ak_buffer ak_buffer_new_str( const char * );
-/*! \brief Уничтожение буффера. */
- dll_export ak_pointer ak_buffer_delete( ak_pointer );
-/*! \brief Пощемение двоичных данных в буффер. */
- dll_export int ak_buffer_set_ptr( ak_buffer , const ak_pointer , const size_t , const ak_bool );
-/*! \brief Пощемение в буффер данных, заданных строкой в  шестнадцатеричном представлении. */
- dll_export int ak_buffer_set_hexstr( ak_buffer, const char * );
-/*! \brief Помещение строки, оканчивающейся нулем, в буффер. */
- dll_export int ak_buffer_set_str( ak_buffer, const char * );
-/*! \brief Получение указателя на данные (как на строку символов). */
- dll_export const char *ak_buffer_get_str( ak_buffer );
-/*! \brief Получение указателя на данные. */
- dll_export ak_pointer ak_buffer_get_ptr( ak_buffer );
-/*! \brief Получение размера буффера. */
- dll_export const size_t ak_buffer_get_size( ak_buffer );
-/*! \brief Получение строки символов с шестнадцатеричным значением буффера. */
- dll_export char *ak_buffer_to_hexstr( const ak_buffer );
-/*! \brief Сравнение двух буфферов. */
- dll_export ak_bool ak_buffer_is_equal( const ak_buffer, const ak_buffer );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание строки символов, содержащей значение заданной области памяти. */
- dll_export char *ak_ptr_to_hexstr( const ak_pointer , const size_t , const ak_bool );
-/*! \brief Преобразование области памяти в символьное представление. */
- dll_export int ak_ptr_to_hexstr_static( const ak_pointer , const size_t , ak_pointer ,
-                                                                     const size_t , const ak_bool );
-/*! \brief Конвертация строки шестнадцатеричных символов в массив данных. */
- dll_export int ak_hexstr_to_ptr( const char *, ak_pointer , const size_t , const ak_bool );
-/*! \brief Сравнение двух областей памяти. */
- dll_export ak_bool ak_ptr_is_equal( const ak_pointer, const ak_pointer , const size_t );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Получение общего количества опций библиотеки */
- dll_export const size_t ak_libakrypt_options_count( void );
-/*! \brief Получение имени опции по ее номеру. */
- dll_export const char *ak_libakrypt_get_option_name( const size_t index );
-/*! \brief Получение значения опции по ее номеру. */
- dll_export int ak_libakrypt_get_option_value( const size_t index );
-
-/*! \brief Получение точного количества типов криптографических механизмов. */
- dll_export const size_t ak_libakrypt_engines_count( void );
-/*! \brief Получение константного символьного описания типа криптографического механизма. */
- dll_export const char *ak_libakrypt_get_engine_str( ak_oid_engine );
-/*! \brief Получение типа криптографического механизма по его символьному описанию. */
- dll_export ak_oid_engine ak_libakrypt_get_engine( const char * );
-/*! \brief Получения символьного описания режима применения криптографического механизма. */
- dll_export const char *ak_libakrypt_get_mode_str( ak_oid_mode );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Получение количества доступных OID библиотеки. */
- dll_export const size_t ak_libakrypt_oids_count( void );
-/*! \brief Поиск OID по типу криптографического механизма. */
- dll_export ak_handle ak_libakrypt_find_oid_by_engine( ak_oid_engine );
-/*! \brief Продолжение поиска OID по типу криптографического механизма. */
- dll_export ak_handle ak_libakrypt_findnext_oid_by_engine( ak_handle, ak_oid_engine );
-/*! \brief Поиск OID его имени. */
- dll_export ak_handle ak_libakrypt_find_oid_by_name( const char * );
-/*! \brief Поиск OID по его идентификатору (строке цифр, разделенных точками). */
- dll_export ak_handle ak_libakrypt_find_oid_by_id( const char * );
-
-/*! \brief Получение читаемого имени OID. */
- dll_export const char *ak_libakrypt_oid_get_name( ak_handle );
-/*! \brief Получение значения OID - последовательности чисел, разделенных точками. */
- dll_export const char *ak_libakrypt_oid_get_id( ak_handle );
-/*! \brief Получение типа криптографического механизма. */
- dll_export const ak_oid_engine ak_libakrypt_oid_get_engine( ak_handle );
-/*! \brief Получение словесного описания для типа криптографического механизма. */
- dll_export const char *ak_libakrypt_oid_get_engine_str( ak_handle );
-/*! \brief Получение режима использования криптографического механизма. */
- dll_export const ak_oid_mode ak_libakrypt_oid_get_mode( ak_handle );
-/*! \brief Получение словесного описания режима использования криптографического механизма. */
- dll_export const char *ak_libakrypt_oid_get_mode_str( ak_handle );
-/*! \brief Установка алгоритмов, обеспечивающих защиту при экспорте ключей. */
- dll_export int ak_libakrypt_set_key_export_algorithms( ak_handle , ak_handle , ak_handle );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Получение типа криптографического механизма. */
- dll_export ak_oid_engine ak_handle_get_engine( ak_handle );
-/*! \brief Получение символьного описания (null-строки) типа криптографического механизма. */
- dll_export const char *ak_handle_get_engine_str( ak_handle handle );
-/*! \brief Удаление дескриптора объекта. */
- dll_export int ak_handle_delete( ak_handle );
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Чтение пароля из консоли. */
  dll_export int ak_password_read( char *, const size_t );
 /*! \brief Чтение пароля из консоли в буффер. */
  dll_export int ak_password_read_buffer( ak_buffer );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Тип функции, передаваемой в качестве аргумента в функцию построчного чтения файлов. */
- typedef int ( ak_file_read_function ) ( char * , ak_pointer );
-/*! \brief Функция построчного чтения данных из заданного файла. */
- dll_export int ak_file_read_by_lines( const char * , ak_file_read_function * , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Обобщенная реализация функции snprintf для различных компиляторов. */

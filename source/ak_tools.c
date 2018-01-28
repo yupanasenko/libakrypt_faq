@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*   Copyright (c) 2014 - 2017 by Axel Kenzo, axelkenzo@mail.ru                                    */
+/*   Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                    */
 /*   All rights reserved.                                                                          */
 /*                                                                                                 */
 /*  Разрешается повторное распространение и использование как в виде исходного кода, так и         */
@@ -361,7 +361,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param buffer Буфер, в который помещается пароль. Буфер должен быть создан заранее с заданным
+/*! @param password Буфер, в который помещается пароль. Буфер должен быть создан заранее с заданным
     размером хранящихся в нем данных (с помощью вызова функции ak_buffer_new_size() )
     Если в буффере хранились данные, то они будут уничтожены.
 
@@ -376,63 +376,16 @@
   int error = ak_error_ok;
   if( password == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                        "using null pointer to password buffer" );
-  if( password->data == NULL ) return ak_error_message( ak_error_zero_length, __func__,
-                                            "using a password buffer with null internal array" );
-  if( password->size == 0 ) return ak_error_message( ak_error_zero_length, __func__,
-                                                    "using a password buffer with zero length" );
+ /* если нужно создаем буффер достаточно большого размера */
+  if((password->data == NULL ) || (password->size == 0 )) {
+    if(( error = ak_buffer_create_size( password, 256 )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect creation of fixed size buffer");
+  }
+ /* считываем пароль */
   if(( error = ak_password_read( password->data, password->size )) != ak_error_ok ) {
     return ak_error_message( error, __func__, "invalind password reading from standard console");
   }
  return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
- int ak_file_read_by_lines( const char *filename, ak_file_read_function *function , ak_pointer ptr )
-{
-  #define buffer_length ( FILENAME_MAX + 160 )
-
-  char ch;
-  struct stat st;
-  size_t idx = 0, off = 0;
-  int fd = 0, error = ak_error_ok;
-  char localbuffer[buffer_length];
-
- /* проверяем наличие файла и прав доступа к нему */
-  if(( fd = open( filename, O_RDONLY | O_BINARY )) < 0 )
-    return ak_error_message_fmt( ak_error_open_file,
-                             __func__, "wrong open file \"%s\" - %s", filename, strerror( errno ));
-  if( fstat( fd, &st ) ) {
-    close( fd );
-    return ak_error_message_fmt( ak_error_access_file, __func__ ,
-                              "wrong stat file \"%s\" with error %s", filename, strerror( errno ));
-  }
-
- /* нарезаем входные на строки длиной не более чем buffer_length - 2 символа */
-  memset( localbuffer, 0, buffer_length );
-  for( idx = 0; idx < (size_t) st.st_size; idx++ ) {
-     if( read( fd, &ch, 1 ) != 1 ) {
-       close(fd);
-       return ak_error_message_fmt( ak_error_read_data, __func__ ,
-                                                                "unexpected end of %s", filename );
-     }
-     if( off > buffer_length - 2 ) {
-       close( fd );
-       return ak_error_message_fmt( ak_error_read_data, __func__ ,
-                          "%s has a line with more than %d symbols", filename, buffer_length - 2 );
-     }
-    if( ch == '\n' ) {
-      #ifdef _WIN32
-       if( off ) localbuffer[off-1] = 0;  /* удаляем второй символ перехода на новую строку */
-      #endif
-      function( localbuffer, ptr );
-     /* далее мы очищаем строку независимо от ее содержимого */
-      off = 0;
-      memset( localbuffer, 0, buffer_length );
-    } else localbuffer[off++] = ch;
-  }
-
-  close( fd );
- return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

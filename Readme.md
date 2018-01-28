@@ -11,7 +11,7 @@ standards and methodological recomendations.
 We have implementation of:
  - GOST R 34.12-2015 block ciphers "Magma" & "Kuznechik" with 64 bit and 128 bit
    block sizes respectively.
- - GOST R 34.13-2015 modes for block ciphers (including CMAC algorithm),
+ - GOST R 34.13-2015 modes for block ciphers,
  - GOST R 34.11-2012 & GOST R 34.11-94 hash functions,
  - GOST R 34.10-2012 digital signature algorithms,
  - R 50.1.113-2016 crypto algorithms such as HMAC ,

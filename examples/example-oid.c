@@ -27,7 +27,7 @@
      handle = ak_libakrypt_findnext_oid_by_engine( handle, undefined_engine );
   }
 
- /* выводим информацию об общем колбичестве OID библиотеки */
+ /* выводим информацию об общем количестве OID библиотеки */
  printf("total count of oid's: %ld\n", ak_libakrypt_oids_count( ));
 
  /* ищем OID по его имени */

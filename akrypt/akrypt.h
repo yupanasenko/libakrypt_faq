@@ -32,7 +32,6 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  #include <stdio.h>
- #include <errno.h>
  #include <getopt.h>
  #include <libakrypt.h>
 
@@ -47,6 +46,17 @@
  #include <sys/stat.h>
 #endif
 
+#ifdef LIBAKRYPT_HAVE_FCNTL_H
+  #include <fcntl.h>
+#endif
+#ifdef LIBAKRYPT_HAVE_UNISTD_H
+ #include <unistd.h>
+#endif
+#ifdef LIBAKRYPT_HAVE_ERRNO_H
+ #include <errno.h>
+#endif
+
+
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef _MSC_VER
  #define	S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
@@ -58,6 +68,10 @@
 #ifndef DT_REG
  #define DT_REG (8)
 #endif
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Тип функции, передаваемой в качестве аргумента в функцию построчного чтения файлов. */
+ typedef int ( ak_file_read_function ) ( char * , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
  extern char audit_filename[1024];
@@ -84,6 +98,8 @@
  int akrypt_find( const char *, const char *, ak_function_find *, ak_pointer , ak_bool );
 /* проверка, является ли заданная стирока файлом или директорией */
  int akrypt_file_or_directory( const char * );
+
+ int ak_file_read_by_lines( const char *, ak_file_read_function * , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /* реализации пользовательских команд */

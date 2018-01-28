@@ -57,6 +57,7 @@
          print_context_managet_status( &manager, handle, iternum );
 
   } while( handle != ak_error_wrong_handle );
+  ak_error_set_value( ak_error_ok );
 
  /* теперь имитируем действия по удалению контекстов в процессе работы  */
   printf("list of deleted handles:\n");

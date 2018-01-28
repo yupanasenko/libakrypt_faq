@@ -17,9 +17,10 @@
 # -------------------------------------------------------------------------------------------------- #
 cmake_minimum_required( VERSION 3.2 )
 project( libakrypt )
+
 set( HEAD_VERSION 0 )
-set( MAIN_VERSION 5 )
-set( MINOR_VERSION 8 )
+set( MAIN_VERSION 6 )
+set( MINOR_VERSION 2 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -43,11 +44,9 @@ set( HEADERS        source/ak_tools.h
                     source/ak_hash.h
                     source/ak_compress.h
                     source/ak_skey.h
-                    source/ak_hmac.h
-                    source/ak_mpzn.h
-                    source/ak_curves.h
-                    source/ak_sign.h
                     source/ak_bckey.h
+                    source/ak_mac.h
+                    source/ak_sign.h
 )
 
 set( SOURCES        source/ak_log.c
@@ -62,16 +61,13 @@ set( SOURCES        source/ak_log.c
                     source/ak_streebog.c
                     source/ak_compress.c
                     source/ak_skey.c
-                    source/ak_hmac.c
-                    source/ak_mpzn.c
-                    source/ak_curves.c
-                    source/ak_sign.c
                     source/ak_bckey.c
                     source/ak_magma.c
+                    source/ak_kuznechik.c
+                    source/ak_mac.c
+                    source/ak_hmac.c
+                    source/ak_sign.c
 )
-
-# set( ASN1_FILES     ${CMAKE_SOURCE_DIR}/asn1/Makefile.initial
-#                     ${CMAKE_SOURCE_DIR}/asn1/KeyContainer.asn1 )
 
 set( DOCS           doc/libakrypt.dox
                     doc/refman_header.in
@@ -93,13 +89,15 @@ set( OTHERS         CMakeLists.txt
                     libakrypt.conf )
 
 set( AKRYPT_SOURCES akrypt/akrypt.c
+                    akrypt/akrypt_icode.c
                     akrypt/akrypt_show.c
-                    akrypt/akrypt_icode.c )
+)
 
 set( AKRYPT_FILES   akrypt/akrypt.h
                     akrypt/akrypt.1
                     akrypt/getopt.h
-                    akrypt/getopt.c )
+                    akrypt/getopt.c
+)
 
 # -------------------------------------------------------------------------------------------------- #
 # подключаем модули CMake для тонкой настройки параметров сборки
@@ -116,6 +114,9 @@ else()
   if( CMAKE_HOST_UNIX )
     set( LIBAKRYPT_CONF "/etc" )
   endif()
+  if( CMAKE_HOST_WINDOWS )
+    set( LIBAKRYPT_CONF "C:\\Program Files\\Akrypt" )
+  endif()
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -127,7 +128,6 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 # сборка библиотек - статической и, если нужно, динамической
 include_directories( "source " )
-#include_directories( "asn1 " )
 add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
 if( LIBAKRYPT_CONF )
     message("-- Path for libakrypt.conf is ${LIBAKRYPT_CONF}")
@@ -150,6 +150,10 @@ message("-- Additional libraries is ${LIBAKRYPT_LIBS}" )
 
 # -------------------------------------------------------------------------------------------------- #
 # сборка консольной утилиты
+if( LIBAKRYPT_HAVE_GETOPT )
+else()
+  set( AKRYPT_SOURCES ${AKRYPT_SOURCES} akrypt/getopt.c )
+endif()
 add_executable( akrypt${LIBAKRYPT_EXT} ${AKRYPT_SOURCES} )
 target_include_directories( akrypt${LIBAKRYPT_EXT} PUBLIC "./akrypt" )
 target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
@@ -164,9 +168,6 @@ set( EXAMPLES_LIST intro
                    oid
                    hash
                    hash-oids
-                   hmac
-                   hmac-oids
-                   sign
 )
 
 # организуем сборку примеров со статической линковкой
@@ -191,9 +192,10 @@ set( INTERNAL_EXAMPLES_LIST
                    context-manager-node
                    context-manager
                    hash-file
-                   sign-internal
                    bckey-internal
-                   xcrypt-internal
+                   mac-internal
+                   mac-file
+                   test
 )
 
 if( CMAKE_HOST_UNIX )

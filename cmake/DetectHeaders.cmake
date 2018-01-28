@@ -1,6 +1,6 @@
 # -------------------------------------------------------------------------------------------------- #
 include(CheckCSourceCompiles)
-  
+
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <syslog.h>
@@ -115,6 +115,17 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
+  #include <stdalign.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_STDALIGN )
+
+if( LIBAKRYPT_HAVE_STDALIGN )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_STDALIGN_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
   #include <windows.h>
   int main( void ) {
      return 0;
@@ -130,10 +141,5 @@ check_c_source_compiles("
   int main( void ) {
      return 0;
   }" LIBAKRYPT_HAVE_GETOPT )
-
-if( LIBAKRYPT_HAVE_GETOPT )
-else()
-  set( AKRYPT_SOURCES ${AKRYPT_SOURCES} akrypt/getopt.c )
-endif()
 
 # -------------------------------------------------------------------------------------------------- #

@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*   Copyright (c) 2014 - 2017 by Axel Kenzo, axelkenzo@mail.ru                                    */
+/*   Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                    */
 /*   All rights reserved.                                                                          */
 /*                                                                                                 */
 /*  Разрешается повторное распространение и использование как в виде исходного кода, так и         */
@@ -43,11 +43,8 @@
  #include <errno.h>
  #include <sys/stat.h>
 
- #include <ak_hmac.h>
- #include <ak_sign.h>
- #include <ak_bckey.h>
+ #include <ak_mac.h>
  #include <ak_tools.h>
- #include <ak_curves.h>
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -57,11 +54,11 @@
    const char *name;
   /*! \brief Численное значение опции (целое неотрицательное число) */
    int value;
- } ak_libakrypt_option;
+ } ak_option;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения опций (значения по-умолчанию) */
- ak_libakrypt_option options[] = {
+ ak_option options[] = {
      { "big_endian_architecture", ak_false },
      { "log_level", ak_log_standard },
      { "context_manager_size", 32 },
@@ -69,7 +66,8 @@
      { "key_number_length", 16 },
      { "pbkdf2_iteration_count", 2000 },
      { "hmac_key_count_resource", 65536 },
-     { "magma_cipher_resource", 4194304 },
+     { "magma_cipher_resource", 32*4194304 }, //!!!!!
+     { "kuznechik_cipher_resource", 8*4194304 },
      { NULL, 0 } /* завершающая константа, должна всегда принимать нулевые значения */
  };
 
@@ -79,7 +77,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  const size_t ak_libakrypt_options_count( void )
 {
-  return ( sizeof( options )/( sizeof( ak_libakrypt_option ))-1 );
+  return ( sizeof( options )/( sizeof( ak_option ))-1 );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -244,13 +242,13 @@
  /* проверяем наличие файла и прав доступа к нему */
   if(( fd = open( filename, O_RDONLY | O_BINARY )) < 0 ) {
     ak_error_message_fmt( ak_error_open_file,
-                             __func__, "wrong open file \"%s\" - %s", filename, strerror( errno ));
+                     __func__, "wrong open file \"%s\" with error %s", filename, strerror( errno ));
     return ak_false;
   }
   if( fstat( fd, &st ) ) {
     close( fd );
     ak_error_message_fmt( ak_error_access_file, __func__ ,
-                              "wrong stat file \"%s\" with error %s", filename, strerror( errno ));
+                               "wrong stat file \"%s\" with error %s", filename, strerror( errno ));
     return ak_false;
   }
 
@@ -384,7 +382,7 @@
 #ifdef LIBAKRYPT_VERSION
   return LIBAKRYPT_VERSION;
 #else
-  return "0.5";
+  return "0.6";
 #endif
 }
 
@@ -509,14 +507,14 @@
 
  /* тестируем функции hmac-streebog согласно Р 50.1.113-2016 */
   if( ak_hmac_test_streebog() != ak_true ) {
-   ak_error_message( ak_error_get_value(), __func__ , "incorrect hmac testing" );
-   return ak_false;
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect hmac testing" );
+    return ak_false;
   }
 
  /* тестируем алгоритм pbkdf2 согласно Р 50.1.111-2016 */
   if( ak_hmac_test_pbkdf2() != ak_true ) {
-   ak_error_message( ak_error_get_value(), __func__ , "incorrect hmac testing" );
-   return ak_false;
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect hmac testing" );
+    return ak_false;
   }
 
   if( audit >= ak_log_maximum )
@@ -538,17 +536,8 @@
     ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms started" );
 
  /* тестируем корректность реализации операций с эллиптическими кривыми в короткой форме Вейерштрасса */
-  if( ak_wcurve_test() != ak_true ) {
-    ak_error_message( ak_error_get_value(), __func__ ,
-                           "error while testing operations with Weierstrass elliptic curves" );
-    return ak_false;
-  }
 
  /* тестируем корректность реализации алгоритмов электронной подписи */
-  if( ak_signkey_test() != ak_true ) {
-    ak_error_message( ak_error_get_value(), __func__ , "error while testing digital signatures" );
-    return ak_false;
-  }
 
   if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms ended successfully" );
@@ -564,8 +553,22 @@
     ak_error_message( ak_error_ok, __func__ , "testing block ciphers started" );
 
  /* тестируем корректность реализации блочного шифра Магма */
-  if( ak_bckey_test_magma() != ak_true ) {
-    ak_error_message( ak_error_get_value(), __func__ , "error while testing block cipher magma" );
+  if( ak_bckey_test_magma()  != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of magma block cipher" );
+    return ak_false;
+  }
+
+ /* инициализируем константные таблицы для алгоритма Кузнечик */
+  if( ak_bckey_init_kuznechik_tables()  != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                       "incorrect initialization of kuznechik predefined tables" );
+    return ak_false;
+  }
+
+ /* тестируем корректность реализации блочного шифра Кузнечик */
+  if( ak_bckey_test_kuznechik()  != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                                   "incorrect testing of kuznechik block cipher" );
     return ak_false;
   }
 

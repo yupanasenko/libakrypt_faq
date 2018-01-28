@@ -35,7 +35,7 @@
   }
 
  /* 3. создаем пустой контекст ключа */
-  if(( error = ak_bckey_create_magma( first = malloc( sizeof( struct bckey )))) != ak_error_ok ) {
+  if(( error = ak_bckey_create_kuznechik( first = malloc( sizeof( struct bckey )))) != ak_error_ok ) {
     free( first );
     return ak_libakrypt_destroy();
   } else print_bckey( first );
@@ -58,6 +58,7 @@
      generator->random( generator, &ch, 4 );
      printf("%08x", ch );
   }
+  printf("  <- expected key value\n");
   /* устанавливаем генератор в начальное состояние */
   generator->randomize_ptr( generator, key, 32 );
   printf("\n\n");
@@ -75,7 +76,7 @@
  /* 7. повторяем процедуру еще раз, теперь с ключом из пароля */
   printf("\npassword: "); fflush( stdout );
   if( ak_password_read( password, 64 ) != ak_error_ok ) goto exit;
-   else printf(" (password: %s, len: %lu, salt: salt, len: 4, count: %d)\n",
+   else printf(" (password: %s, len: %lu, salt: salt, len: 4, count: %d)\n\n",
                     password, strlen( password ), ak_libakrypt_get_option("pbkdf2_iteration_count"));
   if( ak_bckey_context_set_password( first, password, strlen(password), "salt", 4 ) != ak_error_ok )
     printf("wrong generation a key from password\n");
@@ -93,6 +94,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  void print_bckey( ak_bckey bkey )
 {
+  int idx = 0;
   char *str = NULL;
 
   printf("key ---> %s (%s)\n", bkey->key.oid->name, bkey->key.oid->id );
@@ -102,12 +104,17 @@
   printf("     key: %s\n", str = ak_ptr_to_hexstr( bkey->key.key.data, 32, ak_false )); free( str );
   printf("    mask: %s\n", str = ak_ptr_to_hexstr( bkey->key.mask.data, 32, ak_false )); free( str );
  /* real key? */
-  printf("real key: ");
-  if( bkey->key.set_mask == ak_skey_set_mask_additive ) { /* снимаем аддитивную маску и получаем ключ */
-    int idx = 0;
-    for( idx = 0; idx < 8; idx++ ) printf("%08x",
-     (ak_uint32)(((ak_uint32 *)bkey->key.key.data)[idx] - ((ak_uint32 *)bkey->key.mask.data)[idx]) );
-  }
+  printf("real key: (under additive mask)\n          ");
+ /* снимаем аддитивную маску и получаем ключ */
+  for( idx = 0; idx < 8; idx++ ) printf("%08x",
+   (ak_uint32)(((ak_uint32 *)bkey->key.key.data)[idx] - ((ak_uint32 *)bkey->key.mask.data)[idx]) );
+ /* real key? */
+  printf("\nreal key: (under xor mask)\n          ");
+ /* снимаем аддитивную маску и получаем ключ */
+  for( idx = 0; idx < 8; idx++ ) printf("%08x",
+   (ak_uint32)(((ak_uint32 *)bkey->key.key.data)[idx]^((ak_uint32 *)bkey->key.mask.data)[idx]) );
+
+ /* код целостности ключа */
   printf("\n   icode: %s", str = ak_ptr_to_hexstr( bkey->key.icode.data, 8, ak_false )); free( str );
   if( bkey->key.check_icode( &bkey->key )) printf(" is Ok\n");
    else printf(" is Wrong\n");

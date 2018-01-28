@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*   Copyright (c) 2014 - 2017 by Axel Kenzo, axelkenzo@mail.ru                                    */
+/*   Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                    */
 /*   All rights reserved.                                                                          */
 /*                                                                                                 */
 /*  Разрешается повторное распространение и использование как в виде исходного кода, так и         */
@@ -33,7 +33,7 @@
  #include <time.h>
 #ifdef LIBAKRYPT_HAVE_FCNTL_H
  #include <fcntl.h>
-#endif 
+#endif
 #ifdef LIBAKRYPT_HAVE_UNISTD_H
   #include <unistd.h>
  #endif
@@ -347,7 +347,7 @@
  return error;
 }
 
-#ifdef __linux__
+#ifdef __unix__
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param generator Контекст создаваемого генератора.
     \return В случае успеха, функция возвращает \ref ak_error_ok. В противном случае
@@ -368,7 +368,6 @@
  return ak_random_create_file( generator, "/dev/urandom" );
 }
 #endif
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                         реализация класса winrtl                                */
@@ -421,10 +420,10 @@
     return ak_error_message( ak_error_out_of_memory, __func__ ,
            "incorrect memory allocation for an internal variables of random generator" );
 
-  /* теперь мы открываем криптопровайдер для доступа к генерации случайных значений 
+  /* теперь мы открываем криптопровайдер для доступа к генерации случайных значений
      в начале мы пытаемся создать новый ключ */
   if( !CryptAcquireContext( &handle, NULL, NULL,
-                                         PROV_RSA_FULL, CRYPT_NEWKEYSET )) { 
+                                         PROV_RSA_FULL, CRYPT_NEWKEYSET )) {
     /* здесь нам не удалось создать ключ, поэтому мы пытаемся его открыть */
     if( GetLastError() == NTE_EXISTS ) {
       if( !CryptAcquireContext( &handle, NULL, NULL,
@@ -432,14 +431,14 @@
         ak_error_message_fmt( error = ak_error_open_file, __func__,
                       "wrong open default key for system crypto provider with error: %x", GetLastError( ));
        ak_random_destroy( generator );
-       return error;      
+       return error;
       }
-    } else { 
+    } else {
        ak_error_message_fmt( error = ak_error_access_file, __func__,
                       "wrong creation of default key for system crypto provider with error: %x", GetLastError( ));
        ak_random_destroy( generator );
        return error;
-     } 
+     }
   }
   (( ak_random_winrtl )generator->data)->handle = handle;
 
@@ -504,7 +503,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-#ifdef __linux__
+#ifdef __unix__
  ak_handle ak_random_new_dev_random( void )
 {
   return ak_random_new_file( "/dev/random" );
