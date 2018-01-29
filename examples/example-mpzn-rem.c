@@ -36,9 +36,9 @@
   printf(" %lu (%lu) tests passed successfully from %lu \n", mpzcount, mycount, count );
   if(( mpzcount == count ) && (  mycount == count )) rescount++;
 
-
  /* второй тест - модуль q */
-  ak_mpzn_to_mpz( wc->q, wc->size, pp );
+
+  ak_mpzn_to_mpz( p = wc->q, wc->size, pp );
   printf(" - q: "); mpz_out_str( stdout, 16, pp ); printf("\n");
 
   mpzcount = mycount = 0;
@@ -67,23 +67,20 @@
 /* основная тестирующая программа */
  int main( void )
 {
+  ak_oid oid = NULL;
   int totalmany = 0, howmany = 0;
-  ak_handle handle = ak_error_wrong_handle;
   ak_libakrypt_create( ak_function_log_stderr );
 
  /* организуем цикл по перебору всех известных простых чисел */
-  handle = ak_oid_find_by_engine( identifier );
+  oid = ak_oid_find_by_engine( identifier );
 
-  while( handle != ak_error_wrong_handle ) {
-    if( ak_oid_get_mode( handle ) == wcurve_params ) {
+  while( oid != NULL ) {
+    if( oid->mode == wcurve_params ) {
      /* достаем простое число */
-      ak_oid oid = ak_handle_get_context( handle, oid_engine );
-      ak_wcurve wc = ( ak_wcurve ) oid->data;
-
       totalmany += 2;
-      howmany += mpzn_rem_test( wc, 1000000 );
+      howmany += mpzn_rem_test( (ak_wcurve)(oid->data), 1000000 );
     }
-    handle = ak_oid_findnext_by_engine( handle, identifier );
+    oid = ak_oid_findnext_by_engine( oid, identifier );
   }
 
   printf("\n total remainder tests: %d (passed: %d)\n", totalmany, howmany );

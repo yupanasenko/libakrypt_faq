@@ -33,6 +33,13 @@
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Структура, сожержащая указатели на функции зашифрования/расшифрования в режиме счетчика */
+ static struct two_pointers block_cipher_counter_functions = {
+  (ak_function_void *) ak_bckey_context_xcrypt, /* прямое преобразование - зашифрование */
+  (ak_function_void *) ak_bckey_context_xcrypt /* обратное преобразование - расшифрование */
+ };
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения OID библиотеки */
  struct oid libakrypt_oids[] = {
   /* 1. идентификаторы алгоритмов выработки псевдо-случайных последовательностей,
@@ -85,6 +92,66 @@
                                                        (ak_function_void *) ak_bckey_create_magma },
    { block_cipher, algorithm, "kuznechik", "1.2.643.7.1.1.5.2", NULL,
                                                    (ak_function_void *) ak_bckey_create_kuznechik },
+
+  /* 8. идентификаторы режимов работы блочных шифров.
+        в дереве библиотеки: 1.2.643.2.52.1.8 - режимы работы блочных шифров
+        в дереве библиотеки: 1.2.643.2.52.1.9 - параметры режимов работы блочных шифров  */
+   { block_cipher, ecb, "ecb", "1.2.643.2.52.1.8.1", NULL, NULL },
+   { block_cipher, counter, "counter", "1.2.643.2.52.1.8.2",
+                                               (ak_pointer )&block_cipher_counter_functions, NULL },
+
+   // { block_cipher, cfb, "cfb", "1.2.643.2.52.1.8.3", NULL, NULL },
+   // { block_cipher, cbc, "cbc", "1.2.643.2.52.1.8.4", NULL, NULL },
+   // { block_cipher, ofb, "ofb", "1.2.643.2.52.1.8.5", NULL, NULL },
+   // { block_cipher, xts, "xts", "1.2.643.2.52.1.8.6", NULL, NULL },
+
+  /* 10. идентификаторы алгоритмов выработки электронной подписи
+        в дереве библиотеки: 1.2.643.2.52.1.10 - алгоритмы выработки электронной подписи */
+   { digital_signature, algorithm, "sign256", "1.2.643.7.1.1.1.1", NULL, NULL },
+   { digital_signature, algorithm, "sign512", "1.2.643.7.1.1.1.2", NULL, NULL },
+   { digital_signature, algorithm, "sign256-gosthash94", "1.2.643.2.52.1.10.1", NULL, NULL },
+
+ /* 11. идентификаторы алгоритмов проверки электронной подписи
+        в дереве библиотеки: 1.2.643.2.52.1.11 - алгоритмы проверки электронной подписи */
+   { digital_signature, algorithm, "verify256", "1.2.643.2.52.1.11.2", NULL, NULL },
+   { digital_signature, algorithm, "verify512", "1.2.643.2.52.1.11.3", NULL, NULL },
+   { digital_signature, algorithm, "verify256-gosthash94", "1.2.643.2.52.1.11.1", NULL, NULL },
+
+ /* 12. идентификаторы параметров эллиптических кривых, в частности, из Р 50.1.114-2016
+        в дереве библиотеки: 1.2.643.2.52.1.12 - параметры эллиптических кривых в форме Вейерштрасса
+        в дереве библиотеки: 1.2.643.2.52.1.12.1 - параметры 256 битных кривых
+        в дереве библиотеки: 1.2.643.2.52.1.12.2 - параметры 512 битных кривых */
+   { identifier, wcurve_params, "id-tc26-gost3410-2012-256-test-paramset", "1.2.643.7.1.2.1.1.0",
+                                      (ak_pointer) &id_tc26_gost3410_2012_256_test_paramset, NULL },
+   { identifier, wcurve_params, "id-tc26-gost3410-2012-256-paramsetA", "1.2.643.7.1.2.1.1.1",
+                                          (ak_pointer) &id_tc26_gost3410_2012_256_paramsetA, NULL },
+   { identifier, wcurve_params, "id-rfc4357-gost3410-2001-paramsetA", "1.2.643.2.2.35.1",
+                                           (ak_pointer) &id_rfc4357_gost3410_2001_paramsetA, NULL },
+   { identifier, wcurve_params, "id-rfc4357-gost3410-2001-paramsetB", "1.2.643.2.2.35.2",
+                                           (ak_pointer) &id_rfc4357_gost3410_2001_paramsetB, NULL },
+   { identifier, wcurve_params, "id-rfc4357-gost3410-2001-paramsetC", "1.2.643.2.2.35.3",
+                                           (ak_pointer) &id_rfc4357_gost3410_2001_paramsetC, NULL },
+   { identifier, wcurve_params, "id-rfc4357-2001dh-paramset", "1.2.643.2.2.36.0",
+                                           (ak_pointer) &id_rfc4357_gost3410_2001_paramsetA, NULL },
+   { identifier, wcurve_params, "id-axel-gost3410-2012-256-paramsetA", "1.2.643.2.52.1.12.1.1",
+                                          (ak_pointer) &id_axel_gost3410_2012_256_paramsetA, NULL },
+
+   { identifier, wcurve_params, "id-tc26-gost3410-2012-512-test-paramset", "1.2.643.7.1.2.1.2.0",
+                                      (ak_pointer) &id_tc26_gost3410_2012_512_test_paramset, NULL },
+   { identifier, wcurve_params, "id-tc26-gost3410-2012-512-paramsetA", "1.2.643.7.1.2.1.2.1",
+                                          (ak_pointer) &id_tc26_gost3410_2012_512_paramsetA, NULL },
+   { identifier, wcurve_params, "id-tc26-gost3410-2012-512-paramsetB", "1.2.643.7.1.2.1.2.2",
+                                          (ak_pointer) &id_tc26_gost3410_2012_512_paramsetB, NULL },
+   { identifier, wcurve_params, "id-tc26-gost3410-2012-512-paramsetC", "1.2.643.7.1.2.1.2.3",
+                                          (ak_pointer) &id_tc26_gost3410_2012_512_paramsetC, NULL },
+   { identifier, wcurve_params, "id-axel-gost3410-2012-512-paramsetA", "1.2.643.2.52.1.12.2.1",
+                                          (ak_pointer) &id_axel_gost3410_2012_512_paramsetA, NULL },
+
+ /* 13. идентификаторы параметров эллиптических кривых, в частности, из Р 50.1.114-2016
+        в дереве библиотеки: 1.2.643.2.52.1.13 - параметры эллиптических кривых в форме Эдвардса
+        в дереве библиотеки: 1.2.643.2.52.1.13.1 - параметры 256 битных кривых
+        в дереве библиотеки: 1.2.643.2.52.1.13.2 - параметры 512 битных кривых */
+
 
   /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */
    { undefined_engine, undefined_mode, NULL, NULL, NULL, NULL }

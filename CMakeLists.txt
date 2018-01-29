@@ -20,7 +20,7 @@ project( libakrypt )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 6 )
-set( MINOR_VERSION 2 )
+set( MINOR_VERSION 3 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -46,6 +46,8 @@ set( HEADERS        source/ak_tools.h
                     source/ak_skey.h
                     source/ak_bckey.h
                     source/ak_mac.h
+                    source/ak_mpzn.h
+                    source/ak_curves.h
                     source/ak_sign.h
 )
 
@@ -66,6 +68,8 @@ set( SOURCES        source/ak_log.c
                     source/ak_kuznechik.c
                     source/ak_mac.c
                     source/ak_hmac.c
+                    source/ak_mpzn.c
+                    source/ak_curves.c
                     source/ak_sign.c
 )
 

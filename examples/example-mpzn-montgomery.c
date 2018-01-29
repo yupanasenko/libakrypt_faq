@@ -229,20 +229,18 @@
 /* ----------------------------------------------------------------------------------------------- */
  int main( void )
 {
-  int totalmany = 0, howmany = 0;
-  size_t count = 1000000;
-  ak_handle handle = ak_error_wrong_handle;
   char *str = NULL;
+  ak_oid oid = NULL;
+  size_t count = 1000000;
+  int totalmany = 0, howmany = 0;
 
   ak_libakrypt_create( ak_function_log_stderr );
 
  /* организуем цикл по перебору всех известных простых чисел */
-  handle = ak_oid_find_by_engine( identifier );
-
-  while( handle != ak_error_wrong_handle ) {
-    if( ak_oid_get_mode( handle ) == wcurve_params ) {
+  oid = ak_oid_find_by_engine( identifier );
+  while( oid != NULL ) {
+    if( oid->mode == wcurve_params ) {
      /* достаем простое число */
-      ak_oid oid = ak_handle_get_context( handle, oid_engine );
       ak_wcurve wc = ( ak_wcurve ) oid->data;
       if( wc->size == ak_mpzn256_size ) {
         printf(" - p: %s\n", str = ak_mpzn_to_hexstr( wc->p, wc->size ));
@@ -268,7 +266,7 @@
         free( str );
       }
     }
-    handle = ak_oid_findnext_by_engine( handle, identifier );
+    oid = ak_oid_findnext_by_engine( oid, identifier );
   }
 
   printf("\n total montgomery arithmetic tests: %d (passed: %d)\n", totalmany, howmany );
