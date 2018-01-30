@@ -107,15 +107,15 @@
 
   /* 10. идентификаторы алгоритмов выработки электронной подписи
         в дереве библиотеки: 1.2.643.2.52.1.10 - алгоритмы выработки электронной подписи */
-   { digital_signature, algorithm, "sign256", "1.2.643.7.1.1.1.1", NULL, NULL },
-   { digital_signature, algorithm, "sign512", "1.2.643.7.1.1.1.2", NULL, NULL },
-   { digital_signature, algorithm, "sign256-gosthash94", "1.2.643.2.52.1.10.1", NULL, NULL },
+   { sign_function, algorithm, "sign256", "1.2.643.7.1.1.1.1", NULL, NULL },
+   { sign_function, algorithm, "sign512", "1.2.643.7.1.1.1.2", NULL, NULL },
+   { sign_function, algorithm, "sign256-gosthash94", "1.2.643.2.52.1.10.1", NULL, NULL },
 
  /* 11. идентификаторы алгоритмов проверки электронной подписи
         в дереве библиотеки: 1.2.643.2.52.1.11 - алгоритмы проверки электронной подписи */
-   { digital_signature, algorithm, "verify256", "1.2.643.2.52.1.11.2", NULL, NULL },
-   { digital_signature, algorithm, "verify512", "1.2.643.2.52.1.11.3", NULL, NULL },
-   { digital_signature, algorithm, "verify256-gosthash94", "1.2.643.2.52.1.11.1", NULL, NULL },
+   { verify_function, algorithm, "verify256", "1.2.643.2.52.1.11.2", NULL, NULL },
+   { verify_function, algorithm, "verify512", "1.2.643.2.52.1.11.3", NULL, NULL },
+   { verify_function, algorithm, "verify256-gosthash94", "1.2.643.2.52.1.11.1", NULL, NULL },
 
  /* 12. идентификаторы параметров эллиптических кривых, в частности, из Р 50.1.114-2016
         в дереве библиотеки: 1.2.643.2.52.1.12 - параметры эллиптических кривых в форме Вейерштрасса
@@ -479,7 +479,8 @@
    case hybrid_cipher:     return "hybrid cipher";
    case hash_function:     return "hash function";
    case mac_function:      return "mac function";
-   case digital_signature: return "digital signature";
+   case sign_function:     return "digital signature sign function";
+   case verify_function:   return "digital signature verify fucntion";
    case random_generator:  return "random generator";
    case update_engine:     return "update engine";
    case oid_engine:        return "oid";
@@ -512,8 +513,10 @@
                                                                                return hash_function;
   if(( strlen( str ) == 12 ) && ak_ptr_is_equal( "mac function", (void *)str, 12 ))
                                                                                 return mac_function;
-  if(( strlen( str ) == 17 ) && ak_ptr_is_equal( "digital signature", (void *)str, 17 ))
-                                                                           return digital_signature;
+  if(( strlen( str ) == 31 ) && ak_ptr_is_equal( "digital signature sign function",
+                                                            (void *)str, 31 )) return sign_function;
+  if(( strlen( str ) == 33 ) && ak_ptr_is_equal( "digital signature verify function",
+                                                          (void *)str, 33 )) return verify_function;
   if(( strlen( str ) == 16 ) && ak_ptr_is_equal( "random generator", (void *)str, 16 ))
                                                                             return random_generator;
   if(( strlen( str ) == 13 ) && ak_ptr_is_equal( "update engine", (void *)str, 13 ))

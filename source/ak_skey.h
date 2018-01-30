@@ -121,6 +121,8 @@
  int ak_skey_set_password( ak_skey , const ak_pointer , const size_t ,
                                                                  const ak_pointer , const size_t );
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Проверка параметров контекста секретного ключа. */
+ int ak_skey_check( ak_skey );
 /*! \brief Наложение в пространстве векторов \f$ \mathbb V^n \f$ аддитивной маски на ключ. */
  int ak_skey_set_mask_xor( ak_skey );
 /*! \brief Смена в пространстве векторов \f$ \mathbb V^n \f$ значения аддитивной маски ключа. */

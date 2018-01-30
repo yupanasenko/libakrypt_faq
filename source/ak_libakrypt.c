@@ -45,6 +45,7 @@
 
  #include <ak_mac.h>
  #include <ak_tools.h>
+ #include <ak_curves.h>
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -536,6 +537,10 @@
     ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms started" );
 
  /* тестируем корректность реализации операций с эллиптическими кривыми в короткой форме Вейерштрасса */
+  if( ak_wcurve_test() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of Weierstrass curves" );
+    return ak_false;
+  }
 
  /* тестируем корректность реализации алгоритмов электронной подписи */
 

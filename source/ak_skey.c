@@ -216,7 +216,7 @@
     @return В случае успеха функция возвращает ak_error_ok. В противном случае,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_skey_check( ak_skey skey )
+ inline int ak_skey_check( ak_skey skey )
 {
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer,
                                                  __func__ , "using a null pointer to secret key" );

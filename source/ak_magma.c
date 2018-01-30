@@ -237,9 +237,14 @@
  static int ak_skey_set_mask_additive( ak_skey skey )
 {
   size_t idx = 0;
+  int error = ak_error_ok;
 
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using a null pointer to secret key" );
+ /* выполняем стандартные проверки */
+  if(( error = ak_skey_check( skey )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "using invalid secret key" );
+
  /* проверяем длину ключа */
   if( skey->key.size != 32 ) return ak_error_message( ak_error_undefined_value, __func__ ,
                                                           "using a key buffer with wrong length" );
@@ -271,16 +276,14 @@
 {
   size_t idx = 0;
   ak_uint32 newmask[8];
+  int error = ak_error_ok;
 
- /* выполняем стандартные проверки */
-  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                            "using a null pointer to secret key" );
-  if( skey->key.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                    "using undefined key buffer" );
+  /* выполняем стандартные проверки */
+  if(( error = ak_skey_check( skey )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "using invalid secret key" );
+
   if( skey->key.size != 32 ) return ak_error_message( ak_error_wrong_length, __func__ ,
                                                                          "key length is too big" );
-  if( skey->mask.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                   "using undefined mask buffer" );
  /* вырабатываем случайные данные */
   if( skey->generator.random( &skey->generator, newmask, skey->key.size ) != ak_error_ok )
     return ak_error_message( ak_error_undefined_value, __func__ , "wrong random mask generation" );
@@ -363,16 +366,15 @@
  static int ak_skey_set_icode_additive( ak_skey skey )
 {
   ak_uint64 result = 0;
+  int error = ak_error_ok;
 
-  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                            "using a null pointer to secret key" );
- /* проверяем наличие и длину ключа */
-  if( skey->key.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                    "using undefined key buffer" );
+ /* выполняем стандартные проверки */
+  if(( error = ak_skey_check( skey )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "using invalid secret key" );
+
+ /* проверяем длину ключа */
   if( skey->key.size != 32 ) return ak_error_message( ak_error_wrong_length, __func__ ,
                                                           "using a key buffer with wrong length" );
-  if( skey->mask.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                   "using undefined mask buffer" );
   if( skey->icode.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                                    "using undefined mask buffer" );
   if( skey->icode.size != 8 ) return ak_error_message( ak_error_wrong_length, __func__ ,
@@ -381,6 +383,7 @@
  /* теперь, собственно вычисление контрольной суммы */
   ak_skey_icode_additive_sum( skey, &result );
   memcpy( skey->icode.data, &result, 8 );
+
  return ak_error_ok;
 }
 
@@ -396,16 +399,15 @@
  static ak_bool ak_skey_check_icode_additive( ak_skey skey )
 {
   ak_uint64 result = 0;
+  int error = ak_error_ok;
 
-  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                             "using a null pointer to secret key" );
+ /* выполняем стандартные проверки */
+  if(( error = ak_skey_check( skey )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "using invalid secret key" );
+
  /* проверяем наличие и длину ключа */
-  if( skey->key.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                     "using undefined key buffer" );
   if( skey->key.size != 32 ) return ak_error_message( ak_error_wrong_length, __func__ ,
                                                            "using a key buffer with wrong length" );
-  if( skey->mask.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                    "using undefined mask buffer" );
   if( skey->icode.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                                     "using undefined mask buffer" );
   if( skey->icode.size != 8 ) return ak_error_message( ak_error_wrong_length, __func__ ,

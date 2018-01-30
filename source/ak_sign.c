@@ -32,5 +32,122 @@
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция вырабатывает случайный вычет \f$ m \f$ из кольца вычетов \f$ \mathbb Z_q\f$
+    и заменяет значение ключа \f$ k \f$ на величину \f$ km^{-1} \pmod{q} \f$.
+    Величина \f$ q \f$ должна быть простым числом, помещенным в параметры эллиптической кривой,
+    на которые указывает `skey->data`.
+
+    @param skey Указатель на контекст секретного ключа. Длина ключа (в байтах)
+    должна быть кратна 8.
+
+    @return В случае успеха функция возвращает ak_error_ok. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_signkey_set_mask_multiplicative( ak_skey skey )
+{
+  ak_mpznmax u;
+  ak_wcurve wc = NULL;
+  int error = ak_error_ok;
+
+
+ /* выполняем стандартные проверки */
+  if(( error = ak_skey_check( skey )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "using invalid secret key" );
+
+  if(( wc = ( ak_wcurve ) skey->data ) == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__ ,
+                                      "using internal null pointer to elliptic curve" );
+ /* создаем маску*/
+  if(( error = skey->generator.random( &skey->generator,
+                                           skey->mask.data, skey->mask.size )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "wrong mask generation for key buffer" );
+
+ /* накладываем маску на ключ
+    - для этого мы вычисляем значение маски M^{-1} mod(q), хранящееся в skey->mask,
+      и присваиваем ключу K значение KM mod(q)
+    - при этом значения ключа и маски хранятся в представлении Монтгомери    */
+
+ /* приводим случайное число по модулю q и сразу считаем, что это число в представлении Монтгомери */
+  ak_mpzn_rem( (ak_uint64 *)skey->mask.data, (ak_uint64 *)skey->mask.data, wc->q, wc->size );
+
+ /* приводим значение ключа по модулю q, а потом переводим в представление Монтгомери */
+  ak_mpzn_rem( (ak_uint64 *)skey->key.data, (ak_uint64 *)skey->key.data, wc->q, wc->size );
+  ak_mpzn_mul_montgomery( (ak_uint64 *)skey->key.data, (ak_uint64 *)skey->key.data, wc->r2q,
+                                                                           wc->q, wc->nq, wc->size);
+  ak_mpzn_mul_montgomery( (ak_uint64 *)skey->key.data,
+                (ak_uint64 *)skey->key.data, (ak_uint64 *)skey->mask.data, wc->q, wc->nq, wc->size);
+
+ /* вычисляем обратное значение для маски */
+  ak_mpzn_set_ui( u, wc->size, 2 );
+  ak_mpzn_sub( u, wc->q, u, wc->size );
+  ak_mpzn_modpow_montgomery( (ak_uint64 *)skey->mask.data, // m <- m^{q-2} (mod q)
+                                         (ak_uint64 *)skey->mask.data, u, wc->q, wc->nq, wc->size );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция вырабатывает случайный вычет \f$ \zeta \f$ из кольца вычетов \f$ \mathbb Z_q\f$
+    и заменяет значение ключа \f$ k \f$ и значение маски \f$ m \f$  на значения
+    \f$ k \equiv k\zeta \pmod{q} \f$ и \f$  m \equiv m\zeta^{-1} \pmod{q} \f$.
+
+    Величина \f$ q \f$ должна быть простым числом, помещенным в параметры эллиптической кривой,
+    на которые указывает `skey->data`.
+
+    @param skey Указатель на контекст секретного ключа. Длина ключа (в байтах)
+    должна быть кратна 8.
+
+    @return В случае успеха функция возвращает ak_error_ok. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_signkey_remask_multiplicative( ak_skey skey )
+{
+  ak_mpznmax u, zeta;
+  ak_wcurve wc = NULL;
+  int error = ak_error_ok;
+
+ /* выполняем стандартные проверки */
+  if(( error = ak_skey_check( skey )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "using invalid secret key" );
+
+  if(( wc = ( ak_wcurve ) skey->data ) == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__ ,
+                                      "using internal null pointer to elliptic curve" );
+ /* создаем маску */
+  if(( error = skey->generator.random( &skey->generator, zeta, skey->mask.size )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "wrong mask generation for key buffer" );
+
+ /* приводим случайное число по модулю q и сразу считаем, что это число в представлении Монтгомери */
+  ak_mpzn_rem( zeta, zeta, wc->q, wc->size );
+
+ /* домножаем ключ на случайное число */
+  ak_mpzn_mul_montgomery( (ak_uint64 *)skey->key.data, (ak_uint64 *)skey->key.data,
+                                                                    zeta, wc->q, wc->nq, wc->size );
+ /* вычисляем обратное значение zeta */
+  ak_mpzn_set_ui( u, wc->size, 2 );
+  ak_mpzn_sub( u, wc->q, u, wc->size );
+  ak_mpzn_modpow_montgomery( zeta, zeta, u, wc->q, wc->nq, wc->size ); // z <- z^{q-2} (mod q)
+
+ /* домножаем маску на обратное значение zeta */
+  ak_mpzn_mul_montgomery( (ak_uint64 *)skey->mask.data, (ak_uint64 *)skey->mask.data,
+                                                                   zeta, wc->q, wc->nq, wc->size );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_signkey_set_icode_multiplicative( ak_skey skey )
+{
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_signkey_check_icode_multiplicative( ak_skey skey )
+{
+ return ak_error_ok;
+}
+
+
+
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_sign.c  */
 /* ----------------------------------------------------------------------------------------------- */
