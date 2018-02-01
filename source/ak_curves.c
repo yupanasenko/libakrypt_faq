@@ -549,7 +549,12 @@
     функция вычисляет кратную точку \f$ Q \f$, удовлетворяющую
     равенству \f$  Q = [k]P = \underbrace{P+ \cdots + P}_{k\text{~раз}}\f$.
 
-    Функция не приводит результирующую точку \f$ Q \f$ к аффинной форме.
+    При вычислении используется метод `лесенки Монтгомери`, выравнивающий время работы алгоритма
+    вычисления кратной точки в не зависимости от вида числа \f$ k \f$.
+
+    \b Для \b информации:
+     \li Функция не приводит результирующую точку \f$ Q \f$ к аффинной форме.
+     \li Исходная точка \f$ P \f$ и результирующая точка \f$ Q \f$ могут совпадать.
 
     @param wq Точка \f$ Q \f$, в которую помещается результат
     @param wp Точка \f$ P \f$
@@ -562,25 +567,25 @@
  void ak_wpoint_pow( ak_wpoint wq, ak_wpoint wp, ak_uint64 *k, size_t size, ak_wcurve ec )
 {
   ak_uint64 uk = 0;
-  size_t s = size-1;
   long long int i, j;
+  struct wpoint Q, R; /* две точки из лесенки Монтгомери */
 
-  ak_wpoint_set_as_unit( wq, ec );
-  while( k[s] == 0 ) {
-     if( s > 0 ) --s;
-      else return;
-  }
+ /* начальные значения для переменных */
+  ak_wpoint_set_as_unit( &Q, ec );
+  ak_wpoint_set_wpoint( &R, wp, ec );
 
-  for( i = s; i >= 0; i-- ) {
+ /* полный цикл по всем(!) битам числа k */
+  for( i = size-1; i >= 0; i-- ) {
      uk = k[i];
      for( j = 0; j < 64; j++ ) {
-        ak_wpoint_double( wq, ec );
-        if( uk&0x8000000000000000LL ) ak_wpoint_add( wq, wp, ec );
-        uk <<= 1;
+       if( uk&0x8000000000000000LL ) { ak_wpoint_add( &Q, &R, ec ); ak_wpoint_double( &R, ec ); }
+        else { ak_wpoint_add( &R, &Q, ec ); ak_wpoint_double( &Q, ec ); }
+       uk <<= 1;
      }
   }
+ /* копируем полученный результат */
+  ak_wpoint_set_wpoint( wq, &Q, ec );
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Для заданной точки \f$ P = (x:y:z) \f$ функция проверяет
