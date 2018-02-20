@@ -145,7 +145,7 @@
   if( manager == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                             "using a null pointer to context manager structure" );
  /* инициализируем генератор ключей */
-#ifdef __unix__
+#if defined(__unix__) || defined(__APPLE__)
   if(( error = ak_random_create_file( &manager->key_generator, "/dev/urandom" )) != ak_error_ok )
     return ak_error_message( error, __func__,
                              "wrong initialization of /dev/random for random number generation" );
