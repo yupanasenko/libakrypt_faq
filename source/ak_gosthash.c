@@ -390,31 +390,33 @@
 {
   ak_pointer pout = NULL;
   ak_buffer result = NULL;
-  struct gosthash94 *sx = NULL;
+  struct gosthash94 sx; /* структура для хранения копии текущего состояния контекста */
 
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
     return NULL;
   }
   if( size >= 32 ) {
-    ak_error_message( ak_error_zero_length, __func__ , "using zero length for hash data" );
+    ak_error_message( ak_error_zero_length, __func__ ,
+                                             "using wrong length for finalized hash data" );
     return NULL;
   }
 
-  sx = ( struct gosthash94 * )( (( ak_hash ) ctx )->data );
+  /* при финализации мы изменяем копию существующей структуры */
+  memcpy( &sx, ( struct gosthash94 * ) (( ak_hash ) ctx )->data, sizeof( struct gosthash94 ));
   if( size > 0 ) {
     ak_uint32 ms[8];
     ak_uint32 bits = (ak_uint32 )( size << 3 );
 
     memset( ms, 0, 32 ); memcpy( ms, in, size ); // копируем данные в вектор M'
-    sx->len[0] += bits;
-    if( sx->len[0] < bits) sx->len[1]++; // увеличиваем длину сообщения
+    sx.len[0] += bits;
+    if( sx.len[0] < bits) sx.len[1]++; // увеличиваем длину сообщения
 
-    ak_hash_gosthash94_addition( (ak_uint8 *) sx->sum, (const ak_uint8 *) ms, size );
-    ak_hash_gosthash94_compress( sx, ms );
+    ak_hash_gosthash94_addition( (ak_uint8 *) sx.sum, (const ak_uint8 *) ms, size );
+    ak_hash_gosthash94_compress( &sx, ms );
   }
-  ak_hash_gosthash94_compress( sx, sx->len );
-  ak_hash_gosthash94_compress( sx, sx->sum );
+  ak_hash_gosthash94_compress( &sx, sx.len );
+  ak_hash_gosthash94_compress( &sx, sx.sum );
 
  /* определяем указатель на область памяти, в которую будет помещен результат вычислений */
   if( out != NULL ) pout = out;
@@ -423,7 +425,7 @@
 
  /* копируем нужную часть результирующего массива или выдаем сообщение об ошибке */
   if( pout != NULL ) {
-    memcpy( pout, (( struct gosthash94 * ) (( ak_hash ) ctx )->data )->hvec, 32 );
+    memcpy( pout, sx.hvec, 32 );
   } else ak_error_message( ak_error_out_of_memory, __func__ ,
                                                   "incorrect memory allocation for result buffer" );
  return result;

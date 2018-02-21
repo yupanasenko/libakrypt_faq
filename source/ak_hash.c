@@ -44,7 +44,7 @@
                                                              "using null pointer to hash context" );
   if( block_size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
                                                        "using a zero length of data block length" );
-  if( data_size ) {
+  if(( ctx->data_size = data_size ) != 0 ) {
     if(( ctx->data = malloc( data_size )) == NULL )
       return ak_error_message( ak_error_out_of_memory, __func__ ,
                                                       "incorrect internal data memory allocation" );

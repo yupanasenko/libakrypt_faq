@@ -144,7 +144,6 @@
                                                  __func__ , "using null pointer to a context" );
   if( !size ) return ak_error_message( ak_error_zero_length,
                                                  __func__ , "using zero length for hash data" );
-
   quot = size/(( ak_hash ) ctx )->bsize;
   if( size - quot*(( ak_hash ) ctx )->bsize ) /* длина данных должна быть кратна ctx->bsize */
     return ak_error_message( ak_error_wrong_length, __func__ , "using data with wrong length" );
@@ -169,14 +168,15 @@
   ak_pointer pout = NULL;
   ak_buffer result = NULL;
   unsigned char *mhide = NULL;
-  struct streebog *sx = NULL;
+  struct streebog sx; /* структура для хранения копии текущего состояния контекста */
 
   if( ctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
     return NULL;
   }
   if( size >= 64 ) {
-    ak_error_message( ak_error_zero_length, __func__ , "using zero length for hash data" );
+    ak_error_message( ak_error_zero_length, __func__ ,
+                                             "using wrong length for finalized hash data" );
     return NULL;
   }
 
@@ -187,12 +187,13 @@
   mhide = ( unsigned char * )m;
   mhide[size] = 1; /* дополнение */
 
-  sx = ( struct streebog * ) (( ak_hash ) ctx )->data;
-  streebog_g( sx, sx->N, m );
-  streebog_add( sx, size << 3 );
-  streebog_sadd( sx, m );
-  streebog_g( sx, NULL, sx->N );
-  streebog_g( sx, NULL, sx->SIGMA );
+  /* при финализации мы изменяем копию существующей структуры */
+  memcpy( &sx, ( struct streebog * ) (( ak_hash ) ctx )->data, sizeof( struct streebog ));
+  streebog_g( &sx, sx.N, m );
+  streebog_add( &sx, size << 3 );
+  streebog_sadd( &sx, m );
+  streebog_g( &sx, NULL, sx.N );
+  streebog_g( &sx, NULL, sx.SIGMA );
 
  /* определяем указатель на область памяти, в которую будет помещен результат вычислений */
   if( out != NULL ) pout = out;
@@ -204,8 +205,8 @@
 
  /* копируем нужную часть результирующего массива или выдаем сообщение об ошибке */
   if( pout != NULL ) {
-    if((( ak_hash )ctx)->hsize == 64 ) memcpy( pout, sx->H, 64 );
-      else memcpy( pout, sx->H+4, 32 );
+    if((( ak_hash )ctx)->hsize == 64 ) memcpy( pout, sx.H, 64 );
+      else memcpy( pout, sx.H+4, 32 );
   } else ak_error_message( ak_error_out_of_memory, __func__ ,
                                                   "incorrect memory allocation for result buffer" );
  return result;
