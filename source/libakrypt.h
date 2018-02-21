@@ -98,12 +98,13 @@
  typedef u_int64_t ak_uint64;
  int snprintf(char *str, size_t size, const char *format, ... );
 #endif
-#ifdef __unix__
+#if defined(__unix__) || defined(__APPLE__)
  typedef signed int ak_int32;
  typedef unsigned int ak_uint32;
  typedef signed long long int ak_int64;
  typedef unsigned long long int ak_uint64;
 #endif
+
 
 /* ----------------------------------------------------------------------------------------------- */
  typedef signed char ak_int8;
@@ -436,7 +437,7 @@
  dll_export ak_handle ak_random_new_lcg( void  );
 /*! \brief Создание дескриптора генератора, предоставляющего доступ к заданному файлу с данными. */
  dll_export ak_handle ak_random_new_file( const char * );
-#ifdef __unix__
+#if defined(__unix__) || defined(__APPLE__)
 /*! \brief Создание дескриптора генератора, предоставляющего доступ к символьному устройству `/dev/random`. */
  dll_export ak_handle ak_random_new_dev_random( void );
 /*! \brief Создание дескриптора генератора, предоставляющего доступ к символьному устройству `/dev/urandom`. */

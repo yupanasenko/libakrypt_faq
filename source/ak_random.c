@@ -347,7 +347,7 @@
  return error;
 }
 
-#ifdef __unix__
+#if defined(__unix__) || defined(__APPLE__)
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param generator Контекст создаваемого генератора.
     \return В случае успеха, функция возвращает \ref ak_error_ok. В противном случае
@@ -503,7 +503,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-#ifdef __unix__
+#if defined(__unix__) || defined(__APPLE__)
  ak_handle ak_random_new_dev_random( void )
 {
   return ak_random_new_file( "/dev/random" );

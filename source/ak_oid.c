@@ -46,7 +46,7 @@
         значения OID находятся в дереве библиотеки: 1.2.643.2.52.1.1 - генераторы ПСЧ  */
    { random_generator, algorithm, "lcg", "1.2.643.2.52.1.1.1", NULL,
                                                         (ak_function_void *) ak_random_create_lcg },
-#ifdef __unix__
+#if defined(__unix__) || defined(__APPLE__)
    { random_generator, algorithm, "dev-random", "1.2.643.2.52.1.1.2", NULL,
                                                      (ak_function_void *) ak_random_create_random },
    { random_generator, algorithm, "dev-urandom", "1.2.643.2.52.1.1.3", NULL,
