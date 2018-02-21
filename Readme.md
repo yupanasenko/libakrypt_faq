@@ -1,4 +1,4 @@
-#Libakrypt
+# Libakrypt
 
 Libakrypt is a free and open source library (crypto module) for OpenSKZI project.
 This library written in C99 and provides some interfaces for
@@ -16,7 +16,7 @@ We have implementation of:
  - R 50.1.113-2016 crypto algorithms such as HMAC;
  - a some set of pseudo random generators for various operation systems.
 
-##Compilation
+## Compilation
 
 This library can be compiled with many compilers,
 such as gcc, clang, Microsoft Visual C, TinyCC, icc.
@@ -24,14 +24,16 @@ You can get the last version of source codes from github.com
 
     git clone https://github.com/axelkenzo/libakrypt-0.x
 
- - On Linux you can compile & build library with following commands
+### Unix
+On Unix platforms you can compile & build library with following commands
 
     mkdir build
     cd build
     cmake ../libakrypt-0.x
     make
 
- - On Windows you can run a Microsoft Visual 20XX Console and run
+### Windows
+On Windows you can run a Microsoft Visual 20XX Console and run
 
     mkdir build
     cd build
@@ -41,7 +43,7 @@ You can get the last version of source codes from github.com
 The full list of compile & build options you can find
 in library's documentation, see libakrypt-doc-0.x.pdf (in russian).
 
-##Attention
+## Attention
 
 Since this version still under development we don't recomended to use it
 in real security applications.
