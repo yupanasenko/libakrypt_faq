@@ -18,7 +18,7 @@ We have implementation of:
  - a some set of pseudo random generators for various operation systems.
 
 We hope that libakrypt can be used successfully
-under Linux, Windows (since XP), FreeBSD, MacOs and ReactOS opeation systems.
+under Linux, Windows (since XP), FreeBSD, MacOs and ReactOS operation systems.
 
 ## Compilation
 
@@ -28,7 +28,7 @@ You can get the last version of source codes from github.com
 
     git clone https://github.com/axelkenzo/libakrypt-0.x
 
-The build system for liabkrypt is [cmake](https://cmake.org/).
+The build system for libakrypt is [cmake](https://cmake.org/).
 
 ### Unix
 On Unix platforms you can compile & build library with following commands
