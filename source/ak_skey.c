@@ -375,6 +375,7 @@
     return ak_error_message( error, __func__ , "using invalid secret key" );
 
  /* теперь, собственно вычисление контрольной суммы */
+  memset( skey->icode.data, 0, skey->icode.size );
   ak_skey_icode_xor_sum( skey, (ak_uint64 *)skey->icode.data );
  return ak_error_ok;
 }
@@ -498,9 +499,9 @@
     return ak_error_message( error, __func__ , "wrong generation a secret key data" );
 
   if(( error = skey->set_mask( skey )) != ak_error_ok ) return  ak_error_message( error,
-                                                           __func__ , "wrong secret key masking" );
+                                                            __func__ , "wrong secret key masking" );
   if(( error = skey->set_icode( skey )) != ak_error_ok ) return ak_error_message( error,
-                                                __func__ , "wrong calculation of integrity code" );
+                                                 __func__ , "wrong calculation of integrity code" );
 
  /* устанавливаем флаг того, что ключевое значение определено.
     теперь ключ можно использовать в криптографических алгоритмах */

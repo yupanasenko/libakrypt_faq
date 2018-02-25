@@ -112,8 +112,9 @@
 {Axel Kenzo \& The Company Of Belles Lettres}\\[5\baselineskip]
 
 {\itshape Инструкция по сборке и установке}\\[1\baselineskip]
-{\itshape Рекомендации по встраиванию}\\[1\baselineskip]
+{\itshape Инструкция по встраиванию}\\[1\baselineskip]
 {\itshape Принципы реализации}\\[1\baselineskip]
+
 
 \vspace{0.5\textheight}
 {версия библиотеки @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@} (дата сборки документации \today)\\[1\baselineskip]

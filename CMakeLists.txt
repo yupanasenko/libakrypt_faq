@@ -163,6 +163,8 @@ target_include_directories( akrypt${LIBAKRYPT_EXT} PUBLIC "./akrypt" )
 target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
 
 # -------------------------------------------------------------------------------------------------- #
+enable_testing()
+
 # сборка тестовых примеров
 set( EXAMPLES_LIST intro
                    log
@@ -195,12 +197,13 @@ endif()
 set( INTERNAL_EXAMPLES_LIST
                    context-manager-node
                    context-manager
-                   hash-file
                    hash-finalize
                    bckey-internal
                    mac-internal
                    mac-file
                    test
+                   internal-hash-file
+                   internal-hash-update
 )
 
 if( CMAKE_HOST_UNIX )
@@ -208,6 +211,10 @@ if( CMAKE_HOST_UNIX )
      add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
      target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
   endforeach()
+
+  add_test( NAME example-internal-hash-update COMMAND example-internal-hash-update${LIBAKRYPT_EXT} )
+  add_test( NAME example-internal-hash-file COMMAND example-internal-hash-file${LIBAKRYPT_EXT} )
+
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -223,6 +230,7 @@ if( LIBAKRYPT_GMP_TESTS )
   foreach( programm ${ARITHMETIC_TESTS_LIST} )
      add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
      target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static gmp )
+     add_test( NAME example-${programm} COMMAND example-${programm}${LIBAKRYPT_EXT} )
   endforeach()
   message("-- Added examples for integer arithmetic")
 endif()
