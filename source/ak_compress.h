@@ -50,7 +50,7 @@
   ak_function_mac_clean *clean;
  /*! \brief функция обработки данных, длина которых кратна длине обрабатываемого блока */
   ak_function_mac_update *update;
- /*! \brief функция завершения сживающего преобразования */
+ /*! \brief функция завершения сжимающего преобразования */
   ak_function_mac_finalize *finalize;
 };
 

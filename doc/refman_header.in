@@ -61,8 +61,8 @@
 \fancyhead[RO]{\fancyplain{}{\bfseries\thepage}}
 \fancyfoot[LE]{\fancyplain{}{}}
 \fancyfoot[CE]{\fancyplain{}{}}
-\fancyfoot[RE]{\fancyplain{}{\bfseries\scriptsize Документация к библиотеке libakrypt}}
-\fancyfoot[LO]{\fancyplain{}{\bfseries\scriptsize Документация к библиотеке libakrypt}}
+\fancyfoot[RE]{\fancyplain{}{\bfseries\scriptsize Документация к библиотеке libakrypt (версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@)}}
+\fancyfoot[LO]{\fancyplain{}{\bfseries\scriptsize Документация к библиотеке libakrypt (версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@)}}
 \fancyfoot[CO]{\fancyplain{}{}}
 \fancyfoot[RO]{\fancyplain{}{}}
 \renewcommand{\footrulewidth}{0.4pt}

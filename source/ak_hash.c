@@ -470,8 +470,9 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \example example-hash.c
     \example example-hash-oids.c
-    \example example-internal-hash-file.c
-    \example example-internal-hash-update.c                                                        */
+    \example example-internal-hash01.c
+    \example example-internal-hash02.c
+    \example example-internal-hash03.c                                                        */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_hash.c  */
 /* ----------------------------------------------------------------------------------------------- */

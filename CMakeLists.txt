@@ -166,7 +166,7 @@ target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
 enable_testing()
 
 # сборка тестовых примеров
-set( EXAMPLES_LIST intro
+set( EXAMPLES_LIST hello
                    log
                    random
                    randomize
@@ -197,24 +197,22 @@ endif()
 set( INTERNAL_EXAMPLES_LIST
                    context-manager-node
                    context-manager
-                   hash-finalize
-                   bckey-internal
-                   mac-internal
-                   mac-file
-                   test
-                   internal-hash-file
-                   internal-hash-update
+                   #bckey-internal
+                   #mac-internal
+                   #mac-file
+                   #test
+                   internal-hash01
+                   internal-hash02
+                   internal-hash03
+                   internal-compress01
 )
 
 if( CMAKE_HOST_UNIX )
   foreach( programm ${INTERNAL_EXAMPLES_LIST} )
      add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
      target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+     add_test( NAME example-${programm}${LIBAKRYPT_EXT} COMMAND example-${programm}${LIBAKRYPT_EXT} )
   endforeach()
-
-  add_test( NAME example-internal-hash-update COMMAND example-internal-hash-update${LIBAKRYPT_EXT} )
-  add_test( NAME example-internal-hash-file COMMAND example-internal-hash-file${LIBAKRYPT_EXT} )
-
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
