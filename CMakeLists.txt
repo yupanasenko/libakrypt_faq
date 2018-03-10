@@ -20,7 +20,7 @@ project( libakrypt )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 6 )
-set( MINOR_VERSION 4 )
+set( MINOR_VERSION 5 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -200,7 +200,7 @@ set( INTERNAL_EXAMPLES_LIST
                    #bckey-internal
                    #mac-internal
                    #mac-file
-                   #test
+                   test
                    internal-hash01
                    internal-hash02
                    internal-hash03
