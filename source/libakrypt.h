@@ -71,6 +71,11 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64
+ #include <wmmintrin.h>
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_WINDOWS_H
  #include <windows.h>
 #endif
@@ -104,7 +109,6 @@
  typedef signed long long int ak_int64;
  typedef unsigned long long int ak_uint64;
 #endif
-
 
 /* ----------------------------------------------------------------------------------------------- */
  typedef signed char ak_int8;

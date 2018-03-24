@@ -106,10 +106,10 @@ set( AKRYPT_FILES   akrypt/akrypt.h
 # -------------------------------------------------------------------------------------------------- #
 # подключаем модули CMake для тонкой настройки параметров сборки
 set( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
-include( DetectHeaders )
-include( DetectLibraries )
-include( DetectIntrinsics )
 include( DetectFlags )
+include( DetectHeaders )
+include( DetectIntrinsics )
+include( DetectLibraries )
 
 # -------------------------------------------------------------------------------------------------- #
 # определяемся с местом хранения файла с конфигурацией библиотеки

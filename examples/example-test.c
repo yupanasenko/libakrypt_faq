@@ -1,10 +1,8 @@
  #include <stdio.h>
  #include <ak_bckey.h>
 
- #include <wmmintrin.h>
-
 /* ----------------------------------------------------------------------------------------------- */
- static void ak_mgm_mul_gf256_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
+ static void ak_gf128_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
 {
  __m128i am = *((__m128i *) a);
  __m128i bm = *((__m128i *) b);
@@ -27,7 +25,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static void ak_mgm_mul_gf256( ak_pointer z, ak_pointer x, ak_pointer y )
+ static void ak_gf128_mul( ak_pointer z, ak_pointer x, ak_pointer y )
 {
  int i = 0, n = 0;
  ak_uint64 t, s0 = ((ak_uint64 *)x)[0], s1 = ((ak_uint64 *)x)[1];
@@ -86,8 +84,8 @@
  // a = 0x7b5b54657374566563746f725d53475d
  // b =  0x48692853686179295b477565726f6e5d
  // GFMUL128 (a, b) = 0x40229a09a5ed12e7e4e10da323506d2
- ak_mgm_mul_gf256( out, &a, &b );
- ak_mgm_mul_gf256_pcmulqdq( out2, &a, &b );
+ ak_gf128_mul( out, &a, &b );
+ ak_gf128_mul_pcmulqdq( out2, &a, &b );
  if( !ak_ptr_is_equal( out, out2, 16 )) return ak_false;
  if( !ak_ptr_is_equal( out, val, 16 )) return ak_false;
 
@@ -102,8 +100,8 @@
    printf("a:   %s\n", str = ak_ptr_to_hexstr( &a, 16, ak_true )); free( str );
    printf("b:   %s\n", str = ak_ptr_to_hexstr( &b, 16, ak_true )); free( str );
 
-   ak_mgm_mul_gf256( out, &a, &b );
-   ak_mgm_mul_gf256_pcmulqdq( out2, &a, &b );
+   ak_gf128_mul( out, &a, &b );
+   ak_gf128_mul_pcmulqdq( out2, &a, &b );
    if( !ak_ptr_is_equal( out, out2, 16 )) return ak_false;
    printf("a*b: %s\n\n", str = ak_ptr_to_hexstr( &out2, 16, ak_true )); free( str );
  }
@@ -182,7 +180,7 @@
      printf("   h[%lu]: %s\n", i+1, str = ak_ptr_to_hexstr( h, absize, ak_true )); free( str );
      printf("   a[%lu]: %s\n", i+1, str = ak_ptr_to_hexstr( a+absize*i, absize, ak_true )); free( str );
 
-     ak_mgm_mul_gf256_pcmulqdq( mulres, h, a+absize*i );
+     ak_gf128_mul_pcmulqdq( mulres, h, a+absize*i );
      printf(" h*a[%lu]: %s\n", i+1, str = ak_ptr_to_hexstr( mulres, absize, ak_true )); free( str );
 
      icode[0] ^= mulres[0]; icode[1] ^= mulres[1];
@@ -205,7 +203,7 @@
      memcpy( temp+absize-atail, a+absize*ablocks, atail );
      printf("   a[%u]: %s\n", 3, str = ak_ptr_to_hexstr( temp, absize, ak_true )); free( str );
 
-     ak_mgm_mul_gf256_pcmulqdq( mulres, h, temp );
+     ak_gf128_mul_pcmulqdq( mulres, h, temp );
      printf(" h*a[%u]: %s\n", 3, str = ak_ptr_to_hexstr( mulres, absize, ak_true )); free( str );
 
      icode[0] ^= mulres[0]; icode[1] ^= mulres[1];
@@ -243,7 +241,7 @@
      printf("   c[%lu]: %s\n", i+1, str = ak_ptr_to_hexstr( c+i*2, bsize, ak_true )); free( str );
 
      /* теперь умножение */
-     ak_mgm_mul_gf256_pcmulqdq( mulres, h, c+i*2 );
+     ak_gf128_mul_pcmulqdq( mulres, h, c+i*2 );
      printf("       : %s <- h[%lu]*c[%lu]\n",
        str = ak_ptr_to_hexstr( mulres, absize, ak_true ), i+ablocks+2, i+1 ); free( str );
 
@@ -283,7 +281,7 @@
      printf("  c'[%u]: %s\n", 5, str = ak_ptr_to_hexstr( temp, bsize, ak_true )); free( str );
 
      /* теперь умножение */
-     ak_mgm_mul_gf256_pcmulqdq( mulres, h, temp );
+     ak_gf128_mul_pcmulqdq( mulres, h, temp );
      printf("       : %s <- h[%u]*c'[%u]\n",
        str = ak_ptr_to_hexstr( mulres, absize, ak_true ), 8, 5 ); free( str );
 
@@ -315,7 +313,7 @@
      printf("    len: %s\n", str = ak_ptr_to_hexstr( temp, absize, ak_true )); free( str );
 
      /* теперь умножение */
-     ak_mgm_mul_gf256_pcmulqdq( mulres, z, temp );
+     ak_gf128_mul_pcmulqdq( mulres, z, temp );
      printf("       : %s <- h[%u]*len\n",
        str = ak_ptr_to_hexstr( mulres, absize, ak_true ), 9); free( str );
 
@@ -441,7 +439,7 @@
 //     printf("   h[%d]: %s = E(z[%d])\n", i+1, str = ak_ptr_to_hexstr( gamma, 16, ak_true ), i+1 ); free( str );
 //     printf("   a[%d]: %s\n", i+1, str = ak_ptr_to_hexstr( a+2*i, 16, ak_true )); free( str );
 
-//     ak_mgm_mul_gf256_pcmulqdq( delta, a+2*i, gamma );
+//     ak_gf128_mul_pcmulqdq( delta, a+2*i, gamma );
 //     printf("   d[%d]: %s = h[%d]*a[%d]\n\n", i+1, str = ak_ptr_to_hexstr( delta, 16, ak_true ), i+1, i+1); free( str );
 
 //     y[1]++;
@@ -459,7 +457,7 @@
 //     atemp[0] = ( a[4] << 56 );
 //     printf("  a'[3]: %s\n", str = ak_ptr_to_hexstr( atemp, 16, ak_true )); free( str );
 
-//     ak_mgm_mul_gf256_pcmulqdq( delta, atemp, gamma );
+//     ak_gf128_mul_pcmulqdq( delta, atemp, gamma );
 //     printf("   d[3]: %s = h[3]*a'[3]\n\n", str = ak_ptr_to_hexstr( delta, 16, ak_true )); free( str );
 
 //     y[1]++;
