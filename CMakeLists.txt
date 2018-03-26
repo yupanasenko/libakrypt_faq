@@ -49,6 +49,7 @@ set( HEADERS        source/ak_tools.h
                     source/ak_mpzn.h
                     source/ak_curves.h
                     source/ak_sign.h
+                    source/ak_aead.h
 )
 
 set( SOURCES        source/ak_log.c
@@ -71,6 +72,7 @@ set( SOURCES        source/ak_log.c
                     source/ak_mpzn.c
                     source/ak_curves.c
                     source/ak_sign.c
+                    source/ak_aead.c
 )
 
 set( DOCS           doc/libakrypt.dox

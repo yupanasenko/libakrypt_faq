@@ -44,6 +44,7 @@
  #include <sys/stat.h>
 
  #include <ak_mac.h>
+ #include <ak_aead.h>
  #include <ak_tools.h>
  #include <ak_curves.h>
  #include <ak_context_manager.h>
@@ -578,6 +579,13 @@
   if( ak_bckey_test_kuznechik()  != ak_true ) {
     ak_error_message( ak_error_get_value(), __func__ ,
                                                    "incorrect testing of kuznechik block cipher" );
+    return ak_false;
+  }
+
+ /* тестируем дополнительные режимы работы */
+  if( ak_gfn_multiplication_test() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                          "incorrect testing of multiplication in Galois fields" );
     return ak_false;
   }
 
