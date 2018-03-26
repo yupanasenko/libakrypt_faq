@@ -108,6 +108,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  void ak_gf64_mul_pcmulqdq( ak_pointer z, ak_pointer x, ak_pointer y )
 {
+ #ifdef LIBAKRYPT_HAVE_BUILTIN_SET_EPI64X
   const __m128i gm = _mm_set_epi64x( 0, 0x1B );
   __m128i xm = _mm_set_epi64x( 0, ((ak_uint64 *)x)[0] );
   __m128i ym = _mm_set_epi64x( 0, ((ak_uint64 *)y)[0] );
@@ -119,7 +120,25 @@
   ym = _mm_set_epi64x( 0, xm[1] );
   xm = _mm_clmulepi64_si128( ym, gm, 0x00 );
 
- ((ak_uint64 *)z)[0] = cm[0]^xm[0];
+  ((ak_uint64 *)z)[0] = cm[0]^xm[0];
+
+ #else
+  __m128i gm, xm, ym, cm, cx;
+
+  gm.m128i_u64[0] = 0x1B; gm.m128i_u64[1] = 0;
+  xm.m128i_u64[0] = ((ak_uint64 *)x)[0]; xm.m128i_u64[1] = 0;
+  ym.m128i_u64[0] = ((ak_uint64 *)y)[0]; ym.m128i_u64[1] = 0;
+
+  cm = _mm_clmulepi64_si128( xm, ym, 0x00 );
+  cx.m128i_u64[0] = cm.m128i_u64[1]; cx.m128i_u64[1] = 0;
+
+  xm = _mm_clmulepi64_si128( cx, gm, 0x00 ); 
+  xm.m128i_u64[1] ^= cx.m128i_u64[0];
+  ym.m128i_u64[0] = xm.m128i_u64[1]; ym.m128i_u64[1] = 0;
+  xm = _mm_clmulepi64_si128( ym, gm, 0x00 );
+
+  ((ak_uint64 *)z)[0] = cm.m128i_u64[0]^xm.m128i_u64[0];
+ #endif
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -141,6 +160,7 @@
  __m128i fm = _mm_clmulepi64_si128( am, bm, 0x01 ); // f = a1*b0
 
  /* приведение */
+ #ifdef LIBAKRYPT_HAVE_BUILTIN_SET_EPI64X 
   ak_uint64 x3 = dm[1];
   ak_uint64 D = dm[0] ^ em[1] ^ fm[1] ^ (x3 >> 63) ^ (x3 >> 62) ^ (x3 >> 57);
 
@@ -149,6 +169,18 @@
 
   ((ak_uint64 *)z)[0] = cm[0];
   ((ak_uint64 *)z)[1] = cm[1];
+
+ #else
+  ak_uint64 x3 = dm.m128i_u64[1];
+  ak_uint64 D = dm.m128i_u64[0] ^ em.m128i_u64[1] ^ fm.m128i_u64[1] ^ (x3 >> 63) ^ (x3 >> 62) ^ (x3 >> 57);
+
+  cm.m128i_u64[0] ^=  D ^ (D << 1) ^ (D << 2) ^ (D << 7);
+  cm.m128i_u64[1] ^=  em.m128i_u64[0] ^ fm.m128i_u64[0] ^ x3 ^ (x3 << 1) ^ (D >> 63) ^ (x3 << 2) ^ (D >> 62) ^ (x3 << 7) ^ (D >> 57);
+
+  ((ak_uint64 *)z)[0] = cm.m128i_u64[0];
+  ((ak_uint64 *)z)[1] = cm.m128i_u64[1];
+
+ #endif
 }
 #endif
 
@@ -317,12 +349,16 @@
  if( ak_gf64_multiplication_test( ) != ak_true ) {
    ak_error_message( ak_error_get_value(), __func__ , "incorrect multiplication test in GF(2^64)");
    return ak_false;
- } else ak_error_message( ak_error_get_value(), __func__ , "multiplication test in GF(2^64) is OK");
+ } else 
+    if( audit >= ak_log_maximum )
+     ak_error_message( ak_error_get_value(), __func__ , "multiplication test in GF(2^64) is OK");
 
  if( ak_gf128_multiplication_test( ) != ak_true ) {
    ak_error_message( ak_error_get_value(), __func__ , "incorrect multiplication test in GF(2^128)");
    return ak_false;
- } else ak_error_message( ak_error_get_value(), __func__ , "multiplication test in GF(2^128) is OK");
+ } else 
+    if( audit >= ak_log_maximum )
+      ak_error_message( ak_error_get_value(), __func__ , "multiplication test in GF(2^128) is OK");
 
  if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ ,

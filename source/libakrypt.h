@@ -349,7 +349,7 @@
 /*! \brief Получение имени опции по ее номеру. */
  dll_export const char *ak_libakrypt_get_option_name( const size_t index );
 /*! \brief Получение значения опции по ее номеру. */
- dll_export int ak_libakrypt_get_option_value( const size_t index );
+ dll_export ak_int32 ak_libakrypt_get_option_value( const size_t index );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Получение точного количества типов криптографических механизмов. */

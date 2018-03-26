@@ -54,8 +54,8 @@
  typedef struct {
   /*! \brief Человекочитаемое имя опции, используется для поиска и установки значения */
    const char *name;
-  /*! \brief Численное значение опции (целое неотрицательное число) */
-   int value;
+  /*! \brief Численное значение опции (31 значащий бит + знак) */
+   ak_int32 value;
  } ak_option;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -68,7 +68,7 @@
      { "key_number_length", 16 },
      { "pbkdf2_iteration_count", 2000 },
      { "hmac_key_count_resource", 65536 },
-     { "magma_cipher_resource", 32*4194304 }, //!!!!!
+     { "magma_cipher_resource", 32*4194304 }, //!!!!! должно быть 524288
      { "kuznechik_cipher_resource", 8*4194304 },
      { NULL, 0 } /* завершающая константа, должна всегда принимать нулевые значения */
  };
@@ -89,10 +89,10 @@
     \return Значение опции с заданным именем. Если имя указано неверно, то возвращается
     ошибка \ref ak_error_wrong_option.                                                             */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_get_option( const char *name )
+ ak_int32 ak_libakrypt_get_option( const char *name )
 {
   size_t i = 0;
-  int result = ak_error_wrong_option;
+  ak_int32 result = ak_error_wrong_option;
   for( i = 0; i < ak_libakrypt_options_count(); i++ ) {
      if( strncmp( name, options[i].name, strlen( options[i].name )) == 0 ) result = options[i].value;
   }
@@ -102,13 +102,15 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция устанавливает значение опции с заданным именем.
 
+    \b Внимание! Функция не проверяет и не интерпретирует значение устанавливааемой опции.
+
     \param name Имя опции
     \param value Значение опции
 
     \return В случае удачного установления значения опции возввращается \ref ak_error_ok.
      Если имя опции указано неверно, то возвращается ошибка \ref ak_error_wrong_option.            */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_set_option( const char *name, const int value )
+ int ak_libakrypt_set_option( const char *name, const ak_int32 value )
 {
   size_t i = 0;
   int result = ak_error_wrong_option;
@@ -146,7 +148,7 @@
     \return Целое неотрицательное число, содержащее значение опции с заданным индексом.
     В случае неправильно определенного индекса возвращается значение \ref ak_error_wrong_option.   */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_get_option_value( const size_t index )
+ ak_int32 ak_libakrypt_get_option_value( const size_t index )
 {
  if( index >= ak_libakrypt_options_count() ) return ak_error_wrong_option;
   else return options[index].value;
@@ -204,11 +206,11 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_libakrypt_load_option( const char *string, const char *field, ak_uint64 *value )
+ static int ak_libakrypt_load_option( const char *string, const char *field, ak_int32 *value )
 {
   char *ptr = NULL, *endptr = NULL;
   if(( ptr = strstr( string, field )) != NULL ) {
-    ak_uint64 val = (ak_uint64) strtol( ptr += strlen(field), &endptr, 10 ); // strtoll
+    ak_int32 val = (ak_int32) strtol( ptr += strlen(field), &endptr, 10 ); // strtoll
     if(( endptr != NULL ) && ( ptr == endptr )) {
       ak_error_message_fmt( ak_error_undefined_value, __func__,
                                     "using an undefinded value for variable %s", field );
@@ -218,7 +220,7 @@
       ak_error_message_fmt( ak_error_undefined_value, __func__,
                                                      "%s for field %s", strerror( errno ), field );
     } else {
-             *value = ( ak_uint64 ) val;
+             *value = val;
              return ak_true;
            }
   }
@@ -270,11 +272,10 @@
      }
     if( ch == '\n' ) {
       if((strlen(localbuffer) != 0 ) && ( strchr( localbuffer, '#' ) == 0 )) {
-        ak_uint64 value = 0, value2 = 0;
+        ak_int32 value = 0, value2 = 0;
 
         /* устанавливаем уровень аудита */
         if( ak_libakrypt_load_option( localbuffer, "log_level = ", &value ))
-          // libakrypt_options.log_level = ( int )value;
           ak_libakrypt_set_option( "log_level", value );
 
         /* устанавливаем минимальный размер структуры управления контекстами */
@@ -283,8 +284,7 @@
           while( value ) { value>>=1; len++; } /* вычисляем число значащих бит */
           if( len < 2 ) len = 2;
           if( len >= 32 ) len = 31;
-          // libakrypt_options.context_manager_size = ((size_t)1 << len );
-          ak_libakrypt_set_option( "context_manager_size", value2 = ( 1 << len ));
+          ak_libakrypt_set_option( "context_manager_size", value2 = ( (int)1 << len ));
         }
 
        /* устанавливаем максимально возможный размер структуры управления контекстами */
@@ -293,7 +293,6 @@
           while( value ) { value>>=1; len++; } /* вычисляем число значащих бит */
           if( len < 2 ) len = 2;
           if( len > 63 ) len = 63;
-          // libakrypt_options.context_manager_max_size = ((size_t)1 << len );
           ak_libakrypt_set_option( "context_manager_max_size", ak_max( value2, 1 << len ));
         }
 
@@ -301,7 +300,6 @@
         if( ak_libakrypt_load_option( localbuffer, "key_number_length = ", &value )) {
           if( value < 16 ) value = 16;
           if( value > 32 ) value = 32;
-          // libakrypt_options.key_number_length = (int) value;
           ak_libakrypt_set_option( "key_number_length", value );
         }
 
@@ -309,7 +307,6 @@
         if( ak_libakrypt_load_option( localbuffer, "pbkdf2_iteration_count = ", &value )) {
           if( value < 1000 ) value = 1000;
           if( value > 2147483647 ) value = 2147483647;
-          // libakrypt_options.pbkdf2_iteration_count = (int) value;
           ak_libakrypt_set_option( "pbkdf2_iteration_count", value );
         }
 
@@ -317,7 +314,6 @@
         if( ak_libakrypt_load_option( localbuffer, "hmac_key_counter_resource = ", &value )) {
           if( value < 1024 ) value = 1024;
           if( value > 2147483647 ) value = 2147483647;
-          // libakrypt_options.hmac_key_count_resource = (size_t) value;
           ak_libakrypt_set_option( "hmac_key_count_resource", value );
         }
 
@@ -332,7 +328,7 @@
 
   /* выводим сообщение об установленных параметрах библиотеки */
   if( ak_libakrypt_get_option( "log_level" ) > ak_log_standard ) {
-    int i = 0;
+    size_t i = 0;
 
     ak_error_message_fmt( ak_error_ok, __func__, "libakrypt version: %s", ak_libakrypt_version( ));
     /* далее мы пропускаем вывод информации об архитектуре,

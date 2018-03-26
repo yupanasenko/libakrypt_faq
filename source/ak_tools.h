@@ -40,7 +40,7 @@
  int ak_log_set_level( int );
 
 /*! \brief Функция устанавливает значение опции с заданным именем. */
- int ak_libakrypt_set_option( const char *name, const int value );
+ int ak_libakrypt_set_option( const char *name, const ak_int32 value );
 /*! \brief Функция возвращает значение опции с заданным именем. */
  int ak_libakrypt_get_option( const char *name );
 
