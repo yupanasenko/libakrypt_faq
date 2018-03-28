@@ -216,7 +216,7 @@
                                     "using an undefinded value for variable %s", field );
       return ak_false;
     }
-    if(( errno == ERANGE && ( val == LONG_MAX || val == LONG_MIN )) || (errno != 0 && val == 0)) {
+    if(( errno == ERANGE && ( val >= INT_MAX || val <= INT_MIN )) || (errno != 0 && val == 0)) {
       ak_error_message_fmt( ak_error_undefined_value, __func__,
                                                      "%s for field %s", strerror( errno ), field );
     } else {
@@ -334,7 +334,7 @@
     /* далее мы пропускаем вывод информации об архитектуре,
        поскольку она будет далее тестироваться отдельно     */
     for( i = 1; i < ak_libakrypt_options_count(); i++ )
-       ak_error_message_fmt( ak_error_ok, __func__, "option [%s = %d]", options[i].name, options[i].value );
+       ak_error_message_fmt( ak_error_ok, __func__, "value of option %s is %d", options[i].name, options[i].value );
   }
   return ak_true;
  }
