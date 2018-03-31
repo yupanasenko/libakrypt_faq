@@ -352,16 +352,6 @@
  dll_export ak_int32 ak_libakrypt_get_option_value( const size_t index );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Получение точного количества типов криптографических механизмов. */
- dll_export const size_t ak_libakrypt_engines_count( void );
-/*! \brief Получение константного символьного описания типа криптографического механизма. */
- dll_export const char *ak_libakrypt_get_engine_str( ak_oid_engine );
-/*! \brief Получение типа криптографического механизма по его символьному описанию. */
- dll_export ak_oid_engine ak_libakrypt_get_engine( const char * );
-/*! \brief Получения символьного описания режима применения криптографического механизма. */
- dll_export const char *ak_libakrypt_get_mode_str( ak_oid_mode );
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Получение количества доступных OID библиотеки. */
  dll_export const size_t ak_libakrypt_oids_count( void );
 /*! \brief Поиск OID по типу криптографического механизма. */
@@ -372,6 +362,14 @@
  dll_export ak_handle ak_libakrypt_find_oid_by_name( const char * );
 /*! \brief Поиск OID по его идентификатору (строке цифр, разделенных точками). */
  dll_export ak_handle ak_libakrypt_find_oid_by_id( const char * );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Получение точного количества типов криптографических механизмов. */
+ dll_export const size_t ak_libakrypt_engines_count( void );
+/*! \brief Получение константного символьного описания типа криптографического механизма. */
+ dll_export const char *ak_libakrypt_get_engine_str( ak_oid_engine );
+/*! \brief Получение типа криптографического механизма по его символьному описанию. */
+ dll_export ak_oid_engine ak_libakrypt_get_engine( const char * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Получение читаемого имени OID. */

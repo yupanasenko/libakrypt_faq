@@ -35,7 +35,7 @@
 {
   printf("%s (%s) ", ak_libakrypt_oid_get_name( handle ), ak_libakrypt_oid_get_id( handle ));
   printf("[%s, %s]\n", ak_libakrypt_oid_get_engine_str( handle ),
-                                                        ak_libakrypt_get_mode_str( handle ));
+                                                    ak_libakrypt_oid_get_mode_str( handle ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -135,8 +135,7 @@
                }
                /* в заключение - поиск по типу криптографического механизма */
                ak_error_set_value( ak_error_ok );
-               engine = ak_libakrypt_get_engine( value );
-               if( ak_error_get_value() == ak_error_ok ) {
+               if(( engine = ak_libakrypt_get_engine( value )) != undefined_engine ) {
                  handle = ak_libakrypt_find_oid_by_engine( engine );
                  while( handle != ak_error_wrong_handle ) {
                   /* выводим найденное */
@@ -156,7 +155,7 @@
 
      case do_options:
                for( i = 0; i < ak_libakrypt_options_count(); i++ )
-                  printf("[%s = %d]\n",
+                  printf("%s = %d\n",
                          ak_libakrypt_get_option_name( i ), ak_libakrypt_get_option_value( i ));
                break;
 
