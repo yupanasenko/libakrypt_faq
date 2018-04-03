@@ -18,7 +18,7 @@
     char *str = NULL;
     printf("random data (%d bytes):\n%s\n",
              (int) ak_buffer_get_size( buffer),
-             str = ak_buffer_to_hexstr( buffer ));
+             str = ak_buffer_to_hexstr( buffer, ak_false ));
     free( str );
 
    /* удаляем буффер */

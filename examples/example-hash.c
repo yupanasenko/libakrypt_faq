@@ -38,7 +38,7 @@
 
  /* вывод информации о результате вычисления */
   printf("obtained code size: %d bytes\n", (int) ak_buffer_get_size( buffer ));
-  printf("hash: %s (calculated)\n", str = ak_buffer_to_hexstr( buffer ));
+  printf("hash: %s (calculated)\n", str = ak_buffer_to_hexstr( buffer, ak_false ));
   free(str);
   buffer = ak_buffer_delete( buffer );
 

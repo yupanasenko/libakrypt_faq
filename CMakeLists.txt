@@ -206,8 +206,8 @@ set( INTERNAL_EXAMPLES_LIST
                    internal-hash02
                    internal-hash03
                    internal-compress01
+                   internal-mgm-examples
                    test
-                   test2
 )
 
 if( CMAKE_HOST_UNIX )

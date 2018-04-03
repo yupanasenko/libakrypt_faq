@@ -28,7 +28,7 @@
  /* вычисляем хеш-код от заданной области памяти */
   result_one =
     ak_hash_context_ptr( &ctx_one, some_pointer, sizeof( some_pointer ), NULL );
-  printf("hash [1]: %s\n", str = ak_buffer_to_hexstr( result_one ));
+  printf("hash [1]: %s\n", str = ak_buffer_to_hexstr( result_one, ak_false ));
 
  /* освобождаем память */
   result_one = ak_buffer_delete( result_one ); free( str );

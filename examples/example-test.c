@@ -268,7 +268,7 @@
  size_t plain_len = 67, associated_len = 41;
  ak_bckey encryptionKey, authenticationKey;
 
- printf("plain data len: %zu nytes, %zu bits (in hexademal %zx bits)\n", plain_len, plain_len << 3, plain_len << 3 );
+ printf("plain data len: %zu bytes or %zu bits (in hexademal %zx bits)\n", plain_len, plain_len << 3, plain_len << 3 );
  printf("plain data: %s\n", out = ak_ptr_to_hexstr( plain, plain_len, ak_true )); free( out );
  printf("plaint data (blocks on 16 byte):\n");
  for( int i = 0; i < 4; i++ ) {
@@ -282,7 +282,7 @@
  }
  printf( "p[9] = %s\n\n", out = ak_ptr_to_hexstr((ak_uint8 *)plain+64, 3, ak_true )); free( out );
 
- printf("associated data len: %zu nytes, %zu bits (in hexademal %zx bits)\n", associated_len, associated_len << 3, associated_len << 3 );
+ printf("associated data len: %zu bytes or %zu bits (in hexademal %zx bits)\n", associated_len, associated_len << 3, associated_len << 3 );
  printf("associated data: %s\n", out = ak_ptr_to_hexstr( a, associated_len, ak_true )); free( out );
  printf("associated data (blocks on 16 byte):\n");
  for( int i = 0; i < 2; i++ ) {

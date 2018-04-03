@@ -419,7 +419,7 @@
 /*! \brief Получение размера буффера. */
  dll_export const size_t ak_buffer_get_size( ak_buffer );
 /*! \brief Получение строки символов с шестнадцатеричным значением буффера. */
- dll_export char *ak_buffer_to_hexstr( const ak_buffer );
+ dll_export char *ak_buffer_to_hexstr( const ak_buffer , const ak_bool );
 /*! \brief Сравнение двух буфферов. */
  dll_export ak_bool ak_buffer_is_equal( const ak_buffer, const ak_buffer );
 

@@ -209,7 +209,7 @@
  if( authenticationKey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                         "using null pointer to authentication key");
  if( authenticationKey->ivector.size > 16 ) return ak_error_message( ak_error_wrong_length,
-                                                      __func__, "using key with large block size" );
+                                                 __func__, "using key with very large block size" );
  /* инициализация значением и ресурс */
  if(( authenticationKey->key.flags&ak_skey_flag_set_key ) == 0 )
            return ak_error_message( ak_error_key_value, __func__,
@@ -245,14 +245,17 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-#define astep( DATA ) authenticationKey->encrypt( &authenticationKey->key, ctx->zcount, ctx->h ); \
-                      ctx->fm( ctx->mulres, ctx->h, (DATA) ); \
-                      for( i = 0; i < ( absize >> 3 ); i++ ) { \
-                         ((ak_uint64 *) ctx->sum)[i] ^= ((ak_uint64 *) ctx->mulres)[i]; \
-                      } \
-                      ((ak_uint32 *)( ctx->zcount + ( absize/2 )))[0]++;
-                           /* ! ВНИМАНИЕ: здесь должна быть более аккуратная реализация инкремента */
-           /* слишком раннее переполнение может не проявляться из за маленького ключевого  ресурса */
+#define astep64(DATA)  authenticationKey->encrypt( &authenticationKey->key, ctx->zcount, ctx->h ); \
+                       ak_gf64_mul( ctx->mulres, ctx->h, (DATA) ); \
+                       ((ak_uint64 *) ctx->sum)[0] ^= ((ak_uint64 *) ctx->mulres)[0]; \
+                       ((ak_uint32 *)( ctx->zcount + 4 ))[0]++;
+
+#define astep128(DATA) authenticationKey->encrypt( &authenticationKey->key, ctx->zcount, ctx->h ); \
+                       ak_gf128_mul( ctx->mulres, ctx->h, (DATA) ); \
+                       ((ak_uint64 *) ctx->sum)[0] ^= ((ak_uint64 *) ctx->mulres)[0]; \
+                       ((ak_uint64 *) ctx->sum)[1] ^= ((ak_uint64 *) ctx->mulres)[1]; \
+                       ((ak_uint64 *)( ctx->zcount + 8 ))[0]++;
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция обновляет внутреннее состояние переменных алгоритма MGM, участвующих в алгоритме
     выработки имитовставки. Если длина входных данных не кратна длине блока алгоритма шифрования,
@@ -270,7 +273,7 @@
  int ak_mgm_context_authentication_update( ak_mgm_ctx ctx,
                       ak_bckey authenticationKey, const ak_pointer adata, const size_t adata_size )
 {
-  int i = 0;
+  ak_uint8 temp[16];
   size_t absize = authenticationKey->ivector.size, offset = 0;
   ak_int64 resource = 0,
            tail = (ak_int64) adata_size%absize,
@@ -289,18 +292,31 @@
   else authenticationKey->key.resource.counter -= resource;
 
  /* теперь основной цикл */
-  for( ; blocks > 0; blocks--, offset += absize ) { astep( (ak_uint8 *)adata + offset ); }
-  ctx->abitlen += ( offset << 3 );
+ if( absize == 16 ) { /* обработка 128-битным шифром */
 
-  if( tail ) {
-    ak_uint8 temp[16];
+   for( ; blocks > 0; blocks--, offset += 16 ) { astep128( (ak_uint8 *)adata + offset ); }
+   ctx->abitlen += ( offset << 3 );
+   if( tail ) {
     memset( temp, 0, 16 );
     memcpy( temp+absize-tail, (ak_uint8 *)adata + offset, tail );
-    astep( temp );
+    astep128( temp );
    /* закрываем добавление ассоциированных данных */
     ctx->aflag |= 0x1;
     ctx->abitlen += tail << 3;
   }
+ } else { /* обработка 64-битным шифром */
+
+   for( ; blocks > 0; blocks--, offset += 8 ) { astep64( (ak_uint8 *)adata + offset ); }
+   ctx->abitlen += ( offset << 3 );
+   if( tail ) {
+    memset( temp, 0, 8 );
+    memcpy( temp+absize-tail, (ak_uint8 *)adata + offset, tail );
+    astep64( temp );
+   /* закрываем добавление ассоциированных данных */
+    ctx->aflag |= 0x1;
+    ctx->abitlen += tail << 3;
+  }
+ }
 
  return ak_error_ok;
 }
@@ -320,7 +336,6 @@
  ak_buffer ak_mgm_context_authentication_finalize( ak_mgm_ctx ctx,
                                                          ak_bckey authenticationKey, ak_pointer out )
 {
-  int i = 0;
   ak_uint8 temp[16];
   ak_pointer pout = NULL;
   ak_buffer result = NULL;
@@ -336,15 +351,18 @@
   ctx->pflag |= 0x1;
 
  /* формирем последний вектор из длин */
-  memset( temp, 0, 16 );
-  if(  authenticationKey->ivector.size == 16 ) {
+  if(  absize&0x10 ) {
+    memset( temp, 0, 16 );
     ((ak_uint64 *)temp)[0] = ctx->pbitlen;
     ((ak_uint64 *)(temp+absize/2))[0] = ctx->abitlen;
-  } else {
+    astep128( temp );
+
+  } else { /* теперь тоже самое, но для 64-битного шифра */
+    memset( temp, 0, 8 );
     ((ak_uint32 *)temp)[0] = ctx->pbitlen;
     ((ak_uint32 *)(temp+absize/2))[0] = ctx->abitlen;
+    astep64( temp );
   }
-  astep( temp );
 
  /* определяем указатель на область памяти, в которую будет помещен результат вычислений */
   if( out != NULL ) pout = out;
@@ -417,6 +435,17 @@
  return ak_error_ok;
 }
 
+
+/* ----------------------------------------------------------------------------------------------- */
+#define estep64  encryptionKey->encrypt( &encryptionKey->key, ctx->ycount, ctx->e ); \
+                 ((ak_uint64 *)outp)[0] = ((ak_uint64 *)inp)[0] ^ ((ak_uint64 *)ctx->e)[0]; \
+                 ((ak_uint32 *)ctx->ycount)[0]++;
+
+#define estep128 encryptionKey->encrypt( &encryptionKey->key, ctx->ycount, ctx->e ); \
+                 ((ak_uint64 *)outp)[0] = ((ak_uint64 *)inp)[0] ^ ((ak_uint64 *)ctx->e)[0]; \
+                 ((ak_uint64 *)outp)[1] = ((ak_uint64 *)inp)[1] ^ ((ak_uint64 *)ctx->e)[1]; \
+                 ((ak_uint64 *)ctx->ycount)[0]++;
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция зашифровывает очередной фрагмент данных и
     обновляет внутреннее состояние переменных алгоритма MGM, участвующих в алгоритме
@@ -439,6 +468,7 @@
          ak_bckey authenticationKey, const ak_pointer in, ak_pointer out, const size_t size )
 {
   int i = 0;
+  ak_uint8 temp[16];
   size_t absize = encryptionKey->ivector.size;
   ak_uint8 *inp = (ak_uint8 *)in, *outp = (ak_uint8 *)out;
   ak_int64 resource = 0, tail = (ak_int64) size%absize, blocks = (ak_int64) size/absize;
@@ -467,29 +497,78 @@
                                                    "using encryption key with low key resource");
   else encryptionKey->key.resource.counter -= resource;
 
- /* теперь основной цикл */
+ /* теперь обработка данных */
   ctx->pbitlen += ( absize*blocks << 3 );
-  for( ; blocks > 0; blocks--, inp += absize, outp += absize ) {
-     encryptionKey->encrypt( &encryptionKey->key, ctx->ycount, ctx->e );
-     for( i = 0; i < ( absize >> 3 ); i++ ) {
-        ((ak_uint64 *)outp)[i] = ((ak_uint64 *)inp)[i] ^ ((ak_uint64 *)ctx->e)[i];
-     }
-     ((ak_uint32 *)ctx->ycount)[0]++;
-     if( authenticationKey != NULL ) astep( outp );
-  }
+  if( authenticationKey == NULL ) { /* только шифрование (без вычисления имитовставки) */
 
-  if( tail ) {
-    ak_uint8 temp[16];
-    memset( temp, 0, 16 );
-    encryptionKey->encrypt( &encryptionKey->key, ctx->ycount, ctx->e );
-    for( i = 0; i < tail; i++ ) outp[i] = inp[i] ^ ctx->e[absize-tail+i];
-//    ((ak_uint32 *)ctx->ycount)[0]++;
-    memcpy( temp+absize-tail, outp, tail );
-    if( authenticationKey != NULL ) astep( temp );
+    if( absize&0x10 ) { /* режим работы для 128-битного шифра */
+     /* основная часть */
+      for( ; blocks > 0; blocks--, inp += 16, outp += 16 ) {
+         estep128;
+      }
+      /* хвост */
+      if( tail ) {
+        encryptionKey->encrypt( &encryptionKey->key, ctx->ycount, ctx->e );
+        for( i = 0; i < tail; i++ ) outp[i] = inp[i] ^ ctx->e[16-tail+i];
+       /* закрываем добавление шифруемых данных */
+        ctx->pflag |= 0x1;
+        ctx->pbitlen += tail << 3;
+      }
 
-   /* закрываем добавление шифруемых данных */
-    ctx->pflag |= 0x1;
-    ctx->pbitlen += tail << 3;
+    } else { /* режим работы для 64-битного шифра */
+       /* основная часть */
+        for( ; blocks > 0; blocks--, inp += 8, outp += 8 ) {
+           estep64;
+        }
+       /* хвост */
+        if( tail ) {
+          encryptionKey->encrypt( &encryptionKey->key, ctx->ycount, ctx->e );
+          for( i = 0; i < tail; i++ ) outp[i] = inp[i] ^ ctx->e[8-tail+i];
+         /* закрываем добавление шифруемых данных */
+          ctx->pflag |= 0x1;
+          ctx->pbitlen += tail << 3;
+        }
+      } /* конец шифрования без аутентификации для 64-битного шифра */
+
+  } else { /* основной режим работы => шифрование с одновременной выработкой имитовставки */
+    if( absize&0x10 ) { /* режим работы для 128-битного шифра */
+     /* основная часть */
+      for( ; blocks > 0; blocks--, inp += 16, outp += 16 ) {
+         estep128;
+         astep128( outp );
+      }
+      /* хвост */
+      if( tail ) {
+        memset( temp, 0, 16 );
+        encryptionKey->encrypt( &encryptionKey->key, ctx->ycount, ctx->e );
+        for( i = 0; i < tail; i++ ) outp[i] = inp[i] ^ ctx->e[16-tail+i];
+        memcpy( temp+16-tail, outp, tail );
+        astep128( temp );
+
+       /* закрываем добавление шифруемых данных */
+        ctx->pflag |= 0x1;
+        ctx->pbitlen += tail << 3;
+      }
+
+    } else { /* режим работы для 64-битного шифра */
+     /* основная часть */
+      for( ; blocks > 0; blocks--, inp += 8, outp += 8 ) {
+         estep64;
+         astep64( outp );
+      }
+      /* хвост */
+      if( tail ) {
+        memset( temp, 0, 8 );
+        encryptionKey->encrypt( &encryptionKey->key, ctx->ycount, ctx->e );
+        for( i = 0; i < tail; i++ ) outp[i] = inp[i] ^ ctx->e[8-tail+i];
+        memcpy( temp+8-tail, outp, tail );
+        astep64( temp );
+
+       /* закрываем добавление шифруемых данных */
+        ctx->pflag |= 0x1;
+        ctx->pbitlen += tail << 3;
+      }
+    } /* конец 64-битного шифра */
   }
 
  return ak_error_ok;

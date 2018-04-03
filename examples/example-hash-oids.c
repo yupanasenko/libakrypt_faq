@@ -40,7 +40,7 @@
          time = clock() - time;
              /* мы не знаем длину хешкода, */
              /* поэтому помещаем результат в динамический буффер */
-         printf(" hash: %s\n time: %fs, per 1MB = %fs\n\n", str = ak_buffer_to_hexstr( buff ),
+         printf(" hash: %s\n time: %fs, per 1MB = %fs\n\n", str = ak_buffer_to_hexstr( buff, ak_false ),
                (double) time / (double) CLOCKS_PER_SEC,
                (double) time / ( (double) CLOCKS_PER_SEC * mbsize ));
 
