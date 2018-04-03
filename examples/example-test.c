@@ -108,7 +108,7 @@
      printf("   a[%zu]: %s\n", ablocks+1, str = ak_ptr_to_hexstr( temp, absize, ak_true )); free( str );
 
      if( keyAuthentication->ivector.size == 16 ) ak_gf128_mul( mulres, h, temp );
-       ak_gf64_mul( mulres, h, temp );
+       else ak_gf64_mul( mulres, h, temp );
 
      printf(" h*a[%zu]: %s\n", ablocks+1, str = ak_ptr_to_hexstr( mulres, absize, ak_true )); free( str );
 
@@ -149,7 +149,8 @@
 
      /* теперь умножение */
      if( keyAuthentication->ivector.size == 16 ) ak_gf128_mul( mulres, h, c+i*bsize );
-       ak_gf64_mul( mulres, h, c+i*bsize );
+       else ak_gf64_mul( mulres, h, c+i*bsize );
+
      printf("       : %s <- h[%zu]*c[%zu]\n",
                    str = ak_ptr_to_hexstr( mulres, absize, ak_true ), i+ablocks+2, i+1 ); free( str );
 
@@ -187,7 +188,8 @@
                                  blocks+1, str = ak_ptr_to_hexstr( temp, bsize, ak_true )); free( str );
      /* теперь умножение */
      if( keyAuthentication->ivector.size == 16 ) ak_gf128_mul( mulres, h, temp );
-       ak_gf64_mul( mulres, h, temp );
+       else ak_gf64_mul( mulres, h, temp );
+
      printf("       : %s <- h[%zu]*c[%zu]\n",
                    str = ak_ptr_to_hexstr( mulres, absize, ak_true ), blocks+ablocks+2, blocks+1 ); free( str );
 
@@ -217,6 +219,8 @@
 
      /* теперь умножение */
      if( keyAuthentication->ivector.size == 16 ) ak_gf128_mul( mulres, h, temp );
+       else ak_gf64_mul( mulres, h, temp );
+
      printf("       : %s <- h[%zu]*len\n",
        str = ak_ptr_to_hexstr( mulres, absize, ak_true ), ablocks+blocks+3 ); free( str );
 

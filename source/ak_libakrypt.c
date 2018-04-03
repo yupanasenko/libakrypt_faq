@@ -46,7 +46,6 @@
  #include <ak_mac.h>
  #include <ak_aead.h>
  #include <ak_tools.h>
- #include <ak_curves.h>
  #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */

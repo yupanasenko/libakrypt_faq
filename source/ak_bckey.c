@@ -160,7 +160,7 @@
   if( keyptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                                   "using null pointer to key data" );
   if( size != bkey->key.key.size ) return ak_error_message( ak_error_wrong_length, __func__,
-                                          "using a constant value of secret key with wrong length" );
+                                         "using a constant value for secret key with wrong length" );
  /* присваиваем ключевой буффер */
   if(( error = ak_skey_set_ptr( &bkey->key, keyptr, size, cflag )) != ak_error_ok )
     return ak_error_message( error, __func__ , "incorrect assigning of key data" );

@@ -202,11 +202,12 @@ set( INTERNAL_EXAMPLES_LIST
                    #bckey-internal
                    #mac-internal
                    #mac-file
-                   test
                    internal-hash01
                    internal-hash02
                    internal-hash03
                    internal-compress01
+                   test
+                   test2
 )
 
 if( CMAKE_HOST_UNIX )

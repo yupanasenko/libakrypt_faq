@@ -114,6 +114,12 @@
 /*! \brief Инициализация контекста ключа алгоритма выработки имитовставки hmac на основе gosthash94 с таблицами из RFC 4357. */
  int ak_mac_create_hmac_gosthash94_csp( ak_mac );
 
+// ak_mac_create_gost3413_magma
+// ak_mac_create_gost3413_kuznechik
+
+// ak_magma_create_mgm_magma
+// ak_magma_create_mgm_kuznechik
+
 /*! \brief Инициализация контекста ключа алгоритма выработки имитовставки по oid алгоритма. */
  int ak_mac_create_oid( ak_mac, ak_oid );
 

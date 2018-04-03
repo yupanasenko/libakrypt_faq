@@ -32,6 +32,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_bckey.h>
 
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Умножение двух элементов поля \f$ \mathbb F_{2^{64}}\f$. */
  void ak_gf64_mul_uint64( ak_pointer z, ak_pointer x, ak_pointer y );
 /*! \brief Умножение двух элементов поля \f$ \mathbb F_{2^{128}}\f$. */
@@ -49,6 +50,58 @@
  #define ak_gf64_mul ak_gf64_mul_uint64
  #define ak_gf128_mul ak_gf128_mul_uint64
 #endif
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Определение функции умножения двух элементов конечного поля. */
+ typedef void ( ak_function_gfn_multiplication )( ak_pointer , ak_pointer , ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура, содержащая текущее состояние алгоритма шифрования с одновременной выработкой имитовставки */
+ typedef struct mgm_ctx {
+#ifdef LIBAKRYPT_HAVE_STDALIGN_H
+ _Alignas (128)
+#endif
+  /*! \brief Текущее значение имитовставки. */
+   ak_uint8 sum[16],
+  /*! \brief Счетчик, значения которого используются при шифровании информации. */
+            ycount[16],
+  /*! \brief Счетчик, значения которого используются при выработке имитовставки. */
+            zcount[16],
+  /*! \brief Значение зашифрованного счетчика. */
+            h[16],
+  /*! \brief Значение произведения в конечном поле. */
+            mulres[16],
+  /*! \brief Значение шифрующей гаммы. */
+            e[16];
+  /*! \brief Размер обработанных зашифровываемых/расшифровываемых данных в битах. */
+   ak_uint64 pbitlen;
+  /*! \brief Размер обработанных дополнительных данных в битах. */
+   ak_uint64 abitlen;
+  /*! \brief Флаги, устанавливаемые при шифровании данных. */
+   ak_uint8 pflag;
+  /*! \brief Флаги, устанавливаемые при вычислении имитовставки. */
+   ak_uint8 aflag;
+  /*! \brief Операция умножения в конечном поле. */
+   ak_function_gfn_multiplication *fm;
+} *ak_mgm_ctx;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Инициализация начального значения счетчика для вычисления имитовставки. */
+ int ak_mgm_context_authentication_clean( ak_mgm_ctx , ak_bckey , const ak_pointer , const size_t );
+/*! \brief Изменение внутреннего состояния счетчика при вычисления имитовставки. */
+ int ak_mgm_context_authentication_update( ak_mgm_ctx, ak_bckey , const ak_pointer , const size_t );
+/*! \brief Инициализация начального значения счетчика для шифрования. */
+ int ak_mgm_context_encryption_clean( ak_mgm_ctx , ak_bckey , const ak_pointer , const size_t );
+/*! \brief Зашифрование данных и обновление внутреннего состояния счетчика для шифрования. */
+ int ak_mgm_context_encryption_update( ak_mgm_ctx , ak_bckey ,
+                                          ak_bckey , const ak_pointer , ak_pointer , const size_t );
+/*! \brief Завершение действий и вычисление имитовставки. */
+ ak_buffer ak_mgm_context_authentication_finalize( ak_mgm_ctx , ak_bckey , ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Зашифрование данных в режиме MGM с одновременной выработкой имитовставки. */
+ ak_buffer ak_bckey_context_encrypt_mgm( ak_bckey , ak_bckey , const ak_pointer , const size_t ,
+      const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тестирование арифметических операций в конечных полях характеристики 2. */
