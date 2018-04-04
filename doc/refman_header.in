@@ -111,14 +111,14 @@
 {\noindent\Huge\bfseries LIBAKRYPT}\\[1\baselineskip]
 {Axel Kenzo \& The Company Of Belles Lettres}\\[5\baselineskip]
 
-{\itshape Инструкция по сборке и установке}\\[1\baselineskip]
-{\itshape Инструкция по встраиванию}\\[1\baselineskip]
-{\itshape Принципы реализации}\\[1\baselineskip]
+{\textsc{Инструкция по сборке и установке}}\\[1\baselineskip]
+{\textsc{Инструкция по встраиванию}}\\[1\baselineskip]
+{\textsc{Принципы реализации}}\\[1\baselineskip]
 
 
 \vspace{0.5\textheight}
 {версия библиотеки @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@} (дата сборки документации \today)\\[1\baselineskip]
-%{(c) 2014 -- 2017}\\[1\baselineskip]
+%{(c) 2014 -- 2018}\\[1\baselineskip]
 }% end of vbox
 }% end of parbox
 }% end of hbox

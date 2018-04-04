@@ -551,6 +551,11 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция проверяет корректность реализации блочных шифрова и режимов их использования.
+    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
+    вызова ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_libakrypt_test_block_ciphers( void )
 {
   int audit = ak_log_get_level();
@@ -578,9 +583,9 @@
   }
 
  /* тестируем дополнительные режимы работы */
-  if( ak_gfn_multiplication_test() != ak_true ) {
+  if( ak_bckey_test_mgm()  != ak_true ) {
     ak_error_message( ak_error_get_value(), __func__ ,
-                                          "incorrect testing of multiplication in Galois fields" );
+                                               "incorrect testing of mgm mode for block ciphers" );
     return ak_false;
   }
 
@@ -642,6 +647,13 @@
      ak_error_message( error, __func__, "initialization of context manager is wrong" );
      return ak_false;
    }
+
+ /* тестируем арифметические операции в конечнх полях */
+  if( ak_gfn_multiplication_test() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                          "incorrect testing of multiplication in Galois fields" );
+    return ak_false;
+  }
 
  /* тестируем работу функций хеширования */
   if( ak_libakrypt_test_hash_functions() != ak_true ) {

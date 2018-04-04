@@ -233,10 +233,6 @@
  /* принудительно устанавливаем старший бит в 1 */
   ivector[iv_size-1] = ( ivector[iv_size-1]&0x7F ) ^ 0x80;
 
- /* выбор функции для умножения элементов поля */
-  if( authenticationKey->ivector.size == 16 ) ctx->fm = ak_gf128_mul;
-   else ctx->fm = ak_gf64_mul;
-
  /* зашифровываем необходимое и удаляемся */
   authenticationKey->encrypt( &authenticationKey->key, ivector, ctx->zcount );
   authenticationKey->key.resource.counter--;
@@ -424,17 +420,12 @@
  /* принудительно устанавливаем старший бит в 0 */
   ivector[iv_size-1] = ( ivector[iv_size-1]&0x7F );
 
- /* выбор функции для умножения элементов поля */
-  if( encryptionKey->ivector.size == 16 ) ctx->fm = ak_gf128_mul;
-   else ctx->fm = ak_gf64_mul;
-
  /* зашифровываем необходимое и удаляемся */
   encryptionKey->encrypt( &encryptionKey->key, ivector, ctx->ycount );
   encryptionKey->key.resource.counter--;
 
  return ak_error_ok;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
 #define estep64  encryptionKey->encrypt( &encryptionKey->key, ctx->ycount, ctx->e ); \
@@ -692,7 +683,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*                                 реализация функций тестирования                                 */
+/*                             реализация функций для тестирования                                 */
 /* ----------------------------------------------------------------------------------------------- */
 
 
@@ -877,6 +868,112 @@
                                          "testing the Galois fileds arithmetic ended successfully");
  return ak_true;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_bckey_test_mgm( void )
+{
+  char *str = NULL;
+  ak_bool result = ak_false;
+  int error = ak_error_ok, audit = ak_log_get_level();
+
+ /* константные значения ключей из ГОСТ Р 34.13-2015 */
+  ak_uint8 keyAnnexA[32] = {
+     0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01, 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe,
+     0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00, 0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x88 };
+
+  ak_uint8 keyAnnexB[32] = {
+     0xff, 0xfe, 0xfd, 0xfc, 0xfb, 0xfa, 0xf9, 0xf8, 0xf7, 0xf6, 0xf5, 0xf4, 0xf3, 0xf2, 0xf1, 0xf0,
+     0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
+
+ /* открытый текст, подлежащий зашифрованию (модификация ГОСТ Р 34.13-2015, приложение А.1) */
+  ak_uint8 out[67];
+  ak_uint8 plain[67] = {
+     0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11,
+     0x0A, 0xFF, 0xEE, 0xCC, 0xBB, 0xAA, 0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00,
+     0x00, 0x0A, 0xFF, 0xEE, 0xCC, 0xBB, 0xAA, 0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11,
+     0x11, 0x00, 0x0A, 0xFF, 0xEE, 0xCC, 0xBB, 0xAA, 0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22,
+     0xCC, 0xBB, 0xAA };
+
+ /* несколько вариантов шифртекстов */
+  ak_uint8 cipherOne[67] = {
+     0xFC, 0x42, 0x9F, 0xE8, 0x3D, 0xA3, 0xB8, 0x55, 0x90, 0x6E, 0x95, 0x47, 0x81, 0x7B, 0x75, 0xA9,
+     0x39, 0x6B, 0xC1, 0xAD, 0x9A, 0x06, 0xF7, 0xD3, 0x5B, 0xFD, 0xF9, 0x2B, 0x21, 0xD2, 0x75, 0x80,
+     0x1C, 0x85, 0xF6, 0xA9, 0x0E, 0x5D, 0x6B, 0x93, 0x85, 0xBA, 0xA6, 0x15, 0x59, 0xB1, 0x7A, 0x49,
+     0xEB, 0x6D, 0xC7, 0x95, 0x06, 0x42, 0x94, 0xAB, 0xD0, 0x83, 0xF8, 0xD3, 0xD4, 0x14, 0x0C, 0xC6,
+     0x52, 0x75, 0x2C };
+
+ /* асссоциированные данные */
+  ak_uint8 associated[41] = {
+     0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02,
+     0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
+     0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0xEA };
+
+ /* синхропосылки */
+  ak_uint8 iv128[16] = {
+    0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11 };
+  ak_uint8 iv64[8] = {
+    0x59, 0x0a, 0x13, 0x3c, 0x6b, 0xf0, 0xde, 0x92 };
+
+ /* значения для проверки вычисленного значения */
+  ak_uint8 icode[16];
+  ak_uint8 icodeOne[16] = {
+    0x4C, 0xDB, 0xFC, 0x29, 0x0E, 0xBB, 0xE8, 0x46, 0x5C, 0x4F, 0xC3, 0x40, 0x6F, 0x65, 0x5D, 0xCF };
+
+ /* ключи для проверки */
+  struct bckey kuznechikKeyA;
+
+ /* инициализация ключей */
+  if(( error = ak_bckey_create_kuznechik( &kuznechikKeyA )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect initialization of first secret key");
+    return ak_false;
+  }
+  if(( error = ak_bckey_context_set_ptr( &kuznechikKeyA, keyAnnexA, 32, ak_true )) != ak_error_ok ) {
+    ak_bckey_destroy( &kuznechikKeyA );
+    ak_error_message( error, __func__, "incorrect assigning a first constant value to keyA");
+    return ak_false;
+  }
+
+ /* первый тест - шифрование и имитовставка, алгоритм Кузнечик, один ключ */
+  ak_bckey_context_encrypt_mgm( &kuznechikKeyA, &kuznechikKeyA, associated, sizeof( associated ),
+                                      plain, out, sizeof( plain ), iv128, sizeof( iv128 ), icode );
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect encryption for example one");
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( icode, icodeOne, sizeof( icode ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                             "the integrity code for one Kuznechik key is wrong" );
+    ak_log_set_message( str = ak_ptr_to_hexstr( icode, 16, ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( icodeOne, 16, ak_true )); free( str );
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                                "the integrity code for one Kuznechik key is Ok" );
+  if( !ak_ptr_is_equal( out, cipherOne, sizeof( cipherOne ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                            "the encryption test for one Kuznechik key is wrong" );
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, sizeof( out ), ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( cipherOne, sizeof( out ), ak_true )); free( str );
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                               "the encryption test for one Kuznechik key is Ok" );
+ /* только здесь все хорошо */
+  result = ak_true;
+
+// ak_hexstr_to_ptr( "2C7552C60C14D4D3F883D0AB94420695C76DEB497AB15915A6BA85936B5D0EA9F6851C8075D2212BF9FD5BD3F7069AADC16B39A9757B8147956E9055B8A33DE89F42FC",
+//  cipherOne, 67, ak_true );
+
+// printf(" %s\n", str = ak_ptr_to_hexstr( cipherOne, 67, ak_false ));
+
+
+ /* освобождение памяти */
+  exit:
+  ak_bckey_destroy( &kuznechikKeyA );
+
+ return result;
+}
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_aead.c  */
