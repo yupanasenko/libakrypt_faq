@@ -93,7 +93,9 @@
  static ak_uint32 ak_gosthash94_gostf( ak_uint32 x, const ak_uint8* k21,
                                      const ak_uint8 *k43, const ak_uint8* k65, const ak_uint8 *k87 )
 {
-  x = k87[x>>24 & 255] << 24 | k65[x>>16 & 255] << 16 | k43[x>> 8 & 255] <<  8 | k21[x & 255];
+  x = ((ak_uint32)k87[x>>24 & 255]) << 24 |
+      ((ak_uint32)k65[x>>16 & 255]) << 16 |
+      ((ak_uint32)k43[x>> 8 & 255]) <<  8 | (ak_uint32)k21[x & 255];
   return x<<11 | x>>(32-11);
 }
 
