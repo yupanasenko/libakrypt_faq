@@ -298,7 +298,7 @@
     astep128( temp );
    /* закрываем добавление ассоциированных данных */
     ctx->aflag |= 0x1;
-    ctx->abitlen += tail << 3;
+    ctx->abitlen += ( tail << 3 );
   }
  } else { /* обработка 64-битным шифром */
 
@@ -310,7 +310,7 @@
     astep64( temp );
    /* закрываем добавление ассоциированных данных */
     ctx->aflag |= 0x1;
-    ctx->abitlen += tail << 3;
+    ctx->abitlen += ( tail << 3 );
   }
  }
 
@@ -330,12 +330,23 @@
    ak_error_get_value().                                                                           */
 /* ----------------------------------------------------------------------------------------------- */
  ak_buffer ak_mgm_context_authentication_finalize( ak_mgm_ctx ctx,
-                                                         ak_bckey authenticationKey, ak_pointer out )
+                                 ak_bckey authenticationKey, ak_pointer out, const size_t out_size )
 {
   ak_uint8 temp[16];
   ak_pointer pout = NULL;
   ak_buffer result = NULL;
   size_t absize = authenticationKey->ivector.size;
+
+ /* проверка запрашиваемой длины iv */
+  if(( out_size == 0 ) || ( out_size > absize )) {
+    ak_error_message( ak_error_wrong_length, __func__, "unexpected length of integrity code" );
+    return NULL;
+  }
+ /* проверка длины блока */
+  if( absize > 16 ) {
+    ak_error_message( ak_error_wrong_length, __func__, "using key with large block size" );
+    return NULL;
+  }
 
  /* традиционная проверка ресурса */
   if( authenticationKey->key.resource.counter <= 0 ) {
@@ -347,14 +358,13 @@
   ctx->pflag |= 0x1;
 
  /* формирем последний вектор из длин */
+  memset( temp, 0, 16 );
   if(  absize&0x10 ) {
-    memset( temp, 0, 16 );
     ((ak_uint64 *)temp)[0] = ctx->pbitlen;
     ((ak_uint64 *)(temp+absize/2))[0] = ctx->abitlen;
     astep128( temp );
 
   } else { /* теперь тоже самое, но для 64-битного шифра */
-    memset( temp, 0, 8 );
     ((ak_uint32 *)temp)[0] = ctx->pbitlen;
     ((ak_uint32 *)(temp+absize/2))[0] = ctx->abitlen;
     astep64( temp );
@@ -370,7 +380,8 @@
 
  /* последнее шифрование и завершение работы */
   if( pout != NULL ) {
-    authenticationKey->encrypt( &authenticationKey->key, ctx->sum, pout );
+    authenticationKey->encrypt( &authenticationKey->key, ctx->sum, temp );
+    memcpy( pout, temp+absize-out_size, out_size );
   } else ak_error_message( ak_error_out_of_memory, __func__ ,
                                                 "incorrect memory allocation for result buffer" );
  return result;
@@ -503,7 +514,7 @@
         for( i = 0; i < tail; i++ ) outp[i] = inp[i] ^ ctx->e[16-tail+i];
        /* закрываем добавление шифруемых данных */
         ctx->pflag |= 0x1;
-        ctx->pbitlen += tail << 3;
+        ctx->pbitlen += ( tail << 3 );
       }
 
     } else { /* режим работы для 64-битного шифра */
@@ -517,7 +528,7 @@
           for( i = 0; i < tail; i++ ) outp[i] = inp[i] ^ ctx->e[8-tail+i];
          /* закрываем добавление шифруемых данных */
           ctx->pflag |= 0x1;
-          ctx->pbitlen += tail << 3;
+          ctx->pbitlen += ( tail << 3 );
         }
       } /* конец шифрования без аутентификации для 64-битного шифра */
 
@@ -538,7 +549,7 @@
 
        /* закрываем добавление шифруемых данных */
         ctx->pflag |= 0x1;
-        ctx->pbitlen += tail << 3;
+        ctx->pbitlen += ( tail << 3 );
       }
 
     } else { /* режим работы для 64-битного шифра */
@@ -557,7 +568,7 @@
 
        /* закрываем добавление шифруемых данных */
         ctx->pflag |= 0x1;
-        ctx->pbitlen += tail << 3;
+        ctx->pbitlen += ( tail << 3 );
       }
     } /* конец 64-битного шифра */
   }
@@ -567,8 +578,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция реализует режим шифрования для блочного шифра с одновременным вычислением имитовставки.
-
-    При этом на вход функции подаются как данные, подлежащие зашифрованию,
+    На вход функции подаются как данные, подлежащие зашифрованию,
     так и ассоциированные данные, которые не зашифровываются. При этом имитовставка вычисляется
     ото всех переданных на вход функции данных.
 
@@ -601,6 +611,10 @@
    @param iv_size длина синхропосылки в байтах;
    @param icode указатель на область памяти, куда будет помещено значение имитовставки;
           память должна быть выделена заранее; указатель может принимать значение NULL.
+   @param icode_size ожидаемый размер имитовставки в байтах; значение не должно превышать
+          размер блока шифра с помощью которого происходит шифрование и вычисляется имитовставка;
+          если значение icode_size меньше, чем длина блока, то возвращается запрашиваемое количество
+          старших байт результата вычислений.
 
    @return Функция возвращает NULL, если указатель icode не есть NULL, в противном случае
            возвращается указатель на буффер, содержащий результат вычислений. В случае
@@ -609,7 +623,8 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_buffer ak_bckey_context_encrypt_mgm( ak_bckey encryptionKey, ak_bckey authenticationKey,
            const ak_pointer adata, const size_t adata_size, const ak_pointer in, ak_pointer out,
-                    const size_t size, const ak_pointer iv, const size_t iv_size, ak_pointer icode )
+                                     const size_t size, const ak_pointer iv, const size_t iv_size,
+                                                         ak_pointer icode, const size_t icode_size )
 {
  ak_buffer result = NULL;
  int error = ak_error_ok;
@@ -669,7 +684,7 @@
  /* в конце - вырабатываем имитовставку */
  if( authenticationKey != NULL ) {
    ak_error_set_value( ak_error_ok );
-   result = ak_mgm_context_authentication_finalize( &mgm, authenticationKey, icode );
+   result = ak_mgm_context_authentication_finalize( &mgm, authenticationKey, icode, icode_size );
    if(( error = ak_error_get_value()) != ak_error_ok ) {
      if( result != NULL ) result = ak_buffer_delete( result );
      ak_error_message( error, __func__, "incorrect finanlize of integrity code" );
@@ -681,6 +696,18 @@
 
  return result;
 }
+
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_bckey_context_decrypt_mgm( ak_bckey encryptionKey, ak_bckey authenticationKey,
+           const ak_pointer adata, const size_t adata_size, const ak_pointer in, ak_pointer out,
+                    const size_t size, const ak_pointer iv, const size_t iv_size, ak_pointer icode )
+{
+
+ return ak_false;
+}
+
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                             реализация функций для тестирования                                 */
@@ -935,7 +962,7 @@
 
  /* первый тест - шифрование и имитовставка, алгоритм Кузнечик, один ключ */
   ak_bckey_context_encrypt_mgm( &kuznechikKeyA, &kuznechikKeyA, associated, sizeof( associated ),
-                                      plain, out, sizeof( plain ), iv128, sizeof( iv128 ), icode );
+                                    plain, out, sizeof( plain ), iv128, sizeof( iv128 ), icode, 16 );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect encryption for example one");
     goto exit;
@@ -958,6 +985,12 @@
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                                                "the encryption test for one Kuznechik key is Ok" );
+
+
+
+
+
+
  /* только здесь все хорошо */
   result = ak_true;
 

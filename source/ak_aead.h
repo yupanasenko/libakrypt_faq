@@ -55,24 +55,26 @@
 /*! \brief Определение функции умножения двух элементов конечного поля. */
  typedef void ( ak_function_gfn_multiplication )( ak_pointer , ak_pointer , ak_pointer );
 
+//#ifdef LIBAKRYPT_HAVE_STDALIGN_H
+// _Alignas (128)
+//#endif
+
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура, содержащая текущее состояние режима шифрования с одновременной выработкой имитовставки */
  typedef struct mgm_ctx {
-#ifdef LIBAKRYPT_HAVE_STDALIGN_H
- _Alignas (128)
-#endif
   /*! \brief Текущее значение имитовставки. */
    ak_uint8 sum[16],
+  /*! \brief Значение произведения в конечном поле. */
+            mulres[16],
+  /*! \brief Значение зашифрованного счетчика. */
+            h[16],
+  /*! \brief Значение шифрующей гаммы. */
+            e[16],
   /*! \brief Счетчик, значения которого используются при шифровании информации. */
             ycount[16],
   /*! \brief Счетчик, значения которого используются при выработке имитовставки. */
-            zcount[16],
-  /*! \brief Значение зашифрованного счетчика. */
-            h[16],
-  /*! \brief Значение произведения в конечном поле. */
-            mulres[16],
-  /*! \brief Значение шифрующей гаммы. */
-            e[16];
+            zcount[16];
   /*! \brief Размер обработанных зашифровываемых/расшифровываемых данных в битах. */
    ak_uint64 pbitlen;
   /*! \brief Размер обработанных дополнительных данных в битах. */
@@ -94,11 +96,16 @@
  int ak_mgm_context_encryption_update( ak_mgm_ctx , ak_bckey ,
                                           ak_bckey , const ak_pointer , ak_pointer , const size_t );
 /*! \brief Завершение действий и вычисление имитовставки. */
- ak_buffer ak_mgm_context_authentication_finalize( ak_mgm_ctx , ak_bckey , ak_pointer );
+ ak_buffer ak_mgm_context_authentication_finalize( ak_mgm_ctx , ak_bckey , ak_pointer, const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Зашифрование данных в режиме MGM с одновременной выработкой имитовставки. */
  ak_buffer ak_bckey_context_encrypt_mgm( ak_bckey , ak_bckey , const ak_pointer , const size_t ,
+                   const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                         ak_pointer , const size_t );
+
+/*! \brief Расшифрование данных в режиме MGM с одновременной проверкой имитовставки. */
+ ak_bool ak_bckey_context_decrypt_mgm( ak_bckey , ak_bckey , const ak_pointer , const size_t ,
       const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -50,7 +50,7 @@
   memset( cipher, 0, plain_len );
   printf(" mgm example one for Kuznechik ");
   result = ak_bckey_context_encrypt_mgm( &kkeyA, &kkeyA, a, associated_len,
-                                                 plain, cipher, plain_len, iv128, sizeof(iv128), NULL );
+                                                 plain, cipher, plain_len, iv128, sizeof(iv128), NULL, 16 );
   if( ak_error_get_value( ) != ak_error_ok ) printf("is Wrong\n");
     else printf("is Ok\n");
 
@@ -64,7 +64,7 @@
   memset( cipher, 0, plain_len );
   printf(" mgm example two for Kuznechik ");
   result = ak_bckey_context_encrypt_mgm( &kkeyA, &kkeyB, a, associated_len,
-                                                 plain, cipher, plain_len, iv128, sizeof(iv128), NULL );
+                                                 plain, cipher, plain_len, iv128, sizeof(iv128), NULL, 16 );
   if( ak_error_get_value( ) != ak_error_ok ) printf("is Wrong\n");
     else printf("is Ok\n");
 
@@ -78,7 +78,7 @@
   memset( cipher, 0, plain_len );
   printf(" mgm example three for Magma ");
   result = ak_bckey_context_encrypt_mgm( &mkeyB, &mkeyB, a, associated_len,
-                                                 plain, cipher, plain_len, iv64, sizeof(iv64), NULL );
+                                                 plain, cipher, plain_len, iv64, sizeof(iv64), NULL, 8 );
   if( ak_error_get_value( ) != ak_error_ok ) printf("is Wrong\n");
     else printf("is Ok\n");
 
@@ -92,7 +92,7 @@
   memset( cipher, 0, plain_len );
   printf(" mgm example four for Magma ");
   result = ak_bckey_context_encrypt_mgm( &mkeyB, &mkeyA, a, associated_len,
-                                                 plain, cipher, plain_len, iv64, sizeof(iv64), NULL );
+                                                 plain, cipher, plain_len, iv64, sizeof(iv64), NULL, 8 );
   if( ak_error_get_value( ) != ak_error_ok ) printf("is Wrong\n");
     else printf("is Ok\n");
 
@@ -106,7 +106,7 @@
   memset( cipher, 0, plain_len );
   printf(" mgm example five for Kuznechik (key form Annex.A, encryption only) ");
   result = ak_bckey_context_encrypt_mgm( &kkeyA, NULL, NULL, 0,
-                                               plain, cipher, plain_len, iv128, sizeof(iv128), NULL );
+                                               plain, cipher, plain_len, iv128, sizeof(iv128), NULL, 16 );
   if( ak_error_get_value( ) != ak_error_ok ) printf("is Wrong\n");
     else printf("is Ok\n");
 
@@ -120,7 +120,7 @@
   memset( cipher, 0, plain_len );
   printf(" mgm example six for Kuznechik (key form Annex. B, encryption only) ");
   result = ak_bckey_context_encrypt_mgm( &kkeyB, NULL, NULL, 0,
-                                               plain, cipher, plain_len, iv128, sizeof(iv128), NULL );
+                                               plain, cipher, plain_len, iv128, sizeof(iv128), NULL, 16 );
   if( ak_error_get_value( ) != ak_error_ok ) printf("is Wrong\n");
     else printf("is Ok\n");
 
@@ -134,7 +134,7 @@
   memset( cipher, 0, plain_len );
   printf(" mgm example seven for Magma (key form Annex.A, encryption only) ");
   result = ak_bckey_context_encrypt_mgm( &mkeyA, NULL, NULL, 0,
-                                               plain, cipher, plain_len, iv64, sizeof(iv64), NULL );
+                                               plain, cipher, plain_len, iv64, sizeof(iv64), NULL, 8 );
   if( ak_error_get_value( ) != ak_error_ok ) printf("is Wrong\n");
     else printf("is Ok\n");
 
@@ -148,7 +148,7 @@
   memset( cipher, 0, plain_len );
   printf(" mgm example eight for Magma (key form Annex.B, encryption only) ");
   result = ak_bckey_context_encrypt_mgm( &mkeyB, NULL, NULL, 0,
-                                               plain, cipher, plain_len, iv64, sizeof(iv64), NULL );
+                                               plain, cipher, plain_len, iv64, sizeof(iv64), NULL, 8 );
   if( ak_error_get_value( ) != ak_error_ok ) printf("is Wrong\n");
     else printf("is Ok\n");
 
@@ -162,7 +162,7 @@
   memset( cipher, 0, plain_len );
   printf(" mgm example nine for Kuznechik (key form Annex.A, integrity only) ");
   result = ak_bckey_context_encrypt_mgm( NULL, &kkeyA, a, associated_len,
-                                                     NULL, NULL, 0, iv128, sizeof(iv128), NULL );
+                                                     NULL, NULL, 0, iv128, sizeof(iv128), NULL, 16 );
   if( ak_error_get_value( ) != ak_error_ok ) printf("is Wrong\n");
     else printf("is Ok\n");
 
@@ -176,7 +176,7 @@
   memset( cipher, 0, plain_len );
   printf(" mgm example ten for Kuznechik (key form Annex.B, integrity only) ");
   result = ak_bckey_context_encrypt_mgm( NULL, &kkeyB, a, associated_len,
-                                                     NULL, NULL, 0, iv128, sizeof(iv128), NULL );
+                                                     NULL, NULL, 0, iv128, sizeof(iv128), NULL, 16 );
   if( ak_error_get_value( ) != ak_error_ok ) printf("is Wrong\n");
     else printf("is Ok\n");
 
@@ -191,7 +191,7 @@
   memset( cipher, 0, plain_len );
   printf(" mgm example eleven for Magma (key form Annex.A, integrity only) ");
   result = ak_bckey_context_encrypt_mgm( NULL, &mkeyA, a, associated_len,
-                                                     NULL, NULL, 0, iv64, sizeof(iv64), NULL );
+                                                     NULL, NULL, 0, iv64, sizeof(iv64), NULL, 8 );
   if( ak_error_get_value( ) != ak_error_ok ) printf("is Wrong\n");
     else printf("is Ok\n");
 
@@ -206,7 +206,7 @@
   memset( cipher, 0, plain_len );
   printf(" mgm example twelve for Magma (key form Annex.B, integrity only) ");
   result = ak_bckey_context_encrypt_mgm( NULL, &mkeyB, a, associated_len,
-                                                     NULL, NULL, 0, iv64, sizeof(iv64), NULL );
+                                                     NULL, NULL, 0, iv64, sizeof(iv64), NULL, 8 );
   if( ak_error_get_value( ) != ak_error_ok ) printf("is Wrong\n");
     else printf("is Ok\n");
 
