@@ -55,14 +55,14 @@
 /*! \brief Определение функции умножения двух элементов конечного поля. */
  typedef void ( ak_function_gfn_multiplication )( ak_pointer , ak_pointer , ak_pointer );
 
-//#ifdef LIBAKRYPT_HAVE_STDALIGN_H
-// _Alignas (128)
-//#endif
 
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура, содержащая текущее состояние режима шифрования с одновременной выработкой имитовставки */
  typedef struct mgm_ctx {
+  #ifdef LIBAKRYPT_HAVE_STDALIGN_H
+   _Alignas (128)
+  #endif
   /*! \brief Текущее значение имитовставки. */
    ak_uint8 sum[16],
   /*! \brief Значение произведения в конечном поле. */
