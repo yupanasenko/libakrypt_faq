@@ -48,8 +48,6 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef _MSC_VER
- #pragma warning (disable : 4711)
- #pragma warning (disable : 4820)
  #pragma warning (disable : 4996)
 #endif
 
@@ -118,6 +116,7 @@
 /*! \brief Структура для обработки 128-ми битных значений. */
  typedef union {
     ak_uint8 b[16];
+    ak_uint32 w[4];
     ak_uint64 q[2];
  } ak_uint128;
 
@@ -156,8 +155,10 @@
  #define ak_error_undefined_value              (-5)
 /*! \brief Использование неопределенного указателя на функцию (вызов null указателя). */
  #define ak_error_undefined_function           (-6)
+/*! \brief Ошибка переполнения контролируемой переменной */
+ #define ak_error_overflow                     (-7)
 /*! \brief Попытка доступа к неопределенной опции библиотеки. */
- #define ak_error_wrong_option                 (-7)
+ #define ak_error_wrong_option                 (-8)
 /*! \brief Ошибка создания файла. */
  #define ak_error_create_file                  (-9)
 /*! \brief Ошибка доступа к файлу (устройству). */

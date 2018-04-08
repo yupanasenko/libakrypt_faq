@@ -28,7 +28,7 @@
   }
 
  /* выводим информацию об общем количестве OID библиотеки */
- printf("total count of oid's: %ld\n", ak_libakrypt_oids_count( ));
+ printf("total count of oid's: %lu\n", (unsigned long int) ak_libakrypt_oids_count( ));
 
  /* ищем OID по его имени */
   printf("\nsearch results:\n");
