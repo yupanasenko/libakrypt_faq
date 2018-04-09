@@ -86,6 +86,9 @@
 /*! \brief Зашифрование данных и обновление внутреннего состояния счетчика для шифрования. */
  int ak_mgm_context_encryption_update( ak_mgm_ctx , ak_bckey ,
                                           ak_bckey , const ak_pointer , ak_pointer , const size_t );
+/*! \brief Расшифрование данных и обновление внутреннего состояния счетчика для шифрования. */
+ int ak_mgm_context_decryption_update( ak_mgm_ctx , ak_bckey ,
+                                          ak_bckey , const ak_pointer , ak_pointer , const size_t );
 /*! \brief Завершение действий и вычисление имитовставки. */
  ak_buffer ak_mgm_context_authentication_finalize( ak_mgm_ctx , ak_bckey , ak_pointer, const size_t );
 
@@ -97,7 +100,8 @@
 
 /*! \brief Расшифрование данных в режиме MGM с одновременной проверкой имитовставки. */
  ak_bool ak_bckey_context_decrypt_mgm( ak_bckey , ak_bckey , const ak_pointer , const size_t ,
-      const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t , ak_pointer );
+                   const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                          ak_pointer, const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тестирование арифметических операций в конечных полях характеристики 2. */

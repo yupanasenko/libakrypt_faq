@@ -196,9 +196,6 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                                 реализация aead и вычисления имитовставки                       */
 /* ----------------------------------------------------------------------------------------------- */
-
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! Функция инициализирует значение внутренних переменных алгоритма MGM, участвующих в алгоритме
     выработки имитовставки.
 
@@ -369,11 +366,11 @@
  /* закрываем добавление шифруемых данных */
   ctx->pflag |= 0x1;
 
- /* формирем последний вектор из длин */
+ /* формируем последний вектор из длин */
   if(  absize&0x10 ) {
     temp.q[0] = ctx->pbitlen;
     temp.q[1] = ctx->abitlen;
-    astep128( &temp );
+    astep128( temp.b );
 
   } else { /* теперь тоже самое, но для 64-битного шифра */
 
@@ -383,7 +380,7 @@
      }
      temp.w[0] = (ak_uint32) ctx->pbitlen;
      temp.w[1] = (ak_uint32) ctx->abitlen;
-     astep64( &temp );
+     astep64( temp.b );
   }
 
  /* определяем указатель на область памяти, в которую будет помещен результат вычислений */
@@ -396,8 +393,8 @@
 
  /* последнее шифрование и завершение работы */
   if( pout != NULL ) {
-    authenticationKey->encrypt( &authenticationKey->key, &ctx->sum, &temp );
-    memcpy( pout, temp.b+absize-out_size, out_size );
+    authenticationKey->encrypt( &authenticationKey->key, &ctx->sum, &ctx->sum );
+    memcpy( pout, ctx->sum.b+absize-out_size, out_size );
   } else ak_error_message( ak_error_out_of_memory, __func__ ,
                                                 "incorrect memory allocation for result buffer" );
  return result;
@@ -598,6 +595,141 @@
  return ak_error_ok;
 }
 
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция расшифровывает очередной фрагмент данных и
+    обновляет внутреннее состояние переменных алгоритма MGM, участвующих в алгоритме
+    расшифрования с проверкой имитовставки. Если длина входных данных не кратна длине
+    блока алгоритма шифрования, то это воспринимается как конец процесса расшифрования/обновления
+    (после этого вызов функции блокируется).
+
+    @param ctx
+    @param encryptionKey
+    @param authenticationKey
+    @param in
+    @param out
+    @param size
+
+    @return В случае успеха функция возвращает \ref ak_error_ok (ноль). Если ранее функция была
+    вызвана с данными, длина которых не кратна длине блока используемого алгоритма шифрования,
+    или возникла ошибка, то возвращается код ошибки                                                */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mgm_context_decryption_update( ak_mgm_ctx ctx, ak_bckey encryptionKey,
+         ak_bckey authenticationKey, const ak_pointer in, ak_pointer out, const size_t size )
+{
+  int i = 0;
+  ak_uint8 temp[16];
+  size_t absize = encryptionKey->ivector.size;
+  ak_uint64 *inp = (ak_uint64 *)in, *outp = (ak_uint64 *)out;
+  ak_int64 resource = 0, tail = (ak_int64) size%absize, blocks = (ak_int64) size/absize;
+
+ /* принудительно закрываем обновление ассоциированных данных */
+  ctx->aflag |= 0x1;
+ /* проверяем возможность обновления */
+  if( ctx->pflag&0x1 )
+    return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
+                                        "using this function with previously closed aead context");
+
+ /* ни чего не задано => ни чего не обрабатываем */
+  if(( in == NULL ) || ( size == 0 )) return ak_error_ok;
+
+ /* проверка ресурса ключа выработки имитовставки */
+  if( authenticationKey != NULL ) {
+    if( authenticationKey->key.resource.counter <= (resource = blocks + (tail > 0)))
+      return ak_error_message( ak_error_low_key_resource, __func__,
+                                                "using authentication key with low key resource");
+    else authenticationKey->key.resource.counter -= resource;
+  }
+
+ /* проверка ресурса ключа шифрования */
+  if( encryptionKey->key.resource.counter <= resource )
+   return ak_error_message( ak_error_low_key_resource, __func__,
+                                                   "using encryption key with low key resource");
+  else encryptionKey->key.resource.counter -= resource;
+
+ /* теперь обработка данных */
+  ctx->pbitlen += ( absize*blocks << 3 );
+  if( authenticationKey == NULL ) { /* только шифрование (без вычисления имитовставки) */
+                                    /* это полная копия кода, содержащегося в функции .. _encryption_ ... */
+    if( absize&0x10 ) { /* режим работы для 128-битного шифра */
+     /* основная часть */
+      for( ; blocks > 0; blocks--, inp += 2, outp += 2 ) {
+         estep128;
+      }
+      /* хвост */
+      if( tail ) {
+        encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &ctx->e );
+        for( i = 0; i < tail; i++ )
+           ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ ctx->e.b[16-tail+i];
+       /* закрываем добавление шифруемых данных */
+        ctx->pflag |= 0x1;
+        ctx->pbitlen += ( tail << 3 );
+      }
+
+    } else { /* режим работы для 64-битного шифра */
+       /* основная часть */
+        for( ; blocks > 0; blocks--, inp++, outp++ ) {
+           estep64;
+        }
+       /* хвост */
+        if( tail ) {
+          encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &ctx->e );
+          for( i = 0; i < tail; i++ )
+             ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ ctx->e.b[8-tail+i];
+         /* закрываем добавление шифруемых данных */
+          ctx->pflag |= 0x1;
+          ctx->pbitlen += ( tail << 3 );
+        }
+      } /* конец шифрования без аутентификации для 64-битного шифра */
+
+  } else { /* основной режим работы => шифрование с одновременной выработкой имитовставки */
+
+     if( absize&0x10 ) { /* режим работы для 128-битного шифра */
+      /* основная часть */
+      for( ; blocks > 0; blocks--, inp += 2, outp += 2 ) {
+         astep128( inp );
+         estep128;
+      }
+      /* хвост */
+      if( tail ) {
+        memset( temp, 0, 16 );
+        memcpy( temp+16-tail, inp, (size_t)tail );
+        astep128( temp );
+        encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &ctx->e );
+        for( i = 0; i < tail; i++ )
+           ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ ctx->e.b[16-tail+i];
+
+       /* закрываем добавление шифруемых данных */
+        ctx->pflag |= 0x1;
+        ctx->pbitlen += ( tail << 3 );
+      }
+
+    } else { /* режим работы для 64-битного шифра */
+      /* основная часть */
+       for( ; blocks > 0; blocks--, inp++, outp++ ) {
+          astep64( inp );
+          estep64;
+       }
+       /* хвост */
+       if( tail ) {
+         memset( temp, 0, 8 );
+         memcpy( temp+8-tail, inp, (size_t)tail );
+         astep64( temp );
+         encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &ctx->e );
+         for( i = 0; i < tail; i++ )
+            ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ ctx->e.b[8-tail+i];
+
+        /* закрываем добавление шифруемых данных */
+         ctx->pflag |= 0x1;
+         ctx->pbitlen += ( tail << 3 );
+       }
+     } /* конец 64-битного шифра */
+  }
+
+ return ak_error_ok;
+}
+
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция реализует режим шифрования для блочного шифра с одновременным вычислением имитовставки.
     На вход функции подаются как данные, подлежащие зашифрованию,
@@ -720,12 +852,117 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция реализует процедуру расшифрования с одновременной проверкой целостности зашифрованных
+    данных. На вход функции подаются как данные, подлежащие расшифрованию,
+    так и ассоциированные данные, которые не незашифровывавались - при этом имитовставка
+    проверяется ото всех переданных на вход функции данных.
+
+
+    @param encryptionKey ключ шифрования, должен быть инициализирован перед вызовом функции;
+    @param authenticationKey ключ выработки кода аутентификации (имитовставки), должен быть инициализирован
+           перед вызовом функции; может принимать значение NULL;
+
+    @param adata указатель на ассоциированные (незашифровываемые) данные;
+    @param adata_size длина ассоциированных данных в байтах;
+    @param in указатель на расшифровываемые данные;
+    @param out указатель на область памяти, куда будут помещены расшифрованные данные;
+           данный указатель может совпадать с указателем in;
+    @param size размер зашифровываемых данных в байтах;
+    @param iv указатель на синхропосылку;
+    @param iv_size длина синхропосылки в байтах;
+    @param icode указатель на область памяти, в которой хранится значение имитовставки;
+    @param icode_size размер имитовставки в байтах; значение не должно превышать
+           размер блока шифра с помощью которого происходит шифрование и вычисляется имитовставка;
+
+    @return Функция возвращает истину (\ref ak_true), если значение имитовтсавки совпало с
+            вычисленным в ходе выполнения функции значением; если значения не совпадают,
+            или в ходе выполнения функции возникла ошибка, то возвращается ложь (\ref ak_false).
+            При этом код ошибки может быть получен с
+            помощью вызова функции ak_error_get_value().                                           */
+/* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_bckey_context_decrypt_mgm( ak_bckey encryptionKey, ak_bckey authenticationKey,
            const ak_pointer adata, const size_t adata_size, const ak_pointer in, ak_pointer out,
-                    const size_t size, const ak_pointer iv, const size_t iv_size, ak_pointer icode )
+                                     const size_t size, const ak_pointer iv, const size_t iv_size,
+                                                         ak_pointer icode, const size_t icode_size )
 {
+ struct mgm_ctx mgm; /* контекст структуры, в которой хранятся промежуточные данные */
+ int error = ak_error_ok;
+ ak_bool result = ak_false;
 
-  return ak_false;
+ /* проверки ключей */
+ if(( encryptionKey == NULL ) && ( authenticationKey == NULL )) {
+   ak_error_message( ak_error_null_pointer, __func__ ,
+                               "using null pointers both to encryption and authentication keys" );
+   return ak_false;
+ }
+ if(( encryptionKey != NULL ) && ( authenticationKey ) != NULL ) {
+   if( encryptionKey->ivector.size != authenticationKey->ivector.size ) {
+     ak_error_message( ak_error_not_equal_data, __func__, "different block sizes for given keys");
+     return ak_false;
+   }
+ }
+
+ /* подготавливаем память */
+ memset( &mgm, 0, sizeof( struct mgm_ctx ));
+
+ /* в начале обрабатываем ассоциированные данные */
+ if( authenticationKey != NULL ) {
+   if(( error =
+         ak_mgm_context_authentication_clean( &mgm, authenticationKey, iv, iv_size ))
+                                                                              != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect initialization of internal mgm context" );
+     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator );
+     return ak_false;
+   }
+   if(( error =
+         ak_mgm_context_authentication_update( &mgm, authenticationKey, adata, adata_size ))
+                                                                              != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect hashing of associated data" );
+     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator );
+     return ak_false;
+   }
+ }
+
+ /* потом расшифровываем данные */
+ if( encryptionKey != NULL ) {
+   if(( error =
+         ak_mgm_context_encryption_clean( &mgm, encryptionKey, iv, iv_size )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect initialization of internal mgm context" );
+     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &encryptionKey->key.generator );
+     return ak_false;
+   }
+   if(( error =
+         ak_mgm_context_decryption_update( &mgm, encryptionKey, authenticationKey,
+                                                             in, out, size )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect encryption of plain data" );
+     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &encryptionKey->key.generator );
+     return ak_false;
+   }
+ }
+
+ /* в конце - вырабатываем имитовставку */
+ if( authenticationKey != NULL ) {
+   ak_uint8 icode2[16];
+   memset( icode2, 0, 16 );
+
+   ak_error_set_value( ak_error_ok );
+   ak_mgm_context_authentication_finalize( &mgm, authenticationKey, icode2, icode_size );
+   if(( error = ak_error_get_value()) != ak_error_ok )
+     ak_error_message( error, __func__, "incorrect finanlize of integrity code" );
+    else {
+     if( !ak_ptr_is_equal( icode, icode2, icode_size ))
+       ak_error_message( ak_error_not_equal_data, __func__, "wrong value of integrity code" );
+      else result = ak_true;
+    }
+   ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator );
+
+ } else { /* выше была проверка того, что два ключа одновременно не равну NULL =>
+                                                              один из двух ключей очистит контекст */
+         result = ak_true; /* мы ни чего не проверяли => все хорошо */
+         ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &encryptionKey->key.generator );
+        }
+
+ return result;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -948,6 +1185,19 @@
      0xEB, 0x6D, 0xC7, 0x95, 0x06, 0x42, 0x94, 0xAB, 0xD0, 0x83, 0xF8, 0xD3, 0xD4, 0x14, 0x0C, 0xC6,
      0x52, 0x75, 0x2C };
 
+  ak_uint8 cipherThree[67] = {
+     0x3B, 0xA0, 0x9E, 0x5F, 0x6C, 0x06, 0x95, 0xC7, 0xAE, 0x85, 0x91, 0x45, 0x42, 0x33, 0x11, 0x85,
+     0x5D, 0x78, 0x2B, 0xBF, 0xD6, 0x00, 0x2E, 0x1F, 0x7D, 0x8E, 0x9C, 0xBB, 0xB8, 0x70, 0x04, 0x94,
+     0x70, 0xDC, 0x7D, 0x1F, 0x73, 0xD3, 0x5D, 0x9A, 0x76, 0xA5, 0x6F, 0xCE, 0x0A, 0xCB, 0x27, 0xEC,
+     0xD5, 0x75, 0xBB, 0x6A, 0x64, 0x5C, 0xF6, 0x70, 0x4E, 0xC3, 0xB5, 0xBC, 0xC3, 0x37, 0xAA, 0x47,
+     0x9C, 0xBB, 0x03 };
+
+//  ak_hexstr_to_ptr( "03BB9C47AA37C3BCB5C34E70F65C646ABB75D5EC27CB0ACE6FA5769A5DD3731F7DDC70940470B8BB9C8E7D1F2E00D6BF2B785D85113342459185AEC795066C5F9EA03B",
+//   cipherThree, 67, ak_true );
+
+//  printf(" %s\n", str = ak_ptr_to_hexstr( cipherThree, 67, ak_false ));
+
+
  /* асссоциированные данные */
   ak_uint8 associated[41] = {
      0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02,
@@ -964,18 +1214,65 @@
   ak_uint8 icode[16];
   ak_uint8 icodeOne[16] = {
     0x4C, 0xDB, 0xFC, 0x29, 0x0E, 0xBB, 0xE8, 0x46, 0x5C, 0x4F, 0xC3, 0x40, 0x6F, 0x65, 0x5D, 0xCF };
+  ak_uint8 icodeTwo[16] = {
+    0x57, 0x4E, 0x52, 0x01, 0xA8, 0x07, 0x26, 0x60, 0x66, 0xC6, 0xE9, 0x22, 0x57, 0x6B, 0x1B, 0x89 };
+  ak_uint8 icodeThree[8] = { 0x10, 0xFD, 0x10, 0xAA, 0x69, 0x80, 0x92, 0xA7 };
+  ak_uint8 icodeFour[8] = { 0xC5, 0x43, 0xDE, 0xF2, 0x4C, 0xB0, 0xC3, 0xF7 };
 
  /* ключи для проверки */
-  struct bckey kuznechikKeyA;
+  struct bckey kuznechikKeyA, kuznechikKeyB, magmaKeyA, magmaKeyB;
 
  /* инициализация ключей */
+ /* - 1 - */
   if(( error = ak_bckey_create_kuznechik( &kuznechikKeyA )) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect initialization of first secret key");
     return ak_false;
   }
   if(( error = ak_bckey_context_set_ptr( &kuznechikKeyA, keyAnnexA, 32, ak_true )) != ak_error_ok ) {
     ak_bckey_destroy( &kuznechikKeyA );
-    ak_error_message( error, __func__, "incorrect assigning a first constant value to keyA");
+    ak_error_message( error, __func__, "incorrect assigning a first constant value to Kuznechik key");
+    return ak_false;
+  }
+ /* - 2 - */
+  if(( error = ak_bckey_create_kuznechik( &kuznechikKeyB )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect initialization of second secret key");
+    ak_bckey_destroy( &kuznechikKeyA );
+    return ak_false;
+  }
+  if(( error = ak_bckey_context_set_ptr( &kuznechikKeyB, keyAnnexB, 32, ak_true )) != ak_error_ok ) {
+    ak_bckey_destroy( &kuznechikKeyA );
+    ak_bckey_destroy( &kuznechikKeyB );
+    ak_error_message( error, __func__, "incorrect assigning a second constant value to Kuznechik key");
+    return ak_false;
+  }
+ /* - 3 - */
+  if(( error = ak_bckey_create_magma( &magmaKeyA )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect initialization of third secret key");
+    ak_bckey_destroy( &kuznechikKeyA );
+    ak_bckey_destroy( &kuznechikKeyB );
+    return ak_false;
+  }
+  if(( error = ak_bckey_context_set_ptr( &magmaKeyA, keyAnnexA, 32, ak_true )) != ak_error_ok ) {
+    ak_bckey_destroy( &kuznechikKeyA );
+    ak_bckey_destroy( &kuznechikKeyB );
+    ak_bckey_destroy( &magmaKeyA );
+    ak_error_message( error, __func__, "incorrect assigning a first constant value to Magma key");
+    return ak_false;
+  }
+ /* - 4 - */
+  if(( error = ak_bckey_create_magma( &magmaKeyB )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect initialization of fourth secret key");
+    ak_bckey_destroy( &kuznechikKeyA );
+    ak_bckey_destroy( &kuznechikKeyB );
+    ak_bckey_destroy( &magmaKeyA );
+    return ak_false;
+  }
+  if(( error = ak_bckey_context_set_ptr( &magmaKeyB, keyAnnexB, 32, ak_true )) != ak_error_ok ) {
+    ak_bckey_destroy( &kuznechikKeyA );
+    ak_bckey_destroy( &kuznechikKeyB );
+    ak_bckey_destroy( &magmaKeyA );
+    ak_bckey_destroy( &magmaKeyB );
+    ak_error_message( error, __func__, "incorrect assigning a first constant value to Magma key");
     return ak_false;
   }
 
@@ -984,18 +1281,16 @@
   ak_bckey_context_encrypt_mgm( &kuznechikKeyA, &kuznechikKeyA, associated, sizeof( associated ),
                                     plain, out, sizeof( plain ), iv128, sizeof( iv128 ), icode, 16 );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
-    ak_error_message( error, __func__, "incorrect encryption for example one");
+    ak_error_message( error, __func__, "incorrect encryption for first example");
     goto exit;
   }
-  if( !ak_ptr_is_equal( icode, icodeOne, sizeof( icode ))) {
+  if( !ak_ptr_is_equal( icode, icodeOne, sizeof( icodeOne ))) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
                                              "the integrity code for one Kuznechik key is wrong" );
     ak_log_set_message( str = ak_ptr_to_hexstr( icode, 16, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( icodeOne, 16, ak_true )); free( str );
     goto exit;
   }
-  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
-                                                "the integrity code for one Kuznechik key is Ok" );
   if( !ak_ptr_is_equal( out, cipherOne, sizeof( cipherOne ))) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
                                             "the encryption test for one Kuznechik key is wrong" );
@@ -1003,30 +1298,162 @@
     ak_log_set_message( str = ak_ptr_to_hexstr( cipherOne, sizeof( out ), ak_true )); free( str );
     goto exit;
   }
+
+  memset( out, 0, sizeof( out ));
+  if( !ak_bckey_context_decrypt_mgm( &kuznechikKeyA, &kuznechikKeyA,
+            associated, sizeof( associated ), cipherOne, out, sizeof( cipherOne ),
+                                                        iv128, sizeof( iv128 ), icodeOne, 16 )) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                    "checking the integrity code for one Kuznechik key is wrong" );
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( out, plain, sizeof( plain ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                            "the decryption test for one Kuznechik key is wrong" );
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, sizeof( out ), ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( plain, sizeof( out ), ak_true )); free( str );
+    goto exit;
+  }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
-                                               "the encryption test for one Kuznechik key is Ok" );
+        "the 1st full encryption, decryption & integrity check test with one Kuznechik key is Ok" );
 
+ /* второй тест - шифрование и имитовставка, алгоритм Кузнечик, два ключа */
+  memset( icode, 0, 16 );
+  ak_bckey_context_encrypt_mgm( &kuznechikKeyA, &kuznechikKeyB, associated, sizeof( associated ),
+                                  plain, out, sizeof( plain ), iv128, sizeof( iv128 ), icode, 16 );
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect encryption for second example");
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( icode, icodeTwo, sizeof( icodeTwo ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                            "the integrity code for two Kuznechik keys is wrong" );
+    ak_log_set_message( str = ak_ptr_to_hexstr( icode, 16, ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( icodeTwo, 16, ak_true )); free( str );
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( out, cipherOne, sizeof( cipherOne ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                           "the encryption test for two Kuznechik keys is wrong" );
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, sizeof( out ), ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( cipherOne, sizeof( out ), ak_true )); free( str );
+    goto exit;
+  }
 
+  memset( out, 0, sizeof( out ));
+  if( !ak_bckey_context_decrypt_mgm( &kuznechikKeyA, &kuznechikKeyB,
+            associated, sizeof( associated ), cipherOne, out, sizeof( cipherOne ),
+                                                        iv128, sizeof( iv128 ), icodeTwo, 16 )) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                   "checking the integrity code for two Kuznechik keys is wrong" );
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( out, plain, sizeof( plain ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                           "the decryption test for two Kuznechik keys is wrong" );
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, sizeof( out ), ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( plain, sizeof( out ), ak_true )); free( str );
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+      "the 2nd full encryption, decryption & integrity check test with two Kuznechik keys is Ok" );
 
+ /* третий тест - шифрование и имитовставка, алгоритм Магма, один ключ */
+  memset( icode, 0, 16 );
+  ak_bckey_context_encrypt_mgm( &magmaKeyB, &magmaKeyB, associated, sizeof( associated ),
+                                    plain, out, sizeof( plain ), iv64, sizeof( iv64 ), icode, 8 );
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect encryption for third example");
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( icode, icodeThree, sizeof( icodeThree ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                                 "the integrity code for one Magma key is wrong" );
+    ak_log_set_message( str = ak_ptr_to_hexstr( icode, 8, ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( icodeThree, 8, ak_true )); free( str );
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( out, cipherThree, sizeof( cipherThree ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                                "the encryption test for one Magma key is wrong" );
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, sizeof( out ), ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( cipherThree,
+                                                    sizeof( cipherThree ), ak_true )); free( str );
+    goto exit;
+  }
 
+  memset( out, 0, sizeof( out ));
+  if( !ak_bckey_context_decrypt_mgm( &magmaKeyB, &magmaKeyB,
+            associated, sizeof( associated ), cipherThree, out, sizeof( cipherThree ),
+                                                          iv64, sizeof( iv64 ), icodeThree, 8 )) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                        "checking the integrity code for one Magma key is wrong" );
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( out, plain, sizeof( plain ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                                "the decryption test for one Magma key is wrong" );
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, sizeof( out ), ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( plain, sizeof( plain ), ak_true )); free( str );
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+           "the 3rd full encryption, decryption & integrity check test with one Magma key is Ok" );
 
+ /* четвертый тест - шифрование и имитовставка, алгоритм Магма, два ключа */
+  memset( icode, 0, 16 );
+  ak_bckey_context_encrypt_mgm( &magmaKeyB, &magmaKeyA, associated, sizeof( associated ),
+                                    plain, out, sizeof( plain ), iv64, sizeof( iv64 ), icode, 8 );
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect encryption for fourth example");
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( icode, icodeFour, sizeof( icodeFour ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                                "the integrity code for two Magma keys is wrong" );
+    ak_log_set_message( str = ak_ptr_to_hexstr( icode, 8, ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( icodeFour, 8, ak_true )); free( str );
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( out, cipherThree, sizeof( cipherThree ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                              "the encryption test for two Magma keys is wrong" );
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, sizeof( out ), ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( cipherThree,
+                                                    sizeof( cipherThree ), ak_true )); free( str );
+    goto exit;
+  }
+
+  memset( out, 0, sizeof( out ));
+  if( !ak_bckey_context_decrypt_mgm( &magmaKeyB, &magmaKeyA,
+            associated, sizeof( associated ), cipherThree, out, sizeof( cipherThree ),
+                                                          iv64, sizeof( iv64 ), icodeFour, 8 )) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                       "checking the integrity code for two Magma keys is wrong" );
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( out, plain, sizeof( plain ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                              "the decryption test for two Magma keys is wrong" );
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, sizeof( out ), ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( plain, sizeof( plain ), ak_true )); free( str );
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+        "the 4th full encryption, decryption & integrity check test with two Magma keys is Ok" );
 
  /* только здесь все хорошо */
   result = ak_true;
 
-// ak_hexstr_to_ptr( "2C7552C60C14D4D3F883D0AB94420695C76DEB497AB15915A6BA85936B5D0EA9F6851C8075D2212BF9FD5BD3F7069AADC16B39A9757B8147956E9055B8A33DE89F42FC",
-//  cipherOne, 67, ak_true );
-
-// printf(" %s\n", str = ak_ptr_to_hexstr( cipherOne, 67, ak_false ));
-
-
  /* освобождение памяти */
   exit:
+  ak_bckey_destroy( &magmaKeyB );
+  ak_bckey_destroy( &magmaKeyA );
+  ak_bckey_destroy( &kuznechikKeyB );
   ak_bckey_destroy( &kuznechikKeyA );
 
  return result;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_aead.c  */
