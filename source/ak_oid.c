@@ -85,6 +85,11 @@
    { mac_function, algorithm, "hmac-gosthash94", "1.2.643.2.52.1.4.1", NULL,
                                            (ak_function_void *) ak_mac_create_hmac_gosthash94_csp },
 
+   { mac_function, algorithm, "mgm-imito-magma", "1.2.643.2.52.1.4.2", NULL,
+                                                     (ak_function_void *) ak_mac_create_mgm_magma },
+   { mac_function, algorithm, "mgm-imito-kuznechik", "1.2.643.2.52.1.4.3", NULL,
+                                                 (ak_function_void *) ak_mac_create_mgm_kuznechik },
+
   /* 6. идентификаторы алгоритмов блочного шифрования
         в дереве библиотеки: 1.2.643.2.52.1.6 - алгоритмы блочного шифрования
         в дереве библиотеки: 1.2.643.2.52.1.7 - параметры алгоритмов блочного шифрования */

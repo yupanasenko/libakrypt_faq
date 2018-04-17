@@ -9,16 +9,19 @@ is implementation of many Russian crypto mechanisms, decribed by national
 standards and methodological recomendations.
 
 We have implementation of:
- - GOST R 34.12-2015 block ciphers "Magma" & "Kuznechik" with 64 bit and 128 bit
-   block sizes respectively;
- - GOST R 34.13-2015 modes for block ciphers;
- - GOST R 34.11-2012 & GOST R 34.11-94 hash functions;
- - GOST R 34.10-2012 digital signature algorithms;
- - R 50.1.113-2016 crypto algorithms such as HMAC;
- - a some set of pseudo random generators for various operation systems.
 
-We hope that libakrypt can be used successfully
-under Linux, Windows (since XP), FreeBSD, MacOs and ReactOS operation systems.
+1. GOST R 34.12-2015 block ciphers "Magma" & "Kuznechik" with 64 bit and 128 bit block sizes respectively;
+2. GOST R 34.13-2015 modes for block ciphers;
+3. GOST R 34.11-2012 & GOST R 34.11-94 hash functions;
+4. Montgomery arithmetic for prime fileds and group operations on elliptic curves in short Weierstrass form;
+5. GOST R 34.10-2012 digital signature algorithms for elliptic curves described by R 50.1.114-2016;
+6. R 50.1.113-2016 crypto algorithms such as HMAC;
+7. national variant of password-based key derivation function (PBKDF2) described by R 50.1.111-2016;
+8. a some set of pseudo random generators for various operation systems.
+
+Library can be used successfully under Linux, Windows (since XP), FreeBSD, MacOs and ReactOS operation systems.
+Also we have positive runs of library on mobile devices under Sailfish OS 
+
 
 ## Compilation
 

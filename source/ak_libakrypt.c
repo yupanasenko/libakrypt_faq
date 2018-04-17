@@ -44,7 +44,6 @@
  #include <sys/stat.h>
 
  #include <ak_mac.h>
- #include <ak_aead.h>
  #include <ak_tools.h>
  #include <ak_context_manager.h>
 
@@ -67,8 +66,15 @@
      { "key_number_length", 16 },
      { "pbkdf2_iteration_count", 2000 },
      { "hmac_key_count_resource", 65536 },
-     { "magma_cipher_resource", 32*4194304 }, //!!!!! должно быть 524288
-     { "kuznechik_cipher_resource", 8*4194304 },
+
+  /* значение константы задает максимальный объем зашифрованной информации на одном ключе в 4 Mб:
+                                 524288 блока x 8 байт на блок = 4.194.304 байт = 4096 Кб = 4 Mб   */
+     { "magma_cipher_resource", 524288 },
+
+  /* значение константы задает максимальный объем зашифрованной информации на одном ключе в 32 Mб:
+                            2097152 блока x 16 байт на блок = 33.554.432 байт = 32768 Кб = 32 Mб   */
+     { "kuznechik_cipher_resource", 2097152 },
+
      { NULL, 0 } /* завершающая константа, должна всегда принимать нулевые значения */
  };
 

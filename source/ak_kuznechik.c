@@ -614,6 +614,7 @@
 
   ak_uint8 myout[64];
 
+
  /* 1. Создаем контекст ключа алгоритма Кузнечик и устанавливаем значение ключа */
   if(( error = ak_bckey_create_kuznechik( &bkey )) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect initialization of kuznechik secret key context");

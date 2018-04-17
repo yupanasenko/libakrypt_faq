@@ -26,7 +26,8 @@
 /*                                                                                                 */
 /*   ak_aead.c                                                                                     */
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_aead.h>
+ #include <ak_mac.h>
+ #include <ak_tools.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция реализует операцию умножения двух элементов конечного поля \f$ \mathbb F_{2^{64}}\f$,
@@ -966,6 +967,62 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*                       реализация функций для выработки чистой имитовставки                      */
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param mac Контекст алгоритма выработки имитовставки.
+    @return В случае успешного завершения функций возвращает \ref ak_error_ok. В случае
+    возникновения ошибки возвращеется ее код.                                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mac_create_mgm_kuznechik( ak_mac mac )
+{
+ int error = ak_error_ok;
+
+ /* производим первоначальную очистку контекста и устанавливаем его тип */
+  memset( mac, 0, sizeof( struct mac ));
+  mac->type = type_mgm;
+
+ /* подготавливаем память */
+  memset( &mac->choice._mgm, 0, sizeof( struct mgm_ctx ));
+
+ /* инициализируем контекст секретного ключа */
+  if(( error = ak_bckey_create_kuznechik( &mac->choice._mgm.bkey )) != ak_error_ok ) {
+    return ak_error_message( error, __func__, "wrong creation of secret block cipher key" );
+  }
+
+ /* копируем длины */
+  mac->bsize = mac->hsize = mac->choice._mgm.bkey.ivector.size;
+
+ /* доопределяем поля секретного ключа */
+  if(( mac->choice._mgm.bkey.key.oid = ak_oid_find_by_name( "mgm-imito-kuznechik" )) == NULL ) {
+    error = ak_error_get_value();
+    ak_bckey_destroy( &mac->choice._mgm.bkey );
+    return ak_error_message( error, __func__, "wrong internal oid search");
+  }
+
+ /* устанавливаем ресурс ключа */
+  mac->choice._mgm.bkey.key.resource.counter = ak_libakrypt_get_option( "kuznechik_cipher_resource" );
+ /* в заключение инициализируем методы */
+  mac->clean = NULL; // ak_hmac_clean;
+  mac->update = NULL; // ak_hmac_update;
+  mac->finalize = NULL; // ak_hmac_finalize;
+
+  чуй
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param mac Контекст алгоритма выработки имитовставки.
+    @return В случае успешного завершения функций возвращает \ref ak_error_ok. В случае
+    возникновения ошибки возвращеется ее код.                                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mac_create_mgm_magma( ak_mac mac )
+{
+
+ return ak_error_null_pointer;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                             реализация функций для тестирования                                 */
 /* ----------------------------------------------------------------------------------------------- */
 
@@ -1191,12 +1248,6 @@
      0x70, 0xDC, 0x7D, 0x1F, 0x73, 0xD3, 0x5D, 0x9A, 0x76, 0xA5, 0x6F, 0xCE, 0x0A, 0xCB, 0x27, 0xEC,
      0xD5, 0x75, 0xBB, 0x6A, 0x64, 0x5C, 0xF6, 0x70, 0x4E, 0xC3, 0xB5, 0xBC, 0xC3, 0x37, 0xAA, 0x47,
      0x9C, 0xBB, 0x03 };
-
-//  ak_hexstr_to_ptr( "03BB9C47AA37C3BCB5C34E70F65C646ABB75D5EC27CB0ACE6FA5769A5DD3731F7DDC70940470B8BB9C8E7D1F2E00D6BF2B785D85113342459185AEC795066C5F9EA03B",
-//   cipherThree, 67, ak_true );
-
-//  printf(" %s\n", str = ak_ptr_to_hexstr( cipherThree, 67, ak_false ));
-
 
  /* асссоциированные данные */
   ak_uint8 associated[41] = {

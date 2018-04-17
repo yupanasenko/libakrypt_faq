@@ -26,7 +26,6 @@
 /*                                                                                                 */
 /*  ak_mac.c                                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_mac.h>
  #include <ak_compress.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -74,7 +73,7 @@
            ak_error_message( error, __func__ , "incorrect destroying hash function of mac context" );
          break;
 
-   case type_block_cipher:
+   case type_mgm:
          break;
 
    case type_signify:
@@ -116,7 +115,7 @@
 {
   switch( mac->type ) {
    case type_hmac:  return ( ak_skey ) &mac->choice._hmac.key; break;
-   case type_block_cipher: return ( ak_skey ) &mac->choice._bckey.key; break;
+   case type_mgm: return ( ak_skey ) &mac->choice._mgm.bkey.key; break;
    case type_signify:  return ( ak_skey ) &mac->choice._signkey.key; break;
    default:
      ak_error_message( ak_error_undefined_value, __func__,

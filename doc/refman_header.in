@@ -126,3 +126,5 @@
 
 \newpage
 \tableofcontents
+
+% pandoc -f markdown -t latex Readme.me >> refman_header.in ))
