@@ -341,8 +341,9 @@
 /* ----------------------------------------------------------------------------------------------- */
  static int ak_libakrypt_write_options( void )
 {
+  size_t i;
   struct file fd;
-  int i, error = ak_error_ok;
+  int error = ak_error_ok;
   char hpath[FILENAME_MAX], filename[FILENAME_MAX];
 
   memset( hpath, 0, FILENAME_MAX );
@@ -387,15 +388,19 @@
   ak_snprintf( filename, FILENAME_MAX, "%s/libakrypt.conf", hpath );
  #endif
 
- if(( error = ak_file_create( &fd,filename, S_IWUSR | S_IRUSR )) != ak_error_ok )
-   return ak_error_message( error, __func__, "wrong creation of libakrypt.conf file");
+ #ifdef _MSC_VER
+  if(( error = ak_file_create( &fd, filename, _S_IREAD | _S_IWRITE )) != ak_error_ok )
+ #else
+  if(( error = ak_file_create( &fd, filename, S_IWUSR | S_IRUSR )) != ak_error_ok )
+ #endif
+    return ak_error_message( error, __func__, "wrong creation of libakrypt.conf file");
 
   for( i = 0; i < ak_libakrypt_options_count(); i++ ) {
     memset( hpath, 0, ak_min( 1024, FILENAME_MAX ));
     ak_snprintf( hpath, FILENAME_MAX - 1, "%s = %d\n", options[i].name, options[i].value );
     if( write( fd.fd, hpath, strlen( hpath )) < 0 ) {
       ak_error_message_fmt( error = ak_error_write_data, __func__,
-          "wrong option \"%s\" saving with error: %s", options[i].name, strerror( errno ));
+                      "option %s stored with error: %s", options[i].name, strerror( errno ));
     }
   }
   ak_file_close( &fd );
@@ -505,13 +510,21 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_file_create( ak_file fd, const char *filename, int flags )
 {
+#ifdef _MSC_VER
+#include <share.h>
+  errno_t error = _sopen_s( &fd->fd, filename,
+                                         _O_CREAT | _O_BINARY | _O_WRONLY , _SH_DENYRW, flags );
+  if(( error != 0 ) || (fd->fd < 0 ))
+#else
   if(( fd->fd = creat( filename, flags )) < 0 )
+#endif
     return ak_error_message_fmt( ak_error_create_file, __func__,
-                              "wrong creation %s file with error: %s", filename, strerror( errno ));
+                          "wrong creation %s file with error: %s", filename, strerror( errno ));
+
   if( fstat( fd->fd, &fd->st ) ) {
     close( fd->fd );
     return ak_error_message_fmt( ak_error_access_file,  __func__,
-                                                             "access error: %s", strerror( errno ));
+                                                         "access error: %s", strerror( errno ));
   }
  return ak_error_ok;
 }

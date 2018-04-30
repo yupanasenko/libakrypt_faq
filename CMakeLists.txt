@@ -57,6 +57,7 @@ set( OTHERS         CMakeLists.txt
                     Readme.md
                     Changelog.md
                     libakrypt.conf
+                    libakrypt.rc.in
 )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -68,32 +69,30 @@ include( DetectIntrinsics )
 include( DetectLibraries )
 
 # -------------------------------------------------------------------------------------------------- #
-# определяемся с местом хранения файла с конфигурацией библиотеки
-if( LIBAKRYPT_CONF )
-else()
-  if( CMAKE_HOST_UNIX )
-    set( LIBAKRYPT_CONF "/etc" )
-  endif()
-  if( CMAKE_HOST_WINDOWS )
-    set( LIBAKRYPT_CONF "C:\\Program Files\\Akrypt" )
-  endif()
-endif()
-
-# -------------------------------------------------------------------------------------------------- #
 # определяемся с архитектурой
 if( LIBAKRYPT_BIG_ENDIAN )
   set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_BIG_ENDIAN" )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
-# сборка библиотек - статической и, если нужно, динамической
-include_directories( "source " )
-add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
+# определяемся с местом хранения файла с конфигурацией библиотеки
 if( LIBAKRYPT_CONF )
-    message("-- Path for libakrypt.conf is ${LIBAKRYPT_CONF}")
-    add_compile_options( -DLIBAKRYPT_OPTIONS_PATH="${LIBAKRYPT_CONF}" )
+else()
+  if( CMAKE_HOST_UNIX )
+    set( LIBAKRYPT_CONF "/etc" )
+  endif()
+  if( WIN32 )
+    set( LIBAKRYPT_CONF "C:/Program Files/Akrypt" )
+  endif()
 endif()
 
+# -------------------------------------------------------------------------------------------------- #
+# сборка библиотек - статической и, если нужно, динамической
+include_directories( "source " )
+message("-- Path for libakrypt.conf is ${LIBAKRYPT_CONF}")
+add_compile_options( -DLIBAKRYPT_OPTIONS_PATH="${LIBAKRYPT_CONF}" )
+add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
+#
 if( LIBAKRYPT_SHARED_LIB )
   add_library( akrypt-shared SHARED ${MAIN_HEADER} ${SOURCES} ${ASN1_SOURCES} )
   set_target_properties( akrypt-shared PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
