@@ -54,8 +54,8 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция проверяет наличие данного файла. */
  ak_bool ak_file_is_exist( ak_file , const char *, ak_bool );
-/*! \brief Функция открывает заданный файл. */
- int ak_file_create( ak_file , const char *, int );
+/*! \brief Функция создает заданный файл c правами на чтение и запись. */
+ int ak_file_create( ak_file , const char * );
 /*! \brief Функция закрывает файл с заданным дескриптором. */
  int ak_file_close( ak_file );
 

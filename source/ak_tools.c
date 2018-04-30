@@ -6,6 +6,11 @@
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_tools.h>
 
+#ifdef _MSC_VER
+ #include <share.h>
+ #include <direct.h>
+#endif
+
 /* ----------------------------------------------------------------------------------------------- */
 /*!  Переменная, содержащая в себе код последней ошибки                                            */
  static int ak_errno = ak_error_ok;
@@ -49,7 +54,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \b Внимание. Функция экспортируется.
 
-   \return Общее количество опций библиотеки.                                                     */
+    \return Общее количество опций библиотеки.                                                     */
 /* ----------------------------------------------------------------------------------------------- */
  const size_t ak_libakrypt_options_count( void )
 {
@@ -356,7 +361,11 @@
  /* создаем .config */
  #ifdef _WIN32
   ak_snprintf( filename, FILENAME_MAX, "%s\\.config", hpath );
-  if( mkdir( filename ) < 0 ) {
+  #ifdef _MSC_VER
+   if( _mkdir( filename ) < 0 ) {
+  #else
+   if( mkdir( filename ) < 0 ) {
+  #endif
  #else
   ak_snprintf( filename, FILENAME_MAX, "%s/.config", hpath );
   if( mkdir( filename, S_IRWXU ) < 0 ) {
@@ -370,7 +379,11 @@
  /* создаем libakrypt */
  #ifdef _WIN32
   ak_snprintf( hpath, FILENAME_MAX, "%s\\libakrypt", filename );
-  if( mkdir( hpath ) < 0 ) {
+  #ifdef _MSC_VER
+   if( _mkdir( hpath ) < 0 ) {
+  #else
+   if( mkdir( hpath ) < 0 ) {
+  #endif
  #else
   ak_snprintf( hpath, FILENAME_MAX, "%s/libakrypt", filename );
   if( mkdir( hpath, S_IRWXU ) < 0 ) {
@@ -388,11 +401,7 @@
   ak_snprintf( filename, FILENAME_MAX, "%s/libakrypt.conf", hpath );
  #endif
 
- #ifdef _MSC_VER
-  if(( error = ak_file_create( &fd, filename, _S_IREAD | _S_IWRITE )) != ak_error_ok )
- #else
-  if(( error = ak_file_create( &fd, filename, S_IWUSR | S_IRUSR )) != ak_error_ok )
- #endif
+  if(( error = ak_file_create( &fd, filename )) != ak_error_ok )
     return ak_error_message( error, __func__, "wrong creation of libakrypt.conf file");
 
   for( i = 0; i < ak_libakrypt_options_count(); i++ ) {
@@ -508,15 +517,14 @@
     @return В случае успеха функция возвращает \ref ak_error_ok.
     В случае возникновения ошибки возвращается ее код.                                             */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_file_create( ak_file fd, const char *filename, int flags )
+ int ak_file_create( ak_file fd, const char *filename )
 {
 #ifdef _MSC_VER
-#include <share.h>
   errno_t error = _sopen_s( &fd->fd, filename,
-                                         _O_CREAT | _O_BINARY | _O_WRONLY , _SH_DENYRW, flags );
+                            _O_CREAT | _O_BINARY | _O_WRONLY , _SH_DENYRW, _S_IREAD | _S_IWRITE );
   if(( error != 0 ) || (fd->fd < 0 ))
 #else
-  if(( fd->fd = creat( filename, flags )) < 0 )
+  if(( fd->fd = creat( filename, S_IRUSR | S_IWUSR )) < 0 )
 #endif
     return ak_error_message_fmt( ak_error_create_file, __func__,
                           "wrong creation %s file with error: %s", filename, strerror( errno ));
