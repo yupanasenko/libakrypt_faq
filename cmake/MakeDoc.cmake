@@ -8,11 +8,11 @@ if( CMAKE_HOST_UNIX )
     configure_file( ${CMAKE_SOURCE_DIR}/doc/refman_footer.in
                                                ${CMAKE_BINARY_DIR}/refman_footer.tex @ONLY )
 
+    execute_process( COMMAND pandoc -f markdown -t latex --top-level-division=chapter ${CMAKE_SOURCE_DIR}/Readme.md -o readme.tex )
+
     message("-- Creating a fine view for documentation in pdf file - done ")
     configure_file( ${CMAKE_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY )
     file( WRITE ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh "#/bin/bash\n" )
-    file( WRITE ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh
-          "pandoc -f markdown -t latex --top-level-division=chapter ${CMAKE_SOURCE_DIR}/Readme.md >> ${CMAKE_BINARY_DIR}/refman_header.tex\n")
     file( APPEND ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh "doxygen Doxyfile\n" )
 
    # получаем документацию в формате PDF

@@ -42,7 +42,10 @@ set( SOURCES        source/ak_tools.c
 
 set( DOCS           doc/refman_header.in
                     doc/refman_footer.in
-                    doc/Doxyfile.in )
+                    doc/Doxyfile.in
+                    doc/01-install-guide.md
+                    doc/02-user-guide.md
+                    doc/03-internal-interface.md )
 
 set( CMAKES         cmake/DetectHeaders.cmake
                     cmake/DetectFlags.cmake
@@ -112,6 +115,7 @@ enable_testing()
 
 # сборка тестовых примеров
 set( EXAMPLES_LIST hello
+                   log
 )
 
 # организуем сборку примеров со статической линковкой

@@ -45,7 +45,7 @@
      { "magma_cipher_resource", 524288 },
 
   /* значение константы задает максимальный объем зашифрованной информации на одном ключе в 32 Mб:
-                            2097152 блока x 16 байт на блок = 33.554.432 байт = 32768 Кб = 32 Mб   */
+                             2097152 блока x 16 байт на блок = 33.554.432 байт = 32768 Кб = 32 Mб  */
      { "kuznechik_cipher_resource", 2097152 },
 
      { NULL, 0 } /* завершающая константа, должна всегда принимать нулевые значения */
@@ -99,7 +99,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция возвращает указатель на строку символовв, содержащую человекочитаемое имя опции
+/*! Функция возвращает указатель на строку символов, содержащую человекочитаемое имя опции
     библиотеки. Для строки выделяется память, которая должна быть позднее удалена пользователем
     самостоятельно.
 
@@ -250,7 +250,7 @@
     качестве аргумента функции.
 
     @param fd Дескриптор файла. Должен быть предварительно открыт на чтение с помощью функции
-    ak_file_is_exist() или ak_file_open().
+    ak_file_is_exist().
 
     @return Функция возвращает код ошибки или \ref ak_error_ok.                                    */
 /* ----------------------------------------------------------------------------------------------- */
@@ -275,7 +275,7 @@
      }
     if( ch == '\n' ) {
       if((strlen(localbuffer) != 0 ) && ( strchr( localbuffer, '#' ) == 0 )) {
-        ak_int32 value = 0, value2 = 0;
+        ak_int32 value = 0;
 
         /* устанавливаем уровень аудита */
         if( ak_libakrypt_load_one_option( localbuffer, "log_level = ", &value ))
@@ -283,20 +283,16 @@
 
         /* устанавливаем минимальный размер структуры управления контекстами */
         if( ak_libakrypt_load_one_option( localbuffer, "context_manager_size = ", &value )) {
-          int len = 0;
-          while( value ) { value>>=1; len++; } /* вычисляем число значащих бит */
-          if( len < 2 ) len = 2;
-          if( len >= 32 ) len = 31;
-          ak_libakrypt_set_option( "context_manager_size", value2 = ( (int)1 << len ));
+          if( value < 32 ) value = 32;
+          if( value > 65536 ) value = 65536;
+          ak_libakrypt_set_option( "context_manager_size", value );
         }
 
        /* устанавливаем максимально возможный размер структуры управления контекстами */
         if( ak_libakrypt_load_one_option( localbuffer, "context_manager_max_size = ", &value )) {
-          int len = 0;
-          while( value ) { value>>=1; len++; } /* вычисляем число значащих бит */
-          if( len < 2 ) len = 2;
-          if( len > 63 ) len = 63;
-          ak_libakrypt_set_option( "context_manager_max_size", ak_max( value2, 1 << len ));
+          if( value < 4096 ) value = 4096;
+          if( value > 2147483647 ) value = 2147483647;
+          ak_libakrypt_set_option( "context_manager_max_size", value );
         }
 
        /* устанавливаем длину номера ключа */
@@ -309,7 +305,7 @@
        /* устанавливаем количество циклов в алгоритме pbkdf2 */
         if( ak_libakrypt_load_one_option( localbuffer, "pbkdf2_iteration_count = ", &value )) {
           if( value < 1000 ) value = 1000;
-          if( value > 2147483647 ) value = 2147483647;
+          if( value > 32768 ) value = 32768;
           ak_libakrypt_set_option( "pbkdf2_iteration_count", value );
         }
 
@@ -1088,6 +1084,9 @@
  return ak_error_undefined_function;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \example example-hello.c                                                                       */
+/*! \example example-log.c                                                                         */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                     ak_tools.c  */
 /* ----------------------------------------------------------------------------------------------- */
