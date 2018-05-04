@@ -20,16 +20,16 @@
  /* инициализируем библиотеку. в случае возникновения ошибки завершаем работу */
   if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true ) {
     return ak_libakrypt_destroy();
-  }
+  } else printf(" example-log, libakrypt version: %s\n", ak_libakrypt_version());
 
  /* выводим тестовое сообщение в стандарный поток вывода ошибок */
-  ak_log_set_message( "Default audit: simple message" );
+  ak_log_set_message( " default audit: simple message" );
 
  /* устанавливаем свою собственную функцию аудита - вывод в файл */
    ak_log_set_function( ak_function_log_user );
 
  /* выводим еще одно тестовое сообщение, теперь в файл */
-   ak_log_set_message( "User audit: another simple message" );
+   ak_log_set_message( " user audit: another simple message" );
 
  /* сообщения, выводимые при остановке баиблиотеки,
     также выводятся с использованием установленной

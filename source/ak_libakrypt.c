@@ -19,7 +19,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция проверяет корректность определения базовых типов данных
     \return В случе успешного тестирования возвращает \ref ak_true (истина).
-   В противном случае возвращается ak_false.                                                      */
+    В противном случае возвращается ak_false.                                                      */
 /* ----------------------------------------------------------------------------------------------- */
  static ak_bool ak_libakrypt_test_types( void )
 {
@@ -84,6 +84,12 @@
  if( ak_log_get_level() >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "library applies __m128i base type" );
 #endif
+
+#ifdef LIBAKRYPT_HAVE_PTHREAD
+ if( ak_log_get_level() >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "library runs with pthreads support" );
+#endif
+
  return ak_true;
 }
 

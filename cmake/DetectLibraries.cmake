@@ -1,16 +1,18 @@
 # -------------------------------------------------------------------------------------------------- #
 if( MSVC )
-  
+
   # в начале ищем библиотеки, если нет - выходим
   find_library( PTHREAD pthreadVC2 )
   if( PTHREAD )
     message("-- Searching pthreadVC2 - done ")
     set( LIBAKRYPT_LIBS pthreadVC2 )
-    
+
     # потом ищем заголовочный файл, если нет - выходим
     find_file( PTHREAD_H pthread.h )
     if( PTHREAD_H )
-    
+      # устанавливаем флаг
+      set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_PTHREAD" )
+
       # наконец, проверяем, определена ли структура timespec
       check_c_source_compiles("
          #include <pthread.h>
@@ -21,17 +23,17 @@ if( MSVC )
       else()
         set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_STRUCT_TIMESPEC" )
       endif()
-    
+
     else()
       message("-- pthread.h not found")
-      exit()
     endif()
   else()
     message("-- pthreadVC2 not found")
-    exit()
   endif()
+else()
+  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_PTHREAD" )
 endif()
-    
+
 # -------------------------------------------------------------------------------------------------- #
 # вырабатываем и подключаем файл с ресурсами библиотеки
 if( WIN32 )

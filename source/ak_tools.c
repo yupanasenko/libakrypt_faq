@@ -18,7 +18,9 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! Внутренний указатель на функцию аудита                                                         */
  static ak_function_log *ak_function_log_default = NULL;
+#ifdef LIBAKRYPT_HAVE_PTHREAD
  static pthread_mutex_t ak_function_log_default_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тип данных для хранения одной опции библиотеки */
@@ -646,7 +648,9 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_log_set_function( ak_function_log *function )
 {
+#ifdef LIBAKRYPT_HAVE_PTHREAD
   pthread_mutex_lock( &ak_function_log_default_mutex );
+#endif
   if( function != NULL ) ak_function_log_default = function;
    else {
     #ifdef LIBAKRYPT_HAVE_SYSLOG_H
@@ -655,7 +659,9 @@
       ak_function_log_default = ak_function_log_stderr;
     #endif
    }
+#ifdef LIBAKRYPT_HAVE_PTHREAD
   pthread_mutex_unlock( &ak_function_log_default_mutex );
+#endif
   return ak_error_ok;
 }
 
@@ -676,9 +682,13 @@
   if( message == NULL ) {
     return ak_error_message( ak_error_null_pointer, __func__ , "using a NULL string for message" );
   } else {
-       pthread_mutex_lock( &ak_function_log_default_mutex );
-       result = ak_function_log_default( message );
-       pthread_mutex_unlock( &ak_function_log_default_mutex );
+          #ifdef LIBAKRYPT_HAVE_PTHREAD
+           pthread_mutex_lock( &ak_function_log_default_mutex );
+          #endif
+           result = ak_function_log_default( message );
+          #ifdef LIBAKRYPT_HAVE_PTHREAD
+           pthread_mutex_unlock( &ak_function_log_default_mutex );
+          #endif
       return result;
     }
  return ak_error_ok;

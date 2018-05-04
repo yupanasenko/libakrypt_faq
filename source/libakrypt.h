@@ -33,9 +33,12 @@
  #include <stdio.h>
  #include <string.h>
  #include <stdlib.h>
- #include <pthread.h>
  #include <sys/types.h>
 
+/* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_PTHREAD
+ #include <pthread.h>
+#endif
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_STDALIGN
  #include <stdalign.h>
