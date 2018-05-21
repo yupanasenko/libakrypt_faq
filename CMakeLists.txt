@@ -34,9 +34,11 @@ option( LIBAKRYPT_SHARED_LIB "Build the shared library" OFF )
 set( MAIN_HEADER    source/libakrypt.h )
 
 set( HEADERS        source/ak_tools.h
+                    source/ak_buffer.h
 )
 
 set( SOURCES        source/ak_tools.c
+                    source/ak_buffer.c
                     source/ak_libakrypt.c
 )
 
@@ -116,6 +118,7 @@ enable_testing()
 # сборка тестовых примеров
 set( EXAMPLES_LIST hello
                    log
+                   buffer
 )
 
 # организуем сборку примеров со статической линковкой

@@ -2,10 +2,15 @@
 /*  Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  libakrypt.h                                                                                    */
-/*  Файл содержит перечень экспортируемых интерфейсов библиотеки                                   */
+/*  Файл содержит перечень экспортируемых интерфейсов библиотеки libakrypt                         */
 /* ----------------------------------------------------------------------------------------------- */
 #ifndef    __LIBAKRYPT_H__
 #define    __LIBAKRYPT_H__
+
+/* ----------------------------------------------------------------------------------------------- */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef DLL_EXPORT
@@ -109,6 +114,12 @@
  typedef ak_int64 ak_handle;
 /*! \brief Пользовательская функция аудита. */
  typedef int ( ak_function_log )( const char * );
+/*! \brief Стандартная для языка С функция выделения памяти. */
+ typedef ak_pointer ( ak_function_alloc )( size_t );
+/*! \brief Стандартная для языка С функция освобождения памяти. */
+ typedef void ( ak_function_free )( ak_pointer );
+/*! \brief Функция, возвращающая NULL после освобождения памяти. */
+ typedef ak_pointer ( ak_function_free_object )( ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Результат, говорящий об отсутствии ошибки. */
@@ -284,6 +295,11 @@
 } ak_oid_mode;
 
 /* ----------------------------------------------------------------------------------------------- */
+ struct buffer;
+/*! \brief Контекст буффера. */
+ typedef struct buffer *ak_buffer;
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает уровень аудита библиотеки. */
  dll_export int ak_log_get_level( void );
 /*! \brief Прямой вывод сообщения аудита. */
@@ -313,7 +329,6 @@
 /*! \brief Получение значения опции по ее номеру. */
  dll_export ak_int32 ak_libakrypt_get_option_value( const size_t index );
 
-
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает константный указатель NULL-строку с текущей версией библиотеки. */
  dll_export const char *ak_libakrypt_version( void );
@@ -321,6 +336,36 @@
  dll_export int ak_libakrypt_create( ak_function_log * );
 /*! \brief Функция остановки поддержки криптографических механизмов. */
  dll_export int ak_libakrypt_destroy( void );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Создание буффера заданного размера. */
+ dll_export ak_buffer ak_buffer_new_size( const size_t );
+/*! \brief Создание буффера с данными. */
+ dll_export ak_buffer ak_buffer_new_ptr( const ak_pointer , const size_t , const ak_bool );
+/*! \brief Создание буффера с данными, записанными в шестнадцатеричном виде. */
+ dll_export ak_buffer ak_buffer_new_hexstr( const char * );
+/*! \brief Создание буффера заданной длины с данными, записанными в шестнадцатеричном виде. */
+ dll_export ak_buffer ak_buffer_new_hexstr_size( const char * , const size_t , const ak_bool );
+/*! \brief Создание буффера, содержащего строку символов, оканчивающуюся нулем. */
+ dll_export ak_buffer ak_buffer_new_str( const char * );
+/*! \brief Уничтожение буффера. */
+ dll_export ak_pointer ak_buffer_delete( ak_pointer );
+/*! \brief Пощемение двоичных данных в буффер. */
+ dll_export int ak_buffer_set_ptr( ak_buffer , const ak_pointer , const size_t , const ak_bool );
+/*! \brief Пощемение в буффер данных, заданных строкой в  шестнадцатеричном представлении. */
+ dll_export int ak_buffer_set_hexstr( ak_buffer, const char * );
+/*! \brief Помещение в буффер строки, оканчивающейся нулем. */
+ dll_export int ak_buffer_set_str( ak_buffer, const char * );
+/*! \brief Получение указателя на данные (как на строку символов). */
+ dll_export const char *ak_buffer_get_str( ak_buffer );
+/*! \brief Получение указателя на данные. */
+ dll_export ak_pointer ak_buffer_get_ptr( ak_buffer );
+/*! \brief Получение размера буффера. */
+ dll_export const size_t ak_buffer_get_size( ak_buffer );
+/*! \brief Получение строки символов с шестнадцатеричным значением буффера. */
+ dll_export char *ak_buffer_to_hexstr( const ak_buffer , const ak_bool );
+/*! \brief Сравнение двух буфферов. */
+ dll_export ak_bool ak_buffer_is_equal( const ak_buffer, const ak_buffer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей значение заданной области памяти. */
@@ -359,7 +404,11 @@
 #define ak_max(x,y) ((x) > (y) ? (x) : (y))
 #define ak_min(x,y) ((x) < (y) ? (x) : (y))
 
+#ifdef __cplusplus
+} /* конец extern "C" */
 #endif
+#endif
+
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                     libakrypt.h */
 /* ----------------------------------------------------------------------------------------------- */
