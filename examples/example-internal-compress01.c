@@ -46,6 +46,12 @@
   ak_compress_finalize( &comp, NULL, 0, out2 ); /* получаем окончательное значение */
   printf("hash: %s\n", str = ak_ptr_to_hexstr( out2, 32, ak_false )); free( str );
 
+  ak_compress_finalize( &comp, NULL, 0, out2 ); /* получаем окончательное значение второй раз */
+  printf("hash: %s\n", str = ak_ptr_to_hexstr( out2, 32, ak_false )); free( str );
+
+  ak_compress_finalize( &comp, NULL, 0, out2 ); /* получаем окончательное значение третий раз */
+  printf("hash: %s\n", str = ak_ptr_to_hexstr( out2, 32, ak_false )); free( str );
+
  /* очищаем объекты */
   ak_compress_destroy( &comp );
   ak_hash_destroy( &ctx );

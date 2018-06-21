@@ -216,6 +216,9 @@
     (структуру struct buffer), помещает в нее вычисленное значение и возвращает на указатель на
     буффер. Буффер должен позднее быть удален с помощью вызова ak_buffer_delete().
 
+    Внутренняя структура, хранящая промежуточные данные, не очищается. Это позволят повторно вызывать
+    функцию finalize к текущему состоянию.
+
     @param comp указатель на структуру struct compress.
     @param in Указатель на входные данные для которых вычисляется хеш-код.
     @param size Размер входных данных в байтах.
@@ -231,8 +234,6 @@
  ak_buffer ak_compress_finalize( ak_compress comp,
                                             const ak_pointer in, const size_t size, ak_pointer out )
 {
-  ak_buffer result = NULL;
-
   if( comp == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__,
                                                   "using a null pointer to null compress context" );
@@ -243,18 +244,11 @@
                                                            "using an undefined finalize function" );
     return NULL;
   }
-  if( comp->clean == NULL ) {
-    ak_error_message( ak_error_undefined_function, __func__ , "using an undefined clean function" );
-    return NULL;
-  }
 
  /* начинаем с того, что обрабатываем все переданные данные */
   ak_compress_update( comp, in, size );
- /* потом обрабатываем хвост, оставшийся во временном буффере */
-  result = comp->finalize( comp->ctx, comp->data, comp->length, out );
-  comp->clean( comp->ctx );
-
- return result;
+ /* потом обрабатываем хвост, оставшийся во временном буффере, и выходим */
+ return comp->finalize( comp->ctx, comp->data, comp->length, out );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -1006,7 +1006,7 @@
   mac->update = NULL; // ak_hmac_update;
   mac->finalize = NULL; // ak_hmac_finalize;
 
-  чуй
+  //чуй
 
  return ak_error_ok;
 }
