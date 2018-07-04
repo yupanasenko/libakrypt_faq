@@ -206,7 +206,9 @@ set( INTERNAL_EXAMPLES_LIST
                    internal-hash02
                    internal-hash03
                    internal-compress01
+                   internal-compress02
                    internal-mgm-examples
+                   internal-mac-gost
                    test
 )
 

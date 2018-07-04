@@ -95,6 +95,9 @@
 /*! \brief Дальнейшее зашифрование/расшифрование в режиме гаммирования из ГОСТ Р 34.13-2015. */
  int ak_bckey_context_xcrypt_update( ak_bckey , ak_pointer , ak_pointer , size_t );
 
+/*! \brief Вычисление имитовставки от заданной области данных. */
+ ak_buffer ak_bckey_context_mac_gost3413( ak_bckey , ak_pointer , size_t , ak_pointer );
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тестирование корректной работы алгоритма блочного шифрования Магма. */
  ak_bool ak_bckey_test_magma( void );

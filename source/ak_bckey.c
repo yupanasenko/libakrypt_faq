@@ -513,6 +513,122 @@
  return ak_error_ok;
 }
 
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция позволяет вычислить имитовставку от заданной лобласти памяти фиксированного размера.
+
+   @param bkey Ключ алгоритма блочного шифрования, используемый для выработки имитовставки.
+   Ключ должен быть создан и определен.
+   @param in Указатель на входные данные для которых вычисляется имитовставка.
+   @param size Размер входных данных в байтах.
+   @param out Область памяти, куда будет помещен результат. Память должна быть заранее выделена.
+   Размер выделяемой памяти должен совпадать с длиной блока используемого алгоритма
+   блочного шифрования. Указатель out может принимать значение NULL.
+
+   @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+   возвращается указатель на буффер, содержащий результат вычислений. В случае возникновения
+   ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
+   ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_bckey_context_mac_gost3413( ak_bckey bkey, ak_pointer in, size_t size, ak_pointer out )
+{
+  ak_pointer pout = NULL;
+  ak_buffer result = NULL;
+  ak_int64 i = 0,
+           blocks = (ak_int64)size/bkey->ivector.size,
+           tail = (ak_int64)size%bkey->ivector.size;
+  ak_uint64 yaout[2], akey[2], *inptr = (ak_uint64 *)in;
+
+ /* проверяем, что длина данных больше нуля */
+  if( !size ) {
+    ak_error_message( ak_error_zero_length, __func__, "using a data with zero length" );
+    return NULL;
+  }
+
+ /* проверяем целостность ключа */
+  if( bkey->key.check_icode( &bkey->key ) != ak_true ) {
+    ak_error_message( ak_error_wrong_key_icode, __func__,
+                                                  "incorrect integrity code of secret key value" );
+    return NULL;
+  }
+
+ /* уменьшаем значение ресурса ключа */
+  if( bkey->key.resource.counter < ( blocks + ( tail > 0 ))) {
+    ak_error_message( ak_error_low_key_resource, __func__ , "low resource of block cipher key" );
+    return NULL;
+  } else bkey->key.resource.counter -= ( blocks + ( tail > 0 )); /* уменьшаем ресурс ключа */
+
+  memset( akey, 0, sizeof( akey ));
+  memset( yaout, 0, sizeof( yaout ));
+  if( !tail ) { tail = bkey->ivector.size; blocks--; } /* последний блок всегда существует */
+
+ /* основной цикл */
+  if( bkey->ivector.size == 16 ) { /* здесь длина блока равна 128 бита */
+    for( i = 0; i < blocks; i++, inptr += 2 ) {
+       yaout[0] ^= inptr[0];
+       yaout[1] ^= inptr[1];
+       bkey->encrypt( &bkey->key, yaout, yaout );
+    }
+
+    bkey->encrypt( &bkey->key, akey, akey );
+    if( akey[1]&0x8000000000000000LL ) {
+      akey[1] <<= 1; akey[1] ^= (akey[0] >> 63); akey[0] <<= 1;
+      akey[0] ^= 0x87; //135
+    } else {
+        akey[1] <<= 1; akey[1] ^= (akey[0] >> 63); akey[0] <<= 1;
+      }
+
+    if( tail < bkey->ivector.size ) {
+        if( akey[1]&0x8000000000000000LL ) {
+          akey[1] <<= 1; akey[1] ^= (akey[0] >> 63); akey[0] <<= 1;
+          akey[0] ^= 0x87; //135
+        } else {
+            akey[1] <<= 1; akey[1] ^= (akey[0] >> 63); akey[0] <<= 1;
+          }
+    }
+
+    // теперь шифруем последний блок
+    akey[0] ^= yaout[0]; akey[1] ^= yaout[1];
+    for( i = 0; i < tail; i++ ) ((ak_uint8 *)akey)[i] ^= ((ak_uint8 *)inptr)[i];
+    bkey->encrypt( &bkey->key, akey, akey );
+  }
+
+  if( bkey->ivector.size == 8 ) { /* здесь длина блока равна 64 бита */
+    for( i = 0; i < blocks; i++, inptr++ ) {
+       yaout[0] ^= inptr[0];
+       bkey->encrypt( &bkey->key, yaout, yaout );
+    }
+
+    bkey->encrypt( &bkey->key, akey, akey );
+    if( akey[0]&0x8000000000000000LL ) {
+      akey[0] <<= 1; akey[0] ^= 0x1B;
+    } else akey[0] <<= 1;
+
+    if( tail < bkey->ivector.size ) {
+      if( akey[0]&0x8000000000000000LL ) {
+        akey[0] <<= 1; akey[0] ^= 0x1B;
+      } else akey[0] <<= 1;
+    }
+
+    // теперь шифруем последний блок
+    akey[0] ^= yaout[0];
+    for( i = 0; i < tail; i++ ) ((ak_uint8 *)akey)[i] ^= ((ak_uint8 *)inptr)[i];
+    bkey->encrypt( &bkey->key, akey, akey );
+  }
+
+ /* определяем указатель на область памяти, в которую будет помещен результат вычислений */
+  if( out != NULL ) pout = out;
+   else {
+     if(( result = ak_buffer_new_size( bkey->ivector.size )) != NULL ) pout = result->data;
+      else ak_error_message( ak_error_get_value( ), __func__ , "wrong creation of result buffer" );
+   }
+ /* копируем нужную часть результирующего массива или выдаем сообщение об ошибке */
+  if( pout != NULL ) memcpy( pout, akey, bkey->ivector.size );
+    else ak_error_message( ak_error_out_of_memory, __func__ ,
+                                                 "incorrect memory allocation for result buffer" );
+ return result;
+}
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \example example-bckey-internal.c                                                              */
 /* ----------------------------------------------------------------------------------------------- */
