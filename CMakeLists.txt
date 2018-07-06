@@ -19,8 +19,8 @@ cmake_minimum_required( VERSION 3.2 )
 project( libakrypt )
 
 set( HEAD_VERSION 0 )
-set( MAIN_VERSION 6 )
-set( MINOR_VERSION 6 )
+set( MAIN_VERSION 7 )
+set( MINOR_VERSION 1 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -28,6 +28,7 @@ set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 # для включения опции cmake -D LIBAKRYPT_GMP_TESTS=ON path
 option( LIBAKRYPT_STATIC_LIB "Build the static library" ON )
 option( LIBAKRYPT_SHARED_LIB "Build the shared library" OFF )
+option( LIBAKRYPT_GMP_TESTS "Build library with comparison gmp and libakrypt tests" OFF )
 
 # -------------------------------------------------------------------------------------------------- #
 # множество исходных текстов библиотеки и вспомогательных файлов
@@ -35,10 +36,12 @@ set( MAIN_HEADER    source/libakrypt.h )
 
 set( HEADERS        source/ak_tools.h
                     source/ak_buffer.h
+                    source/ak_random.h
 )
 
 set( SOURCES        source/ak_tools.c
                     source/ak_buffer.c
+                    source/ak_random.c
                     source/ak_libakrypt.c
 )
 
@@ -134,6 +137,20 @@ if( LIBAKRYPT_SHARED_LIB )
   foreach( programm ${EXAMPLES_LIST} )
      add_executable( example-dynamic-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
      target_link_libraries( example-dynamic-${programm}${LIBAKRYPT_EXT} akrypt-shared ${LIBAKRYPT_LIBS} )
+  endforeach()
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+# теперь примеры, использующие неэкспортируемые функции
+set( INTERNAL_EXAMPLES_LIST
+                   internal-random01
+)
+
+if( CMAKE_HOST_UNIX )
+  foreach( programm ${INTERNAL_EXAMPLES_LIST} )
+     add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
+     target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+     add_test( NAME example-${programm}${LIBAKRYPT_EXT} COMMAND example-${programm}${LIBAKRYPT_EXT} )
   endforeach()
 endif()
 

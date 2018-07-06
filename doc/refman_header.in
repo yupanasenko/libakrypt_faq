@@ -115,7 +115,7 @@
 % Hyperlinks (required, but should be loaded last)
 \usepackage[unicode, colorlinks]{hyperref} % настройка PDF
 \hypersetup{%
-  pdftitle      = {Документация к библиотеке libakrypt (версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@)},
+  pdftitle      = {Документация к библиотеке libakrypt (версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@ от \today)},
   pdfauthor     = {Axel Kenzo},
   colorlinks    = true,%
   linkcolor     = blue,%

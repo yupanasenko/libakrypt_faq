@@ -7,7 +7,7 @@
   int i = 0;
   char str[128];
   ak_buffer ab[5]; /* массив из 5 указателей */
-  ak_uint8 data[12] = { 'w', 'e', 'l', 'c', 'o', 'm', 'e', 0, 'h', 'o', 'm', 'e' };
+  ak_uint8 *ptr, data[12] = { 'w', 'e', 'l', 'c', 'o', 'm', 'e', 0, 'h', 'o', 'm', 'e' };
   const char *prime = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffacab87";
 
  /* инициализируем библиотеку */
@@ -46,10 +46,17 @@
   ab[4] = ak_buffer_new_str( (char*) data );
   printf("buffer[4]: %s\n", ak_buffer_get_str(ab[4]));
 
+ /* пример модификации данных в буффере: можно, но зачем?  */
+  if(( ptr = (ak_uint8 *) ak_buffer_get_ptr( ab[4] )) != NULL ) {
+    for( i = 0; i < ak_buffer_get_size( ab[4] ); i++ ) *ptr++ = '0';
+  }
+  ak_ptr_to_hexstr_static( /* выводим в строку шестнадцатеричное представление данных */
+    ak_buffer_get_ptr(ab[4]), ak_buffer_get_size( ab[4] ), str, sizeof(str), ak_false );
+  printf("buffer[4]: %s\n", str );
+
  /* очищаем память и закрываем библиотеку
     удаление ab[3], не владеющего данными, должно быть выполнено корректно */
   for( i = 0; i < 5; i++ ) ak_buffer_delete( ab[i] );
   ak_libakrypt_destroy();
  return 0;
 }
-

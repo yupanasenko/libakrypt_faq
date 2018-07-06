@@ -26,7 +26,8 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param buff указатель на структуру struct buffer
+/*! Функция выделяет заданное количество байт памяти. После выделения память заполняется нулями.
+    @param buff указатель на структуру struct buffer
     @param size размер инициализируемого буффера в байтах
 
     @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
@@ -49,7 +50,9 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param buff указатель на структуру struct buffer
+/*! Функция создает буффер заданного размера, используя для выделения и освобождения памяти
+    заданные пользователем функции. После выделения память заполняется нулями.
+    @param buff указатель на структуру struct buffer
     @param falloc указатель на функцию выделения памяти
     @param ffree указатель на функцию освобождения памяти
     @param size размер выделяемой под буффер памяти (в байтах)
@@ -510,6 +513,80 @@
   if( left->size != right->size ) return ak_false;
 
  return ak_ptr_is_equal( left->data, right->data, left->size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция заполняет заданную область памяти случайными данными, выработанными заданным
+    генератором псевдослучайных чисел. Генератор должен быть корректно определен.
+
+    @param ptr Область данных, которая заполняется случайным мусором.
+    @param size Размер заполняемой области в байтах.
+    @param generator Генератор псевдо-случайных чисел, используемый для генерации случайного мусора.
+    @param readflag Булева переменная, отвечающая за обязательное чтение сгенерированных данных.
+    В большинстве случаев должна принимать истинное значение.
+    @return Функция возвращает ak_error_ok в случае успешного уничтожения данных. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_ptr_wipe( ak_pointer ptr, size_t size, ak_random generator, ak_bool readflag )
+{
+  size_t idx = 0;
+  int result = ak_error_ok;
+
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                      __func__, "use null pointer to wipe memory" );
+  if( size == 0 ) return ak_error_message( ak_error_zero_length,
+                                                        __func__ , "wipe memory with zero length" );
+  if( generator == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                       "use a null pointer to a random generator" );
+  if( generator->random == NULL ) return ak_error_message( ak_error_undefined_function, __func__,
+                                                   "use an undefined context to random generator" );
+
+  if( generator->random( generator, ptr, size ) != ak_error_ok ) {
+    ak_error_message( ak_error_write_data, __func__, "incorrect memory wiping" );
+    memset( ptr, 0, size );
+    result = ak_error_write_data;
+  }
+  /* запись в память при чтении => необходим вызов функции чтения данных из ptr */
+  if( readflag ) {
+    for( idx = 0; idx < size; idx++ ) ((ak_uint8 *)ptr)[idx] += ((ak_uint8 *)ptr)[size - 1 - idx];
+  }
+  return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция заполняет буффер случайными данными, выработанными заданным генератором псевдослучайных
+    чисел. Используется для уничтожения хранящихся в буффере значений.
+
+    @param buff Буффер, данные которого уничтожаются
+    @param generator Генератор псевдо-случайных чисел, используемый для генерации случайного мусора.
+    @return Функция возвращает ak_error_ok в случае успешного уничтожения данных. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_buffer_wipe( ak_buffer buff, ak_random generator )
+{
+  if( buff == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                   __func__, "use a null pointer to a buffer" );
+  if( buff->data == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                        "use null pointer to internal buffer" );
+ return ak_ptr_wipe( buff->data, buff->size, generator, ak_true );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция заполняет буффер случайными данными, выработанными заданным генератором псевдослучайных
+    чисел.
+
+    @param buff Буффер, данные которого уничтожаются
+    @param generator Генератор псевдо-случайных чисел, используемый для генерации случайного мусора.
+    @return Функция возвращает ak_error_ok в случае успешного уничтожения данных. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_buffer_set_random( ak_buffer buff, ak_random generator )
+{
+  if( buff == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                   __func__, "use a null pointer to a buffer" );
+  if( buff->data == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                        "use null pointer to internal buffer" );
+ return ak_ptr_wipe( buff->data, buff->size, generator, ak_false );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
