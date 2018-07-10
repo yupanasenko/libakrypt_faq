@@ -142,15 +142,15 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # теперь примеры, использующие неэкспортируемые функции
-set( INTERNAL_EXAMPLES_LIST
+set( INTERNAL_TEST_LIST
                    internal-random01
 )
 
 if( CMAKE_HOST_UNIX )
   foreach( programm ${INTERNAL_EXAMPLES_LIST} )
-     add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
-     target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
-     add_test( NAME example-${programm}${LIBAKRYPT_EXT} COMMAND example-${programm}${LIBAKRYPT_EXT} )
+     add_executable( test-${programm}${LIBAKRYPT_EXT} examples/test-${programm}.c )
+     target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+     add_test( NAME test-${programm}${LIBAKRYPT_EXT} COMMAND test-${programm}${LIBAKRYPT_EXT} )
   endforeach()
 endif()
 

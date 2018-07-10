@@ -1,8 +1,8 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*  Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
-/*  ak_random.с                                                                                    */
-/*  Файл содержит реализацию генераторов псевдо-случайных чисел                                    */
+/*  Файл ak_random.с                                                                               */
+/*  - содержит реализацию генераторов псевдо-случайных чисел                                       */
 /* ----------------------------------------------------------------------------------------------- */
  #include <time.h>
  #include <ak_tools.h>
@@ -36,15 +36,14 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_random_context_destroy( ak_random rnd )
 {
-  if( rnd == NULL ) {
-   ak_error_message( ak_error_null_pointer, __func__ ,"use a null pointer to a random generator" );
-  return ak_error_null_pointer;
-  }
+  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                      "use a null pointer to a random generator" );
   if( rnd->data != NULL ) rnd->free( rnd->data );
   rnd->next = NULL;
   rnd->randomize_ptr = NULL;
   rnd->random = NULL;
   rnd->free = NULL;
+
  return ak_error_ok;
 }
 
@@ -64,6 +63,50 @@
   } else ak_error_message( ak_error_null_pointer, __func__ ,
                                             "use a null pointer to a random generator" );
   return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Инициализация внутреннего состояния происходит путем вызова функции-члена класса random,
+    которая и реализует механизм инициализации.
+
+    @param rnd контект генератора псевдо-случайных чисел.
+    @param in указатель на данные, с помощью которых инициализируется генератор.
+    @param size размер данных, в байтах.
+
+    @return В случае успеха функция возвращает \ref ak_error_ok. В противном случае
+    возвращается код ошибки. */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_random_context_randomize( ak_random rnd, const ak_pointer in, const size_t size )
+{
+ if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                        "use a null pointer to random generator" );
+ if( in == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                           "use a null pointer to initializator" );
+ if( rnd->randomize_ptr == NULL ) return ak_error_message( ak_error_undefined_function, __func__,
+                                           "for this generator randomize() function not defined" );
+ return rnd->randomize_ptr( rnd, in, size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Выработка последовательности псведо-случайных данных происходит путем
+    вызова функции-члена класса random.
+
+    @param rnd контект генератора псевдо-случайных чисел.
+    @param in указатель на область памяти, куда помещаются псевдо-случайные данные.
+    @param size размер данных, в байтах.
+
+    @return В случае успеха функция возвращает \ref ak_error_ok. В противном случае
+    возвращается код ошибки. */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_random_context_random( ak_random rnd, const ak_pointer out, const size_t size )
+{
+ if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                        "use a null pointer to random generator" );
+ if( out == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                             "use a null pointer to output data" );
+ if( rnd->random == NULL ) return ak_error_message( ak_error_undefined_function, __func__,
+                                                "this generator has undefined random() function" );
+ return rnd->random( rnd, out, size );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -302,7 +345,6 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Генератор вырабатывает последовательность внутренних состояний, удовлетворяющую ...
-
 
     @param generator Контекст создаваемого генератора.
     \return В случае успеха, функция возвращает \ref ak_error_ok. В противном случае
