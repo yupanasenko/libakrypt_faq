@@ -4,7 +4,7 @@
 
  int main( void )
 {
-  int i = 0;
+  size_t i = 0;
   char str[128];
   ak_buffer ab[5]; /* массив из 5 указателей */
   ak_uint8 *ptr, data[12] = { 'w', 'e', 'l', 'c', 'o', 'm', 'e', 0, 'h', 'o', 'm', 'e' };
