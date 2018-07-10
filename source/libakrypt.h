@@ -120,6 +120,8 @@ extern "C" {
  typedef void ( ak_function_free )( ak_pointer );
 /*! \brief Функция, возвращающая NULL после освобождения памяти. */
  typedef ak_pointer ( ak_function_free_object )( ak_pointer );
+/*! \brief Класс функций без параметра. */
+ typedef ak_pointer ( ak_function_void )( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Результат, говорящий об отсутствии ошибки. */
@@ -300,6 +302,14 @@ extern "C" {
  typedef struct buffer *ak_buffer;
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция возвращает константный указатель NULL-строку с текущей версией библиотеки. */
+ dll_export const char *ak_libakrypt_version( void );
+/*! \brief Функция инициализации и тестирования криптографических механизмов библиотеки. */
+ dll_export int ak_libakrypt_create( ak_function_log * );
+/*! \brief Функция остановки поддержки криптографических механизмов. */
+ dll_export int ak_libakrypt_destroy( void );
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает уровень аудита библиотеки. */
  dll_export int ak_log_get_level( void );
 /*! \brief Прямой вывод сообщения аудита. */
@@ -330,12 +340,8 @@ extern "C" {
  dll_export ak_int32 ak_libakrypt_get_option_value( const size_t index );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция возвращает константный указатель NULL-строку с текущей версией библиотеки. */
- dll_export const char *ak_libakrypt_version( void );
-/*! \brief Функция инициализации и тестирования криптографических механизмов библиотеки. */
- dll_export int ak_libakrypt_create( ak_function_log * );
-/*! \brief Функция остановки поддержки криптографических механизмов. */
- dll_export int ak_libakrypt_destroy( void );
+/*! \brief Получение общего количества определенных OID библиотеки. */
+ dll_export const size_t ak_libakrypt_oids_count( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание буффера заданного размера. */

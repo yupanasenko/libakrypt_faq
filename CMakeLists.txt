@@ -36,11 +36,13 @@ set( MAIN_HEADER    source/libakrypt.h )
 
 set( HEADERS        source/ak_tools.h
                     source/ak_buffer.h
+                    source/ak_oid.h
                     source/ak_random.h
 )
 
 set( SOURCES        source/ak_tools.c
                     source/ak_buffer.c
+                    source/ak_oid.c
                     source/ak_random.c
                     source/ak_libakrypt.c
 )
@@ -96,7 +98,7 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # сборка библиотек - статической и, если нужно, динамической
-include_directories( "source " )
+include_directories( "source" )
 message("-- Path for libakrypt.conf is ${LIBAKRYPT_CONF}")
 add_compile_options( -DLIBAKRYPT_OPTIONS_PATH="${LIBAKRYPT_CONF}" )
 add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
@@ -116,8 +118,6 @@ endif()
 message("-- Additional libraries is ${LIBAKRYPT_LIBS}" )
 
 # -------------------------------------------------------------------------------------------------- #
-enable_testing()
-
 # сборка тестовых примеров
 set( EXAMPLES_LIST hello
                    log
@@ -141,13 +141,16 @@ if( LIBAKRYPT_SHARED_LIB )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
+enable_testing()
+
 # теперь примеры, использующие неэкспортируемые функции
 set( INTERNAL_TEST_LIST
                    internal-random01
+                   internal-oid01
 )
 
 if( CMAKE_HOST_UNIX )
-  foreach( programm ${INTERNAL_EXAMPLES_LIST} )
+  foreach( programm ${INTERNAL_TEST_LIST} )
      add_executable( test-${programm}${LIBAKRYPT_EXT} examples/test-${programm}.c )
      target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
      add_test( NAME test-${programm}${LIBAKRYPT_EXT} COMMAND test-${programm}${LIBAKRYPT_EXT} )

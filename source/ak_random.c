@@ -22,6 +22,7 @@
     return ak_error_null_pointer;
   }
   rnd->data = NULL;
+  rnd->oid = NULL;
   rnd->next = NULL;
   rnd->randomize_ptr = NULL;
   rnd->random = NULL;
@@ -39,6 +40,7 @@
   if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                       "use a null pointer to a random generator" );
   if( rnd->data != NULL ) rnd->free( rnd->data );
+  rnd->oid = NULL;
   rnd->next = NULL;
   rnd->randomize_ptr = NULL;
   rnd->random = NULL;
@@ -69,12 +71,12 @@
 /*! Инициализация внутреннего состояния происходит путем вызова функции-члена класса random,
     которая и реализует механизм инициализации.
 
-    @param rnd контект генератора псевдо-случайных чисел.
+    @param rnd контекст генератора псевдо-случайных чисел.
     @param in указатель на данные, с помощью которых инициализируется генератор.
     @param size размер данных, в байтах.
 
     @return В случае успеха функция возвращает \ref ak_error_ok. В противном случае
-    возвращается код ошибки. */
+    возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_random_context_randomize( ak_random rnd, const ak_pointer in, const size_t size )
 {
@@ -83,7 +85,7 @@
  if( in == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                            "use a null pointer to initializator" );
  if( rnd->randomize_ptr == NULL ) return ak_error_message( ak_error_undefined_function, __func__,
-                                           "for this generator randomize() function not defined" );
+                                           "randomize() function not defined for this generator" );
  return rnd->randomize_ptr( rnd, in, size );
 }
 
@@ -91,12 +93,12 @@
 /*! Выработка последовательности псведо-случайных данных происходит путем
     вызова функции-члена класса random.
 
-    @param rnd контект генератора псевдо-случайных чисел.
-    @param in указатель на область памяти, куда помещаются псевдо-случайные данные.
-    @param size размер данных, в байтах.
+    @param rnd контекст генератора псевдо-случайных чисел.
+    @param in указатель на область памяти, в которую помещаются псевдо-случайные данные.
+    @param size размер помещаемых данных, в байтах.
 
     @return В случае успеха функция возвращает \ref ak_error_ok. В противном случае
-    возвращается код ошибки. */
+    возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_random_context_random( ak_random rnd, const ak_pointer out, const size_t size )
 {
@@ -242,6 +244,7 @@
     return ak_error_message( ak_error_out_of_memory, __func__ ,
               "incorrect memory allocation for an internal variables of random generator" );
 
+  generator->oid = ak_oid_context_find_by_name("lcg");
   generator->next = ak_random_lcg_next;
   generator->randomize_ptr = ak_random_lcg_randomize_ptr;
   generator->random = ak_random_lcg_random;
@@ -362,6 +365,7 @@
     return ak_error_message( ak_error_out_of_memory, __func__ ,
               "incorrect memory allocation for an internal variables of random generator" );
 
+  generator->oid = ak_oid_context_find_by_name("xorshift64");
   generator->next = ak_random_xorshift64_next;
   generator->randomize_ptr = ak_random_xorshift64_randomize_ptr;
   generator->random = ak_random_xorshift64_random;
@@ -470,6 +474,7 @@
     return ak_error_open_file;
   }
 
+  // для данного генератора oid не определен
   generator->next = NULL;
   generator->randomize_ptr = NULL;
   generator->random = ak_random_file_random;
@@ -486,7 +491,9 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_random_context_create_random( ak_random generator )
 {
- return ak_random_context_create_file( generator, "/dev/random" );
+ int result = ak_random_context_create_file( generator, "/dev/random" );
+  if( result == ak_error_ok ) generator->oid = ak_oid_context_find_by_name("dev-random");
+ return result;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -496,7 +503,9 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_random_context_create_urandom( ak_random generator )
 {
- return ak_random_context_create_file( generator, "/dev/urandom" );
+ int result = ak_random_context_create_file( generator, "/dev/urandom" );
+  if( result == ak_error_ok ) generator->oid = ak_oid_context_find_by_name("dev-urandom");
+ return result;
 }
 #endif
 
@@ -572,6 +581,7 @@
   }
   (( ak_random_winrtl )generator->data)->handle = handle;
 
+  generator->oid = ak_oid_context_find_by_name("winrtl");
   generator->next = NULL;
   generator->randomize_ptr = NULL;
   generator->random = ak_random_winrtl_random;

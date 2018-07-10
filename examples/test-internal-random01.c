@@ -42,6 +42,8 @@
 
  int main( void )
 {
+ if( !ak_libakrypt_create( NULL )) return ak_libakrypt_destroy();
+
  printf("random generators speed test for libakrypt, version %s\n", ak_libakrypt_version( ));
 
  /* последовательно запускаем генераторы на тестирование */
@@ -57,5 +59,6 @@
                     "0000000000000000000000000000000000000000000000000000000000000000",
                     ak_random_context_create_urandom ) != ak_true ) return EXIT_FAILURE;
 
+ ak_libakrypt_destroy();
  return EXIT_SUCCESS;
 }
