@@ -8,7 +8,7 @@
  #include <stdio.h>
  #include <ak_hash.h>
 
- int main( void )
+ int main( int argc, char *argv[] )
 {
   char *str = NULL;
   struct hash ctx_one;    /* объект, размещаемый в статической памяти (стеке) */
@@ -39,9 +39,18 @@
       "C087BAD4C0FDC5622873294B5D9C3B790A9DC55FB29B1758D5154ADC2310F189", 32 ) != 0 )
     exitcode = EXIT_FAILURE;
 
- /* освобождаем память */
+ /* освобождаем временную память */
   free( str );
   result_one = ak_buffer_delete( result_one );
+
+ /* второй эксперимент
+  * вычисляем хеш-код от заданного файла (используя динамический объект) */
+  ak_hash_context_file( ctx_two, argv[0], result_two );
+  if( ak_error_get_value() != ak_error_ok ) exitcode = EXIT_FAILURE;
+  printf("hash [2]: %s\n", str = ak_ptr_to_hexstr( result_two, 64, ak_false ));
+
+ /* освобождаем временную память */
+  free( str );
 
  /* уничтожение статического объекта */
   ak_hash_context_destroy( &ctx_one );

@@ -496,9 +496,13 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_file_is_exist( ak_file fd, const char *filename, ak_bool closeflag )
 {
-  if(( fd->fd = open( filename, O_RDONLY | O_BINARY )) < 0 ) return ak_false;
+  if(( fd->fd = open( filename, O_RDONLY | O_BINARY )) < 0 ) {
+    ak_error_message( ak_error_open_file, __func__, strerror( errno ));
+    return ak_false;
+  }
   if( fstat( fd->fd, &fd->st )) {
     close( fd->fd );
+    ak_error_message( ak_error_access_file,  __func__, strerror( errno ));
     return ak_false;
   }
   if( closeflag ) close( fd->fd );

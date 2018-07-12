@@ -4,7 +4,7 @@
 /*  Файл ak_hash.h                                                                                 */
 /*  - содержит реализацию общих функций для алгоритмов бесключевого хэширования.                   */
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_hash.h>
+ #include <ak_compress.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция устанавливает значение полей структуры struct hash в значения по-умолчанию.
@@ -159,6 +159,46 @@
   result = ctx->finalize( ctx, (unsigned char *)in + offset, size - offset, out );
   /* очищаем за собой данные, содержащиеся в контексте */
   ctx->clean( ctx );
+ return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция вычисляет хеш-код от заданного файла. Результат вычислений помещается в область памяти,
+    на которую указывает out. Если out равен NULL, то функция создает новый буффер
+    (структуру struct buffer), помещает в нее вычисленное значение и возвращает указатель на
+    созданный буффер. Буффер должен позднее быть удален с помощью вызова ak_buffer_delete().
+
+    @param ctx Контекст алгоритма хеширования, должен быть отличен от NULL.
+    @param filename Имя файла, для которого вычисляется значение хеш-кода.
+    @param out Область памяти, куда будет помещен результат.
+    Указатель out может принимать значение NULL.
+
+    @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+    возвращается указатель на буффер, содержащий результат вычислений. В случае возникновения
+    ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_hash_context_file( ak_hash ctx, const char *filename, ak_pointer out )
+{
+  struct compress comp;
+  int error = ak_error_ok;
+  ak_buffer result = NULL;
+
+  if( ctx == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to hash context" );
+    return NULL;
+  }
+
+  if(( error = ak_compress_context_create_hash( &comp, ctx )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong creation a compress context" );
+    return NULL;
+  }
+
+  result = ak_compress_context_file( &comp, filename, out );
+  if(( error = ak_error_get_value( )) != ak_error_ok )
+    ak_error_message( error, __func__ , "incorrect hash code calculation" );
+
+  ak_compress_context_destroy( &comp );
  return result;
 }
 
