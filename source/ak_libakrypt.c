@@ -4,8 +4,8 @@
 /*  Файл ak_libakrypt.с                                                                            */
 /*  - содержит реализацию функций инициализации и тестирования библиотеки.                         */
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_hash.h>
  #include <ak_tools.h>
+ #include <ak_compress.h>
 
 /* ----------------------------------------------------------------------------------------------- */
  const char *ak_libakrypt_version( void )
@@ -131,6 +131,29 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция проверяет корректность реализации алгоритмов итерационного сжатия
+    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
+    вызова ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ static ak_bool ak_libakrypt_test_compress_functions( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing compress methods started" );
+
+  /* тестируем итерационное применение функций хеширования */
+  if( ak_compress_test_hash_functions() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog512 testing" );
+    return ak_false;
+  }
+
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing compress methods ended successfully" );
+
+ return ak_true;
+}
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция должна вызываться перед использованием любых криптографических механизмов библиотеки.
 
    Пример использования функции.
@@ -183,6 +206,12 @@
  /* проверяем корректность реализации алгоритмов бесключевго хеширования */
    if( ak_libakrypt_test_hash_functions( ) != ak_true ) {
      ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of hash functions" );
+     return ak_false;
+   }
+
+ /* проверяем корректность реализации алгоритма итерационного сжатия */
+   if( ak_libakrypt_test_compress_functions( ) != ak_true ) {
+     ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of compress methods" );
      return ak_false;
    }
 

@@ -154,6 +154,7 @@ enable_testing()
 set( INTERNAL_TEST_LIST
                    internal-random01
                    internal-oid01
+                   internal-oid02
                    internal-hash01
                    internal-hash02
                    internal-hash03

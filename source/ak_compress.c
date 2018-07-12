@@ -273,9 +273,116 @@
  return result;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param ctx Контекст бесключевой функции хеширования. Должен быть инициализирован.
+  * \param data Указатель на сжимаемую область памяти.
+  * \param size Длина памяти (в байтах).
+  * \param out Область памяти, куда помещается результат.
+  * \param generator Контекст генератора псевдо-случайных чисел. Должен быть инициализирован.
+  * \return Функция возвращает код ошибки.                                                         */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_compress_test_hash_functions_random( ak_hash ctx,
+                                 ak_pointer data, size_t size, ak_pointer out, ak_random generator )
+{
+  size_t offset = 0;
+  struct compress comp;
+  int error = ak_error_ok;
+
+ /* хешируем через итеративное сжатие */
+  ctx->clean( ctx ); /* очищаем объект от предыдущего мусора */
+ /* инициализируем контекст итерационного сжатия путем указания ссылки
+                                    на объект бесключевого хеширования */
+  if(( error = ak_compress_context_create_hash( &comp, ctx )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect creation of compress context");
+
+ /* теперь обрабатываем данные последовательными фрагментами случайной длины */
+  while( offset < size ) {
+    size_t len;
+    ak_random_context_random( generator, &len, sizeof( size_t ));
+    len %= 256;
+    if( offset + len >= size ) len = size - offset;
+
+   /* обновляем внутреннее состояние */
+    ak_compress_context_update( &comp, ((ak_uint8 *)data)+offset, len );
+    offset += len;
+  }
+  ak_compress_context_finalize( &comp, NULL, 0, out ); /* получаем окончательное значение */
+
+ /* очищаем объекты */
+  ak_compress_context_destroy( &comp );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция проверяет эквивалентность выработки значений всех доступных функций бесключевого
+    хеширования с помощью прямого вычисления для данных с известной длиной и с помощью класса
+    \ref compress для случайной траектории вычислений.                                             */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_compress_test_hash_functions( void )
+{
+  ak_oid oid = NULL;
+  ak_uint8 data[4096];
+  int error = ak_error_ok;
+  struct random generator;
+  int audit = ak_log_get_level();
+
+ /* создаем генератор и вырабатываем необходимое количество псевдослучацных данных */
+  if(( error = ak_random_context_create_xorshift64( &generator )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect creation of random generator context" );
+    return ak_false;
+  }
+  if(( error = ak_random_context_random( &generator, data, sizeof( data ))) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect creation of random data");
+    goto label_exit;
+  }
+
+ /* перебираем все oid в поисках алгоритмов хеширования */
+  oid = ak_oid_context_find_by_engine( hash_function );
+
+  while( oid != NULL ) {
+    if( oid->mode == algorithm ) {
+      struct hash ctx;
+      ak_uint8 out[128];
+
+      memset( out, 0, 128 );
+      if(( error = ak_hash_context_create_oid( &ctx, oid )) == ak_error_ok ) {
+         if( ctx.hsize <= 64 ) {
+           ak_hash_context_ptr( &ctx, data, sizeof( data ), out );
+           if(( error = ak_compress_test_hash_functions_random( &ctx,
+                                 data, sizeof( data ), out+64, &generator )) == ak_error_ok ) {
+             /* здесь данные вычислены и принимается решение о совпадении значений */
+              if( ak_ptr_is_equal( out, out+64, ctx.hsize )) {
+                if( audit >= ak_log_maximum )
+                  ak_error_message_fmt( ak_error_ok, __func__ ,
+                                    "compress algorithm for %s function is Ok", ctx.oid->name );
+                } else {
+                   char *str = NULL;
+                   ak_error_message_fmt( error = ak_error_not_equal_data, __func__ ,
+                               "different values for %s and compress function", ctx.oid->name );
+                   ak_log_set_message(( str = ak_ptr_to_hexstr( out, ctx.hsize, ak_false ))); free( str );
+                   ak_log_set_message(( str = ak_ptr_to_hexstr( out+64, ctx.hsize, ak_false ))); free( str );
+                  }
+           }
+         }
+         ak_hash_context_destroy( &ctx );
+      } /* конец if context_create */
+    } /* конец if алгоритм */
+   /* выполняем поиск следующего */
+    if( error == ak_error_ok ) oid = ak_oid_context_findnext_by_engine( oid, hash_function );
+     else oid = NULL;
+  }
+
+ /* очищаем и уничтожаем вспомогательные данные */
+  label_exit: memset( data, 0, sizeof( data ));
+  ak_random_context_destroy( &generator );
+  if( error != ak_error_ok ) return ak_false;
+
+ return ak_true;
+}
+
 /*! -----------------------------------------------------------------------------------------------
     \example example-internal-compress01.c
-
- * ----------------------------------------------------------------------------------------------- */
+    \example example-internal-compress02.c                                                         */
+/* ----------------------------------------------------------------------------------------------- */
 /*                                                                                   ak_compress.c */
 /* ----------------------------------------------------------------------------------------------- */
