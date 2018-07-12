@@ -55,9 +55,15 @@
                     "A6F1DB7846B992AF9B513A8EF42E898C6035D5696A77D1F7DCF24DD57F55F82D",
                     ak_random_context_create_lcg ) != ak_true ) return EXIT_FAILURE;
 
+#ifdef WIN32
+ if( test_function( "winrtl",
+                    "0000000000000000000000000000000000000000000000000000000000000000",
+                    ak_random_context_create_winrtl ) != ak_true ) return EXIT_FAILURE;
+#else
  if( test_function( "/dev/urandom",
                     "0000000000000000000000000000000000000000000000000000000000000000",
                     ak_random_context_create_urandom ) != ak_true ) return EXIT_FAILURE;
+#endif
 
  ak_libakrypt_destroy();
  return EXIT_SUCCESS;

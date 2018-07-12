@@ -122,7 +122,7 @@
      exitcode = EXIT_FAILURE;
    }
 
-   printf("all results was taken for %s file (%lu bytes)\n",
+   printf("all results was calculated for %s file (%lu bytes)\n",
                                              argv[0], (unsigned long int) file.st.st_size );
    ak_file_close( &file );
 
