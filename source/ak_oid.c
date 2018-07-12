@@ -6,6 +6,7 @@
 /*    алгоритмов и параметров                                                                      */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_random.h>
+ #include <ak_parameters.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения OID библиотеки */
@@ -34,6 +35,32 @@
    { random_generator, algorithm, "xorshift64", "1.2.643.2.52.1.1.5", NULL, NULL,
                                     { (ak_function_void *) ak_random_context_create_xorshift64,
                                       (ak_function_void *) ak_random_context_destroy, NULL, NULL }},
+
+  /* 2. идентификаторы алгоритмов бесключевого хеширования,
+        значения OID взяты из перечней КриптоПро и ТК26 (http://tk26.ru/methods/OID_TK_26/index.php)
+        в дереве библиотеки: 1.2.643.2.52.1.2 - функции бесключевого хеширования */
+   { hash_function, algorithm, "gosthash94", "1.2.643.2.2.9", NULL, NULL,
+                                    { (ak_function_void *) ak_hash_context_create_gosthash94_csp,
+                                        (ak_function_void *) ak_hash_context_destroy, NULL, NULL }},
+
+   { hash_function, algorithm, "streebog256", "1.2.643.7.1.1.2.2", NULL, NULL,
+                                    { (ak_function_void *) ak_hash_context_create_streebog256,
+                                        (ak_function_void *) ak_hash_context_destroy, NULL, NULL }},
+
+   { hash_function, algorithm, "streebog512", "1.2.643.7.1.1.2.3", NULL, NULL,
+                                    { (ak_function_void *) ak_hash_context_create_streebog512,
+                                        (ak_function_void *) ak_hash_context_destroy, NULL, NULL }},
+
+  /* 3. идентификаторы параметров алгоритма бесключевого хеширования ГОСТ Р 34.11-94.
+        значения OID взяты из перечней КриптоПро */
+   { hash_function, kbox_params, "id-gosthash94-test-paramset", "1.2.643.2.2.30.0", NULL,
+                                                 (ak_pointer) hash_box, { NULL, NULL, NULL, NULL }},
+
+   { hash_function, kbox_params, "id-gosthash94-rfc4357-paramsetA", "1.2.643.2.2.30.1", NULL,
+                                            (ak_pointer) hash_box_CSPA, { NULL, NULL, NULL, NULL }},
+
+   { hash_function, kbox_params, "id-gosthash94-verbaO-paramset", "1.2.643.2.2.30.2", NULL,
+                                          (ak_pointer) hash_box_VerbaO, { NULL, NULL, NULL, NULL }},
 
   /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */
    { undefined_engine, undefined_mode, NULL, NULL, NULL, NULL, { NULL, NULL, NULL, NULL }}

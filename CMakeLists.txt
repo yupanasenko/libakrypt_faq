@@ -20,7 +20,7 @@ project( libakrypt )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 7 )
-set( MINOR_VERSION 1 )
+set( MINOR_VERSION 2 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -36,14 +36,19 @@ set( MAIN_HEADER    source/libakrypt.h )
 
 set( HEADERS        source/ak_tools.h
                     source/ak_buffer.h
+                    source/ak_parameters.h
                     source/ak_oid.h
                     source/ak_random.h
+                    source/ak_hash.h
 )
 
 set( SOURCES        source/ak_tools.c
                     source/ak_buffer.c
                     source/ak_oid.c
                     source/ak_random.c
+                    source/ak_hash.c
+                    source/ak_gosthash.c
+                    source/ak_streebog.c
                     source/ak_libakrypt.c
 )
 
@@ -147,9 +152,12 @@ enable_testing()
 set( INTERNAL_TEST_LIST
                    internal-random01
                    internal-oid01
+                   internal-hash01
 )
 
-if( CMAKE_HOST_UNIX )
+# добавляем примеры для всех компиляторов, отличных от MSVC
+if( MSVC )
+else()
   foreach( programm ${INTERNAL_TEST_LIST} )
      add_executable( test-${programm}${LIBAKRYPT_EXT} examples/test-${programm}.c )
      target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
