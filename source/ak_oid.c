@@ -5,7 +5,6 @@
 /*  - содержит реализации функций для работы с идентификаторами криптографических                  */
 /*    алгоритмов и параметров                                                                      */
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_random.h>
  #include <ak_parameters.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -35,6 +34,19 @@
    { random_generator, algorithm, "xorshift64", "1.2.643.2.52.1.1.5", NULL, NULL,
                                     { (ak_function_void *) ak_random_context_create_xorshift64,
                                       (ak_function_void *) ak_random_context_destroy, NULL, NULL }},
+
+   { random_generator, algorithm, "hashrnd-gosthash94", "1.2.643.2.52.1.1.6.0", NULL, NULL,
+                             { (ak_function_void *) ak_random_context_create_hashrnd_gosthash94,
+                                      (ak_function_void *) ak_random_context_destroy, NULL, NULL }},
+
+   { random_generator, algorithm, "hashrnd-streebog256", "1.2.643.2.52.1.1.6.1", NULL, NULL,
+                            { (ak_function_void *) ak_random_context_create_hashrnd_streebog256,
+                                      (ak_function_void *) ak_random_context_destroy, NULL, NULL }},
+
+   { random_generator, algorithm, "hashrnd-streebog512", "1.2.643.2.52.1.1.6.2", NULL, NULL,
+                            { (ak_function_void *) ak_random_context_create_hashrnd_streebog512,
+                                      (ak_function_void *) ak_random_context_destroy, NULL, NULL }},
+
 
   /* 2. идентификаторы алгоритмов бесключевого хеширования,
         значения OID взяты из перечней КриптоПро и ТК26 (http://tk26.ru/methods/OID_TK_26/index.php)
@@ -168,6 +180,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*!  \example example-oid.c                                                                        */
 /*!  \example test-internal-oid01.c                                                                */
+/*!  \example test-internal-oid02.c                                                                */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                       ak_oid.c  */
 /* ----------------------------------------------------------------------------------------------- */

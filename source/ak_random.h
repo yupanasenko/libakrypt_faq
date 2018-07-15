@@ -50,23 +50,33 @@
  ak_pointer ak_random_context_delete( ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание линейного конгруэнтного генератора псевдо-случайных чисел. */
+/*! \brief Инициализация контекста линейного конгруэнтного генератора псевдо-случайных чисел. */
  int ak_random_context_create_lcg( ak_random );
-/*! \brief Создание генератора псевдо-случайных чисел xorshift64* (линейный регистр сдвига с нелинейным выходом). */
+/*! \brief Инициализация контекста генератора псевдо-случайных чисел xorshift64* (линейный регистр сдвига с нелинейным выходом). */
  int ak_random_context_create_xorshift64( ak_random );
- /*! \brief Cоздание генератора, считывающего случайные значения из заданного файла. */
+ /*! \brief Инициализация контекста генератора, считывающего случайные значения из заданного файла. */
  int ak_random_context_create_file( ak_random , const char * );
 #if defined(__unix__) || defined(__APPLE__)
-/*! \brief Cоздание генератора, считывающего случайные значения из /dev/random. */
+/*! \brief Инициализация контекста генератора, считывающего случайные значения из /dev/random. */
  int ak_random_context_create_random( ak_random );
-/*! \brief Cоздание генератора, считывающего случайные значения из /dev/urandom. */
+/*! \brief Инициализация контекста генератора, считывающего случайные значения из /dev/urandom. */
  int ak_random_context_create_urandom( ak_random );
 #endif
 #ifdef _WIN32
-/*! \brief Интерфейс доступа к генератору псевдо-случайных чисел, предоставляемому ОС Windows. */
+/*! \brief Инициализация контекста, реализующего интерфейс доступа к генератору псевдо-случайных чисел, предоставляемому ОС Windows. */
  int ak_random_context_create_winrtl( ak_random );
 #endif
-/*! \brief Инициализация внутреннего состояния генератора псевдо-случайных чисел. */
+/*! \brief Инициализация контекста генератора, основанного на применении функции хеширования ГОСТ Р 34.11-94. */
+ int ak_random_context_create_hashrnd_gosthash94( ak_random );
+/*! \brief Инициализация контекста генератора, основанного на применении функции хеширования Стрибог-256. */
+ int ak_random_context_create_hashrnd_streebog256( ak_random );
+/*! \brief Инициализация контекста генератора, основанного на применении функции хеширования Стрибог-512. */
+ int ak_random_context_create_hashrnd_streebog512( ak_random );
+/*! \brief Инициализация контекста генератора, основанного на применении функции хеширования, определяемой по ее идентификатору. */
+ int ak_random_context_create_hashrnd_oid( ak_random , ak_oid );
+/*! \brief Инициализация контекста генератора по заданному OID алгоритма генерации псевдо-случайных чисел. */
+ int ak_random_context_create_oid( ak_random, ak_oid );
+/*! \brief Установка внутреннего состояния генератора псевдо-случайных чисел. */
  int ak_random_context_randomize( ak_random , const ak_pointer , const size_t );
 /*! \brief Выработка псевдо-случайных данных. */
  int ak_random_context_random( ak_random , const ak_pointer , const size_t );

@@ -38,6 +38,7 @@ set( HEADERS        source/ak_tools.h
                     source/ak_buffer.h
                     source/ak_parameters.h
                     source/ak_oid.h
+                    source/ak_mpzn.h
                     source/ak_random.h
                     source/ak_hash.h
                     source/ak_compress.h
@@ -46,6 +47,7 @@ set( HEADERS        source/ak_tools.h
 set( SOURCES        source/ak_tools.c
                     source/ak_buffer.c
                     source/ak_oid.c
+                    source/ak_mpzn.c
                     source/ak_random.c
                     source/ak_hash.c
                     source/ak_gosthash.c
@@ -153,6 +155,7 @@ enable_testing()
 # теперь примеры, использующие неэкспортируемые функции
 set( INTERNAL_TEST_LIST
                    internal-random01
+                   internal-random02
                    internal-oid01
                    internal-oid02
                    internal-hash01
@@ -170,6 +173,24 @@ else()
      target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
      add_test( NAME test-${programm}${LIBAKRYPT_EXT} COMMAND test-${programm}${LIBAKRYPT_EXT} )
   endforeach()
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+# напоследок тестовые примеры для арифметических операций
+set( ARITHMETIC_TESTS_LIST
+                   mpzn-convert
+                   mpzn-arithmetic
+#                   mpzn-montgomery
+#                   mpzn-rem
+)
+
+if( LIBAKRYPT_GMP_TESTS )
+  foreach( programm ${ARITHMETIC_TESTS_LIST} )
+     add_executable( test-${programm}${LIBAKRYPT_EXT} examples/test-${programm}.c )
+     target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static gmp )
+     add_test( NAME test-${programm} COMMAND test-${programm}${LIBAKRYPT_EXT} )
+  endforeach()
+  message("-- Added tests for integer arithmetic")
 endif()
 
 # -------------------------------------------------------------------------------------------------- #

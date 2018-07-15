@@ -86,9 +86,19 @@
    ak_error_message( ak_error_ok, __func__ , "library applies __m128i base type" );
 #endif
 
+#ifdef LIBAKRYPT_HAVE_BUILTIN_MULQ_GCC
+ if( ak_log_get_level() >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "library applies assembler code for mulq command" );
+#endif
+
 #ifdef LIBAKRYPT_HAVE_PTHREAD
  if( ak_log_get_level() >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "library runs with pthreads support" );
+#endif
+
+#ifdef LIBAKRYPT_HAVE_GMP_H
+ if( ak_log_get_level() >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "library runs with gmp support" );
 #endif
 
  return ak_true;

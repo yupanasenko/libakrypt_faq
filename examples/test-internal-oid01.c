@@ -26,7 +26,7 @@
     struct random generator;
 
    /* используя oid, создаем объект и вырабатываем случайные данные */
-    (( ak_function_random *)( oid->func.create ))( &generator );
+    ak_random_context_create_oid( &generator, oid );
     ak_random_context_random( &generator, data, 32 );
     ak_ptr_to_hexstr_static( data, 32, string, 128, ak_false );
    /* выводим сгенерированные данные и информацию о генераторе,
@@ -38,7 +38,7 @@
      else printf("\n");
 
    /* удаляем генератор */
-    (( ak_function_random *)( oid->func.destroy ))( &generator );
+    ak_random_context_destroy( &generator );
 
    /* выполняем поиск следующего */
     oid = ak_oid_context_findnext_by_engine( oid, random_generator );

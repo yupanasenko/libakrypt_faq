@@ -42,9 +42,8 @@
 
  int main( void )
 {
- if( !ak_libakrypt_create( NULL )) return ak_libakrypt_destroy();
-
  printf("random generators speed test for libakrypt, version %s\n", ak_libakrypt_version( ));
+ if( !ak_libakrypt_create( NULL )) return ak_libakrypt_destroy();
 
  /* последовательно запускаем генераторы на тестирование */
  if( test_function( "xorshift",
