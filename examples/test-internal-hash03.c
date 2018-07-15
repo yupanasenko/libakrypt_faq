@@ -66,11 +66,13 @@
    ak_ptr_to_hexstr_static( out+32, 32, buffer, 1024, ak_false );
    printf("ak_hash_context_file()\nhash: %s\n\n", buffer );
   /* сравниваем полученные результаты */
+#ifdef LIBAKRYPT_HAVE_SYSMMAN_H
    if( ak_ptr_is_equal( out, out+32, 32 ) != ak_true ) {
      ak_ptr_to_hexstr_static( out, 128, buffer, 1024, ak_false );
      printf("out:  %s\n", buffer );
      exitcode = EXIT_FAILURE;
    }
+#endif
 
  /* 5. хешируем файл, используя функцию класса compress (итеративного сжимающего отображения) */
    ak_hash_context_create_streebog256( &ctx );
@@ -83,7 +85,7 @@
    ak_ptr_to_hexstr_static( out+64, 32, buffer, 1024, ak_false );
    printf("ak_compress_file()\nhash: %s\n\n", buffer );
   /* сравниваем полученные результаты */
-   if( ak_ptr_is_equal( out, out+64, 32 ) != ak_true ) {
+   if( ak_ptr_is_equal( out+32, out+64, 32 ) != ak_true ) {
      ak_ptr_to_hexstr_static( out, 128, buffer, 1024, ak_false );
      printf("out:  %s\n", buffer );
      exitcode = EXIT_FAILURE;
@@ -116,7 +118,7 @@
    ak_ptr_to_hexstr_static( out+96, 32, buffer, 1024, ak_false );
    printf("fragments of small random length + ak_compress_update()\nhash: %s\n\n", buffer );
   /* сравниваем полученные результаты */
-   if( ak_ptr_is_equal( out, out+96, 32 ) != ak_true ) {
+   if( ak_ptr_is_equal( out+64, out+96, 32 ) != ak_true ) {
      ak_ptr_to_hexstr_static( out, 128, buffer, 1024, ak_false );
      printf("out:  %s\n", buffer );
      exitcode = EXIT_FAILURE;
