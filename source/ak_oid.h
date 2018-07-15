@@ -17,8 +17,6 @@
 {
  /*! \brief Конструктор объекта. */
   ak_function_void *create;
- /*! \brief Деструктор объекта. */
-  ak_function_void *destroy;
  /*! \brief Функция, выполняющая прямое преобразование. */
   ak_function_void *direct;
  /*! \brief Функция выполняющая обратное преобразование. */
