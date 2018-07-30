@@ -155,14 +155,14 @@ endif()
 message("-- Additional libraries is ${LIBAKRYPT_LIBS}" )
 
 # -------------------------------------------------------------------------------------------------- #
-# сборка консольной утилиты
-if( LIBAKRYPT_HAVE_GETOPT )
-else()
-  set( AKRYPT_SOURCES ${AKRYPT_SOURCES} akrypt/getopt.c )
-endif()
-add_executable( akrypt${LIBAKRYPT_EXT} ${AKRYPT_SOURCES} )
-target_include_directories( akrypt${LIBAKRYPT_EXT} PUBLIC "./akrypt" )
-target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+## сборка консольной утилиты
+#if( LIBAKRYPT_HAVE_GETOPT )
+#else()
+#  set( AKRYPT_SOURCES ${AKRYPT_SOURCES} akrypt/getopt.c )
+#endif()
+#add_executable( akrypt${LIBAKRYPT_EXT} ${AKRYPT_SOURCES} )
+#target_include_directories( akrypt${LIBAKRYPT_EXT} PUBLIC "./akrypt" )
+#target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
 
 # -------------------------------------------------------------------------------------------------- #
 enable_testing()
@@ -210,6 +210,7 @@ set( INTERNAL_EXAMPLES_LIST
                    internal-mgm-examples
                    internal-mac-gost
                    test
+                   fiot
 )
 
 if( CMAKE_HOST_UNIX )
