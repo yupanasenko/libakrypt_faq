@@ -593,7 +593,9 @@
 {
   if( buff == NULL ) return ak_error_message( ak_error_null_pointer,
                                                    __func__, "use a null pointer to a buffer" );
- return ak_ptr_wipe( buff->data, buff->size, generator );
+ /* мы изменяем только ту память, что нам принадлежит */
+  if( buff->flag ) return ak_ptr_wipe( buff->data, buff->size, generator );
+   return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

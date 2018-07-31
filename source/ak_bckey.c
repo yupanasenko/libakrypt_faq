@@ -428,8 +428,10 @@
   if( tail ) { /* на последок, мы обрабатываем хвост сообщения */
     size_t i;
     bkey->encrypt( &bkey->key, bkey->ivector.data, yaout );
-    for( i = 0; i < tail; i++ )
-        ( (ak_uint8*)outptr )[i] = ( (ak_uint8*)inptr )[i]^( (ak_uint8 *)yaout)[i];
+    for( i = 0; i < tail; i++ ) /* теперь мы гаммируем tail байт, используя для этого
+                                   старшие байты (most significant bytes) зашифрованного счетсчикаы */
+        ( (ak_uint8*)outptr )[i] =
+           ( (ak_uint8*)inptr )[i]^( (ak_uint8 *)yaout)[bkey->ivector.size-tail+i];
    /* запрещаем дальнейшее использование xcrypt_update для данных, длина которых не кратна длине блока */
     memset( bkey->ivector.data, 0, bkey->ivector.size );
     bkey->key.flags |= ak_flag_xcrypt_update;
