@@ -423,6 +423,8 @@
  dll_export char *ak_buffer_to_hexstr( const ak_buffer , const ak_bool );
 /*! \brief Сравнение двух буфферов. */
  dll_export ak_bool ak_buffer_is_equal( const ak_buffer, const ak_buffer );
+/*! \brief Проверка наличия данных в буффере. */
+ dll_export ak_bool ak_buffer_is_assigned( const ak_buffer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей значение заданной области памяти. */

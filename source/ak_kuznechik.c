@@ -164,7 +164,7 @@
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer,
                                                  __func__ , "using a null pointer to secret key" );
   if( skey->data == NULL ) return ak_error_message( ak_error_null_pointer,
-                                              __func__ , "using a null pointer to internal data" );
+                                   __func__ , "using a null pointer to secret key internal data" );
  /* теперь очистка и освобождение памяти */
   if(( error = skey->generator.random( &skey->generator,
                                    skey->data, sizeof( struct kuznechik_ctx ))) != ak_error_ok ) {
