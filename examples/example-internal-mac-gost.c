@@ -79,7 +79,7 @@
 
   /* создаем и инициализируем ключ блочного алгоритма шифрования MAGMA */
   ak_bckey_create_magma( &Key );
-  ak_bckey_context_set_ptr( &Key, keyAnnexB, 32, ak_false );
+  ak_bckey_context_set_ptr( &Key, keyAnnexB, 32, ak_true );
 
   /* вычисляем имитовставку. результат помещается в out */
   ak_bckey_context_mac_gost3413( &Key, in_3413_2015_text, 32, out );
@@ -91,6 +91,19 @@
 
   /* уничтожаем ключевую информацию */
   ak_bckey_destroy( &Key );
+
+ /* теперь те же яйца второй раз */
+  memset( out, 0, sizeof( out ));
+  ak_mac_create_gost3413_magma( &mackey );
+  ak_mac_context_set_ptr( &mackey, keyAnnexB, 32 );
+  ak_mac_context_ptr( &mackey, in_3413_2015_text, 32, out );
+  ak_mac_destroy( &mackey );
+
+ /* выводим результат */
+  ak_ptr_to_hexstr_static( out, 8, string, 512, ak_true );
+  printf("\nmac: %s\n", string );
+  printf("MAC: 154e7210 (GOST example: highest 4 octets form 8)\n\n");
+
 
   ak_libakrypt_destroy();
 }
