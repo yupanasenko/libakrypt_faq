@@ -26,6 +26,7 @@
 /*                                                                                                 */
 /*  ak_mac.c                                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
+ #include <ak_bckey.h>
  #include <ak_compress.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -73,6 +74,11 @@
            ak_error_message( error, __func__ , "incorrect destroying hash function of mac context" );
          break;
 
+   case type_imgost:
+         if(( error = ak_bckey_destroy( &mac->choice._imgost.bkey )) != ak_error_ok )
+           ak_error_message( error, __func__ , "incorrect destroying secret key of mac context" );
+         break;
+
    case type_mgm:
          break;
 
@@ -115,6 +121,7 @@
 {
   switch( mac->type ) {
    case type_hmac:  return ( ak_skey ) &mac->choice._hmac.key; break;
+   case type_imgost:  return ( ak_skey ) &mac->choice._imgost.bkey.key; break;
    case type_mgm: return ( ak_skey ) &mac->choice._mgm.bkey.key; break;
    case type_signify:  return ( ak_skey ) &mac->choice._signkey.key; break;
    default:
@@ -177,6 +184,10 @@
     return NULL;
   }
 
+  if( mac->type == type_imgost ) {
+   return ak_bckey_context_mac_gost3413( &mac->choice._imgost.bkey, in, size, out );
+  }
+
  /* проверяем наличие ключа ( ресурс ключа проверяется при вызове clean ) */
   if(( skey = ak_mac_context_get_secret_key( mac )) == NULL ) return NULL;
   if( !((skey->flags)&ak_skey_flag_set_key )) {
@@ -236,6 +247,11 @@
     return NULL;
   }
 
+  if( mac->type == type_imgost ) {
+    ak_error_message( ak_error_undefined_function, __func__, "for imgost type this function not defined");
+    return NULL;
+  }
+
   result = ak_compress_file( &comp, filename, out );
   if(( error = ak_error_get_value( )) != ak_error_ok )
     ak_error_message( error, __func__ , "incorrect hash code calculation" );
@@ -261,11 +277,21 @@
                                                        "using a null pointer to mac key context" );
   if( ptr == NULL ) return  ak_error_message( ak_error_null_pointer, __func__,
                                                     "using a null pointer to constant key value" );
+
+  if( mac->type == type_imgost ) {
+    printf("here\n");
+    if(( error =  ak_bckey_context_set_ptr( &mac->choice._imgost.bkey,
+                                         ptr, size, ak_true )) != ak_error_ok )
+      return ak_error_message( error, __func__ , "incorrect assigning of key data" );
+  }
+
+
  /* присваиваем ключевой буффер */
-  if(( error =
-      ak_skey_set_ptr( ak_mac_context_get_secret_key( mac ),
-                                 ptr, ak_min( size, mac->bsize ), ak_true )) != ak_error_ok )
-    return ak_error_message( error, __func__ , "incorrect assigning of key data" );
+  if( mac->type == type_hmac ) {
+    if(( error =  ak_skey_set_ptr( ak_mac_context_get_secret_key( mac ),
+                                         ptr, ak_min( size, mac->bsize ), ak_true )) != ak_error_ok )
+      return ak_error_message( error, __func__ , "incorrect assigning of key data" );
+  }
 
  return error;
 }

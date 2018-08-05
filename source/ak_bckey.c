@@ -26,6 +26,8 @@
 /*                                                                                                 */
 /*   ak_bckey.c                                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
+ #include <ak_mac.h>
+ #include <ak_tools.h>
  #include <ak_bckey.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -631,6 +633,16 @@
     else ak_error_message( ak_error_out_of_memory, __func__ ,
                                                  "incorrect memory allocation for result buffer" );
  return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mac_create_gost3413_kuznechik( ak_mac mac )
+{
+  memset( mac, 0, sizeof ( struct mac ));
+  mac->type = type_imgost;
+  ak_bckey_create_kuznechik( &mac->choice._imgost.bkey );
+
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

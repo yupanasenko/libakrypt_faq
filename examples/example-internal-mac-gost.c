@@ -6,6 +6,7 @@
  * ----------------------------------------------------------------------------------------------- */
  #include <stdio.h>
  #include <ak_bckey.h>
+ #include <ak_mac.h>
 
  int main( void )
 {
@@ -29,6 +30,7 @@
 
   ak_uint8 string[512], out[16];
   struct bckey Key;
+  struct mac mackey;
 
   ak_libakrypt_create( ak_function_log_stderr );
 
@@ -41,7 +43,7 @@
 
  /* создаем и инициализируем ключ блочного алгоритма шифрования КУЗНЕЧИК */
   ak_bckey_create_kuznechik( &Key );
-  ak_bckey_context_set_ptr( &Key, keyAnnexA, 32, ak_false );
+  ak_bckey_context_set_ptr( &Key, keyAnnexA, 32, ak_true );
                             /* ak_false => данные не копируются в контект ключа */
 
  /* вычисляем имитовставку. результат помещается в out */
@@ -54,6 +56,19 @@
 
  /* уничтожаем ключевую информацию */
   ak_bckey_destroy( &Key );
+
+ /* теперь те же яйца второй раз */
+  memset( out, 0, sizeof( out ));
+  ak_mac_create_gost3413_kuznechik( &mackey );
+  ak_mac_context_set_ptr( &mackey, keyAnnexA, 32 );
+  ak_mac_context_ptr( &mackey, inlong, 64, out );
+  ak_mac_destroy( &mackey );
+
+ /* выводим результат */
+  ak_ptr_to_hexstr_static( out, 16, string, 512, ak_true );
+  printf("\nmac: %s\n", string );
+  printf("MAC: 336f4d296059fbe3 (GOST example: highest 8 octets form 16)\n\n");
+
 
  /* выводим данные, в соответствии с форматом принятом в ГОСТ 34.13-2015 */
   printf("Magma test\n");
