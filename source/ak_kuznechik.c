@@ -195,6 +195,9 @@
  /* проверяем целостность ключа */
   if( skey->check_icode( skey ) != ak_true ) return ak_error_message( ak_error_wrong_key_icode,
                                                 __func__ , "using key with wrong integrity code" );
+ /* удаляем былое */
+  if( skey->data != NULL ) ak_kuznechik_delete_keys( skey );
+
  /* готовим память для переменных */
   if(( skey->data = /* далее, по-возможности, выделяем выравненную память */
 #ifdef LIBAKRYPT_HAVE_STDALIGN

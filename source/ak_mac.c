@@ -279,12 +279,10 @@
                                                     "using a null pointer to constant key value" );
 
   if( mac->type == type_imgost ) {
-    printf("here\n");
     if(( error =  ak_bckey_context_set_ptr( &mac->choice._imgost.bkey,
                                          ptr, size, ak_true )) != ak_error_ok )
       return ak_error_message( error, __func__ , "incorrect assigning of key data" );
   }
-
 
  /* присваиваем ключевой буффер */
   if( mac->type == type_hmac ) {
