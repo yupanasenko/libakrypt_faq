@@ -640,6 +640,7 @@
 {
   memset( mac, 0, sizeof ( struct mac ));
   mac->type = type_imgost;
+  mac->hsize = 16;
   ak_bckey_create_kuznechik( &mac->choice._imgost.bkey );
 
  return ak_error_ok;
@@ -650,6 +651,7 @@
 {
   memset( mac, 0, sizeof ( struct mac ));
   mac->type = type_imgost;
+  mac->hsize = 8;
   ak_bckey_create_magma( &mac->choice._imgost.bkey );
 
  return ak_error_ok;

@@ -27,6 +27,7 @@
 /*   ak_magma.c                                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_bckey.h>
+ #include <ak_compress.h>
  #include <ak_tools.h>
  #include <ak_context_manager.h>
 
@@ -265,6 +266,37 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ static int ak_skey_update_hash_value_additive( ak_skey skey, ak_pointer ptr , const size_t size )
+{
+  size_t idx = 0;
+  ak_uint8 tval[32];
+  int error = ak_error_ok;
+  ak_compress comp = ( ak_compress )ptr;
+
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using a null pointer to secret key" );
+  if( comp == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                  "using a null pointer to compress context key" );
+ /* выполняем стандартные проверки */
+  if(( error = ak_skey_check( skey )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "using invalid secret key" );
+
+ /* проверяем длину ключа */
+  if( skey->key.size != 32 ) return ak_error_message( ak_error_undefined_value, __func__ ,
+                                                          "using a key buffer with wrong length" );
+
+ /* снимаем маску */
+  for( idx = 0; idx < (skey->key.size >> 2); idx++ ) ((ak_uint32 *)tval)[idx] =
+                        ((ak_uint32 *) skey->key.data)[idx] - ((ak_uint32 *) skey->mask.data)[idx];
+  if(( error = ak_compress_update( comp, tval, ak_min( 32, size ))) != ak_error_ok )
+    ak_error_message( error, __func__ , "incorrect updating compress context" );
+  skey->generator.random( &skey->generator, tval, 32 );
+
+ return error;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Смена значения аддитивной в кольце \f$ \mathbb Z_{2^{32}}\f$ маски ключа.
 
 
@@ -461,6 +493,7 @@
   bkey->key.remask = ak_skey_remask_additive;
   bkey->key.set_icode = ak_skey_set_icode_additive;
   bkey->key.check_icode = ak_skey_check_icode_additive;
+  bkey->key.update =ak_skey_update_hash_value_additive;
 
   bkey->schedule_keys = NULL;
   bkey->delete_keys = NULL;

@@ -116,6 +116,7 @@
   skey->remask = ak_skey_remask_xor;
   skey->set_icode = ak_skey_set_icode_xor;
   skey->check_icode = ak_skey_check_icode_xor;
+  skey->update = ak_skey_update_compress_xor;
 
  return ak_error_ok;
 }
@@ -162,6 +163,8 @@
   skey->remask = NULL;
   skey->set_icode = NULL;
   skey->check_icode = NULL;
+  skey->update = NULL;
+
  return ak_error_ok;
 }
 
@@ -268,6 +271,37 @@
 
  return error;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_update_compress_xor( ak_skey skey, ak_pointer ptr , const size_t size )
+{
+  size_t idx = 0;
+  ak_uint8 tval[128];
+  int error = ak_error_ok;
+  ak_compress comp = ( ak_compress )ptr;
+
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using a null pointer to secret key" );
+  if( comp == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                  "using a null pointer to compress context key" );
+ /* выполняем проверку длины ключа */
+  if( skey->key.size > 128 ) return ak_error_message( ak_error_undefined_value, __func__ ,
+                                                            "using a very large secret key size" );
+ /* выполняем стандартные проверки */
+  if(( error = ak_skey_check( skey )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "using invalid secret key" );
+
+ /* снимаем маску */
+  for( idx = 0; idx < (skey->key.size >> 3); idx++ ) ((ak_uint64 *)tval)[idx] =
+                        ((ak_uint64 *) skey->key.data)[idx] ^ ((ak_uint64 *) skey->mask.data)[idx];
+
+  if(( error = ak_compress_update( comp, tval, ak_min( skey->key.size, size ))) != ak_error_ok )
+    ak_error_message( error, __func__ , "incorrect updating compress context" );
+  skey->generator.random( &skey->generator, tval, skey->key.size );
+
+ return error;
+}
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция вычисляет новый случайный вектор \f$ v \f$ и изменяет значение
