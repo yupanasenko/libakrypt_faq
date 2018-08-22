@@ -240,7 +240,8 @@
   memset( ivector, 0, 16 );
   memcpy( ivector, iv, iv_size ); /* копируем нужное количество байт */
  /* принудительно устанавливаем старший бит в 1 */
-  ivector[iv_size-1] = ( ivector[iv_size-1]&0x7F ) ^ 0x80;
+  // ivector[iv_size-1] = ( ivector[iv_size-1]&0x7F ) ^ 0x80;
+  ivector[authenticationKey->ivector.size-1] = ( ivector[authenticationKey->ivector.size-1]&0x7F ) ^ 0x80;
 
  /* зашифровываем необходимое и удаляемся */
   authenticationKey->encrypt( &authenticationKey->key, ivector, &ctx->zcount );
@@ -754,6 +755,7 @@
     Ситуация, при которой оба указателя на ключ принимают значение NULL воспринимается как ошибка.
 
     @param encryptionKey ключ шифрования, должен быть инициализирован перед вызовом функции;
+           может принимать значение NULL;
     @param authenticationKey ключ выработки кода аутентификации (имитовставки), должен быть инициализирован
            перед вызовом функции; может принимать значение NULL;
 
@@ -860,6 +862,7 @@
 
 
     @param encryptionKey ключ шифрования, должен быть инициализирован перед вызовом функции;
+           может принимать значение NULL;
     @param authenticationKey ключ выработки кода аутентификации (имитовставки), должен быть инициализирован
            перед вызовом функции; может принимать значение NULL;
 
@@ -1167,7 +1170,7 @@
                                           "pcmulqdq calculated %s on iteration %d", out, i );
      ak_ptr_to_hexstr_static( result, 16, out, 128, ak_true );
      ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                          "uint64 calculated   %s on iteration %d", out, i );
+                                            "uint64 calculated %s on iteration %d", out, i );
      return ak_false;
    }
  }

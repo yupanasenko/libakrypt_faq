@@ -19,6 +19,8 @@ We have implementation of:
 7. national variant of password-based key derivation function (PBKDF2) described by R 50.1.111-2016;
 8. a some set of pseudo random generators for various operation systems.
 
+9. following a draft we have implementation of russian AEAD mode for block ciphers (MGM mode)
+
 Library can be used successfully under Linux, Windows (since XP), FreeBSD, MacOs and ReactOS operation systems.
 Also we have positive runs of library on mobile devices under Sailfish OS 
 

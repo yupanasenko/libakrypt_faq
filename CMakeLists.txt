@@ -20,7 +20,7 @@ project( libakrypt )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 6 )
-set( MINOR_VERSION 6 )
+set( MINOR_VERSION 7 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -208,6 +208,7 @@ set( INTERNAL_EXAMPLES_LIST
                    internal-compress01
                    internal-compress02
                    internal-mgm-examples
+                   internal-mgm-examples02
                    internal-mac-gost
                    test
                    fiot
