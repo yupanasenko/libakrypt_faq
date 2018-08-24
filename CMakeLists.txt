@@ -41,7 +41,8 @@ set( HEADERS        source/ak_tools.h
                     source/ak_mpzn.h
                     source/ak_random.h
                     source/ak_hash.h
-                    source/ak_compress.h
+                    source/ak_skey.h
+                    source/ak_mac.h
 )
 
 set( SOURCES        source/ak_tools.c
@@ -52,7 +53,8 @@ set( SOURCES        source/ak_tools.c
                     source/ak_hash.c
                     source/ak_gosthash.c
                     source/ak_streebog.c
-                    source/ak_compress.c
+                    source/ak_skey.c
+                    source/ak_mac.c
                     source/ak_libakrypt.c
 )
 
@@ -161,8 +163,8 @@ set( INTERNAL_TEST_LIST
                    internal-hash01
                    internal-hash02
                    internal-hash03
-                   internal-compress01
-                   internal-compress02
+                   internal-skey01
+                   internal-mac01
 )
 
 # добавляем примеры для всех компиляторов, отличных от MSVC

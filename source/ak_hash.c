@@ -4,7 +4,7 @@
 /*  Файл ak_hash.h                                                                                 */
 /*  - содержит реализацию общих функций для алгоритмов бесключевого хэширования.                   */
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_compress.h>
+ #include <ak_mac.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция устанавливает значение полей структуры struct hash в значения по-умолчанию.
@@ -180,7 +180,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_buffer ak_hash_context_file( ak_hash ctx, const char *filename, ak_pointer out )
 {
-  struct compress comp;
+  struct mac ictx;
   int error = ak_error_ok;
   ak_buffer result = NULL;
 
@@ -189,16 +189,16 @@
     return NULL;
   }
 
-  if(( error = ak_compress_context_create_hash( &comp, ctx )) != ak_error_ok ) {
+  if(( error = ak_mac_context_create_hash( &ictx, ctx )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong creation a compress context" );
     return NULL;
   }
 
-  result = ak_compress_context_file( &comp, filename, out );
+  result = ak_mac_context_file( &ictx, filename, out );
   if(( error = ak_error_get_value( )) != ak_error_ok )
     ak_error_message( error, __func__ , "incorrect hash code calculation" );
 
-  ak_compress_context_destroy( &comp );
+  ak_mac_context_destroy( &ictx );
  return result;
 }
 
