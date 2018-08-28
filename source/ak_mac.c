@@ -88,7 +88,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  static int ak_mac_context_create_oid_common( ak_mac ictx, ak_oid oid, size_t size,
-                                                                    ak_function_mac_create *create )
+                                                                   ak_function_mac_create *create )
 {
   ak_pointer ctx = NULL;
   int error = ak_error_ok;
@@ -99,19 +99,18 @@
                                            "incorrect memory allocation for mac internal context" );
   /* инициализируем контекст функции хеширования */
    if(( error = (( ak_function_create_object *)oid->func.create )( ctx )) != ak_error_ok ) {
-     (( ak_function_destroy_object *)oid->func.destroy )( ctx );
-     free( ctx );
+     ctx = (( ak_function_free_object *) oid->func.delete )( ctx );
      return ak_error_message( error, __func__, "incorrect initialization of mac internal context" );
    }
   /* инициализируем контекст сжимающего отображения */
    if(( error = create( ictx, ctx )) != ak_error_ok ) {
-     (( ak_function_destroy_object *)oid->func.destroy )( ctx );
-     free( ctx );
+     ctx = (( ak_function_free_object *) oid->func.delete )( ctx );
      return ak_error_message( error, __func__, "incorrect initialization of mac internal context" );
    }
   /* на-последок, устанавливаем функцию освобождения контекста хеширования */
-   ictx->free = ( ak_function_destroy_object *) oid->func.destroy;
+   ictx->free = ( ak_function_free_object *) oid->func.delete;
 
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -124,7 +123,6 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mac_context_create_oid( ak_mac ictx, ak_oid oid )
 {
-  ak_pointer ctx = NULL;
   int error = ak_error_ok;
 
  /* вначале, необходимые проверки */
@@ -136,45 +134,18 @@
  /* теперь разбираем тип алгоритма */
   switch( oid->engine ) {
     case hash_function: /* создаем бесключевую функцию хеширования */
-    /* выделяем память */
-     if(( ctx = malloc( sizeof( struct hash ))) == NULL )
-       return ak_error_message( ak_error_out_of_memory, __func__ ,
-                                    "incorrect memory allocation for hash function context" );
-    /* инициализируем контекст функции хеширования */
-      if(( error = (( ak_function_hash_create *)oid->func.create)( ctx )) != ak_error_ok ) {
-        ctx = ak_hash_context_delete( ctx );
-        return ak_error_message( error, __func__,
-                                        "incorrect initialization of hash function context" );
-      }
-    /* инициализируем контекст сжимающего отображения */
-      if(( error = ak_mac_context_create_hash( ictx, ctx )) != ak_error_ok ) {
-        ctx = ak_hash_context_delete( ctx );
-        return ak_error_message( error, __func__, "incorrect initialization of mac context" );
-      }
-    /* на-последок, устанавливаем функцию освобождения контекста хеширования */
-      ictx->free = ak_hash_context_delete;
+      if(( error = ak_mac_context_create_oid_common( ictx, oid, sizeof( struct hash ),
+                         (ak_function_mac_create*) ak_mac_context_create_hash )) != ak_error_ok )
+        return ak_error_message_fmt( error, __func__,
+            "incorrect initialization of mac function context with %s hash function", oid->name );
     break;
 
     case hmac_function: /* создаем ключевую функцию хеширования HMAC */
-    /* выделяем память */
-     if(( ctx = malloc( sizeof( struct hmac ))) == NULL )
-       return ak_error_message( ak_error_out_of_memory, __func__ ,
-                                    "incorrect memory allocation for hmac function context" );
-    /* инициализируем контекст функции хеширования */
-      if(( error = (( ak_function_hash_create *)oid->func.create)( ctx )) != ak_error_ok ) {
-        ctx = ak_hmac_context_delete( ctx );
-        return ak_error_message( error, __func__,
-                                        "incorrect initialization of hmac function context" );
-      }
-    /* инициализируем контекст сжимающего отображения */
-      if(( error = ak_mac_context_create_hmac( ictx, ctx )) != ak_error_ok ) {
-        ctx = ak_hmac_context_delete( ctx );
-        return ak_error_message( error, __func__, "incorrect initialization of mac context" );
-      }
-    /* на-последок, устанавливаем функцию освобождения контекста хеширования */
-      ictx->free = ak_hmac_context_delete;
+      if(( error = ak_mac_context_create_oid_common( ictx, oid, sizeof( struct hmac ),
+                         (ak_function_mac_create*) ak_mac_context_create_hmac )) != ak_error_ok )
+        return ak_error_message_fmt( error, __func__,
+            "incorrect initialization of mac function context with %s hmac function", oid->name );
     break;
-
     default: return ak_error_message( ak_error_oid_engine, __func__, "using oid with wrong engine" );
   }
 
@@ -242,16 +213,22 @@
  int ak_mac_context_set_key( ak_mac ictx, const ak_pointer ptr,
                                                            const size_t size , const ak_bool cflag )
 {
+  int error = ak_error_ok;
   if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using a null pointer to null mac context" );
   if( !ictx->has_key ) return ak_error_message( ak_error_key_usage, __func__,
                                                            "using a key for non-key mac context" );
-
-
-//  if(( error = ak_skey_context_set_key( &hctx->key, ptr, size, cflag )) != ak_error_ok )
-//    return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
-
- return ak_error_ok;
+   switch( ictx->engine )
+  {
+    case hmac_function:
+      if(( error =
+                ak_hmac_context_set_key(( ak_hmac )ictx->ctx, ptr, size, cflag )) != ak_error_ok )
+      return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
+    break;
+    default: return ak_error_message( ak_error_undefined_function, __func__ ,
+                                       "this function is undefined for this type of mac context" );
+  }
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -499,28 +476,27 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param ctx Контекст бесключевой функции хеширования. Должен быть инициализирован.
-  * \param data Указатель на сжимаемую область памяти.
-  * \param size Длина памяти (в байтах).
-  * \param out Область памяти, куда помещается результат.
-  * \param generator Контекст генератора псевдо-случайных чисел. Должен быть инициализирован.
-  * \return Функция возвращает код ошибки.                                                         */
+    \param create Функция создания контекста struct mac
+    \param data Указатель на сжимаемую область памяти.
+    \param size Длина памяти (в байтах).
+    \param out Область памяти, куда помещается результат.
+    \param generator Контекст генератора псевдо-случайных чисел. Должен быть инициализирован.
+    \return Функция возвращает код ошибки.                                                         */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_mac_test_hash_functions_random( ak_hash ctx,
+ static int ak_mac_test_context_functions_random( ak_pointer ctx, ak_function_mac_create *create,
                                  ak_pointer data, size_t size, ak_pointer out, ak_random generator )
 {
   struct mac ictx;
   size_t offset = 0;
   int error = ak_error_ok;
 
-// /* хешируем через итеративное сжатие */
-//  ctx->clean( ctx ); /* очищаем объект от предыдущего мусора */
  /* инициализируем контекст итерационного сжатия путем указания ссылки
                                     на объект бесключевого хеширования */
-  if(( error = ak_mac_context_create_hash( &ictx, ctx )) != ak_error_ok )
+  if(( error = create( &ictx, ctx )) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect creation of compress context");
 
  /* теперь обрабатываем данные последовательными фрагментами случайной длины */
- ak_mac_context_clean( &ictx );
+  ak_mac_context_clean( &ictx );
   while( offset < size ) {
     size_t len;
     ak_random_context_random( generator, &len, sizeof( size_t ));
@@ -541,7 +517,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция проверяет эквивалентность выработки значений всех доступных функций бесключевого
     хеширования с помощью прямого вычисления для данных с известной длиной и с помощью класса
-    \ref compress для случайной траектории вычислений.                                             */
+    \ref mac для случайной траектории вычислений.                                             */
 /* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_mac_test_hash_functions( void )
 {
@@ -552,7 +528,7 @@
   struct random generator;
   int audit = ak_log_get_level();
 
- /* создаем генератор и вырабатываем необходимое количество псевдослучацных данных */
+ /* создаем генератор и вырабатываем необходимое количество псевдослучайных данных */
   if(( error = ak_random_context_create_xorshift64( &generator )) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect creation of random generator context" );
     return ak_false;
@@ -572,7 +548,8 @@
       if(( error = ak_hash_context_create_oid( &ctx, oid )) == ak_error_ok ) {
          if( ctx.hsize <= 64 ) {
            ak_hash_context_ptr( &ctx, data, sizeof( data ), out );
-           if(( error = ak_mac_test_hash_functions_random( &ctx,
+           if(( error = ak_mac_test_context_functions_random( &ctx,
+                                 ( ak_function_mac_create *)ak_mac_context_create_hash,
                                  data, sizeof( data ), out+64, &generator )) == ak_error_ok ) {
              /* здесь данные вычислены и принимается решение о совпадении значений */
               if( ak_ptr_is_equal( out, out+64, ctx.hsize )) {
@@ -582,7 +559,7 @@
                 } else {
                    char *str = NULL;
                    ak_error_message_fmt( error = ak_error_not_equal_data, __func__ ,
-                               "different values for %s and compress function", ctx.oid->name );
+                               "different values for %s and mac function", ctx.oid->name );
                    ak_log_set_message(( str = ak_ptr_to_hexstr( out, ctx.hsize, ak_false ))); free( str );
                    ak_log_set_message(( str = ak_ptr_to_hexstr( out+64, ctx.hsize, ak_false ))); free( str );
                   }
@@ -593,6 +570,76 @@
     } /* конец if алгоритм */
    /* выполняем поиск следующего */
     if( error == ak_error_ok ) oid = ak_oid_context_findnext_by_engine( oid, hash_function );
+     else oid = NULL;
+  }
+
+ /* очищаем и уничтожаем вспомогательные данные */
+  label_exit: memset( data, 0, sizeof( data ));
+  ak_random_context_destroy( &generator );
+  if( error != ak_error_ok ) return ak_false;
+
+ return ak_true;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static ak_uint64 testkey[4] = { 0x00LL, 0x01LL, 0x02LL, 0x03LL };
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция проверяет эквивалентность выработки значений всех доступных ключевыйх функций
+    хеширования семейства HMAC с помощью прямого вычисления для данных с известной длиной и
+    с помощью класса \ref mac для случайной траектории вычислений.                                 */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_mac_test_hmac_functions( void )
+{
+  struct hmac ctx;
+  ak_oid oid = NULL;
+  ak_uint8 data[4096];
+  int error = ak_error_ok;
+  struct random generator;
+  int audit = ak_log_get_level();
+
+ /* создаем генератор и вырабатываем необходимое количество псевдослучайных данных */
+  if(( error = ak_random_context_create_xorshift64( &generator )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect creation of random generator context" );
+    return ak_false;
+  }
+  if(( error = ak_random_context_random( &generator, data, sizeof( data ))) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect creation of random data");
+    goto label_exit;
+  }
+
+ /* перебираем все oid в поисках алгоритмов hmac */
+  oid = ak_oid_context_find_by_engine( hmac_function );
+  while( oid != NULL ) {
+    if( oid->mode == algorithm ) {
+      ak_uint8 out[128];
+
+      memset( out, 0, 128 );
+      if(( error = ak_hmac_context_create_oid( &ctx, oid )) == ak_error_ok ) {
+         if( ctx.ctx.hsize <= 64 ) {
+           ak_hmac_context_set_key( &ctx, testkey, 32, ak_true );
+           ak_hmac_context_ptr( &ctx, data, sizeof( data ), out );
+           if(( error = ak_mac_test_context_functions_random( &ctx,
+                                 ( ak_function_mac_create *) ak_mac_context_create_hmac,
+                                 data, sizeof( data ), out+64, &generator )) == ak_error_ok ) {
+             /* здесь данные вычислены и принимается решение о совпадении значений */
+              if( ak_ptr_is_equal( out, out+64, ctx.ctx.hsize )) {
+                if( audit >= ak_log_maximum )
+                  ak_error_message_fmt( ak_error_ok, __func__ , "%s algorithm is Ok", oid->name );
+                } else {
+                   char *str = NULL;
+                   ak_error_message_fmt( error = ak_error_not_equal_data, __func__ ,
+                               "different values for %s and mac function", oid->name );
+                   ak_log_set_message(( str = ak_ptr_to_hexstr( out, ctx.ctx.hsize, ak_false ))); free( str );
+                   ak_log_set_message(( str = ak_ptr_to_hexstr( out+64, ctx.ctx.hsize, ak_false ))); free( str );
+                  }
+           }
+         }
+         ak_hmac_context_destroy( &ctx );
+      } /* конец if context_create */
+    } /* конец if алгоритм */
+   /* выполняем поиск следующего */
+    if( error == ak_error_ok ) oid = ak_oid_context_findnext_by_engine( oid, hmac_function );
      else oid = NULL;
   }
 

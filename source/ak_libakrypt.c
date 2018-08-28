@@ -5,7 +5,6 @@
 /*  - содержит реализацию функций инициализации и тестирования библиотеки.                         */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_mac.h>
- #include <ak_hmac.h>
  #include <ak_tools.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -153,14 +152,19 @@
   if( audit >= ak_log_maximum )
     ak_error_message( ak_error_ok, __func__ , "testing mac algorithms started" );
 
-  /* тестируем итерационное применение функций хеширования */
-  if( ak_mac_test_hash_functions() != ak_true ) {
-    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog512 testing" );
+ /* тестирование механизмов hmac и pbkdf2 */
+  if( ak_hmac_test_streebog() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect testing of hmac functions" );
     return ak_false;
   }
 
-  if( ak_hmac_test_streebog() != ak_true ) {
-    ak_error_message( ak_error_get_value(), __func__, "incorrect testing of hmac functions" );
+  /* тестируем механизм итерационного применения функций хеширования */
+  if( ak_mac_test_hash_functions() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect mac testing" );
+    return ak_false;
+  }
+  if( ak_mac_test_hmac_functions() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect mac testing" );
     return ak_false;
   }
 

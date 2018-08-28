@@ -112,6 +112,10 @@ extern "C" {
  typedef void *ak_pointer;
 /*! \brief Дескриптор произвольного объекта библиотеки. */
  typedef ak_int64 ak_handle;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Класс функций без параметра. */
+ typedef ak_pointer ( ak_function_void )( void );
 /*! \brief Пользовательская функция аудита. */
  typedef int ( ak_function_log )( const char * );
 /*! \brief Стандартная для языка С функция выделения памяти. */
@@ -124,8 +128,6 @@ extern "C" {
  typedef ak_pointer ( ak_function_free_object )( ak_pointer );
 /*! \brief Стандартная для языка С функция освобождения памяти. */
  typedef void ( ak_function_free )( ak_pointer );
-/*! \brief Класс функций без параметра. */
- typedef ak_pointer ( ak_function_void )( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Результат, говорящий об отсутствии ошибки. */

@@ -190,7 +190,7 @@
   }
 
   if(( error = ak_mac_context_create_hash( &ictx, ctx )) != ak_error_ok ) {
-    ak_error_message( error, __func__ , "wrong creation a compress context" );
+    ak_error_message( error, __func__ , "wrong creation of mac context" );
     return NULL;
   }
 
