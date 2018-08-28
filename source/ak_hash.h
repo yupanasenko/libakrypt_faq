@@ -36,6 +36,8 @@
 /*! \brief Тип функции создания дескриптора контекста хеширования. */
  typedef ak_handle ( ak_function_hash )( void );
 
+/*! \brief Функция создания контекста. */
+ typedef int ( ak_function_mac_create ) ( ak_pointer, ak_pointer );
 /*! \brief Функция очистки контекста хеширования. */
  typedef int ( ak_function_mac_clean )( ak_pointer );
 /*! \brief Итерационная функция хеширования. */

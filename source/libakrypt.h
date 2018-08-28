@@ -116,10 +116,14 @@ extern "C" {
  typedef int ( ak_function_log )( const char * );
 /*! \brief Стандартная для языка С функция выделения памяти. */
  typedef ak_pointer ( ak_function_alloc )( size_t );
-/*! \brief Стандартная для языка С функция освобождения памяти. */
- typedef void ( ak_function_free )( ak_pointer );
+/*! \brief Функция, возвращающая код ошибки после инициализации объекта (конструктор). */
+ typedef int ( ak_function_create_object ) ( ak_pointer );
+/*! \brief Функция, возвращающая код ошибки после разрушения объекта (деструктор). */
+ typedef int ( ak_function_destroy_object ) ( ak_pointer );
 /*! \brief Функция, возвращающая NULL после освобождения памяти. */
  typedef ak_pointer ( ak_function_free_object )( ak_pointer );
+/*! \brief Стандартная для языка С функция освобождения памяти. */
+ typedef void ( ak_function_free )( ak_pointer );
 /*! \brief Класс функций без параметра. */
  typedef ak_pointer ( ak_function_void )( void );
 
@@ -189,16 +193,18 @@ extern "C" {
  #define ak_error_resource_counter            (-50)
 /*! \brief Ошибка, возникающая при использовании ключа, значение которого не определено. */
  #define ak_error_key_value                   (-51)
+/*! \brief Ошибка, возникающая при использовании ключа для бесключевых функций. */
+ #define ak_error_key_usage                   (-52)
 /*! \brief Ошибка, возникающая при зашифровании/расшифровании данных, длина которых не кратна длине блока. */
- #define ak_error_wrong_block_cipher_length   (-52)
+ #define ak_error_wrong_block_cipher_length   (-53)
 /*! \brief Ошибка, возникающая при неверном значении кода целостности ключа. */
- #define ak_error_wrong_key_icode             (-53)
+ #define ak_error_wrong_key_icode             (-54)
 /*! \brief Ошибка, возникающая при недостаточном ресурсе ключа. */
- #define ak_error_low_key_resource            (-54)
+ #define ak_error_low_key_resource            (-55)
 /*! \brief Ошибка, возникающая при использовании синхропосылки (инициализационного вектора) неверной длины. */
- #define ak_error_wrong_iv_length             (-55)
+ #define ak_error_wrong_iv_length             (-56)
 /*! \brief Ошибка, возникающая при неправильном использовании функций зашифрования/расшифрования данных. */
- #define ak_error_wrong_block_cipher_function (-56)
+ #define ak_error_wrong_block_cipher_function (-57)
 
 /*! \brief Ошибка, возникающая если заданная точка не принадлежит заданной кривой. */
  #define ak_error_curve_point                 (-60)

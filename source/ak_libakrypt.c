@@ -5,6 +5,7 @@
 /*  - содержит реализацию функций инициализации и тестирования библиотеки.                         */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_mac.h>
+ #include <ak_hmac.h>
  #include <ak_tools.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -155,6 +156,11 @@
   /* тестируем итерационное применение функций хеширования */
   if( ak_mac_test_hash_functions() != ak_true ) {
     ak_error_message( ak_error_get_value(), __func__, "incorrect streebog512 testing" );
+    return ak_false;
+  }
+
+  if( ak_hmac_test_streebog() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect testing of hmac functions" );
     return ak_false;
   }
 

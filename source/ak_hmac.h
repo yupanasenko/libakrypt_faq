@@ -40,7 +40,6 @@
  int ak_hmac_context_create_gosthash94( ak_hmac );
 /*! \brief Создание контекста ключевой функции хеширования HMAC c помощью заданного oid. */
  int ak_hmac_context_create_oid( ak_hmac , ak_oid );
-
 /*! \brief Уничтожение контекста функции хеширования. */
  int ak_hmac_context_destroy( ak_hmac );
 /*! \brief Освобождение памяти из под контекста функции хеширования. */
@@ -50,20 +49,22 @@
 /*! \brief Присвоение секретному ключу константного значения. */
  int ak_hmac_context_set_key( ak_hmac , const ak_pointer , const size_t , const ak_bool );
 
-/*! \brief Функция очищает контекст секретного ключа алгоритма выработки имитовставки HMAC, а также проверяет ресурс ключа. */
+/*! \brief Очистка контекста секретного ключа алгоритма выработки имитовставки HMAC, а также проверка ресурса ключа. */
  int ak_hmac_context_clean( ak_pointer );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Хеширование заданной области памяти. */
+/*! \brief Обновление текущее состояние контекста алгоритма выработки имитовставки HMAC. */
+ int ak_hmac_context_update( ak_pointer ctx, const ak_pointer , const size_t );
+/*! \brief Завершение алгоритма выработки имитовставки HMAC. */
+ ak_buffer ak_hmac_context_finalize( ak_pointer , const ak_pointer , const size_t , ak_pointer );
+/*! \brief Вычисление имитовставки для заданной области памяти. */
  ak_buffer ak_hmac_context_ptr( ak_hmac , const ak_pointer , const size_t , ak_pointer );
-/*! \brief Хеширование заданного файла. */
+/*! \brief Вычисление имитовставки для заданного файла. */
  ak_buffer ak_hmac_context_file( ak_hmac , const char*, ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Развертка ключевого вектора из пароля (согласно Р 50.1.111-2016, раздел 4) */
  int ak_hmac_context_pbkdf2_streebog512( const ak_pointer , const size_t ,
                    const ak_pointer , const size_t, const size_t , const size_t , ak_pointer );
-/*! \brief Тестирование алгоритмов выработки имитовставки hmac с отечественными функциями хеширования. */
+/*! \brief Тестирование алгоритмов выработки имитовставки HMAC с отечественными функциями хеширования. */
  ak_bool ak_hmac_test_streebog( void );
 /*! \brief Тестирование алгоритма PBKDF2, регламентируемого Р 50.1.113-2016. */
  ak_bool ak_hmac_test_pbkdf2( void );

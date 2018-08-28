@@ -36,6 +36,7 @@
   ictx->length = 0;
 
  /* устанавливаем значения и полей и методы из контекста функции хеширования */
+  ictx->engine = hash_function;
   ictx->ctx = hctx;
   ictx->has_key = ak_false;
   ictx->hsize = hctx->hsize;
@@ -48,6 +49,72 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция инициализирует контекст структуры struct mac в значения, определяемые
+    заданным контекстом hctx ключевой функции хеширования HMAC.
+    При этом, владение контекстом hctx не происходит (в частности не происходит его удаление).
+
+    @param ictx указатель на структуру struct mac.
+    @param hctx контекст ключевой функции хеширования HMAC; контекст должен быть
+    предварительно инициализирован.
+    @return В случае успеха возвращается \ref ak_error_ok (ноль). В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mac_context_create_hmac( ak_mac ictx, ak_hmac hctx )
+{
+ /* вначале, необходимые проверки */
+  if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using null pointer to mac context" );
+  if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                           "using null pointer to hash context" );
+ /* теперь собственно инициализация */
+  if(( ictx->data = (ak_uint8 *) malloc( ictx->bsize = hctx->ctx.bsize )) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ ,
+                                     "wrong memory alllocation for a new temporary data buffer" );
+  } else memset( ictx->data, 0, hctx->ctx.bsize );
+  ictx->length = 0;
+
+ /* устанавливаем значения и полей и методы из контекста функции хеширования */
+  ictx->engine = hmac_function;
+  ictx->ctx = hctx;
+  ictx->has_key = ak_true;
+  ictx->hsize = hctx->ctx.hsize;
+  ictx->clean = ak_hmac_context_clean;
+  ictx->update = ak_hmac_context_update;
+  ictx->finalize = ak_hmac_context_finalize;
+  ictx->free = NULL;
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_mac_context_create_oid_common( ak_mac ictx, ak_oid oid, size_t size,
+                                                                    ak_function_mac_create *create )
+{
+  ak_pointer ctx = NULL;
+  int error = ak_error_ok;
+
+  /* выделяем память */
+   if(( ctx = malloc( size )) == NULL )
+     return ak_error_message( ak_error_out_of_memory, __func__ ,
+                                           "incorrect memory allocation for mac internal context" );
+  /* инициализируем контекст функции хеширования */
+   if(( error = (( ak_function_create_object *)oid->func.create )( ctx )) != ak_error_ok ) {
+     (( ak_function_destroy_object *)oid->func.destroy )( ctx );
+     free( ctx );
+     return ak_error_message( error, __func__, "incorrect initialization of mac internal context" );
+   }
+  /* инициализируем контекст сжимающего отображения */
+   if(( error = create( ictx, ctx )) != ak_error_ok ) {
+     (( ak_function_destroy_object *)oid->func.destroy )( ctx );
+     free( ctx );
+     return ak_error_message( error, __func__, "incorrect initialization of mac internal context" );
+   }
+  /* на-последок, устанавливаем функцию освобождения контекста хеширования */
+   ictx->free = ( ak_function_destroy_object *) oid->func.destroy;
+
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция инициализирует контекст структуры struct mac. При этом используется временно
    создаваемый контекст алгоритма хеширования, определяемый идентификатора алгоритма.
 
@@ -57,7 +124,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mac_context_create_oid( ak_mac ictx, ak_oid oid )
 {
-  ak_hash hctx = NULL;
+  ak_pointer ctx = NULL;
   int error = ak_error_ok;
 
  /* вначале, необходимые проверки */
@@ -70,22 +137,42 @@
   switch( oid->engine ) {
     case hash_function: /* создаем бесключевую функцию хеширования */
     /* выделяем память */
-     if(( hctx = malloc( sizeof( struct hash ))) == NULL )
+     if(( ctx = malloc( sizeof( struct hash ))) == NULL )
        return ak_error_message( ak_error_out_of_memory, __func__ ,
                                     "incorrect memory allocation for hash function context" );
     /* инициализируем контекст функции хеширования */
-      if(( error = (( ak_function_hash_create *)oid->func.create)( hctx )) != ak_error_ok ) {
-        hctx = ak_hash_context_delete( hctx );
+      if(( error = (( ak_function_hash_create *)oid->func.create)( ctx )) != ak_error_ok ) {
+        ctx = ak_hash_context_delete( ctx );
         return ak_error_message( error, __func__,
                                         "incorrect initialization of hash function context" );
       }
     /* инициализируем контекст сжимающего отображения */
-      if(( error = ak_mac_context_create_hash( ictx, hctx )) != ak_error_ok ) {
-        hctx = ak_hash_context_delete( hctx );
+      if(( error = ak_mac_context_create_hash( ictx, ctx )) != ak_error_ok ) {
+        ctx = ak_hash_context_delete( ctx );
         return ak_error_message( error, __func__, "incorrect initialization of mac context" );
       }
     /* на-последок, устанавливаем функцию освобождения контекста хеширования */
       ictx->free = ak_hash_context_delete;
+    break;
+
+    case hmac_function: /* создаем ключевую функцию хеширования HMAC */
+    /* выделяем память */
+     if(( ctx = malloc( sizeof( struct hmac ))) == NULL )
+       return ak_error_message( ak_error_out_of_memory, __func__ ,
+                                    "incorrect memory allocation for hmac function context" );
+    /* инициализируем контекст функции хеширования */
+      if(( error = (( ak_function_hash_create *)oid->func.create)( ctx )) != ak_error_ok ) {
+        ctx = ak_hmac_context_delete( ctx );
+        return ak_error_message( error, __func__,
+                                        "incorrect initialization of hmac function context" );
+      }
+    /* инициализируем контекст сжимающего отображения */
+      if(( error = ak_mac_context_create_hmac( ictx, ctx )) != ak_error_ok ) {
+        ctx = ak_hmac_context_delete( ctx );
+        return ak_error_message( error, __func__, "incorrect initialization of mac context" );
+      }
+    /* на-последок, устанавливаем функцию освобождения контекста хеширования */
+      ictx->free = ak_hmac_context_delete;
     break;
 
     default: return ak_error_message( ak_error_oid_engine, __func__, "using oid with wrong engine" );
@@ -133,6 +220,38 @@
      } else
          ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to mac context" );
  return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param ictx указатель на контекст сжимающего отображения (структуру struct mac).
+    К моменту вызова функции контекст должен быть инициализирован.
+    @param ptr Указатель на данные, которые будут интерпретироваться в качестве значения ключа.
+    @param size Размер данных, на которые указывает `ptr` (размер в байтах).
+    Если величина `size` меньше, чем размер выделенной памяти под секретный ключ, то копируется
+    только `size` байт (остальные заполняются нулями). Если `size` больше, чем количество выделенной памяти
+    под ключ, то копируются только младшие байты, в количестве `key.size` байт.
+
+    @param cflag Флаг передачи владения укзателем `ptr`. Если `cflag` ложен (принимает значение `ak_false`),
+    то физического копирования данных не происходит: внутренний буфер лишь указывает на размещенные
+    в другом месте данные, но не владеет ими. Если `cflag` истиннен (принимает значение `ak_true`),
+    то происходит выделение памяти и копирование данных в эту память (размножение данных).
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mac_context_set_key( ak_mac ictx, const ak_pointer ptr,
+                                                           const size_t size , const ak_bool cflag )
+{
+  if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using a null pointer to null mac context" );
+  if( !ictx->has_key ) return ak_error_message( ak_error_key_usage, __func__,
+                                                           "using a key for non-key mac context" );
+
+
+//  if(( error = ak_skey_context_set_key( &hctx->key, ptr, size, cflag )) != ak_error_ok )
+//    return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
+
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

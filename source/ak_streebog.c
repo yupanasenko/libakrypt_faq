@@ -146,12 +146,11 @@
   unsigned char *mhide = NULL;
   struct streebog sx; /* структура для хранения копии текущего состояния контекста */
 
-  if( ctx == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to a context" );
+  if( ctx == NULL ) { ak_error_message( ak_error_null_pointer,
+                                             __func__ , "using null pointer to a context" );
     return NULL;
   }
-  if( size >= 64 ) {
-    ak_error_message( ak_error_zero_length, __func__ ,
+  if( size >= 64 ) { ak_error_message( ak_error_zero_length, __func__ ,
                                              "using wrong length for finalized hash data" );
     return NULL;
   }

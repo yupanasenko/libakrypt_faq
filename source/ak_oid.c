@@ -14,69 +14,83 @@
   /* 1. идентификаторы алгоритмов выработки псевдо-случайных последовательностей,
         значения OID находятся в дереве библиотеки: 1.2.643.2.52.1.1 - генераторы ПСЧ  */
    { random_generator, algorithm, "lcg", "1.2.643.2.52.1.1.1", NULL, NULL,
-                                { (ak_function_void *) ak_random_context_create_lcg, NULL, NULL }},
+                                    { (ak_function_void *) ak_random_context_create_lcg,
+                                      (ak_function_void *) ak_random_context_destroy, NULL, NULL }},
 
   #if defined(__unix__) || defined(__APPLE__)
    { random_generator, algorithm, "dev-random", "1.2.643.2.52.1.1.2", NULL, NULL,
-                             { (ak_function_void *) ak_random_context_create_random, NULL, NULL }},
+                                    { (ak_function_void *) ak_random_context_create_random,
+                                      (ak_function_void *) ak_random_context_destroy, NULL, NULL }},
 
    { random_generator, algorithm, "dev-urandom", "1.2.643.2.52.1.1.3", NULL, NULL,
-                            { (ak_function_void *) ak_random_context_create_urandom, NULL, NULL }},
+                                    { (ak_function_void *) ak_random_context_create_urandom,
+                                      (ak_function_void *) ak_random_context_destroy, NULL, NULL }},
   #endif
   #ifdef _WIN32
    { random_generator, algorithm, "winrtl", "1.2.643.2.52.1.1.4", NULL, NULL,
-                             { (ak_function_void *) ak_random_context_create_winrtl, NULL, NULL }},
+                                    { (ak_function_void *) ak_random_context_create_winrtl,
+                                      (ak_function_void *) ak_random_context_destroy, NULL, NULL }},
  #endif
 
    { random_generator, algorithm, "xorshift64", "1.2.643.2.52.1.1.5", NULL, NULL,
-                         { (ak_function_void *) ak_random_context_create_xorshift64, NULL, NULL }},
+                                    { (ak_function_void *) ak_random_context_create_xorshift64,
+                                      (ak_function_void *) ak_random_context_destroy, NULL, NULL }},
 
    { random_generator, algorithm, "hashrnd-gosthash94", "1.2.643.2.52.1.1.6.0", NULL, NULL,
-                 { (ak_function_void *) ak_random_context_create_hashrnd_gosthash94, NULL, NULL }},
+                        { (ak_function_void *) ak_random_context_create_hashrnd_gosthash94,
+                                      (ak_function_void *) ak_random_context_destroy, NULL, NULL }},
 
    { random_generator, algorithm, "hashrnd-streebog256", "1.2.643.2.52.1.1.6.1", NULL, NULL,
-                { (ak_function_void *) ak_random_context_create_hashrnd_streebog256, NULL, NULL }},
+                        { (ak_function_void *) ak_random_context_create_hashrnd_streebog256,
+                                      (ak_function_void *) ak_random_context_destroy, NULL, NULL }},
 
    { random_generator, algorithm, "hashrnd-streebog512", "1.2.643.2.52.1.1.6.2", NULL, NULL,
-                { (ak_function_void *) ak_random_context_create_hashrnd_streebog512, NULL, NULL }},
+                        { (ak_function_void *) ak_random_context_create_hashrnd_streebog512,
+                                      (ak_function_void *) ak_random_context_destroy, NULL, NULL }},
 
 
   /* 2. идентификаторы алгоритмов бесключевого хеширования,
         значения OID взяты из перечней КриптоПро и ТК26 (http://tk26.ru/methods/OID_TK_26/index.php)
         в дереве библиотеки: 1.2.643.2.52.1.2 - функции бесключевого хеширования */
    { hash_function, algorithm, "gosthash94", "1.2.643.2.2.9", NULL, NULL,
-                       { (ak_function_void *) ak_hash_context_create_gosthash94_csp, NULL, NULL }},
+                        { (ak_function_void *) ak_hash_context_create_gosthash94_csp,
+                                        (ak_function_void *) ak_hash_context_destroy, NULL, NULL }},
 
    { hash_function, algorithm, "streebog256", "1.2.643.7.1.1.2.2", NULL, NULL,
-                          { (ak_function_void *) ak_hash_context_create_streebog256, NULL, NULL }},
+                           { (ak_function_void *) ak_hash_context_create_streebog256,
+                                        (ak_function_void *) ak_hash_context_destroy, NULL, NULL }},
 
    { hash_function, algorithm, "streebog512", "1.2.643.7.1.1.2.3", NULL, NULL,
-                          { (ak_function_void *) ak_hash_context_create_streebog512, NULL, NULL }},
+                           { (ak_function_void *) ak_hash_context_create_streebog512,
+                                        (ak_function_void *) ak_hash_context_destroy, NULL, NULL }},
 
   /* 3. идентификаторы параметров алгоритма бесключевого хеширования ГОСТ Р 34.11-94.
         значения OID взяты из перечней КриптоПро */
    { hash_function, kbox_params, "id-gosthash94-test-paramset", "1.2.643.2.2.30.0", NULL,
-                                                      (ak_pointer) hash_box, { NULL, NULL, NULL }},
+                                                 (ak_pointer) hash_box, { NULL, NULL, NULL, NULL }},
 
    { hash_function, kbox_params, "id-gosthash94-rfc4357-paramsetA", "1.2.643.2.2.30.1", NULL,
-                                                 (ak_pointer) hash_box_CSPA, { NULL, NULL, NULL }},
+                                            (ak_pointer) hash_box_CSPA, { NULL, NULL, NULL, NULL }},
 
    { hash_function, kbox_params, "id-gosthash94-verbaO-paramset", "1.2.643.2.2.30.2", NULL,
-                                               (ak_pointer) hash_box_VerbaO, { NULL, NULL, NULL }},
+                                          (ak_pointer) hash_box_VerbaO, { NULL, NULL, NULL, NULL }},
 
   /* 4. идентификаторы алгоритмов HMAC согласно Р 50.1.113-2016
         в дереве библиотеки: 1.2.643.2.52.1.4 - функции ключевого хеширования (имитозащиты) */
    { hmac_function, algorithm, "hmac-streebog256", "1.2.643.7.1.1.4.1", NULL, NULL,
-                           { (ak_function_void *)ak_hmac_context_create_streebog256, NULL, NULL }},
+                            { (ak_function_void *)ak_hmac_context_create_streebog256,
+                                         (ak_function_void *)ak_hmac_context_destroy, NULL, NULL }},
    { hmac_function, algorithm, "hmac-streebog512", "1.2.643.7.1.1.4.2", NULL, NULL,
-                           { (ak_function_void *)ak_hmac_context_create_streebog512, NULL, NULL }},
+                            { (ak_function_void *)ak_hmac_context_create_streebog512,
+                                         (ak_function_void *)ak_hmac_context_destroy, NULL, NULL }},
    { hmac_function, algorithm, "hmac-gosthash94", "1.2.643.2.52.1.4.0", NULL, NULL,
-                           { (ak_function_void *) ak_hmac_context_create_gosthash94, NULL, NULL }},
+                            { (ak_function_void *) ak_hmac_context_create_gosthash94,
+                                         (ak_function_void *)ak_hmac_context_destroy, NULL, NULL }},
 
   /*    в дереве библиотеки: 1.2.643.2.52.1.5 - параметры функций ключевого хеширования (имитозащиты) */
 
   /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */
-   { undefined_engine, undefined_mode, NULL, NULL, NULL, NULL, { NULL, NULL, NULL }}
+   { undefined_engine, undefined_mode, NULL, NULL, NULL, NULL, { NULL, NULL, NULL, NULL }}
  };
 
 /* ----------------------------------------------------------------------------------------------- */
