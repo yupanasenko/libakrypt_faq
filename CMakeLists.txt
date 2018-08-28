@@ -42,6 +42,7 @@ set( HEADERS        source/ak_tools.h
                     source/ak_random.h
                     source/ak_hash.h
                     source/ak_skey.h
+                    source/ak_hmac.h
                     source/ak_mac.h
 )
 
@@ -54,6 +55,7 @@ set( SOURCES        source/ak_tools.c
                     source/ak_gosthash.c
                     source/ak_streebog.c
                     source/ak_skey.c
+                    source/ak_hmac.c
                     source/ak_mac.c
                     source/ak_libakrypt.c
 )
@@ -165,13 +167,14 @@ set( INTERNAL_TEST_LIST
                    internal-hash03
                    internal-skey01
                    internal-mac01
+                   internal-hmac01
 )
 
 # добавляем примеры для всех компиляторов, отличных от MSVC
 if( MSVC )
 else()
   foreach( programm ${INTERNAL_TEST_LIST} )
-     add_executable( test-${programm}${LIBAKRYPT_EXT} examples/test-${programm}.c )
+     add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
      target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
      add_test( NAME test-${programm}${LIBAKRYPT_EXT} COMMAND test-${programm}${LIBAKRYPT_EXT} )
   endforeach()
@@ -188,7 +191,7 @@ set( ARITHMETIC_TESTS_LIST
 
 if( LIBAKRYPT_GMP_TESTS )
   foreach( programm ${ARITHMETIC_TESTS_LIST} )
-     add_executable( test-${programm}${LIBAKRYPT_EXT} examples/test-${programm}.c )
+     add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
      target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static gmp )
      add_test( NAME test-${programm} COMMAND test-${programm}${LIBAKRYPT_EXT} )
   endforeach()

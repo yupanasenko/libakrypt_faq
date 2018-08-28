@@ -6,6 +6,49 @@
  #include <stdio.h>
  #include <ak_skey.h>
 
+ /* предварительное описание */
+ void ak_skey_context_print( ak_skey skey, FILE *fp );
+
+ /* тестовое значение ключа */
+ ak_uint32 key[8] = { 0x04030201, 0x08070605, 0x0c0b0a09, 0x000f0e0d, 0x78563412, 0xf0debc9a, 0x0, 0x01 };
+
+ int main( void )
+{
+  int i = 0;
+  struct skey skey;
+
+ /* инициализируем библиотеку */
+  if( !ak_libakrypt_create( NULL )) return ak_libakrypt_destroy();
+
+ /* создаем ключ */
+  ak_skey_context_create( &skey, 32, 8 );
+  printf("\n"); ak_skey_context_print( &skey, stdout );
+
+ /* присваиваем ключу константное значение */
+  ak_skey_context_set_key( &skey, key, 32, ak_true );
+  printf("\n"); ak_skey_context_print( &skey, stdout );
+ /* несколько раз перемаскируем ключ */
+  for( i = 0; i < 3; i++ ) {
+    skey.set_mask( &skey );
+    printf("\n"); ak_skey_context_print( &skey, stdout );
+  }
+
+ /* снимаем маску */
+  skey.unmask( &skey );
+  printf("\n"); ak_skey_context_print( &skey, stdout );
+
+ /* в заключение, несколько раз присваиваем случайное значение */
+  printf("\ntwo random keys\n");
+  for( i = 0; i < 2; i++ ) {
+    ak_skey_context_set_key_random( &skey, &skey.generator );
+    printf("\n"); ak_skey_context_print( &skey, stdout );
+  }
+
+ ak_skey_context_destroy( &skey );
+ /* останавливаем библиотеку и возвращаем результат сравнения */
+ return ak_libakrypt_destroy();
+}
+
  void ak_skey_context_print( ak_skey skey, FILE *fp )
 {
   ak_uint8 string[512];
@@ -38,40 +81,3 @@
   fprintf( fp, ")\n");
 }
 
- ak_uint32 key[8] = { 0x04030201, 0x08070605, 0x0c0b0a09, 0x000f0e0d, 0x78563412, 0xf0debc9a, 0x0, 0x01 };
-
- int main( void )
-{
-  int i = 0;
-  struct skey skey;
-
- /* инициализируем библиотеку */
-  if( !ak_libakrypt_create( NULL )) return ak_libakrypt_destroy();
-
- /* создаем ключ */
-  ak_skey_context_create( &skey, 32, 8 );
-  printf("\n"); ak_skey_context_print( &skey, stdout );
- /* присваиваем ключу константное значение */
-  ak_skey_context_set_key( &skey, key, 32, ak_true );
-  printf("\n"); ak_skey_context_print( &skey, stdout );
- /* несколько раз перемаскируем ключ */
-  for( i = 0; i < 3; i++ ) {
-    skey.set_mask( &skey );
-    printf("\n"); ak_skey_context_print( &skey, stdout );
-  }
- /* снимаем маску */
-  skey.unmask( &skey );
-  printf("\n"); ak_skey_context_print( &skey, stdout );
-
- /* в заключение, несколько раз присваиваем случайное значение */
-  printf("\ntwo random keys\n");
-  for( i = 0; i < 2; i++ ) {
-    ak_skey_context_set_key_random( &skey, &skey.generator );
-    printf("\n"); ak_skey_context_print( &skey, stdout );
-  }
-
- ak_skey_context_destroy( &skey );
-
- /* останавливаем библиотеку и возвращаем результат сравнения */
- return ak_libakrypt_destroy();
-}

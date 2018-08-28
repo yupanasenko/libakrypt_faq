@@ -12,19 +12,21 @@ if( CMAKE_HOST_UNIX )
             "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/${file} libakrypt-${FULL_VERSION}/source\n")
   endforeach()
 
-  # создаем каталог examples и копируем файлы с примерами (обычные + неэкспортируемые + арифметика)
+  # создаем каталог examples и копируем файлы с примерами (неэкспортируемые + арифметика)
   file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/examples\n")
   foreach( file ${EXAMPLES_LIST} )
     file( APPEND ${MYDFILE}
      "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/examples/example-${file}.c libakrypt-${FULL_VERSION}/examples\n")
   endforeach()
+  # создаем каталог tests и копируем файлы с тестами (неэкспортируемые функции + арифметика)
+  file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/tests\n")
   foreach( file ${INTERNAL_TEST_LIST} )
     file( APPEND ${MYDFILE}
-     "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/examples/test-${file}.c libakrypt-${FULL_VERSION}/examples\n")
+     "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/tests/test-${file}.c libakrypt-${FULL_VERSION}/tests\n")
   endforeach()
   foreach( file ${ARITHMETIC_TESTS_LIST} )
     file( APPEND ${MYDFILE}
-     "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/examples/test-${file}.c libakrypt-${FULL_VERSION}/examples\n")
+     "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/tests/test-${file}.c libakrypt-${FULL_VERSION}/tests\n")
   endforeach()
 
 #  # создаем каталог asn1 и копируем файлы с реализацией asn1

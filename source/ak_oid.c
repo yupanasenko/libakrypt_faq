@@ -5,6 +5,7 @@
 /*  - содержит реализации функций для работы с идентификаторами криптографических                  */
 /*    алгоритмов и параметров                                                                      */
 /* ----------------------------------------------------------------------------------------------- */
+ #include <ak_hmac.h>
  #include <ak_parameters.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -62,6 +63,17 @@
 
    { hash_function, kbox_params, "id-gosthash94-verbaO-paramset", "1.2.643.2.2.30.2", NULL,
                                                (ak_pointer) hash_box_VerbaO, { NULL, NULL, NULL }},
+
+  /* 4. идентификаторы алгоритмов HMAC согласно Р 50.1.113-2016
+        в дереве библиотеки: 1.2.643.2.52.1.4 - функции ключевого хеширования (имитозащиты) */
+   { hmac_function, algorithm, "hmac-streebog256", "1.2.643.7.1.1.4.1", NULL, NULL,
+                           { (ak_function_void *)ak_hmac_context_create_streebog256, NULL, NULL }},
+   { hmac_function, algorithm, "hmac-streebog512", "1.2.643.7.1.1.4.2", NULL, NULL,
+                           { (ak_function_void *)ak_hmac_context_create_streebog512, NULL, NULL }},
+   { hmac_function, algorithm, "hmac-gosthash94", "1.2.643.2.52.1.4.0", NULL, NULL,
+                           { (ak_function_void *) ak_hmac_context_create_gosthash94, NULL, NULL }},
+
+  /*    в дереве библиотеки: 1.2.643.2.52.1.5 - параметры функций ключевого хеширования (имитозащиты) */
 
   /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */
    { undefined_engine, undefined_mode, NULL, NULL, NULL, NULL, { NULL, NULL, NULL }}
