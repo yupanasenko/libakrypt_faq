@@ -247,7 +247,7 @@
   ak_uint8 *ptr = NULL;
   int error = ak_error_ok;
 
- /* сли новый размер равен нулю, то просто очищаем память */
+ /* если новый размер равен нулю, то просто очищаем память */
   if( size == 0 ) {
     if(( error = ak_buffer_free( buff )) != ak_error_ok )
       ak_error_message( error, __func__, "incorrect buffer memory destroying");

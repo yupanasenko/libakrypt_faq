@@ -139,7 +139,78 @@
   int error = ak_error_ok;
   if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                         "using null pointer to hmac context" );
-  if(( error = ak_skey_context_set_key( &hctx->key, ptr, size, cflag )) != ak_error_ok )
+ /* вспоминаем, что если ключ длиннее, чем длина входного блока хэш-функции, то в качестве
+                                                                      ключа используется его хэш */
+  if( size > hctx->ctx.bsize ) {
+    ak_uint8 out[64];
+    if( hctx->ctx.hsize > 64 ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                        "using hash function with very huge integrity code" );
+    ak_hash_context_ptr( &hctx->ctx, ptr, size, out );
+    if(( error = ak_error_get_value( )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect calculation of integrity code" );
+    if(( error = ak_skey_context_set_key( &hctx->key, out,
+                                               hctx->ctx.hsize, ak_true )) != ak_error_ok )
+      return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
+    ak_ptr_wipe( out, sizeof( out ), &hctx->key.generator, ak_true );
+
+  } else { /* здесь ключ используется в явном виде */
+      if(( error = ak_skey_context_set_key( &hctx->key, ptr, size, cflag )) != ak_error_ok )
+        return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
+  }
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает ключу случайное (псевдо-случайное) значение, размер которого определяется
+    размером секретного ключа. Способ выработки ключевого значения определяется используемым
+    генератором случайных (псевдо-случайных) чисел.
+
+    @param hctx Контекст алгоритма HMAC выработки имитовставки. К моменту вызова функции контекст
+    должен быть инициализирован.
+    @param generator контекст генератора псевдо-случайных чисел.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_hmac_context_set_key_random( ak_hmac hctx, ak_random generator )
+{
+  int error = ak_error_ok;
+  if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                        "using null pointer to hmac context" );
+  if(( error = ak_skey_context_set_key_random( &hctx->key, generator )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает ключу значение, выработанное из заданного пароля при помощи
+    алгоритма PBKDF2, описанного  в рекомендациях по стандартизации Р 50.1.111-2016.
+    Пароль должен быть непустой строкой символов в формате utf8.
+
+    Количество итераций алгоритма PBKDF2 определяется опцией библиотеки `pbkdf2_iteration_count`,
+    значение которой может быть опредедено с помощью вызова функции ak_libakrypt_get_option().
+
+    @param hctx Контекст алгоритма HMAC выработки имитовставки. К моменту вызова функции контекст
+    должен быть инициализирован.
+    @param pass Пароль, представленный в виде строки символов.
+    @param pass_size Длина пароля в байтах.
+    @param salt Случайная последовательность, представленная в виде строки символов.
+    @param salt_size Длина случайной последовательности в байтах.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_hmac_context_set_key_from_password( ak_hmac hctx,
+                                                const ak_pointer pass, const size_t pass_size,
+                                                     const ak_pointer salt, const size_t salt_size )
+{
+  int error = ak_error_ok;
+  if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                        "using null pointer to hmac context" );
+  if(( error = ak_skey_context_set_key_from_password( &hctx->key,
+                                          pass, pass_size, salt, salt_size )) != ak_error_ok )
     return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
 
  return ak_error_ok;
@@ -155,7 +226,7 @@
   int error = ak_error_ok;
   size_t idx = 0, len = 0;
   ak_hmac hctx = ( ak_hmac ) ctx;
-  ak_uint8 buffer[128]; /* буффер для хранения промежуточных значений */
+  ak_uint8 buffer[64]; /* буффер для хранения промежуточных значений */
 
   if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using a null pointer to hmac key context" );
@@ -169,18 +240,17 @@
   if( hctx->ctx.bsize > sizeof( buffer )) return ak_error_message( ak_error_wrong_length,
                                             __func__, "using hash function with huge block size" );
 
- /* инициализируем начальное состояние контекста хеширования */
-  if(( error = hctx->ctx.clean( &hctx->ctx )) != ak_error_ok )
-    return ak_error_message( error, __func__, "wrong cleaning of hash function context" );
-
- /* формируем значение первоначального буффера */
+ /* фомируем маскированное значение ключа */
   len = ak_min( hctx->ctx.bsize, hctx->key.key.size );
-  memset( buffer, 0, hctx->ctx.bsize );
   for( idx = 0; idx < len; idx++ ) {
      buffer[idx] = ((ak_uint8 *)hctx->key.key.data)[idx] ^ 0x36;
      buffer[idx] ^= ((ak_uint8 *)hctx->key.mask.data)[idx];
   }
   for( ; idx < hctx->ctx.bsize; idx++ ) buffer[idx] = 0x36;
+
+ /* инициализируем начальное состояние контекста хеширования */
+  if(( error = hctx->ctx.clean( &hctx->ctx )) != ak_error_ok )
+    return ak_error_message( error, __func__, "wrong cleaning of hash function context" );
 
  /* обновляем состояние контекста хеширования */
   if(( error = hctx->ctx.update( &hctx->ctx, buffer, hctx->ctx.bsize )) != ak_error_ok )
@@ -275,20 +345,19 @@
     return NULL;
   }
 
- /* возвращаем контекст хеширования в начальное состояние */
-  if(( error = hctx->ctx.clean( &hctx->ctx )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "wrong cleaning of hash function context" );
-    return NULL;
-  }
-
- /* формируем значение первоначального буффера */
+ /* фомируем маскированное значение ключа */
   len = ak_min( hctx->ctx.bsize, hctx->key.key.size );
-  memset( keybuffer, 0, hctx->ctx.bsize );
   for( idx = 0; idx < len; idx++ ) {
      keybuffer[idx] = ((ak_uint8 *)hctx->key.key.data)[idx] ^ 0x5C;
      keybuffer[idx] ^= ((ak_uint8 *)hctx->key.mask.data)[idx];
   }
   for( ; idx < hctx->ctx.bsize; idx++ ) keybuffer[idx] = 0x5C;
+
+ /* возвращаем контекст хеширования в начальное состояние */
+  if(( error = hctx->ctx.clean( &hctx->ctx )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong cleaning of hash function context" );
+    return NULL;
+  }
 
  /* обновляем состояние контекста хеширования */
   if(( error = hctx->ctx.update( &hctx->ctx, keybuffer, hctx->ctx.bsize )) != ak_error_ok )
@@ -296,6 +365,7 @@
 
  /* очищаем буффер */
   ak_ptr_wipe( keybuffer, sizeof( keybuffer ), &hctx->key.generator, ak_true );
+
  /* ресурс ключа */
   hctx->key.set_mask( &hctx->key );
   hctx->key.resource.counter--; /* мы использовали ключ один раз */
@@ -470,9 +540,22 @@
   }
 
  /* вычисляем значение первой строки U1  */
-  ak_mac_context_clean( &ictx );
-  ak_mac_context_update( &ictx, salt, salt_size );
+  if(( error = ak_mac_context_clean( &ictx )) != ak_error_ok ) {
+    ak_mac_context_destroy( &ictx );
+    ak_error_message( error, __func__, "incorrect cleaning of internal mac context");
+    goto lab_exit;
+  }
+  if(( error = ak_mac_context_update( &ictx, salt, salt_size )) != ak_error_ok ) {
+    ak_mac_context_destroy( &ictx );
+    ak_error_message( error, __func__, "incorrect updating of internal mac context");
+    goto lab_exit;
+  }
   ak_mac_context_finalize( &ictx, result, 4, result );
+  if(( error = ak_error_get_value( )) != ak_error_ok ) {
+    ak_mac_context_destroy( &ictx );
+    ak_error_message( error, __func__, "incorrect finalizing of internal mac context");
+    goto lab_exit;
+  }
   ak_mac_context_destroy( &ictx );
   memcpy( out, result+64-dklen, dklen );
 

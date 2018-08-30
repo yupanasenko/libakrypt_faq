@@ -231,7 +231,7 @@
  int ak_skey_context_set_mask_xor( ak_skey skey )
 {
   size_t idx = 0;
-  ak_uint8 newmask[128];
+  ak_uint8 newmask[1024];
   int error = ak_error_ok;
 
  /* выполняем стандартные проверки длин и указателей */
@@ -464,11 +464,14 @@
     return ak_error_message( error, __func__ , "using invalid secret key" );
   if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                         "using a null pointer to secret key data" );
- /* обнуляем ключ и присваиваем буффер */
-  memset( skey->key.data, 0, skey->key.size );
-  if(( error =
-      ak_buffer_set_ptr( &skey->key, ptr, ak_min( size, skey->key.size ), cflag )) != ak_error_ok )
+ /* присваиваем ключ */
+  if(( error = ak_buffer_set_ptr( &skey->key, ptr, size, cflag )) != ak_error_ok )
     return ak_error_message( error, __func__ , "wrong assigning a secret key data" );
+
+ /* проверяем маску */
+  if( skey->mask.size != skey->key.size )
+    if(( error = ak_buffer_alloc( &skey->mask, size )) != ak_error_ok )
+      return ak_error_message( error, __func__ , "incorrect memory allocation for secret key mask" );
 
  /* маскируем ключ и вычисляем контрольную сумму */
   if(( error = skey->set_mask( skey )) != ak_error_ok ) return  ak_error_message( error,
@@ -522,6 +525,83 @@
  /* устанавливаем флаг того, что ключевое значение определено.
     теперь ключ можно использовать в криптографических алгоритмах */
   skey->flags |= skey_flag_set_key;
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает ключу значение, выработанное из заданного пароля при помощи
+    алгоритма PBKDF2, описанного  в рекомендациях по стандартизации Р 50.1.111-2016.
+    Пароль должен быть непустой строкой символов в формате utf8.
+
+    Количество итераций алгоритма PBKDF2 определяется опцией библиотеки `pbkdf2_iteration_count`,
+    значение которой может быть опредедено с помощью вызова функции ak_libakrypt_get_option().
+
+    @param skey контекст секретного ключа. К моменту вызова функции контекст должен быть
+    инициализирован.
+    @param pass пароль, представленный в виде строки символов.
+    @param pass_size длина пароля в байтах
+    @param salt случайный вектор, представленный в виде строки символов.
+    @param salt_size длина случайного вектора в байтах
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_context_set_key_from_password( ak_skey skey,
+                                                const ak_pointer pass, const size_t pass_size,
+                                                     const ak_pointer salt, const size_t salt_size )
+{
+  int error = ak_error_ok;
+
+ /* выполняем необходимые проверки */
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                             "using a null pointer to secret key" );
+  if( skey->key.size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                       "using non initialized secret key context" );
+  if( pass == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                               "using a null pointer to password" );
+  if( !pass_size ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                              "using a password with zero length" );
+ /* присваиваем буффер и маскируем его */
+  if(( error = ak_hmac_context_pbkdf2_streebog512( pass, pass_size, salt, salt_size,
+                                  ak_libakrypt_get_option("pbkdf2_iteration_count"),
+                                                 skey->key.size, skey->key.data )) != ak_error_ok )
+                  return ak_error_message( error, __func__ , "wrong generation a secret key data" );
+
+  if(( error = skey->set_mask( skey )) != ak_error_ok ) return  ak_error_message( error,
+                                                            __func__ , "wrong secret key masking" );
+  if(( error = skey->set_icode( skey )) != ak_error_ok ) return ak_error_message( error,
+                                      __func__ , "wrong calculation of secret key integrity code" );
+
+ /* устанавливаем флаг того, что ключевое значение определено.
+    теперь ключ можно использовать в криптографических алгоритмах */
+  skey->flags |= skey_flag_set_key;
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param skey контекст секретного ключа. К моменту вызова функции контекст должен быть
+    инициализирован.
+    @param ictx контекст алгоритма итеративного сжатия. К моменту вызова функции контекст должен
+    быть инициализирован.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_context_mac_context_update( ak_skey skey, struct mac *ictx )
+{
+  int error = ak_error_ok;
+
+ /* выполняем необходимые проверки */
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                             "using a null pointer to secret key" );
+  if( !skey->flags&skey_flag_set_key ) return ak_error_message( ak_error_key_value, __func__ ,
+                                             "using a secret key context with not assigned value" );
+ /* теперь собственно вызов функции обновления контекста */
+  skey->unmask( skey );
+  error = ak_mac_context_update( ictx, skey->key.data, skey->key.size );
+  skey->set_mask( skey );
 
  return error;
 }

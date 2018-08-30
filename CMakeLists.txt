@@ -168,6 +168,7 @@ set( INTERNAL_TEST_LIST
                    internal-skey01
                    internal-mac01
                    internal-hmac01
+                   internal-hmac02
 )
 
 # добавляем примеры для всех компиляторов, отличных от MSVC
