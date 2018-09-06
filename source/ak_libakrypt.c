@@ -5,6 +5,7 @@
 /*  - содержит реализацию функций инициализации и тестирования библиотеки.                         */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_mac.h>
+ #include <ak_bckey.h>
  #include <ak_tools.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -141,6 +142,52 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция проверяет корректность реализации блочных шифрова и режимов их использования.
+    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
+    вызова ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_libakrypt_test_block_ciphers( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing block ciphers started" );
+
+ /* тестируем корректность реализации блочного шифра Магма */
+  if( ak_bckey_test_magma()  != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of magma block cipher" );
+    return ak_false;
+  }
+
+// /* инициализируем константные таблицы для алгоритма Кузнечик */
+//  if( ak_bckey_init_kuznechik_tables()  != ak_true ) {
+//    ak_error_message( ak_error_get_value(), __func__ ,
+//                                       "incorrect initialization of kuznechik predefined tables" );
+//    return ak_false;
+//  }
+
+// /* тестируем корректность реализации блочного шифра Кузнечик */
+//  if( ak_bckey_test_kuznechik()  != ak_true ) {
+//    ak_error_message( ak_error_get_value(), __func__ ,
+//                                                   "incorrect testing of kuznechik block cipher" );
+//    return ak_false;
+//  }
+
+// /* тестируем дополнительные режимы работы */
+//  if( ak_bckey_test_mgm()  != ak_true ) {
+//    ak_error_message( ak_error_get_value(), __func__ ,
+//                                               "incorrect testing of mgm mode for block ciphers" );
+//    return ak_false;
+//  }
+
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing block ciphers ended successfully" );
+
+ return ak_true;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция проверяет корректность реализации алгоритмов итерационного сжатия
     @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
     функция возвращает ak_false. Код ошибки можеть быть получен с помощью
@@ -177,6 +224,7 @@
 
  return ak_true;
 }
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция должна вызываться перед использованием любых криптографических механизмов библиотеки.
 
@@ -232,6 +280,12 @@
      ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of hash functions" );
      return ak_false;
    }
+
+ /* тестируем работу алгоритмов блочного шифрования */
+  if( ak_libakrypt_test_block_ciphers() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "error while testing block ciphers" );
+    return ak_false;
+  }
 
  /* проверяем корректность реализации алгоритмов итерационного сжатия */
    if( ak_libakrypt_test_mac_functions( ) != ak_true ) {

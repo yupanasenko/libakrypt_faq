@@ -127,10 +127,10 @@
   ak_buffer_destroy( &(skey->icode ));
 
   ak_random_context_destroy( &skey->generator );
-  if( skey->data != NULL )
-   /* удаляем память только при установленном флаге */
-    if( ((skey->flags)&skey_flag_data_free )) free( skey->data );
-
+  if( skey->data != NULL ) {
+   /* при установленном флаге прамять не очищаем */
+    if( !((skey->flags)&skey_flag_data_nonfree )) free( skey->data );
+  }
   ak_buffer_destroy( &skey->number );
   skey->oid = NULL;
   skey->flags = 0;
@@ -192,12 +192,11 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Проверка параметров контекста секретного ключа.
-    @param skey Указатель на контекст секретного ключа.
+/*! @param skey Указатель на контекст секретного ключа.
     @return В случае успеха функция возвращает ak_error_ok. В противном случае,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- static inline int ak_skey_context_check( ak_skey skey )
+ int ak_skey_context_check( ak_skey skey )
 {
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer,
                                                  __func__ , "using a null pointer to secret key" );

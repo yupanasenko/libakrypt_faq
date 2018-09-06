@@ -43,6 +43,7 @@ set( HEADERS        source/ak_tools.h
                     source/ak_hash.h
                     source/ak_skey.h
                     source/ak_hmac.h
+                    source/ak_bckey.h
                     source/ak_mac.h
 )
 
@@ -56,6 +57,8 @@ set( SOURCES        source/ak_tools.c
                     source/ak_streebog.c
                     source/ak_skey.c
                     source/ak_hmac.c
+                    source/ak_bckey.c
+                    source/ak_magma.c
                     source/ak_mac.c
                     source/ak_libakrypt.c
 )
@@ -169,6 +172,7 @@ set( INTERNAL_TEST_LIST
                    internal-mac01
                    internal-hmac01
                    internal-hmac02
+                   internal-bckey01
 )
 
 # добавляем примеры для всех компиляторов, отличных от MSVC
