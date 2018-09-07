@@ -318,6 +318,14 @@
           ak_libakrypt_set_option( "hmac_key_count_resource", value );
         }
 
+       /* устанавливаем ресурс ключа алгоритма блочного шифрования Магма */
+        if( ak_libakrypt_load_one_option( localbuffer, "magma_cipher_resource = ", &value )) {
+          if( value < 1024 ) value = 1024;
+          if( value > 2147483647 ) value = 2147483647;
+          ak_libakrypt_set_option( "magma_cipher_resource", value );
+        }
+
+
       } /* далее мы очищаем строку независимо от ее содержимого */
       off = 0;
       memset( localbuffer, 0, 1024 );
@@ -682,7 +690,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_log_set_message( const char *message )
 {
-  int result = 0;
+  int result = ak_error_ok;
   if( ak_function_log_default == NULL ) return ak_error_set_value( ak_error_undefined_function );
   if( message == NULL ) {
     return ak_error_message( ak_error_null_pointer, __func__ , "using a NULL string for message" );

@@ -485,9 +485,30 @@
 {
   if( buff == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
-    return ak_error_null_pointer;
+    return 0;
   }
   return buff->size;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param buff указатель на структуру struct buffer, в которой выделяется память.
+    @param size размер выделяемой памяти в байтах.
+    @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_buffer_set_size( ak_buffer buff , const size_t size )
+{
+  int error = ak_error_ok;
+
+  if( buff == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
+
+  if(( buff->size != size ) || ( buff->data == NULL )) {
+    if(( error = ak_buffer_alloc( buff, size )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect memory allocation");
+  }
+
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -587,6 +608,22 @@
   if( buff->data == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                         "use null pointer to internal buffer" );
  return ak_ptr_wipe( buff->data, buff->size, generator, ak_false );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param buff Буффер, для которого производится проверка.
+
+    @return Функция возвращает ak_true, если буффер определен и содержит данные.
+    В противном случае, а также в случае возникновения ошибки, возвращается \ref ak_false.
+    Код ошибки может быть получен с помощью выщова функции ak_error_get_value().                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_buffer_is_assigned( const ak_buffer buff )
+{
+  if( buff == NULL ) return ak_false;
+  if( buff->data == NULL ) return ak_false;
+  if( buff->size == 0 ) return ak_false;
+
+ return ak_true;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

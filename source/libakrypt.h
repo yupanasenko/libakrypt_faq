@@ -191,18 +191,18 @@ extern "C" {
 /*! \brief Ошибка с обращением к oid. */
  #define ak_error_wrong_oid                   (-45)
 
-/*! \brief Ошибка исчерпания количества возможных использований ключа. */
- #define ak_error_resource_counter            (-50)
 /*! \brief Ошибка, возникающая при использовании ключа, значение которого не определено. */
  #define ak_error_key_value                   (-51)
 /*! \brief Ошибка, возникающая при использовании ключа для бесключевых функций. */
  #define ak_error_key_usage                   (-52)
+/*! \brief Ошибка, возникающая при неверном заполнении полей структуры bckey. */
+ #define ak_error_wrong_block_cipher          (-53)
 /*! \brief Ошибка, возникающая при зашифровании/расшифровании данных, длина которых не кратна длине блока. */
- #define ak_error_wrong_block_cipher_length   (-53)
+ #define ak_error_wrong_block_cipher_length   (-54)
 /*! \brief Ошибка, возникающая при неверном значении кода целостности ключа. */
- #define ak_error_wrong_key_icode             (-54)
+ #define ak_error_wrong_key_icode             (-55)
 /*! \brief Ошибка, возникающая при недостаточном ресурсе ключа. */
- #define ak_error_low_key_resource            (-55)
+ #define ak_error_low_key_resource            (-56)
 /*! \brief Ошибка, возникающая при использовании синхропосылки (инициализационного вектора) неверной длины. */
  #define ak_error_wrong_iv_length             (-56)
 /*! \brief Ошибка, возникающая при неправильном использовании функций зашифрования/расшифрования данных. */

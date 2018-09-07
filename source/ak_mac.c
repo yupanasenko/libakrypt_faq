@@ -532,7 +532,7 @@
   int audit = ak_log_get_level();
 
  /* создаем генератор и вырабатываем необходимое количество псевдослучайных данных */
-  if(( error = ak_random_context_create_xorshift64( &generator )) != ak_error_ok ) {
+  if(( error = ak_random_context_create_xorshift32( &generator )) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect creation of random generator context" );
     return ak_false;
   }
@@ -602,7 +602,7 @@
   int audit = ak_log_get_level();
 
  /* создаем генератор и вырабатываем необходимое количество псевдослучайных данных */
-  if(( error = ak_random_context_create_xorshift64( &generator )) != ak_error_ok ) {
+  if(( error = ak_random_context_create_xorshift32( &generator )) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect creation of random generator context" );
     return ak_false;
   }

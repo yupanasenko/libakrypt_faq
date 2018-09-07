@@ -1,10 +1,18 @@
+/* Пример, иллюстрирующий внутренние значения секретного клча алгоритма Магма.
+   Пример использует неэкспортируемые функции библиотеки.
+
+   test-internal-bckey01.c
+*/
  #include <ak_bckey.h>
 
  int main( void )
 {
   struct bckey magma_key;
   int i, error = ak_error_ok;
-  ak_uint32 key[8] = { 0x12345678, 0xabcdef0, 0x11223344, 0x55667788, 0xaabbccdd, 0xeeff0011, 0xa1a1a2a2, 0xa3a3a4a4 };
+  ak_uint32 key[8] = {
+    0x12345678, 0xabcdef0, 0x11223344, 0x55667788,
+    0xaabbccdd, 0xeeff0011, 0xa1a1a2a2, 0xa3a3a4a4
+  };
 
  /* инициализируем библиотеку */
   if( !ak_libakrypt_create( ak_function_log_stderr ))
@@ -30,8 +38,6 @@
   for( i = 0; i < 8; i++ ) printf("%02X", ((ak_uint8 *)magma_key.key.icode.data)[i] );
   if( magma_key.key.check_icode( &magma_key.key ) == ak_true ) printf(" (Ok)\n");
    else printf(" (Wrong)\n");
-
-  // осталось только реализовать шифрование )))
 
   ak_bckey_context_destroy( &magma_key );
   lab_exit: ak_libakrypt_destroy();

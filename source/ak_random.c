@@ -257,34 +257,33 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*                              реализация класса rng_xorshift64                                   */
+/*                              реализация класса rng_xorshift32                                   */
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Класс для хранения внутренних состояний генератора xorshift64.                          */
- typedef struct random_xorshift64 {
-  /*! \brief текущее значение внутреннего состояния генератора */
-   ak_uint64 val;
-   ak_uint64 res;
- } *ak_random_xorshift64;
+/*! \brief Тип для хранения внутренних состояний генератора xorshift32.                          */
+ typedef struct random_xorshift32 {
+   ak_uint32 value;
+ } *ak_random_xorshift32 ;
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_random_xorshift64_next( ak_random rnd )
+ static int ak_random_xorshift32_next( ak_random rnd )
 {
-  ak_uint64 x = 0;
+  ak_uint32 x = 0;
   if( rnd == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
     return ak_error_null_pointer;
   }
-  x = (( ak_random_xorshift64 ) ( rnd->data ))->val;
-  x ^= ( x >> 12 );
-  x ^= ( x << 25 );
-  x ^= ( x >> 27 );
-  (( ak_random_xorshift64 ) ( rnd->data ))->val = x;
-  (( ak_random_xorshift64 ) ( rnd->data ))->res = x*0x2545F4914F6CDD1DLL;
+
+  x = (( ak_random_xorshift32 )rnd->data)->value;
+  x ^= x << 13;
+  x ^= x >> 17;
+  x ^= x << 5;
+  (( ak_random_xorshift32 )rnd->data)->value = x;
+
  return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_random_xorshift64_randomize_ptr( ak_random rnd,
+ static int ak_random_xorshift32_randomize_ptr( ak_random rnd,
                                                            const ak_pointer ptr, const size_t size )
 {
   size_t idx = 0;
@@ -303,23 +302,22 @@
     return ak_error_null_pointer;
   }
   /* сначала начальное значение, потом цикл по всем элементам массива */
-  (( ak_random_xorshift64 ) ( rnd->data ))->val = ak_max( value[idx], 1 );
+  (( ak_random_xorshift32 )rnd->data)->value = ak_max( value[idx], 1 );
   do {
-        rnd->next( rnd );
-        (( ak_random_xorshift64 ) ( rnd->data ))->val += value[idx];
+       rnd->next( rnd );
+       (( ak_random_xorshift32 )rnd->data)->value += value[idx];
   } while( ++idx < size );
-  /* генератор не может быть инициализирован нулем */
-  if( (( ak_random_xorshift64 ) ( rnd->data ))->val == 0 )
-    (( ak_random_xorshift64 ) ( rnd->data ))->val = 0x42134ea1;
+  if( (( ak_random_xorshift32 )rnd->data)->value == 0 )
+    (( ak_random_xorshift32 )rnd->data)->value = 0x42134ea1;
 
  return rnd->next( rnd );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_random_xorshift64_random( ak_random rnd, const ak_pointer ptr, const size_t size )
+ static int ak_random_xorshift32_random( ak_random rnd, const ak_pointer ptr, const size_t size )
 {
-  ak_uint64 *arr = (ak_uint64 *) ptr;
-  size_t i = 0, blocks = ( size >>3 ), tail = size - ( blocks << 3 );
+  ak_uint32 *arr = (ak_uint32 *) ptr;
+  size_t i = 0, blocks = ( size >> 2 ), tail = size - ( blocks << 2 );
 
   if( rnd == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
@@ -336,14 +334,15 @@
 
  /* сначала заполняем блоками по 8 байт */
   for( i = 0; i < blocks; i++ ) {
-     arr[i] = (( ak_random_xorshift64 ) ( rnd->data ))->res;
+     arr[i] = (( ak_random_xorshift32 )rnd->data)->value;
      rnd->next( rnd );
   }
  /* потом остаток из младших разрядов */
-  for( i = 0; i < tail; i++ )
-     ((ak_uint8 *)( arr+blocks ))[i] =
-                               ((ak_uint8 *)( &(( ak_random_xorshift64 ) ( rnd->data ))->res ))[i];
-  rnd->next( rnd );
+  if( tail ) {
+    memcpy( (ak_uint8 *)arr + blocks, &(( ak_random_xorshift32 )rnd->data)->value, tail );
+    rnd->next( rnd );
+  }
+
  return ak_error_ok;
 }
 
@@ -354,7 +353,7 @@
     \return В случае успеха, функция возвращает \ref ak_error_ok. В противном случае
             возвращается код ошибки.                                                               */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_random_context_create_xorshift64( ak_random generator )
+ int ak_random_context_create_xorshift32( ak_random generator )
 {
   int error = ak_error_ok;
   ak_uint64 qword = ak_random_value(); /* вырабатываем случайное число */
@@ -362,18 +361,18 @@
   if(( error = ak_random_context_create( generator )) != ak_error_ok )
     return ak_error_message( error, __func__ , "wrong initialization of random generator" );
 
-  if(( generator->data = malloc( sizeof( struct random_xorshift64 ))) == NULL )
+  if(( generator->data = malloc( sizeof( struct random_xorshift32 ))) == NULL )
     return ak_error_message( ak_error_out_of_memory, __func__ ,
               "incorrect memory allocation for an internal variables of random generator" );
 
-  generator->oid = ak_oid_context_find_by_name("xorshift64");
-  generator->next = ak_random_xorshift64_next;
-  generator->randomize_ptr = ak_random_xorshift64_randomize_ptr;
-  generator->random = ak_random_xorshift64_random;
+  generator->oid = ak_oid_context_find_by_name("xorshift32");
+  generator->next = ak_random_xorshift32_next;
+  generator->randomize_ptr = ak_random_xorshift32_randomize_ptr;
+  generator->random = ak_random_xorshift32_random;
  /* функция generator->free уже установлена при вызове ak_random_create */
 
  /* для корректной работы присваиваем какое-то случайное начальное значение */
-  ak_random_xorshift64_randomize_ptr( generator, &qword, sizeof( ak_uint64 ));
+  ak_random_xorshift32_randomize_ptr( generator, &qword, sizeof( ak_uint64 ));
  return error;
 }
 

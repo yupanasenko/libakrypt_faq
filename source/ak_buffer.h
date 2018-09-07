@@ -45,6 +45,10 @@
  ak_buffer ak_buffer_new( void );
 /*! \brief Уничтожение данных, хранящиеся в полях структуры struct buffer. */
  int ak_buffer_destroy( ak_buffer );
+/*! \brief Установка размера буффера в заданное значение. */
+ int ak_buffer_set_size( ak_buffer , const size_t );
+/*! \brief Проверка, присвоено ли буферу некоторое значение. */
+ ak_bool ak_buffer_is_assigned( const ak_buffer );
 
 /*! \brief Зачистка данных, хранящихся в произвольной области памяти. */
  int ak_ptr_wipe( ak_pointer , size_t , ak_random , ak_bool );

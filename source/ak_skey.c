@@ -59,7 +59,7 @@
   memset( &(skey->resource), 0, sizeof( union resource ));
 
  /* инициализируем генератор масок */
-  if(( error = ak_random_context_create_xorshift64( &skey->generator )) != ak_error_ok ) {
+  if(( error = ak_random_context_create_xorshift32( &skey->generator )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong creation of random generator" );
     ak_skey_context_destroy( skey );
     return error;
@@ -129,7 +129,7 @@
   ak_random_context_destroy( &skey->generator );
   if( skey->data != NULL ) {
    /* при установленном флаге прамять не очищаем */
-    if( !((skey->flags)&skey_flag_data_nonfree )) free( skey->data );
+    if( !((skey->flags)&skey_flag_data_not_free )) free( skey->data );
   }
   ak_buffer_destroy( &skey->number );
   skey->oid = NULL;

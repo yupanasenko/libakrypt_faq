@@ -173,6 +173,8 @@ set( INTERNAL_TEST_LIST
                    internal-hmac01
                    internal-hmac02
                    internal-bckey01
+                   internal-bckey02
+                   internal-bckey03
 )
 
 # добавляем примеры для всех компиляторов, отличных от MSVC

@@ -356,7 +356,7 @@
 
  /* формируем вектор раундовых поворотов */
   m[0] = m[33] = 0;
-  for( i = 0; i < 32; i++ ) m[i+1] = (ak_uint8)((mv >> i) & 0x01 );
+  for( i = 0; i < 32; i++ ) m[i+1] = (ak_uint8)(( mv >> i) & 0x01 );
 
  /* начинаем движение */
   n3 = ((ak_uint32 *) in)[0]^( m[1] * 0xffffffff );
@@ -488,7 +488,7 @@
  /* выставляем флаги того, что память выделена */
   memset( data, 0, sizeof( struct magma_ctx ));
   skey->data = ( ak_pointer )data;
-  skey->flags |= skey_flag_data_nonfree;
+  skey->flags |= skey_flag_data_not_free;
 
  /* размещаем данные */
   if(( error = ak_random_context_random( &skey->generator, data->inmask[0], 32 )) != ak_error_ok )
@@ -505,6 +505,7 @@
      data->inkey[1][idx] -= ( 1 - data->inmask[1][idx] );        /* наложили новую маску */
      data->inkey[1][idx] += data->inmask[0][idx];                  /* сняли старую маску */
   }
+
  return ak_error_ok;
 }
 
@@ -548,9 +549,10 @@
 /* ----------------------------------------------------------------------------------------------- */
  static int ak_skey_context_set_mask_additive( ak_skey skey )
 {
-  size_t idx = 0;
-  ak_uint8 newmask[32];
+  size_t j, idx = 0;
+  ak_uint32 newmask[8];
   int error = ak_error_ok;
+  struct magma_ctx *data = NULL;
 
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using a null pointer to secret key" );
@@ -582,12 +584,27 @@
                                                      newmask, skey->mask.size )) != ak_error_ok )
               return ak_error_message( error, __func__ ,
                                                   "wrong random mask generation for key buffer" );
+           /* меняем маску для вектора, хранящегося в структуре skey */
             for( idx = 0; idx < ( skey->key.size >> 2 ); idx++ ) {
                ((ak_uint32 *) skey->key.data)[idx] += newmask[idx];
-               ((ak_uint32 *) skey->key.data)[idx] -= ((ak_uint8 *) skey->mask.data)[idx];
+               ((ak_uint32 *) skey->key.data)[idx] -= ((ak_uint32 *) skey->mask.data)[idx];
                ((ak_uint32 *) skey->mask.data)[idx] = newmask[idx];
             }
+          /* меняем маску для внутреннего представления ключевой информации */
+            if(( data = ( struct magma_ctx *)skey->data ) == NULL ) return error;
+            for( j = 0; j < 2; j++ ) {
+              if(( error = ak_random_context_random( &skey->generator,
+                                                     newmask, skey->mask.size )) != ak_error_ok )
+                return ak_error_message( error, __func__ ,
+                                                  "wrong random mask generation for key buffer" );
+              for( idx = 0; idx < ( skey->key.size >> 2 ); idx++ ) {
+                 data->inkey[j][idx] += newmask[idx];
+                 data->inkey[j][idx] -= data->inmask[j][idx];
+                 data->inmask[j][idx] = newmask[idx];
+              }
+            }
     }
+
  return error;
 }
 
@@ -857,7 +874,73 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                                     "the one block decryption test from GOST R 34.12-2015 is Ok" );
 
+ /* 4. Тестируем режим простой замены согласно ГОСТ Р34.13-2015 */
+  if(( error = ak_bckey_context_encrypt_ecb( &bkey, in_3413_2015_text, out, 32 )) != ak_error_ok )
+  {
+    ak_error_message_fmt( error, __func__ , "wrong plain text encryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( out, out_3413_2015_ecb_text, 32 )) {
+    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                   "the ecb mode encryption test from GOST R 34.13-2015 is wrong");
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free(str);
+    ak_log_set_message( str = ak_ptr_to_hexstr( out_3413_2015_ecb_text, 32, ak_true )); free(str);
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                     "the ecb mode encryption test from GOST R 34.13-2015 is Ok" );
 
+  if(( error = ak_bckey_context_decrypt_ecb( &bkey, out_3413_2015_ecb_text, out, 32 )) != ak_error_ok )
+  {
+    ak_error_message_fmt( error, __func__ , "wrong cipher text decryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( out, in_3413_2015_text, 32 )) {
+    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                   "the ecb mode decryption test from GOST R 34.13-2015 is wrong");
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free(str);
+    ak_log_set_message( str = ak_ptr_to_hexstr( in_3413_2015_text, 32, ak_true )); free(str);
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                     "the ecb mode decryption test from GOST R 34.13-2015 is Ok" );
+
+ /* 5. Тестируем режим гаммирования (счетчика) согласно ГОСТ Р34.13-2015 */
+  if( ak_bckey_context_xcrypt( &bkey, in_3413_2015_text, out, 32, ctr_iv, sizeof( ctr_iv )) != ak_error_ok ) {
+    ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong plain text encryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( out, out_3413_2015_ctr_text, 32 )) {
+    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                   "the counter mode encryption test from GOST R 34.13-2015 is wrong");
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( out_3413_2015_ctr_text, 32, ak_true )); free(str);
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                     "the counter mode encryption test from GOST R 34.13-2015 is Ok" );
+
+  if( ak_bckey_context_xcrypt( &bkey, out_3413_2015_ctr_text, out, 32, ctr_iv, sizeof( ctr_iv )) != ak_error_ok ) {
+    ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong cipher text decryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( out, in_3413_2015_text, 32 )) {
+    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                   "the counter mode decryption test from GOST R 34.13-2015 is wrong");
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( in_3413_2015_text, 32, ak_true )); free( str );
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                     "the counter mode decryption test from GOST R 34.13-2015 is Ok" );
 
  /* освобождаем ключ и выходим */
   exit:

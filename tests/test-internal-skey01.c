@@ -76,7 +76,7 @@
     else fprintf( fp, "mask assigned, ");
   if(( skey->flags&skey_flag_set_icode ) == 0 ) fprintf( fp, "no icode, ");
     else fprintf( fp, "icode assigned, ");
-  if(( skey->flags&skey_flag_data_nonfree ) == 0 ) fprintf( fp, "no internal data");
+  if(( skey->flags&skey_flag_data_not_free ) == 0 ) fprintf( fp, "no internal data");
     else fprintf( fp, "internal data assigned, ");
   fprintf( fp, ")\n");
 }

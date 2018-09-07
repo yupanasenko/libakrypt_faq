@@ -234,7 +234,7 @@
   if( !((hctx->key.flags)&skey_flag_set_key )) return ak_error_message( ak_error_key_value,
                                                __func__ , "using hmac key with unassigned value" );
 
-  if( hctx->key.resource.counter <= 1 ) return ak_error_message( ak_error_resource_counter,
+  if( hctx->key.resource.counter <= 1 ) return ak_error_message( ak_error_low_key_resource,
                                             __func__, "using hmac key context with low resource" );
                       /* нам надо два раза использовать ключ => ресурс должен быть не менее двух */
   if( hctx->ctx.bsize > sizeof( buffer )) return ak_error_message( ak_error_wrong_length,
@@ -287,7 +287,7 @@
  /* проверяем наличие ключа и его ресурс */
   if( !((hctx->key.flags)&skey_flag_set_key )) return ak_error_message( ak_error_key_value,
                                                __func__ , "using hmac key with unassigned value" );
-  if( hctx->key.resource.counter <= 0 ) return ak_error_message( ak_error_resource_counter,
+  if( hctx->key.resource.counter <= 0 ) return ak_error_message( ak_error_low_key_resource,
                                             __func__, "using hmac key context with low resource" );
 
   return hctx->ctx.update( &hctx->ctx, data, size );
