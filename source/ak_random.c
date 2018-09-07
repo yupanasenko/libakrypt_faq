@@ -768,7 +768,7 @@
 #if defined(__unix__) || defined(__APPLE__)
    error = ak_random_context_create_random( &rnd );
 #else
-   error = ak_random_context_create_xorshift64( &rnd );
+   error = ak_random_context_create_xorshift32( &rnd );
 #endif
    if( error != ak_error_ok ) {
      ak_random_context_destroy( generator );

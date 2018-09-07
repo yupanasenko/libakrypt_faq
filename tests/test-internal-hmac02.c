@@ -20,7 +20,7 @@
  /* инициализируем библиотеку */
   if( !ak_libakrypt_create( ak_function_log_stderr )) return ak_libakrypt_destroy();
 
-  printf("we have a long password: \n%s (%ld bytes)\n", pass, strlen( pass));
+  printf("we have a long password: \n%s (%d bytes)\n", pass, (int)strlen( pass));
 
  /* инициализируем контекст длинным паролем */
    ak_hmac_context_create_streebog256( &hx );

@@ -595,7 +595,7 @@
  /* выполняем необходимые проверки */
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                              "using a null pointer to secret key" );
-  if( !skey->flags&skey_flag_set_key ) return ak_error_message( ak_error_key_value, __func__ ,
+  if( !(skey->flags&skey_flag_set_key )) return ak_error_message( ak_error_key_value, __func__ ,
                                              "using a secret key context with not assigned value" );
  /* теперь собственно вызов функции обновления контекста */
   skey->unmask( skey );

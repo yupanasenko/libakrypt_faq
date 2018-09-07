@@ -47,7 +47,7 @@
 
  /* последовательно запускаем генераторы на тестирование */
  if( test_function( "xorshift",
-                    "0B410050F2146C66EB11C3A0DFFA88B92978D0FD132E8837F8B04643F7ACD4CB",
+                    "5CD6E4D62B79C1C97921693A1AC587D608D3B6EA03A72E2AE4B41927E6B82221",
                     ak_random_context_create_xorshift32 ) != ak_true ) return EXIT_FAILURE;
 
  if( test_function( "lcg",
