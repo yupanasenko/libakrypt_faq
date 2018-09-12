@@ -833,10 +833,15 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
                   0x2b073f0494f372a0, 0xde70e715d3556e48, 0x11d8d9e9eacfbc1e, 0x7c68260996c67efb };
 
  /* синхропосылка и зашифрованный в режиме гаммирования текст из ГОСТ Р 34.13-2015, приложение А.2 */
-  ak_uint8 ctr_iv[4] = { 0x78, 0x56, 0x34, 0x12 };
+  ak_uint8 ctr_iv[4] = { 0x78, 0x56, 0x34, 0x12 },
+             xiv1[4] = { 0x61, 0x2D, 0x93, 0x42 };
+  ak_uint8 xin1[13] = {
+    0x31, 0xEA, 0x54, 0xBB, 0xB7, 0xE5, 0xE5, 0x1C, 0xAE, 0xEB, 0x79, 0x28, 0x71 };
+  ak_uint8 xout1[13] = {
+    0x7C, 0xC9, 0x83, 0x3D, 0x5D, 0x1B, 0x9E, 0x81, 0x07, 0x94, 0x9F, 0x58, 0x15 };
+
   ak_uint64 out_3413_2015_ctr_text[4] = {
                   0x4e98110c97b7b93c, 0x3e250d93d6e85d69, 0x136d868807b2dbef, 0x568eb680ab52a12d };
-
 
  /* 1. Инициализируем ключ алгоритма Магма */
   if(( error = ak_bckey_context_create_magma( &bkey )) != ak_error_ok ) {
@@ -889,9 +894,6 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
     result = ak_false;
     goto exit;
   }
-  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
-                                     "the ecb mode encryption test from GOST R 34.13-2015 is Ok" );
-
   if(( error = ak_bckey_context_decrypt_ecb( &bkey, out_3413_2015_ecb_text, out, 32 )) != ak_error_ok )
   {
     ak_error_message_fmt( error, __func__ , "wrong cipher text decryption" );
@@ -907,7 +909,7 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
     goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
-                                     "the ecb mode decryption test from GOST R 34.13-2015 is Ok" );
+                          "the ecb mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
 
  /* 5. Тестируем режим гаммирования (счетчика) согласно ГОСТ Р34.13-2015 */
   if( ak_bckey_context_xcrypt( &bkey, in_3413_2015_text, out, 32, ctr_iv, sizeof( ctr_iv )) != ak_error_ok ) {
@@ -923,9 +925,6 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
     result = ak_false;
     goto exit;
   }
-  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
-                                     "the counter mode encryption test from GOST R 34.13-2015 is Ok" );
-
   if( ak_bckey_context_xcrypt( &bkey, out_3413_2015_ctr_text, out, 32, ctr_iv, sizeof( ctr_iv )) != ak_error_ok ) {
     ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong cipher text decryption" );
     result = ak_false;
@@ -940,7 +939,37 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
     goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
-                                     "the counter mode decryption test from GOST R 34.13-2015 is Ok" );
+                          "the counter mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
+
+ /* 6. Тестируем режим гаммирования (счетчика) на длинах, не кратных длине блока. */
+  if( ak_bckey_context_xcrypt( &bkey, xin1, out, 13, xiv1, 4 ) != ak_error_ok ) {
+    ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong plain text encryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( out, xout1, 13 )) {
+    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                            "the counter mode encryption test for 13 octets is wrong");
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, 13, ak_false )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( xout1, 13, ak_false )); free(str);
+    result = ak_false;
+    goto exit;
+  }
+  if( ak_bckey_context_xcrypt( &bkey, xout1, out, 13, xiv1, 4 ) != ak_error_ok ) {
+    ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong cipher text decryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal( out, xin1, 13 )) {
+    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                            "the counter mode decryption test for 13 octets is wrong");
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, 13, ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( xin1, 13, ak_true )); free( str );
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                  "the counter mode encryption/decryption test for 13 octets is Ok" );
 
  /* освобождаем ключ и выходим */
   exit:
