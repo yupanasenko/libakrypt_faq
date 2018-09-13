@@ -96,7 +96,7 @@ extern "C" {
  typedef unsigned char ak_uint8;
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Структура для обработки 128-ми битных значений. */
+/*! \brief Объединение для обработки 128-ми битных значений. */
  typedef union {
     ak_uint8 b[16];
     ak_uint32 w[4];
@@ -201,28 +201,30 @@ extern "C" {
  #define ak_error_wrong_block_cipher_length   (-54)
 /*! \brief Ошибка, возникающая при неверном значении кода целостности ключа. */
  #define ak_error_wrong_key_icode             (-55)
+/*! \brief Ошибка, возникающая при неверном значении длины ключа. */
+ #define ak_error_wrong_key_length            (-57)
 /*! \brief Ошибка, возникающая при недостаточном ресурсе ключа. */
- #define ak_error_low_key_resource            (-56)
+ #define ak_error_low_key_resource            (-58)
 /*! \brief Ошибка, возникающая при использовании синхропосылки (инициализационного вектора) неверной длины. */
- #define ak_error_wrong_iv_length             (-56)
+ #define ak_error_wrong_iv_length             (-59)
 /*! \brief Ошибка, возникающая при неправильном использовании функций зашифрования/расшифрования данных. */
- #define ak_error_wrong_block_cipher_function (-57)
+ #define ak_error_wrong_block_cipher_function (-60)
 
 /*! \brief Ошибка, возникающая если заданная точка не принадлежит заданной кривой. */
- #define ak_error_curve_point                 (-60)
+ #define ak_error_curve_point                 (-70)
 /*! \brief Ошибка, возникающая когда порядок точки неверен. */
- #define ak_error_curve_point_order           (-61)
+ #define ak_error_curve_point_order           (-71)
 /*! \brief Ошибка, возникающая если дискриминант кривой равен нулю (уравнение не задает кривую). */
- #define ak_error_curve_discriminant          (-62)
+ #define ak_error_curve_discriminant          (-72)
 /*! \brief Ошибка, возникающая когда неверно определены вспомогательные параметры эллиптической кривой. */
- #define ak_error_curve_order_parameters      (-63)
+ #define ak_error_curve_order_parameters      (-73)
 /*! \brief Ошибка, возникающая когда простой модуль кривой задан неверно. */
- #define ak_error_curve_prime_size            (-64)
+ #define ak_error_curve_prime_size            (-74)
 
 /*! \brief Ошибка, возникающая при кодировании ASN1 структуры (перевод в DER-кодировку). */
- #define ak_error_wrong_asn1_encode           (-70)
+ #define ak_error_wrong_asn1_encode           (-90)
 /*! \brief Ошибка, возникающая при декодировании ASN1 структуры (перевод из DER-кодировки в ASN1 структуру). */
- #define ak_error_wrong_asn1_decode           (-71)
+ #define ak_error_wrong_asn1_decode           (-91)
 
 /* ----------------------------------------------------------------------------------------------- */
  #define ak_null_string                  ("(null)")

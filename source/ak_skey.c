@@ -230,7 +230,7 @@
  int ak_skey_context_set_mask_xor( ak_skey skey )
 {
   size_t idx = 0;
-  ak_uint8 newmask[1024];
+  ak_uint8 newmask[64];
   int error = ak_error_ok;
 
  /* выполняем стандартные проверки длин и указателей */
@@ -250,20 +250,38 @@
      skey->flags |= skey_flag_set_mask;
 
   } else { /* если маска уже установлена, то мы ее сменяем */
-           /* для очень длинных ключей маска не изменяется */
-            if( skey->mask.size > sizeof( newmask ))
-              return ak_error_message( ak_error_wrong_length, __func__ ,
-                                                     "unsupported length for secret key buffer" );
-            if(( error = ak_random_context_random( &skey->generator,
-                                                     newmask, skey->mask.size )) != ak_error_ok )
-              return ak_error_message( error, __func__ ,
+            size_t jdx = 0, offset = 0,
+                   blocks = skey->mask.size >> 6, /* работаем с блоком длины 64 байта */
+                   tail = skey->mask.size - ( blocks << 6 );
+
+           /* сначала обрабатываем полные блоки */
+            for( jdx = 0; jdx < blocks; jdx++, offset += 64 ) {
+               if(( error = ak_random_context_random( &skey->generator,
+                                                                  newmask, 64 )) != ak_error_ok )
+               return ak_error_message( error, __func__ ,
                                                   "wrong random mask generation for key buffer" );
-            for( idx = 0; idx < skey->key.size; idx++ ) {
-               ((ak_uint8 *) skey->key.data)[idx] ^= newmask[idx];
-               ((ak_uint8 *) skey->key.data)[idx] ^= ((ak_uint8 *) skey->mask.data)[idx];
-               ((ak_uint8 *) skey->mask.data)[idx] = newmask[idx];
+               for( idx = 0; idx < 64; idx++ ) {
+                  ((ak_uint8 *) skey->key.data)[offset+idx] ^= newmask[idx];
+                  ((ak_uint8 *) skey->key.data)[offset+idx] ^=
+                                 ((ak_uint8 *) skey->mask.data)[offset+idx];
+                  ((ak_uint8 *) skey->mask.data)[offset+idx] = newmask[idx];
+               }
+            }
+           /* потом обрабатываем хвост */
+            if( tail ) {
+               if(( error = ak_random_context_random( &skey->generator,
+                                                                newmask, tail )) != ak_error_ok )
+               return ak_error_message( error, __func__ ,
+                                                  "wrong random mask generation for key buffer" );
+               for( idx = 0; idx < tail; idx++ ) {
+                  ((ak_uint8 *) skey->key.data)[offset+idx] ^= newmask[idx];
+                  ((ak_uint8 *) skey->key.data)[offset+idx] ^=
+                                 ((ak_uint8 *) skey->mask.data)[offset+idx];
+                  ((ak_uint8 *) skey->mask.data)[offset+idx] = newmask[idx];
+               }
             }
          }
+
  return error;
 }
 

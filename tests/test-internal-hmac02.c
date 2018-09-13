@@ -11,7 +11,7 @@
 {
   struct hmac hx;
   struct hash ctx;
-  char *pass = "yuoiasdkfk32qahjdhsbsajdbdkфыяяфы12oojskjasdkabcbkcabdkadhgkdgfkahbckbakjb3762827qqqwwquyew879875743974kdjbfbksdjbcskcbskdjcbsdckjsbdcksjdbcsdcb";
+  char *pass = "yuoiasdkfk321qahjdhsbsajdbdkфыяяфы12oojskjasdkabcbkcabdkadhgkdgfkahbckbakjb3762827qqqwwquyew879875743974kdjbfbksdjbcskcbskdjcbsdckjsbdcksjdbcsdcb";
   char *salt = "salt";
   ak_uint8 out[64], out2[64],
            data[13] = { 0x0a, 0xb, 0xc, 0xd, 0xe, 0xf, 0xa1, 0xb1, 0xc1, 0xd1, 0xe1, 0xf1, 0xa2 };

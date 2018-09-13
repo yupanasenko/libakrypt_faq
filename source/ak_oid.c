@@ -113,7 +113,10 @@
                                { ( ak_function_void *) ak_bckey_context_create_magma,
                                       ( ak_function_void *) ak_bckey_context_destroy,
                                        ( ak_function_void *) ak_bckey_context_delete, NULL, NULL }},
-
+   { block_cipher, algorithm, "kuznechik", "1.2.643.7.1.1.5.2", NULL, NULL,
+                           { ( ak_function_void *) ak_bckey_context_create_kuznechik,
+                                      ( ak_function_void *) ak_bckey_context_destroy,
+                                       ( ak_function_void *) ak_bckey_context_delete, NULL, NULL }},
 
   /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */
    { undefined_engine, undefined_mode, NULL, NULL, NULL, NULL, { NULL, NULL, NULL, NULL, NULL }}

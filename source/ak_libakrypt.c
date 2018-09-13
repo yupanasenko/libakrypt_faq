@@ -159,19 +159,19 @@
     return ak_false;
   }
 
-// /* инициализируем константные таблицы для алгоритма Кузнечик */
-//  if( ak_bckey_init_kuznechik_tables()  != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ ,
-//                                       "incorrect initialization of kuznechik predefined tables" );
-//    return ak_false;
-//  }
+ /* инициализируем константные таблицы для алгоритма Кузнечик */
+  if( ak_bckey_init_kuznechik_tables()  != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                       "incorrect initialization of kuznechik predefined tables" );
+    return ak_false;
+  }
 
-// /* тестируем корректность реализации блочного шифра Кузнечик */
-//  if( ak_bckey_test_kuznechik()  != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ ,
-//                                                   "incorrect testing of kuznechik block cipher" );
-//    return ak_false;
-//  }
+ /* тестируем корректность реализации блочного шифра Кузнечик */
+  if( ak_bckey_test_kuznechik()  != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                                   "incorrect testing of kuznechik block cipher" );
+    return ak_false;
+  }
 
 // /* тестируем дополнительные режимы работы */
 //  if( ak_bckey_test_mgm()  != ak_true ) {

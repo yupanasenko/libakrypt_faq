@@ -59,6 +59,7 @@ set( SOURCES        source/ak_tools.c
                     source/ak_hmac.c
                     source/ak_bckey.c
                     source/ak_magma.c
+                    source/ak_kuznechik.c
                     source/ak_mac.c
                     source/ak_libakrypt.c
 )

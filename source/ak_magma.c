@@ -773,13 +773,13 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
 {
   int error = ak_error_ok;
   if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                              "using null pointer to block cipher key context" );
+                                               "using null pointer to block cipher key context" );
 
-  /* создаем ключ алгоритма шифрования и определяем его методы */
+ /* создаем ключ алгоритма шифрования и определяем его методы */
   if(( error = ak_bckey_context_create( bkey, 32, 8 )) != ak_error_ok )
     return ak_error_message( error, __func__, "wrong initalization of block cipher key context" );
 
-  /* устанавливаем OID алгоритма шифрования */
+ /* устанавливаем OID алгоритма шифрования */
   if(( bkey->key.oid = ak_oid_context_find_by_name( "magma" )) == NULL ) {
     error = ak_error_get_value();
     ak_error_message( error, __func__, "wrong search of predefined magma block cipher OID" );
@@ -787,10 +787,10 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
     return error;
   };
 
-  /* устанавливаем ресурс использования серетного ключа */
+ /* устанавливаем ресурс использования серетного ключа */
   bkey->key.resource.counter = ak_libakrypt_get_option( "magma_cipher_resource" );
 
-  /* устанавливаем методы */
+ /* устанавливаем методы */
   bkey->key.set_mask = ak_skey_context_set_mask_additive;
   bkey->key.unmask = ak_skey_context_unmask_additive;
   bkey->key.set_icode = ak_skey_context_set_icode_additive;
