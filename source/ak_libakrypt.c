@@ -293,7 +293,9 @@
      return ak_false;
    }
 
- ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms tested successfully" );
+ if( ak_log_get_level() != ak_log_none )
+   ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms tested successfully" );
+
 return ak_true;
 }
 
@@ -304,8 +306,9 @@ return ak_true;
   if( error != ak_error_ok )
     ak_error_message( error, __func__ , "before destroing library holds an error" );
 
+ if( ak_log_get_level() != ak_log_none )
+   ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms successfully destroyed" );
 
-  ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms successfully destroyed" );
  return ak_error_get_value();
 }
 
