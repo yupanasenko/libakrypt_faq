@@ -25,7 +25,7 @@
 
  int main( void )
 {
-  FILE *fp = NULL;
+  struct file fp;
   ak_oid oid = NULL;
   ak_uint8 memory[1024];
   ak_uint32 idx = 0;
@@ -36,12 +36,12 @@
 
  /* в принудительном порядке создаем файл для экспериментов */
   printf(" generation a %dMB file, wait a few seconds ... \n", (int) mbsize ); fflush(stdout);
-  fp = fopen("data.dat", "wb");
+  ak_file_create( &fp, "data.dat" );
   for( idx = 0; idx < mbsize*1024; idx++ ) { // mbsize MB
      memset( memory, (ak_uint8)idx, 1024 );
-     fwrite( memory, 1, 1024, fp );
+     write( fp.fd, memory, 1024 );
   }
-  fflush(fp);
+  ak_file_close( &fp );
 
  /* контрольная сумма файла для проверки */
   print_file_icode( "data.dat" );
@@ -89,16 +89,18 @@
 /* шифрование заданного файла */
  void test_encrypt_file( ak_bckey key, const char *from, const char *to )
 {
-  size_t len = 0, bsize = 0;
+  clock_t time = 0;
   struct file in, out;
   ak_uint8 *buffer = NULL;
-  clock_t time = 0;
+  size_t len = 0, bsize = 0;
+  size_t readb = 0, writeb = 0;
 
  /* принудительно изменяем ресурс ключа */
   printf(" key resource changed to %llu blocks\n", key->key.resource.counter = ( mbsize*1024*1024 )/key->bsize );
 
  /* открываем файлы */
-  if( ak_file_is_exist( &in, from, ak_false )) printf(" file %s is open\n", from ); else return;
+  if( ak_file_is_exist( &in, from, ak_false ))
+    printf(" file %s is open, size: %lu bytes)\n", from, (unsigned long int)in.st.st_size ); else return;
   if( ak_file_create( &out, to ) == ak_error_ok ) printf(" file %s is created\n", to ); else return;
 
   printf(" one block size: %lu\n", (unsigned long int)(bsize = ak_file_get_optimal_block_size( &in )));
@@ -106,21 +108,23 @@
 
  /* теперь собственно зашифрование */
   time = clock();
-  len = read( in.fd, buffer, bsize );
+  readb = len = read( in.fd, buffer, bsize );
   if( len > 0 ) {
     ak_bckey_context_xcrypt( key, buffer, buffer, len, "12345678", key->bsize/2 );
-    write( out.fd, buffer, len );
+    writeb += write( out.fd, buffer, len );
   }
   do{
      if(( len = read( in.fd, buffer, bsize )) > 0 ) {
+       readb += len;
        ak_bckey_context_xcrypt( key, buffer, buffer, len, NULL, 0 );
-       write( out.fd, buffer, len );
+       writeb += write( out.fd, buffer, len );
      }
   } while( len );
   time = clock() - time;
   printf(" encrypt time: %fs, per 1MB = %fs, speed = %f MBs\n",
                (double) time / (double) CLOCKS_PER_SEC,
                (double) time / ( (double) CLOCKS_PER_SEC * mbsize ), (double) CLOCKS_PER_SEC *mbsize / (double) time );
+  printf(" read:  %lu bytes\n write: %lu bytes\n", (long unsigned int)readb, (long unsigned int)writeb );
   free( buffer );
   ak_file_close( &in );
   ak_file_close( &out );
