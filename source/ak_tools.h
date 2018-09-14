@@ -59,6 +59,8 @@
  int ak_file_create( ak_file , const char * );
 /*! \brief Функция закрывает файл с заданным дескриптором. */
  int ak_file_close( ak_file );
+/*! \brief Функция возвращает оптимальный размер блока считываемых данных. */
+ size_t ak_file_get_optimal_block_size( ak_file );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция устанавливает домашний каталог пользователя. */
@@ -69,9 +71,9 @@
  int ak_log_set_level( int );
 
 /*! \brief Функция устанавливает значение опции с заданным именем. */
- int ak_libakrypt_set_option( const char *name, const ak_int32 value );
+ int ak_libakrypt_set_option( const char *name, const ak_int64 value );
 /*! \brief Функция возвращает значение опции с заданным именем. */
- ak_int32 ak_libakrypt_get_option( const char *name );
+ ak_int64 ak_libakrypt_get_option( const char *name );
 /*! \brief Функция считывает настройки (параметры) библиотеки из файла libakrypt.conf */
  ak_bool ak_libakrypt_load_options( void );
 

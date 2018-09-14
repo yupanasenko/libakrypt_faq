@@ -480,7 +480,15 @@
     0x40bda1b8, 0xd57b5fa2, 0xc10ed1db, 0xf195d8be, 0x3c45dee4, 0xf33ce4b3, 0xf6a13e5d, 0x85eee733,
     0x3564a3a5, 0xd5e877f1, 0xe6356ed3, 0xa5eae88b, 0x20bdba73, 0xd1c6d158, 0xf20cbab6, 0xcb91fab1 };
 
- /* впеменный буффер */
+  ak_uint8 xiv1[8] = { 0x61, 0x2D, 0x93, 0x42, 0xAE, 0x2E, 0x57, 0x21 };
+  ak_uint8 xin1[23] = {
+    0x31, 0xEA, 0x54, 0xBB, 0xB7, 0xE5, 0xE5, 0x1C, 0xAE, 0xEB, 0x79, 0x28, 0x71, 0x5E, 0x93, 0xFF,
+    0x9B, 0x8D, 0xD4, 0x90, 0xC4, 0x76, 0xBC };
+  ak_uint8 xout1[23] = {
+    0x30, 0xF6, 0x0A, 0xA9, 0xC0, 0x11, 0x77, 0xCE, 0xCD, 0xE9, 0x40, 0x9A, 0x4B, 0x46, 0x1C, 0x64,
+    0xF6, 0xCA, 0xF7, 0xC6, 0x90, 0x18, 0x65 };
+
+ /* временный буффер */
   ak_uint8 myout[64];
 
  /* 1. Создаем контекст ключа алгоритма Кузнечик и устанавливаем значение ключа */
@@ -580,6 +588,37 @@
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                "the counter mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
+
+ /* 5. Тестируем режим гаммирования (счетчика) на длинах, не кратных длине блока. */
+  if( ak_bckey_context_xcrypt( &bkey, xin1, myout, 23, xiv1, 8 ) != ak_error_ok ) {
+    ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong plain text encryption" );
+    ak_bckey_context_destroy( &bkey );
+    return ak_false;
+  }
+  if( !ak_ptr_is_equal( myout, xout1, 23 )) {
+    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                            "the counter mode encryption test for 23 octets is wrong");
+    ak_log_set_message( str = ak_ptr_to_hexstr( myout, 23, ak_false )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( xout1, 23, ak_false )); free(str);
+    ak_bckey_context_destroy( &bkey );
+    return ak_false;
+  }
+
+  if( ak_bckey_context_xcrypt( &bkey, xout1, myout, 23, xiv1, 8 ) != ak_error_ok ) {
+    ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong cipher text decryption" );
+    ak_bckey_context_destroy( &bkey );
+    return ak_false;
+  }
+  if( !ak_ptr_is_equal( myout, xin1, 23 )) {
+    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                            "the counter mode decryption test for 23 octets is wrong");
+    ak_log_set_message( str = ak_ptr_to_hexstr( myout, 23, ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( xin1, 23, ak_true )); free( str );
+    ak_bckey_context_destroy( &bkey );
+    return ak_false;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                  "the counter mode encryption/decryption test for 23 octets is Ok" );
 
  /* уничтожаем ключ и выходим */
   ak_bckey_context_destroy( &bkey );

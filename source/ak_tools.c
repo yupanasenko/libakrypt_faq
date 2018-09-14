@@ -28,7 +28,7 @@
   /*! \brief Человекочитаемое имя опции, используется для поиска и установки значения */
    const char *name;
   /*! \brief Численное значение опции (31 значащий бит + знак) */
-   ak_int32 value;
+   ak_int64 value;
  } *ak_option;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -68,10 +68,10 @@
     \return Значение опции с заданным именем. Если имя указано неверно, то возвращается
     ошибка \ref ak_error_wrong_option.                                                             */
 /* ----------------------------------------------------------------------------------------------- */
- ak_int32 ak_libakrypt_get_option( const char *name )
+ ak_int64 ak_libakrypt_get_option( const char *name )
 {
   size_t i = 0;
-  ak_int32 result = ak_error_wrong_option;
+  ak_int64 result = ak_error_wrong_option;
   for( i = 0; i < ak_libakrypt_options_count(); i++ ) {
      if( strncmp( name, options[i].name, strlen( options[i].name )) == 0 ) result = options[i].value;
   }
@@ -87,7 +87,7 @@
     \return В случае удачного установления значения опции возввращается \ref ak_error_ok.
      Если имя опции указано неверно, то возвращается ошибка \ref ak_error_wrong_option.            */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_set_option( const char *name, const ak_int32 value )
+ int ak_libakrypt_set_option( const char *name, const ak_int64 value )
 {
   size_t i = 0;
   int result = ak_error_wrong_option;
@@ -136,7 +136,7 @@
     \return Целое неотрицательное число, содержащее значение опции с заданным индексом.
     В случае неправильно определенного индекса возвращается значение \ref ak_error_wrong_option.   */
 /* ----------------------------------------------------------------------------------------------- */
- ak_int32 ak_libakrypt_get_option_value( const size_t index )
+ ak_int64 ak_libakrypt_get_option_value( const size_t index )
 {
  if( index >= ak_libakrypt_options_count() ) return ak_error_wrong_option;
   else return options[index].value;
@@ -226,11 +226,11 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static ak_bool ak_libakrypt_load_one_option( const char *string, const char *field, ak_int32 *value )
+ static ak_bool ak_libakrypt_load_one_option( const char *string, const char *field, ak_int64 *value )
 {
   char *ptr = NULL, *endptr = NULL;
   if(( ptr = strstr( string, field )) != NULL ) {
-    ak_int32 val = (ak_int32) strtol( ptr += strlen(field), &endptr, 10 ); // strtoll
+    ak_int64 val = (ak_int64) strtoll( ptr += strlen(field), &endptr, 10 ); // strtoll
     if(( endptr != NULL ) && ( ptr == endptr )) {
       ak_error_message_fmt( ak_error_undefined_value, __func__,
                                     "using an undefinded value for variable %s", field );
@@ -277,7 +277,7 @@
      }
     if( ch == '\n' ) {
       if((strlen(localbuffer) != 0 ) && ( strchr( localbuffer, '#' ) == 0 )) {
-        ak_int32 value = 0;
+        ak_int64 value = 0;
 
         /* устанавливаем уровень аудита */
         if( ak_libakrypt_load_one_option( localbuffer, "log_level = ", &value ))
@@ -324,7 +324,12 @@
           if( value > 2147483647 ) value = 2147483647;
           ak_libakrypt_set_option( "magma_cipher_resource", value );
         }
-
+       /* устанавливаем ресурс ключа алгоритма блочного шифрования Магма */
+        if( ak_libakrypt_load_one_option( localbuffer, "kuznechik_cipher_resource = ", &value )) {
+          if( value < 1024 ) value = 1024;
+          if( value > 2147483647 ) value = 2147483647;
+          ak_libakrypt_set_option( "kuznechik_cipher_resource", value );
+        }
 
       } /* далее мы очищаем строку независимо от ее содержимого */
       off = 0;
@@ -559,6 +564,20 @@
  if( close( fd->fd ) < 0 )
   return ak_error_message( ak_error_close_file, __func__, strerror( errno ));
  else return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param fd Дескриптор файла.
+
+    @return Функция возвращает длину блока в байтах.                                               */
+/* ----------------------------------------------------------------------------------------------- */
+ size_t ak_file_get_optimal_block_size( ak_file fd )
+{
+#ifdef _WIN32
+ return 4096;
+#else
+ return fd->st.st_blksize;
+#endif
 }
 
 /* ----------------------------------------------------------------------------------------------- */
