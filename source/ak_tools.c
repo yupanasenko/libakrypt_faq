@@ -264,8 +264,8 @@
 
  /* нарезаем входные на строки длиной не более чем 1022 символа */
   memset( localbuffer, 0, 1024 );
-  for( idx = 0; idx < (size_t) fd->st.st_size; idx++ ) {
-     if( read( fd->fd, &ch, 1 ) != 1 ) {
+  for( idx = 0; idx < (size_t) fd->size; idx++ ) {
+     if( fread( &ch, 1, 1, fd->fp ) != 1 ) {
        ak_file_close(fd);
        return ak_error_message( ak_error_read_data, __func__ ,
                                                          "unexpected end of libakrypt.conf file" );
@@ -365,7 +365,7 @@
   memset( hpath, 0, FILENAME_MAX );
   memset( filename, 9, FILENAME_MAX );
 
- /* начинаем последовательнос создавать подкаталоги */
+ /* начинаем последовательно создавать подкаталоги */
   if(( error = ak_libakrypt_get_home_path( hpath, FILENAME_MAX )) != ak_error_ok )
     return ak_error_message( error, __func__, "wrong libakrypt.conf name creation" );
 
@@ -412,13 +412,13 @@
   ak_snprintf( filename, FILENAME_MAX, "%s/libakrypt.conf", hpath );
  #endif
 
-  if(( error = ak_file_create( &fd, filename )) != ak_error_ok )
+  if(( error = ak_file_create_to_write( &fd, filename )) != ak_error_ok )
     return ak_error_message( error, __func__, "wrong creation of libakrypt.conf file");
 
   for( i = 0; i < ak_libakrypt_options_count(); i++ ) {
     memset( hpath, 0, ak_min( 1024, FILENAME_MAX ));
     ak_snprintf( hpath, FILENAME_MAX - 1, "%s = %d\n", options[i].name, options[i].value );
-    if( write( fd.fd, hpath, strlen( hpath )) < 0 ) {
+    if( fwrite( hpath, 1, strlen( hpath ), fd.fp ) < 0 ) {
       ak_error_message_fmt( error = ak_error_write_data, __func__,
                       "option %s stored with error: %s", options[i].name, strerror( errno ));
     }
@@ -448,7 +448,7 @@
    return ak_false;
  }
 /* пытаемся считать данные из указанного файла */
- if( ak_file_is_exist( &fd, name, ak_false )) {
+ if( ak_file_open_to_read( &fd, name ) == ak_error_ok ) {
    if(( error = ak_libakrypt_load_options_from_file( &fd )) == ak_error_ok ) {
      if( ak_libakrypt_get_option( "log_level" ) > ak_log_standard ) {
        ak_error_message_fmt( ak_error_ok, __func__,
@@ -468,7 +468,7 @@
    return ak_false;
  }
 /* пытаемся считать данные из указанного файла */
- if( ak_file_is_exist( &fd, name, ak_false )) {
+ if( ak_file_open_to_read( &fd, name ) == ak_error_ok ) {
    if(( error = ak_libakrypt_load_options_from_file( &fd )) == ak_error_ok ) {
      if( ak_libakrypt_get_option( "log_level" ) > ak_log_standard ) {
        ak_error_message_fmt( ak_error_ok, __func__,
@@ -492,93 +492,75 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция проверяет наличие файла путем попытки открыть его на чтение. Если файл не существует,
-    либо к нему нет доступа на чтение, то возвращается ложь. В случае, если доступ разрешен,
-    и флаг closeflag ложен, то дескриптор файла помещается в переменную fd. В этом случае
-    вызов функции равносилен вызову функции open( ) с параметрами `O_RDONLY | O_BINARY`.
-    Если флаг closeflag истинен, то файл закрывается.
-
-    @param fd Дескриптор тестируемого на наличие файла.
-    @param filename Имя файла, представленное в виде строки символов.
-    @param closeflag Флаг закрытия файла. Если флаг ложен, то дескриптор файла не закрывается и помещается
-    в аргумент fd. В случае, если флаг истиннен, то файл закрывается и, в случае необходимости,
-    должен быть открыт повторно.
-
-    @return Функция возвращает истину, если файл существует и доступ к нему разрешен. В противном
-    случае возвращается ложь. В последнем случае текущее значение кода ошибки не изменяется.       */
-/* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_file_is_exist( ak_file fd, const char *filename, ak_bool closeflag )
+ int ak_file_open_to_read( ak_file file, const char *filename )
 {
-  if(( fd->fd = open( filename, O_RDONLY | O_BINARY )) < 0 ) {
-    ak_error_message( ak_error_open_file, __func__, strerror( errno ));
-    return ak_false;
-  }
-  if( fstat( fd->fd, &fd->st )) {
-    close( fd->fd );
-    ak_error_message( ak_error_access_file,  __func__, strerror( errno ));
-    return ak_false;
-  }
-  if( closeflag ) close( fd->fd );
- return ak_true;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция создает файл в соответствии с флагами, которые указаны в параметре flags.
-
-    @param fd Дескриптор создаваемого файла.
-    @param filename Имя файла, представленное в виде строки символов.
-    @param closeflag Флаги создаваемого файла. Совпадают со значениями,
-    передаваемыми в функцию creat.
-
-    @return В случае успеха функция возвращает \ref ak_error_ok.
-    В случае возникновения ошибки возвращается ее код.                                             */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_file_create( ak_file fd, const char *filename )
-{
-#ifdef _MSC_VER
-  errno_t error = _sopen_s( &fd->fd, filename,
-                            _O_CREAT | _O_BINARY | _O_WRONLY , _SH_DENYRW, _S_IREAD | _S_IWRITE );
-  if(( error != 0 ) || (fd->fd < 0 ))
+#ifdef _WIN32
+  struct _stat st;
+  if( _stat( filename, &st ) < 0 ) {
 #else
-  if(( fd->fd = creat( filename, S_IRUSR | S_IWUSR )) < 0 )
+  struct stat st;
+  if( stat( filename, &st ) < 0 ) {
 #endif
-    return ak_error_message_fmt( ak_error_create_file, __func__,
-                          "wrong creation %s file with error: %s", filename, strerror( errno ));
-
-  if( fstat( fd->fd, &fd->st ) ) {
-    close( fd->fd );
-    return ak_error_message_fmt( ak_error_access_file,  __func__,
-                                                         "access error: %s", strerror( errno ));
+    switch( errno ) {
+      case EACCES: return ak_error_message_fmt( ak_error_access_file, __func__,
+                                 "incorrect access to file %s [%s]", filename, strerror( errno ));
+      default: return ak_error_message_fmt( ak_error_open_file, __func__ ,
+                                     "wrong opening a file %s [%s]", filename, strerror( errno ));
+    }
   }
+ /* открываем файл */
+  if(( file->fp = fopen( filename, "rb" )) == NULL )
+    return ak_error_message_fmt( ak_error_open_file, __func__ ,
+                                     "wrong opening a file %s [%s]", filename, strerror( errno ));
+ /* заполняем данные */
+  file->size = st.st_size;
+ #ifdef _WIN32
+  file->blksize = 4096;
+ #else
+  file->blksize = st.st_blksize;
+ #endif
  return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param fd Дескриптор закрываемого файла.
-
-    @return В случае успеха функция возвращает \ref ak_error_ok.
-    В случае возникновения ошибки возвращается ее код.                                             */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_file_close( ak_file fd )
+ int ak_file_create_to_write( ak_file file, const char *filename )
 {
- if( close( fd->fd ) < 0 )
-  return ak_error_message( ak_error_close_file, __func__, strerror( errno ));
- else return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param fd Дескриптор файла.
-
-    @return Функция возвращает длину блока в байтах.                                               */
-/* ----------------------------------------------------------------------------------------------- */
- size_t ak_file_get_optimal_block_size( ak_file fd )
-{
-#ifdef _WIN32
- return 4096;
-#else
- return fd->st.st_blksize;
+ #ifdef _WIN32
+  if(( file->fp = fopen( fd, "wb" )) == NULL )
+    return ak_error_message_fmt( ak_error_create_file, __func__,
+                                   "wrong creation a file %s [%s]", filename, strerror( errno ));
+ #else
+  int fd = creat( filename, S_IRUSR | S_IWUSR );
+  if( fd < 0 ) return ak_error_message_fmt( ak_error_create_file, __func__,
+                                   "wrong creation a file %s [%s]", filename, strerror( errno ));
+  if(( file->fp = fdopen( fd, "wb" )) == NULL )
+    return ak_error_message_fmt( ak_error_create_file, __func__,
+                        "wrong creation a file %s via fdopen [%s]", filename, strerror( errno ));
 #endif
+
+  file->size = 0;
+#ifdef _WIN32
+  file->blksize = 4096;
+#else
+  struct stat st;
+  if( fstat( fd, &st )) {
+    close( fd );
+    return ak_error_message_fmt( ak_error_access_file,  __func__,
+                                "incorrect access to file %s [%s]", filename, strerror( errno ));
+  } else file->blksize = st.st_blksize;
+#endif
+
+ return ak_error_ok;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_file_close( ak_file file )
+{
+  if( fclose( file->fp ) != 0 ) return ak_error_message_fmt( ak_error_close_file, __func__ ,
+                                                 "wrong closing a file [%s]", strerror( errno ));
+ return ak_error_ok;
+}
+
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_log_get_level( void ) { return (int)ak_libakrypt_get_option("log_level"); }

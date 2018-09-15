@@ -413,6 +413,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_buffer ak_mac_context_file( ak_mac ictx, const char* filename, ak_pointer out )
 {
+  int error = ak_error_ok;
   size_t len = 0;
   struct file file;
   ak_uint8 *localbuffer; /* место для локального считывания информации */
@@ -429,20 +430,16 @@
     return NULL;
   }
 
-  if( !ak_file_is_exist( &file, filename, ak_false )) {
-    ak_error_message_fmt( ak_error_get_value(), __func__, "incorrect access to file %s", filename );
+  if(( error = ak_file_open_to_read( &file, filename )) != ak_error_ok ) {
+    ak_error_message_fmt( error, __func__, "incorrect access to file %s", filename );
   }
 
  /* для файла нулевой длины результатом будет хеш от нулевого вектора */
   ak_mac_context_clean( ictx );
-  if( !file.st.st_size ) return ak_mac_context_finalize( ictx, "", 0, out );
+  if( !file.size ) return ak_mac_context_finalize( ictx, "", 0, out );
 
  /* готовим область для хранения данных */
-  #ifdef _WIN32
-    block_size = ak_max( 4096, ictx->bsize );
-  #else
-    block_size = ak_max( file.st.st_blksize, ictx->bsize );
-  #endif
+  block_size = ak_max( file.blksize, ictx->bsize );
  /* здесь мы выделяем локальный буффер для считывания/обработки данных */
   if((localbuffer = ( ak_uint8 * ) malloc( block_size )) == NULL ) {
     ak_file_close( &file );
@@ -450,11 +447,7 @@
     return NULL;
   }
  /* теперь обрабатываем файл с данными */
- #ifdef _WIN32
-  read_label: len = read( file.fd, localbuffer, (unsigned int) block_size );
- #else
-  read_label: len = read( file.fd, localbuffer, block_size );
- #endif
+  read_label: len = fread( localbuffer, 1, block_size, file.fp );
   if( len == block_size ) {
     ak_mac_context_update( ictx, localbuffer, block_size ); /* добавляем считанные данные */
     goto read_label;

@@ -39,12 +39,15 @@
  {
    ak_uint8 *data = NULL;
 
-   ak_file_is_exist( &file, argv[0], ak_false );
-   data = mmap( NULL, file.st.st_size, PROT_READ, MAP_SHARED, file.fd, 0 );
+   struct stat st;
+   int fd = open( argv[0], O_RDONLY );
+
+   fstat( fd, &st );
+   data = mmap( NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0 );
 
   /* создаем контекст и, в случае успеха, сразу вычисляем значение кода целостности */
    if( ak_hash_context_create_streebog256( &ctx ) == ak_error_ok ) {
-     ak_hash_context_ptr( &ctx, data, file.st.st_size, out );
+     ak_hash_context_ptr( &ctx, data, st.st_size, out );
 
     /* уничтожаем контекст функции хеширования */
      ak_hash_context_destroy( &ctx );
@@ -55,7 +58,7 @@
 
   /* создаем контекст функции итерационного сжатия */
    if( ak_mac_context_create_oid( &ictx, ak_oid_context_find_by_name("streebog256")) == ak_error_ok ) {
-     ak_mac_context_ptr( &ictx, data, file.st.st_size, out );
+     ak_mac_context_ptr( &ictx, data, st.st_size, out );
 
     /* уничтожаем контекст функции итерационного сжатия */
      ak_mac_context_destroy( &ictx );
@@ -64,8 +67,7 @@
      printf("mmap() + ak_mac_context_ptr()\nhash: %s\n\n", buffer );
    }
 
-   munmap( data, file.st.st_size );
-   ak_file_close( &file );
+   munmap( data, st.st_size );
  }
 #endif
 
@@ -107,13 +109,13 @@
    ak_random_context_create_lcg( &generator );     /* создаем генератор псевдослучайных чисел */
    ak_mac_context_create_oid( &ictx, ak_oid_context_find_by_name( "streebog256" ));
    ak_mac_context_clean( &ictx );
-   if( ak_file_is_exist( &file, argv[0], ak_false ) == ak_true ) {
-     tail = file.st.st_size; /* текущее значение остатка длины файла */
+   if( ak_file_open_to_read( &file, argv[0] ) == ak_error_ok ) {
+     tail = file.size; /* текущее значение остатка длины файла */
      while( tail > ctx.bsize ) {
         size_t len, value = 0;
         generator.random( &generator, &value, sizeof( size_t ));
         value = ak_min( tail, value%256 );
-        if(( len = read( file.fd, buffer, value )) != value ) printf("read error\n");
+        if(( len = fread( buffer, 1, value, file.fp )) != value ) printf("read error\n");
         ak_mac_context_update( &ictx, buffer, value );
       tail -= value;
      }
@@ -133,7 +135,7 @@
    }
 
    printf("all results was calculated for %s file (%lu bytes)\n",
-                                             argv[0], (unsigned long int) file.st.st_size );
+                                             argv[0], (unsigned long int) file.size );
  /* останавливаем библиотеку и выходим */
    ak_libakrypt_destroy();
  return exitcode;
