@@ -526,7 +526,7 @@
  int ak_file_create_to_write( ak_file file, const char *filename )
 {
  #ifdef _WIN32
-  if(( file->fp = fopen( fd, "wb" )) == NULL )
+  if(( file->fp = fopen( filename, "wb" )) == NULL )
     return ak_error_message_fmt( ak_error_create_file, __func__,
                                    "wrong creation a file %s [%s]", filename, strerror( errno ));
  #else

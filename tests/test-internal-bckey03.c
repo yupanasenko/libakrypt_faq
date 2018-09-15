@@ -96,7 +96,8 @@
   size_t len = 0, bsize = 0;
 
  /* принудительно изменяем ресурс ключа */
-  printf(" key resource changed to %llu blocks\n", key->key.resource.counter = ( mbsize*1024*1024 )/key->bsize );
+  key->key.resource.counter = ( mbsize*1024*1024 )/key->bsize;
+  printf(" key resource changed to %lu blocks\n", (unsigned long int)key->key.resource.counter );
 
  /* открываем файлы */
   if( ak_file_open_to_read( &in, from ) == ak_error_ok )
