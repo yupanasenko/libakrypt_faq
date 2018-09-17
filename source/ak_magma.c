@@ -315,7 +315,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief  Структура для хранения внутренних данных в маскированной реализации Магмы. */
- struct magma_ctx {
+ struct magma_encrypted_keys {
   /*! \brief  две ключевые последовательности - прямая и инвертированная. */
   ak_uint32 inkey[2][8];
   /*! \brief  два маски для двух ключевых последовательностей, соответственно,
@@ -347,8 +347,8 @@
 {
   ak_uint8 m[34];
   ak_uint32 i, mv = 0;
-  ak_uint32 (*kp)[8] = ((struct magma_ctx *)skey->data)->inkey;
-  ak_uint32 (*mp)[8] = ((struct magma_ctx *)skey->data)->inmask;
+  ak_uint32 (*kp)[8] = ((struct magma_encrypted_keys *)skey->data)->inkey;
+  ak_uint32 (*mp)[8] = ((struct magma_encrypted_keys *)skey->data)->inmask;
   register ak_uint32 n3, n4, p = 0;
 
  /* вырабатываем случайную траекторию */
@@ -413,8 +413,8 @@
 {
   ak_uint8 m[34];
   ak_uint32 i, mv = 0;
-  ak_uint32 (*kp)[8] = ((struct magma_ctx *)skey->data)->inkey;
-  ak_uint32 (*mp)[8] = ((struct magma_ctx *)skey->data)->inmask;
+  ak_uint32 (*kp)[8] = ((struct magma_encrypted_keys *)skey->data)->inkey;
+  ak_uint32 (*mp)[8] = ((struct magma_encrypted_keys *)skey->data)->inmask;
   register ak_uint32 n3, n4, p = 0;
 
  /* вырабатываем случайную траекторию */
@@ -478,15 +478,15 @@
  static int ak_magma_context_schedule_keys(ak_skey skey)
 {
   int idx, error = ak_error_ok;
-  struct magma_ctx *data = NULL;
+  struct magma_encrypted_keys *data = NULL;
 
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                            "using a null pointer to secret key" );
-  if(( data = malloc( sizeof( struct magma_ctx ))) == NULL )
+                                                        "using a null pointer to secret key" );
+  if(( data = ak_libakrypt_alligned_malloc( sizeof( struct magma_encrypted_keys ))) == NULL )
     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
 
  /* выставляем флаги того, что память выделена */
-  memset( data, 0, sizeof( struct magma_ctx ));
+  memset( data, 0, sizeof( struct magma_encrypted_keys ));
   skey->data = ( ak_pointer )data;
   skey->flags |= skey_flag_data_not_free;
 
@@ -527,7 +527,7 @@
   if( skey->data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                       "unexpected null pointer to internal data" );
 
-  ak_ptr_wipe( skey->data, sizeof( struct magma_ctx ), &skey->generator, ak_true );
+  ak_ptr_wipe( skey->data, sizeof( struct magma_encrypted_keys ), &skey->generator, ak_true );
   free( skey->data );
 
  return ak_error_ok;
@@ -552,7 +552,7 @@
   size_t j, idx = 0;
   ak_uint32 newmask[8];
   int error = ak_error_ok;
-  struct magma_ctx *data = NULL;
+  struct magma_encrypted_keys *data = NULL;
 
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using a null pointer to secret key" );
@@ -591,7 +591,7 @@
                ((ak_uint32 *) skey->mask.data)[idx] = newmask[idx];
             }
           /* меняем маску для внутреннего представления ключевой информации */
-            if(( data = ( struct magma_ctx *)skey->data ) == NULL ) return error;
+            if(( data = ( struct magma_encrypted_keys *)skey->data ) == NULL ) return error;
             for( j = 0; j < 2; j++ ) {
               if(( error = ak_random_context_random( &skey->generator,
                                                      newmask, skey->mask.size )) != ak_error_ok )

@@ -275,6 +275,19 @@
      return ak_false;
    }
 
+// /* инициализируем структуру управления контекстами */
+//   if(( error = ak_libakrypt_create_context_manager()) != ak_error_ok ) {
+//     ak_error_message( error, __func__, "initialization of context manager is wrong" );
+//     return ak_false;
+//   }
+
+ /* тестируем арифметические операции в конечнх полях */
+  if( ak_gfn_multiplication_test() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                          "incorrect testing of multiplication in Galois fields" );
+    return ak_false;
+  }
+
  /* проверяем корректность реализации алгоритмов бесключевго хеширования */
    if( ak_libakrypt_test_hash_functions( ) != ak_true ) {
      ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of hash functions" );

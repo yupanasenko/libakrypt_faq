@@ -150,7 +150,7 @@
                                          "using a constant value for secret key with wrong length" );
  /* присваиваем ключевой буффер */
   if(( error = ak_skey_context_set_key( &bkey->key, keyptr, size, cflag )) != ak_error_ok )
-    return ak_error_message( error, __func__ , "incorrect assigning of key data" );
+    return ak_error_message( error, __func__ , "incorrect assigning of fixed key data" );
 
  /* выполняем развертку раундовых ключей */
   if( bkey->schedule_keys != NULL ) bkey->schedule_keys( &bkey->key );
@@ -158,6 +158,77 @@
  return error;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает контексту ключа алгоритма блочного шифрования случайное (псевдослучайное)
+    значение, вырабатываемое заданным генератором случайных (псевдослучайных) чисел.
+
+    Перед присвоением ключа контекст должен быть инициализирован.
+
+    После присвоения значения ключа производится его маскирование и выработка контрольной суммы.
+
+    @param bkey Контекст ключа блочного алгоритма шифрования.
+    @param generator Контекст генератора случайных (псевдослучайных) чисел.
+
+    @return Функция возвращает код ошибки. В случае успеха возвращается \ref ak_error_ok.          */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_bckey_context_set_key_random( ak_bckey bkey, ak_random generator )
+{
+  int error = ak_error_ok;
+
+ /* проверяем входные данные */
+  if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                        "using null pointer to secret key context" );
+  if( generator == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                          "using null pointer to random generator" );
+ /* присваиваем ключевой буффер */
+  if(( error = ak_skey_context_set_key_random( &bkey->key, generator )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "incorrect assigning of random key data" );
+
+ /* выполняем развертку раундовых ключей */
+  if( bkey->schedule_keys != NULL ) bkey->schedule_keys( &bkey->key );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает контексту ключа блочного шифрования значение, выработанное из заданного
+    пароля при помощи алгоритма PBKDF2, описанного  в рекомендациях по стандартизации Р 50.1.111-2016.
+    Пароль должен быть непустой строкой символов в формате utf8.
+
+    Количество итераций алгоритма PBKDF2 определяется опцией библиотеки `pbkdf2_iteration_count`,
+    значение которой может быть опредедено с помощью вызова функции ak_libakrypt_get_option().
+
+    Перед присвоением ключа контекст должен быть инициализирован.
+
+    После присвоения значения ключа производится его маскирование и выработка контрольной суммы.
+
+    @param bkey Контекст ключа блочного алгоритма шифрования.
+    @param pass Пароль, представленный в виде строки символов.
+    @param pass_size Длина пароля в байтах
+    @param salt Случайный вектор, представленный в виде строки символов.
+    @param salt_size Длина случайного вектора в байтах
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_bckey_context_set_key_from_password( ak_bckey bkey, const ak_pointer pass,
+                             const size_t pass_size, const ak_pointer salt, const size_t salt_size )
+{
+  int error = ak_error_ok;
+
+ /* проверяем входные данные */
+  if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                        "using null pointer to secret key context" );
+ /* присваиваем ключевой буффер */
+  if(( error = ak_skey_context_set_key_from_password( &bkey->key,
+                                                pass, pass_size, salt, salt_size )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "incorrect assigning for given password" );
+
+ /* выполняем развертку раундовых ключей */
+  if( bkey->schedule_keys != NULL ) bkey->schedule_keys( &bkey->key );
+
+ return error;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                             теперь реализация режимов шифрования                                */

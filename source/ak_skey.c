@@ -39,8 +39,7 @@
  /* Инициализируем данные базовыми значениями */
   if(( error = ak_buffer_create_function_size( &skey->key,
                        /* в настоящий момент для выделения памяти используются стандартные функции */
-                                               malloc, free,
-                                               size )) != ak_error_ok ) {
+                                    ak_libakrypt_alligned_malloc, free, size )) != ak_error_ok ) {
     ak_error_message( error, __func__ ,"wrong creation a secret key buffer" );
     ak_skey_context_destroy( skey );
     return error;

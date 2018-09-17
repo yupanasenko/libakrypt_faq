@@ -20,7 +20,7 @@ project( libakrypt )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 7 )
-set( MINOR_VERSION 4 )
+set( MINOR_VERSION 5 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -44,6 +44,7 @@ set( HEADERS        source/ak_tools.h
                     source/ak_skey.h
                     source/ak_hmac.h
                     source/ak_bckey.h
+                    source/ak_gfn2.h
                     source/ak_mac.h
 )
 
@@ -60,6 +61,7 @@ set( SOURCES        source/ak_tools.c
                     source/ak_bckey.c
                     source/ak_magma.c
                     source/ak_kuznechik.c
+                    source/ak_gf2n.c
                     source/ak_mac.c
                     source/ak_libakrypt.c
 )
@@ -67,6 +69,7 @@ set( SOURCES        source/ak_tools.c
 set( DOCS           doc/refman_header.in
                     doc/refman_footer.in
                     doc/Doxyfile.in
+                    doc/00-introduction.md
                     doc/01-install-guide.md
                     doc/02-user-guide.md
                     doc/03-internal-interface.md )

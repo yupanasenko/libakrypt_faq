@@ -86,7 +86,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура с внутренними данными секретного ключа алгоритма Кузнечик. */
- struct kuznechik_ctx {
+ struct kuznechik {
   /*! \brief раундовые ключи для алгоритма зашифрования */
   struct kuznechik_expanded_keys encryptkey;
   /*! \brief раундовые ключи для алгоритма расшифрования */
@@ -111,9 +111,9 @@
                                    __func__ , "using a null pointer to secret key internal data" );
  /* теперь очистка и освобождение памяти */
   if(( error = ak_random_context_random( &skey->generator,
-                                   skey->data, sizeof( struct kuznechik_ctx ))) != ak_error_ok ) {
+                                   skey->data, sizeof( struct kuznechik ))) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect wiping an internal data" );
-    memset( skey->data, 0, sizeof ( struct kuznechik_ctx ));
+    memset( skey->data, 0, sizeof ( struct kuznechik ));
   }
   if( skey->data != NULL ) {
     free( skey->data );
@@ -144,19 +144,14 @@
 
  /* готовим память для переменных */
   if(( skey->data = /* далее, по-возможности, выделяем выравненную память */
-#ifdef LIBAKRYPT_HAVE_STDALIGN
-  aligned_alloc( 16,
-#else
-  malloc(
-#endif
-    sizeof( struct kuznechik_ctx ))) == NULL )
+                  ak_libakrypt_alligned_malloc( sizeof( struct kuznechik ))) == NULL )
       return ak_error_message( ak_error_out_of_memory, __func__ ,
                                                              "wrong allocation of internal data" );
  /* получаем указатели на области памяти */
-  ekey = &(( struct kuznechik_ctx * ) skey->data )->encryptkey;
-  mkey = &(( struct kuznechik_ctx * ) skey->data )->encryptmask;
-  dkey = &(( struct kuznechik_ctx * ) skey->data )->decryptkey;
-  xkey = &(( struct kuznechik_ctx * ) skey->data )->decryptmask;
+  ekey = &(( struct kuznechik * ) skey->data )->encryptkey;
+  mkey = &(( struct kuznechik * ) skey->data )->encryptmask;
+  dkey = &(( struct kuznechik * ) skey->data )->decryptkey;
+  xkey = &(( struct kuznechik * ) skey->data )->decryptmask;
 
  /* вырабатываем маски */
   skey->generator.random( &skey->generator, mkey, sizeof( struct kuznechik_expanded_keys ));
@@ -254,8 +249,8 @@
                                                   mask, 20*sizeof( ak_uint64 ))) != ak_error_ok )
               return ak_error_message( error, __func__, "wrong generation random key mask");
 
-            kptr = (ak_uint64 *) ( &(( struct kuznechik_ctx *)skey->data)->encryptkey );
-            mptr = (ak_uint64 *) ( &(( struct kuznechik_ctx *)skey->data)->encryptmask );
+            kptr = (ak_uint64 *) ( &(( struct kuznechik *)skey->data)->encryptkey );
+            mptr = (ak_uint64 *) ( &(( struct kuznechik *)skey->data)->encryptmask );
             for( idx = 0; idx < 20; idx++ ) {
                kptr[idx] ^= mask[idx]; kptr[idx] ^= mptr[idx]; mptr[idx] = mask[idx];
             }
@@ -265,8 +260,8 @@
                                                   mask, 20*sizeof( ak_uint64 ))) != ak_error_ok )
               return ak_error_message( error, __func__, "wrong generation random key mask");
 
-            kptr = (ak_uint64 *) ( &(( struct kuznechik_ctx *)skey->data)->decryptkey );
-            mptr = (ak_uint64 *) ( &(( struct kuznechik_ctx *)skey->data)->decryptmask );
+            kptr = (ak_uint64 *) ( &(( struct kuznechik *)skey->data)->decryptkey );
+            mptr = (ak_uint64 *) ( &(( struct kuznechik *)skey->data)->decryptmask );
             for( idx = 0; idx < 20; idx++ ) {
                kptr[idx] ^= mask[idx]; kptr[idx] ^= mptr[idx]; mptr[idx] = mask[idx];
             }
@@ -285,8 +280,8 @@
  static void ak_kuznechik_encrypt_with_mask( ak_skey skey, ak_pointer in, ak_pointer out )
 {
   int i = 0;
-  struct kuznechik_expanded_keys *ekey = &(( struct kuznechik_ctx * ) skey->data )->encryptkey;
-  struct kuznechik_expanded_keys *mkey = &(( struct kuznechik_ctx * ) skey->data )->encryptmask;
+  struct kuznechik_expanded_keys *ekey = &(( struct kuznechik * ) skey->data )->encryptkey;
+  struct kuznechik_expanded_keys *mkey = &(( struct kuznechik * ) skey->data )->encryptmask;
 
  /* чистая реализация для 64х битной архитектуры */
   ak_uint64 t;
@@ -344,8 +339,8 @@
  static void ak_kuznechik_decrypt_with_mask( ak_skey skey, ak_pointer in, ak_pointer out )
 {
   int i = 0;
-  struct kuznechik_expanded_keys *dkey = &(( struct kuznechik_ctx * ) skey->data )->decryptkey;
-  struct kuznechik_expanded_keys *xkey = &(( struct kuznechik_ctx * ) skey->data )->decryptmask;
+  struct kuznechik_expanded_keys *dkey = &(( struct kuznechik * ) skey->data )->decryptkey;
+  struct kuznechik_expanded_keys *xkey = &(( struct kuznechik * ) skey->data )->decryptmask;
 
  /* чистая реализация для 64х битной архитектуры */
   ak_uint64 t;

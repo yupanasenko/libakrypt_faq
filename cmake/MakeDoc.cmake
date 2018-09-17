@@ -8,7 +8,7 @@ if( CMAKE_HOST_UNIX )
     configure_file( ${CMAKE_SOURCE_DIR}/doc/refman_footer.in
                                                ${CMAKE_BINARY_DIR}/refman_footer.tex @ONLY )
 
-    execute_process( COMMAND pandoc -f markdown -t latex --top-level-division=chapter ${CMAKE_SOURCE_DIR}/Readme.md -o readme.tex )
+#    execute_process( COMMAND pandoc -f markdown -t latex --top-level-division=chapter ${CMAKE_SOURCE_DIR}/Readme.md -o readme.tex )
 
     message("-- Creating a fine view for documentation in pdf file - done ")
     configure_file( ${CMAKE_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY )

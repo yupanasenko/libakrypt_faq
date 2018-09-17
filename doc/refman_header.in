@@ -157,4 +157,4 @@
 \tableofcontents
 
 % pandoc -f markdown -t latex Readme.me >> refman_header.in ))
-\input{@CMAKE_BINARY_DIR@/readme.tex}
+% \input{@CMAKE_BINARY_DIR@/readme.tex}
