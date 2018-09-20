@@ -36,7 +36,9 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifndef _WIN32
- #define _POSIX_C_SOURCE 2
+ #ifndef _POSIX_C_SOURCE
+   #define _POSIX_C_SOURCE 2
+ #endif
 #endif
  #include <stdio.h>
  #include <stdio.h>

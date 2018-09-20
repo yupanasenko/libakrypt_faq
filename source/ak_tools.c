@@ -418,7 +418,7 @@
   for( i = 0; i < ak_libakrypt_options_count(); i++ ) {
     memset( hpath, 0, ak_min( 1024, FILENAME_MAX ));
     ak_snprintf( hpath, FILENAME_MAX - 1, "%s = %d\n", options[i].name, options[i].value );
-    if( fwrite( hpath, 1, strlen( hpath ), fd.fp ) < 0 ) {
+    if( fwrite( hpath, 1, strlen( hpath ), fd.fp ) < 1 ) {
       ak_error_message_fmt( error = ak_error_write_data, __func__,
                       "option %s stored with error: %s", options[i].name, strerror( errno ));
     }
