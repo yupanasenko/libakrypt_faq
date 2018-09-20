@@ -26,7 +26,7 @@
  /* вырабатываем случайные данные */
   memset( data, 127, sizeof( data ));
 
- /* перебираем все доступные алгоритмы хеширования и для каждого создаем контекст hmac */
+ /* перебираем все доступные алгоритмы алгоритмы выработки имитовставки omac */
   oid = ak_oid_context_find_by_engine( omac_function );
   while( oid != NULL ) {
     if( oid->mode == algorithm ) {

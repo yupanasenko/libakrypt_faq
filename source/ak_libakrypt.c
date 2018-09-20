@@ -211,11 +211,17 @@
 
   /* тестируем механизм итерационного сжатия для ключевых и бесключевых функций хеширования */
   if( ak_mac_test_hash_functions() != ak_true ) {
-    ak_error_message( ak_error_get_value(), __func__, "incorrect mac testing" );
+    ak_error_message( ak_error_get_value(), __func__,
+                                  "incorrect testing mac algorithms based on hash functions" );
     return ak_false;
   }
   if( ak_mac_test_hmac_functions() != ak_true ) {
-    ak_error_message( ak_error_get_value(), __func__, "incorrect mac testing" );
+    ak_error_message( ak_error_get_value(), __func__, "incorrect testing hmac algorithms" );
+    return ak_false;
+  }
+  if( ak_mac_test_omac_functions() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                   "incorrect testing mac algorithms based on block ciphers" );
     return ak_false;
   }
 
@@ -302,7 +308,7 @@
 
  /* проверяем корректность реализации алгоритмов итерационного сжатия */
    if( ak_libakrypt_test_mac_functions( ) != ak_true ) {
-     ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of compress methods" );
+     ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of mac algorithms" );
      return ak_false;
    }
 
