@@ -7,6 +7,7 @@
  #include <ak_mac.h>
  #include <ak_bckey.h>
  #include <ak_tools.h>
+ #include <ak_curves.h>
 
 /* ----------------------------------------------------------------------------------------------- */
  const char *ak_libakrypt_version( void )
@@ -232,6 +233,37 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция проверяет корректность реализации асимметричных криптографических алгоритмов
+    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
+    вызова ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ static ak_bool ak_libakrypt_test_asymmetric_functions( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms started" );
+
+ /* тестируем корректность реализации операций с эллиптическими кривыми в короткой форме Вейерштрасса */
+  if( ak_wcurve_test() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of Weierstrass curves" );
+    return ak_false;
+  }
+
+// /* тестируем корректность реализации алгоритмов электронной подписи */
+//  if( ak_signkey_test() != ak_true ) {
+//    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of digital signatures" );
+//    return ak_false;
+//  }
+
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms ended successfully" );
+
+ return ak_true;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция должна вызываться перед использованием любых криптографических механизмов библиотеки.
 
    Пример использования функции.
@@ -311,6 +343,13 @@
      ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of mac algorithms" );
      return ak_false;
    }
+
+ /* тестируем работу алгоритмов выработки и проверки электронной подписи */
+  if( ak_libakrypt_test_asymmetric_functions() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                        "error while testing digital signature mechanisms" );
+    return ak_false;
+  }
 
  if( ak_log_get_level() != ak_log_none )
    ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms tested successfully" );

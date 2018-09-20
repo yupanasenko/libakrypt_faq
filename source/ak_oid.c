@@ -128,6 +128,57 @@
                                       ( ak_function_void *) ak_bckey_context_destroy,
                                        ( ak_function_void *) ak_bckey_context_delete, NULL, NULL }},
 
+
+ /* 12. идентификаторы параметров эллиптических кривых, в частности, из Р 50.1.114-2016
+        в дереве библиотеки: 1.2.643.2.52.1.12 - параметры эллиптических кривых в форме Вейерштрасса
+        в дереве библиотеки: 1.2.643.2.52.1.12.1 - параметры 256 битных кривых
+        в дереве библиотеки: 1.2.643.2.52.1.12.2 - параметры 512 битных кривых */
+   { identifier, wcurve_params, "id-tc26-gost-3410-2012-256-paramSetTest", "1.2.643.7.1.2.1.1.0",
+                                     NULL, (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetTest,
+                                                                  { NULL, NULL, NULL, NULL, NULL }},
+
+   { identifier, wcurve_params, "id-tc26-gost-3410-2012-256-paramSetA", "1.2.643.7.1.2.1.1.1",
+                                     NULL, (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetA,
+                                                                  { NULL, NULL, NULL, NULL, NULL }},
+
+   { identifier, wcurve_params, "id-tc26-gost-3410-2012-256-paramSetB", "1.2.643.7.1.2.1.1.2",
+                                      NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA,
+                                                                  { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, wcurve_params, "id-rfc4357-gost-3410-2001-paramSetA", "1.2.643.2.2.35.1",
+                                  NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA,
+                                                                  { NULL, NULL, NULL, NULL, NULL }},
+
+   { identifier, wcurve_params, "id-tc26-gost-3410-2012-256-paramSetC", "1.2.643.7.1.2.1.1.3",
+                                      NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB,
+                                                                  { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, wcurve_params, "id-rfc4357-gost-3410-2001-paramSetB", "1.2.643.2.2.35.2",
+                                  NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB,
+                                                                  { NULL, NULL, NULL, NULL, NULL }},
+
+   { identifier, wcurve_params, "id-tc26-gost-3410-2012-256-paramSetD", "1.2.643.7.1.2.1.1.4",
+                                      NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC,
+                                                                  { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, wcurve_params, "id-rfc4357-gost-3410-2001-paramSetC", "1.2.643.2.2.35.3",
+                                  NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC,
+                                                                  { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, wcurve_params, "id-rfc4357-2001dh-paramset", "1.2.643.2.2.36.0",
+                                  NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA,
+                                                                  { NULL, NULL, NULL, NULL, NULL }},
+
+   { identifier, wcurve_params, "id-tc26-gost-3410-2012-512-paramSetTest", "1.2.643.7.1.2.1.2.0",
+                                     NULL, (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetTest,
+                                                                  { NULL, NULL, NULL, NULL, NULL }},
+
+   { identifier, wcurve_params, "id-tc26-gost-3410-2012-512-paramSetA", "1.2.643.7.1.2.1.2.1",
+                                     NULL, (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetA,
+                                                                  { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, wcurve_params, "id-tc26-gost-3410-2012-512-paramSetB", "1.2.643.7.1.2.1.2.2",
+                                     NULL, (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetB,
+                                                                  { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, wcurve_params, "id-tc26-gost-3410-2012-512-paramSetC", "1.2.643.7.1.2.1.2.3",
+                                     NULL, (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetC,
+                                                                  { NULL, NULL, NULL, NULL, NULL }},
+
   /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */
    { undefined_engine, undefined_mode, NULL, NULL, NULL, NULL, { NULL, NULL, NULL, NULL, NULL }}
  };
