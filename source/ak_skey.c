@@ -484,6 +484,9 @@
   if(( error = ak_buffer_set_ptr( &skey->key, ptr, size, cflag )) != ak_error_ok )
     return ak_error_message( error, __func__ , "wrong assigning a secret key data" );
 
+ /* очищаем флаг начальной инициализации */
+  skey->flags &= (0xFFFFFFFFFFFFFFFFLL ^ skey_flag_set_mask );
+
  /* проверяем маску */
   if( skey->mask.size != skey->key.size )
     if(( error = ak_buffer_alloc( &skey->mask, size )) != ak_error_ok )
@@ -532,7 +535,8 @@
   if(( error =
           ak_random_context_random( generator, skey->mask.data, skey->mask.size )) != ak_error_ok )
     return ak_error_message( error, __func__ , "wrong generation a mask" );
- /* меняем значение флага */
+
+ /* меняем значение флага на установленное */
   skey->flags |= skey_flag_set_mask;
 
   if(( error = skey->set_icode( skey )) != ak_error_ok ) return ak_error_message( error,
@@ -583,6 +587,9 @@
                                   ak_libakrypt_get_option("pbkdf2_iteration_count"),
                                                  skey->key.size, skey->key.data )) != ak_error_ok )
                   return ak_error_message( error, __func__ , "wrong generation a secret key data" );
+
+ /* очищаем флаг начальной инициализации */
+  skey->flags &= (0xFFFFFFFFFFFFFFFFLL ^ skey_flag_set_mask );
 
   if(( error = skey->set_mask( skey )) != ak_error_ok ) return  ak_error_message( error,
                                                             __func__ , "wrong secret key masking" );

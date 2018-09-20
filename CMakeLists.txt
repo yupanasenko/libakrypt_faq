@@ -45,6 +45,7 @@ set( HEADERS        source/ak_tools.h
                     source/ak_hmac.h
                     source/ak_bckey.h
                     source/ak_gfn2.h
+                    source/ak_omac.h
                     source/ak_mac.h
 )
 
@@ -62,6 +63,7 @@ set( SOURCES        source/ak_tools.c
                     source/ak_magma.c
                     source/ak_kuznechik.c
                     source/ak_gf2n.c
+                    source/ak_omac.c
                     source/ak_mac.c
                     source/ak_libakrypt.c
 )
@@ -179,6 +181,7 @@ set( INTERNAL_TEST_LIST
                    internal-bckey01
                    internal-bckey02
                    internal-bckey03
+                   internal-omac01
 )
 
 # добавляем примеры для всех компиляторов, отличных от MSVC

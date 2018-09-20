@@ -56,11 +56,12 @@
 /*! \brief Присвоение секретному ключу значения, выработанного из пароля */
  int ak_hmac_context_set_key_from_password( ak_hmac , const ak_pointer , const size_t ,
                                                                  const ak_pointer , const size_t );
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Очистка контекста секретного ключа алгоритма выработки имитовставки HMAC, а также
     проверка ресурса ключа. */
  int ak_hmac_context_clean( ak_pointer );
 /*! \brief Обновление текущее состояние контекста алгоритма выработки имитовставки HMAC. */
- int ak_hmac_context_update( ak_pointer ctx, const ak_pointer , const size_t );
+ int ak_hmac_context_update( ak_pointer , const ak_pointer , const size_t );
 /*! \brief Завершение алгоритма выработки имитовставки HMAC. */
  ak_buffer ak_hmac_context_finalize( ak_pointer , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Вычисление имитовставки для заданной области памяти. */

@@ -4,7 +4,7 @@
 /*  Файл ak_bckey.h                                                                                */
 /*  - содержит реализацию общих функций для алгоритмов блочного шифрования.                        */
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_bckey.h>
+ #include <ak_omac.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция устанавливает параметры алгоритма блочного шифрования, передаваемые в качестве
@@ -477,6 +477,111 @@
     ak_error_message( error, __func__ , "wrong remasking of secret key" );
 
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция вычисляет имитовставку от заданной области памяти фиксированного размера.
+
+   @param bkey Ключ алгоритма блочного шифрования, используемый для выработки имитовставки.
+   Ключ должен быть создан и определен.
+   @param in Указатель на входные данные для которых вычисляется имитовставка.
+   @param size Размер входных данных в байтах.
+   @param out Область памяти, куда будет помещен результат. Память должна быть заранее выделена.
+   Размер выделяемой памяти должен совпадать с длиной блока используемого алгоритма
+   блочного шифрования. Указатель out может принимать значение NULL.
+
+   @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+   возвращается указатель на буффер, содержащий результат вычислений. В случае возникновения
+   ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
+   ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_bckey_context_omac( ak_bckey bkey, ak_pointer in, size_t size, ak_pointer out )
+{
+  ak_pointer pout = NULL;
+  ak_buffer result = NULL;
+  ak_int64 i = 0, one64[2] = { 0x2, 0x0 },
+           blocks = (ak_int64)size/bkey->bsize,
+           tail = (ak_int64)size%bkey->bsize;
+  ak_uint64 yaout[2], akey[2], *inptr = (ak_uint64 *)in;
+
+ /* проверяем, что длина данных больше нуля */
+  if( !size ) {
+    ak_error_message( ak_error_zero_length, __func__, "using a data with zero length" );
+    return NULL;
+  }
+
+ /* проверяем целостность ключа */
+  if( bkey->key.check_icode( &bkey->key ) != ak_true ) {
+    ak_error_message( ak_error_wrong_key_icode, __func__,
+                                                  "incorrect integrity code of secret key value" );
+    return NULL;
+  }
+
+ /* уменьшаем значение ресурса ключа */
+  if( bkey->key.resource.counter < ( blocks + ( tail > 0 ))) {
+    ak_error_message( ak_error_low_key_resource, __func__ , "low resource of block cipher key" );
+    return NULL;
+  } else bkey->key.resource.counter -= ( blocks + ( tail > 0 )); /* уменьшаем ресурс ключа */
+
+  memset( akey, 0, sizeof( akey ));
+  memset( yaout, 0, sizeof( yaout ));
+  if( !tail ) { tail = bkey->bsize; blocks--; } /* последний блок всегда существует */
+
+ /* основной цикл */
+  if( bkey->bsize == 16 ) { /* здесь длина блока равна 128 бита */
+    for( i = 0; i < blocks; i++, inptr += 2 ) {
+       yaout[0] ^= inptr[0];
+       yaout[1] ^= inptr[1];
+       bkey->encrypt( &bkey->key, yaout, yaout );
+    }
+
+  /* вырабатываем ключи для завершения алгортма */
+    bkey->encrypt( &bkey->key, akey, akey );
+    ak_gf128_mul( akey, akey, one64 );
+
+    if( tail < bkey->bsize ) {
+      ak_gf128_mul( akey, akey, one64 );
+      ((ak_uint8 *)akey)[tail] ^= 0x80;
+    }
+
+   /* теперь шифруем последний блок*/
+    akey[0] ^= yaout[0]; akey[1] ^= yaout[1];
+    for( i = 0; i < tail; i++ ) ((ak_uint8 *)akey)[i] ^= ((ak_uint8 *)inptr)[i];
+    bkey->encrypt( &bkey->key, akey, akey );
+  }
+
+  if( bkey->bsize == 8 ) { /* здесь длина блока равна 64 бита */
+    for( i = 0; i < blocks; i++, inptr++ ) {
+       yaout[0] ^= inptr[0];
+       bkey->encrypt( &bkey->key, yaout, yaout );
+    }
+
+   /* теперь ключи для завершения алгоритма */
+    bkey->encrypt( &bkey->key, akey, akey );
+    ak_gf64_mul( akey, akey, one64 );
+
+    if( tail < bkey->bsize ) {
+      ak_gf64_mul( akey, akey, one64 );
+      ((ak_uint8 *)akey)[tail] ^= 0x80;
+    }
+
+   /* теперь шифруем последний блок */
+    akey[0] ^= yaout[0];
+    for( i = 0; i < tail; i++ ) ((ak_uint8 *)akey)[i] ^= ((ak_uint8 *)inptr)[i];
+    bkey->encrypt( &bkey->key, akey, akey );
+  }
+
+ /* определяем указатель на область памяти, в которую будет помещен результат вычислений */
+  if( out != NULL ) pout = out;
+   else {
+     if(( result = ak_buffer_new_size( bkey->bsize )) != NULL ) pout = result->data;
+      else ak_error_message( ak_error_get_value( ), __func__ , "wrong creation of result buffer" );
+   }
+ /* копируем нужную часть результирующего массива или выдаем сообщение об ошибке */
+  if( pout != NULL ) memcpy( pout, akey, bkey->bsize );
+    else ak_error_message( ak_error_out_of_memory, __func__ ,
+                                                 "incorrect memory allocation for result buffer" );
+ return result;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

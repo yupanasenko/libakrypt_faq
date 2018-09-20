@@ -12,8 +12,8 @@
     заданным контекстом hctx функции хеширования.
     При этом, владение контекстом hctx не происходит (в частности не происходит его удаление).
 
-    @param ictx указатель на структуру struct mac.
-    @param hctx контекст бесключевой функции хеширования; контекст должен быть
+    @param ictx Указатель на структуру struct mac.
+    @param hctx Контекст бесключевой функции хеширования; контекст должен быть
     предварительно инициализирован.
     @return В случае успеха возвращается \ref ak_error_ok (ноль). В случае возникновения ошибки
     возвращается ее код.                                                                           */
@@ -53,8 +53,8 @@
     заданным контекстом hctx ключевой функции хеширования HMAC.
     При этом, владение контекстом hctx не происходит (в частности не происходит его удаление).
 
-    @param ictx указатель на структуру struct mac.
-    @param hctx контекст ключевой функции хеширования HMAC; контекст должен быть
+    @param ictx Указатель на структуру struct mac.
+    @param hctx Контекст ключевой функции хеширования HMAC; контекст должен быть
     предварительно инициализирован.
     @return В случае успеха возвращается \ref ak_error_ok (ноль). В случае возникновения ошибки
     возвращается ее код.                                                                           */
@@ -65,7 +65,7 @@
   if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using null pointer to mac context" );
   if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                           "using null pointer to hash context" );
+                                                           "using null pointer to hmac context" );
  /* теперь собственно инициализация */
   if(( ictx->data = (ak_uint8 *) malloc( ictx->bsize = hctx->ctx.bsize )) == NULL ) {
     ak_error_message( ak_error_out_of_memory, __func__ ,
@@ -81,6 +81,44 @@
   ictx->clean = ak_hmac_context_clean;
   ictx->update = ak_hmac_context_update;
   ictx->finalize = ak_hmac_context_finalize;
+  ictx->free = NULL;
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция инициализирует контекст структуры struct mac в значения, определяемые
+    заданным контекстом octx ключевой функции хеширования HMAC.
+    При этом, владение контекстом hctx не происходит (в частности не происходит его удаление).
+
+    @param ictx Указатель на структуру struct mac.
+    @param octx Контекст ключевой функции хеширования ГОСТ Р 34.13-2015; контекст должен быть
+    предварительно инициализирован.
+    @return В случае успеха возвращается \ref ak_error_ok (ноль). В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mac_context_create_omac( ak_mac ictx, ak_omac octx )
+{
+ /* вначале, необходимые проверки */
+  if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using null pointer to mac context" );
+  if( octx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                           "using null pointer to omac context" );
+ /* теперь собственно инициализация */
+  if(( ictx->data = (ak_uint8 *) malloc( ictx->bsize = octx->bkey.bsize )) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ ,
+                                     "wrong memory alllocation for a new temporary data buffer" );
+  } else memset( ictx->data, 0, octx->bkey.bsize );
+  ictx->length = 0;
+
+ /* устанавливаем значения и полей и методы из контекста функции хеширования */
+  ictx->engine = omac_function;
+  ictx->ctx = octx;
+  ictx->has_key = ak_true;
+  ictx->hsize = ictx->bsize; /* длина вызода совпадает с длиной входа */
+  ictx->clean = ak_omac_context_clean;
+  ictx->update = ak_omac_context_update;
+  ictx->finalize = ak_omac_context_finalize;
   ictx->free = NULL;
 
  return ak_error_ok;
@@ -117,8 +155,8 @@
 /*! Функция инициализирует контекст структуры struct mac. При этом используется временно
    создаваемый контекст алгоритма хеширования, определяемый идентификатора алгоритма.
 
-    @param ictx указатель на структуру struct mac.
-    @param oid идентификатор криптографического алгоритма, может быть идентификатором алгоритма
+    @param ictx Указатель на структуру struct mac.
+    @param oid Идентификатор криптографического алгоритма, может быть идентификатором алгоритма
     бесключевого хеширования, либо идентификатором алгоритма выработки имитовставки
     (HMAC, ГОСТ Р 34.13-2015 и т.д.)
     @return В случае успеха возвращается \ref ak_error_ok (ноль). В случае возникновения ошибки
@@ -149,6 +187,14 @@
         return ak_error_message_fmt( error, __func__,
             "incorrect initialization of mac function context with %s hmac function", oid->name );
     break;
+
+    case omac_function: /* создаем функцию выработки имитовставки ГОСТ Р 34.13-2015. */
+      if(( error = ak_mac_context_create_oid_common( ictx, oid, sizeof( struct omac ),
+                         (ak_function_mac_create*) ak_mac_context_create_omac )) != ak_error_ok )
+        return ak_error_message_fmt( error, __func__,
+            "incorrect initialization of mac function context with %s omac function", oid->name );
+    break;
+
     default: return ak_error_message( ak_error_oid_engine, __func__, "using oid with wrong engine" );
   }
 
@@ -158,7 +204,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция уничтожает контекст сжимающего отображения.
 
-  @param ictx указатель на структуру struct mac.
+  @param ictx Указатель на структуру struct mac.
   @return В случае успеха возвращается \ref ak_error_ok (ноль). В случае возникновения ошибки
   возвращается ее код.                                                                             */
 /* ----------------------------------------------------------------------------------------------- */
@@ -182,7 +228,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param ctx указатель на структуру struct mac.
+/*! @param ctx Указатель на структуру struct mac.
     @return Функция всегда возвращает NULL. В случае необходимости, код ошибки может быть получен
     с помощью вызова функции ak_error_get_value().                                                 */
 /* ----------------------------------------------------------------------------------------------- */
@@ -197,7 +243,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param ictx указатель на контекст сжимающего отображения (структуру struct mac).
+/*! @param ictx Указатель на контекст сжимающего отображения (структуру struct mac).
     К моменту вызова функции контекст должен быть инициализирован.
     @param ptr Указатель на данные, которые будут интерпретироваться в качестве значения ключа.
     @param size Размер данных, на которые указывает `ptr` (размер в байтах).
@@ -228,6 +274,13 @@
                 ak_hmac_context_set_key(( ak_hmac )ictx->ctx, ptr, size, cflag )) != ak_error_ok )
       return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
     break;
+
+    case omac_function:
+      if(( error =
+                ak_omac_context_set_key(( ak_omac )ictx->ctx, ptr, size, cflag )) != ak_error_ok )
+      return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
+    break;
+
     default: return ak_error_message( ak_error_undefined_function, __func__ ,
                                        "this function is undefined for this type of mac context" );
   }
@@ -235,7 +288,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param ictx указатель на структуру struct mac.
+/*! @param ictx Указатель на структуру struct mac.
     @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
     возвращается ее код.                                                                           */
 /* ----------------------------------------------------------------------------------------------- */
@@ -253,7 +306,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param ictx указатель на структуру struct mac.
+/*! @param ictx Указатель на структуру struct mac.
     @param in Сжимаемые данные
     @param size Размер сжимаемых данных в байтах. Данное значение может
     быть произвольным, в том числе равным нулю и/или не кратным длине блока обрабатываемых данных
@@ -314,7 +367,7 @@
     Внутренняя структура, хранящая промежуточные данные, не очищается. Это позволят повторно вызывать
     функцию finalize к текущему состоянию.
 
-    @param ictx указатель на структуру struct mac.
+    @param ictx Указатель на структуру struct mac.
     @param in Указатель на входные данные для которых вычисляется хеш-код.
     @param size Размер входных данных в байтах.
     @param out Область памяти, куда будет помещен результат. Память должна быть заранее выделена.
@@ -351,7 +404,7 @@
     (структуру struct buffer), помещает в нее вычисленное значение и возвращает на указатель на
     буффер. Буффер должен позднее быть удален с помощью вызова ak_buffer_delete().
 
-    @param ictx указатель на структуру struct mac.
+    @param ictx Указатель на структуру struct mac.
     @param in Указатель на входные данные для которых вычисляется контрольная сумма
     (имитовставка или хэш-код).
     @param size Размер входных данных в байтах. Если длина равна нулю, то возвращается результат

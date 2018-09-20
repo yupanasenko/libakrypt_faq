@@ -483,6 +483,11 @@
     0x30, 0xF6, 0x0A, 0xA9, 0xC0, 0x11, 0x77, 0xCE, 0xCD, 0xE9, 0x40, 0x9A, 0x4B, 0x46, 0x1C, 0x64,
     0xF6, 0xCA, 0xF7, 0xC6, 0x90, 0x18, 0x65 };
 
+ /* значение имитовставки согласно ГОСТ Р 34.13-2015 (раздел А.1.6) */
+  ak_uint8 imito[16] = {
+     0x67, 0x9C, 0x74, 0x37, 0x5B, 0xB3, 0xDE, 0x4D,
+     0xE3, 0xFB, 0x59, 0x60, 0x29, 0x4D, 0x6F, 0x33 };
+
  /* временный буффер */
   ak_uint8 myout[64];
 
@@ -500,7 +505,7 @@
  /* 2. Тестируем зашифрование/расшифрование одного блока согласно ГОСТ Р34.12-2015 */
   bkey.encrypt( &bkey.key, in, myout );
   if( !ak_ptr_is_equal( myout, out, 16 )) {
-    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+    ak_error_message( ak_error_not_equal_data, __func__ ,
                        "the one block encryption test from GOST R 34.12-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( myout, 16, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( out, 16, ak_true )); free( str );
@@ -512,7 +517,7 @@
 
   bkey.decrypt( &bkey.key, out, myout );
   if( !ak_ptr_is_equal( myout, in, 16 )) {
-    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+    ak_error_message( ak_error_not_equal_data, __func__ ,
                        "the one block decryption test from GOST R 34.12-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( myout, 16, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( in, 16, ak_true )); free( str );
@@ -524,12 +529,12 @@
 
  /* 3. Тестируем режим простой замены согласно ГОСТ Р34.13-2015 */
   if(( error = ak_bckey_context_encrypt_ecb( &bkey, inlong, myout, 64 )) != ak_error_ok ) {
-    ak_error_message_fmt( error, __func__ , "wrong ecb mode encryption" );
+    ak_error_message( error, __func__ , "wrong ecb mode encryption" );
     ak_bckey_context_destroy( &bkey );
     return ak_false;
   }
   if( !ak_ptr_is_equal( myout, outecb, 64 )) {
-    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+    ak_error_message( ak_error_not_equal_data, __func__ ,
                         "the ecb mode encryption test from GOST R 34.13-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( myout, 64, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( outecb, 64, ak_true )); free( str );
@@ -538,12 +543,12 @@
   }
 
   if(( error = ak_bckey_context_decrypt_ecb( &bkey, outecb, myout, 64 )) != ak_error_ok ) {
-    ak_error_message_fmt( error, __func__ , "wrong ecb mode decryption" );
+    ak_error_message( error, __func__ , "wrong ecb mode decryption" );
     ak_bckey_context_destroy( &bkey );
     return ak_false;
   }
   if( !ak_ptr_is_equal( myout, inlong, 64 )) {
-    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+    ak_error_message( ak_error_not_equal_data, __func__ ,
                         "the ecb mode decryption test from GOST R 34.13-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( myout, 64, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( inlong, 64, ak_true )); free( str );
@@ -555,12 +560,12 @@
 
  /* 4. Тестируем режим гаммирования (счетчика) согласно ГОСТ Р34.13-2015 */
   if(( error = ak_bckey_context_xcrypt( &bkey, inlong, myout, 64, ivctr, 8 )) != ak_error_ok ) {
-    ak_error_message_fmt( error, __func__ , "wrong counter mode encryption" );
+    ak_error_message( error, __func__ , "wrong counter mode encryption" );
     ak_bckey_context_destroy( &bkey );
     return ak_false;
   }
   if( !ak_ptr_is_equal( myout, outctr, 64 )) {
-    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+    ak_error_message( ak_error_not_equal_data, __func__ ,
                         "the counter mode encryption test from GOST R 34.13-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( myout, 64, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( outctr, 64, ak_true )); free( str );
@@ -569,12 +574,12 @@
   }
 
   if(( error = ak_bckey_context_xcrypt( &bkey, outctr, myout, 64, ivctr, 8 )) != ak_error_ok ) {
-    ak_error_message_fmt( error, __func__ , "wrong counter mode decryption" );
+    ak_error_message( error, __func__ , "wrong counter mode decryption" );
     ak_bckey_context_destroy( &bkey );
     return ak_false;
   }
   if( !ak_ptr_is_equal( myout, inlong, 64 )) {
-    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+    ak_error_message( ak_error_not_equal_data, __func__ ,
                         "the counter mode decryption test from GOST R 34.13-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( myout, 64, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( inlong, 64, ak_true )); free( str );
@@ -586,13 +591,13 @@
 
  /* 5. Тестируем режим гаммирования (счетчика) на длинах, не кратных длине блока. */
   if( ak_bckey_context_xcrypt( &bkey, xin1, myout, 23, xiv1, 8 ) != ak_error_ok ) {
-    ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong plain text encryption" );
+    ak_error_message( ak_error_get_value(), __func__ , "wrong plain text encryption" );
     ak_bckey_context_destroy( &bkey );
     return ak_false;
   }
   if( !ak_ptr_is_equal( myout, xout1, 23 )) {
-    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                            "the counter mode encryption test for 23 octets is wrong");
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                        "the counter mode encryption test for 23 octets is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( myout, 23, ak_false )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( xout1, 23, ak_false )); free(str);
     ak_bckey_context_destroy( &bkey );
@@ -600,20 +605,38 @@
   }
 
   if( ak_bckey_context_xcrypt( &bkey, xout1, myout, 23, xiv1, 8 ) != ak_error_ok ) {
-    ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong cipher text decryption" );
+    ak_error_message( ak_error_get_value(), __func__ , "wrong cipher text decryption" );
     ak_bckey_context_destroy( &bkey );
     return ak_false;
   }
   if( !ak_ptr_is_equal( myout, xin1, 23 )) {
-    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                            "the counter mode decryption test for 23 octets is wrong");
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                        "the counter mode decryption test for 23 octets is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( myout, 23, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( xin1, 23, ak_true )); free( str );
     ak_bckey_context_destroy( &bkey );
     return ak_false;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
-                                  "the counter mode encryption/decryption test for 23 octets is Ok" );
+                               "the counter mode encryption/decryption test for 23 octets is Ok" );
+
+ /* 6. Тестируем режим выработки имитовставки (плоская реализация). */
+  ak_bckey_context_omac( &bkey, inlong, sizeof( inlong ), myout );
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong omac calculation" );
+    ak_bckey_context_destroy( &bkey );
+    return ak_false;
+  }
+  if( !ak_ptr_is_equal( myout, imito, 16 )) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                   "the omac integrity mode test from GOST R 34.13-2015 is wrong");
+    ak_log_set_message( str = ak_ptr_to_hexstr( myout, 16, ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( imito, 16, ak_true )); free( str );
+    ak_bckey_context_destroy( &bkey );
+    return ak_false;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                     "the omac integrity mode test from GOST R 34.13-2015 is Ok" );
 
  /* уничтожаем ключ и выходим */
   ak_bckey_context_destroy( &bkey );

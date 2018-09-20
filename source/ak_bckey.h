@@ -74,6 +74,9 @@
  int ak_bckey_context_decrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
 /*! \brief Зашифрование, либо расшифрование данных в режиме гаммирования из ГОСТ Р 34.13-2015. */
  int ak_bckey_context_xcrypt( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
+/*! \brief Вычисление имитовставки согласно ГОСТ Р 34.13-2015. */
+ ak_buffer ak_bckey_context_omac( ak_bckey , ak_pointer , size_t , ak_pointer );
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тестирование корректной работы алгоритма блочного шифрования Магма (ГОСТ Р 34.12-2015). */
  ak_bool ak_bckey_test_magma( void );

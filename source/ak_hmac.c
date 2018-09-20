@@ -10,7 +10,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param hctx Контекст алгоритма HMAC выработки имитовставки.
     @param oid Идентификатор алгоритма HMAC - ключевой функции хеширования.
-    @return В случае успешного завершения функций возвращает \ref ak_error_ok. В случае
+    @return В случае успешного завершения функция возвращает \ref ak_error_ok. В случае
     возникновения ошибки возвращеется ее код.                                                      */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_hmac_context_create_oid( ak_hmac hctx, ak_oid oid )
@@ -23,7 +23,7 @@
                                                         "using null pointer to hmac context" );
   if( oid == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                    "using null pointer to hash function OID" );
- /* проверяем, что OID от бесключевой функции хеширования */
+ /* проверяем, что OID от правильного алгоритма выработки */
   if( oid->engine != hmac_function )
     return ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
  /* проверяем, что OID от алгоритма, а не от параметров */
@@ -42,7 +42,7 @@
   if(( error =
            (( ak_function_hash_create *)hashoid->func.create )( &hctx->ctx )) != ak_error_ok )
     return ak_error_message_fmt( error, __func__,
-                                   "invalid creation of %s hash function context", oid->name );
+                               "invalid creation of %s hash function context", hashoid->name );
 
  /* инициализируем контекст секретного ключа */
   if(( error = ak_skey_context_create( &hctx->key, hctx->ctx.bsize, 8 )) != ak_error_ok ) {
@@ -389,7 +389,7 @@
     (структуру struct buffer), помещает в нее вычисленное значение и возвращает на указатель на
     буффер. Буффер должен позднее быть удален с помощью вызова ak_buffer_delete().
 
-    \b Внимание. После завершения вычислений контекст функции хеширования инициалищируется
+    \b Внимание. После завершения вычислений контекст функции хеширования инициализируется
     в начальное состояние.
 
     @param hctx Контекст алгоритма HMAC выработки имитовставки.

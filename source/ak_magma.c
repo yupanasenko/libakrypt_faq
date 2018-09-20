@@ -468,6 +468,30 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция уничтожения развернутых ключей для маскированной магмы
+
+    В данной функции освобождается память выделенная под дополнительные s-боксы а хранящиеся маски
+    и ключи заполняются случайнам мусором
+
+    @param skey Указатель на контекст секретного ключа
+
+    @return В случае успеха функция возвращает ak_error_ok. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_magma_context_free_keys (ak_skey skey)
+{
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using a null pointer to secret key" );
+ /* если ключ был создан, но ему не было присвоено значение, здесь возникнет ошибка */
+  if( skey->data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                      "unexpected null pointer to internal data" );
+
+  ak_ptr_wipe( skey->data, sizeof( struct magma_encrypted_keys ), &skey->generator, ak_true );
+  free( skey->data );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция выработки инвертированного ключа и ключевых масок.
 
     @param skey Указатель на контекст секретного ключа
@@ -482,6 +506,12 @@
 
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                         "using a null pointer to secret key" );
+ /* проверяем целостность ключа */
+  if( skey->check_icode( skey ) != ak_true ) return ak_error_message( ak_error_wrong_key_icode,
+                                                __func__ , "using key with wrong integrity code" );
+ /* удаляем былое */
+  if( skey->data != NULL ) ak_magma_context_free_keys( skey );
+
   if(( data = ak_libakrypt_alligned_malloc( sizeof( struct magma_encrypted_keys ))) == NULL )
     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
 
@@ -505,30 +535,6 @@
      data->inkey[1][idx] -= ( 1 - data->inmask[1][idx] );        /* наложили новую маску */
      data->inkey[1][idx] += data->inmask[0][idx];                  /* сняли старую маску */
   }
-
- return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция уничтожения развернутых ключей для маскированной магмы
-
-    В данной функции освобождается память выделенная под дополнительные s-боксы а хранящиеся маски
-    и ключи заполняются случайнам мусором
-
-    @param skey Указатель на контекст секретного ключа
-
-    @return В случае успеха функция возвращает ak_error_ok. В противном случае,
-    возвращается код ошибки.                                                                       */
-/* ----------------------------------------------------------------------------------------------- */
- static int ak_magma_context_free_keys (ak_skey skey)
-{
-  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                            "using a null pointer to secret key" );
-  if( skey->data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                      "unexpected null pointer to internal data" );
-
-  ak_ptr_wipe( skey->data, sizeof( struct magma_encrypted_keys ), &skey->generator, ak_true );
-  free( skey->data );
 
  return ak_error_ok;
 }
@@ -843,6 +849,8 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
   ak_uint64 out_3413_2015_ctr_text[4] = {
                   0x4e98110c97b7b93c, 0x3e250d93d6e85d69, 0x136d868807b2dbef, 0x568eb680ab52a12d };
 
+  ak_uint8 imito[8] = { 0xBB, 0xC5, 0x30, 0x20, 0x10, 0x72, 0x4E, 0x15 };
+
  /* 1. Инициализируем ключ алгоритма Магма */
   if(( error = ak_bckey_context_create_magma( &bkey )) != ak_error_ok ) {
     ak_error_message( error, __func__, "wrong initialization of magma secret key" );
@@ -970,6 +978,24 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                                   "the counter mode encryption/decryption test for 13 octets is Ok" );
+
+ /* 7. Тестируем режим выработки имитовставки (плоская реализация). */
+  ak_bckey_context_omac( &bkey, in_3413_2015_text, sizeof( in_3413_2015_text ), out );
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong omac calculation" );
+    ak_bckey_context_destroy( &bkey );
+    return ak_false;
+  }
+  if( !ak_ptr_is_equal( out, imito, 8 )) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                   "the omac integrity mode test from GOST R 34.13-2015 is wrong");
+    ak_log_set_message( str = ak_ptr_to_hexstr( out, 8, ak_true )); free( str );
+    ak_log_set_message( str = ak_ptr_to_hexstr( imito, 8, ak_true )); free( str );
+    ak_bckey_context_destroy( &bkey );
+    return ak_false;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                     "the omac integrity mode test from GOST R 34.13-2015 is Ok" );
 
  /* освобождаем ключ и выходим */
   exit:
