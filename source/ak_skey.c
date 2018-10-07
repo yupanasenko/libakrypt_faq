@@ -261,9 +261,7 @@
                                                   "wrong random mask generation for key buffer" );
                for( idx = 0; idx < 64; idx++ ) {
                   ((ak_uint8 *) skey->key.data)[offset+idx] ^= newmask[idx];
-                  ((ak_uint8 *) skey->key.data)[offset+idx] ^=
-                                 ((ak_uint8 *) skey->mask.data)[offset+idx];
-                  ((ak_uint8 *) skey->mask.data)[offset+idx] = newmask[idx];
+                  ((ak_uint8 *) skey->mask.data)[offset+idx] ^= newmask[idx];
                }
             }
            /* потом обрабатываем хвост */
@@ -274,9 +272,7 @@
                                                   "wrong random mask generation for key buffer" );
                for( idx = 0; idx < tail; idx++ ) {
                   ((ak_uint8 *) skey->key.data)[offset+idx] ^= newmask[idx];
-                  ((ak_uint8 *) skey->key.data)[offset+idx] ^=
-                                 ((ak_uint8 *) skey->mask.data)[offset+idx];
-                  ((ak_uint8 *) skey->mask.data)[offset+idx] = newmask[idx];
+                  ((ak_uint8 *) skey->mask.data)[offset+idx] ^= newmask[idx];
                }
             }
          }
