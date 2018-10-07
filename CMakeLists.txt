@@ -203,8 +203,8 @@ endif()
 set( ARITHMETIC_TESTS_LIST
                    mpzn-convert
                    mpzn-arithmetic
-#                   mpzn-montgomery
-#                   mpzn-rem
+                   mpzn-montgomery
+                   mpzn-rem
 )
 
 if( LIBAKRYPT_GMP_TESTS )

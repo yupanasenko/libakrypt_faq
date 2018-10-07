@@ -1,7 +1,6 @@
  #include <stdio.h>
  #include <ak_curves.h>
  #include <ak_oid.h>
- #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /* тест для операции сложения вычетов в представлении монтгомери */
@@ -19,7 +18,7 @@
   mpz_init(zm);
   mpz_init(tm);
   mpz_init(pm);
-  ak_random_create_lcg( &generator );
+  ak_random_context_create_lcg( &generator );
 
   if( ak_mpzn_set_hexstr( p, size, prime ) != ak_error_ok ) goto lab_exit;
   ak_mpzn_to_mpz( p, size, pm );
@@ -66,7 +65,7 @@
   printf(" y = "); mpz_out_str( stdout, 16, ym ); printf("\n\n");
 
 
-  lab_exit:ak_random_destroy( &generator );
+  lab_exit:ak_random_context_destroy( &generator );
   mpz_clear(pm);
   mpz_clear(tm);
   mpz_clear(zm);
@@ -97,7 +96,7 @@
   mpz_init(sm);
   mpz_init(um);
   mpz_init(nm);
-  ak_random_create_lcg( &generator );
+  ak_random_context_create_lcg( &generator );
 
   mpz_set_str( pm, prime, 16 );
   mpz_set_ui( rm, 2 ); mpz_pow_ui( rm, rm, size*64 );
@@ -211,7 +210,7 @@
   printf(" gmp time:  %.3fs [", ((double) tmr) / ((double) CLOCKS_PER_SEC));
   printf("z = "); mpz_out_str( stdout, 16, xm ); printf("]\n\n");
 
-  lab_exit: ak_random_destroy( &generator );
+  lab_exit: ak_random_context_destroy( &generator );
   mpz_clear(nm);
   mpz_clear(gm);
   mpz_clear(sm);
@@ -237,7 +236,7 @@
   ak_libakrypt_create( ak_function_log_stderr );
 
  /* организуем цикл по перебору всех известных простых чисел */
-  oid = ak_oid_find_by_engine( identifier );
+  oid = ak_oid_context_find_by_engine( identifier );
   while( oid != NULL ) {
     if( oid->mode == wcurve_params ) {
      /* достаем простое число */
@@ -266,7 +265,7 @@
         free( str );
       }
     }
-    oid = ak_oid_findnext_by_engine( oid, identifier );
+    oid = ak_oid_context_findnext_by_engine( oid, identifier );
   }
 
   printf("\n total montgomery arithmetic tests: %d (passed: %d)\n", totalmany, howmany );

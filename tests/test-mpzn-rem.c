@@ -1,7 +1,6 @@
  #include <ak_curves.h>
  #include <ak_mpzn.h>
  #include <ak_oid.h>
- #include <ak_context_manager.h>
  #include <gmp.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -17,7 +16,7 @@
   mpz_init( xp );
   mpz_init( rp );
   mpz_init( pp );
-  ak_random_create_lcg( &generator );
+  ak_random_context_create_lcg( &generator );
 
  /* первый тест - модуль p */
   ak_mpzn_to_mpz( p, wc->size, pp );
@@ -55,7 +54,7 @@
   printf(" %lu (%lu) tests passed successfully from %lu \n", mpzcount, mycount, count );
   if(( mpzcount == count ) && (  mycount == count )) rescount++;
 
-  ak_random_destroy( &generator );
+  ak_random_context_destroy( &generator );
   mpz_clear( xp );
   mpz_clear( rp );
   mpz_clear( pp );
@@ -72,7 +71,7 @@
   ak_libakrypt_create( ak_function_log_stderr );
 
  /* организуем цикл по перебору всех известных простых чисел */
-  oid = ak_oid_find_by_engine( identifier );
+  oid = ak_oid_context_find_by_engine( identifier );
 
   while( oid != NULL ) {
     if( oid->mode == wcurve_params ) {
@@ -80,7 +79,7 @@
       totalmany += 2;
       howmany += mpzn_rem_test( (ak_wcurve)(oid->data), 1000000 );
     }
-    oid = ak_oid_findnext_by_engine( oid, identifier );
+    oid = ak_oid_context_findnext_by_engine( oid, identifier );
   }
 
   printf("\n total remainder tests: %d (passed: %d)\n", totalmany, howmany );
