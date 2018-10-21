@@ -147,11 +147,26 @@
                                     ( ak_function_void *) ak_signkey_context_destroy,
                                      ( ak_function_void *) ak_signkey_context_delete, NULL, NULL }},
 
-// /* 11. идентификаторы алгоритмов проверки электронной подписи
-//        в дереве библиотеки: 1.2.643.2.52.1.11 - алгоритмы проверки электронной подписи */
-//   { verify_function, algorithm, "verify256", "1.2.643.2.52.1.11.2", NULL, NULL },
-//   { verify_function, algorithm, "verify512", "1.2.643.2.52.1.11.3", NULL, NULL },
-//   { verify_function, algorithm, "verify256-gosthash94", "1.2.643.2.52.1.11.1", NULL, NULL },
+ /* 11. идентификаторы алгоритмов проверки электронной подписи
+        в дереве библиотеки: 1.2.643.2.52.1.11 - алгоритмы проверки электронной подписи
+
+        поскольку дерево OID-ов ТК26 не делает различия, между алгоритмами выработки и алгоритмами
+        проверки электронной подписи, мы используем свой корень для указания алгоритмов проверки. */
+
+   { verify_function, algorithm, "verify256", "1.2.643.2.52.1.11.2", NULL, NULL,
+                          { (ak_function_void *) ak_verifykey_context_create_signkey,
+                                   (ak_function_void *) ak_verifykey_context_destroy,
+                                    (ak_function_void *) ak_verifykey_context_delete, NULL, NULL }},
+
+   { verify_function, algorithm, "verify512", "1.2.643.2.52.1.11.3", NULL, NULL,
+                          { (ak_function_void *) ak_verifykey_context_create_signkey,
+                                   (ak_function_void *) ak_verifykey_context_destroy,
+                                    (ak_function_void *) ak_verifykey_context_delete, NULL, NULL }},
+
+   { verify_function, algorithm, "verify256-gosthash94", "1.2.643.2.52.1.11.1", NULL, NULL,
+                          { (ak_function_void *) ak_verifykey_context_create_signkey,
+                                   (ak_function_void *) ak_verifykey_context_destroy,
+                                    (ak_function_void *) ak_verifykey_context_delete, NULL, NULL }},
 
  /* 12. идентификаторы параметров эллиптических кривых, в частности, из Р 50.1.114-2016
         в дереве библиотеки: 1.2.643.2.52.1.12 - параметры эллиптических кривых в форме Вейерштрасса

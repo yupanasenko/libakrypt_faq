@@ -6,7 +6,6 @@
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_mac.h>
  #include <ak_sign.h>
- #include <ak_bckey.h>
  #include <ak_tools.h>
  #include <ak_curves.h>
  #include <ak_context_manager.h>

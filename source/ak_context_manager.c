@@ -184,7 +184,7 @@
      ak_error_message( error, __func__,
                          "wrong initialization a random generator from default crypto provider" );
      ak_error_message( ak_error_ok, __func__, "trying to use lcg generator" );
-     if(( error = ak_random_create_lcg( &manager->key_generator )) != ak_error_ok )
+     if(( error = ak_random_context_create_lcg( &manager->key_generator )) != ak_error_ok )
        return ak_error_message( error, __func__,
                                 "wrong initialization of all types of random generators" );
    }
