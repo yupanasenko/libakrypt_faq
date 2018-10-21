@@ -322,7 +322,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_gfn_multiplication_test( void )
 {
- int audit =  audit = ak_log_get_level();
+ int audit = ak_log_get_level();
 
  if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "testing the Galois fileds arithmetic started");

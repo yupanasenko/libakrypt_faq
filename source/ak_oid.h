@@ -69,6 +69,8 @@
  const ak_oid ak_oid_context_find_by_engine( const ak_oid_engine );
 /*! \brief Продолжение поиска OID по типу криптографического механизма. */
  const ak_oid ak_oid_context_findnext_by_engine( const ak_oid, const ak_oid_engine );
+/*! \brief Проверка соответствия заданного адреса корректному oid. */
+ ak_bool ak_oid_context_check( const ak_oid );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

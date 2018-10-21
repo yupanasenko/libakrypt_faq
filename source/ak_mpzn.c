@@ -111,7 +111,8 @@
   if( generator == NULL ) return ak_error_message( ak_error_undefined_value,
                                                 __func__ , "using an undefined random generator" );
 
- /* здесь не совсем корректный способ вычисления, будет исправлено в дальнейшем */
+ /*! @todo Здесь не совсем корректный способ вычисления случайного значения,
+           необходимо исправить в дальнейшем */
 
  /* определяем старший значащий разряд у модуля */
   while( p[midx] == 0 ) {
@@ -640,10 +641,10 @@
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */
-/*! \example example-mpzn-convert.c
-    \example example-mpzn-arithmetic.c
-    \example example-mpzn-montgomery.c
-    \example example-mpzn-rem.c
+/*! \example test-mpzn-convert.c
+    \example test-mpzn-arithmetic.c
+    \example test-mpzn-montgomery.c
+    \example test-mpzn-rem.c
                                                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_mpzn.c  */

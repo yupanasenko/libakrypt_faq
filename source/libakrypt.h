@@ -179,10 +179,12 @@ extern "C" {
 
 /*! \brief Неверное значение дескриптора объекта. */
  #define ak_error_wrong_handle                (-30)
+/*! \brief Попытка создания и/или использования ранее созданного менеджера контектстов */
+ #define ak_error_context_manager_usage       (-31)
 /*! \brief Ошибка, возникающая в случае неправильного значения размера структуры хранения контекстов. */
- #define ak_error_context_manager_size        (-31)
+ #define ak_error_context_manager_size        (-32)
 /*! \brief Ошибка, возникающая при превышении числа возможных элементов структуры хранения контекстов. */
- #define ak_error_context_manager_max_size    (-32)
+ #define ak_error_context_manager_max_size    (-33)
 
 /*! \brief Неверный тип криптографического механизма. */
  #define ak_error_oid_engine                  (-40)
@@ -216,16 +218,18 @@ extern "C" {
 /*! \brief Ошибка, возникающая при неправильном использовании функций зашифрования/расшифрования данных. */
  #define ak_error_wrong_block_cipher_function (-60)
 
+/*! \brief Ошибка, возникающая когда параметры кривой не соотвествуют алгоритму, в котором они используются. */
+ #define ak_error_curve_not_supported         (-70)
 /*! \brief Ошибка, возникающая если заданная точка не принадлежит заданной кривой. */
- #define ak_error_curve_point                 (-70)
+ #define ak_error_curve_point                 (-71)
 /*! \brief Ошибка, возникающая когда порядок точки неверен. */
- #define ak_error_curve_point_order           (-71)
+ #define ak_error_curve_point_order           (-72)
 /*! \brief Ошибка, возникающая если дискриминант кривой равен нулю (уравнение не задает кривую). */
- #define ak_error_curve_discriminant          (-72)
+ #define ak_error_curve_discriminant          (-73)
 /*! \brief Ошибка, возникающая когда неверно определены вспомогательные параметры эллиптической кривой. */
- #define ak_error_curve_order_parameters      (-73)
+ #define ak_error_curve_order_parameters      (-74)
 /*! \brief Ошибка, возникающая когда простой модуль кривой задан неверно. */
- #define ak_error_curve_prime_size            (-74)
+ #define ak_error_curve_prime_size            (-75)
 
 /*! \brief Ошибка, возникающая при кодировании ASN1 структуры (перевод в DER-кодировку). */
  #define ak_error_wrong_asn1_encode           (-90)

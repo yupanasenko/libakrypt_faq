@@ -1,12 +1,13 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*  Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
-/*  Файл ak_oid.h                                                                                  */
+/*  Файл ak_oid.с                                                                                  */
 /*  - содержит реализации функций для работы с идентификаторами криптографических                  */
 /*    алгоритмов и параметров                                                                      */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_hmac.h>
  #include <ak_omac.h>
+ #include <ak_sign.h>
  #include <ak_parameters.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -129,6 +130,29 @@
                                        ( ak_function_void *) ak_bckey_context_delete, NULL, NULL }},
 
 
+  /* 10. идентификаторы алгоритмов выработки электронной подписи
+        в дереве библиотеки: 1.2.643.2.52.1.10 - алгоритмы выработки электронной подписи */
+   { sign_function, algorithm, "sign256", "1.2.643.7.1.1.1.1", NULL, NULL,
+                       { ( ak_function_void *) ak_signkey_context_create_streebog256,
+                                    ( ak_function_void *) ak_signkey_context_destroy,
+                                     ( ak_function_void *) ak_signkey_context_delete, NULL, NULL }},
+
+   { sign_function, algorithm, "sign512", "1.2.643.7.1.1.1.2", NULL, NULL,
+                       { ( ak_function_void *) ak_signkey_context_create_streebog512,
+                                    ( ak_function_void *) ak_signkey_context_destroy,
+                                     ( ak_function_void *) ak_signkey_context_delete, NULL, NULL }},
+
+   { sign_function, algorithm, "sign256-gosthash94", "1.2.643.2.52.1.10.1", NULL, NULL,
+                       { ( ak_function_void *) ak_signkey_context_create_gosthash94_csp,
+                                    ( ak_function_void *) ak_signkey_context_destroy,
+                                     ( ak_function_void *) ak_signkey_context_delete, NULL, NULL }},
+
+// /* 11. идентификаторы алгоритмов проверки электронной подписи
+//        в дереве библиотеки: 1.2.643.2.52.1.11 - алгоритмы проверки электронной подписи */
+//   { verify_function, algorithm, "verify256", "1.2.643.2.52.1.11.2", NULL, NULL },
+//   { verify_function, algorithm, "verify512", "1.2.643.2.52.1.11.3", NULL, NULL },
+//   { verify_function, algorithm, "verify256-gosthash94", "1.2.643.2.52.1.11.1", NULL, NULL },
+
  /* 12. идентификаторы параметров эллиптических кривых, в частности, из Р 50.1.114-2016
         в дереве библиотеки: 1.2.643.2.52.1.12 - параметры эллиптических кривых в форме Вейерштрасса
         в дереве библиотеки: 1.2.643.2.52.1.12.1 - параметры 256 битных кривых
@@ -181,6 +205,9 @@
 
   /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */
    { undefined_engine, undefined_mode, NULL, NULL, NULL, NULL, { NULL, NULL, NULL, NULL, NULL }}
+
+  /* при добавлении нового типа (engine)
+     не забыть также добавить его обработку в функцию ak_context_node_get_context_oid() */
  };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -284,7 +311,23 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*!  \example example-oid.c                                                                        */
+/*! @param oid Тестируемый на корректность адрес
+    @return Функция возвращает истину, если заданный адрес `oid` дествительности содержится
+    среди предопределенных oid библиотеки.                                                         */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_oid_context_check( const ak_oid oid )
+{
+  size_t i;
+  ak_bool result = ak_false;
+
+  for( i = 0; i < ak_libakrypt_oids_count(); i++ )
+     if( (const ak_oid) &libakrypt_oids[i] == oid ) result = ak_true;
+
+ return result;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
 /*!  \example test-internal-oid01.c                                                                */
 /*!  \example test-internal-oid02.c                                                                */
 /* ----------------------------------------------------------------------------------------------- */

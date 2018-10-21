@@ -49,6 +49,7 @@ set( HEADERS        source/ak_tools.h
                     source/ak_mac.h
                     source/ak_curves.h
                     source/ak_sign.h
+                    source/ak_context_manager.h
 )
 
 set( SOURCES        source/ak_tools.c
@@ -69,6 +70,7 @@ set( SOURCES        source/ak_tools.c
                     source/ak_mac.c
                     source/ak_curves.c
                     source/ak_sign.c
+                    source/ak_context_manager.c
                     source/ak_libakrypt.c
 )
 
@@ -186,6 +188,8 @@ set( INTERNAL_TEST_LIST
                    internal-bckey02
                    internal-bckey03
                    internal-omac01
+                   internal-signkey01
+                   internal-context-node01
 )
 
 # добавляем примеры для всех компиляторов, отличных от MSVC
