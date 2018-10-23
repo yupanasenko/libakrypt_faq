@@ -74,7 +74,11 @@
     if(( node = ak_context_node_new( databuffer,
                              125, hmac_function, "digital sign create function" )) != NULL ) {
       printf("unexpected success\n");
-    } printf("correct work with wrong context pointer\n");
+      ak_error_set_value( ak_error_undefined_value );
+    } {
+        printf("correct work with wrong context pointer\n");
+        ak_error_set_value( ak_error_ok );
+      }
 
  return ak_libakrypt_destroy();
 }
