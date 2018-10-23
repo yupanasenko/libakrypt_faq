@@ -45,9 +45,9 @@
 /* ----------------------------------------------------------------------------------------------- */
  typedef struct oid {
   /*! \brief криптографический механизм   */
-   ak_oid_engine engine;
+   oid_engines engine;
   /*! \brief режим использования криптографического алгоритма */
-   ak_oid_mode mode;
+   oid_modes mode;
   /*! \brief читаемое имя (для пользователя) */
    const char *name;
   /*! \brief собственно OID (cтрока чисел, разделенных точками) */
@@ -66,11 +66,12 @@
 /*! \brief Поиск OID по его идентификатору (строке цифр, разделенных точками). */
  const ak_oid ak_oid_context_find_by_id( const char *id );
 /*! \brief Поиск OID по типу криптографического механизма. */
- const ak_oid ak_oid_context_find_by_engine( const ak_oid_engine );
+ const ak_oid ak_oid_context_find_by_engine( const oid_engines );
 /*! \brief Продолжение поиска OID по типу криптографического механизма. */
- const ak_oid ak_oid_context_findnext_by_engine( const ak_oid, const ak_oid_engine );
+ const ak_oid ak_oid_context_findnext_by_engine( const ak_oid, const oid_engines );
 /*! \brief Проверка соответствия заданного адреса корректному oid. */
  ak_bool ak_oid_context_check( const ak_oid );
+
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

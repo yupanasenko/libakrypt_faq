@@ -18,7 +18,7 @@
     В случае возникновения ошибки возвращается NULL. Код ошибки может быть получен с помощью
     вызова функции ak_error_get_value().                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- static ak_oid ak_context_node_get_context_oid( ak_pointer ctx, ak_oid_engine engine )
+ static ak_oid ak_context_node_get_context_oid( const ak_pointer ctx, const oid_engines engine )
 {
   ak_oid oid = NULL;
   if( ctx == NULL ) {
@@ -78,8 +78,8 @@
     В случае возникновения ошибки возвращается NULL. Код ошибки может быть получен с помощью
     вызова функции ak_error_get_value().                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- ak_context_node ak_context_node_new( ak_pointer ctx, ak_handle id, ak_oid_engine engine,
-                                                                           const char *description )
+ ak_context_node ak_context_node_new( const ak_pointer ctx, const ak_handle id,
+                                                 const oid_engines engine, const char *description )
 {
   ak_oid oid = NULL;
   int error = ak_error_ok;

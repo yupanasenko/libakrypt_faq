@@ -38,7 +38,8 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание нового элемента структуры управления контекстами. */
- ak_context_node ak_context_node_new( ak_pointer , ak_handle , ak_oid_engine , const char * );
+ ak_context_node ak_context_node_new( const ak_pointer , const ak_handle ,
+                                                                 const oid_engines , const char * );
 /*! \brief Уничтожение элемента структуры управления контекстами. */
  ak_pointer ak_context_node_delete( ak_pointer );
 
@@ -71,20 +72,6 @@
 /*! \brief Уничтожение структуры управления контекстами. */
  int ak_context_manager_destroy( ak_context_manager );
 
-/*! \brief Увеличение памяти для структуры управления контекстами. */
- int ak_context_manager_morealloc( ak_context_manager );
-/*! \brief Добавление контекста в структуру управления контекстами. */
- ak_handle ak_context_manager_add_node( ak_context_manager , ak_pointer , ak_oid_engine ,
-                                                        const char * , ak_function_free_object * );
-/*! \brief Удаление контекста из структуры управления контекстами. */
- int ak_context_manager_delete_node( ak_context_manager , ak_handle );
-/*! \brief Получение точного значения дескриптора по индексу массива. */
- ak_handle ak_context_manager_idx_to_handle( ak_context_manager , size_t );
-/*! \brief Получение точного значения индекса массива по значению декскриптора. */
- size_t ak_context_manager_handle_to_idx( ak_context_manager , ak_handle );
-/*! \brief Проверка корректности дескриптора контекста. */
- int ak_context_manager_handle_check( ak_context_manager , ak_handle , size_t * );
-
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация глобальной структуры управления контекстами. */
  int ak_libakrypt_create_context_manager( void );
@@ -92,15 +79,6 @@
  int ak_libakrypt_destroy_context_manager( void );
 /*! \brief Получение указателя на глобальную структуру управления контекстами. */
  ak_context_manager ak_libakrypt_get_context_manager( void );
-
-
-
-
-/*! \brief Помещение созданного объекта в глоюальную структуру управления контекстами. */
- ak_handle ak_libakrypt_new_handle( ak_pointer , ak_oid_engine , const char * ,
-                                                                        ak_function_free_object * );
-/*! \brief Получение контекста по заданному дескриптору и типу контекста. */
- ak_pointer ak_handle_get_context( ak_handle, ak_oid_engine );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

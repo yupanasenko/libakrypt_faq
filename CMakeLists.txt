@@ -177,6 +177,7 @@ set( INTERNAL_TEST_LIST
                    internal-random02
                    internal-oid01
                    internal-oid02
+                   internal-oid03
                    internal-hash01
                    internal-hash02
                    internal-hash03

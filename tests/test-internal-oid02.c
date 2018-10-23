@@ -20,7 +20,7 @@
  /* инициализируем библиотеку */
   if( !ak_libakrypt_create( NULL )) return ak_libakrypt_destroy();
 
- /* перебираем все oid для генераторов псевдослучайных чисел */
+ /* перебираем все oid для функций хэширования и их параметров */
   oid = ak_oid_context_find_by_engine( hash_function );
 
   while( oid != NULL ) {

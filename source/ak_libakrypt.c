@@ -366,14 +366,14 @@ return ak_true;
     ak_error_message( error, __func__ , "before destroing library holds an error" );
 
  /* уничтожаем структуру управления контекстами */
-   if(( error = ak_libakrypt_destroy_context_manager()) != ak_error_ok ) {
-     ak_error_message( error, __func__, "destroying of context manager is wrong" );
-   }
+  if( ak_libakrypt_destroy_context_manager() != ak_error_ok ) {
+    ak_error_message( ak_error_get_value(), __func__, "destroying of context manager is wrong" );
+  }
 
- if( ak_log_get_level() != ak_log_none )
-   ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms successfully destroyed" );
+  if( ak_log_get_level() != ak_log_none )
+    ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms successfully destroyed" );
 
- return ak_error_get_value();
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

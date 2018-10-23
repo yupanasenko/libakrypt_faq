@@ -226,11 +226,74 @@
  };
 
 /* ----------------------------------------------------------------------------------------------- */
+ static const char *libakrypt_engine_names[] = {
+    "undefined engine",
+    "identifier",
+    "block cipher",
+    "stream cipher",
+    "hybrid cipher",
+    "hash function",
+    "hmac function",
+    "omac function",
+    "mac function",
+    "sign function",
+    "verify function",
+    "random generator",
+    "oid engine"
+};
+
+/* ----------------------------------------------------------------------------------------------- */
+ static const char *libakrypt_mode_names[] = {
+    "undefined mode",
+    "algorithm",
+    "parameter",
+    "wcurve params",
+    "ecurve params",
+    "kbox params",
+    "ecb",
+    "counter",
+    "counter_gost",
+    "ofb",
+    "cbc",
+    "cfb",
+    "xts",
+    "xtsmac",
+    "xcrypt",
+    "a8"
+};
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                     реализация функций доступа к глобальному списку OID                         */
 /* ----------------------------------------------------------------------------------------------- */
  const size_t ak_libakrypt_oids_count( void )
 {
  return ( sizeof( libakrypt_oids )/( sizeof( struct oid )) - 1 );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param engine тип криптографического механизма.
+    @return Функция возвращает указатель на константную строку.                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ const char *ak_libakrypt_get_engine_name( const oid_engines engine )
+{
+  if(( engine < undefined_engine ) || ( engine > oid_engine )) {
+    ak_error_message( ak_error_oid_engine, __func__, "incorrect value of engine" );
+    return ak_null_string;
+  }
+ return libakrypt_engine_names[engine];
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param mode режим криптографического механизма.
+    @return Функция возвращает указатель на константную строку.                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ const char *ak_libakrypt_get_mode_name( const oid_modes mode )
+{
+  if(( mode < undefined_mode ) || ( mode > a8 )) {
+    ak_error_message( ak_error_oid_mode, __func__, "incorrect value of engine mode" );
+    return ak_null_string;
+  }
+ return libakrypt_mode_names[mode];
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -290,7 +353,7 @@
     @return В случае успешного поиска функция возвращает указатель на  область памяти, в которой
     находится структура с найденным идентификатором. В случае ошибки, возвращается NULL.           */
 /* ----------------------------------------------------------------------------------------------- */
- const ak_oid ak_oid_context_find_by_engine( const ak_oid_engine engine )
+ const ak_oid ak_oid_context_find_by_engine( const oid_engines engine )
 {
   size_t idx = 0;
   do{
@@ -308,7 +371,7 @@
     @return В случае успешного поиска функция возвращает указатель на  область памяти, в которой
     находится структура с найденным идентификатором. В случае ошибки, возвращается NULL.           */
 /* ----------------------------------------------------------------------------------------------- */
- const ak_oid ak_oid_context_findnext_by_engine( const ak_oid startoid, const ak_oid_engine engine )
+ const ak_oid ak_oid_context_findnext_by_engine( const ak_oid startoid, const oid_engines engine )
 {
  ak_oid oid = ( ak_oid )startoid;
 

@@ -3,6 +3,8 @@
    Пример использует неэкспортируемые функции.
 
    test-internal-oid01.c
+
+   Для подавления сообщений аудита используйте: ./test-internal-oid01 2>/dev/null
 */
 
  #include <stdio.h>
@@ -18,6 +20,8 @@
  /* инициализируем библиотеку */
   if( !ak_libakrypt_create( ak_function_log_stderr ))
     return ak_libakrypt_destroy();
+
+  printf("list of all random number generators:\n");
 
  /* перебираем все oid для генераторов псевдослучайных чисел */
   oid = ak_oid_context_find_by_engine( random_generator );
@@ -44,7 +48,7 @@
     oid = ak_oid_context_findnext_by_engine( oid, random_generator );
   }
 
- printf("founded %d random generators\n", count );
+ printf("founded %d random number generators\n", count );
  ak_libakrypt_destroy();
  return EXIT_SUCCESS;
 }

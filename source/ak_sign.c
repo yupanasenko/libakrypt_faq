@@ -974,8 +974,9 @@
 
        ak_verifykey_context_destroy( &vkey );
        ak_signkey_context_destroy( &skey );
-       if( !result ) { ak_error_message_fmt( ak_error_not_equal_data, __func__,
-         "wrong checking of digital signature for \"%s\" elliptic curve", oid->name );
+       if( !result ) {
+         ak_error_message_fmt( ak_error_not_equal_data, __func__,
+             "wrong checking of digital signature for \"%s\" elliptic curve", oid->name );
          goto labexit;
        } else count++;
      }
@@ -985,12 +986,14 @@
 
  labexit:
   error = ak_error_get_value();
-  if( count > 0 ) ak_error_message_fmt( ak_error_ok, __func__,
-    "executing of %d tests for digital signatures from GOST R 34.10-2012 is Ok", count );
+  if(( count > 0 ) && ( ak_log_get_level() >= ak_log_maximum ))
+    ak_error_message_fmt( ak_error_ok, __func__,
+                    "executing of %d tests for digital signatures from GOST R 34.10-2012 is Ok", count );
   if( !result ) ak_error_message( error, __func__,
     "testing of digital signature creation and verification processes from GOST R 34.10-2012 is wrong" );
 
   ak_random_context_destroy( &generator );
+
  return result;
 }
 
