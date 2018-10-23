@@ -230,7 +230,7 @@
 {
   char *ptr = NULL, *endptr = NULL;
   if(( ptr = strstr( string, field )) != NULL ) {
-    ak_int64 val = (ak_int64) strtoll( ptr += strlen(field), &endptr, 10 ); // strtoll
+    ak_int64 val = ( ak_int64 ) strtoll( ptr += strlen(field), &endptr, 10 ); // strtoll
     if(( endptr != NULL ) && ( ptr == endptr )) {
       ak_error_message_fmt( ak_error_undefined_value, __func__,
                                     "using an undefinded value for variable %s", field );

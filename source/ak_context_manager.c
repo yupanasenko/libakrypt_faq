@@ -194,7 +194,7 @@
 #endif
 
  /* инициализируем указатели контекстов */
-  manager->size = ak_libakrypt_get_option("context_manager_size");
+  manager->size = ( size_t )ak_libakrypt_get_option("context_manager_size");
 
   if(( manager->array = malloc( manager->size*sizeof( ak_pointer ))) == NULL ) {
     ak_context_manager_destroy( manager );

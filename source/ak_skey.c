@@ -67,7 +67,7 @@
  /* номер ключа генерится случайным образом. изменяется позднее, например,
                                                            при считывания с файлового носителя */
   if(( error = ak_buffer_create_size( &skey->number,
-                           ak_libakrypt_get_option( "key_number_length" ))) != ak_error_ok ) {
+                (const size_t) ak_libakrypt_get_option( "key_number_length" ))) != ak_error_ok ) {
     ak_error_message( error, __func__ ,"wrong creation key number buffer" );
     ak_skey_context_destroy( skey );
     return error;
@@ -580,7 +580,7 @@
                                                               "using a password with zero length" );
  /* присваиваем буффер и маскируем его */
   if(( error = ak_hmac_context_pbkdf2_streebog512( pass, pass_size, salt, salt_size,
-                                  ak_libakrypt_get_option("pbkdf2_iteration_count"),
+                   (const size_t) ak_libakrypt_get_option("pbkdf2_iteration_count"),
                                                  skey->key.size, skey->key.data )) != ak_error_ok )
                   return ak_error_message( error, __func__ , "wrong generation a secret key data" );
 

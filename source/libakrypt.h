@@ -421,6 +421,7 @@ extern "C" {
 #endif
 #ifdef _MSC_VER
  #define __func__  __FUNCTION__
+ #define strtoll _strtoi64
 #endif
 #ifndef _WIN32
  #ifndef O_BINARY
