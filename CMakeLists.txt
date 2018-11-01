@@ -20,14 +20,15 @@ project( libakrypt )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 7 )
-set( MINOR_VERSION 5 )
+set( MINOR_VERSION 6 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 
-# для включения опции cmake -D LIBAKRYPT_GMP_TESTS=ON path
+# для включения опции: cmake -D LIBAKRYPT_GMP_TESTS=ON path
 option( LIBAKRYPT_STATIC_LIB "Build the static library" ON )
 option( LIBAKRYPT_SHARED_LIB "Build the shared library" OFF )
+option( LIBAKRYPT_INTERNAL_TESTS "Build library and collection of internal tests" OFF )
 option( LIBAKRYPT_GMP_TESTS "Build library with comparison gmp and libakrypt tests" OFF )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -46,6 +47,7 @@ set( HEADERS        source/ak_tools.h
                     source/ak_bckey.h
                     source/ak_gfn2.h
                     source/ak_omac.h
+                    source/ak_mgm.h
                     source/ak_mac.h
                     source/ak_curves.h
                     source/ak_sign.h
@@ -67,6 +69,7 @@ set( SOURCES        source/ak_tools.c
                     source/ak_kuznechik.c
                     source/ak_gf2n.c
                     source/ak_omac.c
+                    source/ak_mgm.c
                     source/ak_mac.c
                     source/ak_curves.c
                     source/ak_sign.c
@@ -146,7 +149,7 @@ endif()
 message("-- Additional libraries is ${LIBAKRYPT_LIBS}" )
 
 # -------------------------------------------------------------------------------------------------- #
-# сборка тестовых примеров
+# сборка примеров, иллюстрирующих работу с внешним интерфейсом библиотеки
 set( EXAMPLES_LIST hello
                    log
                    buffer
@@ -169,10 +172,11 @@ if( LIBAKRYPT_SHARED_LIB )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
-enable_testing()
+if( LIBAKRYPT_INTERNAL_TESTS )
+  enable_testing()
 
-# теперь примеры, использующие неэкспортируемые функции
-set( INTERNAL_TEST_LIST
+  # теперь примеры, использующие неэкспортируемые функции
+  set( INTERNAL_TEST_LIST
                    internal-random01
                    internal-random02
                    internal-oid01
@@ -191,34 +195,38 @@ set( INTERNAL_TEST_LIST
                    internal-omac01
                    internal-signkey01
                    internal-context-node01
-)
+  )
 
-# добавляем примеры для всех компиляторов, отличных от MSVC
-if( MSVC )
-else()
-  foreach( programm ${INTERNAL_TEST_LIST} )
-     add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
-     target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
-     add_test( NAME test-${programm}${LIBAKRYPT_EXT} COMMAND test-${programm}${LIBAKRYPT_EXT} )
-  endforeach()
+  # добавляем примеры для всех компиляторов, отличных от MSVC
+  if( MSVC )
+  else()
+    foreach( programm ${INTERNAL_TEST_LIST} )
+       add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
+       target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+       add_test( NAME test-${programm}${LIBAKRYPT_EXT} COMMAND test-${programm}${LIBAKRYPT_EXT} )
+    endforeach()
+  endif()
+  message("-- Added tests for internal functions (now \"make test\" enabled)")
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # напоследок тестовые примеры для арифметических операций
-set( ARITHMETIC_TESTS_LIST
+if( LIBAKRYPT_GMP_TESTS )
+  enable_testing()
+
+  set( ARITHMETIC_TESTS_LIST
                    mpzn-convert
                    mpzn-arithmetic
                    mpzn-montgomery
                    mpzn-rem
-)
+  )
 
-if( LIBAKRYPT_GMP_TESTS )
   foreach( programm ${ARITHMETIC_TESTS_LIST} )
      add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
      target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static gmp )
      add_test( NAME test-${programm} COMMAND test-${programm}${LIBAKRYPT_EXT} )
   endforeach()
-  message("-- Added tests for integer arithmetic")
+  message("-- Added tests for integer arithmetic and comparizon with libgmp (now \"make test\" enabled)")
 endif()
 
 # -------------------------------------------------------------------------------------------------- #

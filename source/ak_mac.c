@@ -38,7 +38,6 @@
  /* устанавливаем значения и полей и методы из контекста функции хеширования */
   ictx->engine = hash_function;
   ictx->ctx = hctx;
-  ictx->has_key = ak_false;
   ictx->hsize = hctx->hsize;
   ictx->clean = hctx->clean;
   ictx->update = hctx->update;
@@ -76,7 +75,6 @@
  /* устанавливаем значения и полей и методы из контекста функции хеширования */
   ictx->engine = hmac_function;
   ictx->ctx = hctx;
-  ictx->has_key = ak_true;
   ictx->hsize = hctx->ctx.hsize;
   ictx->clean = ak_hmac_context_clean;
   ictx->update = ak_hmac_context_update;
@@ -114,7 +112,6 @@
  /* устанавливаем значения и полей и методы из контекста функции хеширования */
   ictx->engine = omac_function;
   ictx->ctx = octx;
-  ictx->has_key = ak_true;
   ictx->hsize = ictx->bsize; /* длина вызода совпадает с длиной входа */
   ictx->clean = ak_omac_context_clean;
   ictx->update = ak_omac_context_update;
@@ -217,7 +214,6 @@
   if( ictx->free != NULL ) ictx->free( ictx->ctx );
 
   ictx->length =        0;
-  ictx->has_key = ak_false;
   ictx->ctx =        NULL;
   ictx->hsize =         0;
   ictx->bsize =         0;
@@ -265,9 +261,7 @@
 {
   int error = ak_error_ok;
   if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                      "using a null pointer to null mac context" );
-  if( !ictx->has_key ) return ak_error_message( ak_error_key_usage, __func__,
-                                                           "using a key for non-key mac context" );
+                                                        "using a null pointer to null mac context" );
    switch( ictx->engine )
   {
     case hmac_function:
@@ -282,8 +276,8 @@
       return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
     break;
 
-    default: return ak_error_message( ak_error_undefined_function, __func__ ,
-                                       "this function is undefined for this type of mac context" );
+    default:
+      return ak_error_message( ak_error_key_usage, __func__, "using a key for non-key mac context" );
   }
  return error;
 }
