@@ -219,6 +219,7 @@ if( LIBAKRYPT_GMP_TESTS )
                    mpzn-arithmetic
                    mpzn-montgomery
                    mpzn-rem
+                   mpzn-password
   )
 
   foreach( programm ${ARITHMETIC_TESTS_LIST} )

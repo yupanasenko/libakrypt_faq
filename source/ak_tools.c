@@ -513,11 +513,11 @@
     return ak_error_message_fmt( ak_error_open_file, __func__ ,
                                      "wrong opening a file %s [%s]", filename, strerror( errno ));
  /* заполняем данные */
-  file->size = st.st_size;
+  file->size = ( ak_int64 )st.st_size;
  #ifdef _WIN32
   file->blksize = 4096;
  #else
-  file->blksize = st.st_blksize;
+  file->blksize = ( ak_int64 )st.st_blksize;
  #endif
  return ak_error_ok;
 }
@@ -530,7 +530,7 @@
     return ak_error_message_fmt( ak_error_create_file, __func__,
                                    "wrong creation a file %s [%s]", filename, strerror( errno ));
  #else
-  int fd = creat( filename, S_IRUSR | S_IWUSR );
+  int fd = creat( filename, S_IRUSR | S_IWUSR ); /* мы устанавливаем минимальные права */
   if( fd < 0 ) return ak_error_message_fmt( ak_error_create_file, __func__,
                                    "wrong creation a file %s [%s]", filename, strerror( errno ));
   if(( file->fp = fdopen( fd, "wb" )) == NULL )
@@ -547,7 +547,7 @@
     close( fd );
     return ak_error_message_fmt( ak_error_access_file,  __func__,
                                 "incorrect access to file %s [%s]", filename, strerror( errno ));
-  } else file->blksize = st.st_blksize;
+  } else file->blksize = ( ak_int64 )st.st_blksize;
 #endif
 
  return ak_error_ok;
@@ -560,7 +560,6 @@
                                                  "wrong closing a file [%s]", strerror( errno ));
  return ak_error_ok;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_log_get_level( void ) { return (int)ak_libakrypt_get_option("log_level"); }
