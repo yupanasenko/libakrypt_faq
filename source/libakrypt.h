@@ -351,7 +351,7 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает общее количества опций библиотеки. */
- dll_export const size_t ak_libakrypt_options_count( void );
+ dll_export size_t ak_libakrypt_options_count( void );
 /*! \brief Получение имени опции по ее номеру. */
  dll_export char *ak_libakrypt_get_option_name( const size_t index );
 /*! \brief Получение значения опции по ее номеру. */
@@ -363,7 +363,7 @@ extern "C" {
 /*! \brief Получение человекочитаемого имени режима или параметров криптографического механизма. */
  dll_export const char *ak_libakrypt_get_mode_name( const oid_modes );
 /*! \brief Получение общего количества определенных OID библиотеки. */
- dll_export const size_t ak_libakrypt_oids_count( void );
+ dll_export size_t ak_libakrypt_oids_count( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание буффера заданного размера. */

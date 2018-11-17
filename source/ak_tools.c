@@ -33,7 +33,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения опций (значения по-умолчанию) */
- struct option options[] = {
+ static struct option options[] = {
      { "big_endian_architecture", ak_false },
      { "log_level", ak_log_standard },
      { "context_manager_size", 32 },
@@ -58,7 +58,7 @@
 
     \return Общее количество опций библиотеки.                                                     */
 /* ----------------------------------------------------------------------------------------------- */
- const size_t ak_libakrypt_options_count( void )
+ size_t ak_libakrypt_options_count( void )
 {
   return ( sizeof( options )/( sizeof( struct option ))-1 );
 }
