@@ -487,7 +487,7 @@
   if( !file.size ) return ak_mac_context_finalize( ictx, "", 0, out );
 
  /* готовим область для хранения данных */
-  block_size = ak_max( file.blksize, ictx->bsize );
+  block_size = ( size_t ) ak_max( file.blksize, ictx->bsize );
  /* здесь мы выделяем локальный буффер для считывания/обработки данных */
   if((localbuffer = ( ak_uint8 * ) malloc( block_size )) == NULL ) {
     ak_file_close( &file );
