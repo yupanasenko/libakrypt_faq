@@ -98,8 +98,12 @@ set( OTHERS         CMakeLists.txt
                     Readme.md
                     Changelog.md
                     libakrypt.conf
-                    libakrypt.rc.in
-)
+                    libakrypt.rc.in )
+
+set( AKRYPT_SOURCES akrypt/akrypt.c )
+
+set( AKRYPT_FILES   akrypt/getopt.h
+                    akrypt/getopt.c )
 
 # -------------------------------------------------------------------------------------------------- #
 # подключаем модули CMake для тонкой настройки параметров сборки
@@ -147,6 +151,18 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 message("-- Additional libraries is ${LIBAKRYPT_LIBS}" )
+
+# -------------------------------------------------------------------------------------------------- #
+# сборка консольной утиллиты для работы с функциями библиотеки
+if( LIBAKRYPT_HAVE_GETOPT )
+else()
+  set( AKRYPT_SOURCES ${AKRYPT_SOURCES} akrypt/getopt.c )
+endif()
+if( LIBAKRYPT_STATIC_LIB )
+  add_executable( akrypt${LIBAKRYPT_EXT} ${AKRYPT_SOURCES} )
+  target_include_directories( akrypt${LIBAKRYPT_EXT} PUBLIC ".akrypt" )
+  target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # сборка примеров, иллюстрирующих работу с внешним интерфейсом библиотеки
