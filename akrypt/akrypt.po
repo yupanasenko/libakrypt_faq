@@ -1,0 +1,88 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2018-11-28 18:44+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../akrypt.c:15 ../akrypt.c:16
+msgid "akrypt"
+msgstr ""
+
+#: ../akrypt.c:15
+msgid "/usr/share/locale/"
+msgstr ""
+
+#: ../akrypt.c:22
+msgid "-h"
+msgstr ""
+
+#: ../akrypt.c:23
+msgid "--help"
+msgstr ""
+
+#: ../akrypt.c:24
+msgid "/?"
+msgstr ""
+
+#: ../akrypt.c:33
+#, c-format
+msgid "undefined command \"%s\""
+msgstr ""
+
+#: ../akrypt.c:57 ../akrypt.c:67
+#, c-format
+msgid "akrypt (crypto application based on libakrypt library, version: %s)\n"
+msgstr ""
+
+#: ../akrypt.c:59
+#, c-format
+msgid "try \"akrypt --help\" to get more information\n"
+msgstr ""
+
+#: ../akrypt.c:69
+#, c-format
+msgid ""
+"usage \"akrypt command [options] [files]\"\n"
+"\n"
+msgstr ""
+
+#: ../akrypt.c:70
+#, c-format
+msgid "available commands:\n"
+msgstr ""
+
+#: ../akrypt.c:71
+#, c-format
+msgid "  icode   calculation and checking integrity codes\n"
+msgstr ""
+
+#: ../akrypt.c:72
+#, c-format
+msgid ""
+"  show    show useful information\n"
+"\n"
+msgstr ""
+
+#: ../akrypt.c:73
+#, c-format
+msgid "try\n"
+msgstr ""
+
+#: ../akrypt.c:74
+#, c-format
+msgid "  akrypt command --help to get information about command options\n"
+msgstr ""
+
+#: ../akrypt.c:75
+#, c-format
+msgid ""
+"  man akrypt to get more information about akrypt programm and some "
+"examples\n"
+msgstr ""

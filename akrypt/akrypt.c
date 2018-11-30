@@ -1,17 +1,89 @@
 /* ----------------------------------------------------------------------------------------------- */
- #include <libakrypt.h>
- #include <ak_tools.h>
- #include <ak_hash.h>
+/*  Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*                                                                                                 */
+/*  Файл akrypt.c                                                                                  */
+/*  - содержит реализацию консольного клиента, иллюстрирующего работу библиотеки libakrypt         */
+/* ----------------------------------------------------------------------------------------------- */
+ #include <akrypt.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-#ifdef _WIN32
- #include <tchar.h>
- #include <strsafe.h>
  int main( int argc, TCHAR *argv[] )
-#else
- int main( int argc, char *argv[] )
-#endif
 {
+ #ifdef LIBAKRYPT_HAVE_LIBINTL_H
+ /* обрабатываем настройки локали
+    при инсталляции файл akrypt.mo должен помещаться в /usr/share/locale/ru/LC_MESSAGES */
+  setlocale( LC_ALL, "" );
+  bindtextdomain( "akrypt", "/usr/share/locale/" );
+  textdomain( "akrypt" );
+ #endif
+
+ /* проверяем, что пользователем должна быть задана команда */
+  if( argc < 2 ) return akrypt_litehelp();
+
+ /* проверяем флаги вывода справочной информации */
+  if( akrypt_check_command( "-h", argv[1] )) return akrypt_help();
+  if( akrypt_check_command( "--help", argv[1] )) return akrypt_help();
+  if( akrypt_check_command( "/?", argv[1] )) return akrypt_help();
+
+ /* выполняем команду пользователя */
+  if( akrypt_check_command( "show", argv[1] )) return akrypt_show( argc, argv );
+  if( akrypt_check_command( "icode", argv[1] )) return akrypt_icode( argc, argv );
+
+ /* ничего не подошло, выводим сообщение об ошибке */
+  ak_log_set_function( ak_function_log_stderr );
+  ak_error_message_fmt( ak_error_undefined_function,
+                                                 __func__, _("undefined command \"%s\""), argv[1] );
+ return EXIT_FAILURE;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                         реализация функций обработки команд пользователя                        */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool akrypt_check_command( const char *comm, TCHAR *argv )
+{
+ size_t len = strlen( comm );
+
+  if( strlen( argv ) != len ) return ak_false;
+  if( strncmp( comm, argv, len )) return ak_false;
+ return ak_true;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                                 реализация вывода справки                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int akrypt_litehelp( void )
+{
+  printf(_("akrypt (crypto application based on libakrypt library, version: %s)\n\n"),
+                                                                         ak_libakrypt_version( ));
+  printf(_("try \"akrypt --help\" to get more information\n"));
+
+ return EXIT_SUCCESS;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int akrypt_help( void )
+{
+  printf(_("akrypt (crypto application based on libakrypt library, version: %s)\n"),
+                                                                         ak_libakrypt_version( ));
+  printf(_("usage \"akrypt command [options] [files]\"\n\n"));
+  printf(_("available commands:\n"));
+  printf(_("  icode   calculation and checking integrity codes\n"));
+  printf(_("  show    show useful information\n\n"));
+  printf(_("try:\n"));
+  printf(_("  akrypt command --help to get information about command options\n"));
+  printf(_("  man akrypt to get more information about akrypt programm and some examples\n"));
+
+ return EXIT_SUCCESS;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                                                                                       akrypt.c  */
+/* ----------------------------------------------------------------------------------------------- */
+
+
+
+
+/*
      WIN32_FIND_DATA ffd;
      LARGE_INTEGER filesize;
      TCHAR szDir[MAX_PATH];
@@ -27,7 +99,7 @@
      SetConsoleCP( 1251 );
      SetConsoleOutputCP( 1251 );
 
-     _tprintf(TEXT("\n������!!!\n\n"), argv[1]);
+     _tprintf(TEXT("\nПРИВЕТ!!!\n\n"), argv[1]);
 
 
      ak_libakrypt_create( NULL );
@@ -90,7 +162,7 @@
 
            printf("%s\n", ffd.cFileName );
 
-           /* ��������� ��� */
+           // добавляем хэш
            printf("open file: %d\n", error = ak_file_open_to_read( &fp, ffd.cFileName ));
            if( error == ak_error_ok ) {
 
@@ -106,7 +178,7 @@
                printf("\n");
            } ak_error_set_value( ak_error_ok );
            printf("destroy: %d\n", ak_hash_context_destroy( &ctx ));
-           /* ------------- */
+           // -------------
 
            }
         }
@@ -127,10 +199,4 @@
 
 
      return dwError;
-
- return EXIT_SUCCESS;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*                                                                                       akrypt.c  */
-/* ----------------------------------------------------------------------------------------------- */
+*/

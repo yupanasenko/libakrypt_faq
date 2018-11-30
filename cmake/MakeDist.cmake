@@ -50,13 +50,13 @@ if( CMAKE_HOST_UNIX )
      "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/${file} libakrypt-${FULL_VERSION}/cmake\n")
   endforeach()
 
-#  # создаем каталог akrypt и копируем файлы с консольными утилитами
-#  file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/akrypt\n" )
-#  set( AKRYPT ${AKRYPT_SOURCES} ${AKRYPT_FILES} )
-#  foreach( file ${AKRYPT} )
-#    file( APPEND ${MYDFILE}
-#     "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/${file} libakrypt-${FULL_VERSION}/akrypt\n")
-#  endforeach()
+  # создаем каталог akrypt и копируем файлы с консольными утилитами
+  file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/akrypt\n" )
+  set( AKRYPT ${AKRYPT_SOURCES} ${AKRYPT_FILES} )
+  foreach( file ${AKRYPT} )
+    file( APPEND ${MYDFILE}
+     "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/${file} libakrypt-${FULL_VERSION}/akrypt\n")
+  endforeach()
 
   # копируем оставшиеся файлы
   file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/cmake\n" )

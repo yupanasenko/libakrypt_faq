@@ -45,7 +45,7 @@ set( HEADERS        source/ak_tools.h
                     source/ak_skey.h
                     source/ak_hmac.h
                     source/ak_bckey.h
-                    source/ak_gfn2.h
+                    source/ak_gf2n.h
                     source/ak_omac.h
                     source/ak_mgm.h
                     source/ak_mac.h
@@ -100,10 +100,15 @@ set( OTHERS         CMakeLists.txt
                     libakrypt.conf
                     libakrypt.rc.in )
 
-set( AKRYPT_SOURCES akrypt/akrypt.c )
+set( AKRYPT_SOURCES akrypt/akrypt.c
+                    akrypt/akrypt_show.c
+                    akrypt/akrypt_icode.c )
 
-set( AKRYPT_FILES   akrypt/getopt.h
-                    akrypt/getopt.c )
+set( AKRYPT_FILES   akrypt/akrypt.h
+                    akrypt/akrypt.po
+                    akrypt/getopt.h
+                    akrypt/getopt.c
+                    akrypt/Readme.md )
 
 # -------------------------------------------------------------------------------------------------- #
 # подключаем модули CMake для тонкой настройки параметров сборки
@@ -160,7 +165,7 @@ else()
 endif()
 if( LIBAKRYPT_STATIC_LIB )
   add_executable( akrypt${LIBAKRYPT_EXT} ${AKRYPT_SOURCES} )
-  target_include_directories( akrypt${LIBAKRYPT_EXT} PUBLIC ".akrypt" )
+  target_include_directories( akrypt${LIBAKRYPT_EXT} PUBLIC "akrypt" )
   target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
 endif()
 
@@ -188,34 +193,33 @@ if( LIBAKRYPT_SHARED_LIB )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
+# теперь примеры, использующие неэкспортируемые функции
+set( INTERNAL_TEST_LIST
+                 internal-random01
+                 internal-random02
+                 internal-oid01
+                 internal-oid02
+                 internal-oid03
+                 internal-hash01
+                 internal-hash02
+                 internal-hash03
+                 internal-skey01
+                 internal-mac01
+                 internal-hmac01
+                 internal-hmac02
+                 internal-bckey01
+                 internal-bckey02
+                 internal-bckey03
+                 internal-omac01
+                 internal-signkey01
+                 internal-context-node01
+)
+
 if( LIBAKRYPT_INTERNAL_TESTS )
   enable_testing()
 
-  # теперь примеры, использующие неэкспортируемые функции
-  set( INTERNAL_TEST_LIST
-                   internal-random01
-                   internal-random02
-                   internal-oid01
-                   internal-oid02
-                   internal-oid03
-                   internal-hash01
-                   internal-hash02
-                   internal-hash03
-                   internal-skey01
-                   internal-mac01
-                   internal-hmac01
-                   internal-hmac02
-                   internal-bckey01
-                   internal-bckey02
-                   internal-bckey03
-                   internal-omac01
-                   internal-signkey01
-                   internal-context-node01
-  )
-
-  # добавляем примеры для всех компиляторов, отличных от MSVC
-  if( MSVC )
-  else()
+  # добавляем примеры в случае сборки статической библиотеки
+  if( LIBAKRYPT_STATIC_LIB )
     foreach( programm ${INTERNAL_TEST_LIST} )
        add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
        target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
@@ -227,22 +231,24 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # напоследок тестовые примеры для арифметических операций
+set( ARITHMETIC_TESTS_LIST
+                 mpzn-convert
+                 mpzn-arithmetic
+                 mpzn-montgomery
+                 mpzn-rem
+                 mpzn-password
+)
+
 if( LIBAKRYPT_GMP_TESTS )
   enable_testing()
 
-  set( ARITHMETIC_TESTS_LIST
-                   mpzn-convert
-                   mpzn-arithmetic
-                   mpzn-montgomery
-                   mpzn-rem
-                   mpzn-password
-  )
-
-  foreach( programm ${ARITHMETIC_TESTS_LIST} )
-     add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
-     target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static gmp )
-     add_test( NAME test-${programm} COMMAND test-${programm}${LIBAKRYPT_EXT} )
-  endforeach()
+  if( LIBAKRYPT_STATIC_LIB )
+    foreach( programm ${ARITHMETIC_TESTS_LIST} )
+       add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
+       target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static gmp )
+       add_test( NAME test-${programm} COMMAND test-${programm}${LIBAKRYPT_EXT} )
+    endforeach()
+  endif()
   message("-- Added tests for integer arithmetic and comparizon with libgmp (now \"make test\" enabled)")
 endif()
 

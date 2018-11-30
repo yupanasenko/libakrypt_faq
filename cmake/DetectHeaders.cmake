@@ -154,3 +154,14 @@ check_c_source_compiles("
   }" LIBAKRYPT_HAVE_GETOPT )
 
 # -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
+  #include <libintl.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_LIBINTL )
+
+if( LIBAKRYPT_HAVE_LIBINTL )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_LIBINTL_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
