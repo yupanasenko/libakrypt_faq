@@ -228,6 +228,55 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ int ak_file_read_by_lines( const char *filename, ak_file_read_function *function , ak_pointer ptr )
+{
+  #define buffer_length ( FILENAME_MAX + 160 )
+
+  char ch;
+  struct stat st;
+  size_t idx = 0, off = 0;
+  int fd = 0, error = ak_error_ok;
+  char localbuffer[buffer_length];
+
+ /* проверяем наличие файла и прав доступа к нему */
+  if(( fd = open( filename, O_RDONLY | O_BINARY )) < 0 )
+    return ak_error_message_fmt( ak_error_open_file,
+                             __func__, "wrong open file \"%s\" - %s", filename, strerror( errno ));
+  if( fstat( fd, &st ) ) {
+    close( fd );
+    return ak_error_message_fmt( ak_error_access_file, __func__ ,
+                              "wrong stat file \"%s\" with error %s", filename, strerror( errno ));
+  }
+
+ /* нарезаем входные на строки длиной не более чем buffer_length - 2 символа */
+  memset( localbuffer, 0, buffer_length );
+  for( idx = 0; idx < (size_t) st.st_size; idx++ ) {
+     if( read( fd, &ch, 1 ) != 1 ) {
+       close(fd);
+       return ak_error_message_fmt( ak_error_read_data, __func__ ,
+                                                                "unexpected end of %s", filename );
+     }
+     if( off > buffer_length - 2 ) {
+       close( fd );
+       return ak_error_message_fmt( ak_error_read_data, __func__ ,
+                          "%s has a line with more than %d symbols", filename, buffer_length - 2 );
+     }
+    if( ch == '\n' ) {
+      #ifdef _WIN32
+       if( off ) localbuffer[off-1] = 0;  /* удаляем второй символ перехода на новую строку */
+      #endif
+      function( localbuffer, ptr );
+     /* далее мы очищаем строку независимо от ее содержимого */
+      off = 0;
+      memset( localbuffer, 0, buffer_length );
+    } else localbuffer[off++] = ch;
+  }
+
+  close( fd );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                 реализация вывода справки                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int akrypt_litehelp( void )
@@ -258,122 +307,3 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                       akrypt.c  */
 /* ----------------------------------------------------------------------------------------------- */
-
-
-
-
-/*
-     WIN32_FIND_DATA ffd;
-     LARGE_INTEGER filesize;
-     TCHAR szDir[MAX_PATH];
-     size_t length_of_arg;
-     HANDLE hFind = INVALID_HANDLE_VALUE;
-     DWORD dwError=0;
-
-     int i = 0, error;
-     struct file fp;
-     struct hash ctx;
-     ak_uint8 out[32];
-
-
-     _tprintf(TEXT("\nПРИВЕТ!!!\n\n"), argv[1]);
-
-
-     ak_libakrypt_create( NULL );
-
-
-     // If the directory is not specified as a command-line argument,
-     // print usage.
-
-     if(argc != 2)
-     {
-        _tprintf(TEXT("\nUsage: %s <directory name>\n"), argv[0]);
-        return (-1);
-     }
-
-     // Check that the input path plus 3 is not longer than MAX_PATH.
-     // Three characters are for the "\*" plus NULL appended below.
-
-     StringCchLength(argv[1], MAX_PATH, &length_of_arg);
-
-     if (length_of_arg > (MAX_PATH - 3))
-     {
-        _tprintf(TEXT("\nDirectory path is too long.\n"));
-        return (-1);
-     }
-
-     _tprintf(TEXT("\nTarget directory is %s\n\n"), argv[1]);
-
-     // Prepare string for use with FindFile functions.  First, copy the
-     // string to a buffer, then append '\*' to the directory name.
-
-     StringCchCopy(szDir, MAX_PATH, argv[1]);
-     StringCchCat(szDir, MAX_PATH, TEXT("\\*"));
-
-     // Find the first file in the directory.
-
-     hFind = FindFirstFile(szDir, &ffd);
-
-     if (INVALID_HANDLE_VALUE == hFind)
-     {
-        // DisplayErrorBox(TEXT("FindFirstFile"));
-        printf("ERROR\n");
-        return dwError;
-     }
-
-     // List all the files in the directory with some info about them.
-
-     do
-     {
-        if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-        {
-           _tprintf(TEXT("  %s   <DIR>\n"), ffd.cFileName );
-           //printf(TEXT("  %s   <DIR>\n"), ffd.cFileName );
-        }
-        else
-        {
-           filesize.LowPart = ffd.nFileSizeLow;
-           filesize.HighPart = ffd.nFileSizeHigh;
-           _tprintf(TEXT("  %s   %ld bytes -> "), ffd.cFileName, filesize.QuadPart);
-           //printf(TEXT("  %s   %ld bytes -> "), ffd.cFileName, filesize.QuadPart);
-
-           printf("%s\n", ffd.cFileName );
-
-           // добавляем хэш
-           printf("open file: %d\n", error = ak_file_open_to_read( &fp, ffd.cFileName ));
-           if( error == ak_error_ok ) {
-
-           printf("close file: %d\n", ak_file_close( &fp ));
-
-
-           printf("create ctx: %d\n",
-                  ak_hash_context_create_streebog256( &ctx ));
-           printf("hash file (address): %p\n",
-                  (void *) ak_hash_context_file( &ctx, ffd.cFileName, out ));
-           if( ak_error_get_value() == ak_error_ok ) {
-               for( i = 0; i < 32; i++ ) printf("%02X", out[i] );
-               printf("\n");
-           } ak_error_set_value( ak_error_ok );
-           printf("destroy: %d\n", ak_hash_context_destroy( &ctx ));
-           // -------------
-
-           }
-        }
-     }
-     while (FindNextFile(hFind, &ffd) != 0);
-
-     dwError = GetLastError();
-     if (dwError != ERROR_NO_MORE_FILES)
-     {
-        //DisplayErrorBox(TEXT("FindFirstFile"));
-        printf("ERROR\n");
-     }
-
-     FindClose(hFind);
-
-
-     ak_libakrypt_destroy();
-
-
-     return dwError;
-*/

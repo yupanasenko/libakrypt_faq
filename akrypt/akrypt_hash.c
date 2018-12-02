@@ -6,10 +6,11 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  int akrypt_hash_help( void );
- int akrypt_hash_function( const char *, ak_pointer );
+ int akrypt_hash_function( const char * , ak_pointer );
+ int akrypt_hash_check_function( char * , ak_pointer );
 
- /* ----------------------------------------------------------------------------------------------- */
-  struct hash_info {
+/* ----------------------------------------------------------------------------------------------- */
+ static struct hash_info {
     ak_handle handle; /*!< дескриптор алгоритма вычисления кода целостности */
     FILE *outfp; /*!< дескриптор файла для вывода результатов */
     char outfile[FILENAME_MAX]; /*!< имя файла для вывода результатов */
@@ -37,6 +38,17 @@
      { "reverse-order",    0, NULL,  254 },
      { NULL,               0, NULL,   0  }
   };
+
+/*
+  рекурсия при установленной маске поиска  - не работает (((
+
+  добавить параметры вывода результатов
+  --tag  create a BSD-style checksum
+
+  --ignore-missing don't fail or report status for missing files
+  --quiet don't print OK for each successfully verified file (не печатать OK)
+  --status don't output anything, status code shows success
+*/
 
  /* инициализируем переменную */
   memset( &ic, 0, sizeof( struct hash_info ));
@@ -100,7 +112,7 @@
 
  /* создаем дескриптор алгоритма хеширования */
    if(( ic.handle = ak_hash_new_oid_ni( algorithm_ni, NULL )) == ak_error_wrong_handle ) {
-     printf(_("\"%s\" is incorrect name/idetifier for hash function\n"), algorithm_ni );
+     printf(_("\"%s\" is incorrect name/identifier for hash function\n"), algorithm_ni );
      goto lab_exit;
    }
 
@@ -122,7 +134,13 @@
                       }
                    }
                    break;
-    case do_check: break;
+
+    case do_check: /* проверяем контрольную сумму */
+                   ak_file_read_by_lines( checkfile, akrypt_hash_check_function, &ic );
+                   printf(_("\ntotal: %lu files, where: correct %lu, wrong %lu.\n\n"),
+                               (unsigned long int)ic.total, (unsigned long int)ic.successed,
+                                                   (unsigned long int)( ic.total - ic.successed ));
+                   break;
     default:       break;
    }
 
@@ -156,15 +174,63 @@
   ak_error_set_value( ak_error_ok );
   ak_hash_file( ic->handle, filename, out );
   if(( error = ak_error_get_value( )) != ak_error_ok )
-    ak_error_message_fmt( error, __func__, "incorrect integrity code for file %s", filename );
+    ak_error_message_fmt( error, __func__,
+                             "incorrect evaluation of integrity code for \"%s\" file", filename );
    else {
           ak_ptr_to_hexstr_static( out, ak_hash_get_size( ic->handle ),
                                                 outstr, 2*akrypt_max_icode_size+2, ic->oreverse );
+         /* это линуксовый вывод */
           fprintf( ic->outfp, "%s %s\n", outstr, filename );
-          ak_error_set_value( ak_error_ok );
         }
 
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int akrypt_hash_check_function( char *string, ak_pointer ptr )
+{
+  int error = ak_error_ok;
+  size_t offset = 0, isize = 0;
+  struct hash_info *ic = ptr;
+  ak_uint8 preout[akrypt_max_icode_size], out[akrypt_max_icode_size];
+
+ /* проверяем, что дескриптор задан корректно */
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                    "using null pointer to hash function handle" );
+ /* проверяем, что строка достаточно длинная */
+  isize = ak_hash_get_size( ic->handle );
+  if(( offset = 2*isize) + 1 >= strlen( string ))
+    return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                       "unexpected length of line: [%s]", string );
+ /* увеличиваем счетчик обработанных файлов */
+  ic->total++;
+
+ /* получаем хеш из файла */
+  string[offset] = 0;
+  memset( preout, 0, akrypt_max_icode_size );
+  ak_hexstr_to_ptr( string, preout, offset, ic->oreverse );
+  offset++;
+
+ /* вычисляем хеш и проверяем равенство */
+  memset( out, 0, akrypt_max_icode_size );
+  ak_error_set_value( ak_error_ok );
+  ak_hash_file( ic->handle, string+offset, out );
+
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    fprintf( ic->outfp, _("%s (wrong access to file, maybe file is missing)\n"), string+offset );
+    return ak_error_message_fmt( error, __func__ ,
+                                     "wrong calculation of hash code for file %s", string+offset );
+  }
+ /* сравниваем */
+  fprintf( ic->outfp, "%s ", string+offset );
+  if( ak_ptr_is_equal( out, preout, isize )) {
+    ic->successed++;
+    fprintf( ic->outfp, "Ok\n" );
+    return ak_error_ok;
+  }
+
+  fprintf( ic->outfp, _("(wrong check sum)\n"));
+ return ak_error_not_equal_data;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

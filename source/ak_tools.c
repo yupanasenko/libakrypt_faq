@@ -508,6 +508,7 @@
                                      "wrong opening a file %s [%s]", filename, strerror( errno ));
     }
   }
+
  /* открываем файл */
   if(( file->fp = fopen( filename, "rb" )) == NULL )
     return ak_error_message_fmt( ak_error_open_file, __func__ ,

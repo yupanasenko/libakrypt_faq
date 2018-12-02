@@ -18,23 +18,24 @@
  #endif
 
 /* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_HAVE_SYSSTAT_H
- #include <sys/stat.h>
-#endif
-#ifdef LIBAKRYPT_HAVE_UNISTD_H
- #include <unistd.h>
-#endif
-#ifdef LIBAKRYPT_HAVE_DIRENT_H
- #include <dirent.h>
-#endif
-#ifdef LIBAKRYPT_HAVE_ERRNO_H
- #include <errno.h>
-#endif
-#ifdef LIBAKRYPT_HAVE_FNMATCH_H
- #include <fnmatch.h>
-#endif
-
-/* ----------------------------------------------------------------------------------------------- */
+ #ifdef LIBAKRYPT_HAVE_SYSSTAT_H
+  #include <sys/stat.h>
+ #endif
+ #ifdef LIBAKRYPT_HAVE_UNISTD_H
+  #include <unistd.h>
+ #endif
+ #ifdef LIBAKRYPT_HAVE_DIRENT_H
+  #include <dirent.h>
+ #endif
+ #ifdef LIBAKRYPT_HAVE_ERRNO_H
+  #include <errno.h>
+ #endif
+ #ifdef LIBAKRYPT_HAVE_FNMATCH_H
+  #include <fnmatch.h>
+ #endif
+ #ifdef LIBAKRYPT_HAVE_FCNTL_H
+  #include <fcntl.h>
+ #endif
  #ifdef LIBAKRYPT_HAVE_LOCALE_H
   #include <locale.h>
  #endif
@@ -67,6 +68,8 @@
 /* ----------------------------------------------------------------------------------------------- */
 /* определение функции для выполнения действий с заданным файлом */
  typedef int ( ak_function_find )( const TCHAR * , ak_pointer );
+/* определение функции, передаваемой в качестве аргумента в функцию построчного чтения файлов. */
+ typedef int ( ak_file_read_function ) ( char * , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /* обход каталога с учетом заданной маски */
@@ -85,6 +88,8 @@
  int akrypt_audit_function( const char * );
 /* определение функции вывода сообщений о ходе выполнения программы */
  void akrypt_set_audit( TCHAR * );
+/* построчное чтение файла и применение к каждой строке заданной функции */
+ int ak_file_read_by_lines( const char * , ak_file_read_function * , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /* реализации пользовательских команд */

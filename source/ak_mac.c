@@ -477,9 +477,9 @@
     ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to filename" );
     return NULL;
   }
-
   if(( error = ak_file_open_to_read( &file, filename )) != ak_error_ok ) {
     ak_error_message_fmt( error, __func__, "incorrect access to file %s", filename );
+    return NULL;
   }
 
  /* для файла нулевой длины результатом будет хеш от нулевого вектора */
