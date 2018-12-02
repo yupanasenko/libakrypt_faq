@@ -327,7 +327,7 @@ extern "C" {
 /*! \brief Функция остановки поддержки криптографических механизмов. */
  dll_export int ak_libakrypt_destroy( void );
 /*! \brief Запуск динамического тестирования криптографических механизмов. */
- ak_bool ak_libakrypt_dynamic_control_test( void );
+ dll_export ak_bool ak_libakrypt_dynamic_control_test( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
@@ -427,6 +427,10 @@ extern "C" {
  dll_export int ak_hexstr_to_ptr( const char *, ak_pointer , const size_t , const ak_bool );
 /*! \brief Сравнение двух областей памяти. */
  dll_export ak_bool ak_ptr_is_equal( const ak_pointer, const ak_pointer , const size_t );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция устанавливает домашний каталог пользователя. */
+ dll_export int ak_libakrypt_get_home_path( char *, const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Чтение пароля из консоли. */

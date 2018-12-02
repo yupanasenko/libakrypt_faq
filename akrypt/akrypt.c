@@ -4,14 +4,15 @@
 /*  Файл akrypt.c                                                                                  */
 /*  - содержит реализацию консольного клиента, иллюстрирующего работу библиотеки libakrypt         */
 /* ----------------------------------------------------------------------------------------------- */
+ #include <time.h>
  #include <akrypt.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-/* имя пользовательского файла для вывода аудита */
- static char audit_filename[1024];
+ char audit_filename[1024];
 /* функция, реализующая аудит */
  ak_function_log *audit =
 #ifdef _WIN32
+ akrypt_audit_function;
 #else
  ak_function_log_syslog;
 #endif
@@ -19,6 +20,16 @@
 /* ----------------------------------------------------------------------------------------------- */
  int main( int argc, TCHAR *argv[] )
 {
+ /* определение переменных, используемых ддя указания времени старта программы */
+ #ifdef _WIN32
+  time_t ptime;
+  TCHAR homepath[FILENAME_MAX]
+   #ifdef MSC_VER
+     , buffer[64]
+   #endif
+   ;
+ #endif
+ /* попытка русификации программы для unix-like операционных систем */
  #ifdef LIBAKRYPT_HAVE_LIBINTL_H
  /* обрабатываем настройки локали
     при инсталляции файл akrypt.mo должен помещаться в /usr/share/locale/ru/LC_MESSAGES */
@@ -36,6 +47,27 @@
   if( akrypt_check_command( "-h", argv[1] )) return akrypt_help();
   if( akrypt_check_command( "--help", argv[1] )) return akrypt_help();
   if( akrypt_check_command( "/?", argv[1] )) return akrypt_help();
+
+ #ifdef _WIN32
+  if( ak_libakrypt_get_home_path( homepath, FILENAME_MAX ) == ak_error_ok ) {
+    ak_snprintf( audit_filename, FILENAME_MAX, "%s\\.config\\libakrypt\\libakrypt.log", homepath );
+    remove( audit_filename );
+    ak_log_set_function( audit = akrypt_audit_function );
+
+   #ifdef MSC_VER
+    _time64( &ptime );
+    _tctime64_s( buffer, sizeof( buffer ), &ptime );
+    ak_snprintf( homepath, FILENAME_MAX, "%s started at %s", argv[0], buffer );
+   #else
+     ptime = time( NULL );
+     ak_snprintf( homepath, FILENAME_MAX, "%s started at %s", argv[0], ctime( &ptime ));
+   #endif
+    ak_log_set_message( homepath );
+  }
+
+  SetConsoleCP( 1251 );
+  SetConsoleOutputCP( 1251 );
+ #endif
 
  /* выполняем команду пользователя */
   if( akrypt_check_command( "show", argv[1] )) return akrypt_show( argc, argv );
@@ -110,6 +142,48 @@
   char filename[FILENAME_MAX];
 
 #ifdef _WIN32
+  WIN32_FIND_DATA ffd;
+  TCHAR szDir[MAX_PATH];
+  HANDLE hFind = INVALID_HANDLE_VALUE;
+  size_t length_of_arg, length_of_mask;
+
+  StringCchLength( root, MAX_PATH, &length_of_arg);
+  StringCchLength( mask, MAX_PATH, &length_of_mask);
+
+  if( length_of_arg > (MAX_PATH - ( length_of_mask + 2 )))
+    return ak_error_message_fmt( ak_error_wrong_length, __func__ , "directory path too long" );
+
+  StringCchCopy( szDir, MAX_PATH, root );
+  StringCchCat( szDir, MAX_PATH, TEXT("\\") );
+  StringCchCat( szDir, MAX_PATH, mask );
+
+ /* начинаем поиск */
+  if(( hFind = FindFirstFile( szDir, &ffd )) == INVALID_HANDLE_VALUE )
+    return ak_error_message_fmt( ak_error_access_file, __func__ , "given mask search error" );
+
+  do {
+       if( ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) {
+
+         if( !strcmp( ffd.cFileName, "." )) continue;  // пропускаем себя и каталог верхнего уровня
+         if( !strcmp( ffd.cFileName, ".." )) continue;
+
+         if( tree ) { // выполняем рекурсию для вложенных каталогов
+           StringCchCopy( szDir, MAX_PATH, root );
+           StringCchCat( szDir, MAX_PATH, TEXT("\\") );
+           StringCchCat( szDir, MAX_PATH, ffd.cFileName );
+           if(( error = akrypt_find( szDir, mask, function, ptr, tree )) != ak_error_ok )
+             ak_error_message_fmt( error, __func__, _("access to \"%s\" directory denied"), filename );
+         }
+       } else {
+               if( ffd.dwFileAttributes &FILE_ATTRIBUTE_SYSTEM ) continue;
+               StringCchCopy( filename, MAX_PATH, root );
+               StringCchCat( filename, MAX_PATH, TEXT("\\") );
+               StringCchCat( filename, MAX_PATH, ffd.cFileName );
+               function( filename, ptr );
+              }
+
+  } while( FindNextFile( hFind, &ffd ) != 0);
+  FindClose(hFind);
 
 // далее используем механизм функций open/readdir + fnmatch
 #else
@@ -201,8 +275,6 @@
      struct hash ctx;
      ak_uint8 out[32];
 
-     SetConsoleCP( 1251 );
-     SetConsoleOutputCP( 1251 );
 
      _tprintf(TEXT("\nПРИВЕТ!!!\n\n"), argv[1]);
 

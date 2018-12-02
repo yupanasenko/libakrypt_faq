@@ -8,16 +8,16 @@
  int akrypt_hash_help( void );
  int akrypt_hash_function( const char *, ak_pointer );
 
-/* ----------------------------------------------------------------------------------------------- */
- static struct hash_info {
-  ak_handle handle; /*!< дескриптор алгоритма вычисления кода целостности */
-  FILE *outfp; /*!< дескриптор файла для вывода результатов */
-  char outfile[FILENAME_MAX]; /*!< имя файла для вывода результатов */
-  size_t total;  /*!< общее количество обработанных файлов */
-  size_t successed; /*!< количество корректных кодов */
-  ak_bool oreverse; /*!< флаг разворота выводимых результатов */
-  ak_bool tree; /*!< флаг рекурсивной обработки каталогов */
- } ic;
+ /* ----------------------------------------------------------------------------------------------- */
+  struct hash_info {
+    ak_handle handle; /*!< дескриптор алгоритма вычисления кода целостности */
+    FILE *outfp; /*!< дескриптор файла для вывода результатов */
+    char outfile[FILENAME_MAX]; /*!< имя файла для вывода результатов */
+    size_t total;  /*!< общее количество обработанных файлов */
+    size_t successed; /*!< количество корректных кодов */
+    ak_bool oreverse; /*!< флаг разворота выводимых результатов */
+    ak_bool tree; /*!< флаг рекурсивной обработки каталогов */
+  } ic;
 
 /* ----------------------------------------------------------------------------------------------- */
  int akrypt_hash( int argc, TCHAR *argv[] )
@@ -149,6 +149,7 @@
     realpath( filename, flongname );
    #endif
     if( !strncmp( flongname, ic->outfile, FILENAME_MAX - 2 )) return ak_error_ok;
+    if( !strncmp( flongname, audit_filename, 1022 )) return ak_error_ok;
   }
 
  /* теперь собственно хеширование */
