@@ -155,6 +155,18 @@ check_c_source_compiles("
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
+  #include <locale.h>
+  int main( void ) {
+     setlocale( LC_ALL, \"\" );
+     return 0;
+  }" LIBAKRYPT_HAVE_LOCALE )
+
+if( LIBAKRYPT_HAVE_LOCALE )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_LOCALE_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
   #include <libintl.h>
   int main( void ) {
      return 0;

@@ -7,12 +7,24 @@
  #include <akrypt.h>
 
 /* ----------------------------------------------------------------------------------------------- */
+/* имя пользовательского файла для вывода аудита */
+ static char audit_filename[1024];
+/* функция, реализующая аудит */
+ ak_function_log *audit =
+#ifdef _WIN32
+#else
+ ak_function_log_syslog;
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
  int main( int argc, TCHAR *argv[] )
 {
  #ifdef LIBAKRYPT_HAVE_LIBINTL_H
  /* обрабатываем настройки локали
     при инсталляции файл akrypt.mo должен помещаться в /usr/share/locale/ru/LC_MESSAGES */
-  setlocale( LC_ALL, "" );
+  #ifdef LIBAKRYPT_HAVE_LOCALE_H
+   setlocale( LC_ALL, "" );
+  #endif
   bindtextdomain( "akrypt", "/usr/share/locale/" );
   textdomain( "akrypt" );
  #endif
@@ -27,7 +39,7 @@
 
  /* выполняем команду пользователя */
   if( akrypt_check_command( "show", argv[1] )) return akrypt_show( argc, argv );
-  if( akrypt_check_command( "icode", argv[1] )) return akrypt_icode( argc, argv );
+  if( akrypt_check_command( "hash", argv[1] )) return akrypt_hash( argc, argv );
 
  /* ничего не подошло, выводим сообщение об ошибке */
   ak_log_set_function( ak_function_log_stderr );
@@ -49,6 +61,99 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/* вывод сообщений в заданный пользователем файл, а также в стандартный демон вывода сообщений */
+ int akrypt_audit_function( const char *message )
+{
+  FILE *fp = fopen( audit_filename, "a+" );
+   /* функция выводит сообщения в заданный файл */
+    if( !fp ) return ak_error_open_file;
+    fprintf( fp, "%s\n", message );
+#if defined(__unix__) || defined(__APPLE__)
+    ak_function_log_syslog( message ); /* все действия дополнительно дублируются в syslog */
+#endif
+    if( fclose(fp) == EOF ) return ak_error_access_file;
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ void akrypt_set_audit( TCHAR *message )
+{
+  if( ak_ptr_is_equal( "stderr", message, 6 )) {
+       audit = ak_function_log_stderr; /* если задан stderr, то используем готовую функцию */
+  } else {
+            if( strlen( message ) > 0 ) {
+              memset( audit_filename, 0, 1024 );
+              strncpy( audit_filename, message, 1022 );
+              audit = akrypt_audit_function;
+            }
+         }
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int akrypt_file_or_directory( const TCHAR *filename )
+{
+ struct stat st;
+
+  if( stat( filename, &st )) return 0;
+  if( S_ISREG( st.st_mode )) return DT_REG;
+  if( S_ISDIR( st.st_mode )) return DT_DIR;
+
+ return 0;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/* выполнение однотипной процедуры с группой файлов */
+ int akrypt_find( const char *root , const char *mask,
+                                          ak_function_find *function, ak_pointer ptr, ak_bool tree )
+{
+  int error = ak_error_ok;
+  char filename[FILENAME_MAX];
+
+#ifdef _WIN32
+
+// далее используем механизм функций open/readdir + fnmatch
+#else
+  DIR *dp = NULL;
+  struct dirent *ent = NULL;
+
+ /* открытваем каталог */
+  errno = 0;
+  if(( dp = opendir( root )) == NULL ) {
+    if( errno == EACCES ) return ak_error_message_fmt( ak_error_access_file,
+                                          __func__ , _("access to \"%s\" directory denied"), root );
+    if( errno > -1 ) return ak_error_message_fmt( ak_error_open_file,
+                                                                __func__ , "%s", strerror( errno ));
+  }
+
+ /* перебираем все файлы и каталоги */
+  while(( ent = readdir( dp )) != NULL ) {
+    if( ent->d_type == DT_DIR ) {
+      if( !strcmp( ent->d_name, "." )) continue;  // пропускаем себя и каталог верхнего уровня
+      if( !strcmp( ent->d_name, ".." )) continue;
+
+      if( tree ) { // выполняем рекурсию для вложенных каталогов
+        memset( filename, 0, FILENAME_MAX );
+        ak_snprintf( filename, FILENAME_MAX, "%s/%s", root, ent->d_name );
+        if(( error = akrypt_find( filename, mask, function, ptr, tree )) != ak_error_ok )
+          ak_error_message_fmt( error, __func__, _("access to \"%s\" directory denied"), filename );
+      }
+    } else
+       if( ent->d_type == DT_REG ) { // обрабатываем только обычные файлы
+          if( !fnmatch( mask, ent->d_name, FNM_PATHNAME )) {
+            memset( filename, 0, FILENAME_MAX );
+            ak_snprintf( filename, FILENAME_MAX, "%s/%s", root, ent->d_name );
+            function( filename, ptr );
+          }
+       }
+  }
+  if( closedir( dp )) return ak_error_message_fmt( ak_error_close_file,
+                                                                __func__ , "%s", strerror( errno ));
+#endif
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                 реализация вывода справки                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int akrypt_litehelp( void )
@@ -67,8 +172,8 @@
                                                                          ak_libakrypt_version( ));
   printf(_("usage \"akrypt command [options] [files]\"\n\n"));
   printf(_("available commands:\n"));
-  printf(_("  icode   calculation and checking integrity codes\n"));
-  printf(_("  show    show useful information\n\n"));
+  printf(_("  hash   calculation and checking integrity codes\n"));
+  printf(_("  show   show useful information\n\n"));
   printf(_("try:\n"));
   printf(_("  akrypt command --help to get information about command options\n"));
   printf(_("  man akrypt to get more information about akrypt programm and some examples\n"));

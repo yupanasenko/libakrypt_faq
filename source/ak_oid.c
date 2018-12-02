@@ -304,7 +304,7 @@
     @return Функция возвращает указатель на область памяти, в которой находится структура
     с найденным идентификатором. В случае ошибки, возвращается NULL.                               */
 /* ----------------------------------------------------------------------------------------------- */
- const ak_oid ak_oid_context_find_by_name( const char *name )
+ ak_oid ak_oid_context_find_by_name( const char *name )
 {
   size_t len = 0, idx = 0;
   if( name == NULL ) {
@@ -314,7 +314,7 @@
   do{
      if(( strlen( name ) == ( len = strlen( libakrypt_oids[idx].name ))) &&
             ak_ptr_is_equal( (char *)name, (char *)libakrypt_oids[idx].name, len ))
-       return (const ak_oid) &libakrypt_oids[idx];
+       return &libakrypt_oids[idx];
 
   } while( ++idx < ak_libakrypt_oids_count( ));
   ak_error_message( ak_error_oid_name, __func__, "searching oid with wrong name" );
@@ -328,7 +328,7 @@
     @return Функция возвращает указатель на область памяти, в которой находится структура
     с найденным идентификатором. В случае ошибки, возвращается NULL.                               */
 /* ----------------------------------------------------------------------------------------------- */
- const ak_oid ak_oid_context_find_by_id( const char *id )
+ ak_oid ak_oid_context_find_by_id( const char *id )
 {
   size_t len = 0, idx = 0;
   if( id == NULL ) {
@@ -339,7 +339,37 @@
   do{
      if(( strlen( id ) == ( len = strlen( libakrypt_oids[idx].id ))) &&
             ak_ptr_is_equal( (char *)id, (char *)libakrypt_oids[idx].id, len ))
-       return (const ak_oid) &libakrypt_oids[idx];
+       return  &libakrypt_oids[idx];
+
+  } while( ++idx < ak_libakrypt_oids_count( ));
+  ak_error_message( ak_error_oid_id, __func__, "searching oid with wrong idetifier" );
+
+ return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param ni строка, содержащая символьную запись имени или идентифиатора - последовательности
+    чисел, разделенных точками.
+    @return Функция возвращает указатель на область памяти, в которой находится структура
+    с найденным идентификатором. В случае ошибки, возвращается NULL.                               */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_oid ak_oid_context_find_by_ni( const char *ni )
+{
+  size_t len = 0, idx = 0;
+  if( ni == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to oid name/identifier" );
+    return NULL;
+  }
+
+  do{
+    /* проверка имени */
+     if(( strlen( ni ) == ( len = strlen( libakrypt_oids[idx].name ))) &&
+            ak_ptr_is_equal( (char *)ni, (char *)libakrypt_oids[idx].name, len ))
+       return &libakrypt_oids[idx];
+    /* проверка идентификатора */
+     if(( strlen( ni ) == ( len = strlen( libakrypt_oids[idx].id ))) &&
+            ak_ptr_is_equal( (char *)ni, (char *)libakrypt_oids[idx].id, len ))
+       return &libakrypt_oids[idx];
 
   } while( ++idx < ak_libakrypt_oids_count( ));
   ak_error_message( ak_error_oid_id, __func__, "searching oid with wrong idetifier" );
@@ -353,7 +383,7 @@
     @return В случае успешного поиска функция возвращает указатель на  область памяти, в которой
     находится структура с найденным идентификатором. В случае ошибки, возвращается NULL.           */
 /* ----------------------------------------------------------------------------------------------- */
- const ak_oid ak_oid_context_find_by_engine( const oid_engines engine )
+ ak_oid ak_oid_context_find_by_engine( const oid_engines engine )
 {
   size_t idx = 0;
   do{
@@ -371,7 +401,7 @@
     @return В случае успешного поиска функция возвращает указатель на  область памяти, в которой
     находится структура с найденным идентификатором. В случае ошибки, возвращается NULL.           */
 /* ----------------------------------------------------------------------------------------------- */
- const ak_oid ak_oid_context_findnext_by_engine( const ak_oid startoid, const oid_engines engine )
+ ak_oid ak_oid_context_findnext_by_engine( const ak_oid startoid, const oid_engines engine )
 {
  ak_oid oid = ( ak_oid )startoid;
 

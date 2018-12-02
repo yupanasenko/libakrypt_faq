@@ -28,15 +28,15 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция создания контекста секретного ключа электронной подписи. */
- typedef int ( ak_function_create_signkey ) ( ak_signkey , ak_wcurve );
+ typedef int ( ak_function_create_signkey ) ( ak_signkey , const ak_wcurve );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация контекста секретного ключа алгоритма ГОСТ Р 34.10-2012. */
- int ak_signkey_context_create_streebog256( ak_signkey , ak_wcurve );
+ int ak_signkey_context_create_streebog256( ak_signkey , const ak_wcurve );
 /*! \brief Инициализация контекста секретного ключа алгоритма ГОСТ Р 34.10-2012. */
- int ak_signkey_context_create_streebog512( ak_signkey , ak_wcurve );
+ int ak_signkey_context_create_streebog512( ak_signkey , const ak_wcurve );
 /*! \brief Инициализация контекста секретного ключа алгоритма ГОСТ Р 34.10-2001. */
- int ak_signkey_context_create_gosthash94_csp( ak_signkey , ak_wcurve );
+ int ak_signkey_context_create_gosthash94_csp( ak_signkey , const ak_wcurve );
 /*! \brief Инициализация контекста секретного ключа алгоритма выработки электронной подписи
     по заданным идентификаторам алгоритма и эллиптической кривой. */
  int ak_signkey_context_create_oid( ak_signkey , ak_oid , ak_oid );

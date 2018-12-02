@@ -43,7 +43,7 @@
     return ak_error_message_fmt( error, __func__,
                                   "invalid creation of %s block cipher context", bcoid->name );
  /* доопределяем oid ключа */
-  gkey->bkey.key.oid = ak_oid_context_find_by_name( "omac-magma" );
+  gkey->bkey.key.oid = oid;
 
  /* инициализируем структуру буффера для хранения промежуточных значений
     при этом длина буффера полагается равной нулю. */

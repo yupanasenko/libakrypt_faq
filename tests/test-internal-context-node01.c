@@ -9,8 +9,10 @@
  #include <ak_bckey.h>
  #include <ak_context_manager.h>
 
- ak_uint32 constkey[8] = { 0x12345678, 0xabcdef0, 0x11223344, 0x55667788,
-                           0xaabbccdd, 0xeeff0011, 0xa1a1a2a2, 0xa3a3a4a4 };
+ static ak_uint32 constkey[8] = {
+    0x12345678, 0xabcdef0, 0x11223344, 0x55667788,
+    0xaabbccdd, 0xeeff0011, 0xa1a1a2a2, 0xa3a3a4a4
+ };
 
  /* очень короткая функция создания контекста генератора */
  ak_pointer create_random( void )

@@ -65,15 +65,11 @@ if( CMAKE_HOST_UNIX )
                 "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/${file} libakrypt-${FULL_VERSION}\n")
   endforeach()
 
-  # вычисляем контрольные суммы всех файлов, включаемых в архив
-  file( APPEND ${MYDFILE} "cd libakrypt-${FULL_VERSION}\n")
-  file( APPEND ${MYDFILE} "akrypt icode -r -o ${CMAKE_BINARY_DIR}/libakrypt.streebog256 . \n")
-  file( APPEND ${MYDFILE} "cd ${CMAKE_BINARY_DIR}\n")
-  file( APPEND ${MYDFILE} "cp libakrypt.streebog256 libakrypt-${FULL_VERSION}\n")
-
   # собираем дистрибутив
   file( APPEND ${MYDFILE} "tar -cjvf libakrypt-${FULL_VERSION}.tar.bz2 libakrypt-${FULL_VERSION}\n")
   file( APPEND ${MYDFILE} "rm -R libakrypt-${FULL_VERSION}\n")
+  file( APPEND ${MYDFILE} "akrypt hash -r -o libakrypt-${FULL_VERSION}.streebog256 libakrypt-${FULL_VERSION}.tar.bz2\n")
+
   message("-- Creating a make-dist-${FULL_VERSION}.sh file - done ")
   execute_process( COMMAND chmod +x ${MYDFILE} )
   add_custom_target( dist ${MYDFILE} )

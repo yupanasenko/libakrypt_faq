@@ -102,7 +102,7 @@ set( OTHERS         CMakeLists.txt
 
 set( AKRYPT_SOURCES akrypt/akrypt.c
                     akrypt/akrypt_show.c
-                    akrypt/akrypt_icode.c )
+                    akrypt/akrypt_hash.c )
 
 set( AKRYPT_FILES   akrypt/akrypt.h
                     akrypt/akrypt.po
@@ -213,6 +213,7 @@ set( INTERNAL_TEST_LIST
                  internal-omac01
                  internal-signkey01
                  internal-context-node01
+                 internal-context-manager01
 )
 
 if( LIBAKRYPT_INTERNAL_TESTS )

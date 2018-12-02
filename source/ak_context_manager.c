@@ -247,6 +247,202 @@
  return error;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция выделяет дополнительную память под массив хранения контекстов.
+    При выделении памяти производится перенос содержащихся в массиве указателей
+    (элементов структуры управления контекстами) в новую область памяти.
+    Старая область памяти уничтожается.
+
+    При выделении памяти размер новой области увеличивается в два раза, по сравнению с предыдущим
+    объемом, то есть происходит двукратное увеличение. Максимальное число
+    хранимых в структуре управления контекстов является внешним параметром библиотеки.
+    Данное значение устанавливается в файле `libakrypt.conf` (см. раздел \ref construction_options).
+
+    @param manager Указатель на структуру управления ключами
+    @return В случае успеха функция возвращает \ref ak_error_ok (ноль). В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_context_manager_morealloc( ak_context_manager manager )
+{
+  size_t idx, newsize , msize = ( size_t )ak_libakrypt_get_option("context_manager_max_size");
+
+  if( manager == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                            "using a null pointer to context manager structure" );
+  if(( newsize = ( manager->size << 1 )) <= manager->size )
+    return ak_error_message( ak_error_context_manager_size, __func__ ,
+                                      "unexpected value of new value of context manager's size" );
+  if( newsize > msize ) return ak_error_message( ak_error_context_manager_max_size, __func__,
+                                   "current size of context manager exceeds permissible bounds" );
+
+  if(( manager->array = realloc( manager->array, sizeof( ak_pointer )*newsize )) == NULL )
+    return ak_error_message( ak_error_out_of_memory, __func__ ,
+                                            "wrong memory allocation for context manager nodes" );
+ /* инициализируем новые ячейки массива */
+  for( idx = manager->size; idx < newsize; idx++ ) manager->array[idx] = NULL;
+  manager->size = newsize;
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! По заданному значению индекса массива idx функция вычисляет значение дескриптора,
+    доступного пользователю. Обратное преобразование задается функцией
+    ak_context_manager_handle_to_idx().
+
+    @param manager Указатель на структуру управления контекстами
+    @param idx Индекс контекста в массиве
+    @return Функция возвращает значение дескриптора контекста.                                     */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_context_manager_idx_to_handle( ak_context_manager manager, size_t idx )
+{
+  if( manager == NULL ) ak_error_message( ak_error_null_pointer, __func__ ,
+                                            "using a null pointer to context manager structure" );
+ return ( ak_handle )idx;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! По заданному значению дескриптора контекста handle функция вычисляет значение
+    индекса массива, по адресу которого располагается контекст.
+    Обратное преобразование задается функцией ak_context_manager_idx_to_handle().
+
+    @param manager Указатель на структуру управления контекстами
+    @param handle Дескриптор контектса
+    @return Функция возвращает значение дескриптора контекста.                                     */
+/* ----------------------------------------------------------------------------------------------- */
+ size_t ak_context_manager_handle_to_idx( ak_context_manager manager, ak_handle handle )
+{
+  if( manager == NULL ) ak_error_message( ak_error_null_pointer, __func__ ,
+                                            "using a null pointer to context manager structure" );
+ return ( size_t ) handle;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция находит первый равный NULL адрес элемента структуры и
+    помещает по этому адресу новый элемент. В случае, если текущей объем памяти недостаточен для
+    размещения нового элемента, происходит выделение нового фрагмента памяти.
+
+    @param manager Указатель на структуру управления контекстами
+    @param ctx Контекст, который будет храниться в структуре управленияя контекстами
+    @param engine тип контекста: блочный шифр, функия хеширования, массив с данными и т.п.
+    @param description пользовательское описание контекста
+    @return Функция возвращает дескриптор созданного контекста. В случае
+    возникновения ошибки возвращается значение \ref ak_error_wrong_handle. Код ошибки может быть
+    получен с помощью вызова функции ak_error_get_value().                                         */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_context_manager_add_node( ak_context_manager manager, const ak_pointer ctx,
+                                                const oid_engines engine, const char * description )
+{
+  size_t idx = 0;
+  int error = ak_error_ok;
+  ak_context_node node = NULL;
+  ak_handle handle = ak_error_wrong_handle;
+  char *defaultstr = (char *) description;
+
+ /* минимальные проверки */
+  if( manager == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to context manager" );
+    return ak_error_wrong_handle;
+  }
+  if( ctx == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to context" );
+    return ak_error_wrong_handle;
+  }
+  if( defaultstr == NULL )  defaultstr = "";
+
+ /* блокируем доступ к структуре управления контекстами */
+#ifdef LIBAKRYPT_HAVE_PTHREAD
+  pthread_mutex_lock( &ak_context_manager_mutex );
+#endif
+
+ /* ищем свободный адрес */
+  for( idx = 0; idx < manager->size; idx++ ) {
+     if( manager->array[idx] == NULL ) break;
+  }
+  if( idx == manager->size ) {
+    if(( error =  ak_context_manager_morealloc( manager )) != ak_error_ok ) {
+      ak_error_message( error, __func__, "wrong allocation a new memory for context manager" );
+      #ifdef LIBAKRYPT_HAVE_PTHREAD
+        pthread_mutex_unlock( &ak_context_manager_mutex );
+      #endif
+      return ak_error_wrong_handle;
+    }
+  }
+
+ /* адрес найден, теперь размещаем контекст */
+  handle = ak_context_manager_idx_to_handle( manager, idx );
+  if(( node = ak_context_node_new( ctx, handle, engine, defaultstr )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong creation of context manager node" );
+    #ifdef LIBAKRYPT_HAVE_PTHREAD
+     pthread_mutex_unlock( &ak_context_manager_mutex );
+    #endif
+    return ak_error_wrong_handle;
+  }
+  manager->array[idx] = node;
+#ifdef LIBAKRYPT_HAVE_PTHREAD
+  pthread_mutex_unlock( &ak_context_manager_mutex );
+#endif
+
+ return handle;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_context_manager_delete_node( ak_context_manager manager, ak_handle handle )
+{
+  size_t idx = 0;
+  int error = ak_error_ok;
+
+  if( manager == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using a null pointer to context manager" );
+ /* получаем индекс из значения дескриптора */
+  if(( error = ak_context_manager_handle_check( manager, handle, &idx )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect handle" );
+
+ /* блокируем доступ и удаляем объект */
+#ifdef LIBAKRYPT_HAVE_PTHREAD
+  pthread_mutex_lock( &ak_context_manager_mutex );
+#endif
+  manager->array[idx] = ak_context_node_delete( manager->array[idx] );
+#ifdef LIBAKRYPT_HAVE_PTHREAD
+  pthread_mutex_unlock( &ak_context_manager_mutex );
+#endif
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция проверяет, что внутренний массив контекстов содержит в себе отличный от NULL контекст
+    с заданным значеним дескриптора ключа. Функция не экспортируется.
+
+    @param manager Контекст структуры управления контекстами.
+    @param handle Дескриптор контекста.
+    @param idx Указатель на индекс контекста в массиве контекстов.
+    @return В случае ошибки возвращается ее код. В случае успеха, возвращается значение
+    \ref ak_error_ok                                                                               */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_context_manager_handle_check( ak_context_manager manager, ak_handle handle, size_t *idx )
+{
+ /* проверяем менеджер контекстов */
+  if( manager == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using null pointer to context manager" );
+ /* проверяем, что значение handle определено */
+  if( handle == ak_error_wrong_handle ) return ak_error_message( ak_error_wrong_handle,
+                                                  __func__, "using an undefined handle value" );
+ /* определяем индекс */
+  *idx = ak_context_manager_handle_to_idx( manager, handle );
+
+ /* проверяем границы */
+  if( *idx >= manager->size )
+    return ak_error_message( ak_error_wrong_handle, __func__, "invalid handle index" );
+
+ /* проверяем наличие node */
+  if( manager->array[*idx] == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__,
+                                               "using a null pointer to context manager node" );
+ /* проверяем наличие контекста */
+  if( manager->array[*idx]->ctx == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__, "using null pointer to context" );
+
+ return ak_error_ok;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                 теперь глобальный ak_context_manager                            */
@@ -344,7 +540,97 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \example test-internal-context-node.c                                                        */
+/*! Для существующего контекста, под который ранее выделена память с помощью вызова malloc(),
+    функция создает его дескриптор, и размещает контекст в глобальной структуре управления контекстами.
+    Данная функция используется производящими функциями пользовательского интерфейса.
+
+    \b Внимание! В случае возникновения ошибки помещаемый контекст уничтожается.
+
+    @param ctx контекст объекта.
+    @param engine тип контекста: блочный шифр, функия хеширования, массив с данными и т.п.
+    @param description пользовательское описание контекста
+    @return Функция возвращает дескриптор созданного контекста. В случае
+    возникновения ошибки возвращается значение \ref ak_error_wrong_handle. Код ошибки может быть
+    получен с помощью вызова функции ak_error_get_value().                                         */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_libakrypt_add_context( ak_pointer ctx, const oid_engines engine, const char * description )
+{
+  ak_context_manager manager = NULL;
+  ak_handle handle = ak_error_wrong_handle;
+  ak_oid oid = ak_context_node_get_context_oid( ctx, engine );
+
+ /* проверяем входные данные */
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "using incorrect context or engine" );
+    return ak_error_wrong_handle;
+  }
+
+ /* получаем доступ к структуре управления контекстами */
+  if(( manager = ak_libakrypt_get_context_manager()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "using a non initialized context manager" );
+    if( oid->func.delete != NULL ) {
+      if( ctx != NULL )
+        ctx = (( ak_function_free_object *) oid->func.delete )( ctx );
+    }
+    return ak_error_wrong_handle;
+  }
+
+ /* создаем элемент структуры управления контекстами */
+  if(( handle = ak_context_manager_add_node(
+                                  manager, ctx, engine, description )) == ak_error_wrong_handle ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong creation of context manager node" );
+    if( oid->func.delete != NULL ) {
+      if( ctx != NULL )
+        ctx = (( ak_function_free_object *) oid->func.delete )( ctx );
+    }
+    return ak_error_wrong_handle;
+  }
+
+ return handle;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_handle_delete( ak_handle handle )
+{
+  int error = ak_error_ok;
+  ak_context_manager manager = NULL;
+
+ /* получаем доступ к структуре управления контекстами */
+  if(( manager = ak_libakrypt_get_context_manager()) == NULL )
+    return ak_error_message(
+                      ak_error_get_value(), __func__ , "using a non initialized context manager" );
+
+ /* уничтожаем контекст */
+  if(( error = ak_context_manager_delete_node( manager, handle )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect context destruction" );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_handle_get_context( ak_handle handle, oid_engines *engine )
+{
+  size_t idx = 0;
+  int error = ak_error_ok;
+  ak_context_manager manager = NULL;
+
+ /* получаем доступ к структуре управления контекстами */
+  if(( manager = ak_libakrypt_get_context_manager()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "using a non initialized context manager" );
+    return NULL;
+  }
+
+  if(( error = ak_context_manager_handle_check( manager, handle, &idx )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong handle" );
+    return NULL;
+  }
+
+  *engine = manager->array[idx]->oid->engine;
+ return manager->array[idx]->ctx;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \example test-internal-context-node.c                                                          */
+/*! \example test-internal-context-manager01.c                                                     */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                           ak_context_manager.c  */
 /* ----------------------------------------------------------------------------------------------- */

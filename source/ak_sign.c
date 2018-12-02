@@ -161,7 +161,7 @@
     @return Функция возвращает ноль (\ref ak_error_ok) в случае успешной иниициализации контекста.
     В случае возникновения ошибки возвращается ее код.                                             */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_signkey_context_create_streebog256( ak_signkey sctx, ak_wcurve wc )
+ int ak_signkey_context_create_streebog256( ak_signkey sctx, const ak_wcurve wc )
 {
  int error = ak_error_ok;
 
@@ -211,7 +211,7 @@
     @return Функция возвращает ноль (\ref ak_error_ok) в случае успешной иниициализации контекста.
     В случае возникновения ошибки возвращается ее код.                                             */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_signkey_context_create_streebog512( ak_signkey sctx, ak_wcurve wc )
+ int ak_signkey_context_create_streebog512( ak_signkey sctx, const ak_wcurve wc )
 {
  int error = ak_error_ok;
 
@@ -261,7 +261,7 @@
     @return Функция возвращает ноль (\ref ak_error_ok) в случае успешной иниициализации контекста.
     В случае возникновения ошибки возвращается ее код.                                             */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_signkey_context_create_gosthash94_csp( ak_signkey sctx, ak_wcurve wc )
+ int ak_signkey_context_create_gosthash94_csp( ak_signkey sctx, const ak_wcurve wc )
 {
  int error = ak_error_ok;
 
@@ -333,7 +333,8 @@
   if( curveoid->mode != wcurve_params ) return ak_error_message( ak_error_oid_mode, __func__ ,
                                                       "using elliptic curve oid with wrong mode" );
 
- return ((ak_function_create_signkey *)algoid->func.create)( sctx, (ak_wcurve ) curveoid->data );
+ return ((ak_function_create_signkey *)algoid->func.create)( sctx,
+                                                               ( const ak_wcurve )curveoid->data );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -62,13 +62,15 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Поиск OID его имени. */
- const ak_oid ak_oid_context_find_by_name( const char *name );
+ ak_oid ak_oid_context_find_by_name( const char *name );
 /*! \brief Поиск OID по его идентификатору (строке цифр, разделенных точками). */
- const ak_oid ak_oid_context_find_by_id( const char *id );
+ ak_oid ak_oid_context_find_by_id( const char *id );
+/*! \brief Поиск OID по его имени или идентификатору. */
+ ak_oid ak_oid_context_find_by_ni( const char *ni );
 /*! \brief Поиск OID по типу криптографического механизма. */
- const ak_oid ak_oid_context_find_by_engine( const oid_engines );
+ ak_oid ak_oid_context_find_by_engine( const oid_engines );
 /*! \brief Продолжение поиска OID по типу криптографического механизма. */
- const ak_oid ak_oid_context_findnext_by_engine( const ak_oid, const oid_engines );
+ ak_oid ak_oid_context_findnext_by_engine( const ak_oid, const oid_engines );
 /*! \brief Проверка соответствия заданного адреса корректному oid. */
  ak_bool ak_oid_context_check( const ak_oid );
 

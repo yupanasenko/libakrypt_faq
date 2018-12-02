@@ -326,6 +326,28 @@ extern "C" {
  dll_export int ak_libakrypt_create( ak_function_log * );
 /*! \brief Функция остановки поддержки криптографических механизмов. */
  dll_export int ak_libakrypt_destroy( void );
+/*! \brief Запуск динамического тестирования криптографических механизмов. */
+ ak_bool ak_libakrypt_dynamic_control_test( void );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
+ dll_export ak_handle ak_hash_new_streebog256( const char * );
+/*! \brief Создание дескриптора бесключевой функции хеширования Стрибог512. */
+ dll_export ak_handle ak_hash_new_streebog512( const char * );
+/*! \brief Создание дескриптора бесключевой функции хеширования ГОСТ Р 34.11-94. */
+ dll_export ak_handle ak_hash_new_gosthash94( const char * );
+/*! \brief Создание дескриптора бесключевой функции хеширования. */
+ dll_export ak_handle ak_hash_new_oid_ni( const char *, const char * );
+/*! \brief Получение длины хэш-кода (в байтах). */
+ dll_export size_t ak_hash_get_size( ak_handle );
+/*! \brief Вычисление хэш-кода для заданной области памяти. */
+ dll_export ak_buffer ak_hash_ptr( ak_handle , const ak_pointer , const size_t , ak_pointer );
+/*! \brief Вычисление хэш-кода для заданного файла. */
+ dll_export ak_buffer ak_hash_file( ak_handle , const char *, ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Удаление объекта, связанного с заданным дескриптором. */
+ dll_export int ak_handle_delete( ak_handle );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает уровень аудита библиотеки. */
@@ -389,7 +411,7 @@ extern "C" {
 /*! \brief Получение указателя на данные. */
  dll_export ak_pointer ak_buffer_get_ptr( ak_buffer );
 /*! \brief Получение размера буффера. */
- dll_export const size_t ak_buffer_get_size( ak_buffer );
+ dll_export size_t ak_buffer_get_size( ak_buffer );
 /*! \brief Получение строки символов с шестнадцатеричным значением буффера. */
  dll_export char *ak_buffer_to_hexstr( const ak_buffer , const ak_bool );
 /*! \brief Сравнение двух буфферов. */

@@ -263,6 +263,43 @@
  return ak_true;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_libakrypt_dynamic_control_test( void )
+{
+ /* тестируем арифметические операции в конечных полях */
+  if( ak_gfn_multiplication_test() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                          "incorrect testing of multiplication in Galois fields" );
+    return ak_false;
+  }
+
+ /* проверяем корректность реализации алгоритмов бесключевго хеширования */
+   if( ak_libakrypt_test_hash_functions( ) != ak_true ) {
+     ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of hash functions" );
+     return ak_false;
+   }
+
+ /* тестируем работу алгоритмов блочного шифрования */
+  if( ak_libakrypt_test_block_ciphers() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "error while testing block ciphers" );
+    return ak_false;
+  }
+
+ /* проверяем корректность реализации алгоритмов итерационного сжатия */
+   if( ak_libakrypt_test_mac_functions( ) != ak_true ) {
+     ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of mac algorithms" );
+     return ak_false;
+   }
+
+ /* тестируем работу алгоритмов выработки и проверки электронной подписи */
+  if( ak_libakrypt_test_asymmetric_functions() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                        "error while testing digital signature mechanisms" );
+    return ak_false;
+  }
+
+ return ak_true;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция должна вызываться перед использованием любых криптографических механизмов библиотеки.
@@ -320,37 +357,17 @@
      return ak_false;
    }
 
- /* тестируем арифметические операции в конечнх полях */
-  if( ak_gfn_multiplication_test() != ak_true ) {
-    ak_error_message( ak_error_get_value(), __func__ ,
-                                          "incorrect testing of multiplication in Galois fields" );
-    return ak_false;
-  }
+ /* процедура полного тестирования всех криптографических алгоритмов
+    занимает очень много времени на встраиваемых платформах,
+    поэтому ее запуск должен производиться в соответствии с неким регламентом ....
 
- /* проверяем корректность реализации алгоритмов бесключевго хеширования */
-   if( ak_libakrypt_test_hash_functions( ) != ak_true ) {
-     ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of hash functions" );
-     return ak_false;
-   }
+    if( !ak_libakrypt_dynamic_control_test( )) {
+      ak_error_message( error, __func__, "incorrect dynamic control test" );
+      return ak_false;
+    }
 
- /* тестируем работу алгоритмов блочного шифрования */
-  if( ak_libakrypt_test_block_ciphers() != ak_true ) {
-    ak_error_message( ak_error_get_value(), __func__ , "error while testing block ciphers" );
-    return ak_false;
-  }
-
- /* проверяем корректность реализации алгоритмов итерационного сжатия */
-   if( ak_libakrypt_test_mac_functions( ) != ak_true ) {
-     ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of mac algorithms" );
-     return ak_false;
-   }
-
- /* тестируем работу алгоритмов выработки и проверки электронной подписи */
-  if( ak_libakrypt_test_asymmetric_functions() != ak_true ) {
-    ak_error_message( ak_error_get_value(), __func__ ,
-                                        "error while testing digital signature mechanisms" );
-    return ak_false;
-  }
+    заметим, что функция динамического контроля экспортируется,
+    так что теперь она может быть запущена пользователем самостоятельно. */
 
  if( ak_log_get_level() != ak_log_none )
    ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms tested successfully" );

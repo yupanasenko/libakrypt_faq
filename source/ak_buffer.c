@@ -498,7 +498,7 @@
     @return Размер буффера в байтах. Если указатель buff не определен,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- const size_t ak_buffer_get_size( ak_buffer buff )
+ size_t ak_buffer_get_size( ak_buffer buff )
 {
   if( buff == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
