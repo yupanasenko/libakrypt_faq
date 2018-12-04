@@ -50,7 +50,7 @@
 
  #ifdef _WIN32
   if( ak_libakrypt_get_home_path( homepath, FILENAME_MAX ) == ak_error_ok ) {
-    ak_snprintf( audit_filename, FILENAME_MAX, "%s\\.config\\libakrypt\\libakrypt.log", homepath );
+    ak_snprintf( audit_filename, FILENAME_MAX, "%s\\.config\\libakrypt\\akrypt.log", homepath );
     remove( audit_filename );
     ak_log_set_function( audit = akrypt_audit_function );
 
@@ -190,7 +190,7 @@
   DIR *dp = NULL;
   struct dirent *ent = NULL;
 
- /* открытваем каталог */
+ /* открываем каталог */
   errno = 0;
   if(( dp = opendir( root )) == NULL ) {
     if( errno == EACCES ) return ak_error_message_fmt( ak_error_access_file,
@@ -223,7 +223,6 @@
   if( closedir( dp )) return ak_error_message_fmt( ak_error_close_file,
                                                                 __func__ , "%s", strerror( errno ));
 #endif
-
  return ak_error_ok;
 }
 
@@ -265,11 +264,13 @@
       #ifdef _WIN32
        if( off ) localbuffer[off-1] = 0;  /* удаляем второй символ перехода на новую строку */
       #endif
-      function( localbuffer, ptr );
+      error = function( localbuffer, ptr );
      /* далее мы очищаем строку независимо от ее содержимого */
       off = 0;
       memset( localbuffer, 0, buffer_length );
     } else localbuffer[off++] = ch;
+   /* выходим из цикла если процедура проверки нарушена */
+    if( error != ak_error_ok ) return error;
   }
 
   close( fd );
@@ -297,9 +298,9 @@
   printf(_("available commands:\n"));
   printf(_("  hash   calculation and checking integrity codes\n"));
   printf(_("  show   show useful information\n\n"));
-  printf(_("try:\n"));
-  printf(_("  akrypt command --help to get information about command options\n"));
-  printf(_("  man akrypt to get more information about akrypt programm and some examples\n"));
+  printf(_("also try:\n"));
+  printf(_("  \"akrypt command --help\" to get information about command options\n"));
+  printf(_("  \"man akrypt\" to get more information about akrypt programm and some examples\n"));
 
  return EXIT_SUCCESS;
 }

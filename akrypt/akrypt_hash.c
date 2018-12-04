@@ -18,6 +18,9 @@
     size_t successed; /*!< количество корректных кодов */
     ak_bool oreverse; /*!< флаг разворота выводимых результатов */
     ak_bool tree; /*!< флаг рекурсивной обработки каталогов */
+    ak_bool ignore_missing;
+    ak_bool quiet;
+    ak_bool show_stat;
   } ic;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -36,25 +39,26 @@
      { "output",           1, NULL,  'o' },
      { "recursive",        0, NULL,  'r' },
      { "reverse-order",    0, NULL,  254 },
+     { "ignore-missing",   0, NULL,  253 },
+     { "quiet",            0, NULL,  252 },
+     { "dont-show-stat",   0, NULL,  251 },
      { NULL,               0, NULL,   0  }
   };
 
 /*
-  рекурсия при установленной маске поиска  - не работает (((
+  рекурсия при установленной маске поиска  - работает, надо только использовать кавычки
 
   добавить параметры вывода результатов
   --tag  create a BSD-style checksum
 
-  --ignore-missing don't fail or report status for missing files
-  --quiet don't print OK for each successfully verified file (не печатать OK)
   --status don't output anything, status code shows success
 */
 
  /* инициализируем переменную */
   memset( &ic, 0, sizeof( struct hash_info ));
   ic.outfp = stdout;
-  ic.oreverse = ak_false;
-  ic.tree = ak_false;
+  ic.oreverse = ic.tree = ic.ignore_missing = ic.quiet = ak_false;
+  ic.show_stat = ak_true;
 
  /* разбираем опции командной строки */
   do {
@@ -68,6 +72,18 @@
 
          case 254 : /* установить обратный порядок вывода байт */
                      ic.oreverse = ak_true;
+                     break;
+
+         case 253 : /* игонорировать сообщения об ошибках */
+                     ic.ignore_missing = ak_true;
+                     break;
+
+         case 252 : /* гасить вывод Ок при проверке */
+                     ic.quiet = ak_true;
+                     break;
+
+         case 251 : /* гасить вывод Ок при проверке */
+                     ic.show_stat = ak_false;
                      break;
 
          case 'a' : /* устанавливаем алгоритм хеширования */
@@ -137,9 +153,11 @@
 
     case do_check: /* проверяем контрольную сумму */
                    ak_file_read_by_lines( checkfile, akrypt_hash_check_function, &ic );
-                   printf(_("\ntotal: %lu files, where: correct %lu, wrong %lu.\n\n"),
+                   if( ic.show_stat ) {
+                     printf(_("\ntotal: %lu files, where: correct %lu, wrong %lu.\n\n"),
                                (unsigned long int)ic.total, (unsigned long int)ic.successed,
                                                    (unsigned long int)( ic.total - ic.successed ));
+                   }
                    break;
     default:       break;
    }
@@ -218,19 +236,23 @@
 
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     fprintf( ic->outfp, _("%s (wrong access to file, maybe file is missing)\n"), string+offset );
-    return ak_error_message_fmt( error, __func__ ,
+    ak_error_message_fmt( error, __func__ ,
                                      "wrong calculation of hash code for file %s", string+offset );
+    if( ic->ignore_missing ) return ak_error_ok;
+     else return  error;
   }
+
  /* сравниваем */
   fprintf( ic->outfp, "%s ", string+offset );
   if( ak_ptr_is_equal( out, preout, isize )) {
     ic->successed++;
-    fprintf( ic->outfp, "Ok\n" );
+    if( ic->quiet ) printf("\n");
+      else fprintf( ic->outfp, "Ok\n" );
     return ak_error_ok;
   }
 
   fprintf( ic->outfp, _("(wrong check sum)\n"));
- return ak_error_not_equal_data;
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -242,8 +264,11 @@
   printf(_("                         default algorithm is \"streebog256\" defined by GOST R 34.10-2012\n" ));
   printf(_("     --audit <file>      set the output file for errors and libakrypt audit system messages\n" ));
   printf(_(" -c, --check <file>      check previously generated integrity codes\n" ));
+  printf(_("     --dont-show-stat    don't show a statistical results after checking\n"));
+  printf(_("     --ignore-missing    don't breake a check when file is missing\n" ));
   printf(_(" -o, --output <file>     set the output file for generated integrity codes\n" ));
   printf(_(" -p, --pattern <str>     set the pattern which is used to find files\n" ));
+  printf(_("     --quiet             don't print OK for each successfully verified file\n"));
   printf(_(" -r, --recursive         recursive search of files\n" ));
   printf(_("     --reverse-order     output of integrity code in reverse byte order\n" ));
   printf(_(" -h, --help              show this information\n\n" ));
