@@ -83,36 +83,35 @@
 /* ----------------------------------------------------------------------------------------------- */
  void ak_gf64_mul_pcmulqdq( ak_pointer z, ak_pointer x, ak_pointer y )
 {
- #ifdef LIBAKRYPT_HAVE_BUILTIN_SET_EPI64X
+#ifdef _MSC_VER
+	 __m128i gm, xm, ym, cm, cx;
+
+	 gm.m128i_u64[0] = 0x1B; gm.m128i_u64[1] = 0;
+	 xm.m128i_u64[0] = ((ak_uint64 *)x)[0]; xm.m128i_u64[1] = 0;
+	 ym.m128i_u64[0] = ((ak_uint64 *)y)[0]; ym.m128i_u64[1] = 0;
+
+	 cm = _mm_clmulepi64_si128(xm, ym, 0x00);
+	 cx.m128i_u64[0] = cm.m128i_u64[1]; cx.m128i_u64[1] = 0;
+
+	 xm = _mm_clmulepi64_si128(cx, gm, 0x00);
+	 xm.m128i_u64[1] ^= cx.m128i_u64[0];
+	 ym.m128i_u64[0] = xm.m128i_u64[1]; ym.m128i_u64[1] = 0;
+	 xm = _mm_clmulepi64_si128(ym, gm, 0x00);
+
+	 ((ak_uint64 *)z)[0] = cm.m128i_u64[0] ^ xm.m128i_u64[0];
+#else
   const __m128i gm = _mm_set_epi64x( 0, 0x1B );
   __m128i xm = _mm_set_epi64x( 0, ((ak_uint64 *)x)[0] );
   __m128i ym = _mm_set_epi64x( 0, ((ak_uint64 *)y)[0] );
 
   __m128i cm = _mm_clmulepi64_si128( xm, ym, 0x00 );
   __m128i cx = _mm_set_epi64x( 0, cm[1] );
-
+  
   xm = _mm_clmulepi64_si128( cx, gm, 0x00 ); xm[1] ^= cx[0];
-  ym = _mm_set_epi64x( 0, xm[1] );
+  ym = _mm_set_epi64x( 0, xm[1] );  
   xm = _mm_clmulepi64_si128( ym, gm, 0x00 );
 
   ((ak_uint64 *)z)[0] = cm[0]^xm[0];
-
- #else
-  __m128i gm, xm, ym, cm, cx;
-
-  gm.m128i_u64[0] = 0x1B; gm.m128i_u64[1] = 0;
-  xm.m128i_u64[0] = ((ak_uint64 *)x)[0]; xm.m128i_u64[1] = 0;
-  ym.m128i_u64[0] = ((ak_uint64 *)y)[0]; ym.m128i_u64[1] = 0;
-
-  cm = _mm_clmulepi64_si128( xm, ym, 0x00 );
-  cx.m128i_u64[0] = cm.m128i_u64[1]; cx.m128i_u64[1] = 0;
-
-  xm = _mm_clmulepi64_si128( cx, gm, 0x00 );
-  xm.m128i_u64[1] ^= cx.m128i_u64[0];
-  ym.m128i_u64[0] = xm.m128i_u64[1]; ym.m128i_u64[1] = 0;
-  xm = _mm_clmulepi64_si128( ym, gm, 0x00 );
-
-  ((ak_uint64 *)z)[0] = cm.m128i_u64[0]^xm.m128i_u64[0];
  #endif
 }
 
@@ -124,50 +123,48 @@
 /* ----------------------------------------------------------------------------------------------- */
  void ak_gf128_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
 {
-#ifdef LIBAKRYPT_HAVE_BUILTIN_SET_EPI64X
- __m128i am = _mm_set_epi64x( ((ak_uint64 *)a)[1], ((ak_uint64 *)a)[0] );
- __m128i bm = _mm_set_epi64x( ((ak_uint64 *)b)[1], ((ak_uint64 *)b)[0] );
+#ifdef _MSC_VER
+	 __m128i am, bm, cm, dm, em, fm;
+	 ak_uint64 x3, D;
 
- /* умножение */
- __m128i cm = _mm_clmulepi64_si128( am, bm, 0x00 ); // c = a0*b0
- __m128i dm = _mm_clmulepi64_si128( am, bm, 0x11 ); // d = a1*b1
- __m128i em = _mm_clmulepi64_si128( am, bm, 0x10 ); // e = a0*b1
- __m128i fm = _mm_clmulepi64_si128( am, bm, 0x01 ); // f = a1*b0
+	 am.m128i_u64[0] = ((ak_uint64 *)a)[0];  am.m128i_u64[1] = ((ak_uint64 *)a)[1];
+	 bm.m128i_u64[0] = ((ak_uint64 *)b)[0];  bm.m128i_u64[1] = ((ak_uint64 *)b)[1];
 
- /* приведение */
-  ak_uint64 x3 = dm[1];
-  ak_uint64 D = dm[0] ^ em[1] ^ fm[1] ^ (x3 >> 63) ^ (x3 >> 62) ^ (x3 >> 57);
+	 /* умножение */
+	 cm = _mm_clmulepi64_si128(am, bm, 0x00); // c = a0*b0
+	 dm = _mm_clmulepi64_si128(am, bm, 0x11); // d = a1*b1
+	 em = _mm_clmulepi64_si128(am, bm, 0x10); // e = a0*b1
+	 fm = _mm_clmulepi64_si128(am, bm, 0x01); // f = a1*b0
 
-  cm[0] ^=  D ^ (D << 1) ^ (D << 2) ^ (D << 7);
-  cm[1] ^=  em[0] ^ fm[0] ^ x3 ^ (x3 << 1) ^ (D >> 63) ^ (x3 << 2) ^ (D >> 62) ^ (x3 << 7) ^ (D >> 57);
+	/* приведение */
+	 x3 = dm.m128i_u64[1];
+	 D = dm.m128i_u64[0] ^ em.m128i_u64[1] ^ fm.m128i_u64[1] ^ (x3 >> 63) ^ (x3 >> 62) ^ (x3 >> 57);
 
-  ((ak_uint64 *)z)[0] = cm[0];
-  ((ak_uint64 *)z)[1] = cm[1];
+	 cm.m128i_u64[0] ^= D ^ (D << 1) ^ (D << 2) ^ (D << 7);
+	 cm.m128i_u64[1] ^= em.m128i_u64[0] ^ fm.m128i_u64[0] ^ x3 ^ (x3 << 1) ^ (D >> 63) ^ (x3 << 2) ^ (D >> 62) ^ (x3 << 7) ^ (D >> 57);
 
+	 ((ak_uint64 *)z)[0] = cm.m128i_u64[0];
+	 ((ak_uint64 *)z)[1] = cm.m128i_u64[1];
 #else
-  __m128i am, bm, cm, dm, em, fm;
-  ak_uint64 x3, D;
+	 __m128i am = _mm_set_epi64x(((ak_uint64 *)a)[1], ((ak_uint64 *)a)[0]);
+	 __m128i bm = _mm_set_epi64x(((ak_uint64 *)b)[1], ((ak_uint64 *)b)[0]);
 
-  am.m128i_u64[0] = ((ak_uint64 *)a)[0];  am.m128i_u64[1] = ((ak_uint64 *)a)[1];
-  bm.m128i_u64[0] = ((ak_uint64 *)b)[0];  bm.m128i_u64[1] = ((ak_uint64 *)b)[1];
+	 /* умножение */
+	 __m128i cm = _mm_clmulepi64_si128(am, bm, 0x00); // c = a0*b0
+	 __m128i dm = _mm_clmulepi64_si128(am, bm, 0x11); // d = a1*b1
+	 __m128i em = _mm_clmulepi64_si128(am, bm, 0x10); // e = a0*b1
+	 __m128i fm = _mm_clmulepi64_si128(am, bm, 0x01); // f = a1*b0
 
- /* умножение */
-  cm = _mm_clmulepi64_si128( am, bm, 0x00 ); // c = a0*b0
-  dm = _mm_clmulepi64_si128( am, bm, 0x11 ); // d = a1*b1
-  em = _mm_clmulepi64_si128( am, bm, 0x10 ); // e = a0*b1
-  fm = _mm_clmulepi64_si128( am, bm, 0x01 ); // f = a1*b0
+	 /* приведение */
+	 ak_uint64 x3 = dm[1];
+	 ak_uint64 D = dm[0] ^ em[1] ^ fm[1] ^ (x3 >> 63) ^ (x3 >> 62) ^ (x3 >> 57);
 
- /* приведение */
-  x3 = dm.m128i_u64[1];
-  D = dm.m128i_u64[0] ^ em.m128i_u64[1] ^ fm.m128i_u64[1] ^ (x3 >> 63) ^ (x3 >> 62) ^ (x3 >> 57);
+	 cm[0] ^= D ^ (D << 1) ^ (D << 2) ^ (D << 7);
+	 cm[1] ^= em[0] ^ fm[0] ^ x3 ^ (x3 << 1) ^ (D >> 63) ^ (x3 << 2) ^ (D >> 62) ^ (x3 << 7) ^ (D >> 57);
 
-  cm.m128i_u64[0] ^=  D ^ (D << 1) ^ (D << 2) ^ (D << 7);
-  cm.m128i_u64[1] ^=  em.m128i_u64[0] ^ fm.m128i_u64[0] ^ x3 ^ (x3 << 1) ^ (D >> 63) ^ (x3 << 2) ^ (D >> 62) ^ (x3 << 7) ^ (D >> 57);
-
-  ((ak_uint64 *)z)[0] = cm.m128i_u64[0];
-  ((ak_uint64 *)z)[1] = cm.m128i_u64[1];
-
- #endif
+	 ((ak_uint64 *)z)[0] = cm[0];
+	 ((ak_uint64 *)z)[1] = cm[1];
+#endif
 }
 #endif
 
