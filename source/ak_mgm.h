@@ -13,7 +13,8 @@
  #include <ak_bckey.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Структура, содержащая текущее состояние внутренних переменных режима аутентифицированного шифрования. */
+/*! \brief Структура, содержащая текущее состояние внутренних переменных режима
+   аутентифицированного шифрования. */
  typedef struct mgm_ctx {
   /*! \brief Текущее значение имитовставки. */
    ak_uint128 sum;
@@ -30,7 +31,8 @@
 } *ak_mgm_ctx;
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Секретный ключ алгоритма выработки имитовставки, входящего в режим аутентифицированного шифрования. */
+/*! \brief Секретный ключ алгоритма выработки имитовставки, входящего в режим
+   аутентифицированного шифрования. */
  typedef struct mgm {
  /*! \brief Контекст секретного ключа аутентификации. */
   struct bckey bkey;
@@ -39,13 +41,36 @@
 } *ak_mgm;
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Инициализация начального значения внутреннего состояния алгоритма MGM перед обработкой дополнительных данных. */
+/*! \brief Инициализация начального значения внутреннего состояния алгоритма MGM перед
+    обработкой дополнительных данных. */
  int ak_mgm_context_authentication_clean( ak_mgm_ctx , ak_bckey , const ak_pointer , const size_t );
 /*! \brief Изменение значения внутреннего состояния алгоритма MGM при обработке дополнительных данных. */
  int ak_mgm_context_authentication_update( ak_mgm_ctx, ak_bckey , const ak_pointer , const size_t );
 /*! \brief Завершение действий и вычисление имитовставки. */
- ak_buffer ak_mgm_context_authentication_finalize( ak_mgm_ctx , ak_bckey , ak_pointer, const size_t );
+ ak_buffer ak_mgm_context_authentication_finalize( ak_mgm_ctx ,
+                                                              ak_bckey , ak_pointer, const size_t );
+/*! \brief Инициализация начального значения счетчика для шифрования. */
+ int ak_mgm_context_encryption_clean( ak_mgm_ctx , ak_bckey , const ak_pointer , const size_t );
+/*! \brief Зашифрование данных и обновление внутреннего состояния счетчика для шифрования. */
+ int ak_mgm_context_encryption_update( ak_mgm_ctx , ak_bckey ,
+                                          ak_bckey , const ak_pointer , ak_pointer , const size_t );
+/*! \brief Расшифрование данных и обновление внутреннего состояния счетчика для шифрования. */
+ int ak_mgm_context_decryption_update( ak_mgm_ctx , ak_bckey ,
+                                          ak_bckey , const ak_pointer , ak_pointer , const size_t );
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Зашифрование данных в режиме MGM с одновременной выработкой имитовставки. */
+ ak_buffer ak_bckey_context_encrypt_mgm( ak_bckey , ak_bckey , const ak_pointer , const size_t ,
+                   const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                         ak_pointer , const size_t );
+
+/*! \brief Расшифрование данных в режиме MGM с одновременной проверкой имитовставки. */
+ ak_bool ak_bckey_context_decrypt_mgm( ak_bckey , ak_bckey , const ak_pointer , const size_t ,
+                   const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                          ak_pointer, const size_t );
+/*! \brief Тестирование корректной работы режима блочного шифрования с одновременной
+    выработкой имитовставки. */
+ ak_bool ak_bckey_test_mgm( void );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */
