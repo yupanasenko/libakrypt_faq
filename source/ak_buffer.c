@@ -12,7 +12,7 @@
     @param size Размер выделяемой памяти в байтах.
     @return Указатель на выделенную память.                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- ak_pointer ak_libakrypt_alligned_malloc( size_t size )
+ ak_pointer ak_libakrypt_aligned_malloc( size_t size )
 {
  return
 #ifdef LIBAKRYPT_HAVE_STDALIGN
@@ -37,7 +37,7 @@
     return ak_error_null_pointer;
   }
   buff->data = NULL; buff->size = 0; buff->flag = ak_false;
-  buff->alloc = ak_libakrypt_alligned_malloc; /* по-умолчанию, используются выравненные функции */
+  buff->alloc = ak_libakrypt_aligned_malloc; /* по-умолчанию, используются выравненные функции */
   buff->free = free;                                           /* выделения/освобождения памяти */
  return ak_error_ok;
 }

@@ -58,7 +58,7 @@
  int ak_buffer_set_random( ak_buffer , ak_random );
 
 /*! \brief Функция выделения оперативной памяти. */
- ak_pointer ak_libakrypt_alligned_malloc( size_t );
+ ak_pointer ak_libakrypt_aligned_malloc( size_t );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

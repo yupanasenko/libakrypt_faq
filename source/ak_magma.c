@@ -512,7 +512,7 @@
  /* удаляем былое */
   if( skey->data != NULL ) ak_magma_context_free_keys( skey );
 
-  if(( data = ak_libakrypt_alligned_malloc( sizeof( struct magma_encrypted_keys ))) == NULL )
+  if(( data = ak_libakrypt_aligned_malloc( sizeof( struct magma_encrypted_keys ))) == NULL )
     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
 
  /* выставляем флаги того, что память выделена */

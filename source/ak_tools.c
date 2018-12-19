@@ -754,12 +754,15 @@
   memset( error_event_string, 0, 1024 );
 
 #ifdef LIBAKRYPT_HAVE_UNISTD_H
-  ak_snprintf( error_event_string, 1023, "[%d] %s(): %s (code: %d)",
-                                                             getpid(), function, message, code );
+  if( code < 0 ) ak_snprintf( error_event_string, 1023, "[%d] %s(): %s (code: %d)",
+                                                          getpid(), function, message, code );
+   else ak_snprintf( error_event_string, 1023, "[%d] %s(): %s", getpid(), function, message );
 #else
  #ifdef _MSC_VER
-  ak_snprintf( error_event_string, 1023, "[%d] %s(): %s (code: %d)",
-                                                GetCurrentProcessId(), function, message, code );
+  if( code < 0 ) ak_snprintf( error_event_string, 1023, "[%d] %s(): %s (code: %d)",
+                                             GetCurrentProcessId(), function, message, code );
+   else ak_snprintf( error_event_string, 1023, "[%d] %s(): %s",
+                                                   GetCurrentProcessId(), function, message );
  #else
    #error Unsupported path to compile, sorry ...
  #endif

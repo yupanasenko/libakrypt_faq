@@ -1,8 +1,10 @@
 # -------------------------------------------------------------------------------------------------- #
 # генерация файла для сборки документации (только для UNIX)
 if( CMAKE_HOST_UNIX )
+
     set( LIBAKRYPT_PDF_HEADER "refman_header.tex" )
     set( LIBAKRYPT_PDF_FOOTER "refman_footer.tex" )
+
     configure_file( ${CMAKE_SOURCE_DIR}/doc/refman_header.in
                                                ${CMAKE_BINARY_DIR}/refman_header.tex @ONLY )
     configure_file( ${CMAKE_SOURCE_DIR}/doc/refman_footer.in

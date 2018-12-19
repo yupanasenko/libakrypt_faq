@@ -144,7 +144,7 @@
 
  /* готовим память для переменных */
   if(( skey->data = /* далее, по-возможности, выделяем выравненную память */
-                  ak_libakrypt_alligned_malloc( sizeof( struct kuznechik ))) == NULL )
+                  ak_libakrypt_aligned_malloc( sizeof( struct kuznechik ))) == NULL )
       return ak_error_message( ak_error_out_of_memory, __func__ ,
                                                              "wrong allocation of internal data" );
  /* получаем указатели на области памяти */

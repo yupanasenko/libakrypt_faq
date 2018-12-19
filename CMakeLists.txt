@@ -30,6 +30,7 @@ option( LIBAKRYPT_STATIC_LIB "Build the static library" ON )
 option( LIBAKRYPT_SHARED_LIB "Build the shared library" OFF )
 option( LIBAKRYPT_INTERNAL_TESTS "Build library and collection of internal tests" OFF )
 option( LIBAKRYPT_GMP_TESTS "Build library with comparison gmp and libakrypt tests" OFF )
+option( LIBAKRYPT_MAKE_DOC "Build a documentation in PDF and HTML formats" ON )
 
 # -------------------------------------------------------------------------------------------------- #
 # множество исходных текстов библиотеки и вспомогательных файлов
@@ -255,7 +256,9 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 if( UNIX )
-  include( MakeDoc )
+  if( LIBAKRYPT_MAKE_DOC )
+    include( MakeDoc )
+  endif()
   include( MakeDist )
 endif()
 include( MakeInstall )
