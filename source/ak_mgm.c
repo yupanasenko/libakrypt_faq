@@ -8,6 +8,12 @@
  #include <ak_mgm.h>
 
 /* ----------------------------------------------------------------------------------------------- */
+ #define ak_mgm_assosiated_data_bit  (0x1)
+ #define ak_mgm_encrypted_data_bit   (0x2)
+
+ #define ak_mgm_set_bit( x, n ) ( (x) = ((x)&(0xFFFFFFFF^(n)))^(n) )
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция инициализирует значение счетчика, отвечающего за вычисление значений (множителей),
     используемых для вычисления имитовставки (счетчик H).
 
@@ -50,11 +56,17 @@
    return ak_error_message( ak_error_wrong_length,
                                            __func__, "using initial vector with unexpected length");
  /* обнуляем необходимое */
-  memset( &ctx, 0, sizeof( struct mgm_ctx )); /* очищаем по максимуму */
+  ctx->abitlen = 0;
+  ctx->flags = 0;
+  ctx->pbitlen = 0;
+  memset( ctx->sum.b, 0, 16 );
+  memset( ctx->sum.b, 0, 16 );
+  memset( ctx->sum.b, 0, 16 );
+
   memcpy( ivector, iv, iv_size ); /* копируем нужное количество байт */
  /* принудительно устанавливаем старший бит в 1 */
   // ivector[iv_size-1] = ( ivector[iv_size-1]&0x7F ) ^ 0x80;
-  ivector[authenticationKey->ivector.size-1] = ( ivector[authenticationKey->ivector.size-1]&0x7F ) ^ 0x80;
+  ivector[authenticationKey->bsize-1] = ( ivector[authenticationKey->bsize-1]&0x7F ) ^ 0x80;
 
  /* зашифровываем необходимое и удаляемся */
   authenticationKey->encrypt( &authenticationKey->key, ivector, &ctx->zcount );
@@ -63,18 +75,16 @@
  return ak_error_ok;
 }
 
-// заменить mulres на h
-
 /* ----------------------------------------------------------------------------------------------- */
 #define astep64(DATA)  authenticationKey->encrypt( &authenticationKey->key, &ctx->zcount, &h ); \
-                       ak_gf64_mul( &mulres, &h, (DATA) ); \
-                       ctx->sum.q[0] ^= mulres.q[0]; \
+                       ak_gf64_mul( &h, &h, (DATA) ); \
+                       ctx->sum.q[0] ^= h.q[0]; \
                        ctx->zcount.w[1]++;
 
 #define astep128(DATA) authenticationKey->encrypt( &authenticationKey->key, &ctx->zcount, &h ); \
-                       ak_gf128_mul( &mulres, &h, (DATA) ); \
-                       ctx->sum.q[0] ^= mulres.q[0]; \
-                       ctx->sum.q[1] ^= mulres.q[1]; \
+                       ak_gf128_mul( &h, &h, (DATA) ); \
+                       ctx->sum.q[0] ^= h.q[0]; \
+                       ctx->sum.q[1] ^= h.q[1]; \
                        ctx->zcount.q[1]++;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -99,15 +109,16 @@
  int ak_mgm_context_authentication_update( ak_mgm_ctx ctx,
                       ak_bckey authenticationKey, const ak_pointer adata, const size_t adata_size )
 {
-  ak_uint128 h, mulres;
+  ak_uint128 h;
   ak_uint8 temp[16], *aptr = (ak_uint8 *)adata;
-  size_t absize = authenticationKey->ivector.size;
-  size_t resource = 0,
-           tail = adata_size%absize,
-           blocks = adata_size/absize;
+  ssize_t absize = ( ssize_t ) authenticationKey->bsize;
+  ssize_t resource = 0,
+          tail = ( ssize_t ) adata_size%absize,
+          blocks = ( ssize_t ) adata_size/absize;
 
  /* проверка возможности обновления */
-  if( ctx->flags&0x1 ) return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
+  if( ctx->flags&ak_mgm_assosiated_data_bit )
+    return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                                   "attemp to update previously closed mgm context");
  /* ни чего не задано => ни чего не обрабатываем */
   if(( adata == NULL ) || ( adata_size == 0 )) return ak_error_ok;
@@ -127,7 +138,7 @@
     memcpy( temp+absize-tail, aptr, (size_t)tail );
     astep128( temp );
   /* закрываем добавление ассоциированных данных */
-    ctx->flags |= 0x1;
+    ak_mgm_set_bit( ctx->flags, ak_mgm_assosiated_data_bit );
     ctx->abitlen += ( tail << 3 );
   }
  } else { /* обработка 64-битным шифром */
@@ -139,7 +150,7 @@
     memcpy( temp+absize-tail, aptr, (size_t)tail );
     astep64( temp );
    /* закрываем добавление ассоциированных данных */
-    ctx->flags |= 0x1;
+    ak_mgm_set_bit( ctx->flags, ak_mgm_assosiated_data_bit );
     ctx->abitlen += ( tail << 3 );
   }
  }
@@ -163,10 +174,10 @@
  ak_buffer ak_mgm_context_authentication_finalize( ak_mgm_ctx ctx,
                                  ak_bckey authenticationKey, ak_pointer out, const size_t out_size )
 {
-  ak_uint128 temp, h, mulres;
+  ak_uint128 temp, h;
   ak_pointer pout = NULL;
   ak_buffer result = NULL;
-  size_t absize = authenticationKey->ivector.size;
+  size_t absize = authenticationKey->bsize;
 
  /* проверка запрашиваемой длины iv */
   if(( out_size == 0 ) || ( out_size > absize )) {
@@ -186,12 +197,12 @@
   } else authenticationKey->key.resource.counter--;
 
  /* закрываем добавление шифруемых данных */
-  ctx->flags |= 0x2;
+   ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
 
  /* формируем последний вектор из длин */
   if(  absize&0x10 ) {
-    temp.q[0] = ctx->pbitlen;
-    temp.q[1] = ctx->abitlen;
+    temp.q[0] = ( ak_uint64 )ctx->pbitlen;
+    temp.q[1] = ( ak_uint64 )ctx->abitlen;
     astep128( temp.b );
 
   } else { /* теперь тоже самое, но для 64-битного шифра */
@@ -209,7 +220,7 @@
   if( out != NULL ) pout = out;
    else {
      if(( result =
-              ak_buffer_new_size( authenticationKey->ivector.size )) != NULL ) pout = result->data;
+              ak_buffer_new_size( authenticationKey->bsize )) != NULL ) pout = result->data;
       else ak_error_message( ak_error_get_value( ), __func__ , "wrong creation of result buffer" );
    }
 
@@ -243,7 +254,7 @@
                                                       "using null pointer to internal mgm context");
  if( encryptionKey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                         "using null pointer to authentication key");
- if( encryptionKey->ivector.size > 16 ) return ak_error_message( ak_error_wrong_length,
+ if( encryptionKey->bsize > 16 ) return ak_error_message( ak_error_wrong_length,
                                                       __func__, "using key with large block size" );
  /* инициализация значением и ресурс */
  if(( encryptionKey->key.flags&skey_flag_set_key ) == 0 )
@@ -258,7 +269,7 @@
    return ak_error_message( ak_error_wrong_length,
                                            __func__, "using initial vector with unexpected length");
  /* обнуляем необходимое */
-  ctx->flags ^= ( ctx->flags&0x2 );
+  ctx->flags &= ak_mgm_assosiated_data_bit;
   ctx->pbitlen = 0;
   memset( &ctx->ycount, 0, 16 );
   memset( ivector, 0, 16 );
@@ -304,18 +315,18 @@
  int ak_mgm_context_encryption_update( ak_mgm_ctx ctx, ak_bckey encryptionKey,
          ak_bckey authenticationKey, const ak_pointer in, ak_pointer out, const size_t size )
 {
-  ak_uint128 e, h, mulres;
+  ak_uint128 e, h;
   ak_uint8 temp[16];
-  size_t i = 0, absize = encryptionKey->ivector.size;
+  size_t i = 0, absize = encryptionKey->bsize;
   ak_uint64 *inp = (ak_uint64 *)in, *outp = (ak_uint64 *)out;
   size_t resource = 0,
          tail = size%absize,
          blocks = size/absize;
 
  /* принудительно закрываем обновление ассоциированных данных */
-  ctx->flags |= 0x1;
+  ak_mgm_set_bit( ctx->flags, ak_mgm_assosiated_data_bit );
  /* проверяем возможность обновления */
-  if( ctx->flags&0x2 )
+  if( ctx->flags&ak_mgm_encrypted_data_bit )
     return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                         "using this function with previously closed aead context");
 
@@ -324,14 +335,14 @@
 
  /* проверка ресурса ключа выработки имитовставки */
   if( authenticationKey != NULL ) {
-    if( authenticationKey->key.resource.counter <= (resource = blocks + (tail > 0)))
+    if( authenticationKey->key.resource.counter <= ( ssize_t )(resource = blocks + (tail > 0)))
       return ak_error_message( ak_error_low_key_resource, __func__,
                                                 "using authentication key with low key resource");
     else authenticationKey->key.resource.counter -= resource;
   }
 
  /* проверка ресурса ключа шифрования */
-  if( encryptionKey->key.resource.counter <= resource )
+  if( encryptionKey->key.resource.counter <= ( ssize_t )resource )
    return ak_error_message( ak_error_low_key_resource, __func__,
                                                    "using encryption key with low key resource");
   else encryptionKey->key.resource.counter -= resource;
@@ -352,7 +363,7 @@
         for( i = 0; i < tail; i++ )
            ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ e.b[16-tail+i];
        /* закрываем добавление шифруемых данных */
-        ctx->flags |= 0x2;
+        ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
         ctx->pbitlen += ( tail << 3 );
       }
 
@@ -367,7 +378,7 @@
           for( i = 0; i < tail; i++ )
              ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ e.b[8-tail+i];
          /* закрываем добавление шифруемых данных */
-          ctx->flags |= 0x2;
+          ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
           ctx->pbitlen += ( tail << 3 );
         }
       } /* конец шифрования без аутентификации для 64-битного шифра */
@@ -390,7 +401,7 @@
         astep128( temp );
 
        /* закрываем добавление шифруемых данных */
-        ctx->flags |= 0x2;
+        ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
         ctx->pbitlen += ( tail << 3 );
       }
 
@@ -410,7 +421,7 @@
          astep64( temp );
 
         /* закрываем добавление шифруемых данных */
-         ctx->flags |= 0x1;
+         ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
          ctx->pbitlen += ( tail << 3 );
        }
      } /* конец 64-битного шифра */
@@ -442,17 +453,17 @@
          ak_bckey authenticationKey, const ak_pointer in, ak_pointer out, const size_t size )
 {
   ak_uint8 temp[16];
-  ak_uint128 e, h, mulres;
-  size_t i = 0, absize = encryptionKey->ivector.size;
+  ak_uint128 e, h;
+  size_t i = 0, absize = encryptionKey->bsize;
   ak_uint64 *inp = (ak_uint64 *)in, *outp = (ak_uint64 *)out;
   size_t resource = 0,
          tail = size%absize,
          blocks = size/absize;
 
  /* принудительно закрываем обновление ассоциированных данных */
-  ctx->flags |= 0x2;
+  ak_mgm_set_bit( ctx->flags, ak_mgm_assosiated_data_bit );
  /* проверяем возможность обновления */
-  if( ctx->flags&0x2 )
+  if( ctx->flags&ak_mgm_encrypted_data_bit )
     return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                         "using this function with previously closed aead context");
 
@@ -461,14 +472,14 @@
 
  /* проверка ресурса ключа выработки имитовставки */
   if( authenticationKey != NULL ) {
-    if( authenticationKey->key.resource.counter <= (resource = blocks + (tail > 0)))
+    if( authenticationKey->key.resource.counter <= ( ssize_t )(resource = blocks + (tail > 0)))
       return ak_error_message( ak_error_low_key_resource, __func__,
                                                 "using authentication key with low key resource");
     else authenticationKey->key.resource.counter -= resource;
   }
 
  /* проверка ресурса ключа шифрования */
-  if( encryptionKey->key.resource.counter <= resource )
+  if( encryptionKey->key.resource.counter <= ( ssize_t )resource )
    return ak_error_message( ak_error_low_key_resource, __func__,
                                                    "using encryption key with low key resource");
   else encryptionKey->key.resource.counter -= resource;
@@ -489,7 +500,7 @@
         for( i = 0; i < tail; i++ )
            ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ e.b[16-tail+i];
        /* закрываем добавление шифруемых данных */
-        ctx->flags |= 0x2;
+        ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
         ctx->pbitlen += ( tail << 3 );
       }
 
@@ -504,7 +515,7 @@
           for( i = 0; i < tail; i++ )
              ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ e.b[8-tail+i];
          /* закрываем добавление шифруемых данных */
-          ctx->flags |= 0x2;
+          ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
           ctx->pbitlen += ( tail << 3 );
         }
       } /* конец шифрования без аутентификации для 64-битного шифра */
@@ -527,7 +538,7 @@
            ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ e.b[16-tail+i];
 
        /* закрываем добавление шифруемых данных */
-        ctx->flags |= 0x2;
+        ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
         ctx->pbitlen += ( tail << 3 );
       }
 
@@ -547,11 +558,40 @@
             ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ e.b[8-tail+i];
 
         /* закрываем добавление шифруемых данных */
-         ctx->flags |= 0x2;
+         ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
          ctx->pbitlen += ( tail << 3 );
        }
      } /* конец 64-битного шифра */
   }
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static inline int ak_bckey_check_mgm_length( const size_t asize, const size_t psize, const size_t bsize )
+{
+ /* требования к размерам:
+    - длина ассоциированных данных (в битах) не более 2^n/2
+    - длина шифруемых данных (в битах) не более 2^n/2
+    - суммарная длина длина данных (в битах) не более 2^n/2  */
+
+  size_t temp, aval = asize << 3, pval = psize << 3;
+
+   if( aval < asize ) return ak_error_message( ak_error_wrong_length, __func__,
+                                                        "length of assosiated data is very huge");
+   if( pval < psize ) return ak_error_message( ak_error_wrong_length, __func__,
+                                                       "total length of plain data is very huge");
+   if(( temp = ( aval + pval )) < pval )
+     return ak_error_message( ak_error_wrong_length, __func__,
+                                        "total length of assosiated and plain data is very huge");
+   if( bsize != 16 ) {
+     if( aval > 0x0000000100000000LL ) return ak_error_message( ak_error_wrong_length, __func__,
+                                                       "length of assosiated data is very large");
+     if( pval > 0x0000000100000000LL ) return ak_error_message( ak_error_wrong_length, __func__,
+                                                            "length of plain data is very large");
+     if( temp > 0x0000000100000000LL ) return ak_error_message( ak_error_wrong_length, __func__,
+                                       "total length of assosiated and plain data is very large");
+   }
 
  return ak_error_ok;
 }
@@ -607,71 +647,80 @@
                                      const size_t size, const ak_pointer iv, const size_t iv_size,
                                                          ak_pointer icode, const size_t icode_size )
 {
- ak_buffer result = NULL;
- int error = ak_error_ok;
- struct mgm_ctx mgm; /* контекст структуры, в которой хранятся промежуточные данные */
+  size_t bs = 0;
+  ak_buffer result = NULL;
+  int error = ak_error_ok;
+  struct mgm_ctx mgm; /* контекст структуры, в которой хранятся промежуточные данные */
 
  /* проверки ключей */
- if(( encryptionKey == NULL ) && ( authenticationKey == NULL )) {
-   ak_error_message( ak_error_null_pointer, __func__ ,
+  if(( encryptionKey == NULL ) && ( authenticationKey == NULL )) {
+    ak_error_message( ak_error_null_pointer, __func__ ,
                                "using null pointers both to encryption and authentication keys" );
-   return NULL;
- }
- if(( encryptionKey != NULL ) && ( authenticationKey ) != NULL ) {
-   if( encryptionKey->bsize != authenticationKey->bsize ) {
-     ak_error_message( ak_error_not_equal_data, __func__, "different block sizes for given keys");
-     return NULL;
-   }
- }
+    return NULL;
+  }
+  if(( encryptionKey != NULL ) && ( authenticationKey ) != NULL ) {
+    if( encryptionKey->bsize != authenticationKey->bsize ) {
+      ak_error_message( ak_error_not_equal_data, __func__, "different block sizes for given keys");
+      return NULL;
+    }
+  }
+  if( encryptionKey != NULL ) bs = encryptionKey->bsize;
+    else bs = authenticationKey->bsize;
+
+ /* проверяем размер входных данных */
+  if(( error = ak_bckey_check_mgm_length( adata_size, size, bs )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect length of input data");
+    return NULL;
+  }
 
  /* подготавливаем память */
- memset( &mgm, 0, sizeof( struct mgm_ctx ));
+  memset( &mgm, 0, sizeof( struct mgm_ctx ));
 
  /* в начале обрабатываем ассоциированные данные */
- if( authenticationKey != NULL ) {
-   if(( error =
+  if( authenticationKey != NULL ) {
+    if(( error =
          ak_mgm_context_authentication_clean( &mgm, authenticationKey, iv, iv_size ))
                                                                               != ak_error_ok ) {
      ak_error_message( error, __func__, "incorrect initialization of internal mgm context" );
      ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator, ak_true );
      return NULL;
-   }
-   if(( error =
+    }
+    if(( error =
          ak_mgm_context_authentication_update( &mgm, authenticationKey, adata, adata_size ))
                                                                               != ak_error_ok ) {
      ak_error_message( error, __func__, "incorrect hashing of associated data" );
      ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator, ak_true );
      return NULL;
-   }
- }
+    }
+  }
 
  /* потом зашифровываем данные */
- if( encryptionKey != NULL ) {
-   if(( error =
+  if( encryptionKey != NULL ) {
+    if(( error =
          ak_mgm_context_encryption_clean( &mgm, encryptionKey, iv, iv_size )) != ak_error_ok ) {
      ak_error_message( error, __func__, "incorrect initialization of internal mgm context" );
      ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &encryptionKey->key.generator, ak_true );
      return NULL;
-   }
-   if(( error =
+    }
+    if(( error =
          ak_mgm_context_encryption_update( &mgm, encryptionKey, authenticationKey,
                                                              in, out, size )) != ak_error_ok ) {
      ak_error_message( error, __func__, "incorrect encryption of plain data" );
      ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &encryptionKey->key.generator, ak_true );
      return NULL;
-   }
- }
+    }
+  }
 
  /* в конце - вырабатываем имитовставку */
- if( authenticationKey != NULL ) {
-   ak_error_set_value( ak_error_ok );
-   result = ak_mgm_context_authentication_finalize( &mgm, authenticationKey, icode, icode_size );
-   if(( error = ak_error_get_value()) != ak_error_ok ) {
-     if( result != NULL ) result = ak_buffer_delete( result );
-     ak_error_message( error, __func__, "incorrect finanlize of integrity code" );
-   }
-   ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator, ak_true );
- } else /* выше проверка того, что два ключа одновременно не равну NULL =>
+  if( authenticationKey != NULL ) {
+    ak_error_set_value( ak_error_ok );
+    result = ak_mgm_context_authentication_finalize( &mgm, authenticationKey, icode, icode_size );
+    if(( error = ak_error_get_value()) != ak_error_ok ) {
+      if( result != NULL ) result = ak_buffer_delete( result );
+      ak_error_message( error, __func__, "incorrect finanlize of integrity code" );
+    }
+    ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator, ak_true );
+  } else /* выше проверка того, что два ключа одновременно не равну NULL =>
                                                               один из двух ключей очистит контекст */
      ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &encryptionKey->key.generator, ak_true );
 
@@ -714,78 +763,87 @@
                                      const size_t size, const ak_pointer iv, const size_t iv_size,
                                                          ak_pointer icode, const size_t icode_size )
 {
- struct mgm_ctx mgm; /* контекст структуры, в которой хранятся промежуточные данные */
- int error = ak_error_ok;
- ak_bool result = ak_false;
+  size_t bs = 0;
+  struct mgm_ctx mgm; /* контекст структуры, в которой хранятся промежуточные данные */
+  int error = ak_error_ok;
+  ak_bool result = ak_false;
 
  /* проверки ключей */
- if(( encryptionKey == NULL ) && ( authenticationKey == NULL )) {
-   ak_error_message( ak_error_null_pointer, __func__ ,
+  if(( encryptionKey == NULL ) && ( authenticationKey == NULL )) {
+    ak_error_message( ak_error_null_pointer, __func__ ,
                                "using null pointers both to encryption and authentication keys" );
-   return ak_false;
- }
- if(( encryptionKey != NULL ) && ( authenticationKey ) != NULL ) {
-   if( encryptionKey->bsize != authenticationKey->bsize ) {
-     ak_error_message( ak_error_not_equal_data, __func__, "different block sizes for given keys");
-     return ak_false;
-   }
- }
+    return ak_false;
+  }
+  if(( encryptionKey != NULL ) && ( authenticationKey ) != NULL ) {
+    if( encryptionKey->bsize != authenticationKey->bsize ) {
+      ak_error_message( ak_error_not_equal_data, __func__, "different block sizes for given keys");
+      return ak_false;
+    }
+  }
+   if( encryptionKey != NULL ) bs = encryptionKey->bsize;
+     else bs = authenticationKey->bsize;
+
+ /* проверяем размер входных данных */
+  if(( error = ak_bckey_check_mgm_length( adata_size, size, bs )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect length of input data");
+    return ak_false;
+  }
 
  /* подготавливаем память */
- memset( &mgm, 0, sizeof( struct mgm_ctx ));
+  memset( &mgm, 0, sizeof( struct mgm_ctx ));
 
  /* в начале обрабатываем ассоциированные данные */
- if( authenticationKey != NULL ) {
-   if(( error =
+  if( authenticationKey != NULL ) {
+    if(( error =
          ak_mgm_context_authentication_clean( &mgm, authenticationKey, iv, iv_size ))
                                                                               != ak_error_ok ) {
      ak_error_message( error, __func__, "incorrect initialization of internal mgm context" );
      ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator, ak_true );
      return ak_false;
-   }
-   if(( error =
+    }
+    if(( error =
          ak_mgm_context_authentication_update( &mgm, authenticationKey, adata, adata_size ))
                                                                               != ak_error_ok ) {
      ak_error_message( error, __func__, "incorrect hashing of associated data" );
      ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator, ak_true );
      return ak_false;
-   }
- }
+    }
+  }
 
  /* потом расшифровываем данные */
- if( encryptionKey != NULL ) {
-   if(( error =
+  if( encryptionKey != NULL ) {
+    if(( error =
          ak_mgm_context_encryption_clean( &mgm, encryptionKey, iv, iv_size )) != ak_error_ok ) {
-     ak_error_message( error, __func__, "incorrect initialization of internal mgm context" );
-     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &encryptionKey->key.generator, ak_true );
-     return ak_false;
-   }
-   if(( error =
+      ak_error_message( error, __func__, "incorrect initialization of internal mgm context" );
+      ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &encryptionKey->key.generator, ak_true );
+      return ak_false;
+    }
+    if(( error =
          ak_mgm_context_decryption_update( &mgm, encryptionKey, authenticationKey,
                                                              in, out, size )) != ak_error_ok ) {
      ak_error_message( error, __func__, "incorrect encryption of plain data" );
      ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &encryptionKey->key.generator, ak_true );
      return ak_false;
-   }
- }
+    }
+  }
 
  /* в конце - вырабатываем имитовставку */
- if( authenticationKey != NULL ) {
-   ak_uint8 icode2[16];
-   memset( icode2, 0, 16 );
+  if( authenticationKey != NULL ) {
+    ak_uint8 icode2[16];
+    memset( icode2, 0, 16 );
 
-   ak_error_set_value( ak_error_ok );
-   ak_mgm_context_authentication_finalize( &mgm, authenticationKey, icode2, icode_size );
-   if(( error = ak_error_get_value()) != ak_error_ok )
-     ak_error_message( error, __func__, "incorrect finanlize of integrity code" );
-    else {
-     if( !ak_ptr_is_equal( icode, icode2, icode_size ))
-       ak_error_message( ak_error_not_equal_data, __func__, "wrong value of integrity code" );
-      else result = ak_true;
-    }
-   ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator, ak_true );
+    ak_error_set_value( ak_error_ok );
+    ak_mgm_context_authentication_finalize( &mgm, authenticationKey, icode2, icode_size );
+    if(( error = ak_error_get_value()) != ak_error_ok )
+      ak_error_message( error, __func__, "incorrect finanlize of integrity code" );
+     else {
+      if( !ak_ptr_is_equal( icode, icode2, icode_size ))
+        ak_error_message( ak_error_not_equal_data, __func__, "wrong value of integrity code" );
+       else result = ak_true;
+     }
+    ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator, ak_true );
 
- } else { /* выше была проверка того, что два ключа одновременно не равну NULL =>
+  } else { /* выше была проверка того, что два ключа одновременно не равну NULL =>
                                                               один из двух ключей очистит контекст */
          result = ak_true; /* мы ни чего не проверяли => все хорошо */
          ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &encryptionKey->key.generator, ak_true );
@@ -956,7 +1014,7 @@
     goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
-        "the 1st full encryption, decryption & integrity check test with one Kuznechik key is Ok" );
+             "the 1st full encryption, decryption & integrity test with one Kuznechik key is Ok" );
 
  /* второй тест - шифрование и имитовставка, алгоритм Кузнечик, два ключа */
   memset( icode, 0, 16 );
@@ -997,12 +1055,12 @@
     goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
-      "the 2nd full encryption, decryption & integrity check test with two Kuznechik keys is Ok" );
+            "the 2nd full encryption, decryption & integrity test with two Kuznechik keys is Ok" );
 
  /* третий тест - шифрование и имитовставка, алгоритм Магма, один ключ */
   memset( icode, 0, 16 );
   ak_bckey_context_encrypt_mgm( &magmaKeyB, &magmaKeyB, associated, sizeof( associated ),
-                                    plain, out, sizeof( plain ), iv64, sizeof( iv64 ), icode, 8 );
+                                     plain, out, sizeof( plain ), iv64, sizeof( iv64 ), icode, 8 );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect encryption for third example");
     goto exit;
@@ -1039,12 +1097,12 @@
     goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
-           "the 3rd full encryption, decryption & integrity check test with one Magma key is Ok" );
+                 "the 3rd full encryption, decryption & integrity test with one Magma key is Ok" );
 
  /* четвертый тест - шифрование и имитовставка, алгоритм Магма, два ключа */
   memset( icode, 0, 16 );
   ak_bckey_context_encrypt_mgm( &magmaKeyB, &magmaKeyA, associated, sizeof( associated ),
-                                    plain, out, sizeof( plain ), iv64, sizeof( iv64 ), icode, 8 );
+                                     plain, out, sizeof( plain ), iv64, sizeof( iv64 ), icode, 8 );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect encryption for fourth example");
     goto exit;
@@ -1081,7 +1139,7 @@
     goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
-        "the 4th full encryption, decryption & integrity check test with two Magma keys is Ok" );
+               "the 4th full encryption, decryption & integrity test with two Magma keys is Ok" );
 
  /* только здесь все хорошо */
   result = ak_true;

@@ -80,7 +80,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Раундовые ключи алгоритма Кузнечик. */
- struct kuznechik_expanded_keys {
+ struct __attribute__((aligned(16))) kuznechik_expanded_keys {
   ak_uint128 k[10];
 };
 
