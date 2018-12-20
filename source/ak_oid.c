@@ -5,6 +5,7 @@
 /*  - содержит реализации функций для работы с идентификаторами криптографических                  */
 /*    алгоритмов и параметров                                                                      */
 /* ----------------------------------------------------------------------------------------------- */
+ #include <ak_mgm.h>
  #include <ak_hmac.h>
  #include <ak_omac.h>
  #include <ak_sign.h>
@@ -96,12 +97,12 @@
                                         ( ak_function_void *) ak_hmac_context_delete, NULL, NULL }},
 
    { hmac_function, algorithm, "hmac-streebog512", "1.2.643.7.1.1.4.2", NULL, NULL,
-                           { ( ak_function_void *)ak_hmac_context_create_streebog512,
+                            { ( ak_function_void *)ak_hmac_context_create_streebog512,
                                         ( ak_function_void *) ak_hmac_context_destroy,
                                         ( ak_function_void *) ak_hmac_context_delete, NULL, NULL }},
 
    { hmac_function, algorithm, "hmac-gosthash94", "1.2.643.2.52.1.4.0", NULL, NULL,
-                           { ( ak_function_void *) ak_hmac_context_create_gosthash94,
+                            { ( ak_function_void *) ak_hmac_context_create_gosthash94,
                                         ( ak_function_void *) ak_hmac_context_destroy,
                                         ( ak_function_void *) ak_hmac_context_delete, NULL, NULL }},
 
@@ -114,6 +115,16 @@
                              { ( ak_function_void *) ak_omac_context_create_kuznechik,
                                         ( ak_function_void *) ak_omac_context_destroy,
                                         ( ak_function_void *) ak_omac_context_delete, NULL, NULL }},
+
+   { mgm_function, algorithm, "mgm-magma", "1.2.643.2.52.1.4.3", NULL, NULL,
+                                  { ( ak_function_void *) ak_mgm_context_create_magma,
+                                         ( ak_function_void *) ak_mgm_context_destroy,
+                                         ( ak_function_void *) ak_mgm_context_delete, NULL, NULL }},
+
+   { mgm_function, algorithm, "mgm-kuznechik", "1.2.643.2.52.1.4.4", NULL, NULL,
+                              { ( ak_function_void *) ak_mgm_context_create_kuznechik,
+                                         ( ak_function_void *) ak_mgm_context_destroy,
+                                         ( ak_function_void *) ak_mgm_context_delete, NULL, NULL }},
 
   /*    в дереве библиотеки: 1.2.643.2.52.1.5 - параметры функций ключевого хеширования (имитозащиты) */
 

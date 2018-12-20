@@ -853,6 +853,300 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*                    реализация функций для выработки имитовставки (класс mgm)                    */
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param gkey Контекст алгоритма выработки имитовставки.
+    @param oid Идентификатор алгоритма выработки имитовставки в соответствии с ГОСТ Р 34.13-2015.
+    @return В случае успешного завершения функция возвращает \ref ak_error_ok. В случае
+    возникновения ошибки возвращеется ее код.                                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mgm_context_create_oid( ak_mgm mctx, ak_oid oid )
+{
+  ak_oid bcoid = NULL;
+  int error = ak_error_ok;
+
+ /* выполняем проверку */
+  if( mctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                         "using null pointer to mgm context" );
+  if( oid == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                    "using null pointer to mgm function oid" );
+ /* проверяем, что OID от правильного алгоритма выработки имитовставки */
+  if( oid->engine != mgm_function )
+    return ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
+ /* проверяем, что OID от алгоритма, а не от параметров */
+  if( oid->mode != algorithm )
+    return ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
+
+ /* получаем oid алгоритма блочного шифрования */
+  if(( bcoid = ak_oid_context_find_by_name( oid->name+4 )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__ ,
+                                                   "incorrect searching of block cipher oid" );
+ /* проверяем, что производящая функция определена */
+  if( bcoid->func.create == NULL )
+    return ak_error_message( ak_error_undefined_function, __func__ ,
+                                         "using block cipher oid with undefined constructor" );
+ /* инициализируем контекст ключа алгоритма блочного шифрования */
+  if(( error =
+           (( ak_function_bckey_create *)bcoid->func.create )( &mctx->bkey )) != ak_error_ok )
+    return ak_error_message_fmt( error, __func__,
+                                  "invalid creation of %s block cipher context", bcoid->name );
+ /* доопределяем oid ключа */
+  mctx->bkey.key.oid = oid;
+
+ /* инициализируем структуру, хранящую внутренние состояния режима выработки имитовставки. */
+  memset( &mctx->mctx, 0, sizeof( struct mgm_ctx ));
+ /* инициализируем начальный вектор */
+  if(( error = ak_buffer_create( &mctx->iv )) != ak_error_ok ) {
+    ak_bckey_context_destroy( &mctx->bkey );
+    return ak_error_message( error, __func__, "wrong creation a temporary buffer" );
+  }
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param mctx Контекст алгоритма выработки имитовставки MGM на основе блочного шифра Магма.
+    @return В случае успешного завершения функций возвращает \ref ak_error_ok. В случае
+    возникновения ошибки возвращеется ее код.                                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mgm_context_create_magma( ak_mgm mctx )
+{ return ak_mgm_context_create_oid( mctx, ak_oid_context_find_by_name( "mgm-magma" )); }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param mctx Контекст алгоритма выработки имитовставки MGM на основе блочного шифра Кузнечик.
+    @return В случае успешного завершения функций возвращает \ref ak_error_ok. В случае
+    возникновения ошибки возвращеется ее код.                                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mgm_context_create_kuznechik( ak_mgm mctx )
+{ return ak_mgm_context_create_oid( mctx, ak_oid_context_find_by_name( "mgm-kuznechik" )); }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param mctx Контекст алгоритма выработки имитовставки MGM на основе блочного шифра Кузнечик.
+    @return В случае успешного завершения функций возвращает \ref ak_error_ok. В случае
+    возникновения ошибки возвращеется ее код.                                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mgm_context_destroy( ak_mgm mctx )
+{
+  int error = ak_error_ok;
+
+  if( mctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                             "using null pointer to mgm context" );
+  if(( error = ak_buffer_destroy( &mctx->iv )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect destroying of internal buffer" );
+  if(( error = ak_bckey_context_destroy( &mctx->bkey )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect destroying of block cipher key" );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param mctx Контекст алгоритма выработки имитовставки.
+    @return Функция возвращает NULL. В случае возникновения ошибки, ее код может быть получен с
+    помощью вызова функции ak_error_get_value().                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_mgm_context_delete( ak_pointer mctx )
+{
+  if( mctx != NULL ) {
+      ak_mgm_context_destroy(( ak_mgm ) mctx );
+      free( mctx );
+     } else ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to mgm context" );
+ return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mgm_context_set_iv( ak_mgm mctx, const ak_pointer ptr, const size_t size )
+{
+  if( mctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                             "using null pointer to mgm context" );
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                          "using null pointer to initial vector" );
+  if(( size == 0) || ( size > mctx->bkey.bsize )) return ak_error_message( ak_error_wrong_length,
+                                        __func__, "using initial vector with unsupported length" );
+  return ak_buffer_set_ptr( &mctx->iv, ptr, size, ak_true );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param mctx Контекст алгоритма выработки имитовставки.
+    К моменту вызова функции контекст должен быть инициализирован.
+    @param ptr Указатель на данные, которые будут интерпретироваться в качестве значения ключа.
+    @param size Размер данных, на которые указывает `ptr` (размер в байтах).
+    Если величина `size` меньше, чем размер выделенной памяти под секретный ключ, то копируется
+    только `size` байт (остальные заполняются нулями). Если `size` больше, чем количество выделенной памяти
+    под ключ, то копируются только младшие байты, в количестве `key.size` байт.
+
+    @param cflag Флаг передачи владения укзателем `ptr`. Если `cflag` ложен (принимает значение `ak_false`),
+    то физического копирования данных не происходит: внутренний буфер лишь указывает на размещенные
+    в другом месте данные, но не владеет ими. Если `cflag` истиннен (принимает значение `ak_true`),
+    то происходит выделение памяти и копирование данных в эту память (размножение данных).
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mgm_context_set_key( ak_mgm mctx, const ak_pointer ptr,
+                                                            const size_t size, const ak_bool cflag )
+{
+  int error = ak_error_ok;
+  if( mctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                        "using null pointer to mgm context" );
+  if(( error = ak_bckey_context_set_key( &mctx->bkey, ptr, size, cflag )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает ключу случайное (псевдо-случайное) значение, размер которого определяется
+    размером секретного ключа. Способ выработки ключевого значения определяется используемым
+    генератором случайных (псевдо-случайных) чисел.
+
+    @param mctx Контекст алгоритма выработки имитовставки.
+    К моменту вызова функции контекст должен быть инициализирован.
+    @param generator контекст генератора псевдо-случайных чисел.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mgm_context_set_key_random( ak_mgm mctx, ak_random generator )
+{
+  int error = ak_error_ok;
+  if( mctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                        "using null pointer to mgm context" );
+  if(( error = ak_bckey_context_set_key_random( &mctx->bkey, generator )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает ключу значение, выработанное из заданного пароля при помощи
+    алгоритма PBKDF2, описанного  в рекомендациях по стандартизации Р 50.1.111-2016.
+    Пароль должен быть непустой строкой символов в формате utf8.
+
+    Количество итераций алгоритма PBKDF2 определяется опцией библиотеки `pbkdf2_iteration_count`,
+    значение которой может быть опредедено с помощью вызова функции ak_libakrypt_get_option().
+
+    @param mctx Контекст алгоритма выработки имитовставки.
+    К моменту вызова функции контекст должен быть инициализирован.
+    @param pass Пароль, представленный в виде строки символов.
+    @param pass_size Длина пароля в байтах.
+    @param salt Случайная последовательность, представленная в виде строки символов.
+    @param salt_size Длина случайной последовательности в байтах.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mgm_context_set_key_from_password( ak_mgm mctx,
+                                                const ak_pointer pass, const size_t pass_size,
+                                                     const ak_pointer salt, const size_t salt_size )
+{
+  int error = ak_error_ok;
+  if( mctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                        "using null pointer to omac context" );
+  if(( error = ak_bckey_context_set_key_from_password( &mctx->bkey,
+                                          pass, pass_size, salt, salt_size )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
+
+ return ak_error_ok;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param ptr Контекст алгоритма выработки имитовставки.
+    @return В случае успеха функция возвращает \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mgm_context_clean( ak_pointer ptr )
+{
+  int error = ak_error_ok;
+  ak_mgm mctx = ( ak_mgm ) ptr;
+
+  if( mctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to mgm context" );
+  if( !((mctx->bkey.key.flags)&skey_flag_set_key )) return ak_error_message( ak_error_key_value,
+                                               __func__ , "using mgm key with unassigned value" );
+  if( mctx->iv.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                         "using non initialized initial vector" );
+  if(( error = ak_mgm_context_authentication_clean( &mctx->mctx, &mctx->bkey,
+                                                 mctx->iv.data, mctx->iv.size )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect cleaning of mgm context" );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param ptr Контекст алгоритма выработки имитовставки.
+    @param data Указатель на обрабатываемые данные.
+    @param size Длина обрабатываемых данных (в байтах); длина должна быть кратна длине блока
+    обрабатываемых данных используемого алгоритма блочного шифрования.
+    @return В случае успеха функция возвращает \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mgm_context_update( ak_pointer ptr, const ak_pointer data, const size_t size )
+{
+  int error = ak_error_ok;
+  ak_mgm mctx = ( ak_mgm ) ptr;
+
+  if( mctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                       "using a null pointer to mgm key context" );
+  if( data == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using a null pointer to plain data" );
+  if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                      "using zero length for authenticated data" );
+  if( size%mctx->bkey.bsize ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                                  "using data with wrong length" );
+ /* проверяем наличие ключа */
+  if(( error =
+    ak_mgm_context_authentication_update( &mctx->mctx, &mctx->bkey, data, size )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect updating of mgm context" );
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param ptr Контекст алгоритма выработки имитовставки.
+    @param data Блок входных данных; длина блока должна быть менее, чем блина блока
+           обрабатываемых данных (блока блочного шифра: не более 7 для Магмы и 15 для Кузнечика).
+    @param size Длина блока обрабатываемых данных
+    @param out Указатель на область памяти, куда будет помещен результат; если out равен NULL,
+           то создается новый буффер, в который помещается результат.
+    @return Если out равен NULL, то возвращается указатель на созданный буффер. В противном случае
+           возвращается NULL. В случае возникновения ошибки возывращается NULL. Код ошибки может
+           быть получен c помощью вызова функции ak_error_get_value().                             */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_mgm_context_finalize( ak_pointer ptr, const ak_pointer data,
+                                                               const size_t size, ak_pointer out )
+{
+  ak_buffer buf = NULL;
+  int error = ak_error_ok;
+  ak_mgm mctx = ( ak_mgm ) ptr;
+
+  if( mctx == NULL ) { ak_error_message( ak_error_null_pointer, __func__,
+                                                       "using a null pointer to mgm key context" );
+    return NULL;
+  }
+  if( data == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to plain data" );
+    return NULL;
+  }
+  if( size >= mctx->bkey.bsize ) { ak_error_message( ak_error_zero_length,
+                                          __func__ , "using wrong length for authenticated data" );
+    return NULL;
+  }
+
+ /* сжимаем оставшиеся данные */
+  if( size > 0 )
+    if(( error = ak_mgm_context_authentication_update( &mctx->mctx, &mctx->bkey,
+                                                                  data, size )) != ak_error_ok ) {
+      ak_error_message( error, __func__, "incorrect updating of mgm context" );
+      return NULL;
+    }
+
+ buf = ak_mgm_context_authentication_finalize( &mctx->mctx, &mctx->bkey, out, mctx->bkey.bsize );
+ if(( error = ak_error_get_value()) != ak_error_ok )
+   ak_error_message( error, __func__, " incorrect finalizing of mgm context");
+ return buf;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                             реализация функций для тестирования                                 */
 /* ----------------------------------------------------------------------------------------------- */
 

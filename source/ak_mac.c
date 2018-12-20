@@ -122,6 +122,43 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция инициализирует контекст структуры struct mac в значения, определяемые
+    заданным контекстом `mctx` алгоритма выработки имитовставки MGM.
+    При этом, владение контекстом `mctx` не происходит (в частности не происходит его удаление).
+
+    @param ictx Указатель на структуру struct mac.
+    @param mctx Контекст алгоритма выработки имитовставки MGM; контекст должен быть
+    предварительно инициализирован.
+    @return В случае успеха возвращается \ref ak_error_ok (ноль). В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mac_context_create_mgm( ak_mac ictx, ak_mgm mctx )
+{
+ /* вначале, необходимые проверки */
+  if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using null pointer to mac context" );
+  if( mctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using null pointer to mgm context" );
+ /* теперь собственно инициализация */
+  if(( ictx->data = (ak_uint8 *) malloc( ictx->bsize = mctx->bkey.bsize )) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ ,
+                                     "wrong memory alllocation for a new temporary data buffer" );
+  } else memset( ictx->data, 0, mctx->bkey.bsize );
+  ictx->length = 0;
+
+ /* устанавливаем значения и полей и методы из контекста функции хеширования */
+  ictx->engine = mgm_function;
+  ictx->ctx = mctx;
+  ictx->hsize = ictx->bsize; /* длина вызода совпадает с длиной входа */
+  ictx->clean = ak_mgm_context_clean;
+  ictx->update = ak_mgm_context_update;
+  ictx->finalize = ak_mgm_context_finalize;
+  ictx->free = NULL;
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  static int ak_mac_context_create_oid_common( ak_mac ictx, ak_oid oid, size_t size,
                                                                    ak_function_mac_create *create )
 {
@@ -193,6 +230,13 @@
             "incorrect initialization of mac function context with %s omac function", oid->name );
     break;
 
+    case mgm_function: /* создаем функцию выработки имитовставки ГОСТ Р 34.13-2015. */
+      if(( error = ak_mac_context_create_oid_common( ictx, oid, sizeof( struct mgm ),
+                         (ak_function_mac_create*) ak_mac_context_create_mgm )) != ak_error_ok )
+        return ak_error_message_fmt( error, __func__,
+            "incorrect initialization of mac function context with %s omac function", oid->name );
+    break;
+
     default: return ak_error_message( ak_error_oid_engine, __func__, "using oid with wrong engine" );
   }
 
@@ -242,6 +286,37 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param ictx Указатель на контекст сжимающего отображения (структуру struct mac).
     К моменту вызова функции контекст должен быть инициализирован.
+    @param iv Указатель на данные, которые будут интерпретироваться в качестве
+    инициализационного вектора.
+    @param size Размер данных, на которые указывает `iv` (размер в байтах).
+
+    \b Примечание. Большинство алгоритмов выработки имитовставки не требуют наличия
+    инициализационного вектора. Для таких алгоритмов функция будет возвращать ошибку.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mac_context_set_iv( ak_mac ictx, const ak_pointer iv, const size_t size )
+{
+  int error = ak_error_ok;
+  if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using a null pointer to null mac context" );
+   switch( ictx->engine )
+  {
+    case mgm_function:
+      error = ak_mgm_context_set_iv(( ak_mgm )ictx->ctx, iv, size );
+      break;
+    default: return ak_error_message( ak_error_key_usage, __func__,
+                                           "using an initial vector for non-specified algorithm" );
+  }
+  if( error != ak_error_ok ) ak_error_message( error, __func__ ,
+                                                         "incorrect assigning an initial vector" );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param ictx Указатель на контекст сжимающего отображения (структуру struct mac).
+    К моменту вызова функции контекст должен быть инициализирован.
     @param ptr Указатель на данные, которые будут интерпретироваться в качестве значения ключа.
     @param size Размер данных, на которые указывает `ptr` (размер в байтах).
     Если величина `size` меньше, чем размер выделенной памяти под секретный ключ, то копируется
@@ -261,24 +336,23 @@
 {
   int error = ak_error_ok;
   if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                        "using a null pointer to null mac context" );
+                                                      "using a null pointer to null mac context" );
    switch( ictx->engine )
   {
     case hmac_function:
-      if(( error =
-                ak_hmac_context_set_key(( ak_hmac )ictx->ctx, ptr, size, cflag )) != ak_error_ok )
-      return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
-    break;
-
+      error = ak_hmac_context_set_key(( ak_hmac )ictx->ctx, ptr, size, cflag );
+      break;
     case omac_function:
-      if(( error =
-                ak_omac_context_set_key(( ak_omac )ictx->ctx, ptr, size, cflag )) != ak_error_ok )
-      return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
-    break;
-
-    default:
-      return ak_error_message( ak_error_key_usage, __func__, "using a key for non-key mac context" );
+      error = ak_omac_context_set_key(( ak_omac )ictx->ctx, ptr, size, cflag );
+      break;
+    case mgm_function:
+      error = ak_mgm_context_set_key(( ak_mgm )ictx->ctx, ptr, size, cflag );
+      break;
+    default: return ak_error_message( ak_error_key_usage, __func__,
+                                                           "using a key for non-key mac context" );
   }
+  if( error != ak_error_ok ) ak_error_message( error, __func__ ,
+                                                        "incorrect assigning a secret key value" );
  return error;
 }
 
@@ -487,7 +561,7 @@
   if( !file.size ) return ak_mac_context_finalize( ictx, "", 0, out );
 
  /* готовим область для хранения данных */
-  block_size = ( size_t ) ak_max( file.blksize, ictx->bsize );
+  block_size = ak_max( ( size_t )file.blksize, ictx->bsize );
  /* здесь мы выделяем локальный буффер для считывания/обработки данных */
   if((localbuffer = ( ak_uint8 * ) malloc( block_size )) == NULL ) {
     ak_file_close( &file );

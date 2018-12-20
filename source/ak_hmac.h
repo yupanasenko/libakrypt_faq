@@ -60,7 +60,7 @@
 /*! \brief Очистка контекста секретного ключа алгоритма выработки имитовставки HMAC, а также
     проверка ресурса ключа. */
  int ak_hmac_context_clean( ak_pointer );
-/*! \brief Обновление текущее состояние контекста алгоритма выработки имитовставки HMAC. */
+/*! \brief Обновление текущего состояния контекста алгоритма выработки имитовставки HMAC. */
  int ak_hmac_context_update( ak_pointer , const ak_pointer , const size_t );
 /*! \brief Завершение алгоритма выработки имитовставки HMAC. */
  ak_buffer ak_hmac_context_finalize( ak_pointer , const ak_pointer , const size_t , ak_pointer );

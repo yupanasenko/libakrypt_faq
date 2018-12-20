@@ -265,6 +265,8 @@ extern "C" {
      hmac_function,
    /*! \brief семейство функций выработки имитовставки согласно ГОСТ Р 34.13-2015. */
      omac_function,
+   /*! \brief семейство функций выработки имитовставки MGM. */
+     mgm_function,
    /*! \brief класс всех ключевых функций хеширования (функций вычисления имитовставки) */
      mac_function,
    /*! \brief функция выработки электронной подписи (секретный ключ электронной подписи) */
@@ -400,9 +402,9 @@ extern "C" {
  dll_export ak_buffer ak_buffer_new_str( const char * );
 /*! \brief Уничтожение буффера. */
  dll_export ak_pointer ak_buffer_delete( ak_pointer );
-/*! \brief Пощемение двоичных данных в буффер. */
+/*! \brief Помещение двоичных данных в буффер. */
  dll_export int ak_buffer_set_ptr( ak_buffer , const ak_pointer , const size_t , const ak_bool );
-/*! \brief Пощемение в буффер данных, заданных строкой в  шестнадцатеричном представлении. */
+/*! \brief Помещение в буффер данных, заданных строкой в  шестнадцатеричном представлении. */
  dll_export int ak_buffer_set_hexstr( ak_buffer, const char * );
 /*! \brief Помещение в буффер строки, оканчивающейся нулем. */
  dll_export int ak_buffer_set_str( ak_buffer, const char * );

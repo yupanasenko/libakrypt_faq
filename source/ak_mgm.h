@@ -33,11 +33,13 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Секретный ключ алгоритма выработки имитовставки, входящего в режим
    аутентифицированного шифрования. */
- typedef struct mgm {
+ typedef struct __attribute__((aligned(16))) mgm {
  /*! \brief Контекст секретного ключа аутентификации. */
   struct bckey bkey;
  /*! \brief Текущее состояние внутренних переменных алгоритма аутентифицированного шифрования. */
   struct mgm_ctx mctx;
+ /*! \brief Вектор со значением инициализационного вектора. */
+  struct buffer iv;
 } *ak_mgm;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -63,11 +65,43 @@
  ak_buffer ak_bckey_context_encrypt_mgm( ak_bckey , ak_bckey , const ak_pointer , const size_t ,
                    const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
                                                                          ak_pointer , const size_t );
-
 /*! \brief Расшифрование данных в режиме MGM с одновременной проверкой имитовставки. */
  ak_bool ak_bckey_context_decrypt_mgm( ak_bckey , ak_bckey , const ak_pointer , const size_t ,
                    const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
                                                                           ak_pointer, const size_t );
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Инициализация конектста алгоритма выработки имитовставки MGM
+     на основе блочного шифра Магма. */
+ int ak_mgm_context_create_magma( ak_mgm );
+/*! \brief Инициализация конектста алгоритма выработки имитовставки MGM
+     на основе блочного шифра Кузнечик. */
+ int ak_mgm_context_create_kuznechik( ak_mgm );
+/*! \brief Создание контекста алгоритма вырабтки имитовставки MGM c помощью заданного oid. */
+ int ak_mgm_context_create_oid( ak_mgm , ak_oid );
+/*! \brief Уничтожение контекста алгоритма выработки имитовставки MGM. */
+ int ak_mgm_context_destroy( ak_mgm );
+/*! \brief Освобождение памяти из под контекста алгоритма выработки имитовставки MGM. */
+ ak_pointer ak_mgm_context_delete( ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Присвоение контексту заданного значения инициализационного вектора (синхропосылки). */
+ int ak_mgm_context_set_iv( ak_mgm , const ak_pointer , const size_t );
+/*! \brief Присвоение секретному ключу константного значения. */
+ int ak_mgm_context_set_key( ak_mgm , const ak_pointer , const size_t , const ak_bool );
+/*! \brief Присвоение секретному ключу случайного значения. */
+ int ak_mgm_context_set_key_random( ak_mgm , ak_random );
+/*! \brief Присвоение секретному ключу значения, выработанного из пароля */
+ int ak_mgm_context_set_key_from_password( ak_mgm , const ak_pointer , const size_t ,
+                                                                 const ak_pointer , const size_t );
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Очистка контекста алгоритма выработки имитовставки MGM. */
+ int ak_mgm_context_clean( ak_pointer );
+/*! \brief Обновление текущего состояния контекста алгоритма выработки имитовставки MGM. */
+ int ak_mgm_context_update( ak_pointer , const ak_pointer , const size_t );
+/*! \brief Завершение алгоритма выработки имитовставки MGM. */
+ ak_buffer ak_mgm_context_finalize( ak_pointer , const ak_pointer , const size_t , ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тестирование корректной работы режима блочного шифрования с одновременной
     выработкой имитовставки. */
  ak_bool ak_bckey_test_mgm( void );
