@@ -584,7 +584,12 @@
    if(( temp = ( aval + pval )) < pval )
      return ak_error_message( ak_error_wrong_length, __func__,
                                         "total length of assosiated and plain data is very huge");
-   if( bsize != 16 ) {
+
+  /* на 32-х битной архитектуре size_t не превосходит 32 бита =>
+     длины корректны для Магмы и для Кузнечика
+
+     на 64-х битной архитектуре много может быть только для Магмы => проверяем */
+   if(( sizeof ( ak_pointer ) > 4 ) && ( bsize != 16 )) {
      if( aval > 0x0000000100000000LL ) return ak_error_message( ak_error_wrong_length, __func__,
                                                        "length of assosiated data is very large");
      if( pval > 0x0000000100000000LL ) return ak_error_message( ak_error_wrong_length, __func__,
@@ -1448,6 +1453,11 @@
  return result;
 }
 
+/*! \todo Необходимо сделать цикл тестов со
+    случайными имитовставками, вычисляемыми с помощью класса struct mac. */
+/* ----------------------------------------------------------------------------------------------- */
+/*!  \example test-internal-mgm01.c                                                                */
+/*!  \example test-internal-mgm02.c                                                                */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                       ak_mgm.c  */
 /* ----------------------------------------------------------------------------------------------- */

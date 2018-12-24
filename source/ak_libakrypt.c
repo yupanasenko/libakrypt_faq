@@ -162,13 +162,6 @@
     return ak_false;
   }
 
- /* инициализируем константные таблицы для алгоритма Кузнечик */
-  if( ak_bckey_init_kuznechik_tables()  != ak_true ) {
-    ak_error_message( ak_error_get_value(), __func__ ,
-                                       "incorrect initialization of kuznechik predefined tables" );
-    return ak_false;
-  }
-
  /* тестируем корректность реализации блочного шифра Кузнечик */
   if( ak_bckey_test_kuznechik()  != ak_true ) {
     ak_error_message( ak_error_get_value(), __func__ ,
@@ -358,8 +351,15 @@
      return ak_false;
    }
 
+ /* инициализируем константные таблицы для алгоритма Кузнечик */
+  if( ak_bckey_init_kuznechik_tables()  != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                       "incorrect initialization of kuznechik predefined tables" );
+    return ak_false;
+  }
+
  /* процедура полного тестирования всех криптографических алгоритмов
-    занимает очень много времени на встраиваемых платформах,
+    занимает очень много времени, особенно на встраиваемых платформах,
     поэтому ее запуск должен производиться в соответствии с неким регламентом ....
 
     if( !ak_libakrypt_dynamic_control_test( )) {
@@ -368,7 +368,7 @@
     }
 
     заметим, что функция динамического контроля экспортируется,
-    так что теперь она может быть запущена пользователем самостоятельно. */
+    так что она может быть запущена пользователем самостоятельно. */
 
  if( ak_log_get_level() != ak_log_none )
    ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms tested successfully" );

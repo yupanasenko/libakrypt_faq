@@ -216,6 +216,8 @@ set( INTERNAL_TEST_LIST
                  internal-context-node01
                  internal-context-manager01
                  internal-mgm01
+                 internal-mgm02
+                 internal-mgm03
 )
 
 if( LIBAKRYPT_INTERNAL_TESTS )
