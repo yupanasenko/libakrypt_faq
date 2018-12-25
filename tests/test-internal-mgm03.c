@@ -47,6 +47,7 @@
     return ak_libakrypt_destroy();
   }
 
+ /* вычисляем имитовставку от фиксированных данных */
   if(( buffer = ak_mac_context_ptr( &ictx, testdata, sizeof( testdata ), NULL )) != NULL ) {
     for( i = 0; i < buffer->size; i++ ) printf("%02X", ((ak_uint8 *)buffer->data)[i] );
     printf(" [icode]\n");

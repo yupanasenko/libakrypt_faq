@@ -354,7 +354,7 @@
  /* инициализируем константные таблицы для алгоритма Кузнечик */
   if( ak_bckey_init_kuznechik_tables()  != ak_true ) {
     ak_error_message( ak_error_get_value(), __func__ ,
-                                       "incorrect initialization of kuznechik predefined tables" );
+                                  "incorrect initialization of kuznechik predefined tables" );
     return ak_false;
   }
 
