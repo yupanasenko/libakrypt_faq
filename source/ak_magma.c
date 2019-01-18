@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2019 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                            by Mikhail Lavrinovich, mikhail.lavrinovich@netcracker.com           */
 /*                                                                                                 */
 /*  Файл ak_magma.h                                                                                */
