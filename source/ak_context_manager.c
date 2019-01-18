@@ -4,6 +4,21 @@
 /*  Файл ak_context_manager.c                                                                      */
 /*  - содержит реализацию функций для управления контекстами.                                      */
 /* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+ #include <stdlib.h>
+#else
+ #error Library cannot be compiled without stdlib.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STRING_H
+ #include <string.h>
+#else
+ #error Library cannot be compiled without string.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_PTHREAD
+ #include <pthread.h>
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
  #include <ak_mac.h>
  #include <ak_sign.h>
  #include <ak_tools.h>

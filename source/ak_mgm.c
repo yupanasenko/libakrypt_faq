@@ -5,6 +5,18 @@
 /*  - содержит функции, реализующие аутентифицированное шифрование
       и различные режимы его применения.                                                           */
 /* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+ #include <stdlib.h>
+#else
+ #error Library cannot be compiled without stdlib.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STRING_H
+ #include <string.h>
+#else
+ #error Library cannot be compiled without string.h header
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
  #include <ak_mgm.h>
 
 /* ----------------------------------------------------------------------------------------------- */

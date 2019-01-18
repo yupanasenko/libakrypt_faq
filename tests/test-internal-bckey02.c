@@ -4,6 +4,8 @@
 
    test-internal-bckey02.c
 */
+ #include <stdio.h>
+ #include <string.h>
  #include <ak_bckey.h>
  #define size (67)
 

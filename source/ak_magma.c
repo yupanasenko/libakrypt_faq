@@ -6,11 +6,23 @@
 /*  - содержит реализацию алгоритма блочного шифрования Магма,                                     */
 /*    регламентированного ГОСТ Р 34.12-2015                                                        */
 /* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+ #include <stdlib.h>
+#else
+ #error Library cannot be compiled without stdlib.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STRING_H
+ #include <string.h>
+#else
+ #error Library cannot be compiled without string.h header
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
  #include <ak_tools.h>
  #include <ak_bckey.h>
 
 /* ----------------------------------------------------------------------------------------------- */
- const magma magma_boxes[2][2] = {
+ static const magma magma_boxes[2][2] = {
   {
    {
     {

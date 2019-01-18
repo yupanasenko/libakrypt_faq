@@ -7,6 +7,7 @@
 
  #include <stdio.h>
  #include <stdlib.h>
+ #include <string.h>
  #include <ak_mgm.h>
 
 /* общие данные */

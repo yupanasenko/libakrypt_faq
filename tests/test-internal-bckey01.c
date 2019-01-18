@@ -3,6 +3,7 @@
 
    test-internal-bckey01.c
 */
+ #include <stdio.h>
  #include <ak_bckey.h>
 
  int main( void )

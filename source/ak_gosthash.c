@@ -5,6 +5,18 @@
 /*  - содержит реализацию алгоритма бесключевого хэширования, регламентируемого ГОСТ Р 34.11-94    */
 /*    (в настоящее время стандарт отменен).                                                        */
 /* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+ #include <stdlib.h>
+#else
+ #error Library cannot be compiled without stdlib.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STRING_H
+ #include <string.h>
+#else
+ #error Library cannot be compiled without string.h header
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
  #include <ak_hash.h>
 
 /* ----------------------------------------------------------------------------------------------- */

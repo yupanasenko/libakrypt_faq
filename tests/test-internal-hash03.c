@@ -6,6 +6,7 @@
 */
  #include <stdio.h>
  #include <stdlib.h>
+ #include <string.h>
  #include <ak_tools.h>
  #include <ak_random.h>
  #include <ak_mac.h>

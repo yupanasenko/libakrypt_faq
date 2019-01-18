@@ -8,40 +8,8 @@
  #define    __AK_TOOLS_H__
 
 /* ----------------------------------------------------------------------------------------------- */
+ #include <stdio.h>
  #include <libakrypt.h>
-
-/* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_HAVE_FCNTL_H
- #include <fcntl.h>
-#endif
-#ifdef LIBAKRYPT_HAVE_SYSSTAT_H
- #include <sys/stat.h>
-#endif
-#ifdef LIBAKRYPT_HAVE_TERMIOS_H
- #include <termios.h>
-#endif
-#ifdef LIBAKRYPT_HAVE_UNISTD_H
- #include <unistd.h>
-#endif
-#ifdef LIBAKRYPT_HAVE_SYSLOG_H
- #include <syslog.h>
-#endif
-#ifdef LIBAKRYPT_HAVE_UNISTD_H
- #include <unistd.h>
-#endif
-#ifdef LIBAKRYPT_HAVE_LIMITS_H
- #include <limits.h>
-#endif
-#ifdef LIBAKRYPT_HAVE_ERRNO_H
- #include <errno.h>
-#else
- #error Library cannot be compiled without errno.h header
-#endif
-#ifdef LIBAKRYPT_HAVE_STDARG_H
- #include <stdarg.h>
-#else
- #error Library cannot be compiled without stdarg.h header
-#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура данных для хранения дескриптора и параметров файла (используется переносимая реализация через libc). */

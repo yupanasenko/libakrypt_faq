@@ -1,3 +1,6 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
  #include <ak_mpzn.h>
 
 /* основная тестирующая программа */

@@ -4,6 +4,13 @@
 /*  Файл ak_hash.h                                                                                 */
 /*  - содержит реализацию общих функций для алгоритмов бесключевого хэширования.                   */
 /* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+ #include <stdlib.h>
+#else
+ #error Library cannot be compiled without stdlib.h header
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
  #include <ak_mac.h>
  #include <ak_context_manager.h>
 

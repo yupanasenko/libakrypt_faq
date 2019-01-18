@@ -8,6 +8,7 @@
 */
 
  #include <stdio.h>
+ #include <stdlib.h>
  #include <ak_oid.h>
  #include <ak_random.h>
 

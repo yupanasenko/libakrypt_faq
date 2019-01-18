@@ -4,7 +4,29 @@
 /*  Файл ak_random.с                                                                               */
 /*  - содержит реализацию генераторов псевдо-случайных чисел                                       */
 /* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_TIME_H
  #include <time.h>
+#else
+ #error Library cannot be compiled without time.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+ #include <stdlib.h>
+#else
+ #error Library cannot be compiled without stdlib.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STRING_H
+ #include <string.h>
+#else
+ #error Library cannot be compiled without string.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_UNISTD_H
+ #include <unistd.h>
+#endif
+#ifdef LIBAKRYPT_HAVE_FCNTL_H
+ #include <fcntl.h>
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
  #include <ak_hash.h>
  #include <ak_mpzn.h>
  #include <ak_tools.h>

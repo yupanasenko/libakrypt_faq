@@ -3,6 +3,7 @@
 
    test-internal-signkey01.c
 */
+ #include <stdio.h>
  #include <ak_sign.h>
 
  int main( void )

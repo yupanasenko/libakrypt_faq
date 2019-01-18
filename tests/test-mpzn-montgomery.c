@@ -1,4 +1,6 @@
  #include <stdio.h>
+ #include <stdlib.h>
+ #include <time.h>
  #include <ak_curves.h>
  #include <ak_oid.h>
 

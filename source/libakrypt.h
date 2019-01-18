@@ -35,43 +35,18 @@ extern "C" {
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
-#ifndef _WIN32
- #ifndef _POSIX_C_SOURCE
-   #define _POSIX_C_SOURCE 2
- #endif
-#endif
- #include <stdio.h>
- #include <stdio.h>
- #include <string.h>
- #include <stdlib.h>
- #include <sys/types.h>
+#include <sys/types.h>
 
-/* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_HAVE_PTHREAD
- #include <pthread.h>
-#endif
-/* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_HAVE_STDALIGN
- #include <stdalign.h>
-#endif
-/* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_HAVE_BUILTIN_XOR_SI128
- #include <emmintrin.h>
-#endif
-/* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64
- #include <wmmintrin.h>
-#endif
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_WINDOWS_H
  #include <windows.h>
+ #include <io.h>
+ #include <conio.h>
+ #include <process.h>
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef _MSC_VER
- #include <io.h>
- #include <conio.h>
- #include <process.h>
  typedef __int32 ak_int32;
  typedef unsigned __int32 ak_uint32;
  typedef __int64 ak_int64;

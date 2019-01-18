@@ -4,6 +4,18 @@
 /*  Файл ak_omac.с                                                                                 */
 /*  - содержит реализацию алгоритма выработки имитовставки согласно ГОСТ Р 34.13-2015.             */
 /* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+ #include <stdlib.h>
+#else
+ #error Library cannot be compiled without stdlib.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STRING_H
+ #include <string.h>
+#else
+ #error Library cannot be compiled without string.h header
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
  #include <ak_mac.h>
 
 /* ----------------------------------------------------------------------------------------------- */

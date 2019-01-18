@@ -5,9 +5,11 @@
    test-internal-random01.c
 */
 
-#include <time.h>
-#include <stdio.h>
-#include <ak_random.h>
+ #include <time.h>
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
+ #include <ak_random.h>
 
  int test_function( const char *name, const char *result, ak_function_random create )
 { 

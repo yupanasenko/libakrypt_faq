@@ -1,3 +1,4 @@
+ #include <stdio.h>
  #include <ak_curves.h>
  #include <ak_mpzn.h>
  #include <ak_oid.h>

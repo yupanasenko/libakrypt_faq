@@ -1,5 +1,7 @@
 /* пример иллюстрирует применение экспортируемых
    функций для работы с буфферами хранения данных */
+ #include <stdio.h>
+ #include <string.h>
  #include <libakrypt.h>
 
  int main( void )

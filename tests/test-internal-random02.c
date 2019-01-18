@@ -5,11 +5,13 @@
    test-internal-random02.c
 */
 
-#include <time.h>
-#include <stdio.h>
-#include <ak_oid.h>
-#include <ak_hash.h>
-#include <ak_random.h>
+ #include <time.h>
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
+ #include <ak_oid.h>
+ #include <ak_hash.h>
+ #include <ak_random.h>
 
 /* функция, тестирующая совпадение различных путей вызова генератора */
  int test( ak_oid oid )

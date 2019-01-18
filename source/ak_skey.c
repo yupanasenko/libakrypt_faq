@@ -4,7 +4,23 @@
 /*  Файл ak_skey.h                                                                                 */
 /*  - содержит реализации функций, предназначенных для хранения и обработки ключевой информации.   */
 /* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_TIME_H
  #include <time.h>
+#else
+ #error Library cannot be compiled without time.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+ #include <stdlib.h>
+#else
+ #error Library cannot be compiled without stdlib.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STRING_H
+ #include <string.h>
+#else
+ #error Library cannot be compiled without string.h header
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
  #include <ak_mac.h>
  #include <ak_tools.h>
 

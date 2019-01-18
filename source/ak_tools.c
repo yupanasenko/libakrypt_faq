@@ -4,14 +4,78 @@
 /*  Файл ak_tools.с                                                                                */
 /*  - содержит реализацию служебных функций, не экспортируемых за пределы библиотеки               */
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_tools.h>
- #include <stdio.h>
- #include <stdlib.h>
 
+/* ----------------------------------------------------------------------------------------------- */
+/* это объявление нужно для использования функции fdopen() */
+#ifndef _WIN32
+ #ifndef _POSIX_C_SOURCE
+   #define _POSIX_C_SOURCE 2
+ #endif
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_STDIO_H
+ #include <stdio.h>
+#else
+ #error Library cannot be compiled without stdio.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+ #include <stdlib.h>
+#else
+ #error Library cannot be compiled without stdlib.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STRING_H
+ #include <string.h>
+#else
+ #error Library cannot be compiled without string.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_ERRNO_H
+ #include <errno.h>
+#else
+ #error Library cannot be compiled without errno.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STDARG_H
+ #include <stdarg.h>
+#else
+ #error Library cannot be compiled without stdarg.h header
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_FCNTL_H
+ #include <fcntl.h>
+#endif
+#ifdef LIBAKRYPT_HAVE_SYSSTAT_H
+ #include <sys/stat.h>
+#endif
+#ifdef LIBAKRYPT_HAVE_TERMIOS_H
+ #include <termios.h>
+#endif
+#ifdef LIBAKRYPT_HAVE_UNISTD_H
+ #include <unistd.h>
+#endif
+#ifdef LIBAKRYPT_HAVE_SYSLOG_H
+ #include <syslog.h>
+#endif
+#ifdef LIBAKRYPT_HAVE_UNISTD_H
+ #include <unistd.h>
+#endif
+#ifdef LIBAKRYPT_HAVE_LIMITS_H
+ #include <limits.h>
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_PTHREAD
+ #include <pthread.h>
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
 #ifdef _MSC_VER
  #include <share.h>
  #include <direct.h>
 #endif
+
+/* ----------------------------------------------------------------------------------------------- */
+ #include <ak_tools.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*!  Переменная, содержащая в себе код последней ошибки                                            */

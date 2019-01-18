@@ -6,6 +6,7 @@
    test-internal-context-node.c
 */
  #include <stdio.h>
+ #include <stdlib.h>
  #include <ak_bckey.h>
  #include <ak_context_manager.h>
 

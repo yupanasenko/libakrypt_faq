@@ -2,6 +2,9 @@
  #define _DEFAULT_SOURCE
  #include <limits.h>
 #endif
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
  #include <akrypt.h>
 
 /* ----------------------------------------------------------------------------------------------- */

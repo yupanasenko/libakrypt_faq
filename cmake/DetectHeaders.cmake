@@ -3,6 +3,50 @@ include(CheckCSourceCompiles)
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
+  #include <stdio.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_STDIO )
+
+if( LIBAKRYPT_HAVE_STDIO )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_STDIO_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
+  #include <stdlib.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_STDLIB )
+
+if( LIBAKRYPT_HAVE_STDLIB )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_STDLIB_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
+  #include <string.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_STRING )
+
+if( LIBAKRYPT_HAVE_STRING )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_STRING_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
+  #include <time.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_TIME )
+
+if( LIBAKRYPT_HAVE_TIME )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_TIME_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
   #include <syslog.h>
   int main( void ) {
      return 0;
@@ -65,6 +109,17 @@ check_c_source_compiles("
 
 if( LIBAKRYPT_HAVE_SYSSTAT )
     set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SYSSTAT_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
+  #include <sys/types.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_SYSTYPES )
+
+if( LIBAKRYPT_HAVE_SYSTYPES )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SYSTYPES_H" )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
