@@ -5,6 +5,11 @@
 /*  - содержит реализацию алгоритма блочного шифрования Кузнечик,                                  */
 /*    регламентированного ГОСТ Р 34.12-2015                                                        */
 /* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+ #include <stdlib.h>
+#else
+ #error Library cannot be compiled without stdlib.h header
+#endif
 #ifdef LIBAKRYPT_HAVE_STRING_H
  #include <string.h>
 #else
