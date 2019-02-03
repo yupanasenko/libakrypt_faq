@@ -207,6 +207,8 @@
   }
 
 #ifdef LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64
+ if( ak_log_get_level() >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__, "comparison between two implementations included");
 
  /* сравнение с контрольными примерами */
  y = 0xF000000000000011LL, x = 0x1aaabcda1115LL, z = 0;
@@ -254,12 +256,19 @@
  ak_uint8 result[16], result2[16];
 
  ak_uint128 a, b, m;
+#if __BYTE_ORDER == __LITTLE_ENDIAN
   a.q[0] = 0x63746f725d53475dLL; a.q[1] = 0x7b5b546573745665LL;
   b.q[0] = 0x5b477565726f6e5dLL; b.q[1] = 0x4869285368617929LL;
   m.q[0] = 0x7e4e10da323506d2LL; m.q[1] = 0x040229a09a5ed12eLL;
+#else
+ /*! здесь надо исправлять */
+  a.q[0] = 0x63746f725d53475dLL; a.q[1] = 0x7b5b546573745665LL;
+  b.q[0] = 0x5b477565726f6e5dLL; b.q[1] = 0x4869285368617929LL;
+  m.q[0] = 0x7e4e10da323506d2LL; m.q[1] = 0x040229a09a5ed12eLL;
+#endif
   memset( result, 0, 16 );
   memset( result2, 0, 16 );
- (void)i; /* неиспользуемая переменная */
+  (void)i;
 
  // сравниваем данные
  if( !ak_ptr_is_equal( a8, a.q, 16 )) {
@@ -286,6 +295,8 @@
  }
 
 #ifdef LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64
+ if( ak_log_get_level() >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__, "comparison between two implementations included");
 
  ak_gf128_mul_pcmulqdq( result2, &a, &b );
  /* сравнение с константой */

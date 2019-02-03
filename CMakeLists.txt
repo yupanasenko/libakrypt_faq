@@ -20,7 +20,7 @@ project( libakrypt )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 7 )
-set( MINOR_VERSION 7 )
+set( MINOR_VERSION 8 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -118,12 +118,6 @@ include( DetectFlags )
 include( DetectHeaders )
 include( DetectIntrinsics )
 include( DetectLibraries )
-
-# -------------------------------------------------------------------------------------------------- #
-# определяемся с архитектурой
-if( LIBAKRYPT_BIG_ENDIAN )
-  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_BIG_ENDIAN" )
-endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # определяемся с местом хранения файла с конфигурацией библиотеки

@@ -100,7 +100,6 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения опций (значения по-умолчанию) */
  static struct option options[] = {
-     { "big_endian_architecture", ak_false },
      { "log_level", ak_log_standard },
      { "context_manager_size", 32 },
      { "context_manager_max_size", 4096 },
@@ -647,18 +646,21 @@
     сообщения отладочного характера, позхволяющие прослдедить логику работы функций библиотеки.
 
     \param level Уровень аудита, может принимать значения \ref ak_log_none,
-    \ref ak_log_standard и \ref ak_log_maximum.
+    \ref ak_log_standard и \ref ak_log_maximum
+
+    \note Допускается передавать в функцию любое целое число, не превосходящее 16.
+    Однако для всех значений от \ref ak_log_maximum  до 16 поведение функции аудита
+    будет одинаковым. Дополнительный лиапазон преднахначен для приложений библиотеки.
 
     \return Функция всегда возвращает \ref ak_error_ok (ноль).                                     */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_log_set_level( int level )
 {
- if( level >= ak_log_maximum )
-   return ak_libakrypt_set_option("log_level", ak_log_maximum );
- if( level <= ak_log_none )
-   return ak_libakrypt_set_option("log_level", ak_log_none );
+ int value = level;
 
- return ak_libakrypt_set_option("log_level", ak_log_standard );
+   if( value < 0 ) return ak_libakrypt_set_option("log_level", ak_log_none );
+   if( value > 16 ) value = 16;
+ return ak_libakrypt_set_option("log_level", value );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

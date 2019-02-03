@@ -37,11 +37,6 @@
 /* ----------------------------------------------------------------------------------------------- */
  static ak_bool ak_libakrypt_test_types( void )
 {
-  union {
-    ak_uint8 x[4];
-    ak_uint32 z;
-  } val;
-
   if( sizeof( ak_int8 ) != 1 ) {
     ak_error_message( ak_error_undefined_value, __func__ , "wrong size of ak_int8 type" );
     return ak_false;
@@ -70,33 +65,22 @@
   if( ak_log_get_level() >= ak_log_maximum )
     ak_error_message_fmt( ak_error_ok, __func__, "size of pointer is %d", sizeof( ak_pointer ));
 
- /* определяем тип платформы: little-endian или big-endian */
-  val.x[0] = 0; val.x[1] = 1; val.x[2] = 2; val.x[3] = 3;
-
-#ifdef LIBAKRYPT_BIG_ENDIAN
-  ak_libakrypt_set_option("big_endian_architecture", ak_true );
-  if( val.z == 50462976 ) {
-    ak_error_message( ak_error_wrong_endian, __func__ ,
-      "library runs on little endian platform, don't use LIBAKRYPT_BIG_ENDIAN flag while compile library" );
-    return ak_false;
-  }
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+  if( ak_log_get_level() >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "library runs on little endian platform" );
 #else
-  if( val.z == 66051 ) {
-    ak_error_message( ak_error_wrong_endian, __func__ ,
-      "library runs on big endian platform, use LIBAKRYPT_BIG_ENDIAN flag while compiling library" );
-    return ak_false;
-  }
+  if( ak_log_get_level() >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "library runs on big endian platform" );
 #endif
-
-  if( ak_log_get_level() >= ak_log_maximum ) {
-    if( ak_libakrypt_get_option( "big_endian_architecture" ) )
-      ak_error_message( ak_error_ok, __func__ , "library runs on big endian platform" );
-    else ak_error_message( ak_error_ok, __func__ , "library runs on little endian platform" );
-  }
 
 #ifdef LIBAKRYPT_HAVE_BUILTIN_XOR_SI128
  if( ak_log_get_level() >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "library applies __m128i base type" );
+#endif
+
+#ifdef LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64
+ if( ak_log_get_level() >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "library applies clmulepi64 instruction" );
 #endif
 
 #ifdef LIBAKRYPT_HAVE_BUILTIN_MULQ_GCC
@@ -191,7 +175,6 @@
  return ak_true;
 }
 
-
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция проверяет корректность реализации алгоритмов итерационного сжатия
     @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
@@ -267,8 +250,15 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция проверяет корректностьработы всех криптографических механизмов библиотеки
+    с использованием как значений, содержащихся в нормативных документах и стандартах,
+    так и с использованием знаечний, вырабатываемых случайно.                                      */
+/* ----------------------------------------------------------------------------------------------- */
  ak_bool ak_libakrypt_dynamic_control_test( void )
 {
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ , "testing started" );
+
  /* тестируем арифметические операции в конечных полях */
   if( ak_gfn_multiplication_test() != ak_true ) {
     ak_error_message( ak_error_get_value(), __func__ ,
@@ -301,6 +291,7 @@
     return ak_false;
   }
 
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ , "testing is Ok" );
  return ak_true;
 }
 
@@ -349,7 +340,7 @@
    }
 
  /* проверяем длины фиксированных типов данных */
-   if( ak_libakrypt_test_types( ) != ak_true ) {
+   if( ak_libakrypt_test_types() != ak_true ) {
      ak_error_message( ak_error_get_value(), __func__ , "sizes of predefined types is wrong" );
      return ak_false;
    }
@@ -368,8 +359,8 @@
   }
 
  /* процедура полного тестирования всех криптографических алгоритмов
-    занимает очень много времени, особенно на встраиваемых платформах,
-    поэтому ее запуск должен производиться в соответствии с неким регламентом ....
+    занимает крайне много времени, особенно на встраиваемых платформах,
+    поэтому ее запуск должен производиться в соответствии с неким (внешним) регламентом ....
 
     if( !ak_libakrypt_dynamic_control_test( )) {
       ak_error_message( error, __func__, "incorrect dynamic control test" );
@@ -380,9 +371,9 @@
     так что она может быть запущена пользователем самостоятельно. */
 
  if( ak_log_get_level() != ak_log_none )
-   ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms tested successfully" );
+   ak_error_message( ak_error_ok, __func__ , "creation of libakrypt is Ok" );
 
-return ak_true;
+ return ak_true;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
