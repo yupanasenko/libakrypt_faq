@@ -36,6 +36,18 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
+  #include <endian.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_ENDIAN )
+
+if( LIBAKRYPT_HAVE_ENDIAN )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_ENDIAN_H" )
+endif()
+
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
   #include <time.h>
   int main( void ) {
      return 0;
