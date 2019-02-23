@@ -99,13 +99,21 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Раундовые ключи алгоритма Кузнечик. */
- struct __attribute__((aligned(16))) kuznechik_expanded_keys {
+ struct
+#ifndef _MSC_VER
+  __attribute__((aligned(16)))
+#endif
+ kuznechik_expanded_keys {
   ak_uint128 k[10];
 };
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура с внутренними данными секретного ключа алгоритма Кузнечик. */
- struct __attribute__((aligned(16))) kuznechik {
+ struct
+#ifndef _MSC_VER
+  __attribute__((aligned(16)))
+#endif
+ kuznechik {
   /*! \brief раундовые ключи для алгоритма зашифрования */
   struct kuznechik_expanded_keys encryptkey;
   /*! \brief раундовые ключи для алгоритма расшифрования */
