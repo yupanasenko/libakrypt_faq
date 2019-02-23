@@ -91,13 +91,14 @@
       ak_error_message( error, __func__ , "wrong deleting of round keys" );
     }
   }
- /* вектор для хранения синхропосылок может быть не определен */
-  if( bkey->ivector.data != NULL ) {
-    if(( error = ak_buffer_wipe( &bkey->ivector, &bkey->key.generator )) != ak_error_ok )
-      ak_error_message( error, __func__, "wrong wiping a temporary vector");
-  }
+
+ /* изменяем значение вектора синхропосылок перед уничтожением */
+  if( ak_buffer_is_assigned( &bkey->ivector ))
+    ak_buffer_wipe( &bkey->ivector, &bkey->key.generator );
   if(( error = ak_buffer_destroy( &bkey->ivector )) != ak_error_ok )
     ak_error_message( error, __func__, "wrong destroying a temporary vector" );
+
+ /* уничтожаем секретный ключ */
   if(( error = ak_skey_context_destroy( &bkey->key )) != ak_error_ok )
     ak_error_message( error, __func__, "wrong destroying a secret key" );
 

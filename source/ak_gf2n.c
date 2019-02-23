@@ -240,9 +240,9 @@
 
  /* сравнение с контрольными примерами */
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-  y = 0xF000000000000011LL, x = 0x00001aaabcda1115LL;
+  y = 0xF000000000000011LL; x = 0x00001aaabcda1115LL;
 #else
-  y = 0x11000000000000F0LL, x = 0x1511dabcaa1a0000LL;
+  y = 0x11000000000000F0LL; x = 0x1511dabcaa1a0000LL;
 #endif
  (void)z1; /* неиспользуемая переменная */
 

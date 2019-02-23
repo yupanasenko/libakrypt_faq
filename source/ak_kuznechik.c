@@ -468,6 +468,7 @@
 {
   char *str = NULL;
   struct bckey bkey;
+  ak_bool result = ak_true;
   int error = ak_error_ok, audit = ak_log_get_level();
 
  /* тестовый ключ из ГОСТ Р 34.12-2015, приложение А.1 */
@@ -526,7 +527,8 @@
 
   if(( error = ak_bckey_context_set_key( &bkey, testkey, sizeof( testkey ), ak_false )) != ak_error_ok ) {
     ak_error_message( ak_error_get_value(), __func__, "wrong creation of test key" );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
 
  /* 2. Тестируем зашифрование/расшифрование одного блока согласно ГОСТ Р34.12-2015 */
@@ -536,8 +538,8 @@
                        "the one block encryption test from GOST R 34.12-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( myout, 16, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( out, 16, ak_true )); free( str );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                          "the one block encryption test from GOST R 34.12-2015 is Ok" );
@@ -548,8 +550,8 @@
                        "the one block decryption test from GOST R 34.12-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( myout, 16, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( in, 16, ak_true )); free( str );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                          "the one block decryption test from GOST R 34.12-2015 is Ok" );
@@ -557,30 +559,30 @@
  /* 3. Тестируем режим простой замены согласно ГОСТ Р34.13-2015 */
   if(( error = ak_bckey_context_encrypt_ecb( &bkey, inlong, myout, 64 )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong ecb mode encryption" );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
   if( !ak_ptr_is_equal( myout, outecb, 64 )) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
                         "the ecb mode encryption test from GOST R 34.13-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( myout, 64, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( outecb, 64, ak_true )); free( str );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
 
   if(( error = ak_bckey_context_decrypt_ecb( &bkey, outecb, myout, 64 )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong ecb mode decryption" );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
   if( !ak_ptr_is_equal( myout, inlong, 64 )) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
                         "the ecb mode decryption test from GOST R 34.13-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( myout, 64, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( inlong, 64, ak_true )); free( str );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                 "the ecb mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
@@ -588,30 +590,30 @@
  /* 4. Тестируем режим гаммирования (счетчика) согласно ГОСТ Р34.13-2015 */
   if(( error = ak_bckey_context_xcrypt( &bkey, inlong, myout, 64, ivctr, 8 )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong counter mode encryption" );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
   if( !ak_ptr_is_equal( myout, outctr, 64 )) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
                         "the counter mode encryption test from GOST R 34.13-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( myout, 64, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( outctr, 64, ak_true )); free( str );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
 
   if(( error = ak_bckey_context_xcrypt( &bkey, outctr, myout, 64, ivctr, 8 )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong counter mode decryption" );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
   if( !ak_ptr_is_equal( myout, inlong, 64 )) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
                         "the counter mode decryption test from GOST R 34.13-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( myout, 64, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( inlong, 64, ak_true )); free( str );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                "the counter mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
@@ -619,30 +621,30 @@
  /* 5. Тестируем режим гаммирования (счетчика) на длинах, не кратных длине блока. */
   if( ak_bckey_context_xcrypt( &bkey, xin1, myout, 23, xiv1, 8 ) != ak_error_ok ) {
     ak_error_message( ak_error_get_value(), __func__ , "wrong plain text encryption" );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
   if( !ak_ptr_is_equal( myout, xout1, 23 )) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
                                         "the counter mode encryption test for 23 octets is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( myout, 23, ak_false )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( xout1, 23, ak_false )); free(str);
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
 
   if( ak_bckey_context_xcrypt( &bkey, xout1, myout, 23, xiv1, 8 ) != ak_error_ok ) {
     ak_error_message( ak_error_get_value(), __func__ , "wrong cipher text decryption" );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
   if( !ak_ptr_is_equal( myout, xin1, 23 )) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
                                         "the counter mode decryption test for 23 octets is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( myout, 23, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( xin1, 23, ak_true )); free( str );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                                "the counter mode encryption/decryption test for 23 octets is Ok" );
@@ -651,23 +653,27 @@
   ak_bckey_context_omac( &bkey, inlong, sizeof( inlong ), myout );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong omac calculation" );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
   if( !ak_ptr_is_equal( myout, imito, 16 )) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
                                    "the omac integrity mode test from GOST R 34.13-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( myout, 16, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( imito, 16, ak_true )); free( str );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                                      "the omac integrity mode test from GOST R 34.13-2015 is Ok" );
+ /* освобождаем ключ и выходим */
+  exit:
+  if(( error = ak_bckey_context_destroy( &bkey )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong destroying of secret key" );
+    return ak_false;
+  }
 
- /* уничтожаем ключ и выходим */
-  ak_bckey_context_destroy( &bkey );
- return ak_true;
+ return result;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

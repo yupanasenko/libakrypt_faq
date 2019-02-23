@@ -995,16 +995,16 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
   ak_bckey_context_omac( &bkey, in_3413_2015_text, sizeof( in_3413_2015_text ), out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong omac calculation" );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
   if( !ak_ptr_is_equal( out, imito, 8 )) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
                                    "the omac integrity mode test from GOST R 34.13-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( out, 8, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( imito, 8, ak_true )); free( str );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                                      "the omac integrity mode test from GOST R 34.13-2015 is Ok" );
