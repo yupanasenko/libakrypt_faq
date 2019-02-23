@@ -51,6 +51,7 @@ extern "C" {
  typedef unsigned __int32 ak_uint32;
  typedef __int64 ak_int64;
  typedef unsigned __int64 ak_uint64;
+ typedef __int64 ssize_t;
 #endif
 #ifdef __MINGW32__
  typedef __int32 ak_int32;

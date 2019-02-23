@@ -227,6 +227,7 @@
     0x6130D1DE01730130LL, 0x110E1FE9A3061C6BLL, 0x141AD569FEF4A826LL, 0x03CA3F740C2F3A97LL,
     0x3F3D8540ED565C89LL, 0xCE5E5EC6290234AELL, 0xE28CA103DEDB71FELL, 0x525EBDBB631CE618LL };
 #endif
+ ak_uint64 x, y, z = 0, z1 = 0;
 
  /* сравниваем исходные данные */
   for( i = 0; i < 8; i++ ) {
@@ -238,7 +239,6 @@
   }
 
  /* сравнение с контрольными примерами */
- ak_uint64 z = 0, z1 = 0,
 #if __BYTE_ORDER == __LITTLE_ENDIAN
   y = 0xF000000000000011LL, x = 0x00001aaabcda1115LL;
 #else
