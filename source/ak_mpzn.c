@@ -4,7 +4,10 @@
 /*  Файл ak_mpzn.h                                                                                 */
 /*  - содержит реализации функций для вычислений с большими целыми числами                         */
 /* ----------------------------------------------------------------------------------------------- */
- #ifdef LIBAKRYPT_HAVE_STRING_H
+#ifdef LIBAKRYPT_HAVE_SYSTYPES_H
+ #include <sys/types.h>
+#endif
+#ifdef LIBAKRYPT_HAVE_STRING_H
  #include <string.h>
 #else
  #error Library cannot be compiled without string.h header
@@ -14,10 +17,10 @@
  #include <ak_mpzn.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_HAVE_BUILTIN_MULQ_GCC
+#if defined( __x86_64__ ) && LIBAKRYPT_HAVE_BUILTIN_MULQ_GCC
  #define LIBAKRYPT_HAVE_ASM_CODE
  #define umul_ppmm(w1, w0, u, v) \
- __asm__ ("mulq %3" : "=a,a" (w0), "=d,d" (w1) : "%0,0" (u), "r,m" (v))
+   __asm__ ("mulq %3" : "=a,a" (w0), "=d,d" (w1) : "%0,0" (u), "r,m" (v))
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */

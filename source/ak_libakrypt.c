@@ -4,10 +4,12 @@
 /*  Файл ak_libakrypt.с                                                                            */
 /*  - содержит реализацию функций инициализации и тестирования библиотеки.                         */
 /* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_ENDIAN_H
+ #include <endian.h>
+#endif
 #ifdef LIBAKRYPT_HAVE_PTHREAD
  #include <pthread.h>
 #endif
-/* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_BUILTIN_XOR_SI128
  #include <emmintrin.h>
 #endif
@@ -62,41 +64,31 @@
     return ak_false;
   }
 
-  if( ak_log_get_level() >= ak_log_maximum )
+  if( ak_log_get_level() >= ak_log_maximum ) {
     ak_error_message_fmt( ak_error_ok, __func__, "size of pointer is %d", sizeof( ak_pointer ));
 
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-  if( ak_log_get_level() >= ak_log_maximum )
+  #if __BYTE_ORDER == __LITTLE_ENDIAN
     ak_error_message( ak_error_ok, __func__ , "library runs on little endian platform" );
-#else
-  if( ak_log_get_level() >= ak_log_maximum )
+  #else
     ak_error_message( ak_error_ok, __func__ , "library runs on big endian platform" );
-#endif
+  #endif
 
-#ifdef LIBAKRYPT_HAVE_BUILTIN_XOR_SI128
- if( ak_log_get_level() >= ak_log_maximum )
-   ak_error_message( ak_error_ok, __func__ , "library applies __m128i base type" );
-#endif
-
-#ifdef LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64
- if( ak_log_get_level() >= ak_log_maximum )
-   ak_error_message( ak_error_ok, __func__ , "library applies clmulepi64 instruction" );
-#endif
-
-#ifdef LIBAKRYPT_HAVE_BUILTIN_MULQ_GCC
- if( ak_log_get_level() >= ak_log_maximum )
+  #ifdef LIBAKRYPT_HAVE_BUILTIN_XOR_SI128
+    ak_error_message( ak_error_ok, __func__ , "library applies __m128i base type" );
+  #endif
+  #ifdef LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64
+    ak_error_message( ak_error_ok, __func__ , "library applies clmulepi64 instruction" );
+  #endif
+  #ifdef LIBAKRYPT_HAVE_BUILTIN_MULQ_GCC
    ak_error_message( ak_error_ok, __func__ , "library applies assembler code for mulq command" );
-#endif
-
-#ifdef LIBAKRYPT_HAVE_PTHREAD
- if( ak_log_get_level() >= ak_log_maximum )
+  #endif
+  #ifdef LIBAKRYPT_HAVE_PTHREAD
    ak_error_message( ak_error_ok, __func__ , "library runs with pthreads support" );
-#endif
-
-#ifdef LIBAKRYPT_HAVE_GMP_H
- if( ak_log_get_level() >= ak_log_maximum )
+  #endif
+  #ifdef LIBAKRYPT_HAVE_GMP_H
    ak_error_message( ak_error_ok, __func__ , "library runs with gmp support" );
-#endif
+  #endif
+  }
 
  return ak_true;
 }

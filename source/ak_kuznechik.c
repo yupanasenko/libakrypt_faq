@@ -90,6 +90,10 @@
          }
       }
   }
+
+ if( ak_log_get_level() != ak_log_none )
+   ak_error_message( ak_error_ok, __func__ , "initialization of predefined tables is Ok" );
+
  return ak_true;
 }
 

@@ -77,7 +77,6 @@
 
   memcpy( ivector, iv, iv_size ); /* копируем нужное количество байт */
  /* принудительно устанавливаем старший бит в 1 */
-  // ivector[iv_size-1] = ( ivector[iv_size-1]&0x7F ) ^ 0x80;
   ivector[authenticationKey->bsize-1] = ( ivector[authenticationKey->bsize-1]&0x7F ) ^ 0x80;
 
  /* зашифровываем необходимое и удаляемся */
