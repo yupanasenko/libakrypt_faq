@@ -12,15 +12,12 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_mgm.h>
- #include <ak_hmac.h>
- #include <ak_omac.h>
- #include <ak_sign.h>
+ #include <ak_random.h>
  #include <ak_parameters.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения OID библиотеки */
- struct oid libakrypt_oids[] = {
+ static struct oid libakrypt_oids[] = {
   /* 1. идентификаторы алгоритмов выработки псевдо-случайных последовательностей,
         значения OID находятся в дереве библиотеки: 1.2.643.2.52.1.1 - генераторы ПСЧ  */
    { random_generator, algorithm, "lcg", "1.2.643.2.52.1.1.1", NULL, NULL,
@@ -51,140 +48,6 @@
                                       ( ak_function_void *) ak_random_context_destroy,
                                       ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
 
-   { random_generator, algorithm, "hashrnd-gosthash94", "1.2.643.2.52.1.1.6.0", NULL, NULL,
-                       { ( ak_function_void *) ak_random_context_create_hashrnd_gosthash94,
-                                      ( ak_function_void *) ak_random_context_destroy,
-                                      ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
-
-   { random_generator, algorithm, "hashrnd-streebog256", "1.2.643.2.52.1.1.6.1", NULL, NULL,
-                       { ( ak_function_void *) ak_random_context_create_hashrnd_streebog256,
-                                      ( ak_function_void *) ak_random_context_destroy,
-                                      ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
-
-   { random_generator, algorithm, "hashrnd-streebog512", "1.2.643.2.52.1.1.6.2", NULL, NULL,
-                       { ( ak_function_void *) ak_random_context_create_hashrnd_streebog512,
-                                      ( ak_function_void *) ak_random_context_destroy,
-                                      ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
-
-
-  /* 2. идентификаторы алгоритмов бесключевого хеширования,
-        значения OID взяты из перечней КриптоПро и ТК26 (http://tk26.ru/methods/OID_TK_26/index.php)
-        в дереве библиотеки: 1.2.643.2.52.1.2 - функции бесключевого хеширования */
-   { hash_function, algorithm, "gosthash94", "1.2.643.2.2.9", NULL, NULL,
-                        { ( ak_function_void *) ak_hash_context_create_gosthash94_csp,
-                                        ( ak_function_void *) ak_hash_context_destroy,
-                                        ( ak_function_void *) ak_hash_context_delete, NULL, NULL }},
-
-   { hash_function, algorithm, "streebog256", "1.2.643.7.1.1.2.2", NULL, NULL,
-                           { ( ak_function_void *) ak_hash_context_create_streebog256,
-                                        ( ak_function_void *) ak_hash_context_destroy,
-                                        ( ak_function_void *) ak_hash_context_delete, NULL, NULL }},
-
-   { hash_function, algorithm, "streebog512", "1.2.643.7.1.1.2.3", NULL, NULL,
-                           { ( ak_function_void *) ak_hash_context_create_streebog512,
-                                        ( ak_function_void *) ak_hash_context_destroy,
-                                        ( ak_function_void *) ak_hash_context_delete, NULL, NULL }},
-
-  /* 3. идентификаторы параметров алгоритма бесключевого хеширования ГОСТ Р 34.11-94.
-        значения OID взяты из перечней КриптоПро */
-   { hash_function, kbox_params, "id-gosthash94-test-paramset", "1.2.643.2.2.30.0", NULL,
-                                           (ak_pointer) hash_box, { NULL, NULL, NULL, NULL, NULL }},
-
-   { hash_function, kbox_params, "id-gosthash94-rfc4357-paramsetA", "1.2.643.2.2.30.1", NULL,
-                                      (ak_pointer) hash_box_CSPA, { NULL, NULL, NULL, NULL, NULL }},
-
-   { hash_function, kbox_params, "id-gosthash94-verbaO-paramset", "1.2.643.2.2.30.2", NULL,
-                                    (ak_pointer) hash_box_VerbaO, { NULL, NULL, NULL, NULL, NULL }},
-
-  /* 4. идентификаторы алгоритмов HMAC согласно Р 50.1.113-2016
-        в дереве библиотеки: 1.2.643.2.52.1.4 - функции ключевого хеширования (имитозащиты) */
-   { hmac_function, algorithm, "hmac-streebog256", "1.2.643.7.1.1.4.1", NULL, NULL,
-                           { ( ak_function_void *) ak_hmac_context_create_streebog256,
-                                        ( ak_function_void *) ak_hmac_context_destroy,
-                                        ( ak_function_void *) ak_hmac_context_delete, NULL, NULL }},
-
-   { hmac_function, algorithm, "hmac-streebog512", "1.2.643.7.1.1.4.2", NULL, NULL,
-                            { ( ak_function_void *)ak_hmac_context_create_streebog512,
-                                        ( ak_function_void *) ak_hmac_context_destroy,
-                                        ( ak_function_void *) ak_hmac_context_delete, NULL, NULL }},
-
-   { hmac_function, algorithm, "hmac-gosthash94", "1.2.643.2.52.1.4.0", NULL, NULL,
-                            { ( ak_function_void *) ak_hmac_context_create_gosthash94,
-                                        ( ak_function_void *) ak_hmac_context_destroy,
-                                        ( ak_function_void *) ak_hmac_context_delete, NULL, NULL }},
-
-   { omac_function, algorithm, "omac-magma", "1.2.643.2.52.1.4.1", NULL, NULL,
-                                { ( ak_function_void *) ak_omac_context_create_magma,
-                                        ( ak_function_void *) ak_omac_context_destroy,
-                                        ( ak_function_void *) ak_omac_context_delete, NULL, NULL }},
-
-   { omac_function, algorithm, "omac-kuznechik", "1.2.643.2.52.1.4.2", NULL, NULL,
-                             { ( ak_function_void *) ak_omac_context_create_kuznechik,
-                                        ( ak_function_void *) ak_omac_context_destroy,
-                                        ( ak_function_void *) ak_omac_context_delete, NULL, NULL }},
-
-   { mgm_function, algorithm, "mgm-magma", "1.2.643.2.52.1.4.3", NULL, NULL,
-                                  { ( ak_function_void *) ak_mgm_context_create_magma,
-                                         ( ak_function_void *) ak_mgm_context_destroy,
-                                         ( ak_function_void *) ak_mgm_context_delete, NULL, NULL }},
-
-   { mgm_function, algorithm, "mgm-kuznechik", "1.2.643.2.52.1.4.4", NULL, NULL,
-                              { ( ak_function_void *) ak_mgm_context_create_kuznechik,
-                                         ( ak_function_void *) ak_mgm_context_destroy,
-                                         ( ak_function_void *) ak_mgm_context_delete, NULL, NULL }},
-
-  /*    в дереве библиотеки: 1.2.643.2.52.1.5 - параметры функций ключевого хеширования (имитозащиты) */
-
-  /* 6. идентификаторы алгоритмов блочного шифрования
-        в дереве библиотеки: 1.2.643.2.52.1.6 - алгоритмы блочного шифрования
-        в дереве библиотеки: 1.2.643.2.52.1.7 - параметры алгоритмов блочного шифрования */
-   { block_cipher, algorithm, "magma", "1.2.643.2.2.21", NULL, NULL,
-                               { ( ak_function_void *) ak_bckey_context_create_magma,
-                                      ( ak_function_void *) ak_bckey_context_destroy,
-                                       ( ak_function_void *) ak_bckey_context_delete, NULL, NULL }},
-   { block_cipher, algorithm, "kuznechik", "1.2.643.7.1.1.5.2", NULL, NULL,
-                           { ( ak_function_void *) ak_bckey_context_create_kuznechik,
-                                      ( ak_function_void *) ak_bckey_context_destroy,
-                                       ( ak_function_void *) ak_bckey_context_delete, NULL, NULL }},
-
-
-  /* 10. идентификаторы алгоритмов выработки электронной подписи
-        в дереве библиотеки: 1.2.643.2.52.1.10 - алгоритмы выработки электронной подписи */
-   { sign_function, algorithm, "sign256", "1.2.643.7.1.1.1.1", NULL, NULL,
-                       { ( ak_function_void *) ak_signkey_context_create_streebog256,
-                                    ( ak_function_void *) ak_signkey_context_destroy,
-                                     ( ak_function_void *) ak_signkey_context_delete, NULL, NULL }},
-
-   { sign_function, algorithm, "sign512", "1.2.643.7.1.1.1.2", NULL, NULL,
-                       { ( ak_function_void *) ak_signkey_context_create_streebog512,
-                                    ( ak_function_void *) ak_signkey_context_destroy,
-                                     ( ak_function_void *) ak_signkey_context_delete, NULL, NULL }},
-
-   { sign_function, algorithm, "sign256-gosthash94", "1.2.643.2.52.1.10.1", NULL, NULL,
-                       { ( ak_function_void *) ak_signkey_context_create_gosthash94_csp,
-                                    ( ak_function_void *) ak_signkey_context_destroy,
-                                     ( ak_function_void *) ak_signkey_context_delete, NULL, NULL }},
-
- /* 11. идентификаторы алгоритмов проверки электронной подписи
-        в дереве библиотеки: 1.2.643.2.52.1.11 - алгоритмы проверки электронной подписи
-
-        поскольку дерево OID-ов ТК26 не делает различия, между алгоритмами выработки и алгоритмами
-        проверки электронной подписи, мы используем свой корень для указания алгоритмов проверки. */
-
-   { verify_function, algorithm, "verify256", "1.2.643.2.52.1.11.2", NULL, NULL,
-                          { (ak_function_void *) ak_verifykey_context_create_signkey,
-                                   (ak_function_void *) ak_verifykey_context_destroy,
-                                    (ak_function_void *) ak_verifykey_context_delete, NULL, NULL }},
-
-   { verify_function, algorithm, "verify512", "1.2.643.2.52.1.11.3", NULL, NULL,
-                          { (ak_function_void *) ak_verifykey_context_create_signkey,
-                                   (ak_function_void *) ak_verifykey_context_destroy,
-                                    (ak_function_void *) ak_verifykey_context_delete, NULL, NULL }},
-
-   { verify_function, algorithm, "verify256-gosthash94", "1.2.643.2.52.1.11.1", NULL, NULL,
-                          { (ak_function_void *) ak_verifykey_context_create_signkey,
-                                   (ak_function_void *) ak_verifykey_context_destroy,
-                                    (ak_function_void *) ak_verifykey_context_delete, NULL, NULL }},
 
  /* 12. идентификаторы параметров эллиптических кривых, в частности, из Р 50.1.114-2016
         в дереве библиотеки: 1.2.643.2.52.1.12 - параметры эллиптических кривых в форме Вейерштрасса
@@ -236,12 +99,12 @@
                                      NULL, (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetC,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
 
-  /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */
-   { undefined_engine, undefined_mode, NULL, NULL, NULL, NULL, { NULL, NULL, NULL, NULL, NULL }}
+ /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */
+  { undefined_engine, undefined_mode, NULL, NULL, NULL, NULL, { NULL, NULL, NULL, NULL, NULL }}
 
-  /* при добавлении нового типа (engine)
-     не забыть также добавить его обработку в функцию ak_context_node_get_context_oid() */
- };
+ /* при добавлении нового типа (engine)
+    не забыть также добавить его обработку в функцию ak_context_node_get_context_oid() */
+};
 
 /* ----------------------------------------------------------------------------------------------- */
  static const char *libakrypt_engine_names[] = {
@@ -322,7 +185,7 @@
     @return Функция возвращает указатель на область памяти, в которой находится структура
     с найденным идентификатором. В случае ошибки, возвращается NULL.                               */
 /* ----------------------------------------------------------------------------------------------- */
- ak_oid ak_oid_context_find_by_name( const char *name )
+ ak_oid ak_oid_context_find_by_name( char *name )
 {
   size_t len = 0, idx = 0;
   if( name == NULL ) {
@@ -341,12 +204,12 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param id строка, содержащая символьную запись идентифиатора - последовательность чисел,
+/*! @param id строка, содержащая символьную запись идентификатора - последовательность чисел,
     разделенных точками.
     @return Функция возвращает указатель на область памяти, в которой находится структура
     с найденным идентификатором. В случае ошибки, возвращается NULL.                               */
 /* ----------------------------------------------------------------------------------------------- */
- ak_oid ak_oid_context_find_by_id( const char *id )
+ ak_oid ak_oid_context_find_by_id( char *id )
 {
   size_t len = 0, idx = 0;
   if( id == NULL ) {
@@ -371,7 +234,7 @@
     @return Функция возвращает указатель на область памяти, в которой находится структура
     с найденным идентификатором. В случае ошибки, возвращается NULL.                               */
 /* ----------------------------------------------------------------------------------------------- */
- ak_oid ak_oid_context_find_by_ni( const char *ni )
+ ak_oid ak_oid_context_find_by_ni( char *ni )
 {
   size_t len = 0, idx = 0;
   if( ni == NULL ) {

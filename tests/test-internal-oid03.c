@@ -21,17 +21,18 @@
 
  /* находим какой-нибудь OID
     поскольку мы не знаем какой OID в дальнейшем будет первым в массиве */
-  if(( oid = ak_oid_context_find_by_engine( block_cipher )) == NULL ) {
-    ak_error_message( ak_error_oid_engine, __func__, "cannot find a block cipher");
+  if(( oid = ak_oid_context_find_by_engine( random_generator )) == NULL ) {
+    ak_error_message( ak_error_oid_engine, __func__, "cannot find a random generator");
     ak_libakrypt_destroy();
     return EXIT_FAILURE;
   };
 
- /* движемся по массиву oid в конец (пока не найдем строку из неопределенных значений) */
+ /* движемся по массиву oid в конец (пока не найдем строку из неопределенных значений)
+    заметим, что движение в начало массива oid может завершиться попыткой доступа к неопределенной памяти */
   while(( oid->engine != undefined_engine ) && ( oid->mode != undefined_mode ))
      oid = (ak_oid)(((ak_uint8 *)oid) + sizeof( struct oid ));
 
- /* зная общее число oid - получаем первый */
+ /* теперь, зная общее число oid, мы можем вычислить первый */
   oid = (ak_oid)(((ak_uint8 *)oid) - ak_libakrypt_oids_count()*sizeof( struct oid ));
 
  /* выводим все oid, начиная с начала */

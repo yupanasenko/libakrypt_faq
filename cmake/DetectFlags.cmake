@@ -33,8 +33,6 @@ if( MSVC )
   try_append_c_flag( "/MD" CMAKE_C_FLAGS )
   try_append_c_flag( "/DNDEBUG" CMAKE_C_FLAGS )
 else()
-  # запрещаем Warning's для компилятора icc
-  try_append_c_flag( "-wd858" CMAKE_C_FLAGS )
   # набор Unix'овых флагов
   try_append_c_flag( "-Wall" CMAKE_C_FLAGS )
   try_append_c_flag( "-pedantic-errors" CMAKE_C_FLAGS )

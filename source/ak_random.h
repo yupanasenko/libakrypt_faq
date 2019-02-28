@@ -19,7 +19,7 @@
 /*! \brief Функция, принимающая в качестве аргумента указатель на структуту struct random. */
  typedef int ( ak_function_random )( ak_random );
 /*! \brief Функция обработки данных заданного размера. */
- typedef int ( ak_function_random_ptr_const )( ak_random, const ak_pointer, const size_t );
+ typedef int ( ak_function_random_ptr_const )( ak_random, const ak_pointer, const ssize_t );
 /*! \brief Функция создания дескриптора генератора псевдо случайных чисел. */
  typedef ak_handle ( ak_function_random_new ) ( void );
 
@@ -77,9 +77,9 @@
 /*! \brief Инициализация контекста генератора по заданному OID алгоритма генерации псевдо-случайных чисел. */
  int ak_random_context_create_oid( ak_random, ak_oid );
 /*! \brief Установка внутреннего состояния генератора псевдо-случайных чисел. */
- int ak_random_context_randomize( ak_random , const ak_pointer , const size_t );
+ int ak_random_context_randomize( ak_random , const ak_pointer , const ssize_t );
 /*! \brief Выработка псевдо-случайных данных. */
- int ak_random_context_random( ak_random , const ak_pointer , const size_t );
+ int ak_random_context_random( ak_random , const ak_pointer , const ssize_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Неэкспортируемая функция генерации случайного 64-х битного целого числа. */

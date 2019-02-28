@@ -20,7 +20,7 @@ project( libakrypt )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 7 )
-set( MINOR_VERSION 8 )
+set( MINOR_VERSION 9 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -28,9 +28,10 @@ set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 # для включения опции: cmake -D LIBAKRYPT_GMP_TESTS=ON path
 option( LIBAKRYPT_STATIC_LIB "Build the static library" ON )
 option( LIBAKRYPT_SHARED_LIB "Build the shared library" OFF )
-option( LIBAKRYPT_INTERNAL_TESTS "Build library and collection of internal tests" OFF )
-option( LIBAKRYPT_GMP_TESTS "Build library with comparison gmp and libakrypt tests" OFF )
-option( LIBAKRYPT_MAKE_DOC "Build a documentation in PDF and HTML formats" ON )
+option( LIBAKRYPT_INTERNAL_TESTS "Build collection of internal tests using non-export functions" OFF )
+option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
+option( LIBAKRYPT_HTML_DOC "Build documentation in HTML format" OFF )
+option( LIBAKRYPT_PDF_DOC "Build documentation in PDF format" OFF )
 
 # -------------------------------------------------------------------------------------------------- #
 # множество исходных текстов библиотеки и вспомогательных файлов
@@ -38,86 +39,29 @@ set( MAIN_HEADER    source/libakrypt.h )
 
 set( HEADERS        source/ak_tools.h
                     source/ak_buffer.h
-                    source/ak_parameters.h
                     source/ak_oid.h
-                    source/ak_mpzn.h
                     source/ak_random.h
-                    source/ak_hash.h
-                    source/ak_skey.h
-                    source/ak_hmac.h
-                    source/ak_bckey.h
-                    source/ak_gf2n.h
-                    source/ak_omac.h
-                    source/ak_mgm.h
-                    source/ak_mac.h
+                    source/ak_mpzn.h
                     source/ak_curves.h
-                    source/ak_sign.h
-                    source/ak_context_manager.h
+                    source/ak_parameters.h
 )
 
 set( SOURCES        source/ak_tools.c
                     source/ak_buffer.c
                     source/ak_oid.c
                     source/ak_mpzn.c
-                    source/ak_random.c
-                    source/ak_hash.c
-                    source/ak_gosthash.c
-                    source/ak_streebog.c
-                    source/ak_skey.c
-                    source/ak_hmac.c
-                    source/ak_bckey.c
-                    source/ak_magma.c
-                    source/ak_kuznechik.c
-                    source/ak_gf2n.c
-                    source/ak_omac.c
-                    source/ak_mgm.c
-                    source/ak_mac.c
                     source/ak_curves.c
-                    source/ak_sign.c
-                    source/ak_context_manager.c
+                    source/ak_random.c
                     source/ak_libakrypt.c
 )
-
-set( DOCS           doc/refman_header.in
-                    doc/refman_footer.in
-                    doc/Doxyfile.in
-                    doc/00-introduction.md
-                    doc/01-install-guide.md
-                    doc/02-user-guide.md
-                    doc/03-internal-interface.md )
-
-set( CMAKES         cmake/DetectHeaders.cmake
-                    cmake/DetectFlags.cmake
-                    cmake/DetectLibraries.cmake
-                    cmake/DetectIntrinsics.cmake
-                    cmake/MakeDoc.cmake
-                    cmake/MakeDist.cmake
-                    cmake/MakeInstall.cmake )
-
-set( OTHERS         CMakeLists.txt
-                    LICENSE
-                    Readme.md
-                    Changelog.md
-                    libakrypt.conf
-                    libakrypt.rc.in )
-
-set( AKRYPT_SOURCES akrypt/akrypt.c
-                    akrypt/akrypt_show.c
-                    akrypt/akrypt_hash.c )
-
-set( AKRYPT_FILES   akrypt/akrypt.h
-                    akrypt/akrypt.po
-                    akrypt/getopt.h
-                    akrypt/getopt.c
-                    akrypt/Readme.md )
 
 # -------------------------------------------------------------------------------------------------- #
 # подключаем модули CMake для тонкой настройки параметров сборки
 set( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
 include( DetectFlags )
 include( DetectHeaders )
-include( DetectIntrinsics )
 include( DetectLibraries )
+#include( DetectIntrinsics )
 
 # -------------------------------------------------------------------------------------------------- #
 # определяемся с местом хранения файла с конфигурацией библиотеки
@@ -150,18 +94,31 @@ if( LIBAKRYPT_STATIC_LIB )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
-message("-- Additional libraries is ${LIBAKRYPT_LIBS}" )
+message("-- Compiler options is ${CMAKE_C_FLAGS}" )
+if( LIBAKRYPT_LIBS )
+  message("-- Additional libraries is ${LIBAKRYPT_LIBS}" )
+endif()
 
 # -------------------------------------------------------------------------------------------------- #
-# сборка консольной утиллиты для работы с функциями библиотеки
-if( LIBAKRYPT_HAVE_GETOPT )
-else()
-  set( AKRYPT_SOURCES ${AKRYPT_SOURCES} akrypt/getopt.c )
-endif()
-if( LIBAKRYPT_STATIC_LIB )
-  add_executable( akrypt${LIBAKRYPT_EXT} ${AKRYPT_SOURCES} )
-  target_include_directories( akrypt${LIBAKRYPT_EXT} PUBLIC "akrypt" )
-  target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+# тестовые примеры для арифметических операций
+set( ARITHMETIC_TESTS_LIST
+                 mpzn-convert
+                 mpzn-arithmetic
+                 mpzn-montgomery
+                 mpzn-rem
+                # mpzn-password
+)
+
+if( LIBAKRYPT_GMP_TESTS )
+  enable_testing()
+  if( LIBAKRYPT_STATIC_LIB )
+    foreach( programm ${ARITHMETIC_TESTS_LIST} )
+       add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
+       target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static gmp )
+       add_test( NAME test-${programm} COMMAND test-${programm}${LIBAKRYPT_EXT} )
+    endforeach()
+  endif()
+  message("-- Added tests for integer arithmetic and comparizon with libgmp (now \"make test\" enabled)")
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -191,27 +148,10 @@ endif()
 # теперь примеры, использующие неэкспортируемые функции
 set( INTERNAL_TEST_LIST
                  internal-random01
-                 internal-random02
                  internal-oid01
-                 internal-oid02
                  internal-oid03
-                 internal-hash01
-                 internal-hash02
-                 internal-hash03
-                 internal-skey01
-                 internal-mac01
-                 internal-hmac01
-                 internal-hmac02
-                 internal-bckey01
-                 internal-bckey02
-                 internal-bckey03
-                 internal-omac01
-                 internal-signkey01
-                 internal-context-node01
-                 internal-context-manager01
-                 internal-mgm01
-                 internal-mgm02
-                 internal-mgm03
+                 # internal-random02
+                 # internal-oid02
 )
 
 if( LIBAKRYPT_INTERNAL_TESTS )
@@ -228,39 +168,3 @@ if( LIBAKRYPT_INTERNAL_TESTS )
   message("-- Added tests for internal functions (now \"make test\" enabled)")
 endif()
 
-# -------------------------------------------------------------------------------------------------- #
-# напоследок тестовые примеры для арифметических операций
-set( ARITHMETIC_TESTS_LIST
-                 mpzn-convert
-                 mpzn-arithmetic
-                 mpzn-montgomery
-                 mpzn-rem
-                 mpzn-password
-)
-
-if( LIBAKRYPT_GMP_TESTS )
-  enable_testing()
-
-  if( LIBAKRYPT_STATIC_LIB )
-    foreach( programm ${ARITHMETIC_TESTS_LIST} )
-       add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
-       target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static gmp )
-       add_test( NAME test-${programm} COMMAND test-${programm}${LIBAKRYPT_EXT} )
-    endforeach()
-  endif()
-  message("-- Added tests for integer arithmetic and comparizon with libgmp (now \"make test\" enabled)")
-endif()
-
-# -------------------------------------------------------------------------------------------------- #
-if( UNIX )
-  if( LIBAKRYPT_MAKE_DOC )
-    include( MakeDoc )
-  endif()
-  include( MakeDist )
-endif()
-include( MakeInstall )
-
-# -------------------------------------------------------------------------------------------------- #
-message("-- Compiler options is ${CMAKE_C_FLAGS}" )
-
-# -------------------------------------------------------------------------------------------------- #
