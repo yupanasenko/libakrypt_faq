@@ -31,7 +31,6 @@ option( LIBAKRYPT_SHARED_LIB "Build the shared library" OFF )
 option( LIBAKRYPT_INTERNAL_TESTS "Build collection of internal tests using non-export functions" OFF )
 option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
 option( LIBAKRYPT_HTML_DOC "Build documentation in HTML format" OFF )
-option( LIBAKRYPT_PDF_DOC "Build documentation in PDF format" OFF )
 
 # -------------------------------------------------------------------------------------------------- #
 # множество исходных текстов библиотеки и вспомогательных файлов
@@ -61,7 +60,7 @@ set( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
 include( DetectFlags )
 include( DetectHeaders )
 include( DetectLibraries )
-#include( DetectIntrinsics )
+include( DetectIntrinsics )
 
 # -------------------------------------------------------------------------------------------------- #
 # определяемся с местом хранения файла с конфигурацией библиотеки

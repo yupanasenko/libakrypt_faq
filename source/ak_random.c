@@ -404,8 +404,8 @@
                                                      "use a null pointer to a random generator" );
   if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                                    "use a null pointer to data" );
-  if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
-                                                                  "use a data with zero length" );
+  if( size <= 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                                 "use a data with wrong length" );
   /* считываем несколько байт */
   slabel: result = read( (( ak_random_file ) ( rnd->data ))->fd, value,
   #ifdef _MSC_VER
@@ -513,8 +513,15 @@
 } *ak_random_winrtl;
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_random_winrtl_random( ak_random rnd, const ak_pointer ptr, const size_t size )
+ static int ak_random_winrtl_random( ak_random rnd, const ak_pointer ptr, const ssize_t size )
 {
+  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                      "use a null pointer to a random generator" );
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                                    "use a null pointer to data" );
+  if( size <= 0 ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                           "use a data vector with wrong length" );
+
   if( !CryptGenRandom( (( ak_random_winrtl )rnd->data)->handle, (DWORD) size, ptr ))
     return ak_error_message( ak_error_undefined_value, __func__,
                                                     "wrong generation of pseudo random sequence" );

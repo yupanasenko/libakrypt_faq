@@ -17,7 +17,7 @@
  #include <ak_mpzn.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-#if defined( __x86_64__ ) && LIBAKRYPT_HAVE_BUILTIN_MULQ_GCC
+#if LIBAKRYPT_HAVE_BUILTIN_MULQ_GCC
  #define LIBAKRYPT_HAVE_ASM_CODE
  #define umul_ppmm(w1, w0, u, v) \
    __asm__ ("mulq %3" : "=a,a" (w0), "=d,d" (w1) : "%0,0" (u), "r,m" (v))
@@ -330,7 +330,7 @@
 
     \param z   Переменная, в которую помещается результат
     \param x   Множимое число (многкратной точности)
-    \param size Размер множимого числа. Данная ведичина может принимать значения
+    \param size Размер множимого числа. Данная величина может принимать значения
     \ref ak_mpzn256_size или \ref ak_mpzn512_size
     \param d   Множитель, беззнаковое число однократной точности.
     \return    Старший значащий разряд вычисленног произведения.                                   */
@@ -350,7 +350,7 @@
         cy += w[j] < w0;
         m = w1 + cy;
      }
- memcpy( z, w, sizeof( ak_uint64 )*size );
+  memcpy( z, w, sizeof( ak_uint64 )*size );
  return m;
 }
 

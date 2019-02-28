@@ -206,12 +206,15 @@
 
    /* генерим случайные значения и копируем их в mpz */
     ak_mpzn_set_random( x, size, &generator );
-    generator.random( &generator, &d, sizeof( ak_uint64 ));
+    generator.random( &generator, &d, sizeof( ak_pointer ));
+     /* для 32х битной системы gmp под ui имеет только 4 байта,
+        что отличается от 8ми байт, подразумеваемых нашей библиотекой
+        это дает неверные значения при тестировании */
 
     ak_mpzn_to_mpz( x, size, xm );
     z[size] = ak_mpzn_mul_ui( z, x, size, d );
 
-    ak_mpzn_to_mpz( z, 2*size, zm );
+    ak_mpzn_to_mpz( z, size+1, zm );
     mpz_mul_ui( tm, xm, d );
     if( mpz_cmp(tm, zm) == 0 ) val++;
   }
