@@ -168,3 +168,7 @@ if( LIBAKRYPT_INTERNAL_TESTS )
   message("-- Added tests for internal functions (now \"make test\" enabled)")
 endif()
 
+# -------------------------------------------------------------------------------------------------- #
+if( CMAKE_HOST_UNIX )
+  include( MakeDoc )
+endif()
