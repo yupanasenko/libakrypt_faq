@@ -4,9 +4,6 @@
 /*  Файл ak_libakrypt.с                                                                            */
 /*  - содержит реализацию функций инициализации и тестирования библиотеки.                         */
 /* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_HAVE_ENDIAN_H
- #include <endian.h>
-#endif
 #ifdef LIBAKRYPT_HAVE_PTHREAD
  #include <pthread.h>
 #endif
@@ -15,7 +12,9 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
+ #include <ak_gf2n.h>
  #include <ak_tools.h>
+ #include <ak_curves.h>
 
 /* ----------------------------------------------------------------------------------------------- */
  const char *ak_libakrypt_version( void )
@@ -70,7 +69,7 @@
  /* определяем тип платформы: little-endian или big-endian */
   val.x[0] = 0; val.x[1] = 1; val.x[2] = 2; val.x[3] = 3;
 
-   #if __BYTE_ORDER == __LITTLE_ENDIAN
+   #ifdef LIBAKRYPT_LITTLE_ENDIAN
     if( val.z != 50462976 ) {
       ak_error_message( ak_error_wrong_endian, __func__,
        "incorrect endian: library runs on big endian, but compiled for little endian platform");
@@ -100,6 +99,82 @@
    ak_error_message( ak_error_ok, __func__ , "library runs with gmp support" );
    #endif
   }
+ return ak_true;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция проверяет корректность реализации асимметричных криптографических алгоритмов
+    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
+    вызова ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ static ak_bool ak_libakrypt_test_asymmetric_functions( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms started" );
+
+ /* тестируем корректность реализации операций с эллиптическими кривыми в короткой форме Вейерштрасса */
+  if( ak_wcurve_test() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of Weierstrass curves" );
+    return ak_false;
+  }
+
+// /* тестируем корректность реализации алгоритмов электронной подписи */
+//  if( ak_signkey_test() != ak_true ) {
+//    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of digital signatures" );
+//    return ak_false;
+//  }
+
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms ended successfully" );
+
+ return ak_true;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция проверяет корректностьработы всех криптографических механизмов библиотеки
+    с использованием как значений, содержащихся в нормативных документах и стандартах,
+    так и с использованием знаечний, вырабатываемых случайно.                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_bool ak_libakrypt_dynamic_control_test( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ , "testing started" );
+
+ /* тестируем арифметические операции в конечных полях */
+  if( ak_gfn_multiplication_test() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                          "incorrect testing of multiplication in Galois fields" );
+    return ak_false;
+  }
+
+// /* проверяем корректность реализации алгоритмов бесключевго хеширования */
+//   if( ak_libakrypt_test_hash_functions( ) != ak_true ) {
+//     ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of hash functions" );
+//     return ak_false;
+//   }
+
+// /* тестируем работу алгоритмов блочного шифрования */
+//  if( ak_libakrypt_test_block_ciphers() != ak_true ) {
+//    ak_error_message( ak_error_get_value(), __func__ , "error while testing block ciphers" );
+//    return ak_false;
+//  }
+
+// /* проверяем корректность реализации алгоритмов итерационного сжатия */
+//   if( ak_libakrypt_test_mac_functions( ) != ak_true ) {
+//     ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of mac algorithms" );
+//     return ak_false;
+//   }
+
+ /* тестируем работу алгоритмов выработки и проверки электронной подписи */
+  if( ak_libakrypt_test_asymmetric_functions() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                        "error while testing digital signature mechanisms" );
+    return ak_false;
+  }
+
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ , "testing is Ok" );
  return ak_true;
 }
 

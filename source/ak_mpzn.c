@@ -25,7 +25,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifndef LIBAKRYPT_HAVE_ASM_CODE
- /* реализация метода Карацубы для двух 64-х битных чисел */
+ /* очень хочется, чтобы здесь была реализация метода А.А. Карацубы для двух 64-х битных чисел */
  #define umul_ppmm( w1, w0, u, v )                  \
  do {                                               \
     ak_uint64 __x0, __x1, __x2, __x3;               \
@@ -154,6 +154,10 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mpzn_set_hexstr( ak_uint64 *x, const size_t size, const char *str )
 {
+  int error = ak_error_ok;
+#ifdef LIBAKRYPT_BIG_ENDIAN
+  size_t i = 0;
+#endif
   if( x == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to mpzn" );
     return ak_error_null_pointer;
@@ -166,7 +170,12 @@
     ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to hexademal string" );
     return ak_error_null_pointer;
   }
- return ak_hexstr_to_ptr( str, x, size*sizeof( ak_uint64 ), ak_true );
+
+  error = ak_hexstr_to_ptr( str, x, size*sizeof( ak_uint64 ), ak_true );
+#ifdef LIBAKRYPT_BIG_ENDIAN
+  for( i = 0; i < size; i++ ) x[i] = bswap_64(x[i]);
+#endif
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -182,6 +191,10 @@
 /* ----------------------------------------------------------------------------------------------- */
  char *ak_mpzn_to_hexstr( ak_uint64 *x, const size_t size )
 {
+#ifdef LIBAKRYPT_BIG_ENDIAN
+  size_t i = 0;
+  ak_mpznmax temp;
+#endif
   if( x == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to mpzn" );
     return NULL;
@@ -190,13 +203,22 @@
     ak_error_message( ak_error_zero_length, __func__ , "using a zero legth of input data" );
     return NULL;
   }
- return ak_ptr_to_hexstr( x, size*sizeof( ak_uint64 ), ak_true );
+#ifdef LIBAKRYPT_BIG_ENDIAN
+  for( i = 0; i < size; i++ ) temp[i] = bswap_64( x[i] );
+  return ak_ptr_to_hexstr( temp, size*sizeof( ak_uint64 ), ak_true );
+#else
+  return ak_ptr_to_hexstr( x, size*sizeof( ak_uint64 ), ak_true );
+#endif
 }
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mpzn_to_hexstr_static( ak_uint64* x, const size_t size,
                                                              ak_pointer out, const size_t outsize )
 {
+#ifdef LIBAKRYPT_BIG_ENDIAN
+  size_t i = 0;
+  ak_mpznmax temp;
+#endif
   if( x == NULL ) return ak_error_message( ak_error_null_pointer,
                                                         __func__ , "using a null pointer to mpzn" );
   if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
@@ -205,7 +227,12 @@
                                         __func__ , "using a null pointer to output string buffer" );
   if( !outsize ) return ak_error_message( ak_error_zero_length, __func__ ,
                                                      "using a zero legth of output string buffer" );
- return ak_ptr_to_hexstr_static( x, size*sizeof( ak_uint64 ), out, outsize, ak_true );
+#ifdef LIBAKRYPT_BIG_ENDIAN
+  for( i = 0; i < size; i++ ) temp[i] = bswap_64( x[i] );
+  return ak_ptr_to_hexstr_static( temp, size*sizeof( ak_uint64 ), out, outsize, ak_true );
+#else
+  return ak_ptr_to_hexstr_static( x, size*sizeof( ak_uint64 ), out, outsize, ak_true );
+#endif
 }
 
 /* ----------------------------------------------------------------------------------------------- */

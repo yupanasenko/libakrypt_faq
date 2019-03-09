@@ -12,7 +12,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_oid.h>
- #include <ak_curves.h>
+ #include <ak_parameters.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция вычисляерт величину \f$\Delta \equiv -16(4a^3 + 27b^2) \pmod{p} \f$, зависящую
@@ -102,7 +102,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция принимает на вход контекст эллиптической кривой, заданной в короткой форме Вейерштрасса,
-    и выполняет следующие проверки
+    и выполняет следующие математические проверки
 
      - проверяется, что модуль кривой (простое число \f$ p \f$) удовлетворяет неравенству
        \f$ 2^{n-32} < p < 2^n \f$, где \f$ n \f$ это либо 256, либо 512 в зависимости от
@@ -122,17 +122,33 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_wcurve_is_ok( ak_wcurve ec )
 {
-  int error = ak_error_ok;
+  char str[512];
+  ak_mpzn512 temp;
   struct wpoint wp;
+  int error = ak_error_ok;
 
- /* создали кривую и проверяем ее параметры */
+ /* создали кривую и проверяем веоичину старшего коэффициента ее молуля */
   if( ec->p[ ec->size-1 ] < 0x100000000LL )
-    return ak_error_message( ak_error_curve_prime_size, __func__ ,
-                                            "using elliptic curve parameters with wrong module" );
+    return ak_error_message( ak_error_curve_prime_modulo, __func__ ,
+                                           "using elliptic curve parameters with wrong module" );
+
+ /* проверяем соответствие данных в памяти их символьному представлению */
+  if(( error = ak_mpzn_to_hexstr_static( ec->p, ec->size, str, sizeof( str ))) != ak_error_ok )
+    return ak_error_message( error, __func__ , "incorrect convertation mpzn integer to string" );
+  if( strncmp( str, ec->pchar, strlen( ec->pchar )) != 0 )
+    return ak_error_message( ak_error_wrong_endian, __func__,
+                                               "incorrect convertation mpzn integer to string" );
+ /* теперь обратный тест */
+  if(( error = ak_mpzn_set_hexstr( temp, ec->size, ec->pchar )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "incorrect convertation string to mpzn integer" );
+  if( ak_mpzn_cmp( temp, ec->p, ec->size ) != 0 )
+    return ak_error_message( ak_error_wrong_endian, __func__,
+                                               "incorrect convertation string to mpzn integer" );
+ /* проверяем, что дискриминант кривой отличен от нуля */
   if(( error = ak_wcurve_discriminant_is_ok( ec )) != ak_error_ok )
     return ak_error_message( ak_error_curve_discriminant, __func__ ,
                                        "using elliptic curve parameters with zero discriminant" );
- /* теперь тестируем точку на кривой */
+ /* теперь проверяем принадлежность точки кривой */
   if(( error = ak_wpoint_set( &wp, ec )) != ak_error_ok )
     return ak_error_message( error, __func__, "incorect asiigning a temporary point" );
   if( ak_wpoint_is_ok( &wp, ec ) != ak_true )
@@ -151,44 +167,30 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция выводит в файл аудита значения параметров эллиптической кривой                  */
 /* ----------------------------------------------------------------------------------------------- */
- static void ak_wcurve_to_log( ak_wcurve ec )
+ static void ak_wcurve_to_log( ak_wcurve ec, int error )
 {
   char message[160];
 
-  memset( message, 0, 160 );
-  ak_snprintf( message, 160, " a = " );
-  ak_ptr_to_hexstr_static( ec->a, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
-  ak_log_set_message( message );
+  ak_ptr_to_hexstr_static( ec->a, ec->size*sizeof( ak_uint64 ), message, sizeof( message) , ak_true );
+  ak_error_message_fmt( error, __func__, " a = %s", message );
 
-  memset( message, 0, 160 );
-  ak_snprintf( message, 160, " b = " );
-  ak_ptr_to_hexstr_static( ec->b, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
-  ak_log_set_message( message );
+  ak_ptr_to_hexstr_static( ec->b, ec->size*sizeof( ak_uint64 ), message, sizeof( message ), ak_true );
+  ak_error_message_fmt( error, __func__, " b = %s", message );
 
-  memset( message, 0, 160 );
-  ak_snprintf( message, 160, " p = " );
-  ak_ptr_to_hexstr_static( ec->p, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
-  ak_log_set_message( message );
+  ak_ptr_to_hexstr_static( ec->p, ec->size*sizeof( ak_uint64 ), message, sizeof( message ), ak_true );
+  ak_error_message_fmt( error, __func__, " p = %s", message );
 
-  memset( message, 0, 160 );
-  ak_snprintf( message, 160, " q = " );
-  ak_ptr_to_hexstr_static( ec->q, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
-  ak_log_set_message( message );
+  ak_ptr_to_hexstr_static( ec->q, ec->size*sizeof( ak_uint64 ), message, sizeof( message ), ak_true );
+  ak_error_message_fmt( error, __func__, " q = %s", message );
 
-  memset( message, 0, 160 );
-  ak_snprintf( message, 160, "px = " );
-  ak_ptr_to_hexstr_static( ec->point.x, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
-  ak_log_set_message( message );
+  ak_ptr_to_hexstr_static( ec->point.x, ec->size*sizeof( ak_uint64 ), message, sizeof( message ), ak_true );
+  ak_error_message_fmt( error, __func__, "px = %s", message );
 
-  memset( message, 0, 160 );
-  ak_snprintf( message, 160, "py = " );
-  ak_ptr_to_hexstr_static( ec->point.y, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
-  ak_log_set_message( message );
+  ak_ptr_to_hexstr_static( ec->point.y, ec->size*sizeof( ak_uint64 ), message, sizeof( message ), ak_true );
+  ak_error_message_fmt( error, __func__, "py = %s", message );
 
-  memset( message, 0, 160 );
-  ak_snprintf( message, 160, "pz = " );
-  ak_ptr_to_hexstr_static( ec->point.z, ec->size*sizeof( ak_uint64 ), message+5, 155, ak_true );
-  ak_log_set_message( message );
+  ak_ptr_to_hexstr_static( ec->point.z, ec->size*sizeof( ak_uint64 ), message, sizeof( message ), ak_true );
+  ak_error_message_fmt( error, __func__, "pz = %s", message );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -215,7 +217,7 @@
       ak_wcurve wc = NULL;
       if(( wc = ( ak_wcurve ) oid->data ) == NULL )  {
         ak_error_message( ak_error_null_pointer, __func__,
-                                      "internal error with null poionter to wcurve paramset" );
+                                      "internal error with null pointer to wcurve paramset" );
         result = ak_false;
         goto lab_exit;
       }
@@ -225,11 +227,12 @@
           case ak_error_curve_discriminant     : p = "discriminant"; break;
           case ak_error_curve_point            : p = "base point"; break;
           case ak_error_curve_point_order      : p = "base point order"; break;
-          case ak_error_curve_prime_size       : p = "prime modulo p"; break;
+          case ak_error_curve_prime_modulo     : p = "prime modulo p"; break;
           case ak_error_curve_order_parameters : p = "prime order parameters"; break;
+          case ak_error_wrong_endian           : p = "incorrect representation of prime modulo"; break;
           default : p = "unexpected parameter";
         }
-        ak_wcurve_to_log( wc );
+        ak_wcurve_to_log( wc, reason );
         ak_error_message_fmt( reason, __func__ , "curve %s (OID: %s) has wrong %s",
                                                              oid->name, oid->id, p );
         result = ak_false;

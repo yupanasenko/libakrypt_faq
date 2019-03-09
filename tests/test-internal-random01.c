@@ -66,6 +66,125 @@
                     ak_random_context_create_urandom ) != ak_true ) return EXIT_FAILURE;
 #endif
 
+// #include <ak_mpzn.h>
+
+// char s[160];
+// ak_mpzn512 x, y;
+
+// ak_mpzn_set_hexstr( x, ak_mpzn256_size, "11234567890abcdfef0123456789accfead" );
+// ak_mpzn_to_hexstr_static( x, ak_mpzn256_size, s, sizeof(s));
+// printf("x: %s [", s );
+// for( int i = 0; i < ak_mpzn256_size; i++ ) printf("%llu ", x[i] );
+// printf("]\n");
+
+// ak_mpzn_set_hexstr( y, ak_mpzn256_size, "20781accdefa223675645cceffd011" );
+// ak_mpzn_to_hexstr_static( y, ak_mpzn256_size, s, sizeof(s));
+// printf("y: %s [", s );
+// for( int i = 0; i < ak_mpzn256_size; i++ ) printf("%llu ", y[i] );
+// printf("]\n");
+
+// ak_mpzn_mul( x, x, y, ak_mpzn256_size );
+// ak_mpzn_to_hexstr_static( x, 5, s, sizeof(s));
+// printf("z: %s [", s );
+// for( int i = 0; i < 5; i++ ) printf("%0llu ", x[i] );
+// printf("]\n");
+
+// /* далее, удалить */
+//  #include <ak_curves.h>
+
+//  union {
+//   ak_uint64 x;
+//   ak_uint8 c[8];
+//  } un;
+//  ak_oid oid = ak_oid_context_find_by_engine( identifier );
+
+//  while( oid != NULL ) {
+//    int j, i = 0;
+//    if( oid->mode == wcurve_params ) {
+//      ak_wcurve wc = NULL;
+//      if(( wc = ( ak_wcurve ) oid->data ) == NULL )  {
+//        ak_error_message( ak_error_null_pointer, __func__,
+//                                      "internal error with null pointer to wcurve paramset" );
+//      }
+
+//      printf("%s\n", oid->name );
+//      printf(" { ");
+//      for( i = 0; i < wc->size; i++ ) {
+//         un.x = wc->a[i]; printf(" 0x");
+//         for( j = 0; j < 8; j++ ) printf("%02x", un.c[j] );
+//         printf(",");
+//      }
+//      printf(" },\n");
+//      printf(" { ");
+//      for( i = 0; i < wc->size; i++ ) {
+//         un.x = wc->b[i]; printf(" 0x");
+//         for( j = 0; j < 8; j++ ) printf("%02x", un.c[j] );
+//         printf(",");
+//      }
+//      printf(" },\n");
+//      printf(" { ");
+//      for( i = 0; i < wc->size; i++ ) {
+//         un.x = wc->p[i]; printf(" 0x");
+//         for( j = 0; j < 8; j++ ) printf("%02x", un.c[j] );
+//         printf(",");
+//      }
+//      printf(" },\n");
+//      printf(" { ");
+//      for( i = 0; i < wc->size; i++ ) {
+//         un.x = wc->r2[i]; printf(" 0x");
+//         for( j = 0; j < 8; j++ ) printf("%02x", un.c[j] );
+//         printf(",");
+//      }
+//      printf(" },\n");
+//      printf(" { ");
+//      for( i = 0; i < wc->size; i++ ) {
+//         un.x = wc->q[i]; printf(" 0x");
+//         for( j = 0; j < 8; j++ ) printf("%02x", un.c[j] );
+//         printf(",");
+//      }
+//      printf(" },\n");
+//      printf(" { ");
+//      for( i = 0; i < wc->size; i++ ) {
+//         un.x = wc->r2q[i]; printf(" 0x");
+//         for( j = 0; j < 8; j++ ) printf("%02x", un.c[j] );
+//         printf(",");
+//      }
+//      printf(" },\n");
+
+//      printf(" { ");
+//      for( i = 0; i < wc->size; i++ ) {
+//         un.x = wc->point.x[i]; printf(" 0x");
+//         for( j = 0; j < 8; j++ ) printf("%02x", un.c[j] );
+//         printf(",");
+//      }
+//      printf(" },\n");
+//      printf(" { ");
+//      for( i = 0; i < wc->size; i++ ) {
+//         un.x = wc->point.y[i]; printf(" 0x");
+//         for( j = 0; j < 8; j++ ) printf("%02x", un.c[j] );
+//         printf(",");
+//      }
+//      printf(" },\n");
+//      printf(" { ");
+//      for( i = 0; i < wc->size; i++ ) {
+//         un.x = wc->point.z[i]; printf(" 0x");
+//         for( j = 0; j < 8; j++ ) printf("%02x", un.c[j] );
+//         printf(",");
+//      }
+//      printf(" },\n");
+
+//      un.x = wc->n; printf(" 0x");
+//      for( j = 0; j < 8; j++ ) printf("%02x", un.c[j] );
+//      printf("LL,\n");
+//      un.x = wc->nq; printf(" 0x");
+//      for( j = 0; j < 8; j++ ) printf("%02x", un.c[j] );
+//      printf("LL,\n");
+//    }
+
+//    printf("\n");
+//    oid = ak_oid_context_findnext_by_engine( oid, identifier );
+//  }
+
  ak_libakrypt_destroy();
  return EXIT_SUCCESS;
 }

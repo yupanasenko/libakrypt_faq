@@ -37,11 +37,23 @@ extern "C" {
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_ENDIAN_H
+ #include <endian.h>
+ #include <byteswap.h>
+ #if __BYTE_ORDER == __LITTLE_ENDIAN
+   #define LIBAKRYPT_LITTLE_ENDIAN   (1234)
+ #else
+   #define LIBAKRYPT_BIG_ENDIAN      (4321)
+ #endif
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_WINDOWS_H
  #include <windows.h>
  #include <io.h>
  #include <conio.h>
  #include <process.h>
+ #define LIBAKRYPT_LITTLE_ENDIAN      (1234)
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -204,7 +216,7 @@ extern "C" {
 /*! \brief Ошибка, возникающая когда неверно определены вспомогательные параметры эллиптической кривой. */
  #define ak_error_curve_order_parameters      (-74)
 /*! \brief Ошибка, возникающая когда простой модуль кривой задан неверно. */
- #define ak_error_curve_prime_size            (-75)
+ #define ak_error_curve_prime_modulo          (-75)
 
 /*! \brief Ошибка, возникающая при кодировании ASN1 структуры (перевод в DER-кодировку). */
  #define ak_error_wrong_asn1_encode           (-90)

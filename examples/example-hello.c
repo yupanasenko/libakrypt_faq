@@ -13,8 +13,9 @@
 
        в качестве примера мы выполняем динамическое
        тестирование криптографических механизмов с
-       помощью функции  ak_libakrypt_dynamic_control_test();
+       помощью функции                                ... */
 
-                                                       ... */
+       ak_libakrypt_dynamic_control_test();
+
  return ak_libakrypt_destroy();
 }

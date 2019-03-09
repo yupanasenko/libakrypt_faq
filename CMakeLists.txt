@@ -43,6 +43,7 @@ set( HEADERS        source/ak_tools.h
                     source/ak_mpzn.h
                     source/ak_curves.h
                     source/ak_parameters.h
+                    source/ak_gf2n.h
 )
 
 set( SOURCES        source/ak_tools.c
@@ -51,6 +52,7 @@ set( SOURCES        source/ak_tools.c
                     source/ak_mpzn.c
                     source/ak_curves.c
                     source/ak_random.c
+                    source/ak_gf2n.c
                     source/ak_libakrypt.c
 )
 
