@@ -20,7 +20,7 @@ project( libakrypt )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 7 )
-set( MINOR_VERSION 9 )
+set( MINOR_VERSION 10 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -31,6 +31,8 @@ option( LIBAKRYPT_SHARED_LIB "Build the shared library" OFF )
 option( LIBAKRYPT_INTERNAL_TESTS "Build collection of internal tests using non-export functions" OFF )
 option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
 option( LIBAKRYPT_HTML_DOC "Build documentation in HTML format" OFF )
+option( LIBAKRYPT_PDF_DOC "Build documentation in PDF format" OFF )
+option( LIBAKRYPT_CRYPTO_FUNCTIONS "Build library with crypto functions" ON )
 
 # -------------------------------------------------------------------------------------------------- #
 # множество исходных текстов библиотеки и вспомогательных файлов
@@ -45,6 +47,11 @@ set( HEADERS        source/ak_tools.h
                     source/ak_parameters.h
                     source/ak_gf2n.h
 )
+if( LIBAKRYPT_CRYPTO_FUNCTIONS )
+  set( HEADERS      ${HEADERS}
+                    source/ak_hash.h
+  )
+endif()
 
 set( SOURCES        source/ak_tools.c
                     source/ak_buffer.c
@@ -55,6 +62,13 @@ set( SOURCES        source/ak_tools.c
                     source/ak_gf2n.c
                     source/ak_libakrypt.c
 )
+if( LIBAKRYPT_CRYPTO_FUNCTIONS )
+  set( SOURCES      ${SOURCES}
+                    source/ak_hash.c
+                    source/ak_streebog.c
+  )
+  add_compile_options( -DLIBAKRYPT_CRYPTO_FUNCTIONS=ON )
+endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # подключаем модули CMake для тонкой настройки параметров сборки
@@ -151,10 +165,18 @@ set( INTERNAL_TEST_LIST
                  internal-random01
                  internal-oid01
                  internal-oid03
+)
+if( LIBAKRYPT_CRYPTO_FUNCTIONS )
+  set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
+                 internal-hash01
+                 internal-hash02
                  # internal-random02
                  # internal-oid02
-)
+                 # internal-hash03
+  )
+endif()
 
+# -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_INTERNAL_TESTS )
   enable_testing()
 

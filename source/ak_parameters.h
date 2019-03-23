@@ -109,6 +109,7 @@
 /*! \brief Итерационные константы для алгоритма Стрибог (ГОСТ Р 34.11-2012). */
 /* ---------------------------------------------------------------------------------------------- */
  static const ak_uint64 streebog_c[12][8] = {
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
   { 0xdd806559f2a64507, 0x05767436cc744d23, 0xa2422a08a460d315, 0x4b7ce09192676901,
     0x714eb88d7585c4fc, 0x2f6a76432e45d016, 0xebcb2f81c0657c1f, 0xb1085bda1ecadae9 },
   { 0xe679047021b19bb7, 0x55dda21bd7cbcd56, 0x5cb561c2db0aa7ca, 0x9ab5176b12d69958,
@@ -133,6 +134,32 @@
     0x2001802114846679, 0xd8fa6bbbebab0761, 0x3002c6cd635afe94, 0x7bcd9ed0efc889fb },
   { 0x48bc924af11bd720, 0xfaf417d5d9b21b99, 0xe71da4aa88e12852, 0x5d80ef9d1891cc86,
     0xf82012d430219f9b, 0xcda43c32bcdf1d77, 0xd21380b00449b17a, 0x378ee767f11631ba }
+#else
+  { 0x0745a6f2596580dd, 0x234d74cc36747605, 0x15d360a4082a42a2, 0x0169679291e07c4b,
+    0xfcc485758db84e71, 0x16d0452e43766a2f, 0x1f7c65c0812fcbeb, 0xe9daca1eda5b08b1 },
+  { 0xb79bb121700479e6, 0x56cdcbd71ba2dd55, 0xcaa70adbc261b55c, 0x5899d6126b17b59a,
+    0x3101b5160f5ed561, 0x982b230a72eafef3, 0xd7b5700f469de34f, 0x1a2f9da98ab5a36f },
+  { 0xb20aba0af5961e99, 0x31db7a8643f4b6c2, 0x09db6260373ac9c1, 0xb19e3590e40fe2d3,
+    0x7b7b29b11475eaf2, 0x8b1f9c525f5ef106, 0x35843d6a28fc390a, 0xc72fce2bacdc74f5 },
+  { 0x2ed1e384bcbe0c22, 0xf137e893a1ea5334, 0xbe0352933313b7d8, 0x75d603ed822cd7a9,
+    0x3f355e68ad1c729d, 0x7d3c5c337e858e48, 0xdde4715da0e148f9, 0xd26615e8b3df1fef },
+  { 0x57fe6c7cfd581760, 0xf563eaa97ea2567a, 0x161a2723b700ffdf, 0xa3f53a254717cdbf,
+    0xbdff0f80d7359e35, 0x4a1086161f1c157f, 0x6323a96c0c413f9a, 0x994747adac6bea4b },
+  { 0x6e7d64467a4068fa, 0x354f903672c571bf, 0xb6c6bec2661ff20a, 0xb4b79a1cb7a6facf,
+    0xc68ef09ab49a7f18, 0x6ca44251f9c4662d, 0xc039307a3bc3a46f, 0xd9d33a1daeae4fae },
+  { 0x93d4143a4d568688, 0xf34a3ca24c451735, 0x04054a2883694706, 0x372c822dc5ab9209,
+    0xc9937a19333e47d3, 0xc987bfe6c7c69e39, 0x540924bffe86ac51, 0xecc5aaee160ec7f4 },
+  { 0x1ee702bfd40d7fa4, 0xd9a8515935c2ac36, 0x2fc4a5d12b8dd169, 0x90069b92cb2b89f4,
+    0x9ac4db4d3b44b489, 0x1ede369c71f8b74e, 0x41416e0c02aae703, 0xa7c9934d425b1f9b },
+  { 0xdb5a238351446172, 0x602a1fcb92dc380e, 0x549c07a69a8a2b7b, 0xb1ceb2db0b440a80,
+    0x84090de0b755d93c, 0x244289251b3a7d3a, 0xde5f16ecd89a4c94, 0x9b223116545a8f37 },
+  { 0xed9c4598fbc7b474, 0xc3b63b15d1fa9836, 0xf452763b306c1e7a, 0x4b3369af0267e79f,
+    0x0361331b8ae1ff1f, 0xdb788aff1ce74189, 0xf3f3e4b248e52a38, 0x526f0580a6debeab },
+  { 0x1b2df381cda4ca6b, 0x5dd86fc04a59a2de, 0x986e477d1dcdbaef, 0xcab948eaef711d8a,
+    0x7966841421800120, 0x6107abebbb6bfad8, 0x94fe5a63cdc60230, 0xfb89c8efd09ecd7b },
+  { 0x20d71bf14a92bc48, 0x991bb2d9d517f4fa, 0x5228e188aaa41de7, 0x86cc91189def805d,
+    0x9b9f2130d41220f8, 0x771ddfbc323ca4cd, 0x7ab14904b08013d2, 0xba3116f167e78e37 }
+#endif
  };
 
 /* ----------------------------------------------------------------------------------------------- */
