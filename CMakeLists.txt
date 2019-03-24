@@ -66,6 +66,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( SOURCES      ${SOURCES}
                     source/ak_hash.c
                     source/ak_streebog.c
+                    source/ak_hashrnd.c
   )
   add_compile_options( -DLIBAKRYPT_CRYPTO_FUNCTIONS=ON )
 endif()
@@ -170,7 +171,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
                  internal-hash01
                  internal-hash02
-                 # internal-random02
+                 internal-random02
                  # internal-oid02
                  # internal-hash03
   )

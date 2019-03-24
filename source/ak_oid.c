@@ -43,14 +43,24 @@
                                     { ( ak_function_void *) ak_random_context_create_winrtl,
                                       ( ak_function_void *) ak_random_context_destroy,
                                       ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
- #endif
+  #endif
 
    { random_generator, algorithm, "xorshift32", "1.2.643.2.52.1.1.5", NULL, NULL,
                                     { ( ak_function_void *) ak_random_context_create_xorshift32,
                                       ( ak_function_void *) ak_random_context_destroy,
                                       ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
 
-#ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
+  #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
+   { random_generator, algorithm, "hashrnd-streebog256", "1.2.643.2.52.1.1.6.1", NULL, NULL,
+                       { ( ak_function_void *) ak_random_context_create_hashrnd_streebog256,
+                                      ( ak_function_void *) ak_random_context_destroy,
+                                      ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
+
+   { random_generator, algorithm, "hashrnd-streebog512", "1.2.643.2.52.1.1.6.2", NULL, NULL,
+                       { ( ak_function_void *) ak_random_context_create_hashrnd_streebog512,
+                                      ( ak_function_void *) ak_random_context_destroy,
+                                      ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
+
   /* 2. идентификаторы алгоритмов бесключевого хеширования,
         значения OID взяты из перечней КриптоПро и ТК26 (http://tk26.ru/methods/OID_TK_26/index.php)
         в дереве библиотеки: 1.2.643.2.52.1.2 - функции бесключевого хеширования */
@@ -63,12 +73,12 @@
                            { ( ak_function_void *) ak_hash_context_create_streebog512,
                                         ( ak_function_void *) ak_hash_context_destroy,
                                         ( ak_function_void *) ak_hash_context_delete, NULL, NULL }},
-#endif
+  #endif
 
- /* 12. идентификаторы параметров эллиптических кривых, в частности, из Р 50.1.114-2016
-        в дереве библиотеки: 1.2.643.2.52.1.12 - параметры эллиптических кривых в форме Вейерштрасса
-        в дереве библиотеки: 1.2.643.2.52.1.12.1 - параметры 256 битных кривых
-        в дереве библиотеки: 1.2.643.2.52.1.12.2 - параметры 512 битных кривых */
+  /* 12. идентификаторы параметров эллиптических кривых, в частности, из Р 50.1.114-2016
+         в дереве библиотеки: 1.2.643.2.52.1.12 - параметры эллиптических кривых в форме Вейерштрасса
+         в дереве библиотеки: 1.2.643.2.52.1.12.1 - параметры 256 битных кривых
+         в дереве библиотеки: 1.2.643.2.52.1.12.2 - параметры 512 битных кривых */
    { identifier, wcurve_params, "id-tc26-gost-3410-2012-256-paramSetTest", "1.2.643.7.1.2.1.1.0",
                                      NULL, (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetTest,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
@@ -132,6 +142,7 @@
     "hash function",
     "hmac function",
     "omac function",
+    "mgm function",
     "mac function",
     "sign function",
     "verify function",
@@ -193,6 +204,8 @@
  return libakrypt_mode_names[mode];
 }
 
+#include <stdio.h>
+
 /* ----------------------------------------------------------------------------------------------- */
 /*                          поиск OID - функции внутреннего интерфейса                             */
 /* ----------------------------------------------------------------------------------------------- */
@@ -204,17 +217,22 @@
  ak_oid ak_oid_context_find_by_name( char *name )
 {
   size_t len = 0, idx = 0;
+
+ /* надо ли стартовать */
   if( name == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__, "using null pointer to oid name" );
     return NULL;
   }
+
+
+ /* перебор по всем возможным значениям */
   do{
      if(( strlen( name ) == ( len = strlen( libakrypt_oids[idx].name ))) &&
             ak_ptr_is_equal( (char *)name, (char *)libakrypt_oids[idx].name, len ))
-       return &libakrypt_oids[idx];
+       return  &libakrypt_oids[idx];
 
   } while( ++idx < ak_libakrypt_oids_count( ));
-  ak_error_message( ak_error_oid_name, __func__, "searching oid with wrong name" );
+  ak_error_message( ak_error_oid_id, __func__, "searching oid with wrong idetifier" );
 
  return NULL;
 }
@@ -330,7 +348,6 @@
 
  return result;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*!  \example test-internal-oid01.c                                                                */
