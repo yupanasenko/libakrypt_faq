@@ -83,7 +83,7 @@
           streebog_x( B, T, K );
           streebog_lps( T, B ); /* преобразуем текст */
 
-          streebog_x( B, K, &streebog_c[idx][0] );
+          streebog_x( B, K, streebog_c[idx] );
           streebog_lps( K, B );   /* новый ключ */
        }
        /* изменяем значение переменной h */
@@ -94,13 +94,20 @@
 /*! Преобразование Add (увеличения счетчика длины обработаного сообщения)                          */
  static inline void streebog_add( struct streebog *ctx, ak_uint64 size )
 {
+ #ifdef LIBAKRYPT_LITTLE_ENDIAN
    ak_uint64 tmp = size + ctx->N[0];
    if( tmp < ctx->N[0] ) ctx->N[1]++;
-   #ifdef LIBAKRYPT_LITTLE_ENDIAN
-     ctx->N[0] = tmp;  /* такой код позволяет обработать сообщения, длиной не более 2^125 байт */
-   #else
+   ctx->N[0] = tmp;  /* такой код позволяет обработать сообщения, длиной не более 2^125 байт */
+ #else
+     ak_uint64 val = bswap_64( ctx->N[0] ),
+               tmp = size + val;
+     if( tmp < val ) {
+       val = bswap_64( ctx->N[1] );
+       val++;
+       ctx->N[1] = bswap_64( val );
+     }
      ctx->N[0] = bswap_64(tmp);
-   #endif
+ #endif
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -111,12 +118,24 @@
    ak_uint64 carry = 0;
    for( i = 0; i < 8; i++ )
    {
+    #ifdef LIBAKRYPT_LITTLE_ENDIAN
       if( carry ) {
                     ctx->SIGMA[i] ++;
                     if( ctx->SIGMA[i] ) carry = 0;
       }
       ctx->SIGMA[i] += data[i];
       if( ctx->SIGMA[i] < data[i] ) carry = 1;
+    #else
+      ak_uint64 val_data = bswap_64( data[i] ),
+               val_sigma = bswap_64( ctx->SIGMA[i] );
+      if( carry ) {
+                    val_sigma++;
+                    if( val_sigma ) carry = 0;
+      }
+      val_sigma += val_data;
+      if( val_sigma < val_data ) carry = 1;
+      ctx->SIGMA[i] = bswap_64( val_sigma );
+    #endif
    }
 }
 
