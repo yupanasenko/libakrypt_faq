@@ -1,5 +1,5 @@
 /* Тестовый пример, иллюстрирующий создание серии генераторов,
-   основанных на применении функций хеширования.
+   основанных на применении функций хеширования (hashrnd).
    Пример использует неэкспортируемые функции.
 
    test-internal-random02.c
@@ -78,8 +78,6 @@
 
   if(( error = test( ak_oid_context_find_by_name( "streebog256" ))) != EXIT_SUCCESS ) goto exitlab;
   if(( error = test( ak_oid_context_find_by_name( "streebog512" ))) != EXIT_SUCCESS ) goto exitlab;
- /* этот фрагмент не будет выполняться */
-  if( test( ak_oid_context_find_by_name( "gosthash94" )) != EXIT_SUCCESS ) goto exitlab;
 
   exitlab: ak_libakrypt_destroy();
  return error;

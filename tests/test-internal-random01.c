@@ -69,9 +69,6 @@
 #endif
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
- if( test_function( ak_random_context_create_hashrnd_streebog256,
-      "D9DE84A990EE681E0375E8904A58C3C24DF87D7C44E8CAD9419A5D0B328D2A4D" ) != ak_true )
-   error = EXIT_FAILURE;
  if( test_function( ak_random_context_create_hashrnd_streebog512,
       "F59B4AC1EFEEDD34E0BC8875BE96C1EE89901F9153F949DDA6BC666512F41375" ) != ak_true )
    error = EXIT_FAILURE;

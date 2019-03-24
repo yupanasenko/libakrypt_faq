@@ -27,7 +27,7 @@
  /* перебираем все oid для генераторов псевдослучайных чисел */
   oid = ak_oid_context_find_by_engine( random_generator );
 
-  while( oid != NULL ) {
+  while( oid != NULL ) { /* генератор найден - тестируем его */
     struct random generator;
 
    /* используя oid, создаем объект и вырабатываем случайные данные */
