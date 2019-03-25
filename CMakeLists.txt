@@ -50,6 +50,9 @@ set( HEADERS        source/ak_tools.h
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( HEADERS      ${HEADERS}
                     source/ak_hash.h
+                    source/ak_skey.h
+                    source/ak_hmac.h
+                    source/ak_mac.h
   )
 endif()
 
@@ -67,6 +70,9 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_hash.c
                     source/ak_streebog.c
                     source/ak_hashrnd.c
+                    source/ak_skey.c
+                    source/ak_hmac.c
+                    source/ak_mac.c
   )
   add_compile_options( -DLIBAKRYPT_CRYPTO_FUNCTIONS=ON )
 endif()
@@ -165,7 +171,7 @@ endif()
 set( INTERNAL_TEST_LIST
                  internal-random01
                  internal-oid01
-                 internal-oid03
+                 internal-oid02
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}

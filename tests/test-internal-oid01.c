@@ -22,7 +22,7 @@
   if( !ak_libakrypt_create( ak_function_log_stderr ))
     return ak_libakrypt_destroy();
 
-  printf("list of all random number generators:\n");
+  printf("list of all random number generators (including /dev/random, if accessible):\n");
 
  /* перебираем все oid для генераторов псевдослучайных чисел */
   oid = ak_oid_context_find_by_engine( random_generator );

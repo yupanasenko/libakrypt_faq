@@ -11,7 +11,7 @@
  #error Library cannot be compiled without string.h header
 #endif
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
- #include <ak_hash.h>
+ #include <ak_mac.h>
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -73,6 +73,24 @@
                            { ( ak_function_void *) ak_hash_context_create_streebog512,
                                         ( ak_function_void *) ak_hash_context_destroy,
                                         ( ak_function_void *) ak_hash_context_delete, NULL, NULL }},
+
+  /* 3. идентификаторы параметров алгоритма бесключевого хеширования ГОСТ Р 34.11-94.
+        значения OID взяты из перечней КриптоПро
+
+        в текущей версии библиотеки данные идентификаторы отсутствуют */
+
+  /* 4. идентификаторы алгоритмов HMAC согласно Р 50.1.113-2016
+        в дереве библиотеки: 1.2.643.2.52.1.4 - функции ключевого хеширования (имитозащиты) */
+   { hmac_function, algorithm, "hmac-streebog256", "1.2.643.7.1.1.4.1", NULL, NULL,
+                           { ( ak_function_void *) ak_hmac_context_create_streebog256,
+                                        ( ak_function_void *) ak_hmac_context_destroy,
+                                        ( ak_function_void *) ak_hmac_context_delete, NULL, NULL }},
+
+   { hmac_function, algorithm, "hmac-streebog512", "1.2.643.7.1.1.4.2", NULL, NULL,
+                            { ( ak_function_void *)ak_hmac_context_create_streebog512,
+                                        ( ak_function_void *) ak_hmac_context_destroy,
+                                        ( ak_function_void *) ak_hmac_context_delete, NULL, NULL }},
+
   #endif
 
   /* 12. идентификаторы параметров эллиптических кривых, в частности, из Р 50.1.114-2016

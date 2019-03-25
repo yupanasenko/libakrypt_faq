@@ -198,7 +198,7 @@
     используя для этого другой генератор псевдо-случайных чисел */
 
 #if defined(__unix__) || defined(__APPLE__)
-   error = ak_random_context_create_random( &rnd );
+   error = ak_random_context_create_urandom( &rnd );
 #else
    error = ak_random_context_create_xorshift32( &rnd );
 #endif
