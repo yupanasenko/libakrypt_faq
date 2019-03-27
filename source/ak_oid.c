@@ -12,6 +12,7 @@
 #endif
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  #include <ak_mac.h>
+ #include <ak_sign.h>
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -90,6 +91,34 @@
                             { ( ak_function_void *)ak_hmac_context_create_streebog512,
                                         ( ak_function_void *) ak_hmac_context_destroy,
                                         ( ak_function_void *) ak_hmac_context_delete, NULL, NULL }},
+
+  /* 10. идентификаторы алгоритмов выработки электронной подписи
+        в дереве библиотеки: 1.2.643.2.52.1.10 - алгоритмы выработки электронной подписи */
+   { sign_function, algorithm, "sign256", "1.2.643.7.1.1.1.1", NULL, NULL,
+                       { ( ak_function_void *) ak_signkey_context_create_streebog256,
+                                    ( ak_function_void *) ak_signkey_context_destroy,
+                                     ( ak_function_void *) ak_signkey_context_delete, NULL, NULL }},
+
+   { sign_function, algorithm, "sign512", "1.2.643.7.1.1.1.2", NULL, NULL,
+                       { ( ak_function_void *) ak_signkey_context_create_streebog512,
+                                    ( ak_function_void *) ak_signkey_context_destroy,
+                                     ( ak_function_void *) ak_signkey_context_delete, NULL, NULL }},
+
+ /* 11. идентификаторы алгоритмов проверки электронной подписи
+        в дереве библиотеки: 1.2.643.2.52.1.11 - алгоритмы проверки электронной подписи
+
+        поскольку дерево OID-ов ТК26 не делает различия, между алгоритмами выработки и алгоритмами
+        проверки электронной подписи, мы используем свой корень для указания алгоритмов проверки. */
+
+   { verify_function, algorithm, "verify256", "1.2.643.2.52.1.11.2", NULL, NULL,
+                     { (ak_function_void *) ak_verifykey_context_create_from_signkey,
+                                   (ak_function_void *) ak_verifykey_context_destroy,
+                                    (ak_function_void *) ak_verifykey_context_delete, NULL, NULL }},
+
+   { verify_function, algorithm, "verify512", "1.2.643.2.52.1.11.3", NULL, NULL,
+                     { (ak_function_void *) ak_verifykey_context_create_from_signkey,
+                                   (ak_function_void *) ak_verifykey_context_destroy,
+                                    (ak_function_void *) ak_verifykey_context_delete, NULL, NULL }},
 
   #endif
 
@@ -222,8 +251,6 @@
  return libakrypt_mode_names[mode];
 }
 
-#include <stdio.h>
-
 /* ----------------------------------------------------------------------------------------------- */
 /*                          поиск OID - функции внутреннего интерфейса                             */
 /* ----------------------------------------------------------------------------------------------- */
@@ -241,8 +268,6 @@
     ak_error_message( ak_error_null_pointer, __func__, "using null pointer to oid name" );
     return NULL;
   }
-
-
  /* перебор по всем возможным значениям */
   do{
      if(( strlen( name ) == ( len = strlen( libakrypt_oids[idx].name ))) &&
@@ -250,7 +275,7 @@
        return  &libakrypt_oids[idx];
 
   } while( ++idx < ak_libakrypt_oids_count( ));
-  ak_error_message( ak_error_oid_id, __func__, "searching oid with wrong idetifier" );
+  ak_error_message_fmt( ak_error_oid_id, __func__, "searching oid with wrong name \"%s\"", name );
 
  return NULL;
 }
@@ -275,8 +300,8 @@
        return  &libakrypt_oids[idx];
 
   } while( ++idx < ak_libakrypt_oids_count( ));
-  ak_error_message( ak_error_oid_id, __func__, "searching oid with wrong idetifier" );
-
+  ak_error_message_fmt( ak_error_oid_id, __func__,
+                                            "searching oid with wrong identifier \"%s\"", id );
  return NULL;
 }
 
@@ -290,7 +315,8 @@
 {
   size_t len = 0, idx = 0;
   if( ni == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to oid name/identifier" );
+    ak_error_message( ak_error_null_pointer, __func__,
+                                                  "using null pointer to oid name or identifier" );
     return NULL;
   }
 
@@ -305,8 +331,8 @@
        return &libakrypt_oids[idx];
 
   } while( ++idx < ak_libakrypt_oids_count( ));
-  ak_error_message( ak_error_oid_id, __func__, "searching oid with wrong idetifier" );
-
+  ak_error_message_fmt( ak_error_oid_id, __func__,
+                                        "searching oid with wrong name or identifier\"%s\"", ni );
  return NULL;
 }
 

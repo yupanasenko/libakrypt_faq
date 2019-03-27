@@ -13,6 +13,8 @@
  #error Library cannot be compiled without string.h header
 #endif
 
+#include <stdio.h>
+
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_mpzn.h>
 
@@ -121,7 +123,7 @@
   if( generator == NULL ) return ak_error_message( ak_error_undefined_value,
                                                 __func__ , "using an undefined random generator" );
 
- /*! @todo Здесь не совсем корректный способ вычисления случайного значения,
+ /*! TODO! Здесь не совсем корректный способ вычисления случайного значения,
            необходимо исправить в дальнейшем */
 
  /* определяем старший значащий разряд у модуля */

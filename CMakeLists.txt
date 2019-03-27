@@ -53,6 +53,8 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_skey.h
                     source/ak_hmac.h
                     source/ak_mac.h
+                    source/ak_context_manager.h
+                    source/ak_sign.h
   )
 endif()
 
@@ -73,6 +75,8 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_skey.c
                     source/ak_hmac.c
                     source/ak_mac.c
+                    source/ak_context_manager.c
+                    source/ak_sign.c
   )
   add_compile_options( -DLIBAKRYPT_CRYPTO_FUNCTIONS=ON )
 endif()
@@ -172,6 +176,7 @@ set( INTERNAL_TEST_LIST
                  internal-random01
                  internal-oid01
                  internal-oid02
+                 internal-mpzn01
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}

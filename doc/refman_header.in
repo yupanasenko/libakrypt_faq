@@ -146,8 +146,11 @@
 {\bfseries\textsc{Принципы реализации}}\\[1\baselineskip]
 
 
+%![axelkenzo](https://avatars3.githubusercontent.com/u/605552?s=400&v=4)
+
+
 \vspace{0.5\textheight}
-{\small\textsc{Axel Kenzo \& The Company Of Belles Lettres~~\copyright~~\today}}\\[1\baselineskip]
+{\small\textsc{Axel Kenzo и <<Компания изящной словесности>>~~\copyright~~\today}}\\[1\baselineskip]
 %{(c) 2014 -- 2019}\\[1\baselineskip]
 }% end of vbox
 }% end of parbox

@@ -17,6 +17,8 @@
  #include <ak_curves.h>
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  #include <ak_mac.h>
+ #include <ak_sign.h>
+ #include <ak_context_manager.h>
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -200,11 +202,11 @@
     return ak_false;
   }
 
-// /* тестируем корректность реализации алгоритмов электронной подписи */
-//  if( ak_signkey_test() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of digital signatures" );
-//    return ak_false;
-//  }
+ /* тестируем корректность реализации алгоритмов электронной подписи */
+  if( ak_signkey_test() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of digital signatures" );
+    return ak_false;
+  }
 
   if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms ended successfully" );
@@ -310,11 +312,11 @@
      return ak_false;
    }
 
-// /* инициализируем структуру управления контекстами */
-//   if(( error = ak_libakrypt_create_context_manager()) != ak_error_ok ) {
-//     ak_error_message( error, __func__, "initialization of context manager is wrong" );
-//     return ak_false;
-//   }
+ /* инициализируем структуру управления контекстами */
+   if(( error = ak_libakrypt_create_context_manager()) != ak_error_ok ) {
+     ak_error_message( error, __func__, "initialization of context manager is wrong" );
+     return ak_false;
+   }
 
 // /* инициализируем константные таблицы для алгоритма Кузнечик */
 //  if( ak_bckey_init_kuznechik_tables()  != ak_true ) {
@@ -348,10 +350,10 @@
   if( error != ak_error_ok )
     ak_error_message( error, __func__ , "before destroing library holds an error" );
 
-// /* уничтожаем структуру управления контекстами */
-//  if( ak_libakrypt_destroy_context_manager() != ak_error_ok ) {
-//    ak_error_message( ak_error_get_value(), __func__, "destroying of context manager is wrong" );
-//  }
+ /* уничтожаем структуру управления контекстами */
+  if( ak_libakrypt_destroy_context_manager() != ak_error_ok ) {
+    ak_error_message( ak_error_get_value(), __func__, "destroying of context manager is wrong" );
+  }
 
   if( ak_log_get_level() != ak_log_none )
     ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms successfully destroyed" );
