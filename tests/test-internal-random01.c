@@ -25,7 +25,8 @@
   printf( "%s: ", generator.oid->name ); fflush( stdout );
 
  /* инициализируем константным значением */
-  ak_random_context_randomize( &generator, &seed, sizeof( seed ));
+  if( generator.randomize_ptr != NULL )
+    ak_random_context_randomize( &generator, &seed, sizeof( seed ));
 
  /* теперь вырабатываем необходимый объем данных - 256МБ */
   time = clock();
