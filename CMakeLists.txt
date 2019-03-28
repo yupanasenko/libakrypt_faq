@@ -182,7 +182,9 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
                  internal-hash01
                  internal-hash02
+                 internal-hash03
                  internal-random02
+                 internal-sign01
                  # internal-oid02
                  # internal-hash03
   )

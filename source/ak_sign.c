@@ -914,6 +914,34 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ int ak_verify_context_export_ptr( ak_verifykey pctx, ak_pointer out, size_t size )
+{
+#ifndef LIBAKRYPT_LITTLE_ENDIAN
+  int i = 0;
+#endif
+  size_t len = 0;
+
+ /* необходимые проверки */
+  if( pctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                  "using null pointer to public key context" );
+  if( out == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                       "using null pointer to output buffer" );
+  len = pctx->wc->size*sizeof( ak_uint64 );
+  if( size < 2*len )
+    return ak_error_message( ak_error_wrong_length, __func__, "using buffer with small size" );
+
+ /* копируем данные */
+  memcpy( out, pctx->qpoint.x, len );
+  memcpy( ((ak_uint64 *)out)+pctx->wc->size, pctx->qpoint.y, len );
+
+#ifndef LIBAKRYPT_LITTLE_ENDIAN
+  for( i = 0; i < 2*pctx->wc->size; i++ ) ((ak_uint64 *)out)[i] = bswap_64( ((ak_uint64 *)out)[i] );
+#endif
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                         тестовые примеры                                        */
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция тестирует полный цикл: создание ключа, подпись, проверка для всех кривых

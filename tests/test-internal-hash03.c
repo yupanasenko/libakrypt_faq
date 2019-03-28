@@ -1,143 +1,44 @@
-/*
-   Пример, иллюстрирующий различные методы вычисления хэш-кода для заданного файла.
-   В примере используются неэкспортируемые функции библиотеки
+/* Пример, иллюстрирующий вычисление хеша от пароля.
+   Внимание! Используются неэкспортируемые функции.
 
    test-internal-hash03.c
 */
+
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
- #include <ak_tools.h>
- #include <ak_random.h>
- #include <ak_mac.h>
+ #include <ak_hash.h>
 
-#ifdef LIBAKRYPT_HAVE_SYSMMAN_H
- #include <sys/stat.h>
- #include <unistd.h>
- #include <fcntl.h>
- #include <sys/mman.h>
-#endif
-
- int main( int argc, char *argv[] )
+ int main( void )
 {
-  size_t tail;
+  ak_uint8 out[32];  /* значение хеш-функции */
   struct hash ctx;
-  struct mac ictx;
-  struct file file;
-  ak_uint8 out[128];
-  ak_uint8 buffer[1024];
-  struct random generator;
-  int exitcode = EXIT_SUCCESS;
+  int i = 0, res = EXIT_SUCCESS;
 
- /* инициализируем библиотеку */
-  if( ak_libakrypt_create( NULL ) != ak_true ) return ak_libakrypt_destroy();
-  memset( out, 0, sizeof( out ));
+ /* проверочная константа */
+  ak_uint8 sout[32] = {
+   0xC6, 0x00, 0xFD, 0x9D, 0xD0, 0x49, 0xCF, 0x8A, 0xBD, 0x2F, 0x5B, 0x32, 0xE8, 0x40, 0xD2, 0xCB,
+   0x0E, 0x41, 0xEA, 0x44, 0xDE, 0x1C, 0x15, 0x5D, 0xCD, 0x88, 0xDC, 0x84, 0xFE, 0x58, 0xA8, 0x55 };
 
-  printf("we working with %s file\n", argv[0] );
+ /* инициализация библиотеки
+    (NULL означает, что все сообщения об ошибках будут выводиться в /var/log/auth.log */
+  if( !ak_libakrypt_create( NULL )) return ak_libakrypt_destroy();
 
- /* 1. хешируем файл как единый фрагмент данных (используя mmap) */
-#ifdef LIBAKRYPT_HAVE_SYSMMAN_H
- {
-   ak_uint8 *data = NULL;
+ /* вычисление хеша для фиксированного пароля */
+  ak_hash_context_create_streebog256( &ctx );
+  ak_hash_context_ptr( &ctx, "hello world", 11, out );
+  ak_hash_context_destroy( &ctx );
 
-   struct stat st;
-   int fd = open( argv[0], O_RDONLY );
+ /* сверяем значение хеша с константой */
+  printf("hash: ");
+  for( i = 0; i < 32; i++ ) {
+     printf("%02X", out[i] );
+     if( out[i] != sout[i] ) res = EXIT_FAILURE;
+  }
+  if( res == EXIT_SUCCESS ) printf(" Ok\n"); else printf(" No\n");
 
-   fstat( fd, &st );
-   data = mmap( NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0 );
+ /* завершаем работу с библиотекой */
+  ak_libakrypt_destroy();
 
-  /* создаем контекст и, в случае успеха, сразу вычисляем значение кода целостности */
-   if( ak_hash_context_create_streebog256( &ctx ) == ak_error_ok ) {
-     ak_hash_context_ptr( &ctx, data, st.st_size, out );
-
-    /* уничтожаем контекст функции хеширования */
-     ak_hash_context_destroy( &ctx );
-    /* выводим полученное значение */
-     ak_ptr_to_hexstr_static( out, 32, buffer, 1024, ak_false );
-     printf("mmap() + ak_hash_context_ptr()\nhash: %s\n\n", buffer );
-   }
-
-  /* создаем контекст функции итерационного сжатия */
-   if( ak_mac_context_create_oid( &ictx, ak_oid_context_find_by_name("streebog256")) == ak_error_ok ) {
-     ak_mac_context_ptr( &ictx, data, st.st_size, out );
-
-    /* уничтожаем контекст функции итерационного сжатия */
-     ak_mac_context_destroy( &ictx );
-    /* выводим полученное значение */
-     ak_ptr_to_hexstr_static( out, 32, buffer, 1024, ak_false );
-     printf("mmap() + ak_mac_context_ptr()\nhash: %s\n\n", buffer );
-   }
-
-   munmap( data, st.st_size );
- }
-#endif
-
- /* 2. хешируем файл, используя функции класса hash */
-   ak_hash_context_create_streebog256( &ctx );
-  /* хешируем вызовом всего одной функции */
-   ak_hash_context_file( &ctx, argv[0], out+32 );
-   ak_hash_context_destroy( &ctx );
-  /* выводим полученное значение */
-   ak_ptr_to_hexstr_static( out+32, 32, buffer, 1024, ak_false );
-   printf("ak_hash_context_file()\nhash: %s\n\n", buffer );
-  /* сравниваем полученные результаты */
-#ifdef LIBAKRYPT_HAVE_SYSMMAN_H
-   if( ak_ptr_is_equal( out, out+32, 32 ) != ak_true ) {
-     ak_ptr_to_hexstr_static( out, 128, buffer, 1024, ak_false );
-     printf("out:  %s\n", buffer );
-     exitcode = EXIT_FAILURE;
-   }
-#endif
-
- /* 3. хешируем файл, используя функции класса mac */
-   ak_mac_context_create_oid( &ictx, ak_oid_context_find_by_name("streebog256"));
-  /* хешируем вызовом всего одной функции */
-   ak_mac_context_file( &ictx, argv[0], out+64 );
-   ak_mac_context_destroy( &ictx );
-  /* выводим полученное значение */
-   ak_ptr_to_hexstr_static( out+64, 32, buffer, 1024, ak_false );
-   printf("ak_mac_context_file()\nhash: %s\n\n", buffer );
-  /* сравниваем полученные результаты */
-  /* сравниваем полученные результаты */
-   if( ak_ptr_is_equal( out+32, out+64, 32 ) != ak_true ) {
-     ak_ptr_to_hexstr_static( out, 128, buffer, 1024, ak_false );
-     printf("out:  %s\n", buffer );
-     exitcode = EXIT_FAILURE;
-   }
-
- /* 4. хешируем файл, используя фрагменты случайной длины,
-       меньшей чем длина обрабатываемого блока */
-   ak_random_context_create_lcg( &generator );     /* создаем генератор псевдослучайных чисел */
-   ak_mac_context_create_oid( &ictx, ak_oid_context_find_by_name( "streebog256" ));
-   ak_mac_context_clean( &ictx );
-   if( ak_file_open_to_read( &file, argv[0] ) == ak_error_ok ) {
-     tail = file.size; /* текущее значение остатка длины файла */
-     while( tail > ctx.bsize ) {
-        size_t len, value = 0;
-        generator.random( &generator, &value, sizeof( size_t ));
-        value = ak_min( tail, value%256 );
-        if(( len = fread( buffer, 1, value, file.fp )) != value ) printf("read error\n");
-        ak_mac_context_update( &ictx, buffer, value );
-      tail -= value;
-     }
-     ak_mac_context_finalize( &ictx, NULL, 0, out+96 );
-     ak_file_close( &file );
-   }
-   ak_mac_context_destroy( &ictx );
-   ak_random_context_destroy( &generator );
-  /* выводим полученное значение */
-   ak_ptr_to_hexstr_static( out+96, 32, buffer, 1024, ak_false );
-   printf("fragments of small random length + ak_mac_context_update()\nhash: %s\n\n", buffer );
-  /* сравниваем полученные результаты */
-   if( ak_ptr_is_equal( out+64, out+96, 32 ) != ak_true ) {
-     ak_ptr_to_hexstr_static( out, 128, buffer, 1024, ak_false );
-     printf("out:  %s\n", buffer );
-     exitcode = EXIT_FAILURE;
-   }
-
-   printf("all results was calculated for %s file (%lu bytes)\n",
-                                             argv[0], (unsigned long int) file.size );
- /* останавливаем библиотеку и выходим */
-   ak_libakrypt_destroy();
- return exitcode;
+ return res;
 }
