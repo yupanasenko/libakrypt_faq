@@ -20,7 +20,7 @@ project( libakrypt )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 7 )
-set( MINOR_VERSION 10 )
+set( MINOR_VERSION 11 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -206,4 +206,6 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 if( CMAKE_HOST_UNIX )
   include( MakeDoc )
+  include( MakeInstall )
 endif()
+
