@@ -185,6 +185,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  internal-hash03
                  internal-random02
                  internal-sign01
+                 internal-sign02
                  # internal-oid02
                  # internal-hash03
   )

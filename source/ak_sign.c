@@ -459,15 +459,21 @@
            при вычислении подписи предполагается, что под вычет выделена память в количестве
            `wc->size` слов размера 64 бита, где `wc` используемая эллиптическая кривая.
 
-           Поскольку `k` является массивом 64 битных чисел, используемая архитектура
+           \warning Поскольку `k` является массивом 64 битных чисел, используемая архитектура
+           влияет на значение вычета.
+
+    @param e целое число, соотвествующее хеш-коду подписываемого сообщения,
+           заранее приведить значение по модулю `q` не требуется.
+
+           \warning Поскольку `e` является массивом 64 битных чисел, используемая архитектура
            влияет на значение вычета. Необходимо учитывать это, если вызов функции используется
            напрямую, минуя вызов функций ak_signkey_context_sign_hash или ak_signkey_context_sign_ptr.
 
-    @param e хеш-код сообщения, для которого вырабатывается электронная подпись.
+    хеш-код сообщения, для которого вырабатывается электронная подпись.
     @param out массив, куда помещается результат. Память под массив должна быть выделена заранее.  */
 /* ----------------------------------------------------------------------------------------------- */
  void ak_signkey_context_sign_const_values( ak_signkey sctx,
-                                                       ak_uint64 *k, ak_pointer e, ak_pointer out )
+                                                       ak_uint64 *k, ak_uint64 *e, ak_pointer out )
 {
 #ifndef LIBAKRYPT_LITTLE_ENDIAN
   int i = 0;
@@ -493,7 +499,7 @@
   ak_mpzn_mul_montgomery( wr.y, k, wc->r2q, wc->q, wc->nq, wc->size );
 
  /* приводим e к виду Монтгомери и помещаем во временную переменную wr.z <- e */
-  ak_mpzn_rem( wr.z, (ak_uint64 *)e, wc->q, wc->size );
+  ak_mpzn_rem( wr.z, e, wc->q, wc->size );
   if( ak_mpzn_cmp_ui( wr.z, wc->size, 0 )) ak_mpzn_set_ui( wr.z, wc->size, 1 );
   ak_mpzn_mul_montgomery( wr.z, wr.z, wc->r2q, wc->q, wc->nq, wc->size );
 
@@ -530,10 +536,13 @@
  ak_buffer ak_signkey_context_sign_hash( ak_signkey sctx,
                                                       ak_pointer hash, size_t size, ak_pointer out )
 {
+#ifndef LIBAKRYPT_LITTLE_ENDIAN
+  int i = 0;
+#endif
+  ak_mpzn512 k, h;
   ak_pointer pout = out;
   ak_buffer result = NULL;
   int error = ak_error_ok;
-  ak_uint64 k[ak_mpzn512_size];
  /* нужен нам для доступа к системному генератору случайных чисел */
   ak_context_manager manager = NULL;
 
@@ -575,8 +584,14 @@
      }
   }
 
+ /* превращаем хеш от сообщения в последовательность 64х битных слов  */
+  memcpy( h, hash, sctx->ctx.hsize );
+#ifndef LIBAKRYPT_LITTLE_ENDIAN
+  for( i = 0; i < (( ak_wcurve )sctx->key.data)->size; i++ ) h[i] = bswap_64( h[i] );
+#endif
+
  /* и только теперь вычисляем электронную подпись */
-  ak_signkey_context_sign_const_values( sctx, k, hash, pout );
+  ak_signkey_context_sign_const_values( sctx, k, h, pout );
 
  lab_exit:
    ak_ptr_wipe( k, sizeof( ak_uint64 )*ak_mpzn512_size, &sctx->key.generator, ak_true );
@@ -624,6 +639,8 @@
     return NULL;
   }
 
+ /* выработанный хеш-код представляет собой последовательность байт
+    данная последовательность не зависит от используемой архитектуры используемой ЭВМ */
  return ak_signkey_context_sign_hash( sctx, hash, sctx->ctx.hsize, out );
 }
 
@@ -672,8 +689,8 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                     функции для работы с открытыми ключами электронной подписи                  */
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция вычисляет открытый ключ (точку эллиптической кривой), соответствующий
-    заданному значению секретного ключа.
+/*! Функция инициализирует контекст открытого ключа и вычисляет его значение
+    (точку эллиптической кривой), соответствующее заданному значению секретного ключа.
 
     @param pctx Контекст открытого ключа электронной подписи
     @param sctx Контекст секретного ключа электронной подписи. Контекст должен быть предварительно
@@ -720,7 +737,79 @@
   ak_wpoint_pow( &pctx->qpoint, &pctx->qpoint, k, pctx->wc->size, pctx->wc );
   ak_wpoint_reduce( &pctx->qpoint, pctx->wc );
 
+ /* перемаскируем секретный ключ */
   sctx->key.set_mask( &sctx->key );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция инициализирует контекст открытого ключа и присваивает ему значение,
+    переданное в качестве аргументов функции. Формат передаваемых данных
+    соответсвует тому, что формируется функцией ak_verify_context_export_ptr().
+
+    @param pctx Контекст открытого ключа электронной подписи
+    @param key Вектор (последовательность байт), образующая открытый ключ.
+    @param size Длина открытого ключа в байтах.
+    @param wc Указатель на параметры эллиптической кривой.
+
+    @return В случае успеха возвращается \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_verifykey_context_create_from_ptr( ak_verifykey pctx,
+                                                  ak_pointer key, size_t size, const ak_wcurve wc )
+{
+#ifndef LIBAKRYPT_LITTLE_ENDIAN
+  int i = 0;
+#endif
+  size_t blen = 0;
+  int error = ak_error_ok;
+
+  if( pctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                     "using null pointer to digital signature public key context" );
+  if( key == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                     "using a null pointer to digital signature secret key value" );
+  if(( size != 64 ) && ( size != 128 )) return ak_error_message( ak_error_wrong_key_length,
+                                                 __func__, "using a secret key with wrong length" );
+  if(( wc->size != ak_mpzn256_size ) && ( wc->size != ak_mpzn512_size ))
+    return ak_error_message( ak_error_wrong_length, __func__, "unexpected elliptic curve" );
+
+ /* устанавливаем OID алгоритма */
+  if( wc->size == ak_mpzn256_size ) {
+    if(( pctx->oid = ak_oid_context_find_by_name( "verify256" )) == NULL )
+      ak_error_message( ak_error_get_value(), __func__ ,
+                                             "incorrect initialization of algorithm OID" );
+    if(( error = ak_hash_context_create_streebog256( &pctx->ctx )) != ak_error_ok )
+      return ak_error_message( error, __func__, "invalid creation of streebog256 context ");
+  }
+
+  if( wc->size == ak_mpzn512_size ) {
+    if(( pctx->oid = ak_oid_context_find_by_name( "verify512" )) == NULL )
+      ak_error_message( ak_error_get_value(), __func__ ,
+                                              "incorrect initialization of algorithm OID" );
+    if(( error = ak_hash_context_create_streebog512( &pctx->ctx )) != ak_error_ok )
+      return ak_error_message( error, __func__, "invalid creation of streebog256 context ");
+  }
+
+ /* устанавливаем эллиптическую кривую */
+  pctx->wc = ( ak_wcurve ) wc;
+
+ /* копируем данные */
+  blen = wc->size*sizeof( ak_uint64 );
+  memset( pctx->qpoint.x, 0, 2*blen );
+  memcpy( pctx->qpoint.x, key, blen );
+
+  memset( pctx->qpoint.y, 0, 2*blen );
+  memcpy( pctx->qpoint.y, ((ak_uint64 *)key)+wc->size, blen );
+
+  memset( pctx->qpoint.z, 0, sizeof( pctx->qpoint.z ));
+  pctx->qpoint.z[0] = 1;
+
+#ifndef LIBAKRYPT_LITTLE_ENDIAN
+  for( i = 0; i < pctx->wc->size; i++ ) {
+    pctx->qpoint.x[i] = bswap_64( pctx->qpoint.x[i] );
+    pctx->qpoint.y[i] = bswap_64( pctx->qpoint.y[i] );
+  }
+#endif
  return ak_error_ok;
 }
 
@@ -757,7 +846,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param pctx контекст открытого ключа.
-    @param hash хеш-код сообщения, для которого проверяется электронная подпись.
+    @param hash хеш-код сообщения (последовательность байт), для которого проверяется электронная подпись.
     @param hsize размер хеш-кода, в байтах.
     @param sign электронная подпись, для которой выполняется проверка.
     @return Функция возыращает истину, если подпись верна. Если функция не верна или если
@@ -770,9 +859,8 @@
 #ifndef LIBAKRYPT_LITTLE_ENDIAN
   int i = 0;
 #endif
-  ak_mpzn512 v, z1, z2, u, r, s;
+  ak_mpzn512 v, z1, z2, u, r, s, h;
   struct wpoint cpoint, tpoint;
-  //ak_uint64 *r = NULL, *s = NULL;
 
   if( pctx == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__,
@@ -794,12 +882,17 @@
 
   memcpy( r, ( ak_uint64* )sign, sizeof( ak_uint64 )*pctx->wc->size );
   memcpy( s, ( ak_uint64 *)sign + pctx->wc->size, sizeof( ak_uint64 )*pctx->wc->size );
+  memcpy( h, hash, sizeof( ak_uint64 )*pctx->wc->size );
 
 #ifndef LIBAKRYPT_LITTLE_ENDIAN
-  for( i = 0; i < pctx->wc->size; i++ ) { r[i] = bswap_64( r[i] ); s[i] = bswap_64( s[i] ); }
+  for( i = 0; i < pctx->wc->size; i++ ) {
+     r[i] = bswap_64( r[i] );
+     s[i] = bswap_64( s[i] );
+     h[i] = bswap_64( h[i] );
+  }
 #endif
 
-  ak_mpzn_set( v, hash, pctx->wc->size );
+  ak_mpzn_set( v, h, pctx->wc->size );
   ak_mpzn_rem( v, v, pctx->wc->q, pctx->wc->size );
   if( ak_mpzn_cmp_ui( v, pctx->wc->size, 0 )) ak_mpzn_set_ui( v, pctx->wc->size, 1 );
   ak_mpzn_mul_montgomery( v, v, pctx->wc->r2q, pctx->wc->q, pctx->wc->nq, pctx->wc->size );
@@ -919,20 +1012,20 @@
 #ifndef LIBAKRYPT_LITTLE_ENDIAN
   int i = 0;
 #endif
-  size_t len = 0;
+  size_t blen = 0;
 
  /* необходимые проверки */
   if( pctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                   "using null pointer to public key context" );
   if( out == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                        "using null pointer to output buffer" );
-  len = pctx->wc->size*sizeof( ak_uint64 );
-  if( size < 2*len )
+  blen = pctx->wc->size*sizeof( ak_uint64 );
+  if( size < 2*blen )
     return ak_error_message( ak_error_wrong_length, __func__, "using buffer with small size" );
 
  /* копируем данные */
-  memcpy( out, pctx->qpoint.x, len );
-  memcpy( ((ak_uint64 *)out)+pctx->wc->size, pctx->qpoint.y, len );
+  memcpy( out, pctx->qpoint.x, blen );
+  memcpy( ((ak_uint64 *)out)+pctx->wc->size, pctx->qpoint.y, blen );
 
 #ifndef LIBAKRYPT_LITTLE_ENDIAN
   for( i = 0; i < 2*pctx->wc->size; i++ ) ((ak_uint64 *)out)[i] = bswap_64( ((ak_uint64 *)out)[i] );
@@ -1086,6 +1179,10 @@
       0xF5, 0x2F, 0xD5, 0x33, 0xE9, 0xFB, 0x0B, 0x1C, 0x08, 0xBC, 0xAD, 0x8A, 0x77, 0x56, 0x5F, 0x32,
       0xB6, 0x26, 0x2D, 0x36, 0xA9, 0xE7, 0x85, 0x65, 0x8E, 0xFE, 0x6F, 0x69, 0x94, 0xB3, 0x81, 0x10 };
 
+#ifndef LIBAKRYPT_LITTLE_ENDIAN
+  int i = 0;
+#endif
+  ak_uint64 e[64];
   char *str = NULL;
   struct signkey sk;
   ak_uint8 sign[128];
@@ -1131,7 +1228,15 @@
   }
   ak_signkey_context_destroy( &sk );
 
-  if( ak_verifykey_context_verify_hash( &pk, e256, sizeof(e256), sign )) {
+  /* поскольку проверка выполняется для результата функции хеширования, то мы
+     преобразуем последовательность 64х битных интов в последовательность байт */
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
+  memcpy( e, e256, 32 );
+#else
+  for( i = 0; i < ak_mpzn256_size; i++ ) ((ak_uint64 *)e)[i] = bswap_64( e256[i] );
+#endif
+
+  if( ak_verifykey_context_verify_hash( &pk, e, 32, sign )) {
     if( audit >= ak_log_maximum )
       ak_error_message( ak_error_ok, __func__ ,
              "digital signature verification process from GOST R 34.10-2012 (for 256 bit curve) is Ok" );
@@ -1180,7 +1285,15 @@
   }
   ak_signkey_context_destroy( &sk );
 
-  if( ak_verifykey_context_verify_hash( &pk, e512, sizeof(e512),  sign )) {
+  /* поскольку проверка выполняется для результата функции хеширования, то мы
+     преобразуем последовательность 64х битных интов в последовательность байт */
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
+  memcpy( e, e512, 64 );
+#else
+  for( i = 0; i < ak_mpzn512_size; i++ ) ((ak_uint64 *)e)[i] = bswap_64( e512[i] );
+#endif
+
+  if( ak_verifykey_context_verify_hash( &pk, e, 64, sign )) {
     if( audit >= ak_log_maximum )
       ak_error_message( ak_error_ok, __func__ ,
              "digital signature verification process from GOST R 34.10-2012 (for 512 bit curve) is Ok" );

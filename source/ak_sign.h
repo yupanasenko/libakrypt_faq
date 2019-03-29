@@ -54,7 +54,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Выработка электронной подписи для фиксированного значения случайного числа и вычисленного
     заранее значения хеш-функции. */
- void ak_signkey_context_sign_const_values( ak_signkey , ak_uint64 *, ak_pointer , ak_pointer );
+ void ak_signkey_context_sign_const_values( ak_signkey , ak_uint64 * , ak_uint64 * , ak_pointer );
 /*! \brief Выработка электронной подписи для вычисленного заранее значения хеш-функции. */
  ak_buffer ak_signkey_context_sign_hash( ak_signkey , ak_pointer , size_t , ak_pointer );
 /*! \brief Выработка электронной подписи для заданной области памяти. */
@@ -87,10 +87,10 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация контекста открытого ключа алгоритма ГОСТ Р 34.10-2012. */
  int ak_verifykey_context_create_from_signkey( ak_verifykey , ak_signkey );
-
+/*! \brief Инициализация контекста открытого ключа алгоритма ГОСТ Р 34.10-2012. */
+ int ak_verifykey_context_create_from_ptr( ak_verifykey , ak_pointer , size_t , const ak_wcurve );
 /*! \brief Экспорт ключа в виде последовательности байт (формат raw key). */
  int ak_verify_context_export_ptr( ak_verifykey, ak_pointer , size_t );
-
 /*! \brief Уничтожение контекста открытого ключа. */
  int ak_verifykey_context_destroy( ak_verifykey );
 /*! \brief Освобождение памяти из под контекста открытого ключа. */

@@ -32,7 +32,7 @@
     (NULL означает, что все сообщения об ошибках будут выводиться в /var/log/auth.log */
   if( !ak_libakrypt_create( NULL )) return ak_libakrypt_destroy();
 
- /* инициализируем контекст секретного ключа и устанавливаем эллиптиескую кривую */
+ /* инициализируем контекст секретного ключа и устанавливаем эллиптическую кривую */
   if(( error = ak_signkey_context_create_streebog256(
                    &skey, (const ak_wcurve) &id_rfc4357_gost_3410_2001_paramSetA )) != ak_error_ok ) {
     ak_error_message( error, __func__, "ошибка при конструировании секретного ключа" );
@@ -69,7 +69,7 @@
   if( ak_verifykey_context_verify_ptr( &vkey, "1234567890", 10, buffer )) printf("sign Ok\n");
     else printf("sign Wrong\n");
 
- /* выводим значение открытого ключа в консоль */
+ /* тестируем экспорт: выводим значение открытого ключа в консоль */
   if(( error = ak_verify_context_export_ptr( &vkey, buffer, sizeof( buffer ))) != ak_error_ok ) {
     ak_error_message( error, __func__, "ошибка при экспорте открытого ключа" );
     goto lab_exit;
