@@ -102,6 +102,8 @@
  struct
 #ifndef _MSC_VER
   __attribute__((aligned(16)))
+#else
+  __declspec(align(16))
 #endif
  kuznechik_expanded_keys {
   ak_uint128 k[10];
@@ -112,6 +114,8 @@
  struct
 #ifndef _MSC_VER
   __attribute__((aligned(16)))
+#else
+  __declspec(align(16))
 #endif
  kuznechik {
   /*! \brief раундовые ключи для алгоритма зашифрования */
@@ -535,10 +539,12 @@
   }
 
   if(( error = ak_bckey_context_set_key( &bkey, testkey, sizeof( testkey ), ak_false )) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), __func__, "wrong creation of test key" );
+    ak_error_message( error, __func__, "wrong creation of test key" );
     result = ak_false;
     goto exit;
   }
+
+  return ak_false;
 
  /* 2. Тестируем зашифрование/расшифрование одного блока согласно ГОСТ Р34.12-2015 */
   bkey.encrypt( &bkey.key, in, myout );
