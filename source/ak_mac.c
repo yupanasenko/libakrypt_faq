@@ -685,7 +685,7 @@
               if( ak_ptr_is_equal( out, out+64, ctx.hsize )) {
                 if( audit >= ak_log_maximum )
                   ak_error_message_fmt( ak_error_ok, __func__ ,
-                                        "mac realization for hash function \"%s\" is Ok", ctx.oid->name );
+                                        "mac realization of hash function \"%s\" is Ok", ctx.oid->name );
                 } else {
                    char *str = NULL;
                    ak_error_message_fmt( error = ak_error_not_equal_data, __func__ ,
@@ -756,7 +756,7 @@
               if( ak_ptr_is_equal( out, out+64, ctx.ctx.hsize )) {
                 if( audit >= ak_log_maximum )
                   ak_error_message_fmt( ak_error_ok, __func__ ,
-                                   "mac realization for hmac function \"%s\" is Ok", oid->name );
+                                   "mac realization of hmac function \"%s\" is Ok", oid->name );
                 } else {
                    char *str = NULL;
                    ak_error_message_fmt( error = ak_error_not_equal_data, __func__ ,

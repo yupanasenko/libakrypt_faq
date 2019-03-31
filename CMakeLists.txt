@@ -16,7 +16,7 @@
 # cmake -G "MinGW Makefiles" -D CMAKE_C_COMPILER=gcc path && mingw32-make
 # -------------------------------------------------------------------------------------------------- #
 cmake_minimum_required( VERSION 3.2 )
-project( libakrypt )
+project( libakrypt C )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 7 )
@@ -55,6 +55,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_mac.h
                     source/ak_context_manager.h
                     source/ak_sign.h
+                    source/ak_bckey.h
   )
 endif()
 
@@ -77,9 +78,32 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_mac.c
                     source/ak_context_manager.c
                     source/ak_sign.c
+                    source/ak_bckey.c
+                    source/ak_kuznechik.c
   )
   add_compile_options( -DLIBAKRYPT_CRYPTO_FUNCTIONS=ON )
 endif()
+
+set( CMAKES         cmake/DetectFlags.cmake
+                    cmake/DetectHeaders.cmake
+                    cmake/DetectIntrinsics.cmake
+                    cmake/DetectLibraries.cmake
+                    cmake/MakeDist.cmake
+                    cmake/MakeDoc.cmake
+                    cmake/MakeInstall.cmake
+)
+set( DOCS           doc/00-introduction.md
+                    doc/01-install-guide.md
+                    doc/Doxyfile.in
+                    doc/refman_footer.in
+                    doc/refman_header.in
+)
+set( OTHERS         CMakeLists.txt
+                    Readme.md
+                    Changelog.md
+                    libakrypt.conf
+                    libakrypt.rc.in
+)
 
 # -------------------------------------------------------------------------------------------------- #
 # подключаем модули CMake для тонкой настройки параметров сборки
@@ -183,11 +207,13 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  internal-hash01
                  internal-hash02
                  internal-hash03
+                 internal-oid03
                  internal-random02
                  internal-sign01
                  internal-sign02
-                 # internal-oid02
-                 # internal-hash03
+                 internal-bckey01
+                 internal-bckey02
+                 internal-bckey03
   )
 endif()
 
@@ -210,5 +236,6 @@ endif()
 if( CMAKE_HOST_UNIX )
   include( MakeDoc )
   include( MakeInstall )
+  include( MakeDist )
 endif()
 
