@@ -453,9 +453,18 @@
   switch( bkey->bsize ) {
     case  8: /* шифр с длиной блока 64 бита */
       do {
+        #ifndef LIBAKRYPT_LITTLE_ENDIAN
+          ak_uint64 tmp = bswap_64( ((ak_uint64 *)bkey->ivector.data)[0] );
+        #endif
           bkey->encrypt( &bkey->key, bkey->ivector.data, yaout );
           *outptr = *inptr ^ yaout[0];
-          outptr++; inptr++; ((ak_uint64 *)bkey->ivector.data)[0]++;
+          outptr++; inptr++;
+        #ifdef LIBAKRYPT_LITTLE_ENDIAN
+          ((ak_uint64 *)bkey->ivector.data)[0]++;
+        #else
+          ((ak_uint64 *)bkey->ivector.data)[0] = bswap_64( ++tmp );
+        #endif
+
       } while( --blocks > 0 );
     break;
 
@@ -525,10 +534,8 @@
   ak_int64 i = 0,
  #ifdef LIBAKRYPT_LITTLE_ENDIAN
            one64[2] = { 0x02, 0x00 },
-           one128[2] = { 0x02, 0x00 },
  #else
-           one64[2] = { 0x02000000L, 0x00L },
-           one128[2] = { 0x0200000000000000LL, 0x00LL },
+           one64[2] = { 0x0200000000000000LL, 0x00LL },
  #endif
            blocks = (ak_int64)size/bkey->bsize,
            tail = (ak_int64)size%bkey->bsize;
@@ -590,9 +597,9 @@
             }
           /* вырабатываем ключи для завершения алгортма */
             bkey->encrypt( &bkey->key, akey, akey );
-            ak_gf128_mul( akey, akey, one128 );
+            ak_gf128_mul( akey, akey, one64 );
             if( tail < bkey->bsize ) {
-              ak_gf128_mul( akey, akey, one128 );
+              ak_gf128_mul( akey, akey, one64 );
               ((ak_uint8 *)akey)[tail] ^= 0x80;
             }
           /* теперь шифруем последний блок*/

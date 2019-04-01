@@ -210,11 +210,11 @@
     return ak_false;
   }
 
-//  if( ak_mac_test_omac_functions() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__,
-//                                   "incorrect testing mac algorithms based on block ciphers" );
-//    return ak_false;
-//  }
+  if( ak_mac_test_omac_functions() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                   "incorrect testing mac algorithms based on block ciphers" );
+    return ak_false;
+  }
 
   if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "testing mac algorithms ended successfully" );

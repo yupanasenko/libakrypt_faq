@@ -56,6 +56,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_context_manager.h
                     source/ak_sign.h
                     source/ak_bckey.h
+                    source/ak_omac.h
   )
 endif()
 
@@ -81,6 +82,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_bckey.c
                     source/ak_kuznechik.c
                     source/ak_magma.c
+                    source/ak_omac.c
   )
   add_compile_options( -DLIBAKRYPT_CRYPTO_FUNCTIONS=ON )
 endif()

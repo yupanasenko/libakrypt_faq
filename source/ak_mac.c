@@ -107,31 +107,31 @@
     @return В случае успеха возвращается \ref ak_error_ok (ноль). В случае возникновения ошибки
     возвращается ее код.                                                                           */
 /* ----------------------------------------------------------------------------------------------- */
-// int ak_mac_context_create_omac( ak_mac ictx, ak_omac octx )
-//{
-// /* вначале, необходимые проверки */
-//  if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-//                                                            "using null pointer to mac context" );
-//  if( octx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-//                                                           "using null pointer to omac context" );
-// /* теперь собственно инициализация */
-//  if(( ictx->data = (ak_uint8 *) malloc( ictx->bsize = octx->bkey.bsize )) == NULL ) {
-//    ak_error_message( ak_error_out_of_memory, __func__ ,
-//                                     "wrong memory alllocation for a new temporary data buffer" );
-//  } else memset( ictx->data, 0, octx->bkey.bsize );
-//  ictx->length = 0;
+ int ak_mac_context_create_omac( ak_mac ictx, ak_omac octx )
+{
+ /* вначале, необходимые проверки */
+  if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using null pointer to mac context" );
+  if( octx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                           "using null pointer to omac context" );
+ /* теперь собственно инициализация */
+  if(( ictx->data = (ak_uint8 *) malloc( ictx->bsize = octx->bkey.bsize )) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ ,
+                                     "wrong memory alllocation for a new temporary data buffer" );
+  } else memset( ictx->data, 0, octx->bkey.bsize );
+  ictx->length = 0;
 
-// /* устанавливаем значения и полей и методы из контекста функции хеширования */
-//  ictx->engine = omac_function;
-//  ictx->ctx = octx;
-//  ictx->hsize = ictx->bsize; /* длина вызода совпадает с длиной входа */
-//  ictx->clean = ak_omac_context_clean;
-//  ictx->update = ak_omac_context_update;
-//  ictx->finalize = ak_omac_context_finalize;
-//  ictx->free = NULL;
+ /* устанавливаем значения и полей и методы из контекста функции хеширования */
+  ictx->engine = omac_function;
+  ictx->ctx = octx;
+  ictx->hsize = ictx->bsize; /* длина вызода совпадает с длиной входа */
+  ictx->clean = ak_omac_context_clean;
+  ictx->update = ak_omac_context_update;
+  ictx->finalize = ak_omac_context_finalize;
+  ictx->free = NULL;
 
-// return ak_error_ok;
-//}
+ return ak_error_ok;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция инициализирует контекст структуры struct mac в значения, определяемые
@@ -235,12 +235,12 @@
             "incorrect initialization of mac function context with %s hmac function", oid->name );
     break;
 
-//    case omac_function: /* создаем функцию выработки имитовставки ГОСТ Р 34.13-2015. */
-//      if(( error = ak_mac_context_create_oid_common( ictx, oid, sizeof( struct omac ),
-//                         (ak_function_mac_create*) ak_mac_context_create_omac )) != ak_error_ok )
-//        return ak_error_message_fmt( error, __func__,
-//            "incorrect initialization of mac function context with %s omac function", oid->name );
-//    break;
+    case omac_function: /* создаем функцию выработки имитовставки ГОСТ Р 34.13-2015. */
+      if(( error = ak_mac_context_create_oid_common( ictx, oid, sizeof( struct omac ),
+                         (ak_function_mac_create*) ak_mac_context_create_omac )) != ak_error_ok )
+        return ak_error_message_fmt( error, __func__,
+            "incorrect initialization of mac function context with %s omac function", oid->name );
+    break;
 
 //    case mgm_function: /* создаем функцию выработки имитовставки ГОСТ Р 34.13-2015. */
 //      if(( error = ak_mac_context_create_oid_common( ictx, oid, sizeof( struct mgm ),
@@ -354,9 +354,9 @@
     case hmac_function:
       error = ak_hmac_context_set_key(( ak_hmac )ictx->ctx, ptr, size, cflag );
       break;
-//    case omac_function:
-//      error = ak_omac_context_set_key(( ak_omac )ictx->ctx, ptr, size, cflag );
-//      break;
+    case omac_function:
+      error = ak_omac_context_set_key(( ak_omac )ictx->ctx, ptr, size, cflag );
+      break;
 //    case mgm_function:
 //      error = ak_mgm_context_set_key(( ak_mgm )ictx->ctx, ptr, size, cflag );
 //      break;
@@ -685,7 +685,7 @@
               if( ak_ptr_is_equal( out, out+64, ctx.hsize )) {
                 if( audit >= ak_log_maximum )
                   ak_error_message_fmt( ak_error_ok, __func__ ,
-                                        "mac realization of hash function \"%s\" is Ok", ctx.oid->name );
+                                        "mac realization of \"%s\" is Ok", ctx.oid->name );
                 } else {
                    char *str = NULL;
                    ak_error_message_fmt( error = ak_error_not_equal_data, __func__ ,
@@ -756,7 +756,7 @@
               if( ak_ptr_is_equal( out, out+64, ctx.ctx.hsize )) {
                 if( audit >= ak_log_maximum )
                   ak_error_message_fmt( ak_error_ok, __func__ ,
-                                   "mac realization of hmac function \"%s\" is Ok", oid->name );
+                                   "mac realization of \"%s\" is Ok", oid->name );
                 } else {
                    char *str = NULL;
                    ak_error_message_fmt( error = ak_error_not_equal_data, __func__ ,
@@ -787,78 +787,78 @@
     эталонными значениями из ГОСТ Р 34.13-2015, здесь проверяется эквивалентность реализации
     для класса bckey (она же используется в omac) и mac.                                           */
 /* ----------------------------------------------------------------------------------------------- */
-// ak_bool ak_mac_test_omac_functions( void )
-//{
-//  size_t i = 0;
-//  struct mac mctx;
-//  struct omac octx;
-//  ak_uint8 data[36], out[16], out1[16];
-//  ak_oid oid = NULL;
-//  struct random generator;
-//  int error = ak_error_ok;
+ ak_bool ak_mac_test_omac_functions( void )
+{
+  size_t i = 0;
+  struct mac mctx;
+  struct omac octx;
+  ak_uint8 data[36], out[16], out1[16];
+  ak_oid oid = NULL;
+  struct random generator;
+  int error = ak_error_ok;
 
-// /* создаем какие-то случайные данные для тестирвоания */
-//  if( ak_random_context_create_lcg( &generator ) != ak_error_ok )
-//    memset( data, 127, sizeof( data ));
-//   else {
-//          ak_random_context_random( &generator, data, sizeof( data ));
-//          ak_random_context_destroy( &generator );
-//        }
+ /* создаем какие-то случайные данные для тестирвоания */
+  if( ak_random_context_create_lcg( &generator ) != ak_error_ok )
+    memset( data, 127, sizeof( data ));
+   else {
+          ak_random_context_random( &generator, data, sizeof( data ));
+          ak_random_context_destroy( &generator );
+        }
 
-// /* основной цикл перебора алгоритмов */
-//  oid = ak_oid_context_find_by_engine( omac_function );
-//  while( oid != NULL ) {
-//    if( oid->mode == algorithm ) {
-//     /* создаем контексты */
-//      if(( error = ak_omac_context_create_oid( &octx, oid )) != ak_error_ok ) {
-//        ak_error_message_fmt( error, __func__,
-//                                  "incorrect context creation for %s algorithm", oid->name );
-//        return ak_false;
-//      }
-//      if(( error = ak_omac_context_set_key( &octx, testkey, 32, ak_true )) != ak_error_ok ) {
-//        ak_error_message( error, __func__, "incorrect assigning key value to omac context" );
-//        ak_omac_context_destroy( &octx );
-//        return ak_false;
-//      }
-//      if(( error = ak_mac_context_create_omac( &mctx, &octx )) != ak_error_ok ) {
-//        ak_error_message_fmt( error, __func__,
-//                              "incorrect mac context creation for %s algorithm", oid->name );
-//        return ak_false;
-//      }
-//      if(( error = ak_omac_context_set_key( &octx, testkey, 32, ak_true )) != ak_error_ok ) {
-//        ak_error_message( error, __func__, "incorrect assigning key value to mac context" );
-//        ak_omac_context_destroy( &octx );
-//        ak_mac_context_destroy( &mctx );
-//        return ak_false;
-//      }
+ /* основной цикл перебора алгоритмов */
+  oid = ak_oid_context_find_by_engine( omac_function );
+  while( oid != NULL ) {
+    if( oid->mode == algorithm ) {
+     /* создаем контексты */
+      if(( error = ak_omac_context_create_oid( &octx, oid )) != ak_error_ok ) {
+        ak_error_message_fmt( error, __func__,
+                                  "incorrect context creation for %s algorithm", oid->name );
+        return ak_false;
+      }
+      if(( error = ak_omac_context_set_key( &octx, testkey, 32, ak_true )) != ak_error_ok ) {
+        ak_error_message( error, __func__, "incorrect assigning key value to omac context" );
+        ak_omac_context_destroy( &octx );
+        return ak_false;
+      }
+      if(( error = ak_mac_context_create_omac( &mctx, &octx )) != ak_error_ok ) {
+        ak_error_message_fmt( error, __func__,
+                              "incorrect mac context creation for %s algorithm", oid->name );
+        return ak_false;
+      }
+      if(( error = ak_omac_context_set_key( &octx, testkey, 32, ak_true )) != ak_error_ok ) {
+        ak_error_message( error, __func__, "incorrect assigning key value to mac context" );
+        ak_omac_context_destroy( &octx );
+        ak_mac_context_destroy( &mctx );
+        return ak_false;
+      }
 
-//     /* теперь цикл побайтного перебора случайных данных */
-//      for( i = 1; i <= sizeof( data ); i++ ){
-//         ak_omac_context_ptr( &octx, data, i, out );
-//         ak_mac_context_ptr( &mctx, data, i, out1 );
-//         if( memcmp( out, out1, mctx.hsize ) != 0 ) {
-//            char *str = NULL;
-//            ak_error_message_fmt( error = ak_error_not_equal_data, __func__ ,
-//              "different values for %s and mac algorithms on iteration %u", oid->name, (unsigned int)i );
-//            ak_log_set_message(( str = ak_ptr_to_hexstr( out,  mctx.hsize, ak_false ))); free( str );
-//            ak_log_set_message(( str = ak_ptr_to_hexstr( out1, mctx.hsize, ak_false ))); free( str );
-//            ak_omac_context_destroy( &octx );
-//            ak_mac_context_destroy( &mctx );
-//            return ak_false;
-//         }
-//      }
+     /* теперь цикл побайтного перебора случайных данных */
+      for( i = 1; i <= sizeof( data ); i++ ){
+         ak_omac_context_ptr( &octx, data, i, out );
+         ak_mac_context_ptr( &mctx, data, i, out1 );
+         if( memcmp( out, out1, mctx.hsize ) != 0 ) {
+            char *str = NULL;
+            ak_error_message_fmt( error = ak_error_not_equal_data, __func__ ,
+              "different values for %s and mac algorithms on iteration %u", oid->name, (unsigned int)i );
+            ak_log_set_message(( str = ak_ptr_to_hexstr( out,  mctx.hsize, ak_false ))); free( str );
+            ak_log_set_message(( str = ak_ptr_to_hexstr( out1, mctx.hsize, ak_false ))); free( str );
+            ak_omac_context_destroy( &octx );
+            ak_mac_context_destroy( &mctx );
+            return ak_false;
+         }
+      }
 
-//     /* уничтожаем контексты */
-//      ak_omac_context_destroy( &octx );
-//      ak_mac_context_destroy( &mctx );
-//      if( ak_log_get_level() >= ak_log_maximum )
-//        ak_error_message_fmt( ak_error_ok, __func__ , "%s algorithm is Ok", oid->name );
-//    }
-//    oid = ak_oid_context_findnext_by_engine( oid, omac_function );
-//  }
+     /* уничтожаем контексты */
+      ak_omac_context_destroy( &octx );
+      ak_mac_context_destroy( &mctx );
+      if( ak_log_get_level() >= ak_log_maximum )
+        ak_error_message_fmt( ak_error_ok, __func__ , "mac realization of \"%s\" is Ok", oid->name );
+    }
+    oid = ak_oid_context_findnext_by_engine( oid, omac_function );
+  }
 
-//return ak_true;
-//}
+ return ak_true;
+}
 
 /*! -----------------------------------------------------------------------------------------------
     \example test-internal-mac01.c                                                                 */
