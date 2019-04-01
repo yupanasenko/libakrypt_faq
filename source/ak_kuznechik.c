@@ -544,8 +544,6 @@
     goto exit;
   }
 
-  return ak_false;
-
  /* 2. Тестируем зашифрование/расшифрование одного блока согласно ГОСТ Р34.12-2015 */
   bkey.encrypt( &bkey.key, in, myout );
   if( !ak_ptr_is_equal( myout, out, 16 )) {

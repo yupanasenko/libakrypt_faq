@@ -5,11 +5,37 @@
    test-internal-bckey01.c
 */
  #include <stdio.h>
+ #include <string.h>
  #include <ak_bckey.h>
+
+ void print_key_info( ak_bckey skey )
+{
+  size_t i = 0;
+
+  printf("\n%s (%s)\nkey:\t", skey->key.oid->name, skey->key.oid->id );
+  for( i = 0; i < skey->key.key.size; i++ ) printf("%02X", ((ak_uint8 *)skey->key.key.data)[i] );
+  printf("\nmask:\t");
+  for( i = 0; i < skey->key.key.size; i++ ) printf("%02X", ((ak_uint8 *)skey->key.mask.data)[i] );
+  printf("\nicode:\t");
+  for( i = 0; i < skey->key.icode.size; i++ ) printf("%02X", ((ak_uint8 *)skey->key.icode.data)[i] );
+  if( skey->key.check_icode( &skey->key ) == ak_true ) printf(" (Ok)\n");
+   else printf(" (Wrong)\n");
+
+  skey->key.unmask( &skey->key ); /* снимаем маску */
+  printf("\nreal:\t");
+  for( i = 0; i < skey->key.key.size; i++ ) printf("%02X", ((ak_uint8 *)skey->key.key.data)[i] );
+
+  if( strncmp( skey->key.oid->name, "magma", 5 ) == 0 ) {
+    printf("\nreal:\t");
+    for( i = 0; i < 8; i++ ) printf("%u ", ((ak_uint32 *)skey->key.key.data)[i] );
+  }
+
+  skey->key.set_mask( &skey->key );
+  printf("\n");
+}
 
  int main( void )
 {
-  size_t i = 0;
   struct bckey skey;
   int error = ak_error_ok;
   ak_uint8 const_key[32] = {
@@ -19,33 +45,34 @@
  /* инициализируем библиотеку */
   if( !ak_libakrypt_create( ak_function_log_stderr )) return ak_libakrypt_destroy();
 
+ /* ------ в начале тестируем работоспособность алгоритма Кузнечик */
  /* создаем ключ алгоритма блочного шифрования */
-  if(( error = ak_bckey_context_create_kuznechik( &skey)) != ak_error_ok ) {
+  if(( error = ak_bckey_context_create_kuznechik( &skey )) != ak_error_ok ) {
     ak_libakrypt_destroy( );
     return error;
   }
-
  /* присваиваем ключу заданное значение
     значение ak_true в вызове функции означает, что значение ключа копируется в контекст ключа */
   if(( error = ak_bckey_context_set_key( &skey, const_key, 32, ak_true )) != ak_error_ok )
     goto lab_exit;
 
  /* выводим информацию */
-  printf("key:\t");
-  for( i = 0; i < skey.key.key.size; i++ ) printf("%02X", ((ak_uint8 *)skey.key.key.data)[i] );
-  printf("\nmask:\t");
-  for( i = 0; i < skey.key.key.size; i++ ) printf("%02X", ((ak_uint8 *)skey.key.mask.data)[i] );
+  print_key_info( &skey );
+  ak_bckey_context_destroy( &skey );
 
-  printf("\nicode:\t");
-  for( i = 0; i < skey.key.icode.size; i++ ) printf("%02X", ((ak_uint8 *)skey.key.icode.data)[i] );
-  if( skey.key.check_icode( &skey.key ) == ak_true ) printf(" (Ok)\n");
-   else printf(" (Wrong)\n");
+ /* ------ потом тестируем работоспособность алгоритма Магма */
+ /* создаем ключ алгоритма блочного шифрования */
+  if(( error = ak_bckey_context_create_magma( &skey )) != ak_error_ok ) {
+    ak_libakrypt_destroy( );
+    return error;
+  }
+ /* присваиваем ключу заданное значение
+    значение ak_true в вызове функции означает, что значение ключа копируется в контекст ключа */
+  if(( error = ak_bckey_context_set_key( &skey, const_key, 32, ak_true )) != ak_error_ok )
+    goto lab_exit;
 
-  skey.key.unmask( &skey.key ); /* снимаем маску */
-  printf("\nreal:\t");
-  for( i = 0; i < skey.key.key.size; i++ ) printf("%02X", ((ak_uint8 *)skey.key.key.data)[i] );
-  skey.key.set_mask( &skey.key );
-  printf("\n");
+ /* выводим информацию */
+  print_key_info( &skey );
 
  /* выходим */
   lab_exit:

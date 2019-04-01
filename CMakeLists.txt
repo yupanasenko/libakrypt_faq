@@ -80,6 +80,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_sign.c
                     source/ak_bckey.c
                     source/ak_kuznechik.c
+                    source/ak_magma.c
   )
   add_compile_options( -DLIBAKRYPT_CRYPTO_FUNCTIONS=ON )
 endif()
@@ -213,6 +214,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  internal-sign02
                  internal-bckey01
                  internal-bckey02
+                 internal-bckey02-magma
                  internal-bckey03
   )
 endif()
