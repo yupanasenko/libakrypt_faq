@@ -76,7 +76,7 @@
  int ak_mac_context_clean( ak_mac );
 /*! \brief Обновление состояния контекста сжимающего отображения. */
  int ak_mac_context_update( ak_mac , const ak_pointer , const size_t );
-/*! \brief Обновление состояние и вычисление результата применения сжимающего отображения. */
+/*! \brief Обновление состояния и вычисление результата применения сжимающего отображения. */
  ak_buffer ak_mac_context_finalize( ak_mac , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Применение сжимающего отображения к заданной области памяти. */
  ak_buffer ak_mac_context_ptr( ak_mac , const ak_pointer , const size_t , ak_pointer );

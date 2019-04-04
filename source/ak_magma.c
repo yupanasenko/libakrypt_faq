@@ -364,8 +364,7 @@
   register ak_uint32 n3, n4, p = 0;
 
  /* вырабатываем случайную траекторию */
- // skey->generator.random( &skey->generator, &mv, sizeof( ak_uint32 ));
- mv = 0x112a;
+  skey->generator.random( &skey->generator, &mv, sizeof( ak_uint32 ));
 
  /* формируем вектор раундовых поворотов */
   m[0] = m[33] = 0;
@@ -440,8 +439,7 @@
   register ak_uint32 n3, n4, p = 0;
 
  /* вырабатываем случайную траекторию */
-  //skey->generator.random( &skey->generator, &mv, sizeof( ak_uint32 ));
-  mv = 0xff12;
+  skey->generator.random( &skey->generator, &mv, sizeof( ak_uint32 ));
 
  /* формируем вектор раундовых поворотов */
   m[0] = m[33] = 0;

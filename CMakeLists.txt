@@ -218,6 +218,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  internal-bckey02
                  internal-bckey02-magma
                  internal-bckey03
+                 internal-bckey04
   )
 endif()
 
