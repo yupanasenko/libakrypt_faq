@@ -8,8 +8,6 @@ if( LIBAKRYPT_HTML_DOC )
      configure_file( ${CMAKE_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY )
      file( WRITE ${CMAKE_BINARY_DIR}/make-html-${FULL_VERSION}.sh "#/bin/bash\n" )
      file( APPEND ${CMAKE_BINARY_DIR}/make-html-${FULL_VERSION}.sh "doxygen Doxyfile\n" )
-     file( APPEND ${CMAKE_BINARY_DIR}/make-html-${FULL_VERSION}.sh
-                         "tar -cjvf libakrypt-doc-${FULL_VERSION}.tar.bz2 doc/html\n")
 
      find_file( QHELPGENERATOR_BIN qhelpgenerator )
      if( QHELPGENERATOR_BIN )
@@ -18,6 +16,9 @@ if( LIBAKRYPT_HTML_DOC )
        file( APPEND ${CMAKE_BINARY_DIR}/make-html-${FULL_VERSION}.sh
                                                                 "rm doc/html/libakrypt.qch\n" )
      endif()
+     file( APPEND ${CMAKE_BINARY_DIR}/make-html-${FULL_VERSION}.sh
+                                  "tar -cjvf libakrypt-doc-${FULL_VERSION}.tar.bz2 doc/html\n")
+
      execute_process( COMMAND chmod +x ${CMAKE_BINARY_DIR}/make-html-${FULL_VERSION}.sh )
      add_custom_target( html ${CMAKE_BINARY_DIR}/make-html-${FULL_VERSION}.sh )
      message("-- Script for documentation in HTML format is done (now \"make html\" enabled)")

@@ -33,6 +33,8 @@ option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
 option( LIBAKRYPT_HTML_DOC "Build documentation in HTML format" OFF )
 option( LIBAKRYPT_PDF_DOC "Build documentation in PDF format" OFF )
 option( LIBAKRYPT_CRYPTO_FUNCTIONS "Build library with crypto functions" ON )
+option( LIBAKRYPT_FIOT "Build library with FIOT protocol support" ON )
+option( LIBAKRYPT_TLS_13 "Build library with TLS 1.3 protocol support" OFF )
 
 # -------------------------------------------------------------------------------------------------- #
 # множество исходных текстов библиотеки и вспомогательных файлов
@@ -47,6 +49,29 @@ set( HEADERS        source/ak_tools.h
                     source/ak_parameters.h
                     source/ak_gf2n.h
 )
+
+set( SOURCES        source/ak_tools.c
+                    source/ak_buffer.c
+                    source/ak_oid.c
+                    source/ak_mpzn.c
+                    source/ak_curves.c
+                    source/ak_random.c
+                    source/ak_gf2n.c
+                    source/ak_libakrypt.c
+)
+
+if( LIBAKRYPT_FIOT )
+  set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
+  set( HEADERS      ${HEADERS}
+                    source/ak_fiot.h
+  )
+  set( SOURCES      ${SOURCES}
+                    source/ak_fiot.c
+                    source/ak_fiot_tlp.c
+                    source/ak_fiot_print.c
+  )
+endif()
+
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( HEADERS      ${HEADERS}
                     source/ak_hash.h
@@ -58,18 +83,6 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_bckey.h
                     source/ak_omac.h
   )
-endif()
-
-set( SOURCES        source/ak_tools.c
-                    source/ak_buffer.c
-                    source/ak_oid.c
-                    source/ak_mpzn.c
-                    source/ak_curves.c
-                    source/ak_random.c
-                    source/ak_gf2n.c
-                    source/ak_libakrypt.c
-)
-if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( SOURCES      ${SOURCES}
                     source/ak_hash.c
                     source/ak_streebog.c
@@ -220,6 +233,10 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  internal-bckey03
                  internal-bckey04
   )
+  set( INTERNAL_FIOT_TEST_LIST
+                 internal-fiot-context
+                 internal-fiot-unix
+  )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -235,6 +252,15 @@ if( LIBAKRYPT_INTERNAL_TESTS )
     endforeach()
   endif()
   message("-- Added tests for internal functions (now \"make test\" enabled)")
+
+  # добавляем примеры для тестирования протокольной части
+  if( LIBAKRYPT_STATIC_LIB )
+    foreach( programm ${INTERNAL_FIOT_TEST_LIST} )
+       add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
+       target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+    endforeach()
+  endif()
+
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -243,4 +269,3 @@ if( CMAKE_HOST_UNIX )
   include( MakeInstall )
   include( MakeDist )
 endif()
-

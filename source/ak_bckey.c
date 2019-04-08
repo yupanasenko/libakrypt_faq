@@ -411,7 +411,7 @@
 {
   int error = ak_error_ok;
   ak_int64 blocks = (ak_int64)size/bkey->bsize,
-            tail = (ak_int64)size%bkey->bsize;
+             tail = (ak_int64)size%bkey->bsize;
   ak_uint64 yaout[2], *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
 
  /* проверяем целостность ключа */
@@ -452,7 +452,7 @@
  /* обработка основного массива данных (кратного длине блока) */
   switch( bkey->bsize ) {
     case  8: /* шифр с длиной блока 64 бита */
-      do {
+      while( blocks > 0 ) {
         #ifndef LIBAKRYPT_LITTLE_ENDIAN
           ak_uint64 tmp = bswap_64( ((ak_uint64 *)bkey->ivector.data)[0] );
         #endif
@@ -464,12 +464,12 @@
         #else
           ((ak_uint64 *)bkey->ivector.data)[0] = bswap_64( ++tmp );
         #endif
-
-      } while( --blocks > 0 );
+        --blocks;
+      };
     break;
 
     case 16: /* шифр с длиной блока 128 бит */
-      do {
+      while( blocks > 0 ) {
         #ifndef LIBAKRYPT_LITTLE_ENDIAN
           ak_uint64 tmp = bswap_64( ((ak_uint64 *)bkey->ivector.data)[0] );
         #endif
@@ -483,7 +483,8 @@
         #endif                                      /* здесь мы не учитываем знак переноса
                                                      потому что объем данных на одном ключе не должен превышать
                                                      2^64 блоков (контролируется через ресурс ключа) */
-      } while( --blocks > 0 );
+        --blocks;
+      };
     break;
 
     default: return ak_error_message( ak_error_wrong_block_cipher,

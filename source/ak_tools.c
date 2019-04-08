@@ -645,18 +645,22 @@
     На этом уровне выводятся все сообщения, доступные на первых двух уровнях, а также
     сообщения отладочного характера, позхволяющие прослдедить логику работы функций библиотеки.
 
+    Функция сделана экспортируемой, однако она не позволяет понизить уровень аудита
+    по-сравнению с тем значением, которое указано в конфигурационном файле.
+    Экспорт функции разрешен с целью отладки приложений, использующих библиотеку.
+
     \param level Уровень аудита, может принимать значения \ref ak_log_none,
     \ref ak_log_standard и \ref ak_log_maximum
 
     \note Допускается передавать в функцию любое целое число, не превосходящее 16.
     Однако для всех значений от \ref ak_log_maximum  до 16 поведение функции аудита
-    будет одинаковым. Дополнительный диапазон предназначен для приложений библиотеки.
+    будет одинаковым для. Дополнительный диапазон предназначен для приложений библиотеки.
 
     \return Функция всегда возвращает \ref ak_error_ok (ноль).                                     */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_log_set_level( int level )
 {
- int value = level;
+ int value = ak_max( level, ak_log_get_level( ));
 
    if( value < 0 ) return ak_libakrypt_set_option("log_level", ak_log_none );
    if( value > 16 ) value = 16;
@@ -819,18 +823,22 @@
 {
  /* здесь мы выводим в логгер строку вида [pid] function: message (code: n)                        */
   char error_event_string[1024];
+  const char *br0 = "", *br1 = "():", *br = NULL;
+
   memset( error_event_string, 0, 1024 );
+  if(( function == NULL ) || strcmp( function, "" ) == 0 ) br = br0;
+    else br = br1;
 
 #ifdef LIBAKRYPT_HAVE_UNISTD_H
-  if( code < 0 ) ak_snprintf( error_event_string, 1023, "[%d] %s(): %s (code: %d)",
-                                                          getpid(), function, message, code );
-   else ak_snprintf( error_event_string, 1023, "[%d] %s(): %s", getpid(), function, message );
+  if( code < 0 ) ak_snprintf( error_event_string, 1023, "[%d] %s%s %s (code: %d)",
+                                                         getpid(), function, br, message, code );
+   else ak_snprintf( error_event_string, 1023, "[%d] %s%s %s", getpid(), function, br, message );
 #else
  #ifdef _MSC_VER
-  if( code < 0 ) ak_snprintf( error_event_string, 1023, "[%d] %s(): %s (code: %d)",
-                                             GetCurrentProcessId(), function, message, code );
-   else ak_snprintf( error_event_string, 1023, "[%d] %s(): %s",
-                                                   GetCurrentProcessId(), function, message );
+  if( code < 0 ) ak_snprintf( error_event_string, 1023, "[%d] %s%s %s (code: %d)",
+                                             GetCurrentProcessId(), function, br, message, code );
+   else ak_snprintf( error_event_string, 1023, "[%d] %s%s %s",
+                                                   GetCurrentProcessId(), function, br, message );
  #else
    #error Unsupported path to compile, sorry ...
  #endif
@@ -890,7 +898,7 @@
     пользователем с помощью вызова функции free(). В случае ошибки конвертации возвращается NULL.
     Код ошибки может быть получен с помощью вызова функции ak_error_get_code()                     */
 /* ----------------------------------------------------------------------------------------------- */
- char *ak_ptr_to_hexstr( const ak_pointer ptr, const size_t ptr_size, const ak_bool reverse )
+ char *ak_ptr_to_hexstr( ak_pointer ptr, size_t ptr_size, ak_bool reverse )
 {
   char *nullstr = NULL;
   size_t len = 1 + (ptr_size << 1);
@@ -953,8 +961,8 @@
     @return Если преобразование прошло успешно, возвращается \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_ptr_to_hexstr_static( const ak_pointer ptr, const size_t ptr_size,
-                                     ak_pointer out, const size_t out_size, const ak_bool reverse )
+ int ak_ptr_to_hexstr_static( ak_pointer ptr, size_t ptr_size,
+                                     ak_pointer out, size_t out_size, ak_bool reverse )
 {
   ak_uint8 *data = ( ak_uint8 * ) ptr;
   size_t len = 1 + (ptr_size << 1);

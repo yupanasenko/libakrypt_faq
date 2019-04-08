@@ -170,25 +170,25 @@
 {
   char message[160];
 
-  ak_ptr_to_hexstr_static( ec->a, ec->size*sizeof( ak_uint64 ), message, sizeof( message) , ak_true );
+  ak_mpzn_to_hexstr_static( ec->a, ec->size, message, sizeof( message ));
   ak_error_message_fmt( error, __func__, " a = %s", message );
 
-  ak_ptr_to_hexstr_static( ec->b, ec->size*sizeof( ak_uint64 ), message, sizeof( message ), ak_true );
+  ak_mpzn_to_hexstr_static( ec->b, ec->size, message, sizeof( message ));
   ak_error_message_fmt( error, __func__, " b = %s", message );
 
-  ak_ptr_to_hexstr_static( ec->p, ec->size*sizeof( ak_uint64 ), message, sizeof( message ), ak_true );
+  ak_mpzn_to_hexstr_static( ec->p, ec->size, message, sizeof( message ));
   ak_error_message_fmt( error, __func__, " p = %s", message );
 
-  ak_ptr_to_hexstr_static( ec->q, ec->size*sizeof( ak_uint64 ), message, sizeof( message ), ak_true );
+  ak_mpzn_to_hexstr_static( ec->q, ec->size, message, sizeof( message ));
   ak_error_message_fmt( error, __func__, " q = %s", message );
 
-  ak_ptr_to_hexstr_static( ec->point.x, ec->size*sizeof( ak_uint64 ), message, sizeof( message ), ak_true );
+  ak_mpzn_to_hexstr_static( ec->point.x, ec->size, message, sizeof( message ));
   ak_error_message_fmt( error, __func__, "px = %s", message );
 
-  ak_ptr_to_hexstr_static( ec->point.y, ec->size*sizeof( ak_uint64 ), message, sizeof( message ), ak_true );
+  ak_mpzn_to_hexstr_static( ec->point.y, ec->size, message, sizeof( message ));
   ak_error_message_fmt( error, __func__, "py = %s", message );
 
-  ak_ptr_to_hexstr_static( ec->point.z, ec->size*sizeof( ak_uint64 ), message, sizeof( message ), ak_true );
+  ak_mpzn_to_hexstr_static( ec->point.z, ec->size, message, sizeof( message ));
   ak_error_message_fmt( error, __func__, "pz = %s", message );
 }
 

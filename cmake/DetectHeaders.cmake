@@ -136,6 +136,17 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
+  #include <sys/socket.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_SYSSOCKET )
+
+if( LIBAKRYPT_HAVE_SYSSOCKET )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SYSSOCKET_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
   #include <errno.h>
   int main( void ) {
      return 0;
