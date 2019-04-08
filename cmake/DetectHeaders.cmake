@@ -255,3 +255,14 @@ if( LIBAKRYPT_HAVE_LIBINTL )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
+  #include <signal.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_SIGNAL )
+
+if( LIBAKRYPT_HAVE_SIGNAL )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SIGNAL_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #

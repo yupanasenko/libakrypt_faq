@@ -68,7 +68,6 @@ if( LIBAKRYPT_FIOT )
   set( SOURCES      ${SOURCES}
                     source/ak_fiot.c
                     source/ak_fiot_tlp.c
-                    source/ak_fiot_print.c
   )
 endif()
 
@@ -233,10 +232,17 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  internal-bckey03
                  internal-bckey04
   )
+endif()
+
+if( LIBAKRYPT_FIOT )
   set( INTERNAL_FIOT_TEST_LIST
                  internal-fiot-context
-                 internal-fiot-unix
   )
+  if( UNIX )
+    set( INTERNAL_FIOT_TEST_LIST ${INTERNAL_FIOT_TEST_LIST}
+                 internal-fiot-unix
+    )
+  endif()
 endif()
 
 # -------------------------------------------------------------------------------------------------- #

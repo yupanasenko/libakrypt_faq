@@ -162,8 +162,8 @@
             exit(1);
         }
 
-        fctx.header_offset = 11; /* восемь байт для стандартного заголовка + 3 байта - мусор */
-        ak_fiot_context_send_frame( &fctx, "xQt", str, strlen( str ),
+        // fctx.header_offset = 11; /* восемь байт для стандартного заголовка + 3 байта - мусор */
+        ak_fiot_context_send_frame( &fctx, NULL, str, strlen( str ),
                                                                 encrypted_frame, application_data );
 
         if(( t=recv( s, str, 100, 0 )) > 0 ) {

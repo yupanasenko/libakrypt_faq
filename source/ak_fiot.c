@@ -20,9 +20,8 @@
  #error Library cannot be compiled without unistd.h header
 #endif
 #ifdef LIBAKRYPT_HAVE_SYSSOCKET_H
+ /* заголовок нужен длял реализации функции shutdown */
  #include <sys/socket.h>
-#else
- #error Library cannot be compiled without sys/socket.h header
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -54,8 +53,71 @@
     { { 0, 0, 0, 0 }, undefinedKeyMechanism },
 };
 
+
 /* ----------------------------------------------------------------------------------------------- */
-/*                    Функции для работы с контектами протокола sp fiot                            */
+/*           група функций, реализующих передачу/прием данных по каналам связи                     */
+/* ----------------------------------------------------------------------------------------------- */
+ volatile sig_atomic_t __io_canceled;
+
+// static inline void io_init( void ) { __io_canceled = 0; }
+// static inline void io_cancel( void ) { __io_canceled = 1; }
+
+//static inline int write_n(int fd, char *buf, int len)
+//{
+//	register int t=0, w;
+
+//	while (!__io_canceled && len > 0) {
+// 	  if( (w = write(fd, buf, len)) < 0 ){
+//	     if( errno == EINTR || errno == EAGAIN )
+//  	         continue;
+//	     return -1;
+//	  }
+//	  if( !w )
+//	     return 0;
+//	  len -= w; buf += w; t += w;
+//	}
+
+//	return t;
+//}
+
+///* Read exactly len bytes (Signal safe)*/
+//static inline int read_n(int fd, char *buf, int len)
+//{
+//	register int t=0, w;
+
+//	while (!__io_canceled && len > 0) {
+//	  if( (w = read(fd, buf, len)) < 0 ){
+//	     if( errno == EINTR || errno == EAGAIN )
+// 	        continue;
+//	     return -1;
+//	  }
+//	  if( !w )
+//	     return 0;
+//	  len -= w; buf += w; t += w;
+//	}
+
+//	return t;
+//}
+
+///* Read N bytes with timeout */
+//int readn_t(int fd, void *buf, size_t count, time_t timeout)
+//{
+//	fd_set fdset;
+//	struct timeval tv;
+
+//	tv.tv_usec=0; tv.tv_sec=timeout;
+
+//	FD_ZERO(&fdset);
+//	FD_SET(fd,&fdset);
+//	if( select(fd+1,&fdset,NULL,NULL,&tv) <= 0)
+//	   return -1;
+
+//	return read_n(fd, buf, count);
+//}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                    функции для работы с контектами протокола sp fiot                            */
 /* ----------------------------------------------------------------------------------------------- */
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -123,12 +185,16 @@
                                                            "using null pointer to fiot context" );
   /* закрываем связанные сокеты */
    if( fctx->enc_gate != -1 ) {
+#ifdef LIBAKRYPT_HAVE_SYSSOCKET_H
      shutdown( fctx->enc_gate, SHUT_RDWR );
+#endif
      close( fctx->enc_gate );
      fctx->enc_gate = -1;
    }
    if( fctx->plain_gate != -1 ) {
+#ifdef LIBAKRYPT_HAVE_SYSSOCKET_H
      shutdown( fctx->plain_gate, SHUT_RDWR );
+#endif
      close( fctx->plain_gate );
      fctx->plain_gate = -1;
    }
