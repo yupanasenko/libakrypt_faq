@@ -15,9 +15,9 @@
  #error Library cannot be compiled without string.h header
 #endif
 #ifdef LIBAKRYPT_HAVE_UNISTD_H
- #include <unistd.h>
+// #include <unistd.h>
 #else
- #error Library cannot be compiled without unistd.h header
+// #error Library cannot be compiled without unistd.h header
 #endif
 #ifdef LIBAKRYPT_HAVE_SYSSOCKET_H
  /* заголовок нужен длял реализации функции shutdown */
@@ -215,6 +215,11 @@
 {
   int error = ak_error_ok;
 
+ /*! \todo const may be deleted later */
+  ak_uint8 const_key[32] = {
+    0x12, 0x34, 0x56, 0x78, 0x0a, 0xbc, 0xde, 0xf0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
+    0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11, 0xa1, 0xa1, 0xa2, 0xa2, 0xa3, 0xa3, 0xa4, 0xa4 };
+
   /* инициализируем заголовок струкуры */
    memset( fctx, 0, sizeof( struct fiot ));
    if(( error = fiot_context_create_common( fctx )) != ak_error_ok )
@@ -250,7 +255,11 @@
      ak_fiot_context_destroy( fctx );
      return error;
    }
+#ifdef _WIN32
+   if(( error = ak_random_context_create_winrtl( &fctx->crypto_rnd )) != ak_error_ok ) {
+#else
    if(( error = ak_random_context_create_urandom( &fctx->crypto_rnd )) != ak_error_ok ) {
+#endif
      ak_error_message( error, __func__, "incorrect creation of crypto random generator");
      ak_fiot_context_destroy( fctx );
      return error;
@@ -282,10 +291,6 @@
 
   /* нижеследующий фрагмент это костыль, который должен быть удален
      после корректной реализации протокола выработки ключей */
-  ak_uint8 const_key[32] = {
-    0x12, 0x34, 0x56, 0x78, 0x0a, 0xbc, 0xde, 0xf0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
-    0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11, 0xa1, 0xa1, 0xa2, 0xa2, 0xa3, 0xa3, 0xa4, 0xa4 };
-
 
    fctx->ecfk = malloc( sizeof( struct bckey ));
    ak_bckey_context_create_kuznechik( fctx->ecfk );
