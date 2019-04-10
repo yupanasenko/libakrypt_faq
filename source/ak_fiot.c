@@ -27,6 +27,9 @@
  /* заголовок нужен длял реализации функции shutdown */
  #include <sys/socket.h>
 #endif
+#ifdef LIBAKRYPT_HAVE_WINDOWS_H
+ #include <winsock2.h>
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_fiot.h>
@@ -73,7 +76,7 @@
     \param length Размер области памяти в байтах.
     \return Функция возвращает количество отправленных в канал данных.                             */
 /* ----------------------------------------------------------------------------------------------- */
- static ssize_t ak_fiot_context_write_ptr( int fd, char *buffer, ssize_t length )
+ static ssize_t ak_fiot_context_write_ptr( ak_socket fd, char *buffer, ssize_t length )
 {
     register ssize_t w, t = 0;
 
@@ -95,7 +98,7 @@
     \param length Размер области памяти в байтах.
     \return Функция возвращает количество полученных данных.                                       */
 /* ----------------------------------------------------------------------------------------------- */
- static ssize_t ak_fiot_context_read_ptr( int fd, char *buffer, ssize_t length )
+ static ssize_t ak_fiot_context_read_ptr( ak_socket fd, char *buffer, ssize_t length )
 {
     register ssize_t w, t = 0;
 
@@ -219,6 +222,10 @@
    if( fctx->enc_gate != -1 ) {
 #ifdef LIBAKRYPT_HAVE_SYSSOCKET_H
      shutdown( fctx->enc_gate, SHUT_RDWR );
+#else
+  #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+     shutdown( fctx->enc_gate, SD_BOTH );
+  #endif
 #endif
      close( fctx->enc_gate );
      fctx->enc_gate = -1;
@@ -226,7 +233,12 @@
    if( fctx->plain_gate != -1 ) {
 #ifdef LIBAKRYPT_HAVE_SYSSOCKET_H
      shutdown( fctx->plain_gate, SHUT_RDWR );
+#else
+  #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+     shutdown( fctx->plain_gate, SD_BOTH );
+  #endif
 #endif
+
      close( fctx->plain_gate );
      fctx->plain_gate = -1;
    }
@@ -676,7 +688,7 @@
     \return В случае успеха функция возвращает \ref ak_error_ok.
     В случае возникновения ошибки возвращается ее код                                              */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_fiot_context_set_gate_descriptor( ak_fiot fctx, gate_t gate, int descriptor )
+ int ak_fiot_context_set_gate_descriptor( ak_fiot fctx, gate_t gate, ak_socket descriptor )
 {
   if( fctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                         "using a null pointer to fiot context" );
@@ -695,7 +707,7 @@
     \return Функция возвращает значение установленного дескриптора.
     В случае возникновения ошибки возвращается ее код                                              */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_fiot_context_get_gate_descriptor( ak_fiot fctx , gate_t gate )
+ ak_socket ak_fiot_context_get_gate_descriptor( ak_fiot fctx , gate_t gate )
 {
   if( fctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                         "using a null pointer to fiot context" );

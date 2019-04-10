@@ -69,6 +69,7 @@ if( LIBAKRYPT_FIOT )
                     source/ak_fiot.c
                     source/ak_fiot_tlp.c
   )
+  add_compile_options( -DLIBAKRYPT_FIOT=ON )
 endif()
 
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )

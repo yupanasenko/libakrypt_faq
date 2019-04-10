@@ -96,13 +96,16 @@
     ak_error_message( ak_error_ok, __func__ , "library applies clmulepi64 instruction" );
    #endif
    #ifdef LIBAKRYPT_HAVE_BUILTIN_MULQ_GCC
-   ak_error_message( ak_error_ok, __func__ , "library applies assembler code for mulq command" );
+    ak_error_message( ak_error_ok, __func__ , "library applies assembler code for mulq command" );
    #endif
    #ifdef LIBAKRYPT_HAVE_PTHREAD
-   ak_error_message( ak_error_ok, __func__ , "library runs with pthreads support" );
+    ak_error_message( ak_error_ok, __func__ , "library runs with pthreads support" );
    #endif
    #ifdef LIBAKRYPT_HAVE_GMP_H
-   ak_error_message( ak_error_ok, __func__ , "library runs with gmp support" );
+    ak_error_message( ak_error_ok, __func__ , "library runs with gmp support" );
+   #endif
+   #ifdef LIBAKRYPT_FIOT
+    ak_error_message( ak_error_ok, __func__ , "library includes implementation of fiot protocol" );
    #endif
   }
  return ak_true;
@@ -328,6 +331,14 @@
  int ak_libakrypt_create( ak_function_log *logger )
 {
  int error;
+
+ /* в случае, когда компилируются сетевые функции, инициализируем работу с сокетами */
+#ifdef LIBAKRYPT_HAVE_WINDOWS_H
+  #if defined( LIBAKRYPT_FIOT ) || defined( LIBAKRYPT_TLS_13 )
+    WSADATA wj;
+    WSAStartup( MAKEWORD(2,2), &wj );
+  #endif
+#endif
 
  /* перед стартом все должно быть хорошо */
    ak_error_set_value( error = ak_error_ok );

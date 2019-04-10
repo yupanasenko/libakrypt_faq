@@ -20,8 +20,6 @@
  #include <sys/socket.h>
 #endif
 
- #include <stdio.h>
-
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_fiot.h>
 
@@ -260,7 +258,7 @@
    for( i = 0; i < 6; i++ ) {
       ssize_t idx = framelen-1-ilen;
       if( idx < 1 ) { ilen = 256; break; }
-      if( idx > framelen-1 ) { ilen = 256; break; }
+      if(( size_t )idx > ( size_t )( framelen-1 )) { ilen = 256; break; }
       if(( fctx->inframe[idx] == ilen ) && ( fctx->inframe[idx-1] == ( char )is_present )) break;
       ilen <<= 1;
    }
@@ -315,7 +313,7 @@
 
   for( i = 0; i < blocks; i++ ) {
      memset( buffer, 0, sizeof( buffer ));
-     memset( buffer, ' ', offset = 8*level );
+     memset( buffer, ' ', ( size_t )( offset = 8*level ));
      for( j = 0; j < 16; j++ ) {
         ak_snprintf( buffer+offset, 8, "%02X ", (unsigned char)data[16*i+j] );
         offset += 3;
@@ -324,7 +322,7 @@
   }
   if( tail ) {
     memset( buffer, 0, sizeof( buffer ));
-    memset( buffer, ' ', offset = 8*level );
+    memset( buffer, ' ', ( size_t )( offset = 8*level ));
     for( j = 0; j < tail; j++ ) {
        ak_snprintf( buffer+offset, 8, "%02X ", (unsigned char)data[16*i+j] );
        offset += 3;

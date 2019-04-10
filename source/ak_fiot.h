@@ -354,7 +354,14 @@
  #define fiot_frame_message_offset   (11)
 
 /* ----------------------------------------------------------------------------------------------- */
- typedef ssize_t ( fiot_function_read_write_socket )( int , char *, ssize_t );
+#ifdef LIBAKRYPT_HAVE_WINDOWS_H
+ typedef SOCKET ak_socket;
+#else
+ typedef int ak_socket;
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
+ typedef ssize_t ( fiot_function_read_write_socket )( ak_socket , char *, ssize_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Контекст защищенного соединения протокола sp fiot.
@@ -390,8 +397,10 @@
    crypto_restriction_t restriction;
   /*! \brief Значение счетчиков фреймов. */
    ssize_t lcounter, mcounter, ncounter;
-  /*! \brief Дескрипторы чтения и записи данных. */
-   int enc_gate, plain_gate;
+  /*! \brief Дескриптор чтения/записи для шифрующего интерфейса. */
+   ak_socket enc_gate;
+   /*! \brief Дескриптор чтения/записи для обычного интерфейса. */
+   ak_socket plain_gate;
   /*! \brief Указатель на функцию записи данных в канал связи. */
    fiot_function_read_write_socket *write;
   /*! \brief Указатель на функцию получения данных из канала связи. */
@@ -463,9 +472,9 @@
  elliptic_curve_t ak_fiot_context_get_curve( ak_fiot );
 
 /*! \brief Присвоение заданному интерфейсу контекста открытого сокета. */
- int ak_fiot_context_set_gate_descriptor( ak_fiot , gate_t, int );
+ int ak_fiot_context_set_gate_descriptor( ak_fiot , gate_t, ak_socket );
 /*! \brief Получение дескриптора сокета для заданного интерфейса контекста защищенного взаимодействия. */
- int ak_fiot_context_get_gate_descriptor( ak_fiot , gate_t );
+ ak_socket ak_fiot_context_get_gate_descriptor( ak_fiot , gate_t );
 /** @} */
 
 /*! \brief Формирование сообщения транспортного протокола и отправка его в канал связи. */

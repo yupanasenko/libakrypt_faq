@@ -1,15 +1,30 @@
 # -------------------------------------------------------------------------------------------------- #
+if( WIN32 )
+  if( LIBAKRYPT_FIOT )
+    # ищем реализацию сокетов
+    find_library( LIBAKRYPT_WS2_32 ws2_32 )
+    if( LIBAKRYPT_WS2_32 )
+      message("-- Searching ws2_32 - done ")
+      set( LIBAKRYPT_LIBS ws2_32 )
+    else()
+      message("-- ws2_32 not found")
+      return()
+    endif()
+  endif()
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
 if( MSVC )
 
   # в начале ищем библиотеки, если нет - выходим
-  find_library( PTHREAD pthreadVC2 )
-  if( PTHREAD )
+  find_library( LIBAKRYPT_PTHREAD pthreadVC2 )
+  if( LIBAKRYPT_PTHREAD )
     message("-- Searching pthreadVC2 - done ")
-    set( LIBAKRYPT_LIBS pthreadVC2 )
+    set( LIBAKRYPT_LIBS ${LIBAKRYPT_LIBS} pthreadVC2 )
 
     # потом ищем заголовочный файл, если нет - выходим
-    find_file( PTHREAD_H pthread.h )
-    if( PTHREAD_H )
+    find_file( LIBAKRYPT_PTHREAD_H pthread.h )
+    if( LIBAKRYPT_PTHREAD_H )
       # устанавливаем флаг
       set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_PTHREAD" )
 
