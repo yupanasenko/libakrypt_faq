@@ -114,34 +114,33 @@
 /*! Функция ожидает данные в течение заданного временного интревала.
     По истечении времени, если данные не получены, возвращается ошибка.
 
-    \param fd Дескриптор файла (сокет) в который производится запись.
+    \param fctx Контекст защищенного соединения.
+    \param gate Интерфейс, на котором ожидаются данные.
     \param buffer Указатель на область памяти, в которую помещаются полученные данные
     \param length Размер области памяти в байтах.
-    \param timeout Временной интервал (в секундах) в течении которого происходит ожидание данных.
     \return Функция возвращает количество полученных данных.                                       */
 /* ----------------------------------------------------------------------------------------------- */
- ssize_t ak_fiot_context_read_ptr_timeout( int fd, char *buffer, ssize_t length, time_t timeout )
+ ssize_t ak_fiot_context_read_ptr_timeout( ak_fiot fctx, gate_t gate,
+                                                                 ak_pointer buffer, ssize_t length )
 {
+    int fd = -1;
 #ifdef LIBAKRYPT_HAVE_SYSSELECT_H
     fd_set fdset;
     struct timeval tv;
+#endif
+    if( gate == encryption_gate ) fd = fctx->enc_gate;
+      else fd = fctx->plain_gate;
 
-    tv.tv_usec =0; tv.tv_sec = timeout;
+#ifdef LIBAKRYPT_HAVE_SYSSELECT_H
+    tv.tv_usec =0; tv.tv_sec = fctx->timeout;
 
     FD_ZERO( &fdset );
     FD_SET( fd, &fdset );
     if( select( fd+1, &fdset, NULL, NULL, &tv ) <= 0 )
       return ak_error_set_value( ak_error_read_data );
-
-    return ak_fiot_context_read_ptr( fd, buffer, length );
-
-   /*! \todo Надо потестировать, возможно имеет смысл завернуть ..read_ptr в цикл,
-    * если length превышает единицу */
-
-#else
-  (void) timeout;
-  return ak_fiot_context_read_ptr( fd, buffer, length );
 #endif
+
+ return fctx->read( fd, buffer, length );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -475,7 +475,7 @@
  char *ak_fiot_context_read_frame( ak_fiot , size_t *, message_t * );
 
 /*! \brief Получение данных из канала связи в течение заданного интервала времени. */
- ssize_t ak_fiot_context_read_ptr_timeout( int fd, char *, ssize_t , time_t );
+ ssize_t ak_fiot_context_read_ptr_timeout( ak_fiot , gate_t , ak_pointer , ssize_t );
 /*! \brief Вывод содержимого фрейма с использованием системы аудита. */
  void ak_fiot_context_print_frame( char *, ssize_t );
 

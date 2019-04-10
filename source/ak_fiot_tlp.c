@@ -214,9 +214,8 @@
    }
 
   /* в начале пытаемся получить из канала связи три байта, содержащие тип фрейма и его длину */
-   if( ak_fiot_context_read_ptr_timeout( fctx->enc_gate,
-                                        fctx->inframe, 3, fctx->timeout ) != 3 ) return NULL;
-
+   if( ak_fiot_context_read_ptr_timeout( fctx,
+                                       encryption_gate, fctx->inframe, 3 ) != 3 ) return NULL;
   /* проверяем, что тип полученного фрейма корректен */
    ftype = fctx->inframe[0]&0x3;
    if(( ftype != plain_frame ) && ( ftype != encrypted_frame )) {
@@ -239,8 +238,8 @@
        return NULL;
 
   /* теперь получаем из канала основное тело пакета */
-   if( ak_fiot_context_read_ptr_timeout( fctx->enc_gate,
-                   fctx->inframe+3, framelen-3, fctx->timeout ) != framelen-3 ) return NULL;
+   if( ak_fiot_context_read_ptr_timeout( fctx, encryption_gate,
+                                    fctx->inframe+3, framelen-3 ) != framelen-3 ) return NULL;
    if( ak_log_get_level() >= fiot_log_maximum )
      ak_fiot_context_print_frame( fctx->inframe, framelen );
 
