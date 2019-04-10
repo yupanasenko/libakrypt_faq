@@ -33,7 +33,7 @@ option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
 option( LIBAKRYPT_HTML_DOC "Build documentation in HTML format" OFF )
 option( LIBAKRYPT_PDF_DOC "Build documentation in PDF format" OFF )
 option( LIBAKRYPT_CRYPTO_FUNCTIONS "Build library with crypto functions" ON )
-option( LIBAKRYPT_FIOT "Build library with FIOT protocol support" ON )
+option( LIBAKRYPT_FIOT "Build library with FIOT protocol support" OFF )
 option( LIBAKRYPT_TLS_13 "Build library with TLS 1.3 protocol support" OFF )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -230,6 +230,9 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  internal-bckey02
                  internal-bckey02-magma
                  internal-bckey03
+  )
+  set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
+                                   # при запуске make test
                  internal-bckey04
   )
 endif()
@@ -255,6 +258,11 @@ if( LIBAKRYPT_INTERNAL_TESTS )
        add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
        target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
        add_test( NAME test-${programm}${LIBAKRYPT_EXT} COMMAND test-${programm}${LIBAKRYPT_EXT} )
+    endforeach()
+    # компилируемые тесты, не попадающие в вызов команды make test
+    foreach( programm ${INTERNAL_TEST_LIST_EXAMPLES} )
+       add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
+       target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
     endforeach()
   endif()
   message("-- Added tests for internal functions (now \"make test\" enabled)")

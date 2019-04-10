@@ -15,8 +15,12 @@
 #else
  #error Library cannot be compiled without string.h header
 #endif
+#ifdef LIBAKRYPT_HAVE_SYSSOCKET_H
+ /* заголовок нужен длял реализации функции send */
+ #include <sys/socket.h>
+#endif
 
-#include <stdio.h>
+ #include <stdio.h>
 
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_fiot.h>
@@ -75,11 +79,12 @@
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха.
     Иначе, возвращается код ошибки.                                                                */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_fiot_context_send_frame( ak_fiot fctx, ak_pointer header,
+ int ak_fiot_context_write_frame( ak_fiot fctx, ak_pointer header,
                              ak_pointer data, size_t datalen, frame_type_t ftype, message_t mtype )
 {
    ak_mac ikey = NULL;
    ak_bckey ekey = NULL;
+   int error = ak_error_ok;
    size_t ilen = 0, olen = 0, framelen = 0, offset = 0;
 
   /* выполняем минимальные проверки */
@@ -113,7 +118,7 @@
      должна быть кратной 16 байтам, если этого сделать нельзя, то откатываемся назад.
      необходимо реализовать все возможные политики в соответствии с методическими рекомендациями. */
    if( framelen%16 != 0 ) {
-     framelen = ( 1+ (framelen>>4) )<<4;
+     framelen = ( 1+ ( framelen>>4 )) <<4;
      if( framelen > fctx->oframe_size ) framelen = olen;
    }
   /* теперь собираем фрейм по кусочкам */
@@ -163,7 +168,7 @@
            ak_mac_context_ptr( ikey, fctx->oframe, olen, fctx->oframe + framelen - ilen );
            olen -= fctx->header_offset;
 
-          /* здесь надо аккуратно определить iv */
+          /*! \todo здесь надо аккуратно определить iv */
            ak_bckey_context_xcrypt( ekey, fctx->oframe + fctx->header_offset,
                               fctx->oframe + fctx->header_offset, olen, fctx->oframe, 8 );
         }
@@ -172,18 +177,126 @@
    if( ak_log_get_level() >= fiot_log_maximum )
      ak_fiot_context_print_frame( fctx->oframe, ( ssize_t )framelen );
 
-//   if( fctx->send( fctx->enc_gate,  sendDescriptor, frame, framelen ) != framelen ) {
-//     return fiot_error_wrong_send;
-//   }
+   if( fctx->write( fctx->enc_gate, fctx->oframe, ( ssize_t )framelen ) != ( ssize_t )framelen )
+    ak_error_set_value( error = ak_error_write_data );
 
   /* изменяем значения счетчиков и ключей после отправки фрейма в канал связи */
    ak_fiot_context_increment_counters( fctx );
- return ak_error_ok;
+ return error;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция получает данные из канала связи, рашифровывает их, проверяет целостность
+    помещает полученные данные во временный буффер.
+
+    \param fctx Контекст защищенного соединения протокола sp fiot.
+    Контекст должен быть предварительно создан, а ключевые значения инициализированы.
+    \param length Переменная, в которую помещается длина полученного сообщения.
+    \param mtype Переменная, в которую помещается тип полученного сообщения
+
+    \return В случае успешного приема функция возвращает указатель на область памяти,
+    в которой находятся полученные данные. В случае неудачи, возвращается `NULL`,
+    а также устанавливается код ошибки, который может быть определен с помощью
+    вызова функции ak_error_get_value().                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ char *ak_fiot_context_read_frame( ak_fiot fctx, size_t *length, message_t *mtype )
+{
+   ak_uint8 out[64]; /* максимальная длина имитовставки - длина хэшкода для Стрибога 512 */
+   ak_mac ikey = NULL;
+   ak_bckey ekey = NULL;
+   int i, error = ak_error_ok;
+   ssize_t ilen = 4, ftype = 0, offset = 0, framelen = 0;
+
+  /* необходимые проверки */
+   if( fctx->enc_gate == undefined_gate ) {
+     ak_error_set_value( fiot_error_wrong_gate );
+     return NULL;
+   }
+
+  /* в начале пытаемся получить из канала связи три байта, содержащие тип фрейма и его длину */
+   if( ak_fiot_context_read_ptr_timeout( fctx->enc_gate,
+                                        fctx->inframe, 3, fctx->timeout ) != 3 ) return NULL;
+
+  /* проверяем, что тип полученного фрейма корректен */
+   ftype = fctx->inframe[0]&0x3;
+   if(( ftype != plain_frame ) && ( ftype != encrypted_frame )) {
+     ak_error_set_value( fiot_error_frame_type );
+     return NULL;
+   }
+
+  /* определяем длину заголовка */
+   offset = fctx->inframe[0]>>2;
+
+  /* проверяем, что длина полученного фрейма корректна */
+   if(( framelen = fctx->inframe[2] + fctx->inframe[1]*256 ) > fiot_max_frame_size ) {
+     ak_error_set_value( fiot_error_frame_size );
+     return NULL;
+   }
+  /* при необходимости, увеличиваем объем внутреннего буффера */
+   if(( size_t )framelen > fctx->inframe_size )
+     if(( error = ak_fiot_context_set_frame_size( fctx, inframe,
+                                                       ( size_t )framelen )) != ak_error_ok )
+       return NULL;
+
+  /* теперь получаем из канала основное тело пакета */
+   if( ak_fiot_context_read_ptr_timeout( fctx->enc_gate,
+                   fctx->inframe+3, framelen-3, fctx->timeout ) != framelen-3 ) return NULL;
+   if( ak_log_get_level() >= fiot_log_maximum )
+     ak_fiot_context_print_frame( fctx->inframe, framelen );
+
+  /* теперь процесс проверки данных
+     начинаем с уcтановки ключей и проверки длины имитовставки */
+   if( ftype == plain_frame ) ikey = fctx->epsk;
+    else {
+          switch( fctx->role ) {
+            case client_role: ikey = fctx->icfk; ekey = fctx->ecfk; break;
+            case server_role: ikey = fctx->isfk; ekey = fctx->esfk; break;
+            default:
+                 ak_error_set_value( fiot_error_wrong_role );
+                 return NULL;
+          }
+         }
+
+  /* в начале, пытаемся определить размер имитовставки (без использования контекста протокола ) */
+   for( i = 0; i < 6; i++ ) {
+      ssize_t idx = framelen-1-ilen;
+      if( idx < 1 ) { ilen = 256; break; }
+      if( idx > framelen-1 ) { ilen = 256; break; }
+      if(( fctx->inframe[idx] == ilen ) && ( fctx->inframe[idx-1] == ( char )is_present )) break;
+      ilen <<= 1;
+   }
+   if( ilen > 128 ) { /* значение имитовставки слишком большое */
+     ak_error_set_value( fiot_error_frame_format );
+     return NULL;
+   }
+   if(( size_t )ilen != ikey->hsize ) { /* длина имитовставки полученного фрейма не совпадает
+                                           с длиной имитовставки для установленного ключа */
+     ak_error_set_value( fiot_error_wrong_mechanism );
+     return NULL;
+   }
+
+ /* расшифровываем и проверяем контрольную сумму */
+   if( ftype == encrypted_frame ) {
+    /*! \todo здесь надо аккуратно определить iv */
+     ak_bckey_context_xcrypt( ekey, fctx->inframe + offset,
+          fctx->inframe + offset, ( size_t )( framelen - offset - ilen - 2 ), fctx->inframe, 8 );
+   }
+   ak_mac_context_ptr( ikey, fctx->inframe, ( size_t )(framelen - ilen - 2 ), out );
+   if( memcmp( fctx->inframe + framelen - ilen, out, ( size_t )ilen ) != 0 ) {
+     ak_error_set_value( ak_error_not_equal_data );
+     return NULL;
+   }
+
+ /* теперь помещаем значения полей */
+   *mtype = ( message_t ) fctx->inframe[ offset++ ];
+   *length = ( size_t )( fctx->inframe[ offset++ ]*256 );
+   *length += ( size_t )( fctx->inframe[ offset++ ] );
+
+ return fctx->inframe + offset;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
-/*            далее идет группа функций, реализующих аудит передаваемых фреймов                    */
+/*         далее идет большая группа функций, реализующих аудит передаваемых фреймов               */
 /* ----------------------------------------------------------------------------------------------- */
 
 
@@ -233,8 +346,7 @@
    ssize_t offset = 0;
    char *message = NULL;
    int error = ak_error_ok;
-   unsigned int i, ilen = 4, meslen;
-
+   unsigned int i, ilen = 4;
 
   /* выводим общую информацию */
    if( frame == NULL ) return;
@@ -260,11 +372,7 @@
                              "        %02X %02X [length: %u octets]", frame[1], frame[2], framelen );
    ak_error_message_fmt( error, "",
      "        %02X %02X %02X %02X %02X [number]", frame[3], frame[4], frame[5], frame[6], frame[7] );
-   if( offset > 8 ) {
-     if( offset > 56 ) ak_error_message( error = ak_error_wrong_length, __func__,
-                                                               "frame has incorrect offset length" );
-      else ak_fiot_context_print_ptr( frame+8, offset-8, 1 );
-   }
+   if( offset > 8 ) ak_fiot_context_print_ptr( frame+8, offset-8, 1 );
    if( error != ak_error_ok ) return;
 
   /* пытаемся определить имитовставку (без использования контекста протокола ) */

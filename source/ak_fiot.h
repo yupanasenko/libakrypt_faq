@@ -112,6 +112,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тип передаваемого сообщения. */
  typedef enum {
+    undefined_message = 0x0,
     client_hello = 0x11,
     server_hello = 0x12,
     verify_message = 0x13,
@@ -353,6 +354,9 @@
  #define fiot_frame_message_offset   (11)
 
 /* ----------------------------------------------------------------------------------------------- */
+ typedef ssize_t ( fiot_function_read_write_socket )( int , char *, ssize_t );
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Контекст защищенного соединения протокола sp fiot.
     \details Контекст представляет собой фильтр ...
 
@@ -388,6 +392,12 @@
    ssize_t lcounter, mcounter, ncounter;
   /*! \brief Дескрипторы чтения и записи данных. */
    int enc_gate, plain_gate;
+  /*! \brief Указатель на функцию записи данных в канал связи. */
+   fiot_function_read_write_socket *write;
+  /*! \brief Указатель на функцию получения данных из канала связи. */
+   fiot_function_read_write_socket *read;
+  /*! \brief Значение таймаута при ожидании входящих пакетов (в секундах) */
+   time_t timeout;
 
   /*! \brief Идентификатор сервера, должен быть определен всегда. */
    struct buffer server_id;
@@ -459,8 +469,13 @@
 /** @} */
 
 /*! \brief Формирование сообщения транспортного протокола и отправка его в канал связи. */
- int ak_fiot_context_send_frame( ak_fiot , ak_pointer , ak_pointer , size_t ,
+ int ak_fiot_context_write_frame( ak_fiot , ak_pointer , ak_pointer , size_t ,
                                                                         frame_type_t , message_t );
+/*! \brief Получение фрейма из канала связи. */
+ char *ak_fiot_context_read_frame( ak_fiot , size_t *, message_t * );
+
+/*! \brief Получение данных из канала связи в течение заданного интервала времени. */
+ ssize_t ak_fiot_context_read_ptr_timeout( int fd, char *, ssize_t , time_t );
 /*! \brief Вывод содержимого фрейма с использованием системы аудита. */
  void ak_fiot_context_print_frame( char *, ssize_t );
 

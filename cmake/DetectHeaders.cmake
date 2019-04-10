@@ -147,6 +147,17 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
+  #include <sys/select.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_SYSSELECT )
+
+if( LIBAKRYPT_HAVE_SYSSELECT )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SYSSELECT_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
   #include <errno.h>
   int main( void ) {
      return 0;

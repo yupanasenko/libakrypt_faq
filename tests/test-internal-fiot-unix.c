@@ -1,5 +1,6 @@
-/* Пример, иллюстрирующий защищенный обмен между потомком и родителем,
-   использующий сокеты домена unix.
+/* Пример, в котором на примере эхо-серера
+   иллюстрируется защищенный обмен между потомком и родителем.
+   Взаимодействие происходит с использованием сокетов домена unix.
 
    test-internal-fiot-unix.c
 */
@@ -21,7 +22,7 @@
 
  int main( void )
 {
- /* инициализируем криптобиблиотеку в процессе сервера */
+ /* инициализируем криптобиблиотеку в корневом процессе */
   if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true )
     return ak_libakrypt_destroy();
  /* устанавливаем максимальный уровень аудита */
@@ -43,7 +44,6 @@
 /* функция реализует простейший эхо-сервер */
  int server( void )
 {
-  char str[100];
   int s, s2;
   socklen_t t, len;
   struct sockaddr_un local, remote;
@@ -64,9 +64,8 @@
   if( listen( s, 5 ) == -1 )
     return ak_error_message_fmt( -1, __func__, "listen error (%s)", strerror( errno ));
 
-
+        ssize_t done;
         int error = ak_error_ok;
-        ssize_t done, n;
         struct fiot fctx;
 
         printf("server: waiting for a connection...\n");
@@ -95,17 +94,17 @@
        /* выполняем процесс получения и возврата последовательностей символов */
         done = 0;
         do {
-            n = recv( s2, str, sizeof( str ), 0 );
-            if (n <= 0) {
-                if (n < 0) perror("recv");
-                done = 1;
+            size_t length;
+            message_t mtype = undefined_message;
+            char *data = ak_fiot_context_read_frame( &fctx, &length, &mtype );
+            if( data == NULL ) {
+              printf("server: timeout"); continue;
             }
-            if( strncmp( str, "quit", 4 ) == 0 ) done = 1;
-            if (!done)
-                if( send( s2, str, (size_t)n, 0 ) < 0) {
-                    perror("send");
-                    done = 1;
-                }
+            if( strncmp( data, "quit", 4 ) == 0 ) done = 1;
+            if( !done )
+              if(( error = ak_fiot_context_write_frame( &fctx, NULL,
+                                             data, length, encrypted_frame, mtype )) != ak_error_ok )
+                ak_error_message( error, __func__, "write error");
         } while (!done);
 
    full_exit:
@@ -122,12 +121,11 @@
 /* функция реализует клиентскую часть эхо-сервера */
  int client( void  )
 {
-    ssize_t t;
     socklen_t len;
     int s, error = ak_error_ok;
     struct fiot fctx;
     struct sockaddr_un remote;
-    char str[100];
+    char str[32];
 
     if(( s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1 )
       return ak_error_message_fmt( -1, __func__, "incorrect socket creation (%s)", strerror( errno ));
@@ -154,26 +152,22 @@
        /* устанавливаем сокет для внешнего (шифрующего) интерфейса */
         if(( error = ak_fiot_context_set_gate_descriptor( &fctx,
                                               encryption_gate, s )) != ak_error_ok ) goto full_exit;
+        while(1) {
 
+         size_t length;
+         message_t mtype = undefined_message;
+         char *data = NULL;
 
-    while(printf("> "), fgets(str, 100, stdin ), !feof(stdin)) {
-        if (send(s, str, strlen(str), 0) == -1) {
-            perror("send");
-            exit(1);
-        }
-
-        // fctx.header_offset = 11; /* восемь байт для стандартного заголовка + 3 байта - мусор */
-        ak_fiot_context_send_frame( &fctx, NULL, str, strlen( str ),
-                                                                encrypted_frame, application_data );
-
-        if(( t=recv( s, str, 100, 0 )) > 0 ) {
-            str[t] = '\0';
-            printf("echo> %s\n", str);
-        } else {
-            if (t < 0) perror("recv");
-            else printf("client: server closed connection\n");
-            exit(1);
-        }
+         memset( str, 0, sizeof( str ));
+         printf("client> "); fgets( str, 31, stdin );
+         if(( error = ak_fiot_context_write_frame( &fctx, NULL, str, strlen( str ),
+                                             encrypted_frame, application_data )) != ak_error_ok ) {
+           ak_error_message( error, __func__, "write error" );
+         } else printf("client: (send %lu bytes)\n", strlen( str ));
+         if(( data = ak_fiot_context_read_frame( &fctx, &length, &mtype )) != NULL ) {
+           data[length-1] = 0;
+           printf("  echo: %s (recv: %lu bytes, type: %x)\n", data, length, mtype );
+         }
     }
 
    full_exit:

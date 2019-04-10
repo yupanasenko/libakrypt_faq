@@ -14,10 +14,14 @@
 #else
  #error Library cannot be compiled without string.h header
 #endif
+#ifdef LIBAKRYPT_HAVE_ERRNO_H
+ #include <errno.h>
+#endif
 #ifdef LIBAKRYPT_HAVE_UNISTD_H
-// #include <unistd.h>
-#else
-// #error Library cannot be compiled without unistd.h header
+ #include <unistd.h>
+#endif
+#ifdef LIBAKRYPT_HAVE_SYSSELECT_H
+ #include <sys/select.h>
 #endif
 #ifdef LIBAKRYPT_HAVE_SYSSOCKET_H
  /* заголовок нужен длял реализации функции shutdown */
@@ -62,59 +66,83 @@
 // static inline void io_init( void ) { __io_canceled = 0; }
 // static inline void io_cancel( void ) { __io_canceled = 1; }
 
-//static inline int write_n(int fd, char *buf, int len)
-//{
-//	register int t=0, w;
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция-обертка, отправляющая в канал связи произвольный массив данных заданной длины.
+    \param fd Дескриптор файла (сокет) в который производится запись.
+    \param buffer Указатель на область памяти, которая отправляется в канал связи
+    \param length Размер области памяти в байтах.
+    \return Функция возвращает количество отправленных в канал данных.                             */
+/* ----------------------------------------------------------------------------------------------- */
+ static ssize_t ak_fiot_context_write_ptr( int fd, char *buffer, ssize_t length )
+{
+    register ssize_t w, t = 0;
 
-//	while (!__io_canceled && len > 0) {
-// 	  if( (w = write(fd, buf, len)) < 0 ){
-//	     if( errno == EINTR || errno == EAGAIN )
-//  	         continue;
-//	     return -1;
-//	  }
-//	  if( !w )
-//	     return 0;
-//	  len -= w; buf += w; t += w;
-//	}
+    while ( !__io_canceled && length > 0 ) {
+      if(( w = send( fd, buffer, ( size_t )length, 0 )) < 0 ) {
+         if( errno == EINTR || errno == EAGAIN ) continue;
+         return ak_error_write_data;
+      }
+      if( !w ) return 0;
+      length -= w; buffer += w; t += w;
+    }
+  return t;
+}
 
-//	return t;
-//}
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция-обертка, получающая из канала связи произвольный массив данных заданной длины.
+    \param fd Дескриптор файла (сокет) в который производится запись.
+    \param buffer Указатель на область памяти, в которую помещаются полученные данные
+    \param length Размер области памяти в байтах.
+    \return Функция возвращает количество полученных данных.                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ static ssize_t ak_fiot_context_read_ptr( int fd, char *buffer, ssize_t length )
+{
+    register ssize_t w, t = 0;
 
-///* Read exactly len bytes (Signal safe)*/
-//static inline int read_n(int fd, char *buf, int len)
-//{
-//	register int t=0, w;
+    while( !__io_canceled && length > 0 ) {
+      if(( w = recv( fd, buffer, (size_t) length, 0 )) < 0 ) {
+        if( errno == EINTR || errno == EAGAIN ) continue;
+        return ak_error_set_value( ak_error_read_data );
+      }
+      if( !w ) return 0;
+      length -= w; buffer += w; t += w;
+    }
+ return t;
+}
 
-//	while (!__io_canceled && len > 0) {
-//	  if( (w = read(fd, buf, len)) < 0 ){
-//	     if( errno == EINTR || errno == EAGAIN )
-// 	        continue;
-//	     return -1;
-//	  }
-//	  if( !w )
-//	     return 0;
-//	  len -= w; buf += w; t += w;
-//	}
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция ожидает данные в течение заданного временного интревала.
+    По истечении времени, если данные не получены, возвращается ошибка.
 
-//	return t;
-//}
+    \param fd Дескриптор файла (сокет) в который производится запись.
+    \param buffer Указатель на область памяти, в которую помещаются полученные данные
+    \param length Размер области памяти в байтах.
+    \param timeout Временной интервал (в секундах) в течении которого происходит ожидание данных.
+    \return Функция возвращает количество полученных данных.                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ ssize_t ak_fiot_context_read_ptr_timeout( int fd, char *buffer, ssize_t length, time_t timeout )
+{
+#ifdef LIBAKRYPT_HAVE_SYSSELECT_H
+    fd_set fdset;
+    struct timeval tv;
 
-///* Read N bytes with timeout */
-//int readn_t(int fd, void *buf, size_t count, time_t timeout)
-//{
-//	fd_set fdset;
-//	struct timeval tv;
+    tv.tv_usec =0; tv.tv_sec = timeout;
 
-//	tv.tv_usec=0; tv.tv_sec=timeout;
+    FD_ZERO( &fdset );
+    FD_SET( fd, &fdset );
+    if( select( fd+1, &fdset, NULL, NULL, &tv ) <= 0 )
+      return ak_error_set_value( ak_error_read_data );
 
-//	FD_ZERO(&fdset);
-//	FD_SET(fd,&fdset);
-//	if( select(fd+1,&fdset,NULL,NULL,&tv) <= 0)
-//	   return -1;
+    return ak_fiot_context_read_ptr( fd, buffer, length );
 
-//	return read_n(fd, buf, count);
-//}
+   /*! \todo Надо потестировать, возможно имеет смысл завернуть ..read_ptr в цикл,
+    * если length превышает единицу */
 
+#else
+  (void) timeout;
+  return ak_fiot_context_read_ptr( fd, buffer, length );
+#endif
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                    функции для работы с контектами протокола sp fiot                            */
@@ -133,6 +161,18 @@
                                                            "using null pointer to fiot context" );
   /* максимальный размер буффера для хранения передаваемых/получаемых данных */
     fctx->inframe_size = fctx->oframe_size = fiot_frame_size;
+
+  /* выделяем память под буффера, выравненную по границе 8 байт. */
+   if(( fctx->oframe = ak_libakrypt_aligned_malloc( fctx->oframe_size )) == NULL ) {
+     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
+   }
+   memset( fctx->oframe, 0, fctx->oframe_size );
+
+   if(( fctx->inframe = ak_libakrypt_aligned_malloc( fctx->inframe_size )) == NULL ) {
+     free( fctx->oframe );
+     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
+   }
+   memset( fctx->inframe, 0, fctx->inframe_size );
 
   /* смещение зашифровываемых данных от начала фрейма (для базового заголовка). */
     fctx->header_offset = fiot_frame_header_offset;
@@ -153,22 +193,15 @@
   /* значения счетчиков */
    fctx->lcounter = fctx->mcounter = fctx->ncounter = 0;
 
+  /* устанавливаем таймаут ожидания входящих пакетов (в секундах) */
+   fctx->timeout = 3;
+
   /* дескрипторы сокетов */
    fctx->enc_gate = fctx->plain_gate = undefined_gate;
 
-  /* выделяем память под буффера, выравненную по границе 8 байт. */
-   if(( fctx->oframe = ak_libakrypt_aligned_malloc( fctx->oframe_size )) == NULL ) {
-     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
-   }
-   memset( fctx->oframe, 0, ( size_t )fctx->oframe_size );
-
-   if(( fctx->inframe = ak_libakrypt_aligned_malloc( fctx->inframe_size )) == NULL ) {
-     free( fctx->oframe );
-     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
-   }
-   memset( fctx->inframe, 0, ( size_t )fctx->inframe_size );
-
-  /* подготавливаем указатели на функции */
+  /* устанавливаем функции чтения и записи по-умолчанию */
+   fctx->write = ak_fiot_context_read_ptr;
+   fctx->write = ak_fiot_context_write_ptr;
 
  return ak_error_ok;
 }
@@ -289,7 +322,7 @@
 
   /**/
 
-  /* нижеследующий фрагмент это костыль, который должен быть удален
+  /*! \todo нижеследующий фрагмент это костыль, который должен быть удален
      после корректной реализации протокола выработки ключей */
 
    fctx->ecfk = malloc( sizeof( struct bckey ));
