@@ -78,6 +78,16 @@
  ak_buffer ak_bckey_context_omac( ak_bckey , ak_pointer , size_t , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Зашифрование данных в режиме MGM с одновременной выработкой имитовставки. */
+ ak_buffer ak_bckey_context_encrypt_mgm( ak_bckey , ak_bckey , const ak_pointer , const size_t ,
+                   const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                         ak_pointer , const size_t );
+/*! \brief Расшифрование данных в режиме MGM с одновременной проверкой имитовставки. */
+ ak_bool ak_bckey_context_decrypt_mgm( ak_bckey , ak_bckey , const ak_pointer , const size_t ,
+                   const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                          ak_pointer, const size_t );
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тестирование корректной работы алгоритма блочного шифрования Магма (ГОСТ Р 34.12-2015). */
  ak_bool ak_bckey_test_magma( void );
 /*! \brief Инициализация внутренних структур данных, используемых при реализации алгоритма

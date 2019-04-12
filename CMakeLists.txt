@@ -82,6 +82,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_sign.h
                     source/ak_bckey.h
                     source/ak_omac.h
+                    source/ak_mgm.h
   )
   set( SOURCES      ${SOURCES}
                     source/ak_hash.c
@@ -96,6 +97,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_kuznechik.c
                     source/ak_magma.c
                     source/ak_omac.c
+                    source/ak_mgm.c
   )
   add_compile_options( -DLIBAKRYPT_CRYPTO_FUNCTIONS=ON )
 endif()
@@ -172,10 +174,12 @@ set( ARITHMETIC_TESTS_LIST
                  mpzn-arithmetic
                  mpzn-montgomery
                  mpzn-rem
-                # mpzn-password
 )
 
 if( LIBAKRYPT_GMP_TESTS )
+  set( ARITHMETIC_TESTS_LIST ${ARITHMETIC_TESTS_LIST}
+                 mpzn-password
+  )
   enable_testing()
   if( LIBAKRYPT_STATIC_LIB )
     foreach( programm ${ARITHMETIC_TESTS_LIST} )
@@ -231,6 +235,10 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  internal-bckey02
                  internal-bckey02-magma
                  internal-bckey03
+                 internal-mac01
+                 internal-mgm01
+                 internal-mgm02
+                 internal-mgm03
   )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
                                    # при запуске make test

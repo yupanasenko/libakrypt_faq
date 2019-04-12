@@ -17,8 +17,8 @@
  #include <ak_curves.h>
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  #include <ak_mac.h>
+ #include <ak_mgm.h>
  #include <ak_sign.h>
- #include <ak_bckey.h>
  #include <ak_context_manager.h>
 #endif
 
@@ -167,12 +167,12 @@
     return ak_false;
   }
 
-// /* тестируем дополнительные режимы работы */
-//  if( ak_bckey_test_mgm()  != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ ,
-//                                               "incorrect testing of mgm mode for block ciphers" );
-//    return ak_false;
-//  }
+ /* тестируем дополнительные режимы работы */
+  if( ak_bckey_test_mgm()  != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                               "incorrect testing of mgm mode for block ciphers" );
+    return ak_false;
+  }
 
   if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "testing block ciphers ended successfully" );

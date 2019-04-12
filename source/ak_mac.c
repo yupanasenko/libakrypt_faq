@@ -144,31 +144,31 @@
     @return В случае успеха возвращается \ref ak_error_ok (ноль). В случае возникновения ошибки
     возвращается ее код.                                                                           */
 /* ----------------------------------------------------------------------------------------------- */
-// int ak_mac_context_create_mgm( ak_mac ictx, ak_mgm mctx )
-//{
-// /* вначале, необходимые проверки */
-//  if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-//                                                            "using null pointer to mac context" );
-//  if( mctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-//                                                            "using null pointer to mgm context" );
-// /* теперь собственно инициализация */
-//  if(( ictx->data = (ak_uint8 *) malloc( ictx->bsize = mctx->bkey.bsize )) == NULL ) {
-//    ak_error_message( ak_error_out_of_memory, __func__ ,
-//                                     "wrong memory alllocation for a new temporary data buffer" );
-//  } else memset( ictx->data, 0, mctx->bkey.bsize );
-//  ictx->length = 0;
+ int ak_mac_context_create_mgm( ak_mac ictx, ak_mgm mctx )
+{
+ /* вначале, необходимые проверки */
+  if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using null pointer to mac context" );
+  if( mctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using null pointer to mgm context" );
+ /* теперь собственно инициализация */
+  if(( ictx->data = (ak_uint8 *) malloc( ictx->bsize = mctx->bkey.bsize )) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ ,
+                                     "wrong memory alllocation for a new temporary data buffer" );
+  } else memset( ictx->data, 0, mctx->bkey.bsize );
+  ictx->length = 0;
 
-// /* устанавливаем значения и полей и методы из контекста функции хеширования */
-//  ictx->engine = mgm_function;
-//  ictx->ctx = mctx;
-//  ictx->hsize = ictx->bsize; /* длина вызода совпадает с длиной входа */
-//  ictx->clean = ak_mgm_context_clean;
-//  ictx->update = ak_mgm_context_update;
-//  ictx->finalize = ak_mgm_context_finalize;
-//  ictx->free = NULL;
+ /* устанавливаем значения и полей и методы из контекста функции хеширования */
+  ictx->engine = mgm_function;
+  ictx->ctx = mctx;
+  ictx->hsize = ictx->bsize; /* длина вызода совпадает с длиной входа */
+  ictx->clean = ak_mgm_context_clean;
+  ictx->update = ak_mgm_context_update;
+  ictx->finalize = ak_mgm_context_finalize;
+  ictx->free = NULL;
 
-// return ak_error_ok;
-//}
+ return ak_error_ok;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
  static int ak_mac_context_create_oid_common( ak_mac ictx, ak_oid oid, size_t size,
@@ -202,7 +202,8 @@
     для инициализации может использоваться идентификатор
     - алгоритма бесключевого хеширования,
     - алгоритма HMAC,
-    - алгоритма выработки имитовставки ГОСТ Р 34.10-2013.
+    - алгоритма выработки имитовставки ГОСТ Р 34.10-2013,
+    - алгоритма выработки имитовставки MGM.
 
     @param ictx Указатель на структуру struct mac.
     @param oid Идентификатор криптографического алгоритма
@@ -242,12 +243,12 @@
             "incorrect initialization of mac function context with %s omac function", oid->name );
     break;
 
-//    case mgm_function: /* создаем функцию выработки имитовставки ГОСТ Р 34.13-2015. */
-//      if(( error = ak_mac_context_create_oid_common( ictx, oid, sizeof( struct mgm ),
-//                         (ak_function_mac_create*) ak_mac_context_create_mgm )) != ak_error_ok )
-//        return ak_error_message_fmt( error, __func__,
-//            "incorrect initialization of mac function context with %s omac function", oid->name );
-//    break;
+    case mgm_function: /* создаем функцию выработки имитовставки ГОСТ Р 34.13-2015. */
+      if(( error = ak_mac_context_create_oid_common( ictx, oid, sizeof( struct mgm ),
+                         (ak_function_mac_create*) ak_mac_context_create_mgm )) != ak_error_ok )
+        return ak_error_message_fmt( error, __func__,
+            "incorrect initialization of mac function context with %s omac function", oid->name );
+    break;
 
     default: return ak_error_message( ak_error_oid_engine, __func__, "using oid with wrong engine" );
   }
@@ -315,9 +316,9 @@
                                                       "using a null pointer to null mac context" );
    switch( ictx->engine )
   {
-//    case mgm_function:
-//      error = ak_mgm_context_set_iv(( ak_mgm )ictx->ctx, iv, size );
-//      break;
+    case mgm_function:
+      error = ak_mgm_context_set_iv(( ak_mgm )ictx->ctx, iv, size );
+      break;
     default: return ak_error_message( ak_error_key_usage, __func__,
                                            "using an initial vector for non-specified algorithm" );
   }
@@ -357,9 +358,9 @@
     case omac_function:
       error = ak_omac_context_set_key(( ak_omac )ictx->ctx, ptr, size, cflag );
       break;
-//    case mgm_function:
-//      error = ak_mgm_context_set_key(( ak_mgm )ictx->ctx, ptr, size, cflag );
-//      break;
+    case mgm_function:
+      error = ak_mgm_context_set_key(( ak_mgm )ictx->ctx, ptr, size, cflag );
+      break;
     default: return ak_error_message( ak_error_key_usage, __func__,
                                                            "using a key for non-key mac context" );
   }

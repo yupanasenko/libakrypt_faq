@@ -163,10 +163,10 @@
          if(( error = ak_fiot_context_write_frame( &fctx, NULL, str, strlen( str ),
                                              encrypted_frame, application_data )) != ak_error_ok ) {
            ak_error_message( error, __func__, "write error" );
-         } else printf("client: (send %lu bytes)\n", strlen( str ));
+         } else printf("client: (send %zu bytes)\n", strlen( str ));
          if(( data = ak_fiot_context_read_frame( &fctx, &length, &mtype )) != NULL ) {
            data[length-1] = 0;
-           printf("  echo: %s (recv: %lu bytes, type: %x)\n", data, length, mtype );
+           printf("  echo: %s (recv: %zu bytes, type: %x)\n", data, length, mtype );
          }
     }
 

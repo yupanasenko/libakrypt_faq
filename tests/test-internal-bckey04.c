@@ -19,12 +19,12 @@
  void print_file_icode( const char * );
 
  /* константы */
- ak_uint32 mbsize = 128;
- ak_uint32 constkey[8] = {
+ static ak_uint32 mbsize = 128;
+ static ak_uint32 constkey[8] = {
     0x12345678, 0xabcdef0, 0x11223344, 0x55667788,
     0xaabbccdd, 0xeeff0011, 0xa1a1a2a2, 0xa3a3a4a4
  };
- ak_uint8 constiv[8] = { 0, 1, 2, 3, 4, 5, 6, 7 };
+ static ak_uint8 constiv[8] = { 0, 1, 2, 3, 4, 5, 6, 7 };
 
  int main( void )
 {
@@ -138,12 +138,17 @@
 /* вывод хэш-кода для заданного файла */
  void print_file_icode( const char *file )
 {
+  clock_t time;
   struct hash ctx;
   ak_uint8 out[32], memory[96];
 
-  ak_hash_context_create_streebog256( &ctx );
-  ak_hash_context_file( &ctx, file, out );
+  time = clock();
+   ak_hash_context_create_streebog256( &ctx );
+   ak_hash_context_file( &ctx, file, out );
+  time = clock() - time;
+
   ak_ptr_to_hexstr_static( out, 32, memory, sizeof( memory ), ak_false );
-  printf(" icode: %s (%s)\n\n", memory, file );
+  printf(" icode: %s (%fs, %s)\n\n",
+    memory, (double) time / (double) CLOCKS_PER_SEC, file );
   ak_hash_context_destroy( &ctx );
 }
