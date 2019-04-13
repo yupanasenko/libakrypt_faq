@@ -16,6 +16,8 @@
  #error Library cannot be compiled without string.h header
 #endif
 
+#include <stdio.h>
+
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_mgm.h>
 
@@ -87,16 +89,34 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-#define astep64(DATA)  authenticationKey->encrypt( &authenticationKey->key, &ctx->zcount, &h ); \
-                       ak_gf64_mul( &h, &h, (DATA) ); \
-                       ctx->sum.q[0] ^= h.q[0]; \
-                       ctx->zcount.w[1]++;
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
+ #define astep64(DATA)  authenticationKey->encrypt( &authenticationKey->key, &ctx->zcount, &h ); \
+                        ak_gf64_mul( &h, &h, (DATA) ); \
+                        ctx->sum.q[0] ^= h.q[0]; \
+                        ctx->zcount.w[1]++;
 
-#define astep128(DATA) authenticationKey->encrypt( &authenticationKey->key, &ctx->zcount, &h ); \
-                       ak_gf128_mul( &h, &h, (DATA) ); \
-                       ctx->sum.q[0] ^= h.q[0]; \
-                       ctx->sum.q[1] ^= h.q[1]; \
-                       ctx->zcount.q[1]++;
+ #define astep128(DATA) authenticationKey->encrypt( &authenticationKey->key, &ctx->zcount, &h ); \
+                        ak_gf128_mul( &h, &h, (DATA) ); \
+                        ctx->sum.q[0] ^= h.q[0]; \
+                        ctx->sum.q[1] ^= h.q[1]; \
+                        ctx->zcount.q[1]++;
+
+#else
+ #define astep64(DATA)  authenticationKey->encrypt( &authenticationKey->key, &ctx->zcount, &h ); \
+                        ak_gf64_mul( &h, &h, (DATA) ); \
+                        ctx->sum.q[0] ^= h.q[0]; \
+                        ctx->zcount.w[1] = bswap_32( ctx->zcount.w[1] ); \
+                        ctx->zcount.w[1]++; \
+                        ctx->zcount.w[1] = bswap_32( ctx->zcount.w[1] );
+ #define astep128(DATA) authenticationKey->encrypt( &authenticationKey->key, &ctx->zcount, &h ); \
+                        ak_gf128_mul( &h, &h, (DATA) ); \
+                        ctx->sum.q[0] ^= h.q[0]; \
+                        ctx->sum.q[1] ^= h.q[1]; \
+                        ctx->zcount.q[1] = bswap_64( ctx->zcount.q[1] ); \
+                        ctx->zcount.q[1]++; \
+                        ctx->zcount.q[1] = bswap_64( ctx->zcount.q[1] );
+
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция обрабатывает очередной блок дополнительных данных и
@@ -143,7 +163,7 @@
  if( absize == 16 ) { /* обработка 128-битным шифром */
 
    ctx->abitlen += ( blocks  << 7 );
-   for( ; blocks > 0; blocks--, aptr += 16 ) { astep128( aptr );  }
+   for( ; blocks > 0; blocks--, aptr += 16 ) { astep128( aptr ); }
    if( tail ) {
     memset( temp, 0, 16 );
     memcpy( temp+absize-tail, aptr, (size_t)tail );
@@ -212,18 +232,27 @@
 
  /* формируем последний вектор из длин */
   if(  absize&0x10 ) {
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
     temp.q[0] = ( ak_uint64 )ctx->pbitlen;
     temp.q[1] = ( ak_uint64 )ctx->abitlen;
+#else
+    temp.q[0] = bswap_64(( ak_uint64 )ctx->pbitlen );
+    temp.q[1] = bswap_64(( ak_uint64 )ctx->abitlen );
+#endif
     astep128( temp.b );
-
   } else { /* теперь тоже самое, но для 64-битного шифра */
 
      if(( ctx->abitlen > 0xFFFFFFFF ) || ( ctx->pbitlen > 0xFFFFFFFF )) {
        ak_error_message( ak_error_overflow, __func__, "using an algorithm with very long data" );
        return NULL;
      }
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
      temp.w[0] = (ak_uint32) ctx->pbitlen;
      temp.w[1] = (ak_uint32) ctx->abitlen;
+#else
+     temp.w[0] = bswap_32((ak_uint32) ctx->pbitlen );
+     temp.w[1] = bswap_32((ak_uint32) ctx->abitlen );
+#endif
      astep64( temp.b );
   }
 
@@ -296,14 +325,30 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-#define estep64  encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &e ); \
-                 outp[0] = inp[0] ^ e.q[0]; \
-                 ctx->ycount.w[0]++;
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
+ #define estep64  encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &e ); \
+                  outp[0] = inp[0] ^ e.q[0]; \
+                  ctx->ycount.w[0]++;
 
-#define estep128 encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &e ); \
-                 outp[0] = inp[0] ^ e.q[0]; \
-                 outp[1] = inp[1] ^ e.q[1]; \
-                 ctx->ycount.q[0]++;
+ #define estep128 encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &e ); \
+                  outp[0] = inp[0] ^ e.q[0]; \
+                  outp[1] = inp[1] ^ e.q[1]; \
+                  ctx->ycount.q[0]++;
+
+#else
+ #define estep64  encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &e ); \
+                  outp[0] = inp[0] ^ e.q[0]; \
+                  ctx->ycount.w[0] = bswap_32( ctx->ycount.w[0] ); \
+                  ctx->ycount.w[0]++; \
+                  ctx->ycount.w[0] = bswap_32( ctx->ycount.w[0] );
+
+ #define estep128 encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &e ); \
+                  outp[0] = inp[0] ^ e.q[0]; \
+                  outp[1] = inp[1] ^ e.q[1]; \
+                  ctx->ycount.q[0] = bswap_64( ctx->ycount.q[0] ); \
+                  ctx->ycount.q[0]++; \
+                  ctx->ycount.q[0] = bswap_64( ctx->ycount.q[0] );
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция зашифровывает очередной фрагмент данных и
@@ -440,7 +485,6 @@
 
  return ak_error_ok;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция расшифровывает очередной фрагмент данных и
@@ -1464,8 +1508,6 @@
  return result;
 }
 
-/*! \todo Необходимо сделать цикл тестов со
-    случайными имитовставками, вычисляемыми с помощью класса struct mac. */
 /* ----------------------------------------------------------------------------------------------- */
 /*!  \example test-internal-mgm01.c                                                                */
 /*!  \example test-internal-mgm02.c                                                                */
