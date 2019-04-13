@@ -244,11 +244,13 @@
     return ak_false;
   }
 
+#ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  /* тестируем корректность реализации алгоритмов электронной подписи */
   if( ak_signkey_test() != ak_true ) {
     ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of digital signatures" );
     return ak_false;
   }
+#endif
 
   if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms ended successfully" );
