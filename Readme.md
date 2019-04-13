@@ -12,14 +12,14 @@ We have implementation of:
 
  1. GOST R 34.12-2015 block ciphers "Magma" & "Kuznechik" with 64 bit and 128 bit block sizes respectively;
  2. GOST R 34.13-2015 modes for block ciphers;
- 3. new MGM mode (Multilinear Galois mode) for authenticated encryption (AEAD);
+ 3. New MGM mode (Multilinear Galois mode) for authenticated encryption (AEAD);
  4. GOST R 34.11-2012 hash functions from Streebog family;
  5. Montgomery arithmetic for prime fileds;
- 6. group operations on elliptic curves in short Weierstrass form;
+ 6. Group operations on elliptic curves in short Weierstrass form;
  7. GOST R 34.10-2012 digital signature algorithms for elliptic curves described by R 50.1.114-2016;
  8. R 50.1.113-2016 crypto algorithms such as HMAC;
- 9. national variant of password-based key derivation function (PBKDF2) described by R 50.1.111-2016;
-10. a some set of pseudo random generators for various operation systems including
+ 9. National variant of password-based key derivation function (PBKDF2) described by R 50.1.111-2016;
+10. A some set of pseudo random generators for various operation systems including
     R 1323565.1.006-2017 mechanism.
 
 Library can be used successfully under Linux, Windows (since XP), FreeBSD and MacOs operation systems.

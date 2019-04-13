@@ -18,9 +18,14 @@ if( CMAKE_HOST_UNIX )
     file( APPEND ${MYDFILE}
      "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/examples/example-${file}.c libakrypt-${FULL_VERSION}/examples\n")
   endforeach()
+
   # создаем каталог tests и копируем файлы с тестами (неэкспортируемые функции + арифметика)
   file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/tests\n")
   foreach( file ${INTERNAL_TEST_LIST} )
+    file( APPEND ${MYDFILE}
+     "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/tests/test-${file}.c libakrypt-${FULL_VERSION}/tests\n")
+  endforeach()
+  foreach( file ${INTERNAL_TEST_LIST_EXAMPLES} )
     file( APPEND ${MYDFILE}
      "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/tests/test-${file}.c libakrypt-${FULL_VERSION}/tests\n")
   endforeach()

@@ -92,6 +92,7 @@
 /*! \brief Присвоение секретному ключу значения, выработанного из пароля */
  int ak_mgm_context_set_key_from_password( ak_mgm , const ak_pointer , const size_t ,
                                                                  const ak_pointer , const size_t );
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Очистка контекста алгоритма выработки имитовставки MGM. */
  int ak_mgm_context_clean( ak_pointer );
