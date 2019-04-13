@@ -66,7 +66,7 @@
 
   printf("out: ");
   for( i = 0; i < mctx->bkey.bsize; i++ ) printf("%02X ", out[i]);
-  printf(" [%zu octets]\n", mctx->bkey.bsize );
+  printf(" [%u octets]\n", ( unsigned int ) mctx->bkey.bsize );
 
  /* проверяем результат */
   ak_bckey_context_encrypt_mgm( NULL, &mctx->bkey,  /* ключи */
@@ -77,7 +77,7 @@
                               );
   printf("new: ");
   for( i = 0; i < mctx->bkey.bsize; i++ ) printf("%02X ", out[i]);
-  printf(" [%zu octets]\n", mctx->bkey.bsize );
+  printf(" [%u octets]\n", (unsigned int) mctx->bkey.bsize );
   printf("destroy: %d\n", ak_mgm_context_destroy( mctx ));
 
   if( memcmp( out, out1, mctx->bkey.bsize ) != 0 ) return EXIT_FAILURE;
