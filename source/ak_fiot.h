@@ -479,6 +479,9 @@
  ak_socket ak_fiot_context_get_gate_descriptor( ak_fiot , gate_t );
 /** @} */
 
+/*! \brief Выполнение протокола выработки общих ключей. */
+ int ak_fiot_context_keys_generation_protocol( ak_fiot );
+
 /*! \brief Формирование сообщения транспортного протокола и отправка его в канал связи. */
  int ak_fiot_context_write_frame( ak_fiot , ak_pointer , ak_pointer , size_t ,
                                                                         frame_type_t , message_t );
