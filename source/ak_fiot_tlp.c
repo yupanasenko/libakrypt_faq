@@ -184,6 +184,45 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция интерпретирует входящие данные, на которые указывает `data`, как единый массив октетов
+    с известной длиной. Массив разбивается на фрагменты, длина которых не превосходит максимально
+    возможной длины отправляемого фрейма. Максимально возможная длина отправляемого фрейма
+    определяется значением `fctx->oframe_size`, которое может изменяться пользователем.
+
+    После разбиения, все фрагменты, последовательно, отправляются в канал связи
+    с помощью функции ak_fiot_context_write_frame().
+    Все передаваемые данные помещаются во фреймы типа application data и зашифровываются.
+
+    \param fctx Контекст защищенного соединения протокола sp fiot.
+    Контекст должен быть предварительно создан, а ключевые значения инициализированы.
+    \param data Данные, которые помещаются во фрейм и отправляются в канал.
+    \param datalen Размер отправляемых данных в байтах.
+
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха.
+    Иначе, возвращается код ошибки.                                                                */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_fiot_context_write_application_data( ak_fiot fctx, ak_pointer data, size_t datalen )
+{
+  int error = ak_error_ok;
+  ak_uint8 *dataptr = data;
+  size_t meslen = 0, ilen = 0;
+
+  if( fctx == NULL ) ak_error_message( ak_error_null_pointer, __func__,
+                                                           "using null pointer to fiot context" );
+  ilen = ( fctx->role == client_role ) ? fctx->icfk->hsize : fctx->isfk->hsize;
+  meslen = fctx->oframe_size - fctx->header_offset - 3 - 2 - ilen;
+
+  while( datalen > 0 ) {
+    ilen = ak_min( meslen, datalen ); /* получаем длину отправляемого фрагмента */
+    if(( error = ak_fiot_context_write_frame( fctx, NULL,
+                             dataptr, ilen, encrypted_frame, application_data )) != ak_error_ok )
+      return ak_error_message( error, __func__, "write application data error" );
+    dataptr += ilen; datalen -= ilen;
+  }
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция получает данные из канала связи, рашифровывает их, проверяет целостность
     помещает полученные данные во временный буффер.
 
