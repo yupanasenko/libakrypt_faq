@@ -60,124 +60,35 @@
     { { 0, 0, 0, 0 }, undefinedKeyMechanism },
 };
 
-
-/* ----------------------------------------------------------------------------------------------- */
-/*           група функций, реализующих передачу/прием данных по каналам связи                     */
-/* ----------------------------------------------------------------------------------------------- */
- volatile sig_atomic_t __io_canceled;
-
-// static inline void io_init( void ) { __io_canceled = 0; }
-// static inline void io_cancel( void ) { __io_canceled = 1; }
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция-обертка, отправляющая в канал связи произвольный массив данных заданной длины.
-    \param fd Дескриптор файла (сокет) в который производится запись.
-    \param buffer Указатель на область памяти, которая отправляется в канал связи
-    \param length Размер области памяти в байтах.
-    \return Функция возвращает количество отправленных в канал данных.                             */
-/* ----------------------------------------------------------------------------------------------- */
- static ssize_t ak_fiot_context_write_ptr( ak_socket fd, char *buffer, ssize_t length )
-{
-    register ssize_t w, t = 0;
-
-    while ( !__io_canceled && length > 0 ) {
-      if(( w = send( fd, buffer, ( size_t )length, 0 )) < 0 ) {
-         if( errno == EINTR || errno == EAGAIN ) continue;
-         return ak_error_write_data;
-      }
-      if( !w ) return 0;
-      length -= w; buffer += w; t += w;
-    }
-  return t;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция-обертка, получающая из канала связи произвольный массив данных заданной длины.
-    \param fd Дескриптор файла (сокет) в который производится запись.
-    \param buffer Указатель на область памяти, в которую помещаются полученные данные
-    \param length Размер области памяти в байтах.
-    \return Функция возвращает количество полученных данных.                                       */
-/* ----------------------------------------------------------------------------------------------- */
- static ssize_t ak_fiot_context_read_ptr( ak_socket fd, char *buffer, ssize_t length )
-{
-    register ssize_t w, t = 0;
-
-    while( !__io_canceled && length > 0 ) {
-      if(( w = recv( fd, buffer, (size_t) length, 0 )) < 0 ) {
-        if( errno == EINTR || errno == EAGAIN ) continue;
-        return ak_error_set_value( ak_error_read_data );
-      }
-      if( !w ) return 0;
-      length -= w; buffer += w; t += w;
-    }
- return t;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция ожидает данные в течение заданного временного интревала.
-    По истечении времени, если данные не получены, возвращается ошибка.
-
-    \param fctx Контекст защищенного соединения.
-    \param gate Интерфейс, на котором ожидаются данные.
-    \param buffer Указатель на область памяти, в которую помещаются полученные данные
-    \param length Размер области памяти в байтах.
-    \return Функция возвращает количество полученных данных.                                       */
-/* ----------------------------------------------------------------------------------------------- */
- ssize_t ak_fiot_context_read_ptr_timeout( ak_fiot fctx, gate_t gate,
-                                                                 ak_pointer buffer, ssize_t length )
-{
-    int fd = -1;
-#ifdef LIBAKRYPT_HAVE_SYSSELECT_H
-    fd_set fdset;
-    struct timeval tv;
-#endif
-    if( gate == encryption_gate ) fd = fctx->enc_gate;
-      else fd = fctx->plain_gate;
-
-#ifdef LIBAKRYPT_HAVE_SYSSELECT_H
-    tv.tv_usec =0; tv.tv_sec = fctx->timeout;
-
-    FD_ZERO( &fdset );
-    FD_SET( fd, &fdset );
-    if( select( fd+1, &fdset, NULL, NULL, &tv ) <= 0 )
-      return ak_error_set_value( ak_error_read_data );
-#endif
-
- return fctx->read( fd, buffer, length );
-}
-
 /* ----------------------------------------------------------------------------------------------- */
 /*                    функции для работы с контектами протокола sp fiot                            */
 /* ----------------------------------------------------------------------------------------------- */
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \param fctx Контекст защищенного соединения протокола sp fiot. Под контекст должна быть
+/*! \brief Функция инициализирует базовые поля контекста защищенного соединения.
+    \param fctx Контекст защищенного соединения протокола sp fiot. Под контекст должна быть
     заранее выделена память.
 
-    \return Функция возвращает ноль в случае успеха. В противном случае возвращается
+    \return Функция возвращает \ref ak_error_ok в случае успеха. В противном случае возвращается
     отрицательное целое число, содержащее код ошибки.                                              */
 /* ----------------------------------------------------------------------------------------------- */
- static int fiot_context_create_common( ak_fiot fctx )
+ static int ak_fiot_context_create_common( ak_fiot fctx )
 {
+  int error = ak_error_ok;
+
    if( fctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                            "using null pointer to fiot context" );
-  /* максимальный размер буффера для хранения передаваемых/получаемых данных */
-    fctx->inframe_size = fctx->oframe_size = fiot_frame_size;
-
-  /* выделяем память под буффера, выравненную по границе 8 байт. */
-   if(( fctx->oframe = ak_libakrypt_aligned_malloc( fctx->oframe_size )) == NULL ) {
-     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
+  /* устанавливаем максимальный размер буффера для хранения передаваемых/получаемых данных */
+   if(( error = ak_buffer_create_size( &fctx->oframe, fiot_frame_size )) != ak_error_ok )
+     return ak_error_message( error, __func__, "incorrect creation of output buffer" );
+   if(( error = ak_buffer_create_size( &fctx->inframe, fiot_frame_size )) != ak_error_ok ) {
+     ak_buffer_destroy( &fctx->oframe );
+     return ak_error_message( error, __func__, "incorrect creation of input buffer" );
    }
-   memset( fctx->oframe, 0, fctx->oframe_size );
-
-   if(( fctx->inframe = ak_libakrypt_aligned_malloc( fctx->inframe_size )) == NULL ) {
-     free( fctx->oframe );
-     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
-   }
-   memset( fctx->inframe, 0, fctx->inframe_size );
 
   /* смещение зашифровываемых данных от начала фрейма (для базового заголовка). */
     fctx->header_offset = fiot_frame_header_offset;
+    ak_buffer_create( &fctx->header_data );
 
   /* роль участника взаимодействия изначально не определена */
     fctx->role = undefined_role;
@@ -195,56 +106,61 @@
   /* значения счетчиков */
    fctx->lcounter = fctx->mcounter = fctx->ncounter = 0;
 
+  /* дескрипторы сокетов */
+   fctx->iface_enc = fctx->iface_plain = undefined_interface;
+
+  /* устанавливаем функции чтения и записи по-умолчанию */
+   fctx->write = write;
+   fctx->read = read;
+
   /* устанавливаем таймаут ожидания входящих пакетов (в секундах) */
    fctx->timeout = 3;
 
-  /* дескрипторы сокетов */
-   fctx->enc_gate = fctx->plain_gate = undefined_gate;
-
-  /* устанавливаем функции чтения и записи по-умолчанию */
-   fctx->write = ak_fiot_context_read_ptr;
-   fctx->write = ak_fiot_context_write_ptr;
-
+  /* остальные поля: идентификаторы и ключи устанавливаются в ходе выполнения протокола */
  return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \param fctx Контекст защищенного соединения протокола sp fiot.
+/*! \brief Функция уничтожает базовые поля контекста защищенного соединения, в частности,
+    закрываются открытые дескрипторы интерфейсов и освобождается память, выделенная под буффера.
+    \param fctx Контекст защищенного соединения протокола sp fiot.
 
-    \return Функция возвращает ноль в случае успеха. В противном случае возвращается
+    \return Функция возвращает \ref ak_error_ok в случае успеха. В противном случае возвращается
     отрицательное целое число, содержащее код ошибки.                                              */
 /* ----------------------------------------------------------------------------------------------- */
- static int fiot_context_destroy_common( ak_fiot fctx )
+ static int ak_fiot_context_destroy_common( ak_fiot fctx )
 {
    if( fctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                            "using null pointer to fiot context" );
   /* закрываем связанные сокеты */
-   if( fctx->enc_gate != -1 ) {
+   if( fctx->iface_enc != undefined_interface ) {
 #ifdef LIBAKRYPT_HAVE_SYSSOCKET_H
-     shutdown( fctx->enc_gate, SHUT_RDWR );
+     shutdown( fctx->iface_enc, SHUT_RDWR );
 #else
   #ifdef LIBAKRYPT_HAVE_WINDOWS_H
-     shutdown( fctx->enc_gate, SD_BOTH );
+     shutdown( fctx->iface_enc, SD_BOTH );
   #endif
 #endif
-     close( fctx->enc_gate );
-     fctx->enc_gate = -1;
+     close( fctx->iface_enc );
+     fctx->iface_enc = undefined_interface;
    }
-   if( fctx->plain_gate != -1 ) {
+   if( fctx->iface_plain != undefined_interface ) {
 #ifdef LIBAKRYPT_HAVE_SYSSOCKET_H
-     shutdown( fctx->plain_gate, SHUT_RDWR );
+     shutdown( fctx->iface_plain, SHUT_RDWR );
 #else
   #ifdef LIBAKRYPT_HAVE_WINDOWS_H
-     shutdown( fctx->plain_gate, SD_BOTH );
+     shutdown( fctx->iface_plain, SD_BOTH );
   #endif
 #endif
 
-     close( fctx->plain_gate );
-     fctx->plain_gate = -1;
+     close( fctx->iface_plain );
+     fctx->iface_plain = undefined_interface;
    }
 
-  if( fctx->inframe != NULL ) free( fctx->inframe );
-  if( fctx->oframe != NULL ) free( fctx->oframe );
+ /* очищаем память буфферов */
+  ak_buffer_destroy( &fctx->oframe );
+  ak_buffer_destroy( &fctx->inframe );
+  ak_buffer_destroy( &fctx->header_data );
 
  return ak_error_ok;
 }
@@ -266,7 +182,7 @@
 
   /* инициализируем заголовок струкуры */
    memset( fctx, 0, sizeof( struct fiot ));
-   if(( error = fiot_context_create_common( fctx )) != ak_error_ok )
+   if(( error = ak_fiot_context_create_common( fctx )) != ak_error_ok )
      return ak_error_message( error, __func__, "common part of fiot context incorrect creation");
 
   /* инициализируем буфферы для хранения идентификаторов участников взаимодействия */
@@ -395,7 +311,7 @@
 
 
  /* освобождаем базовую часть */
-  if(( error = fiot_context_destroy_common( fctx )) != ak_error_ok )
+  if(( error = ak_fiot_context_destroy_common( fctx )) != ak_error_ok )
     ak_error_message( error, __func__ , "incorrect common part destroying of fiot context" );
 
  /* обнуляем значения и освобождаем память */
@@ -419,7 +335,6 @@
  return NULL;
 }
 
-
 /* ----------------------------------------------------------------------------------------------- */
 /*! \details Функция возвращает значение, которым ограничена длина данных, передаваемых или
     принимаемых из канала связи. Эта величина определяет максимальный размер памяти,
@@ -439,8 +354,8 @@
     return 0;
   }
   switch( fb ) {
-    case inframe: return fctx->inframe_size;
-    case oframe: return fctx->oframe_size;
+    case inframe: return fctx->inframe.size;
+    case oframe: return fctx->oframe.size;
   }
   ak_error_message( fiot_error_frame_buffer_type, __func__ , "incorrect frame buffer type" );
   return 0;
@@ -465,44 +380,26 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_fiot_context_set_frame_size( ak_fiot fctx, frame_buffer_t fb, size_t framesize )
 {
-  char *ptr = NULL;
+  int error = ak_error_ok;
   size_t newsize = framesize;
 
    if( fctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                           "using null pointer to fiot context" );
+                                                              "using null pointer to fiot context" );
    if( newsize < fiot_min_frame_size ) newsize = fiot_min_frame_size;
    if( newsize > fiot_max_frame_size ) newsize = fiot_max_frame_size;
 
    switch( fb ) {
      case inframe:
-        if( newsize == fctx->inframe_size ) return ak_error_ok;
-        if( fctx->inframe == NULL ) ak_error_message( ak_error_null_pointer, __func__,
-                                        "using null pointer to inframe buffer in fiot context" );
-       /* выделяем новую память */
-        if(( ptr = ak_libakrypt_aligned_malloc( newsize )) == NULL )
-          return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
-        memset( ptr, 0, newsize );
-       /* копируем хранящиеся в буффере данные и удаляем старую память */
-        memcpy( ptr, fctx->inframe, ak_min( fctx->inframe_size, newsize ));
-        free( fctx->inframe );
-        fctx->inframe = ptr;
-        fctx->inframe_size = newsize;
-        return ak_error_ok;
+        if( newsize <= fctx->inframe.size ) return ak_error_ok;
+        if(( error = ak_buffer_alloc( &fctx->inframe, newsize )) != ak_error_ok )
+          return ak_error_message( error, __func__, "incorrect increasing memory for input buffer" );
+        else return ak_error_ok;
 
      case oframe:
-        if( newsize == fctx->oframe_size ) return ak_error_ok;
-        if( fctx->oframe == NULL ) ak_error_message( ak_error_null_pointer, __func__,
-                                         "using null pointer to oframe buffer in fiot context" );
-       /* выделяем новую память */
-        if(( ptr = ak_libakrypt_aligned_malloc( newsize )) == NULL )
-          return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
-        memset( ptr, 0, newsize );
-       /* копируем хранящиеся в буффере данные и удаляем старую память */
-        memcpy( ptr, fctx->oframe, ak_min( fctx->oframe_size, newsize ));
-        free( fctx->oframe );
-        fctx->oframe = ptr;
-        fctx->oframe_size = newsize;
-        return ak_error_ok;
+        if( newsize <= fctx->oframe.size ) return ak_error_ok;
+        if(( error = ak_buffer_alloc( &fctx->oframe, newsize )) != ak_error_ok )
+          return ak_error_message( error, __func__, "incorrect increasing memory for output buffer" );
+        else return ak_error_ok;
    }
 
  return ak_error_message( fiot_error_frame_buffer_type, __func__ , "incorrect frame buffer type" );
@@ -602,7 +499,8 @@
     \return  Возвращается количество записанных октетов. В случае возникновения ошибки возвращается
     отрицательное число - код ошибки                                                               */
 /* ----------------------------------------------------------------------------------------------- */
- ssize_t ak_fiot_context_get_user_identifier( ak_fiot fctx, role_t role, void *out, const size_t maxlen )
+ ssize_t ak_fiot_context_get_user_identifier( ak_fiot fctx, role_t role,
+                                                                    void *out, const size_t maxlen )
 {
   size_t len = 0;
   if( fctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -611,7 +509,6 @@
                                                           "using null pointer to output memory" );
   if( maxlen < 1 ) return ak_error_message( ak_error_wrong_length, __func__,
                                                          "using incorrect value of memory size" );
-
   switch( role ) {
     case client_role:
        memcpy( out, fctx->client_id.data, len = ak_min( maxlen, fctx->client_id.size ));
@@ -688,17 +585,17 @@
     \return В случае успеха функция возвращает \ref ak_error_ok.
     В случае возникновения ошибки возвращается ее код                                              */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_fiot_context_set_gate_descriptor( ak_fiot fctx, gate_t gate, ak_socket descriptor )
+ int ak_fiot_context_set_interface_descriptor( ak_fiot fctx, interface_t gate, ak_socket descriptor )
 {
   if( fctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                         "using a null pointer to fiot context" );
   switch( gate ) {
-    case encryption_gate: fctx->enc_gate = descriptor; return ak_error_ok;
-    case plain_gate: fctx->plain_gate = descriptor; return ak_error_ok;
-  default:  return ak_error_message( fiot_error_wrong_gate, __func__,
+    case encryption_interface: fctx->iface_enc = descriptor; return ak_error_ok;
+    case plain_interface: fctx->iface_plain = descriptor; return ak_error_ok;
+  default:  return ak_error_message( fiot_error_wrong_interface, __func__,
                                                             "using a wrong value of gate type" );
   }
- return fiot_error_wrong_gate;
+ return fiot_error_wrong_interface;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -707,25 +604,17 @@
     \return Функция возвращает значение установленного дескриптора.
     В случае возникновения ошибки возвращается ее код                                              */
 /* ----------------------------------------------------------------------------------------------- */
- ak_socket ak_fiot_context_get_gate_descriptor( ak_fiot fctx , gate_t gate )
+ ak_socket ak_fiot_context_get_gate_descriptor( ak_fiot fctx , interface_t gate )
 {
   if( fctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                         "using a null pointer to fiot context" );
   switch( gate ) {
-    case encryption_gate: return fctx->enc_gate;
-    case plain_gate: return fctx->plain_gate;
-  default:  return ak_error_message( fiot_error_wrong_gate, __func__,
+    case encryption_interface: return fctx->iface_enc;
+    case plain_interface: return fctx->iface_plain;
+  default:  return ak_error_message( fiot_error_wrong_interface, __func__,
                                                             "using a wrong value of gate type" );
   }
- return fiot_error_wrong_gate;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/* заглушка */
- int ak_fiot_context_keys_generation_protocol( ak_fiot fctx )
-{
-  (void) fctx;
- return ak_error_ok;
+ return fiot_error_wrong_interface;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -1,9 +1,9 @@
 /* Пример, иллюстрирующий процесс создания контекста защищенного соединения,
-   а также его внутреннюю структуру.
+   а также доступ к полям его внутренней структуры.
    Внимание! Используются неэкспортируемые функции библиотеки и прямой доступ к полям
    контекста защищенного взаимодействия.
 
-   test-internal-fiot-context01.c
+   test-internal-fiot-context.c
 */
  #include <stdio.h>
  #include <string.h>
@@ -87,6 +87,10 @@
   printf(" maxFrameCount %u\n", actx.restriction.maxFrameCount );
   printf(" maxFrameKeysCount %u\n", actx.restriction.maxFrameKeysCount );
   printf(" maxApplicationSecretCount %u\n", actx.restriction.maxApplicationSecretCount );
+
+ /* напоследок, тестируем функцию записи фреймов в какой-ниудь сокет */
+  actx.iface_enc = 2; /* отправляем все в стандартный вывод */
+  ak_fiot_context_write_frame( &actx, "hello fiot", 10, encrypted_frame, application_data );
 
   ak_fiot_context_destroy( &actx );
   lab_exit: ak_libakrypt_destroy();

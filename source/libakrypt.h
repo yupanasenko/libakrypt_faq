@@ -168,6 +168,8 @@ extern "C" {
  #define ak_error_wrong_endian                (-21)
 /*! \brief Ошибка чтения из терминала. */
  #define ak_error_terminal                    (-22)
+/*! \brief Использование неопределенного буффера. */
+ #define ak_error_wrong_buffer                (-23)
 
 /*! \brief Неверное значение дескриптора объекта. */
  #define ak_error_wrong_handle                (-30)

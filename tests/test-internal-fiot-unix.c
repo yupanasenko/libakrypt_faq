@@ -1,5 +1,5 @@
 /* Пример, в котором на примере эхо-серера
-   иллюстрируется защищенный обмен между потомком и родителем.
+   иллюстрируется защищенный обмен между двумя процессами в системе: потомком и родителем.
    Взаимодействие происходит с использованием сокетов домена unix.
 
    test-internal-fiot-unix.c
@@ -88,21 +88,19 @@
                                                     "serverID", 8 )) != ak_error_ok ) goto full_exit;
 
        /* устанавливаем сокет для внешнего (шифрующего) интерфейса */
-        if(( error = ak_fiot_context_set_gate_descriptor( &fctx,
-                                              encryption_gate, s2 )) != ak_error_ok ) goto full_exit;
+        if(( error = ak_fiot_context_set_interface_descriptor( &fctx,
+                                         encryption_interface, s2 )) != ak_error_ok ) goto full_exit;
 
        /* выполняем процесс получения и возврата последовательностей символов */
         done = 0;
         do {
             size_t length;
             message_t mtype = undefined_message;
-            char *data = ak_fiot_context_read_frame( &fctx, &length, &mtype );
-            if( data == NULL ) {
-              printf("server: timeout"); continue;
-            }
-            if( strncmp( data, "quit", 4 ) == 0 ) done = 1;
+            ak_uint8 *data = ak_fiot_context_read_frame( &fctx, &length, &mtype );
+            if( data == NULL ) continue;
+            if( strncmp( (char *)data, "quit", 4 ) == 0 ) done = 1;
             if( !done )
-              if(( error = ak_fiot_context_write_frame( &fctx, NULL,
+              if(( error = ak_fiot_context_write_frame( &fctx,
                                              data, length, encrypted_frame, mtype )) != ak_error_ok )
                 ak_error_message( error, __func__, "write error");
         } while (!done);
@@ -150,17 +148,17 @@
         if(( error = ak_fiot_context_set_role( &fctx, client_role )) != ak_error_ok ) goto full_exit;
 
        /* устанавливаем сокет для внешнего (шифрующего) интерфейса */
-        if(( error = ak_fiot_context_set_gate_descriptor( &fctx,
-                                              encryption_gate, s )) != ak_error_ok ) goto full_exit;
+        if(( error = ak_fiot_context_set_interface_descriptor( &fctx,
+                                          encryption_interface, s )) != ak_error_ok ) goto full_exit;
         while(1) {
 
          size_t length;
          message_t mtype = undefined_message;
-         char *data = NULL;
+         ak_uint8 *data = NULL;
 
          memset( str, 0, sizeof( str ));
          printf("client> "); fgets( str, 31, stdin );
-         if(( error = ak_fiot_context_write_frame( &fctx, NULL, str, strlen( str ),
+         if(( error = ak_fiot_context_write_frame( &fctx, str, strlen( str ),
                                              encrypted_frame, application_data )) != ak_error_ok ) {
            ak_error_message( error, __func__, "write error" );
          } else printf("client: (send %zu bytes)\n", strlen( str ));

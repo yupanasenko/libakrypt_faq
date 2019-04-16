@@ -68,6 +68,7 @@ if( LIBAKRYPT_FIOT )
   set( SOURCES      ${SOURCES}
                     source/ak_fiot.c
                     source/ak_fiot_tlp.c
+                    source/ak_fiot_kgp.c
   )
   add_compile_options( -DLIBAKRYPT_FIOT=ON )
 endif()
