@@ -250,12 +250,9 @@ endif()
 if( LIBAKRYPT_FIOT )
   set( INTERNAL_FIOT_TEST_LIST
                  internal-fiot-context
+                 internal-fiot-echo-client
+                 internal-fiot-echo-server
   )
-  if( UNIX )
-    set( INTERNAL_FIOT_TEST_LIST ${INTERNAL_FIOT_TEST_LIST}
-                 internal-fiot-unix
-    )
-  endif()
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -277,7 +274,7 @@ if( LIBAKRYPT_INTERNAL_TESTS )
   endif()
   message("-- Added tests for internal functions (now \"make test\" enabled)")
 
-  # добавляем примеры для тестирования протокольной части
+  # добавляем примеры для тестирования протокольной части (командой make test не затрагиваются)
   if( LIBAKRYPT_STATIC_LIB )
     foreach( programm ${INTERNAL_FIOT_TEST_LIST} )
        add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
