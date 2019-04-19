@@ -893,11 +893,9 @@
     ak_error_set_value( ak_error_ok );
     ak_mgm_context_authentication_finalize( &mgm, authenticationKey, icode2, icode_size );
     if(( error = ak_error_get_value()) != ak_error_ok )
-      ak_error_message( error, __func__, "incorrect finanlize of integrity code" );
+      ak_error_message( error, __func__, "incorrect finalize of integrity code" );
      else {
-      if( !ak_ptr_is_equal( icode, icode2, icode_size ))
-        ak_error_message( ak_error_not_equal_data, __func__, "wrong value of integrity code" );
-       else result = ak_true;
+        if( ak_ptr_is_equal( icode, icode2, icode_size )) result = ak_true;
      }
     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator, ak_true );
 

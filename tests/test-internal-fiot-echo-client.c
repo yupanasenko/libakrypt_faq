@@ -19,6 +19,27 @@
  #include <sys/socket.h>
 #endif
  #include <arpa/inet.h>
+/*
+ *  the function
+
+int inet_pton(int af, const char *src, void *dst);
+
+is declared in header file:
+
+#include <arpa/inet.h>
+
+if this is Windows (Vista or later) there is Winsock analog to this ANSI version:
+
+INT WSAAPI InetPton(
+  _In_   INT  Family,
+  _In_   PCTSTR pszAddrString,
+  _Out_  PVOID pAddrBuf
+);
+
+try #include <Ws2tcpip.h> add Ws2_32.lib
+
+--4pie0*/
+
 
  #include <ak_fiot.h>
 
