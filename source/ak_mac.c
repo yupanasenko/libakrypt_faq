@@ -582,7 +582,7 @@
     return NULL;
   }
  /* теперь обрабатываем файл с данными */
-  read_label: len = fread( localbuffer, 1, block_size, file.fp );
+  read_label: len = ( size_t ) ak_file_read( &file, localbuffer, block_size );
   if( len == block_size ) {
     ak_mac_context_update( ictx, localbuffer, block_size ); /* добавляем считанные данные */
     goto read_label;

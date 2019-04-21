@@ -42,7 +42,7 @@
   ak_file_create_to_write( &fp, "data.dat" );
   for( idx = 0; idx < mbsize*1024; idx++ ) { // mbsize MB
      memset( memory, (ak_uint8)idx, 1024 );
-     fwrite( memory, 1024, 1, fp.fp );
+     ak_file_write( &fp, memory, 1024 );
   }
   ak_file_close( &fp );
 
@@ -106,21 +106,21 @@
     printf(" file %s is open (size: %lu bytes)\n", from, (unsigned long int)in.size ); else return;
   if( ak_file_create_to_write( &out, to ) == ak_error_ok ) printf(" file %s is created\n", to ); else return;
 
-  bsize = in.blksize;
+  bsize = ( size_t )in.blksize;
   printf(" one block size: %lu\n", (unsigned long int)(bsize));
   buffer = malloc( bsize );
 
  /* теперь собственно зашифрование */
   time = clock();
-  len = fread( buffer, 1, bsize, in.fp );
+  len = ( size_t ) ak_file_read( &in, buffer, bsize );
   if( len > 0 ) {
     ak_bckey_context_xcrypt( key, buffer, buffer, len, constiv, key->bsize/2 );
-    fwrite( buffer, len, 1, out.fp );
+    ak_file_write( &out, buffer, len );
   }
   do{
-     if(( len = fread( buffer, 1, bsize, in.fp )) > 0 ) {
+     if(( len = ( size_t ) ak_file_read( &in, buffer, bsize )) > 0 ) {
        ak_bckey_context_xcrypt( key, buffer, buffer, len, NULL, 0 );
-       fwrite( buffer, len, 1, out.fp );
+       ak_file_write( &out, buffer, len );
      }
   } while( len );
   time = clock() - time;

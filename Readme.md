@@ -12,7 +12,7 @@ We have implementation of:
 
  1. GOST R 34.12-2015 block ciphers "Magma" & "Kuznechik" with 64 bit and 128 bit block sizes respectively;
  2. GOST R 34.13-2015 modes for block ciphers;
- 3. New MGM mode (Multilinear Galois mode) for authenticated encryption (AEAD);
+ 3. New russian AEAD mode (MGM, Multilinear Galois mode) for authenticated encryption;
  4. GOST R 34.11-2012 hash functions from Streebog family;
  5. Montgomery arithmetic for prime fileds;
  6. Group operations on elliptic curves in short Weierstrass form;
@@ -58,12 +58,11 @@ After this you can run a Microsoft Visual 20XX Console and execute a following s
     cmake.exe -G "NMake Makefiles" ../libakrypt-0.x
     nmake.exe
 
-The full list of compile & build options you can find
-in documentation, see `doc` directory or libakrypt-doc-0.x.pdf (in russian).
 
 ## Information
 
-Full documentation can be found in doc directory (in Russian).
+The full list of compile & build options and full documentation you can find
+in `doc` directory or libakrypt-doc-0.x.pdf (in russian).
 
 ## Attention
 

@@ -110,8 +110,12 @@
    fctx->iface_enc = fctx->iface_plain = undefined_interface;
 
   /* устанавливаем функции чтения и записи по-умолчанию */
+#ifdef LIBAKRYPT_HAVE_WINDOWS_H
+    /* здесь должны быть установлены функции-обертки для стандартных вызовов в Windows */
+#else
    fctx->write = write;
    fctx->read = read;
+#endif
 
   /* устанавливаем таймаут ожидания входящих пакетов (в секундах) */
    fctx->timeout = 3;

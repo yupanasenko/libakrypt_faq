@@ -239,6 +239,7 @@
  return ak_error_ok;
 }
 
+#ifndef LIBAKRYPT_CONST_CRYPTO_PARAMS
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция создает имя файла в котором содержатся настройки библиотеки.
 
@@ -330,7 +331,7 @@
  /* нарезаем входные на строки длиной не более чем 1022 символа */
   memset( localbuffer, 0, 1024 );
   for( idx = 0; idx < (size_t) fd->size; idx++ ) {
-     if( fread( &ch, 1, 1, fd->fp ) != 1 ) {
+     if( ak_file_read( fd, &ch, 1 ) != 1 ) {
        ak_file_close(fd);
        return ak_error_message( ak_error_read_data, __func__ ,
                                                          "unexpected end of libakrypt.conf file" );
@@ -471,7 +472,7 @@
   for( i = 0; i < ak_libakrypt_options_count(); i++ ) {
     memset( hpath, 0, ak_min( 1024, FILENAME_MAX ));
     ak_snprintf( hpath, FILENAME_MAX - 1, "%s = %d\n", options[i].name, options[i].value );
-    if( fwrite( hpath, 1, strlen( hpath ), fd.fp ) < 1 ) {
+    if( ak_file_write( &fd, hpath, strlen( hpath )) < 1 ) {
       ak_error_message_fmt( error = ak_error_write_data, __func__,
                       "option %s stored with error: %s", options[i].name, strerror( errno ));
     }
@@ -543,6 +544,7 @@
 
  return ak_true;
 }
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
  void ak_libakrypt_log_options( void )
@@ -578,57 +580,132 @@
     }
   }
 
- /* открываем файл */
-  if(( file->fp = fopen( filename, "rb" )) == NULL )
-    return ak_error_message_fmt( ak_error_open_file, __func__ ,
-                                     "wrong opening a file %s [%s]", filename, strerror( errno ));
  /* заполняем данные */
   file->size = ( ak_int64 )st.st_size;
  #ifdef _WIN32
   file->blksize = 4096;
  #else
+  if(( file->fd = open( filename, O_SYNC|O_RDONLY )) < 0 )
+    return ak_error_message_fmt( ak_error_open_file, __func__ ,
+                                     "wrong opening a file %s [%s]", filename, strerror( errno ));
   file->blksize = ( ak_int64 )st.st_blksize;
  #endif
+
  return ak_error_ok;
 }
+
+//#ifdef _WIN32
+//  struct _stat st;
+//  if( _stat( filename, &st ) < 0 ) {
+//#else
+//  struct stat st;
+//  if( stat( filename, &st ) < 0 ) {
+//#endif
+//    switch( errno ) {
+//      case EACCES: return ak_error_message_fmt( ak_error_access_file, __func__,
+//                                 "incorrect access to file %s [%s]", filename, strerror( errno ));
+//      default: return ak_error_message_fmt( ak_error_open_file, __func__ ,
+//                                     "wrong opening a file %s [%s]", filename, strerror( errno ));
+//    }
+//  }
+
+// /* открываем файл */
+//  if(( file->fp = fopen( filename, "rb" )) == NULL )
+//    return ak_error_message_fmt( ak_error_open_file, __func__ ,
+//                                     "wrong opening a file %s [%s]", filename, strerror( errno ));
+// /* заполняем данные */
+//  file->size = ( ak_int64 )st.st_size;
+// #ifdef _WIN32
+//  file->blksize = 4096;
+// #else
+//  file->blksize = ( ak_int64 )st.st_blksize;
+// #endif
+
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_file_create_to_write( ak_file file, const char *filename )
 {
  #ifdef _WIN32
-  if(( file->fp = fopen( filename, "wb" )) == NULL )
-    return ak_error_message_fmt( ak_error_create_file, __func__,
-                                   "wrong creation a file %s [%s]", filename, strerror( errno ));
+
  #else
-  int fd = creat( filename, S_IRUSR | S_IWUSR ); /* мы устанавливаем минимальные права */
-  if( fd < 0 ) return ak_error_message_fmt( ak_error_create_file, __func__,
-                                   "wrong creation a file %s [%s]", filename, strerror( errno ));
-  if(( file->fp = fdopen( fd, "wb" )) == NULL )
-    return ak_error_message_fmt( ak_error_create_file, __func__,
-                        "wrong creation a file %s via fdopen [%s]", filename, strerror( errno ));
-#endif
+  struct stat st;
+ #endif
+ /* необходимые проверки */
+  if(( file == NULL ) || ( filename == NULL ))
+    return ak_error_message( ak_error_null_pointer, __func__, "using null pointer" );
 
   file->size = 0;
-#ifdef _WIN32
-  file->blksize = 4096;
-#else
-  struct stat st;
-  if( fstat( fd, &st )) {
-    close( fd );
+ #ifdef _WIN32
+
+ #else  /* мы устанавливаем минимальные права: чтение и запись только для владельца */
+  if(( file->fd = creat( filename, S_IRUSR | S_IWUSR )) < 0 )
+    return ak_error_message_fmt( ak_error_create_file, __func__,
+                                   "wrong creation a file %s [%s]", filename, strerror( errno ));
+  if( fstat( file->fd, &st )) {
+    close( file->fd );
     return ak_error_message_fmt( ak_error_access_file,  __func__,
                                 "incorrect access to file %s [%s]", filename, strerror( errno ));
   } else file->blksize = ( ak_int64 )st.st_blksize;
-#endif
+ #endif
+
+ return ak_error_ok;
+}
+
+// #ifdef _WIN32
+//  if(( file->fp = fopen( filename, "wb" )) == NULL )
+//    return ak_error_message_fmt( ak_error_create_file, __func__,
+//                                   "wrong creation a file %s [%s]", filename, strerror( errno ));
+
+// #else
+
+//  int fd = creat( filename, S_IRUSR | S_IWUSR ); /* мы устанавливаем минимальные права */
+//  if( fd < 0 ) return ak_error_message_fmt( ak_error_create_file, __func__,
+//                                   "wrong creation a file %s [%s]", filename, strerror( errno ));
+//  if(( file->fp = fdopen( fd, "wb" )) == NULL )
+//    return ak_error_message_fmt( ak_error_create_file, __func__,
+//                        "wrong creation a file %s via fdopen [%s]", filename, strerror( errno ));
+//#endif
+
+//  file->size = 0;
+//#ifdef _WIN32
+//  file->blksize = 4096;
+//#else
+//  struct stat st;
+//  if( fstat( fd, &st )) {
+//    close( fd );
+//    return ak_error_message_fmt( ak_error_access_file,  __func__,
+//                                "incorrect access to file %s [%s]", filename, strerror( errno ));
+//  } else file->blksize = ( ak_int64 )st.st_blksize;
+//#endif
+
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_file_close( ak_file file )
+{
+  file->size = 0;
+  file->blksize = 0;
+  if( close( file->fd ) != 0 ) return ak_error_message_fmt( ak_error_close_file, __func__ ,
+                                                 "wrong closing a file [%s]", strerror( errno ));
 
  return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_file_close( ak_file file )
+ ssize_t ak_file_read( ak_file file, ak_pointer buffer, size_t size )
 {
-  if( fclose( file->fp ) != 0 ) return ak_error_message_fmt( ak_error_close_file, __func__ ,
-                                                 "wrong closing a file [%s]", strerror( errno ));
- return ak_error_ok;
+ #ifdef _WIN32
+ #else
+  return read( file->fd, buffer, size );
+ #endif
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ssize_t ak_file_write( ak_file file, ak_const_pointer buffer, size_t size )
+{
+ #ifdef _WIN32
+ #else
+  return write( file->fd, buffer, size );
+ #endif
 }
 
 /* ----------------------------------------------------------------------------------------------- */
