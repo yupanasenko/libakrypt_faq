@@ -582,7 +582,17 @@
 
  /* заполняем данные */
   file->size = ( ak_int64 )st.st_size;
- #ifdef _WIN32
+ #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+  if(( file->hFile = CreateFile( filename,   /* name of the write */
+                     GENERIC_READ,           /* open for reading */
+                     0,                      /* do not share */
+                     NULL,                   /* default security */
+                     OPEN_EXISTING,          /* open only existing file */
+                     FILE_ATTRIBUTE_NORMAL,  /* normal file */
+                     NULL )                  /* no attr. template */
+      ) == INVALID_HANDLE_VALUE )
+       return ak_error_message_fmt( ak_error_open_file, __func__,
+                                     "wrong opening a file %s [%s]", filename, strerror( errno ));
   file->blksize = 4096;
  #else
   if(( file->fd = open( filename, O_SYNC|O_RDONLY )) < 0 )
@@ -625,17 +635,27 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_file_create_to_write( ak_file file, const char *filename )
 {
- #ifdef _WIN32
-
- #else
+ #ifndef LIBAKRYPT_HAVE_WINDOWS_H
   struct stat st;
  #endif
+
  /* необходимые проверки */
   if(( file == NULL ) || ( filename == NULL ))
     return ak_error_message( ak_error_null_pointer, __func__, "using null pointer" );
 
   file->size = 0;
- #ifdef _WIN32
+ #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+  if(( file->hFile = CreateFile( filename,   /* name of the write */
+                     GENERIC_WRITE,          /* open for writing */
+                     0,                      /* do not share */
+                     NULL,                   /* default security */
+                     CREATE_ALWAYS,          /* create new file only */
+                     FILE_ATTRIBUTE_NORMAL,  /* normal file */
+                     NULL )                  /* no attr. template */
+     ) == INVALID_HANDLE_VALUE )
+      return ak_error_message_fmt( ak_error_create_file, __func__,
+                                    "wrong creation a file %s [%s]", filename, strerror( errno ));
+   file->blksize = 4096;
 
  #else  /* мы устанавливаем минимальные права: чтение и запись только для владельца */
   if(( file->fd = creat( filename, S_IRUSR | S_IWUSR )) < 0 )
@@ -651,49 +671,30 @@
  return ak_error_ok;
 }
 
-// #ifdef _WIN32
-//  if(( file->fp = fopen( filename, "wb" )) == NULL )
-//    return ak_error_message_fmt( ak_error_create_file, __func__,
-//                                   "wrong creation a file %s [%s]", filename, strerror( errno ));
-
-// #else
-
-//  int fd = creat( filename, S_IRUSR | S_IWUSR ); /* мы устанавливаем минимальные права */
-//  if( fd < 0 ) return ak_error_message_fmt( ak_error_create_file, __func__,
-//                                   "wrong creation a file %s [%s]", filename, strerror( errno ));
-//  if(( file->fp = fdopen( fd, "wb" )) == NULL )
-//    return ak_error_message_fmt( ak_error_create_file, __func__,
-//                        "wrong creation a file %s via fdopen [%s]", filename, strerror( errno ));
-//#endif
-
-//  file->size = 0;
-//#ifdef _WIN32
-//  file->blksize = 4096;
-//#else
-//  struct stat st;
-//  if( fstat( fd, &st )) {
-//    close( fd );
-//    return ak_error_message_fmt( ak_error_access_file,  __func__,
-//                                "incorrect access to file %s [%s]", filename, strerror( errno ));
-//  } else file->blksize = ( ak_int64 )st.st_blksize;
-//#endif
-
-
 /* ----------------------------------------------------------------------------------------------- */
  int ak_file_close( ak_file file )
 {
-  file->size = 0;
-  file->blksize = 0;
-  if( close( file->fd ) != 0 ) return ak_error_message_fmt( ak_error_close_file, __func__ ,
+   file->size = 0;
+   file->blksize = 0;
+  #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+   CloseHandle( file->hFile);
+  #else
+   if( close( file->fd ) != 0 ) return ak_error_message_fmt( ak_error_close_file, __func__ ,
                                                  "wrong closing a file [%s]", strerror( errno ));
-
+  #endif
  return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
  ssize_t ak_file_read( ak_file file, ak_pointer buffer, size_t size )
 {
- #ifdef _WIN32
+ #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+  DWORD dwBytesReaden = 0;
+  BOOL bErrorFlag = ReadFile( file->hFile, buffer, size,  &dwBytesReaden, NULL );
+  if( bErrorFlag == FALSE ) {
+    ak_error_message( ak_error_read_data, __func__, "unable to read from file");
+    return 0;
+  } else return ( ssize_t ) dwBytesReaden;
  #else
   return read( file->fd, buffer, size );
  #endif
@@ -702,7 +703,13 @@
 /* ----------------------------------------------------------------------------------------------- */
  ssize_t ak_file_write( ak_file file, ak_const_pointer buffer, size_t size )
 {
- #ifdef _WIN32
+ #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+  DWORD dwBytesWritten = 0;
+  BOOL bErrorFlag = WriteFile( file->hFile, buffer, size,  &dwBytesWritten, NULL );
+  if( bErrorFlag == FALSE ) {
+    ak_error_message( ak_error_write_data, __func__, "unable to write to file");
+    return 0;
+  } else return ( ssize_t ) dwBytesWritten;
  #else
   return write( file->fd, buffer, size );
  #endif
@@ -979,7 +986,7 @@
     пользователем с помощью вызова функции free(). В случае ошибки конвертации возвращается NULL.
     Код ошибки может быть получен с помощью вызова функции ak_error_get_code()                     */
 /* ----------------------------------------------------------------------------------------------- */
- char *ak_ptr_to_hexstr( ak_pointer ptr, size_t ptr_size, ak_bool reverse )
+ char *ak_ptr_to_hexstr( ak_const_pointer ptr, const size_t ptr_size, const ak_bool reverse )
 {
   char *nullstr = NULL;
   size_t len = 1 + (ptr_size << 1);
@@ -1042,8 +1049,8 @@
     @return Если преобразование прошло успешно, возвращается \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_ptr_to_hexstr_static( ak_pointer ptr, size_t ptr_size,
-                                     ak_pointer out, size_t out_size, ak_bool reverse )
+ int ak_ptr_to_hexstr_static( ak_const_pointer ptr, const size_t ptr_size,
+                                     ak_pointer out, const size_t out_size, const ak_bool reverse )
 {
   ak_uint8 *data = ( ak_uint8 * ) ptr;
   size_t len = 1 + (ptr_size << 1);

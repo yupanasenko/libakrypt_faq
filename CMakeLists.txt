@@ -141,7 +141,7 @@ else()
     set( LIBAKRYPT_CONF "/etc" )
   endif()
   if( WIN32 )
-    set( LIBAKRYPT_CONF "C:/Program Files/Akrypt" )
+    set( LIBAKRYPT_CONF "C:\\\\Program Files\\\\Akrypt" )
   endif()
 endif()
 
