@@ -351,12 +351,16 @@
      return ak_false;
    }
 
+#ifndef LIBAKRYPT_CONST_CRYPTO_PARAMS
  /* считываем настройки криптографических алгоритмов */
    if( ak_libakrypt_load_options() != ak_true ) {
      ak_error_message( ak_error_get_value(), __func__ ,
                                         "unsuccessful load options from libakrypt.conf file" );
      return ak_false;
    }
+#endif
+ /* выводим значения установленных параметров библиотеки */
+   ak_libakrypt_log_options();
 
  /* проверяем длины фиксированных типов данных */
    if( ak_libakrypt_test_types() != ak_true ) {

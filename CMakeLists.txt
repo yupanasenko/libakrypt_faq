@@ -33,6 +33,7 @@ option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
 option( LIBAKRYPT_HTML_DOC "Build documentation in HTML format" OFF )
 option( LIBAKRYPT_PDF_DOC "Build documentation in PDF format" OFF )
 option( LIBAKRYPT_CRYPTO_FUNCTIONS "Build library with crypto functions" ON )
+option( LIBAKRYPT_CONST_CRYPTO_PARAMS "Build library with const values of crypto parameters" OFF )
 option( LIBAKRYPT_FIOT "Build library with FIOT protocol support" OFF )
 option( LIBAKRYPT_TLS_13 "Build library with TLS 1.3 protocol support" OFF )
 
@@ -142,6 +143,11 @@ else()
   if( WIN32 )
     set( LIBAKRYPT_CONF "C:/Program Files/Akrypt" )
   endif()
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+if( LIBAKRYPT_CONST_CRYPTO_PARAMS )
+  add_compile_options( -DLIBAKRYPT_CONST_CRYPTO_PARAMS=ON )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #

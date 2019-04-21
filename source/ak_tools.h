@@ -36,6 +36,8 @@
  ak_int64 ak_libakrypt_get_option( const char *name );
 /*! \brief Функция считывает настройки (параметры) библиотеки из файла libakrypt.conf */
  ak_bool ak_libakrypt_load_options( void );
+/*! \brief Вывод в логгер текущих значений параметров библиотеки. */
+ void ak_libakrypt_log_options( void );
 
  #endif
 /* ----------------------------------------------------------------------------------------------- */
