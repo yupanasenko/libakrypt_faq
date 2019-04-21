@@ -225,10 +225,10 @@
 
  #ifdef _WIN32
   /* в начале определяем, находимся ли мы в консоли MSys */
-   GetEnvironmentVariableA( "HOME", hpath, size );
+   GetEnvironmentVariableA( "HOME", hpath, ( DWORD )size );
   /* если мы находимся не в консоли, то строка hpath должна быть пустой */
    if( strlen( hpath ) == 0 ) {
-     GetEnvironmentVariableA( "USERPROFILE", hpath, size );
+     GetEnvironmentVariableA( "USERPROFILE", hpath, ( DWORD )size );
    }
  #else
    ak_snprintf( hpath, size, "%s", getenv( "HOME" ));
@@ -303,8 +303,14 @@
       return ak_false;
     }
     if(( errno == ERANGE && ( val >= INT_MAX || val <= INT_MIN )) || (errno != 0 && val == 0)) {
-      ak_error_message_fmt( ak_error_undefined_value, __func__,
-                                                     "%s for field %s", strerror( errno ), field );
+     #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+       char mbuf[256];
+       strerror_s( mbuf, 256, errno );
+       ak_error_message_fmt( ak_error_undefined_value, __func__, "%s for field %s", mbuf, field );
+     #else
+       ak_error_message_fmt( ak_error_undefined_value, __func__,
+                                                    "%s for field %s", strerror( errno ), field );
+     #endif
     } else {
              *value = val;
              return ak_true;
@@ -436,8 +442,14 @@
   if( mkdir( filename, S_IRWXU ) < 0 ) {
  #endif
     if( errno != EEXIST ) {
+     #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+       strerror_s( hpath, FILENAME_MAX, errno ); /* помещаем сообщение об ошибке в ненужный буффер */
+       return ak_error_message_fmt( ak_error_access_file, __func__,
+                                         "wrong creation of %s directory [%s]", filename, hpath );
+     #else
       return ak_error_message_fmt( ak_error_access_file, __func__,
-       "wrong creation of %s directory with error: %s", filename, strerror( errno ));
+                              "wrong creation of %s directory [%s]", filename, strerror( errno ));
+     #endif
     }
   }
 
@@ -454,8 +466,14 @@
   if( mkdir( hpath, S_IRWXU ) < 0 ) {
  #endif
     if( errno != EEXIST ) {
+     #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+       strerror_s( hpath, FILENAME_MAX, errno ); /* помещаем сообщение об ошибке в ненужный буффер */
+       return ak_error_message_fmt( ak_error_access_file, __func__,
+                                        "wrong creation of %s directory [%s]", filename, hpath );
+     #else
       return ak_error_message_fmt( ak_error_access_file, __func__,
-       "wrong creation of %s directory with error: %s", filename, strerror( errno ));
+                             "wrong creation of %s directory [%s]", filename, strerror( errno ));
+     #endif
     }
   }
 
@@ -473,8 +491,14 @@
     memset( hpath, 0, ak_min( 1024, FILENAME_MAX ));
     ak_snprintf( hpath, FILENAME_MAX - 1, "%s = %d\n", options[i].name, options[i].value );
     if( ak_file_write( &fd, hpath, strlen( hpath )) < 1 ) {
+     #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+      strerror_s( hpath, FILENAME_MAX, errno ); /* помещаем сообщение об ошибке в ненужный буффер */
       ak_error_message_fmt( error = ak_error_write_data, __func__,
-                      "option %s stored with error: %s", options[i].name, strerror( errno ));
+                                 "option %s stored with error [%s]", options[i].name, hpath );
+     #else
+      ak_error_message_fmt( error = ak_error_write_data, __func__,
+                      "option %s stored with error [%s]", options[i].name, strerror( errno ));
+     #endif
     }
   }
   ak_file_close( &fd );
@@ -604,34 +628,6 @@
  return ak_error_ok;
 }
 
-//#ifdef _WIN32
-//  struct _stat st;
-//  if( _stat( filename, &st ) < 0 ) {
-//#else
-//  struct stat st;
-//  if( stat( filename, &st ) < 0 ) {
-//#endif
-//    switch( errno ) {
-//      case EACCES: return ak_error_message_fmt( ak_error_access_file, __func__,
-//                                 "incorrect access to file %s [%s]", filename, strerror( errno ));
-//      default: return ak_error_message_fmt( ak_error_open_file, __func__ ,
-//                                     "wrong opening a file %s [%s]", filename, strerror( errno ));
-//    }
-//  }
-
-// /* открываем файл */
-//  if(( file->fp = fopen( filename, "rb" )) == NULL )
-//    return ak_error_message_fmt( ak_error_open_file, __func__ ,
-//                                     "wrong opening a file %s [%s]", filename, strerror( errno ));
-// /* заполняем данные */
-//  file->size = ( ak_int64 )st.st_size;
-// #ifdef _WIN32
-//  file->blksize = 4096;
-// #else
-//  file->blksize = ( ak_int64 )st.st_blksize;
-// #endif
-
-
 /* ----------------------------------------------------------------------------------------------- */
  int ak_file_create_to_write( ak_file file, const char *filename )
 {
@@ -690,7 +686,7 @@
 {
  #ifdef LIBAKRYPT_HAVE_WINDOWS_H
   DWORD dwBytesReaden = 0;
-  BOOL bErrorFlag = ReadFile( file->hFile, buffer, size,  &dwBytesReaden, NULL );
+  BOOL bErrorFlag = ReadFile( file->hFile, buffer, ( DWORD )size,  &dwBytesReaden, NULL );
   if( bErrorFlag == FALSE ) {
     ak_error_message( ak_error_read_data, __func__, "unable to read from file");
     return 0;
@@ -705,7 +701,7 @@
 {
  #ifdef LIBAKRYPT_HAVE_WINDOWS_H
   DWORD dwBytesWritten = 0;
-  BOOL bErrorFlag = WriteFile( file->hFile, buffer, size,  &dwBytesWritten, NULL );
+  BOOL bErrorFlag = WriteFile( file->hFile, buffer, ( DWORD )size,  &dwBytesWritten, NULL );
   if( bErrorFlag == FALSE ) {
     ak_error_message( ak_error_write_data, __func__, "unable to write to file");
     return 0;
