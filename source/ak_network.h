@@ -3,17 +3,18 @@
  #define __AK_NETWORK_H__
 
 /* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_HAVE_SIGNAL_H
- /* заголовок нужен для определения типа sig_atomic_t */
- #include <signal.h>
-#endif
+ #include <libakrypt.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief  Определение сокета, не зависящее от типа операционной системы. */
 #ifdef LIBAKRYPT_HAVE_WINDOWS_H
  typedef SOCKET ak_socket;
+ #define ak_socket_undefined  (INVALID_SOCKET)
+
 #else
  typedef int ak_socket;
+ #define ak_socket_undefined  (-1)
+
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */

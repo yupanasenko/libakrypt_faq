@@ -112,6 +112,9 @@
   /* устанавливаем функции чтения и записи по-умолчанию */
 #ifdef LIBAKRYPT_HAVE_WINDOWS_H
     /* здесь должны быть установлены функции-обертки для стандартных вызовов в Windows */
+      fctx->write = write;
+      fctx->read = read;
+
 #else
    fctx->write = write;
    fctx->read = read;

@@ -317,7 +317,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Перечисление, определяющее возможный тип интерфейса. */
  typedef enum {
-   undefined_interface = -1,
+   undefined_interface = ak_socket_undefined,
    encryption_interface = 0,
    plain_interface = 1
  } interface_t;

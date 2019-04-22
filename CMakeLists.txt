@@ -250,6 +250,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
                                    # при запуске make test
                  internal-bckey04
+                 internal-mgm04
   )
 endif()
 

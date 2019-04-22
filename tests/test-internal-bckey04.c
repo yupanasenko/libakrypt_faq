@@ -1,7 +1,7 @@
 /* Пример, иллюстрирующий скорость алгоритмов блочного шифрования.
    Используются неэкспортируемые функции библиотеки.
 
-   test-internal-bckey03.c
+   test-internal-bckey04.c
 */
  #include <time.h>
  #include <stdio.h>
