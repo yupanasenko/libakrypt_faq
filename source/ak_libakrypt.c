@@ -10,6 +10,9 @@
 #ifdef LIBAKRYPT_HAVE_BUILTIN_XOR_SI128
  #include <emmintrin.h>
 #endif
+#ifdef LIBAKRYPT_HAVE_WINDOWS_H
+ #include <windows.h>
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_gf2n.h>
