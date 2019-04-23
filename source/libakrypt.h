@@ -164,14 +164,23 @@ extern "C" {
 /*! \brief Ошибка записи в файл - файл существует */
  #define ak_error_file_exists                 (-16)
 
-/*! \brief Ошибка при сравнении двух массивов данных. */
- #define ak_error_not_equal_data              (-20)
+/*! \brief Ошибка открытия сокета. */
+ #define ak_error_open_socket                 (-17)
+/*! Ошибка конвертации сетевого адреса в двоичное представление. */
+ #define ak_error_wrong_inet_pton             (-18)
+/*! Ошибка установления соединения с сокетом. */
+ #define ak_error_connect_socket              (-19)
+/*! Ошибка закрытия сокета. */
+ #define ak_error_close_socket                (-20)
+
+ /*! \brief Ошибка при сравнении двух массивов данных. */
+ #define ak_error_not_equal_data              (-25)
 /*! \brief Ошибка выполнения библиотеки на неверной архитектуре. */
- #define ak_error_wrong_endian                (-21)
+ #define ak_error_wrong_endian                (-26)
 /*! \brief Ошибка чтения из терминала. */
- #define ak_error_terminal                    (-22)
+ #define ak_error_terminal                    (-27)
 /*! \brief Использование неопределенного буффера. */
- #define ak_error_wrong_buffer                (-23)
+ #define ak_error_wrong_buffer                (-28)
 
 /*! \brief Неверное значение дескриптора объекта. */
  #define ak_error_wrong_handle                (-30)

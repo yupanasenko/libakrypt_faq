@@ -111,10 +111,9 @@
 
   /* устанавливаем функции чтения и записи по-умолчанию */
 #ifdef LIBAKRYPT_HAVE_WINDOWS_H
-    /* здесь должны быть установлены функции-обертки для стандартных вызовов в Windows */
-      fctx->write = write;
-      fctx->read = read;
-
+    /* здесь установлены функции-обертки для стандартных вызовов в Windows */
+      fctx->write = ak_network_write_win;
+      fctx->read = ak_network_read_win;
 #else
    fctx->write = write;
    fctx->read = read;
@@ -148,9 +147,10 @@
      shutdown( fctx->iface_enc, SD_BOTH );
   #endif
 #endif
-     close( fctx->iface_enc );
+     ak_network_close( fctx->iface_enc );
      fctx->iface_enc = undefined_interface;
    }
+
    if( fctx->iface_plain != undefined_interface ) {
 #ifdef LIBAKRYPT_HAVE_SYSSOCKET_H
      shutdown( fctx->iface_plain, SHUT_RDWR );
@@ -159,8 +159,7 @@
      shutdown( fctx->iface_plain, SD_BOTH );
   #endif
 #endif
-
-     close( fctx->iface_plain );
+     ak_network_close( fctx->iface_plain );
      fctx->iface_plain = undefined_interface;
    }
 
