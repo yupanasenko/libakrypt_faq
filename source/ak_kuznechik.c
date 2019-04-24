@@ -25,8 +25,21 @@
  #include <ak_parameters.h>
 
 /* ---------------------------------------------------------------------------------------------- */
- static ak_uint128 kuz_mat_enc128[16][256];
- static ak_uint128 kuz_mat_dec128[16][256];
+  static
+#ifndef _MSC_VER
+  __attribute__((aligned(16)))
+#else
+  __declspec(align(16))
+#endif
+ ak_uint128 kuz_mat_enc128[16][256];
+
+ static
+#ifndef _MSC_VER
+  __attribute__((aligned(16)))
+#else
+  __declspec(align(16))
+#endif
+ ak_uint128 kuz_mat_dec128[16][256];
 
 /* ---------------------------------------------------------------------------------------------- */
 /*! \brief Функция умножает два элемента конечного поля \f$\mathbb F_{2^8}\f$, определенного
