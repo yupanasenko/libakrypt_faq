@@ -34,8 +34,19 @@ option( LIBAKRYPT_HTML_DOC "Build documentation in HTML format" OFF )
 option( LIBAKRYPT_PDF_DOC "Build documentation in PDF format" OFF )
 option( LIBAKRYPT_CRYPTO_FUNCTIONS "Build library with crypto functions" ON )
 option( LIBAKRYPT_CONST_CRYPTO_PARAMS "Build library with const values of crypto parameters" OFF )
+option( LIBAKRYPT_NETWORK "Build library with network communications support" OFF )
 option( LIBAKRYPT_FIOT "Build library with FIOT protocol support" OFF )
 option( LIBAKRYPT_TLS_13 "Build library with TLS 1.3 protocol support" OFF )
+
+# -------------------------------------------------------------------------------------------------- #
+if( LIBAKRYPT_FIOT )
+  set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
+  set( LIBAKRYPT_NETWORK ON )
+endif()
+if( LIBAKRYPT_TLS_13 )
+  set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
+  set( LIBAKRYPT_NETWORK ON )
+endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # множество исходных текстов библиотеки и вспомогательных файлов
@@ -49,6 +60,7 @@ set( HEADERS        source/ak_tools.h
                     source/ak_curves.h
                     source/ak_parameters.h
                     source/ak_gf2n.h
+                    source/ak_network.h
 )
 
 set( SOURCES        source/ak_tools.c
@@ -61,19 +73,7 @@ set( SOURCES        source/ak_tools.c
                     source/ak_libakrypt.c
 )
 
-if( LIBAKRYPT_FIOT )
-  set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
-  set( HEADERS      ${HEADERS}
-                    source/ak_fiot.h
-  )
-  set( SOURCES      ${SOURCES}
-                    source/ak_fiot.c
-                    source/ak_fiot_tlp.c
-                    source/ak_fiot_kgp.c
-  )
-  add_compile_options( -DLIBAKRYPT_FIOT=ON )
-endif()
-
+# -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( HEADERS      ${HEADERS}
                     source/ak_hash.h
@@ -104,6 +104,31 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   add_compile_options( -DLIBAKRYPT_CRYPTO_FUNCTIONS=ON )
 endif()
 
+# -------------------------------------------------------------------------------------------------- #
+if( LIBAKRYPT_NETWORK )
+  set( HEADERS      ${HEADERS}
+                    source/ak_network.h
+  )
+  set( SOURCES      ${SOURCES}
+                    source/ak_network.c
+                    )
+  add_compile_options( -DLIBAKRYPT_NETWORK=ON )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+if( LIBAKRYPT_FIOT )
+  set( HEADERS      ${HEADERS}
+                    source/ak_fiot.h
+  )
+  set( SOURCES      ${SOURCES}
+                    source/ak_fiot.c
+                    source/ak_fiot_tlp.c
+                    source/ak_fiot_kgp.c
+  )
+  add_compile_options( -DLIBAKRYPT_FIOT=ON )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
 set( CMAKES         cmake/DetectFlags.cmake
                     cmake/DetectHeaders.cmake
                     cmake/DetectIntrinsics.cmake

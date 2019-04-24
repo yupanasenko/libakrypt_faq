@@ -48,7 +48,18 @@ if( MSVC )
     return()
   endif()
 else()
-  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_PTHREAD" )
+  if( WIN32 )
+
+    find_library( LIBAKRYPT_PTHREAD pthread )
+    if( LIBAKRYPT_PTHREAD )
+      message("-- Searching pthread - done ")
+      set( LIBAKRYPT_LIBS ${LIBAKRYPT_LIBS} pthread )
+      set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_PTHREAD" )
+    endif()
+
+  else()
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_PTHREAD" )
+  endif()
 endif()
 
 # -------------------------------------------------------------------------------------------------- #

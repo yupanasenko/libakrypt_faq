@@ -302,7 +302,7 @@
       return ak_false;
     }
     if(( errno == ERANGE && ( val >= INT_MAX || val <= INT_MIN )) || (errno != 0 && val == 0)) {
-     #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+     #ifdef _MSC_VER
        char mbuf[256];
        strerror_s( mbuf, 256, errno );
        ak_error_message_fmt( ak_error_undefined_value, __func__, "%s for field %s", mbuf, field );
@@ -441,7 +441,7 @@
   if( mkdir( filename, S_IRWXU ) < 0 ) {
  #endif
     if( errno != EEXIST ) {
-     #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+     #ifdef _MSC_VER
        strerror_s( hpath, FILENAME_MAX, errno ); /* помещаем сообщение об ошибке в ненужный буффер */
        return ak_error_message_fmt( ak_error_access_file, __func__,
                                          "wrong creation of %s directory [%s]", filename, hpath );
@@ -465,7 +465,7 @@
   if( mkdir( hpath, S_IRWXU ) < 0 ) {
  #endif
     if( errno != EEXIST ) {
-     #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+     #ifdef _MSC_VER
        strerror_s( hpath, FILENAME_MAX, errno ); /* помещаем сообщение об ошибке в ненужный буффер */
        return ak_error_message_fmt( ak_error_access_file, __func__,
                                         "wrong creation of %s directory [%s]", filename, hpath );
@@ -490,7 +490,7 @@
     memset( hpath, 0, ak_min( 1024, FILENAME_MAX ));
     ak_snprintf( hpath, FILENAME_MAX - 1, "%s = %d\n", options[i].name, options[i].value );
     if( ak_file_write( &fd, hpath, strlen( hpath )) < 1 ) {
-     #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+     #ifdef _MSC_VER
       strerror_s( hpath, FILENAME_MAX, errno ); /* помещаем сообщение об ошибке в ненужный буффер */
       ak_error_message_fmt( error = ak_error_write_data, __func__,
                                  "option %s stored with error [%s]", options[i].name, hpath );
