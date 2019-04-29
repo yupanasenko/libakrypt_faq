@@ -15,6 +15,10 @@
  #include <winsock2.h>
  #include <ws2tcpip.h>
 #endif
+#ifdef LIBAKRYPT_HAVE_SYSSOCKET_H
+ #include <sys/socket.h>
+ #include <arpa/inet.h>
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_WINDOWS_H
@@ -55,9 +59,9 @@
 /*! \brief Функция закрытия сокета. */
  int ak_network_close( ak_socket );
 /*! \brief Функция преобразования IPv4 или IPv6 адреса в двоичную форму. */
- int ak_network_inet_pton( int , const char *, ak_uint32 , ak_sock_addr );
+ int ak_network_inet_pton( int , const char *, void * );
 /*! \brief Функция устанавливает соединение с сокетом. */
- int ak_network_connect( ak_socket , ak_sock_addr );
+ int ak_network_connect( ak_socket , void * );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

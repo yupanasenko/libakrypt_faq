@@ -18,9 +18,9 @@
 {
   char str[2048];
   struct fiot ctx;
-  union sock_addr addr;
   int error = ak_error_ok, done = 1;
   ak_socket sock = ak_network_undefined_socket;
+  struct sockaddr_in socket_address;
 
  /* проверяем, что определен ip адрес сервера и порт */
   if( argc != 3 ) {
@@ -41,13 +41,17 @@
      return ak_libakrypt_destroy();
    }
 
-   if(( error = ak_network_inet_pton( AF_INET, argv[1], atoi( argv[2] ), &addr )) != ak_error_ok ) {
+   memset( &socket_address, 0, sizeof( struct sockaddr_in ));
+   socket_address.sin_family = AF_INET;
+   socket_address.sin_port = htons( atoi( argv[2] ));
+
+   if(( error = ak_network_inet_pton( AF_INET, argv[1], &socket_address.sin_addr )) != ak_error_ok ) {
      ak_network_close( sock );
      ak_error_message_fmt( error, __func__, "wrong assigning binary address to socket" );
      return ak_libakrypt_destroy();
    }
 
-   if(( error = ak_network_connect( sock, &addr )) != ak_error_ok ) {
+   if(( error = ak_network_connect( sock, &socket_address )) != ak_error_ok ) {
      ak_network_close( sock );
      ak_error_message_fmt( error, __func__, "wrong server connect" );
      return ak_libakrypt_destroy();

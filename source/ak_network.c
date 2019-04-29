@@ -6,6 +6,16 @@
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_network.h>
 
+#ifdef LIBAKRYPT_HAVE_STRING_H
+ #include <string.h>
+#endif
+#ifdef LIBAKRYPT_HAVE_ERRNO_H
+ #include <errno.h>
+#endif
+#ifdef LIBAKRYPT_HAVE_UNISTD_H
+ #include <unistd.h>
+#endif
+
 #ifdef LIBAKRYPT_HAVE_WINDOWS_H
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param sock Сокет, в который происходит запись.
@@ -35,15 +45,15 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_socket ak_network_socket( int family, int type, int protocol )
+ ak_socket ak_network_socket( int domain, int type, int protocol )
 {
  #ifdef _MSC_VER // LIBAKRYPT_HAVE_WINDOWS_H
   char str[128];
  #endif
-  ak_socket sock = socket( family, type, protocol );
+  ak_socket sock = socket( domain, type, protocol );
 
   if( sock == ak_network_undefined_socket ) {
- #ifdef _MSC_VER // LIBAKRYPT_HAVE_WINDOWS_H
+ #ifdef _MSC_VER
     strerror_s( str, sizeof( str ), WSAGetLastError( ));
     ak_error_message_fmt( ak_error_open_socket, __func__, "wrong socket creation [%s]", str );
  #else
@@ -72,29 +82,15 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_network_inet_pton( int family, const char *src, ak_uint32 port, ak_sock_addr saddr )
+ int ak_network_inet_pton( int family, const char *src, void *dst )
 {
-   memset( saddr, 0, sizeof( union sock_addr ));
-   switch( family ) {
-     case AF_INET:
-       saddr->ipv4.sin_family = family;
-       saddr->ipv4.sin_port = htons( port );
-       break;
-     case AF_INET6:
-       saddr->ipv6.sin6_family = AF_INET6;
-       saddr->ipv6.sin6_port   = htons(port);
-       break;
-     default: return ak_error_message( ak_error_wrong_protocol_family,
-                                                         __func__, "using wrong protocol family" );
-   }
-
  #ifndef LIBAKRYPT_HAVE_WINDOWS_H
-   if( inet_pton( family, addr, &( serv.sin_addr )) <= 0 )
+   if( inet_pton( family, src, dst ) != 1 )
      return ak_error_message_fmt( ak_error_wrong_inet_pton, __func__,
                                                  "wrong address creation (%s)", strerror( errno ));
  #else
    #ifdef _MSC_VER
-     if( InetPton( family, src, saddr ) != 1 ) {
+     if( InetPton( family, src, dst ) != 1 ) {
        char str[128];
        strerror_s( str, sizeof( str ),  WSAGetLastError( ));
        return ak_error_message_fmt( ak_error_wrong_inet_pton, __func__,
@@ -107,10 +103,46 @@
  return ak_error_ok;
 }
 
+//   memset( saddr, 0, sizeof( union sock_addr ));
+//   switch( family ) {
+//     case AF_INET:
+//       saddr->ipv4.sin_family = AF_INET;
+//       saddr->ipv4.sin_port = htons( port );
+
+
+//       break;
+//     case AF_INET6:
+//       saddr->ipv6.sin6_family = AF_INET6;
+//       saddr->ipv6.sin6_port   = htons(port);
+//       break;
+//     default: return ak_error_message( ak_error_wrong_protocol_family,
+//                                                         __func__, "using wrong protocol family" );
+//   }
+
+// #ifndef LIBAKRYPT_HAVE_WINDOWS_H
+//   if( inet_pton( family, src, saddr ) != 1 )
+//     return ak_error_message_fmt( ak_error_wrong_inet_pton, __func__,
+//                                                 "wrong address creation (%s)", strerror( errno ));
+// #else
+//   #ifdef _MSC_VER
+//     if( InetPton( family, src, saddr ) != 1 ) {
+//       char str[128];
+//       strerror_s( str, sizeof( str ),  WSAGetLastError( ));
+//       return ak_error_message_fmt( ak_error_wrong_inet_pton, __func__,
+//                                                               "wrong address creation (%s)", str );
+//     }
+//   #else
+//      xxx
+//   #endif
+// #endif
+// return ak_error_ok;
+
+
+
 /* ----------------------------------------------------------------------------------------------- */
- int ak_network_connect( ak_socket sock, ak_sock_addr saddr )
+ int ak_network_connect( ak_socket sock, void *saddr )
 {
-  if( connect( sock, ( struct sockaddr* ) saddr, sizeof( union sock_addr )) ) {
+  if( connect( sock, ( struct sockaddr* ) saddr, sizeof( struct sockaddr )) != 0 ) {
  #ifdef _MSC_VER // LIBAKRYPT_HAVE_WINDOWS_H
     char str[128];
     strerror_s( str, sizeof( str ),  WSAGetLastError( ));
