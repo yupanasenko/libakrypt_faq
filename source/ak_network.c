@@ -71,15 +71,74 @@
    char str[128];
    if( closesocket( sock ) == SOCKET_ERROR ) {
      strerror_s( str, sizeof( str ), WSAGetLastError( ));
-     return ak_error_message_fmt( ak_error_close_socket, __func__, "wrong socket closing [%s]", str );
-   }
- #else
-   if( close( sock ) == -1 )
      return ak_error_message_fmt( ak_error_close_socket, __func__,
-                                                      "wrong socket closing [%s]", strerror( errno ));
+                                                                "wrong socket closing [%s]", str );
+   }
+ #else // ( sock != ak_network_undefined_socket )
+   if( sock != ak_network_undefined_socket ) {
+     if( close( sock ) == -1 ) return ak_error_message_fmt( ak_error_close_socket, __func__,
+                                                   "wrong socket closing [%s]", strerror( errno ));
+   }
+
  #endif
  return ak_error_ok;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+/* MinGW не поддерживает реализацию inet_pton(), поэтому приходится заниматься самодеятельностью и
+ * использовать внешний код
+
+   Thanks to author: Paul Vixie, 1996.                                                             */
+/* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_WINDOWS_H
+ #ifndef _MSC_VER
+  #define NS_INADDRSZ  4
+
+  int inet_pton4( const char *src, char *dst ) {
+     ak_uint8 tmp[NS_INADDRSZ], *tp = NULL;
+     int ch;
+     int saw_digit = 0;
+     int octets = 0;
+     *(tp = tmp) = 0;
+
+     while ((ch = *src++) != '\0')
+     {
+         if (ch >= '0' && ch <= '9')
+         {
+             ak_uint32 n = *tp * 10 + (ch - '0');
+
+             if (saw_digit && *tp == 0)
+                 return 0;
+
+             if (n > 255)
+                 return 0;
+
+             *tp = n;
+             if (!saw_digit)
+             {
+                 if (++octets > 4)
+                     return 0;
+                 saw_digit = 1;
+             }
+         }
+         else if (ch == '.' && saw_digit)
+         {
+             if (octets == 4)
+                 return 0;
+             *++tp = 0;
+             saw_digit = 0;
+         }
+         else
+             return 0;
+     }
+     if (octets < 4)
+         return 0;
+
+     memcpy( dst, tmp, NS_INADDRSZ );
+     return 1;
+ }
+ #endif
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_network_inet_pton( int family, const char *src, void *dst )
@@ -94,50 +153,19 @@
        char str[128];
        strerror_s( str, sizeof( str ),  WSAGetLastError( ));
        return ak_error_message_fmt( ak_error_wrong_inet_pton, __func__,
-                                                               "wrong address creation (%s)", str );
+                                                              "wrong address creation (%s)", str );
      }
    #else
-      xxx
+       if( family == AF_INET ) {
+         if( inet_pton4( src, dst ) != 1 )
+           return ak_error_message_fmt( ak_error_wrong_inet_pton, __func__,
+                                                 "wrong address creation (%s)", strerror( errno ));
+       } else return ak_error_message( ak_error_undefined_function, __func__,
+                                                 "this function is undefined for AF_INET6 family");
    #endif
  #endif
  return ak_error_ok;
 }
-
-//   memset( saddr, 0, sizeof( union sock_addr ));
-//   switch( family ) {
-//     case AF_INET:
-//       saddr->ipv4.sin_family = AF_INET;
-//       saddr->ipv4.sin_port = htons( port );
-
-
-//       break;
-//     case AF_INET6:
-//       saddr->ipv6.sin6_family = AF_INET6;
-//       saddr->ipv6.sin6_port   = htons(port);
-//       break;
-//     default: return ak_error_message( ak_error_wrong_protocol_family,
-//                                                         __func__, "using wrong protocol family" );
-//   }
-
-// #ifndef LIBAKRYPT_HAVE_WINDOWS_H
-//   if( inet_pton( family, src, saddr ) != 1 )
-//     return ak_error_message_fmt( ak_error_wrong_inet_pton, __func__,
-//                                                 "wrong address creation (%s)", strerror( errno ));
-// #else
-//   #ifdef _MSC_VER
-//     if( InetPton( family, src, saddr ) != 1 ) {
-//       char str[128];
-//       strerror_s( str, sizeof( str ),  WSAGetLastError( ));
-//       return ak_error_message_fmt( ak_error_wrong_inet_pton, __func__,
-//                                                               "wrong address creation (%s)", str );
-//     }
-//   #else
-//      xxx
-//   #endif
-// #endif
-// return ak_error_ok;
-
-
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_network_connect( ak_socket sock, void *saddr )

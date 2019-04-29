@@ -107,7 +107,7 @@
    fctx->lcounter = fctx->mcounter = fctx->ncounter = 0;
 
   /* дескрипторы сокетов */
-   fctx->iface_enc = fctx->iface_plain = undefined_interface;
+   fctx->iface_enc = fctx->iface_plain = ak_network_undefined_socket;
 
   /* устанавливаем функции чтения и записи по-умолчанию */
 #ifdef LIBAKRYPT_HAVE_WINDOWS_H
