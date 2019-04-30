@@ -22,40 +22,20 @@
  #include <ak_parameters.h>
 
 /* ---------------------------------------------------------------------------------------------- */
- static
-#ifndef _MSC_VER
-  __attribute__((aligned(16)))
-#else
-  __declspec(align(16))
-#endif
- ak_uint64 ak_kuznechik_encryption_matrix[16][256][2];
-
- static
-#ifndef _MSC_VER
-  __attribute__((aligned(16)))
-#else
-  __declspec(align(16))
-#endif
- ak_uint64 ak_kuznechik_decryption_matrix[16][256][2];
+/*! \brief Таблицы, используемые для реализации алгоритма зашифрования одного блока. */
+ static ak_uint64 ak_kuznechik_encryption_matrix[16][256][2];
+/*! \brief Таблицы, используемые для реализации алгоритма расшифрования одного блока. */
+ static ak_uint64 ak_kuznechik_decryption_matrix[16][256][2];
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Развернутые раундовые ключи и маски алгоритма Кузнечик. */
- typedef
-#ifndef _MSC_VER
-  __attribute__((aligned(16)))
-#else
-  __declspec(align(16))
-#endif
- ak_uint64 ak_kuznechik_expanded_keys[80];
-
-//  /*! \brief раундовые ключи для алгоритма зашифрования */
-//  struct kuznechik_expanded_keys encryptkey;
-//  /*! \brief раундовые ключи для алгоритма расшифрования */
-//  struct kuznechik_expanded_keys decryptkey;
-//  /*! \brief маски для раундовых ключей алгоритма зашифрования */
-//  struct kuznechik_expanded_keys encryptmask;
-//  /*! \brief маски для раундовых ключей алгоритма расшифрования */
-//  struct kuznechik_expanded_keys decryptmask;
+/*! \brief Развернутые раундовые ключи и маски алгоритма Кузнечик.
+    \details Массив содержит в себе записанные последовательно следующие ключи и маски
+    (последовательно, по 10 ключей из двух 64-х битных слов на каждый ключ)
+      - раундовые ключи для алгоритма зашифрования
+      - раундовые ключи для алгоритма расшифрования
+      - маски для раундовых ключей алгоритма зашифрования
+      - маски для раундовых ключей алгоритма расшифрования. */
+ typedef ak_uint64 ak_kuznechik_expanded_keys[80];
 
 /* ---------------------------------------------------------------------------------------------- */
 /*! \brief Функция умножает два элемента конечного поля \f$\mathbb F_{2^8}\f$, определенного
@@ -157,8 +137,6 @@
  return error;
 }
 
-#include <stdio.h>
-
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция реализует развертку ключей для алгоритма Кузнечик.
     \param skey Указатель на контекст секретного ключа, в который помещаются развернутые
@@ -253,9 +231,9 @@
   ak_uint8 *b = (ak_uint8 *)x;
 
   x[0] = (( ak_uint64 *) in)[0]; x[1] = (( ak_uint64 *) in)[1];
-  for( i = 0; i < 18; i += 2 ) {
+  while( i < 18 ) {
      x[0] ^= ekey[i]; x[0] ^= mkey[i];
-     x[1] ^= ekey[i+1]; x[1] ^= mkey[i+1];
+     x[1] ^= ekey[++i]; x[1] ^= mkey[i++];
 
      t  = ak_kuznechik_encryption_matrix[ 0][b[ 0]][0];
      t ^= ak_kuznechik_encryption_matrix[ 1][b[ 1]][0];
@@ -314,7 +292,9 @@
 
   x[0] = (( ak_uint64 *) in)[0]; x[1] = (( ak_uint64 *) in)[1];
   for( i = 0; i < 16; i++ ) b[i] = gost_pi[b[i]];
-  for( i = 18; i > 0; i -= 2 ) {
+
+  i = 19;
+  while( i > 1 ) {
      t  = ak_kuznechik_decryption_matrix[ 0][b[ 0]][0];
      t ^= ak_kuznechik_decryption_matrix[ 1][b[ 1]][0];
      t ^= ak_kuznechik_decryption_matrix[ 2][b[ 2]][0];
@@ -351,8 +331,8 @@
 
      x[0] = t; x[1] = s;
 
-     x[0] ^= dkey[i]; x[1] ^= dkey[i+1];
-     x[0] ^= xkey[i]; x[1] ^= xkey[i+1];
+     x[1] ^= dkey[i]; x[1] ^= xkey[i--];
+     x[0] ^= dkey[i]; x[0] ^= xkey[i--];
   }
   for( i = 0; i < 16; i++ ) b[i] = gost_pinv[b[i]];
 
