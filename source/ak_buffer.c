@@ -586,7 +586,7 @@
   if( generator->random == NULL ) return ak_error_message( ak_error_undefined_function, __func__,
                                                    "use an undefined context to random generator" );
 
-  if( generator->random( generator, ptr, size ) != ak_error_ok ) {
+  if( generator->random( generator, ptr, (ssize_t) size ) != ak_error_ok ) {
     ak_error_message( ak_error_write_data, __func__, "incorrect memory wiping" );
     memset( ptr, 0, size );
     result = ak_error_write_data;
