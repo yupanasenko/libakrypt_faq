@@ -26,7 +26,7 @@
  typedef struct mac
 {
  /*! \brief Тип криптографического механизма */
-  oid_engines engine;
+  oid_engines_t engine;
  /*! \brief указатель на контекст сжимающего преобразования */
   ak_pointer ctx;
  /*! \brief массив, предназначенный для временного хранения обрабатываемых данных */
@@ -76,7 +76,7 @@
 /*! \brief Проверка, можно ли присваивать контексту секретный ключ. */
  int ak_mac_context_is_key_settable( ak_mac );
 /*! \brief Присвоение контексту сжимающего отображения (секретному ключу) константного значения. */
- int ak_mac_context_set_key( ak_mac , const ak_pointer , const size_t , const ak_bool );
+ int ak_mac_context_set_key( ak_mac , const ak_pointer , const size_t , const bool_t );
 
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -98,12 +98,12 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Проверка корректной работы механизмов итерационного сжатия для функций хеширования. */
- ak_bool ak_mac_test_hash_functions( void );
+ bool_t ak_mac_test_hash_functions( void );
 /*! \brief Проверка корректной работы механизмов итерационного сжатия для семейства ключевых
     функций хеширования HMAC. */
- ak_bool ak_mac_test_hmac_functions( void );
+ bool_t ak_mac_test_hmac_functions( void );
 /*! \brief Проверка корректной работы алгоритма выработки имитовставки ГОСТ Р 34.13-2015. */
- ak_bool ak_mac_test_omac_functions( void );
+ bool_t ak_mac_test_omac_functions( void );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

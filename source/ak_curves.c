@@ -200,10 +200,10 @@
     ошибки функция возвращает ak_false. Код ошибки можеть быть получен с помощью вызова
     ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_wcurve_test( void )
+ bool_t ak_wcurve_test( void )
 {
   ak_oid oid = NULL;
-  ak_bool result = ak_true;
+  bool_t result = ak_true;
   int reason = ak_error_ok, audit = ak_log_get_level();
 
   if( audit >= ak_log_maximum )
@@ -327,7 +327,7 @@
     @return Функция возвращает \ref ak_true если все проверки выполнены. В противном случае
     возвращается \ref ak_false.                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_wpoint_is_ok( ak_wpoint wp, ak_wcurve ec )
+ bool_t ak_wpoint_is_ok( ak_wpoint wp, ak_wcurve ec )
 {
   ak_mpznmax t, s;
   memset( t, 0, sizeof(ak_uint64)*ak_mpznmax_size );
@@ -585,7 +585,7 @@
     @return Функция возвращает \ref ak_true если все проверки выполнены. В противном случае
     возвращается \ref ak_false.                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_wpoint_check_order( ak_wpoint wp, ak_wcurve ec )
+ bool_t ak_wpoint_check_order( ak_wpoint wp, ak_wcurve ec )
 {
   struct wpoint ep;
 

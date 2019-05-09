@@ -424,7 +424,7 @@
     @return В случае совпадения контрольной суммы ключа функция возвращает истину (\ref ak_true).
     В противном случае, возвращается ложь (\ref ak_false).                                         */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_skey_context_check_icode_xor( ak_skey skey )
+ bool_t ak_skey_context_check_icode_xor( ak_skey skey )
 {
   ak_uint64 result = 0;
   int error = ak_error_ok;
@@ -483,7 +483,7 @@
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_skey_context_set_key( ak_skey skey,
-                                     const ak_pointer ptr, const size_t size, const ak_bool cflag )
+                                     const ak_pointer ptr, const size_t size, const bool_t cflag )
 {
   int error = ak_error_ok;
 

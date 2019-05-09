@@ -22,7 +22,7 @@
    /*! \brief указатель на данные */
    ak_pointer data;
    /*! \brief флаг выделения памяти/владения данными */
-   ak_bool flag;
+   bool_t flag;
    /*! \brief указатель на функцию выделения памяти под данные */
    ak_function_alloc *alloc;
    /*! \brief указатель на функцию освобождения данных */
@@ -48,10 +48,10 @@
 /*! \brief Установка размера буффера в заданное значение. */
  int ak_buffer_set_size( ak_buffer , const size_t );
 /*! \brief Проверка, присвоено ли буферу некоторое значение. */
- ak_bool ak_buffer_is_assigned( const ak_buffer );
+ bool_t ak_buffer_is_assigned( const ak_buffer );
 
 /*! \brief Зачистка данных, хранящихся в произвольной области памяти. */
- int ak_ptr_wipe( ak_pointer , size_t , ak_random , ak_bool );
+ int ak_ptr_wipe( ak_pointer , size_t , ak_random , bool_t );
 /*! \brief Зачистка данных, хранящихся в буффере. */
  int ak_buffer_wipe( ak_buffer, ak_random );
 /*! \brief Заполнение буффера случайными данными. */

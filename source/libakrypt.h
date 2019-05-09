@@ -102,7 +102,12 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Определение булева типа, принимающего значения либо истина, либо ложь. */
- typedef enum { ak_false, ak_true } ak_bool;
+ typedef enum {
+  /*! \brief Ложь */
+   ak_false,
+  /*! \brief Истина */
+   ak_true
+} bool_t;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Указатель на произвольный объект библиотеки. */
@@ -159,22 +164,22 @@ extern "C" {
 /*! \brief Ошибка чтения из файла (устройства). */
  #define ak_error_read_data                   (-14)
 /*! \brief Ошибка чтения из файла (устройства) из-за превышения времени ожидания. */
- #define ak_error_read_data_timeout           (-14)
+ #define ak_error_read_data_timeout           (-15)
 /*! \brief Ошибка записи в файл (устройство). */
- #define ak_error_write_data                  (-15)
+ #define ak_error_write_data                  (-16)
 /*! \brief Ошибка записи в файл - файл существует */
- #define ak_error_file_exists                 (-16)
+ #define ak_error_file_exists                 (-17)
 
 /*! \brief Ошибка открытия сокета. */
- #define ak_error_open_socket                 (-17)
+ #define ak_error_open_socket                 (-20)
 /*! \brief Ошибка конвертации сетевого адреса в двоичное представление. */
- #define ak_error_wrong_inet_pton             (-18)
+ #define ak_error_wrong_inet_pton             (-21)
 /*! \brief Ошибка установления соединения с сокетом. */
- #define ak_error_connect_socket              (-19)
+ #define ak_error_connect_socket              (-22)
 /*! \brief Ошибка закрытия сокета. */
- #define ak_error_close_socket                (-20)
+ #define ak_error_close_socket                (-23)
 /*! \brief Ошибка выбора семейства протоколов. */
- #define ak_error_wrong_protocol_family       (-21)
+ #define ak_error_wrong_protocol_family       (-24)
 
  /*! \brief Ошибка при сравнении двух массивов данных. */
  #define ak_error_not_equal_data              (-25)
@@ -285,7 +290,7 @@ extern "C" {
      random_generator,
    /*! \brief механизм идентификаторов криптографических алгоритмов */
      oid_engine
-} oid_engines;
+} oid_engines_t;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Режим и параметры использования криптографического механизма. */
@@ -322,7 +327,7 @@ extern "C" {
      xcrypt,
    /*! \brief гаммирование по модулю \f$ 2^8 \f$ поточного шифра */
      a8
-} oid_modes;
+} oid_modes_t;
 
 /* ----------------------------------------------------------------------------------------------- */
  struct buffer;
@@ -337,7 +342,7 @@ extern "C" {
 /*! \brief Функция остановки поддержки криптографических механизмов. */
  dll_export int ak_libakrypt_destroy( void );
 /*! \brief Запуск динамического тестирования криптографических механизмов. */
- dll_export ak_bool ak_libakrypt_dynamic_control_test( void );
+ dll_export bool_t ak_libakrypt_dynamic_control_test( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
@@ -393,9 +398,9 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Получение человекочитаемого имени для заданного типа криптографического механизма. */
- dll_export const char *ak_libakrypt_get_engine_name( const oid_engines );
+ dll_export const char *ak_libakrypt_get_engine_name( const oid_engines_t );
 /*! \brief Получение человекочитаемого имени режима или параметров криптографического механизма. */
- dll_export const char *ak_libakrypt_get_mode_name( const oid_modes );
+ dll_export const char *ak_libakrypt_get_mode_name( const oid_modes_t );
 /*! \brief Получение общего количества определенных OID библиотеки. */
  dll_export size_t ak_libakrypt_oids_count( void );
 
@@ -403,17 +408,17 @@ extern "C" {
 /*! \brief Создание буффера заданного размера. */
  dll_export ak_buffer ak_buffer_new_size( const size_t );
 /*! \brief Создание буффера с данными. */
- dll_export ak_buffer ak_buffer_new_ptr( const ak_pointer , const size_t , const ak_bool );
+ dll_export ak_buffer ak_buffer_new_ptr( const ak_pointer , const size_t , const bool_t );
 /*! \brief Создание буффера с данными, записанными в шестнадцатеричном виде. */
  dll_export ak_buffer ak_buffer_new_hexstr( const char * );
 /*! \brief Создание буффера заданной длины с данными, записанными в шестнадцатеричном виде. */
- dll_export ak_buffer ak_buffer_new_hexstr_size( const char * , const size_t , const ak_bool );
+ dll_export ak_buffer ak_buffer_new_hexstr_size( const char * , const size_t , const bool_t );
 /*! \brief Создание буффера, содержащего строку символов, оканчивающуюся нулем. */
  dll_export ak_buffer ak_buffer_new_str( const char * );
 /*! \brief Уничтожение буффера. */
  dll_export ak_pointer ak_buffer_delete( ak_pointer );
 /*! \brief Помещение двоичных данных в буффер. */
- dll_export int ak_buffer_set_ptr( ak_buffer , const ak_pointer , const size_t , const ak_bool );
+ dll_export int ak_buffer_set_ptr( ak_buffer , const ak_pointer , const size_t , const bool_t );
 /*! \brief Помещение в буффер данных, заданных строкой в  шестнадцатеричном представлении. */
  dll_export int ak_buffer_set_hexstr( ak_buffer, const char * );
 /*! \brief Помещение в буффер строки, оканчивающейся нулем. */
@@ -425,20 +430,20 @@ extern "C" {
 /*! \brief Получение размера буффера. */
  dll_export size_t ak_buffer_get_size( ak_buffer );
 /*! \brief Получение строки символов с шестнадцатеричным значением буффера. */
- dll_export char *ak_buffer_to_hexstr( const ak_buffer , const ak_bool );
+ dll_export char *ak_buffer_to_hexstr( const ak_buffer , const bool_t );
 /*! \brief Сравнение двух буфферов. */
- dll_export ak_bool ak_buffer_is_equal( const ak_buffer, const ak_buffer );
+ dll_export bool_t ak_buffer_is_equal( const ak_buffer, const ak_buffer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей значение заданной области памяти. */
- dll_export char *ak_ptr_to_hexstr( ak_const_pointer , const size_t , const ak_bool );
+ dll_export char *ak_ptr_to_hexstr( ak_const_pointer , const size_t , const bool_t );
 /*! \brief Преобразование области памяти в символьное представление. */
  dll_export int ak_ptr_to_hexstr_static( ak_const_pointer , const size_t , ak_pointer ,
-                                                                     const size_t , const ak_bool );
+                                                                     const size_t , const bool_t );
 /*! \brief Конвертация строки шестнадцатеричных символов в массив данных. */
- dll_export int ak_hexstr_to_ptr( const char *, ak_pointer , const size_t , const ak_bool );
+ dll_export int ak_hexstr_to_ptr( const char *, ak_pointer , const size_t , const bool_t );
 /*! \brief Сравнение двух областей памяти. */
- dll_export ak_bool ak_ptr_is_equal( const ak_pointer, const ak_pointer , const size_t );
+ dll_export bool_t ak_ptr_is_equal( const ak_pointer, const ak_pointer , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция устанавливает домашний каталог пользователя. */

@@ -152,7 +152,7 @@
     @return Функция возвращает код ошибки. В случае успеха возвращается ak_error_ok (ноль).        */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_set_key( ak_bckey bkey,
-                                   const ak_pointer keyptr, const size_t size, const ak_bool cflag )
+                                   const ak_pointer keyptr, const size_t size, const bool_t cflag )
 {
   int error = ak_error_ok;
 

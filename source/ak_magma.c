@@ -781,7 +781,7 @@
     @return В случае совпадения контрольной суммы ключа функция возвращает истину (\ref ak_true).
     В противном случае, возвращается ложь (\ref ak_false).                                         */
 /* ----------------------------------------------------------------------------------------------- */
- static ak_bool ak_skey_context_check_icode_additive( ak_skey skey )
+ static bool_t ak_skey_context_check_icode_additive( ak_skey skey )
 {
   ak_uint64 result = 0;
   int error = ak_error_ok;
@@ -860,13 +860,13 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
 /* ----------------------------------------------------------------------------------------------- */
 /*! Тестирование производится в соответствии с примерами из ГОСТ Р 34.12-2015 и ГОСТ Р 34.13-2015. */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_bckey_test_magma( void )
+ bool_t ak_bckey_test_magma( void )
 {
   char *str = NULL;
   ak_uint8 out[32];
   struct bckey bkey; /* контекст используемого для тестов ключа */
   int error = ak_error_ok, audit = ak_log_get_level();
-  ak_bool result = ak_true;
+  bool_t result = ak_true;
 
   ak_uint8 gost3412_2015_key[32] = { /* тестовый ключ из ГОСТ Р 34.12-2015, приложение А.2 */
      0xff, 0xfe, 0xfd, 0xfc, 0xfb, 0xfa, 0xf9, 0xf8, 0xf7, 0xf6, 0xf5, 0xf4, 0xf3, 0xf2, 0xf1, 0xf0,

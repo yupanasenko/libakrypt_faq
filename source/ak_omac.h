@@ -41,7 +41,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Присвоение секретному ключу константного значения. */
- int ak_omac_context_set_key( ak_omac , const ak_pointer , const size_t , const ak_bool );
+ int ak_omac_context_set_key( ak_omac , const ak_pointer , const size_t , const bool_t );
 /*! \brief Присвоение секретному ключу случайного значения. */
  int ak_omac_context_set_key_random( ak_omac , ak_random );
 /*! \brief Присвоение секретному ключу значения, выработанного из пароля */

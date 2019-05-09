@@ -53,7 +53,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_bckey_init_kuznechik_tables( void )
+ bool_t ak_bckey_init_kuznechik_tables( void )
 {
   int i, j, l;
   for( i = 0; i < 16; i++ ) {
@@ -384,11 +384,11 @@
 /*! Тестирование производится в соответствии с контрольными примерами из
     ГОСТ Р 34.12-2015 и ГОСТ Р 34.13-2015.                                                         */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_bckey_test_kuznechik( void )
+ bool_t ak_bckey_test_kuznechik( void )
 {
   char *str = NULL;
   struct bckey bkey;
-  ak_bool result = ak_true;
+  bool_t result = ak_true;
   int error = ak_error_ok, audit = ak_log_get_level();
 
  /* тестовый ключ из ГОСТ Р 34.12-2015, приложение А.1 */

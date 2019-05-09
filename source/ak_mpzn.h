@@ -51,9 +51,9 @@
 /*! \brief Преобразование вычета в строку шестнадцатеричных символов. */
  int ak_mpzn_to_hexstr_static( ak_uint64 * , const size_t , ak_pointer , const size_t );
 /*! \brief Сериализация вычета в последовательность октетов. */
- int ak_mpzn_to_little_endian( ak_uint64 * , const size_t , ak_pointer , const size_t , ak_bool );
+ int ak_mpzn_to_little_endian( ak_uint64 * , const size_t , ak_pointer , const size_t , bool_t );
 /*! \brief Присвоение вычету сериализованного значения. */
- int ak_mpzn_set_little_endian( ak_uint64 * , const size_t , const ak_pointer , const size_t , ak_bool );
+ int ak_mpzn_set_little_endian( ak_uint64 * , const size_t , const ak_pointer , const size_t , bool_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Сложение двух вычетов */
@@ -63,7 +63,7 @@
 /*! \brief Сравнение двух вычетов */
  int ak_mpzn_cmp( ak_uint64 *, ak_uint64 *, const size_t );
 /*! \brief Сравнение вычета с беззнаковым целым числом (типа ak_uint64) */
- ak_bool ak_mpzn_cmp_ui( ak_uint64 *, const size_t , const ak_uint64 );
+ bool_t ak_mpzn_cmp_ui( ak_uint64 *, const size_t , const ak_uint64 );
 /*! \brief Умножение вычета на беззнаковое целое */
  ak_uint64 ak_mpzn_mul_ui( ak_uint64 *, ak_uint64 *, const size_t, const ak_uint64 );
 /*! \brief Умножение двух вычетов как целых чисел */

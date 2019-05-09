@@ -33,7 +33,7 @@
     В случае возникновения ошибки возвращается NULL. Код ошибки может быть получен с помощью
     вызова функции ak_error_get_value().                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- static ak_oid ak_context_node_get_context_oid( const ak_pointer ctx, const oid_engines engine )
+ static ak_oid ak_context_node_get_context_oid( const ak_pointer ctx, const oid_engines_t engine )
 {
   ak_oid oid = NULL;
   if( ctx == NULL ) {
@@ -94,7 +94,7 @@
     вызова функции ak_error_get_value().                                                           */
 /* ----------------------------------------------------------------------------------------------- */
  ak_context_node ak_context_node_new( const ak_pointer ctx, const ak_handle id,
-                                                 const oid_engines engine, const char *description )
+                                               const oid_engines_t engine, const char *description )
 {
   ak_oid oid = NULL;
   int error = ak_error_ok;
@@ -345,7 +345,7 @@
     получен с помощью вызова функции ak_error_get_value().                                         */
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_context_manager_add_node( ak_context_manager manager, const ak_pointer ctx,
-                                                       const oid_engines engine, char *description )
+                                                     const oid_engines_t engine, char *description )
 {
   size_t idx = 0;
   int error = ak_error_ok;
@@ -568,7 +568,7 @@
     возникновения ошибки возвращается значение \ref ak_error_wrong_handle. Код ошибки может быть
     получен с помощью вызова функции ak_error_get_value().                                         */
 /* ----------------------------------------------------------------------------------------------- */
- ak_handle ak_libakrypt_add_context( ak_pointer ctx, const oid_engines engine, char *description )
+ ak_handle ak_libakrypt_add_context( ak_pointer ctx, const oid_engines_t engine, char *description )
 {
   ak_context_manager manager = NULL;
   ak_handle handle = ak_error_wrong_handle;
@@ -622,7 +622,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_pointer ak_handle_get_context( ak_handle handle, oid_engines *engine )
+ ak_pointer ak_handle_get_context( ak_handle handle, oid_engines_t *engine )
 {
   size_t idx = 0;
   int error = ak_error_ok;

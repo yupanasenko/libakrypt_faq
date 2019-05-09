@@ -45,9 +45,9 @@
  int ak_wpoint_set_wpoint( ak_wpoint , ak_wpoint , ak_wcurve );
 
 /*! \brief Проверка принадлежности точки заданной кривой. */
- ak_bool ak_wpoint_is_ok( ak_wpoint , ak_wcurve );
+ bool_t ak_wpoint_is_ok( ak_wpoint , ak_wcurve );
 /*! \brief Проверка порядка заданной точки. */
- ak_bool ak_wpoint_check_order( ak_wpoint , ak_wcurve );
+ bool_t ak_wpoint_check_order( ak_wpoint , ak_wcurve );
 
 /*! \brief Удвоение точки эллиптической кривой, заданной в короткой форме Вейерштрасса. */
  void ak_wpoint_double( ak_wpoint , ak_wcurve );
@@ -114,7 +114,7 @@
  int ak_wcurve_is_ok( ak_wcurve );
 /*! \brief Функция тестирует все определяемые библиотекой параметры эллиптических кривых,
     заданных в короткой форме Вейерштрасса. */
- ak_bool ak_wcurve_test( void );
+ bool_t ak_wcurve_test( void );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

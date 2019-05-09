@@ -370,13 +370,13 @@
 /*!  @return Если тестирование прошло успешно возвращается ak_true (истина). В противном случае,
      возвращается ak_false.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_hash_test_streebog256( void )
+ bool_t ak_hash_test_streebog256( void )
 {
   struct hash ctx; /* контекст функции хеширования */
   ak_uint8 out[32]; /* буффер длиной 32 байта (256 бит) для получения результата */
   char *str = NULL;
   int error = ak_error_ok;
-  ak_bool result = ak_true;
+  bool_t result = ak_true;
   int audit = ak_log_get_level();
 
  /* инициализируем контекст функции хешиирования */
@@ -494,13 +494,13 @@
 /*!  @return Если тестирование прошло успешно возвращается ak_true (истина). В противном случае,
      возвращается ak_false.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_hash_test_streebog512( void )
+ bool_t ak_hash_test_streebog512( void )
 {
   struct hash ctx; /* контекст функции хеширования */
   ak_uint8 out[64]; /* буффер длиной 64 байта (512 бит) для получения результата */
   char *str = NULL;
   int error = ak_error_ok;
-  ak_bool result = ak_true;
+  bool_t result = ak_true;
   int audit = ak_log_get_level();
 
  /* инициализируем контекст функции хешиирования */

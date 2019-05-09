@@ -57,7 +57,7 @@
  int main( void )
 {
   char st[512];
-  ak_bool result;
+  bool_t result;
   struct bckey key; /* ключ блочного алгоритма шифрования */
   ak_uint8 frame[124];
 

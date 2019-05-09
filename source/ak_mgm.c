@@ -816,7 +816,7 @@
             При этом код ошибки может быть получен с
             помощью вызова функции ak_error_get_value().                                           */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_bckey_context_decrypt_mgm( ak_bckey encryptionKey, ak_bckey authenticationKey,
+ bool_t ak_bckey_context_decrypt_mgm( ak_bckey encryptionKey, ak_bckey authenticationKey,
            const ak_pointer adata, const size_t adata_size, const ak_pointer in, ak_pointer out,
                                      const size_t size, const ak_pointer iv, const size_t iv_size,
                                                          ak_pointer icode, const size_t icode_size )
@@ -824,7 +824,7 @@
   size_t bs = 0;
   struct mgm_ctx mgm; /* контекст структуры, в которой хранятся промежуточные данные */
   int error = ak_error_ok;
-  ak_bool result = ak_false;
+  bool_t result = ak_false;
 
  /* проверки ключей */
   if(( encryptionKey == NULL ) && ( authenticationKey == NULL )) {
@@ -1039,7 +1039,7 @@
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mgm_context_set_key( ak_mgm mctx, const ak_pointer ptr,
-                                                            const size_t size, const ak_bool cflag )
+                                                            const size_t size, const bool_t cflag )
 {
   int error = ak_error_ok;
   if( mctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -1208,10 +1208,10 @@
 
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_bckey_test_mgm( void )
+ bool_t ak_bckey_test_mgm( void )
 {
   char *str = NULL;
-  ak_bool result = ak_false;
+  bool_t result = ak_false;
   int error = ak_error_ok, audit = ak_log_get_level();
 
  /* константные значения ключей из ГОСТ Р 34.13-2015 */

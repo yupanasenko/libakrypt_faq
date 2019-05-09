@@ -23,7 +23,7 @@
 /*! \brief Однопараметрическая функция для проведения действий с секретным ключом, возвращает код ошибки. */
  typedef int ( ak_function_skey )( ak_skey );
 /*! \brief Однопараметрическая функция для проведения действий с секретным ключом, возвращает истину или ложь. */
- typedef ak_bool ( ak_function_skey_check )( ak_skey );
+ typedef bool_t ( ak_function_skey_check )( ak_skey );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура для хранения ресурса ключа. */
@@ -57,7 +57,7 @@
  /*! \brief Флаг, который определяет, можно ли использовать значение внутреннего буффера в режиме omac. */
    omac_flag_buffer_used = 0x0200LL
 
-} key_flags;
+} key_flags_t;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура секретного ключа -- базовый набор данных и методов контроля. */
@@ -79,7 +79,7 @@
   /*! \brief OID алгоритма для которого предназначен секретный ключ */
    ak_oid oid;
  /*! \brief Флаги текущего состояния ключа */
-   key_flags flags;
+   key_flags_t flags;
 
   /*! \brief указатель на функцию маскирования ключа */
    ak_function_skey *set_mask;
@@ -99,7 +99,7 @@
 /*! \brief Присвоение секретному ключу уникального номера. */
  int ak_skey_context_set_unique_number( ak_skey );
 /*! \brief Присвоение секретному ключу константного значения. */
- int ak_skey_context_set_key( ak_skey , const ak_pointer , const size_t , const ak_bool );
+ int ak_skey_context_set_key( ak_skey , const ak_pointer , const size_t , const bool_t );
 /*! \brief Присвоение секретному ключу случайного значения. */
  int ak_skey_context_set_key_random( ak_skey , ak_random );
 /*! \brief Присвоение секретному ключу значения, выработанного из пароля */
@@ -115,7 +115,7 @@
 /*! \brief Вычисление значения контрольной суммы ключа. */
  int ak_skey_context_set_icode_xor( ak_skey );
 /*! \brief Проверка значения контрольной суммы ключа. */
- ak_bool ak_skey_context_check_icode_xor( ak_skey );
+ bool_t ak_skey_context_check_icode_xor( ak_skey );
 /*! \brief Обновление контекста алгоритма итеративного сжатия значением секретного ключа. */
  int ak_skey_context_mac_context_update( ak_skey, struct mac * );
 

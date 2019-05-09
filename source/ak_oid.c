@@ -266,7 +266,7 @@
 /*! @param engine тип криптографического механизма.
     @return Функция возвращает указатель на константную строку.                                    */
 /* ----------------------------------------------------------------------------------------------- */
- const char *ak_libakrypt_get_engine_name( const oid_engines engine )
+ const char *ak_libakrypt_get_engine_name( const oid_engines_t engine )
 {
   if(( engine < undefined_engine ) || ( engine > oid_engine )) {
     ak_error_message( ak_error_oid_engine, __func__, "incorrect value of engine" );
@@ -279,7 +279,7 @@
 /*! @param mode режим криптографического механизма.
     @return Функция возвращает указатель на константную строку.                                    */
 /* ----------------------------------------------------------------------------------------------- */
- const char *ak_libakrypt_get_mode_name( const oid_modes mode )
+ const char *ak_libakrypt_get_mode_name( const oid_modes_t mode )
 {
   if(( mode < undefined_mode ) || ( mode > a8 )) {
     ak_error_message( ak_error_oid_mode, __func__, "incorrect value of engine mode" );
@@ -379,7 +379,7 @@
     @return В случае успешного поиска функция возвращает указатель на  область памяти, в которой
     находится структура с найденным идентификатором. В случае ошибки, возвращается NULL.           */
 /* ----------------------------------------------------------------------------------------------- */
- ak_oid ak_oid_context_find_by_engine( const oid_engines engine )
+ ak_oid ak_oid_context_find_by_engine( const oid_engines_t engine )
 {
   size_t idx = 0;
   do{
@@ -397,7 +397,7 @@
     @return В случае успешного поиска функция возвращает указатель на  область памяти, в которой
     находится структура с найденным идентификатором. В случае ошибки, возвращается NULL.           */
 /* ----------------------------------------------------------------------------------------------- */
- ak_oid ak_oid_context_findnext_by_engine( const ak_oid startoid, const oid_engines engine )
+ ak_oid ak_oid_context_findnext_by_engine( const ak_oid startoid, const oid_engines_t engine )
 {
  ak_oid oid = ( ak_oid )startoid;
 
@@ -419,10 +419,10 @@
     @return Функция возвращает истину, если заданный адрес `oid` дествительности содержится
     среди предопределенных oid библиотеки.                                                         */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_oid_context_check( const ak_oid oid )
+ bool_t ak_oid_context_check( const ak_oid oid )
 {
   size_t i;
-  ak_bool result = ak_false;
+  bool_t result = ak_false;
 
   for( i = 0; i < ak_libakrypt_oids_count(); i++ )
      if( (const ak_oid) &libakrypt_oids[i] == oid ) result = ak_true;

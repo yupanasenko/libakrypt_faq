@@ -54,7 +54,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 #ifndef LIBAKRYPT_CONST_CRYPTO_PARAMS
 /*! \brief Функция считывает настройки (параметры) библиотеки из файла libakrypt.conf */
- ak_bool ak_libakrypt_load_options( void );
+ bool_t ak_libakrypt_load_options( void );
 #endif
 
 #endif

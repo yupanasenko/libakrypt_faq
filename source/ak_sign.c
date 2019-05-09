@@ -174,7 +174,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @todo Необходимо реализовать проверку контрольной суммы для секретного ключа ЭП. */
- static ak_bool ak_signkey_context_check_icode_multiplicative( ak_skey skey )
+ static bool_t ak_signkey_context_check_icode_multiplicative( ak_skey skey )
 {
  (void)skey;
  return ak_error_ok;
@@ -386,7 +386,7 @@
     код ошибки.                                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_signkey_context_set_key( ak_signkey sctx, const ak_pointer ptr,
-                                                            const size_t size, const ak_bool cflag )
+                                                            const size_t size, const bool_t cflag )
 {
   int error = ak_error_ok;
 
@@ -845,7 +845,7 @@
     возникла ошибка, то возвращается ложь. Код шибки может получен с помощью
     вызова функции ak_error_get_value().                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_verifykey_context_verify_hash( ak_verifykey pctx,
+ bool_t ak_verifykey_context_verify_hash( ak_verifykey pctx,
                                         const ak_pointer hash, const size_t hsize, ak_pointer sign )
 {
 #ifndef LIBAKRYPT_LITTLE_ENDIAN
@@ -925,7 +925,7 @@
     возникла ошибка, то возвращается ложь. Код шибки может получен с помощью
     вызова функции ak_error_get_value().                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_verifykey_context_verify_ptr( ak_verifykey pctx, const ak_pointer in,
+ bool_t ak_verifykey_context_verify_ptr( ak_verifykey pctx, const ak_pointer in,
                                                                const size_t size, ak_pointer sign )
 {
   ak_uint8 hash[64];
@@ -968,7 +968,7 @@
     возникла ошибка, то возвращается ложь. Код шибки может получен с помощью
     вызова функции ak_error_get_value().                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_verifykey_context_verify_file( ak_verifykey pctx, const char *filename, ak_pointer sign )
+ bool_t ak_verifykey_context_verify_file( ak_verifykey pctx, const char *filename, ak_pointer sign )
 {
   ak_uint8 hash[64];
   int error = ak_error_ok;
@@ -1035,13 +1035,13 @@
     @return Функция возвращает истину только в том случае,
     когда будут пройдены все тесты. В противном случае возвращается ложь.                          */
 /* ----------------------------------------------------------------------------------------------- */
- static ak_bool ak_signkey_test_random_signatures( void )
+ static bool_t ak_signkey_test_random_signatures( void )
 {
   size_t count = 0, allcount = 0;
   ak_uint8 buffer[128];
   struct random generator;
   int error = ak_error_ok;
-  ak_bool result = ak_false;
+  bool_t result = ak_false;
   ak_oid oid = ak_oid_context_find_by_engine( identifier );
 
   /* создаем тестовый генератор */
@@ -1119,7 +1119,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_signkey_test( void )
+ bool_t ak_signkey_test( void )
 {
  /* секретные ключи определяются последовательностями байт */
  /* d = "7A929ADE789BB9BE10ED359DD39A72C11B60961F49397EEE1D19CE9891EC3B28"; */

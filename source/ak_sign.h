@@ -47,7 +47,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Присвоение секретному ключу электронной подписи константного значения. */
- int ak_signkey_context_set_key( ak_signkey , const ak_pointer , const size_t , const ak_bool );
+ int ak_signkey_context_set_key( ak_signkey , const ak_pointer , const size_t , const bool_t );
 /*! \brief Присвоение секретному ключу электронной подписи случайного значения. */
  int ak_signkey_context_set_key_random( ak_signkey , ak_random );
 
@@ -63,7 +63,7 @@
  ak_buffer ak_signkey_context_sign_file( ak_signkey , const char * , ak_pointer );
 
 /*! \brief Выполнение тестовых примеров для алгоритмов выработки и проверки электронной подписи */
- ak_bool ak_signkey_test( void );
+ bool_t ak_signkey_test( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Открытый ключ алгоритма проверки электронной подписи ГОСТ Р 34.10-2012.
@@ -96,13 +96,13 @@
 /*! \brief Освобождение памяти из под контекста открытого ключа. */
  ak_pointer ak_verifykey_context_delete( ak_pointer );
 /*! \brief Проверка электронной подписи для вычисленного заранее значения хеш-функции. */
- ak_bool ak_verifykey_context_verify_hash( ak_verifykey , const ak_pointer ,
+ bool_t ak_verifykey_context_verify_hash( ak_verifykey , const ak_pointer ,
                                                                        const size_t , ak_pointer );
 /*! \brief Проверка электронной подписи для заданной области памяти. */
- ak_bool ak_verifykey_context_verify_ptr( ak_verifykey , const ak_pointer ,
+ bool_t ak_verifykey_context_verify_ptr( ak_verifykey , const ak_pointer ,
                                                                        const size_t , ak_pointer );
 /*! \brief Проверка электронной подписи для заданного файла. */
- ak_bool ak_verifykey_context_verify_file( ak_verifykey , const char * , ak_pointer );
+ bool_t ak_verifykey_context_verify_file( ak_verifykey , const char * , ak_pointer );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

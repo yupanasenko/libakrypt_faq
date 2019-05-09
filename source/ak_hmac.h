@@ -47,7 +47,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Присвоение секретному ключу константного значения. */
- int ak_hmac_context_set_key( ak_hmac , const ak_pointer , const size_t , const ak_bool );
+ int ak_hmac_context_set_key( ak_hmac , const ak_pointer , const size_t , const bool_t );
 /*! \brief Присвоение секретному ключу случайного значения. */
  int ak_hmac_context_set_key_random( ak_hmac , ak_random );
 /*! \brief Присвоение секретному ключу значения, выработанного из пароля */
@@ -72,9 +72,9 @@
                    const ak_pointer , const size_t, const size_t , const size_t , ak_pointer );
 /*! \brief Тестирование алгоритмов выработки имитовставки HMAC с отечественными
     функциями хеширования семейства Стрибог (ГОСТ Р 34.11-2012). */
- ak_bool ak_hmac_test_streebog( void );
+ bool_t ak_hmac_test_streebog( void );
 /*! \brief Тестирование алгоритма PBKDF2, регламентируемого Р 50.1.113-2016. */
- ak_bool ak_hmac_test_pbkdf2( void );
+ bool_t ak_hmac_test_pbkdf2( void );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

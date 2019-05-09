@@ -203,7 +203,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тестирование операции умножения в поле \f$ \mathbb F_{2^{64}}\f$. */
- static ak_bool ak_gf64_multiplication_test( void )
+ static bool_t ak_gf64_multiplication_test( void )
 {
  int i = 0;
  char out[128];
@@ -295,7 +295,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тестирование операции умножения в поле \f$ \mathbb F_{2^{128}}\f$. */
- static ak_bool ak_gf128_multiplication_test( void )
+ static bool_t ak_gf128_multiplication_test( void )
 {
  int i = 0;
  char out[128];
@@ -394,7 +394,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_gfn_multiplication_test( void )
+ bool_t ak_gfn_multiplication_test( void )
 {
  int audit = ak_log_get_level();
 

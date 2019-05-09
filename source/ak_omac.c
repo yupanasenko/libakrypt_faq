@@ -135,7 +135,7 @@
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_omac_context_set_key( ak_omac gkey, const ak_pointer ptr,
-                                                            const size_t size, const ak_bool cflag )
+                                                            const size_t size, const bool_t cflag )
 {
   int error = ak_error_ok;
   if( gkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,

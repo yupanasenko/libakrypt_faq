@@ -40,7 +40,7 @@
     \return В случе успешного тестирования возвращает \ref ak_true (истина).
     В противном случае возвращается ak_false.                                                      */
 /* ----------------------------------------------------------------------------------------------- */
- static ak_bool ak_libakrypt_test_types( void )
+ static bool_t ak_libakrypt_test_types( void )
 {
   union {
     ak_uint8 x[4];
@@ -121,7 +121,7 @@
     функция возвращает ak_false. Код ошибки можеть быть получен с помощью
     вызова ak_error_get_value()                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- static ak_bool ak_libakrypt_test_hash_functions( void )
+ static bool_t ak_libakrypt_test_hash_functions( void )
 {
   int audit = ak_log_get_level();
   if( audit >= ak_log_maximum )
@@ -151,7 +151,7 @@
     функция возвращает ak_false. Код ошибки можеть быть получен с помощью
     вызова ak_error_get_value()                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_libakrypt_test_block_ciphers( void )
+ bool_t ak_libakrypt_test_block_ciphers( void )
 {
   int audit = ak_log_get_level();
   if( audit >= ak_log_maximum )
@@ -189,7 +189,7 @@
     функция возвращает ak_false. Код ошибки можеть быть получен с помощью
     вызова ak_error_get_value()                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- static ak_bool ak_libakrypt_test_mac_functions( void )
+ static bool_t ak_libakrypt_test_mac_functions( void )
 {
   int audit = ak_log_get_level();
   if( audit >= ak_log_maximum )
@@ -235,7 +235,7 @@
     функция возвращает ak_false. Код ошибки можеть быть получен с помощью
     вызова ak_error_get_value()                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- static ak_bool ak_libakrypt_test_asymmetric_functions( void )
+ static bool_t ak_libakrypt_test_asymmetric_functions( void )
 {
   int audit = ak_log_get_level();
   if( audit >= ak_log_maximum )
@@ -266,7 +266,7 @@
     с использованием как значений, содержащихся в нормативных документах и стандартах,
     так и с использованием случайных значений, вырабатываемых в хде тестирвоания.                  */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_libakrypt_dynamic_control_test( void )
+ bool_t ak_libakrypt_dynamic_control_test( void )
 {
   int audit = ak_log_get_level();
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ , "testing started" );

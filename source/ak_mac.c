@@ -361,7 +361,7 @@
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mac_context_set_key( ak_mac ictx, const ak_pointer ptr,
-                                                           const size_t size , const ak_bool cflag )
+                                                           const size_t size , const bool_t cflag )
 {
   int error = ak_error_ok;
   if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -701,7 +701,7 @@
     хеширования с помощью прямого вычисления для данных с известной длиной и с помощью класса
     \ref mac для случайной траектории вычислений.                                             */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_mac_test_hash_functions( void )
+ bool_t ak_mac_test_hash_functions( void )
 {
   struct hash ctx;
   ak_oid oid = NULL;
@@ -771,7 +771,7 @@
     хеширования семейства HMAC с помощью прямого вычисления для данных с известной длиной и
     с помощью класса \ref mac для случайной траектории вычислений.                                 */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_mac_test_hmac_functions( void )
+ bool_t ak_mac_test_hmac_functions( void )
 {
   struct hmac ctx;
   ak_oid oid = NULL;
@@ -839,7 +839,7 @@
     эталонными значениями из ГОСТ Р 34.13-2015, здесь проверяется эквивалентность реализации
     для класса bckey (она же используется в omac) и mac.                                           */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_mac_test_omac_functions( void )
+ bool_t ak_mac_test_omac_functions( void )
 {
   size_t i = 0;
   struct mac mctx;

@@ -258,7 +258,7 @@
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mpzn_to_little_endian( ak_uint64* x, const size_t size,
-                                            ak_pointer out, const size_t outsize, ak_bool reverse )
+                                            ak_pointer out, const size_t outsize, bool_t reverse )
 {
   ak_uint8 *ptr = out;
   size_t j = 0, idx = 0, cnt = size*sizeof( ak_uint64 );
@@ -297,7 +297,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mpzn_set_little_endian( ak_uint64 *x, const size_t size,
-                                     const ak_pointer buff, const size_t buffsize, ak_bool reverse )
+                                     const ak_pointer buff, const size_t buffsize, bool_t reverse )
 {
   ak_uint64 tmp = 0;
   ak_uint8 *ptr = buff;
@@ -445,7 +445,7 @@
    @return Функция возвращает \ref ak_true в случае равенства значений.
    В противном случае, возвращается \ref ak_false.                                                 */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_mpzn_cmp_ui( ak_uint64 *x, const size_t size, const ak_uint64 value )
+ bool_t ak_mpzn_cmp_ui( ak_uint64 *x, const size_t size, const ak_uint64 value )
 {
   size_t i = 0;
   if( x[0] != value ) return ak_false;

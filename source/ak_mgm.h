@@ -86,7 +86,7 @@
 /*! \brief Присвоение контексту заданного значения инициализационного вектора (синхропосылки). */
  int ak_mgm_context_set_iv( ak_mgm , const ak_pointer , const size_t );
 /*! \brief Присвоение секретному ключу константного значения. */
- int ak_mgm_context_set_key( ak_mgm , const ak_pointer , const size_t , const ak_bool );
+ int ak_mgm_context_set_key( ak_mgm , const ak_pointer , const size_t , const bool_t );
 /*! \brief Присвоение секретному ключу случайного значения. */
  int ak_mgm_context_set_key_random( ak_mgm , ak_random );
 /*! \brief Присвоение секретному ключу значения, выработанного из пароля */
@@ -104,7 +104,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тестирование корректной работы режима блочного шифрования с одновременной
     выработкой имитовставки. */
- ak_bool ak_bckey_test_mgm( void );
+ bool_t ak_bckey_test_mgm( void );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

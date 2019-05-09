@@ -291,7 +291,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static ak_bool ak_libakrypt_load_one_option( const char *string, const char *field, ak_int64 *value )
+ static bool_t ak_libakrypt_load_one_option( const char *string, const char *field, ak_int64 *value )
 {
   char *ptr = NULL, *endptr = NULL;
   if(( ptr = strstr( string, field )) != NULL ) {
@@ -512,7 +512,7 @@
     если ни в одном из указанных мест файл не найден, то функция создает файл `libakrypt.conf`
     в домашнем каталоге пользователя со значениями по-умолчанию.                                   */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_libakrypt_load_options( void )
+ bool_t ak_libakrypt_load_options( void )
 {
  struct file fd;
  int error = ak_error_ok;
@@ -981,7 +981,7 @@
     пользователем с помощью вызова функции free(). В случае ошибки конвертации возвращается NULL.
     Код ошибки может быть получен с помощью вызова функции ak_error_get_code()                     */
 /* ----------------------------------------------------------------------------------------------- */
- char *ak_ptr_to_hexstr( ak_const_pointer ptr, const size_t ptr_size, const ak_bool reverse )
+ char *ak_ptr_to_hexstr( ak_const_pointer ptr, const size_t ptr_size, const bool_t reverse )
 {
   char *nullstr = NULL;
   size_t len = 1 + (ptr_size << 1);
@@ -1045,7 +1045,7 @@
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_ptr_to_hexstr_static( ak_const_pointer ptr, const size_t ptr_size,
-                                     ak_pointer out, const size_t out_size, const ak_bool reverse )
+                                     ak_pointer out, const size_t out_size, const bool_t reverse )
 {
   ak_uint8 *data = ( ak_uint8 * ) ptr;
   size_t len = 1 + (ptr_size << 1);
@@ -1120,7 +1120,7 @@
     @return В случае успеха возвращается ноль. В противном случае, в частности,
                       когда длина строки превышает размер массива, возвращается код ошибки.        */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hexstr_to_ptr( const char *hexstr, ak_pointer ptr, const size_t size, const ak_bool reverse )
+ int ak_hexstr_to_ptr( const char *hexstr, ak_pointer ptr, const size_t size, const bool_t reverse )
 {
   int i = 0;
   ak_uint8 *bdata = ptr;
@@ -1173,10 +1173,10 @@
     В противном случае, а также в случае возникновения ошибки, возвращается \ref ak_false.
     Код шибки может быть получен с помощью выщова функции ak_error_get_value().                    */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_ptr_is_equal( const ak_pointer left, const ak_pointer right, const size_t size )
+ bool_t ak_ptr_is_equal( const ak_pointer left, const ak_pointer right, const size_t size )
 {
   size_t i = 0;
-  ak_bool result = ak_true;
+  bool_t result = ak_true;
   ak_uint8 *lp = left, *rp = right;
 
   if(( left == NULL ) || ( right == NULL )) {
