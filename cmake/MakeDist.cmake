@@ -33,6 +33,10 @@ if( CMAKE_HOST_UNIX )
     file( APPEND ${MYDFILE}
      "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/tests/test-${file}.c libakrypt-${FULL_VERSION}/tests\n")
   endforeach()
+  foreach( file ${INTERNAL_FIOT_TEST_LIST} )
+    file( APPEND ${MYDFILE}
+     "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/tests/test-${file}.c libakrypt-${FULL_VERSION}/tests\n")
+  endforeach()
 
 #  # создаем каталог asn1 и копируем файлы с реализацией asn1
 #  file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/asn1\n" )
@@ -73,7 +77,7 @@ if( CMAKE_HOST_UNIX )
   # собираем дистрибутив
   file( APPEND ${MYDFILE} "tar -cjvf libakrypt-${FULL_VERSION}.tar.bz2 libakrypt-${FULL_VERSION}\n")
   file( APPEND ${MYDFILE} "rm -R libakrypt-${FULL_VERSION}\n")
-  file( APPEND ${MYDFILE} "akrypt hash -r -o libakrypt-${FULL_VERSION}.streebog256 libakrypt-${FULL_VERSION}.tar.bz2\n")
+#  file( APPEND ${MYDFILE} "akrypt hash -r -o libakrypt-${FULL_VERSION}.streebog256 libakrypt-${FULL_VERSION}.tar.bz2\n")
 
   message("-- Creating a make-dist-${FULL_VERSION}.sh file - done ")
   execute_process( COMMAND chmod +x ${MYDFILE} )

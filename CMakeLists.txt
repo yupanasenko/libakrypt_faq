@@ -148,6 +148,7 @@ set( OTHERS         CMakeLists.txt
                     Changelog.md
                     libakrypt.conf
                     libakrypt.rc.in
+                    LICENSE
 )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -281,10 +282,16 @@ endif()
 
 if( LIBAKRYPT_FIOT )
   set( INTERNAL_FIOT_TEST_LIST
+                 internal-fiot-algconst
                  internal-fiot-context
                  internal-fiot-echo-client
-                 internal-fiot-echo-server
   )
+  if( UNIX )
+    set( INTERNAL_FIOT_TEST_LIST
+                 ${INTERNAL_FIOT_TEST_LIST}
+                 internal-fiot-echo-server
+    )
+  endif()
 endif()
 
 # -------------------------------------------------------------------------------------------------- #

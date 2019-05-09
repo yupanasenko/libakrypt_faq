@@ -50,6 +50,10 @@
  char *ak_mpzn_to_hexstr( ak_uint64 *, const size_t );
 /*! \brief Преобразование вычета в строку шестнадцатеричных символов. */
  int ak_mpzn_to_hexstr_static( ak_uint64 * , const size_t , ak_pointer , const size_t );
+/*! \brief Сериализация вычета в последовательность октетов. */
+ int ak_mpzn_to_little_endian( ak_uint64 * , const size_t , ak_pointer , const size_t , ak_bool );
+/*! \brief Присвоение вычету сериализованного значения. */
+ int ak_mpzn_set_little_endian( ak_uint64 * , const size_t , const ak_pointer , const size_t , ak_bool );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Сложение двух вычетов */

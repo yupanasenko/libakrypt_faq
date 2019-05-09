@@ -97,7 +97,10 @@
   /* устанавливаем сокет для внешнего (шифрующего) интерфейса */
    if(( error = ak_fiot_context_set_interface_descriptor( &ctx,
                                             encryption_interface, fd )) != ak_error_ok ) goto exit;
-  /* здесь реализация протокола */
+  /* устанавливаем набор криптографических алгоритмов для обмена зашифрованной информацией */
+   if(( error =  ak_fiot_context_set_server_policy( &ctx,
+                                            magmaCTRplusGOST3413 )) != ak_error_ok ) goto exit;
+  /* теперь выполняем протокол */
    if(( error = ak_fiot_context_keys_generation_protocol( &ctx )) != ak_error_ok ) goto exit;
    printf( "echo-server: client authentication is Ok\n" );
 

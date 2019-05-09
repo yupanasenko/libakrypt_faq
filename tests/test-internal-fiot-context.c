@@ -83,14 +83,14 @@
 
  /* выводим текущие ограничения */
   printf("restrictions:\n");
-  printf(" maxFrameLength %u\n", actx.restriction.maxFrameLength );
-  printf(" maxFrameCount %u\n", actx.restriction.maxFrameCount );
-  printf(" maxFrameKeysCount %u\n", actx.restriction.maxFrameKeysCount );
-  printf(" maxApplicationSecretCount %u\n", actx.restriction.maxApplicationSecretCount );
+  printf(" maxFrameLength %u\n", actx.policy.restrictions.maxFrameLength );
+  printf(" maxFrameCount %u\n", actx.policy.restrictions.maxFrameCount );
+  printf(" maxFrameKeysCount %u\n", actx.policy.restrictions.maxFrameKeysCount );
+  printf(" maxApplicationSecretCount %u\n", actx.policy.restrictions.maxApplicationSecretCount );
 
  /* напоследок, тестируем функцию записи фреймов в какой-ниудь сокет */
-  actx.iface_enc = 2; /* отправляем все в стандартный вывод */
-  ak_fiot_context_write_frame( &actx, "hello fiot", 10, encrypted_frame, application_data );
+ // actx.iface_enc = 2; /* отправляем все в стандартный вывод */
+ // ak_fiot_context_write_frame( &actx, "hello fiot", 10, encrypted_frame, application_data );
 
   ak_fiot_context_destroy( &actx );
   lab_exit: ak_libakrypt_destroy();

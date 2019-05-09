@@ -74,6 +74,11 @@
   /* устанавливаем сокет для внешнего (шифрующего) интерфейса */
    if(( error = ak_fiot_context_set_interface_descriptor( &ctx,
                                     encryption_interface, sock )) != ak_error_ok ) goto exit;
+  /* устанавливаем идентификатор ключа аутентификации */
+   if(( error = ak_fiot_context_set_psk_identifier( &ctx,
+                                          ePSK_key, "12345", 5 )) != ak_error_ok ) goto exit;
+   if(( error = ak_fiot_context_set_initial_crypto_mechanism( &ctx,
+                                                   hmac256ePSK )) != ak_error_ok ) goto exit;
   /* здесь реализация протокола */
    if(( error = ak_fiot_context_keys_generation_protocol( &ctx )) != ak_error_ok ) goto exit;
    printf( "echo-client: server authentication is Ok\n" );

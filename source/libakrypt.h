@@ -158,6 +158,8 @@ extern "C" {
  #define ak_error_close_file                  (-13)
 /*! \brief Ошибка чтения из файла (устройства). */
  #define ak_error_read_data                   (-14)
+/*! \brief Ошибка чтения из файла (устройства) из-за превышения времени ожидания. */
+ #define ak_error_read_data_timeout           (-14)
 /*! \brief Ошибка записи в файл (устройство). */
  #define ak_error_write_data                  (-15)
 /*! \brief Ошибка записи в файл - файл существует */

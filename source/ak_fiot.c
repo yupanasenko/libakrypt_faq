@@ -24,7 +24,7 @@
  #include <sys/select.h>
 #endif
 #ifdef LIBAKRYPT_HAVE_SYSSOCKET_H
- /* заголовок нужен длял реализации функции shutdown */
+ /* заголовок нужен для реализации функции shutdown */
  #include <sys/socket.h>
 #endif
 #ifdef LIBAKRYPT_HAVE_WINDOWS_H
@@ -33,6 +33,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_fiot.h>
+ #include <ak_buffer.h>
  #include <ak_parameters.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -43,12 +44,12 @@
 /*! \brief Множество всех допустимых ограничений защищенного взаимодействия. */
  const static struct named_restriction {
   /*! \brief Ограничения на значения параметров. */
-   crypto_restriction_t restriction;
+   struct crypto_restriction restriction;
   /*! \brief Константа,  связанная со множеством значений параметров. */
    key_mechanism_t keymech;
  } crypto_restrictions[ named_restriction_count ] =  {
     { { 16384, 8192, 65535, 255 }, baseKeyMechanismMagma },
-    { { 16384, 65536, 65535, 255 }, baseKeyMechanismKuznechik },
+    { { 16384, 4, 4, 255 }, baseKeyMechanismKuznechik }, // 65536, 65535, 255
     { { 1500, 2048, 65535, 255 }, shortKCMechanismMagma },
     { { 1500, 65536, 65535, 255 },  shortKCMechanismKuznechik },
     { { 16384, 256, 65535, 65535 }, longKCMechanismMagma },
@@ -99,12 +100,9 @@
   /* используемый набор криптографических механизмов согласуется в ходе выполнения проткола. */
     fctx->mechanism = not_set_mechanism;
 
-  /* криптографические ограничения зависят от используемого алгоритма шифрования информации,
-     и должны устанавливаться при выборе криптографических механизмов. */
-   fctx->restriction = crypto_restrictions[named_restriction_count-1].restriction;
-
-  /* значения счетчиков */
-   fctx->lcounter = fctx->mcounter = fctx->ncounter = 0;
+  /* начальные значения счетчиков */
+   fctx->in_counter.l = fctx->in_counter.m = fctx->in_counter.n = 0;
+   fctx->out_counter.l = fctx->out_counter.m = fctx->out_counter.n = 0;
 
   /* дескрипторы сокетов */
    fctx->iface_enc = fctx->iface_plain = ak_network_undefined_socket;
@@ -174,17 +172,19 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param fctx Контекст защищенного соединения протокола sp fiot.
 
+    \note В ходе выполнения данной функции часть ключевой информации не инициализируется:
+     - контекст предварительно распределенного ключа инициализируется в ходе выполнения функции
+     ak_fiot_context_set_initial_crypto_mechanism()
+     - контексты ключей шифрования (`fctx->ecfk`, `fctx->esfk`) и ключи
+     имитозащиты (`fctx->icfk`, `fctx->isfk`)
+     инициализируются в ходе выполнения функции ak_fiot_context_set_secondary_crypto_mechanism().
+
     \return Функция возвращает ноль в случае успеха. В противном случае возвращается
     отрицательное целое число, содержащее код ошибки.                                              */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_fiot_context_create( ak_fiot fctx )
 {
   int error = ak_error_ok;
-
- /*! \todo const may be deleted later */
-  ak_uint8 const_key[32] = {
-    0x12, 0x34, 0x56, 0x78, 0x0a, 0xbc, 0xde, 0xf0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
-    0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x11, 0xa1, 0xa1, 0xa2, 0xa2, 0xa3, 0xa3, 0xa4, 0xa4 };
 
   /* инициализируем заголовок струкуры */
    memset( fctx, 0, sizeof( struct fiot ));
@@ -193,27 +193,22 @@
 
   /* инициализируем буфферы для хранения идентификаторов участников взаимодействия */
    if(( error = ak_buffer_create( &fctx->client_id )) != ak_error_ok ) {
-     ak_error_message( error, __func__, "incorrect creation of clientID buffer");
+     ak_error_message( error, __func__, "incorrect creation of client ID buffer");
      ak_fiot_context_destroy( fctx );
      return error;
    }
    if(( error = ak_buffer_create( &fctx->server_id )) != ak_error_ok ) {
-     ak_error_message( error, __func__, "incorrect creation of clientID buffer");
+     ak_error_message( error, __func__, "incorrect creation of server ID buffer");
      ak_fiot_context_destroy( fctx );
      return error;
    }
 
-//   /* инициализируем буфферы для хранения идентификаторов ключей аутентификации */
-//   if(( error = ak_buffer_create( &actx->epskID )) != fiot_error_ok ) {
-//     fiot_error( error, __func__, "incorrect creation of clientID buffer");
-//     fiot_delete(( fiot_t )actx );
-//     return NULL;
-//   }
-//   if(( error = ak_buffer_create( &actx->ipskID )) != fiot_error_ok ) {
-//     fiot_error( error, __func__, "incorrect creation of clientID buffer");
-//     fiot_delete(( fiot_t )actx );
-//     return NULL;
-//   }
+   /* инициализируем буфферы для хранения идентификаторов ключа аутентификации */
+   if(( error = ak_buffer_create( &fctx->epsk_id )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect creation of epsk ID buffer");
+     ak_fiot_context_destroy( fctx );
+     return error;
+   }
 
   /* инициализируем генераторы */
    if(( error = ak_random_context_create_lcg( &fctx->plain_rnd )) != ak_error_ok ) {
@@ -239,43 +234,31 @@
      return error;
    }
 
-//  /* инициализируем контекст хеширования сообщений */
-//   if(( error = ak_hash_context_create_streebog512( &actx->comp )) != fiot_error_ok ) {
-//     fiot_error( error, __func__, "incorrect elliptic curve parameters");
-//     fiot_delete(( fiot_t )actx );
-//     return NULL;
-//   }
+  /* инициализируем контекст хеширования сообщений */
+   if(( error = ak_mac_context_create_oid( &fctx->comp,
+                       ak_oid_context_find_by_name( "streebog512" ))) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect creation of hash function context");
+     ak_fiot_context_destroy( fctx );
+     return error;
+   }
 
-  /* следующие ключевые контексты инициализируются в ходе выполнения протокола:
+  /* инициализируем контекст контроля целостности незашифрованных сообщений */
+   if(( error = ak_mac_context_create_oid( &fctx->epsk,
+                       ak_oid_context_find_by_name( "streebog256" ))) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect creation of hash function context");
+     ak_fiot_context_destroy( fctx );
+     return error;
+   }
 
-     esfk, isfk, ecfk, icfk, epsk
-     (поскольку конкретные виды алгоритмов пока еще не известны)
+  /* устанавливаем значения параметров политики взаимоействия по-умолчанию */
+   fctx->policy.mechanism = kuznechikCTRplusGOST3413;
 
-     остальные поля структуры инициализированы нулем в значения по-умолчанию  */
+  /* криптографические ограничения зависят от используемого алгоритма шифрования информации,
+     и должны устанавливаться при выборе криптографических механизмов. */
+   fctx->policy.restrictions = crypto_restrictions[1].restriction;
 
-  /**/
-
-  /*! \todo нижеследующий фрагмент это костыль, который должен быть удален
-     после корректной реализации протокола выработки ключей */
-
-   fctx->ecfk = malloc( sizeof( struct bckey ));
-   ak_bckey_context_create_kuznechik( fctx->ecfk );
-   ak_bckey_context_set_key( fctx->ecfk, const_key, 32, ak_true );
-
-   fctx->esfk = malloc( sizeof( struct bckey ));
-   ak_bckey_context_create_kuznechik( fctx->esfk );
-   ak_bckey_context_set_key( fctx->esfk, const_key, 32, ak_true );
-
-   fctx->icfk = malloc( sizeof( struct mac ));
-   ak_mac_context_create_oid( fctx->icfk, ak_oid_context_find_by_name("omac-magma"));
-   ak_mac_context_set_key( fctx->icfk, const_key, 32, ak_true );
-
-   fctx->isfk = malloc( sizeof( struct mac ));
-   ak_mac_context_create_oid( fctx->isfk, ak_oid_context_find_by_name("omac-magma"));
-   ak_mac_context_set_key( fctx->isfk, const_key, 32, ak_true );
-
-   fctx->epsk = NULL;
-   fctx->restriction = crypto_restrictions[1].restriction;
+  /* тип ключа аутентификации нам не ясен */
+   fctx->epsk_type = undefined_key;
 
  return error;
 }
@@ -292,14 +275,11 @@
 
  /* уничтожение буфферов с идентификаторами */
   if(( error = ak_buffer_destroy( &fctx->client_id )) != ak_error_ok )
-    ak_error_message( error, __func__, "incrorrect destroying of clientID buffer" );
+    ak_error_message( error, __func__, "incrorrect destroying of client ID buffer" );
   if(( error = ak_buffer_destroy( &fctx->server_id )) != ak_error_ok )
-    ak_error_message( error, __func__, "incrorrect destroying of serverID buffer" );
-
-//  if(( error = ak_buffer_destroy( &actx->epskID )) != fiot_error_ok )
-//    fiot_error( error, __func__, "incrorrect destroying of epskID buffer" );
-//  if(( error = ak_buffer_destroy( &actx->ipskID )) != fiot_error_ok )
-//    fiot_error( error, __func__, "incrorrect destroying of ipskID buffer" );
+    ak_error_message( error, __func__, "incrorrect destroying of server ID buffer" );
+  if(( error = ak_buffer_destroy( &fctx->epsk_id )) != ak_error_ok )
+    ak_error_message( error, __func__, "incrorrect destroying of epsk ID buffer" );
 
  /* освобождаем генераторы */
   if(( error = ak_random_context_destroy( &fctx->plain_rnd )) != ak_error_ok )
@@ -307,14 +287,19 @@
   if(( error = ak_random_context_destroy( &fctx->crypto_rnd )) != ak_error_ok )
     ak_error_message( error, __func__, "incrorrect destroying of crypto random generator" );
 
+ /* освобождаем контекст хэширования сообщений */
+  if(( error = ak_mac_context_destroy( &fctx->comp )) != ak_error_ok )
+    ak_error_message( error, __func__, "incrorrect destroying of hash function context" );
 
- /* освобождаем ключевую информацию */
-  fctx->ecfk = ak_bckey_context_delete( fctx->ecfk );
-  fctx->esfk = ak_bckey_context_delete( fctx->esfk );
+ /* если нужно, уничтожаем ключи аутентификации */
+  ak_mac_context_destroy( &fctx->epsk );
+  fctx->epsk_type = undefined_key;
 
-  fctx->icfk = ak_mac_context_delete( fctx->icfk );
-  fctx->isfk = ak_mac_context_delete( fctx->isfk );
-
+ /* освобождаем производную ключевую информацию */
+  ak_bckey_context_destroy( &fctx->ecfk );
+  ak_bckey_context_destroy( &fctx->esfk );
+  ak_mac_context_destroy( &fctx->icfk );
+  ak_mac_context_destroy( &fctx->isfk );
 
  /* освобождаем базовую часть */
   if(( error = ak_fiot_context_destroy_common( fctx )) != ak_error_ok )
@@ -322,7 +307,6 @@
 
  /* обнуляем значения и освобождаем память */
   memset( fctx, 0, sizeof( struct fiot ));
-
  return error;
 }
 
@@ -381,8 +365,8 @@
     меньше, чем текущее значение MTU. Величина, на которую фрейм должен быть меньше,
     зависит от длины заголовка используемого канального протокола.
 
-    \return Функция возвращает ноль в случае успеха. В противном случае возвращается
-    отрицательное целое число, содержащее код ошибки.                                              */
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха. В противном случае
+    возвращается отрицательное целое число, содержащее код ошибки.                                 */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_fiot_context_set_frame_size( ak_fiot fctx, frame_buffer_t fb, size_t framesize )
 {
@@ -624,8 +608,374 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \details Функция устанавливает идентификатор симметричного ключа аутентификации.
+    В качестве такого ключа могут выступать
+    - предварительно распределенный, симметричный ключ аутентификации ePSK,
+    - выработанный в ходе предыдущего сеанса связи, симметричный ключ аутентификации iPSK.
+    При этом значение ключа не устанавливается, это происходит
+    при вызове функции ak_fiot_context_set_initial_crypto_mechanism().
+
+    \param fctx Контекст защищенного соединения.
+    \param type Тип ключа, для которого присваивается идентификатор.
+    \param in Указатель на область памяти, в которой содержится идентификатор ключа.
+    \param size Размер идентификатора в байтах
+    \return В случае успеха функция возвращает \ref ak_error_ok. В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_fiot_context_set_psk_identifier( ak_fiot fctx, key_type_t type, void *in, const size_t size )
+{
+  int error = ak_error_ok;
+
+  if(( in == NULL ) || ( size == 0 )) return ak_error_ok;
+  if( fctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to fiot context" );
+  switch( type ) {
+    case ePSK_key: fctx->epsk_type = ePSK_key; break;
+    case iPSK_key: fctx->epsk_type = iPSK_key; break;
+    default: return ak_error_message_fmt( fiot_error_wrong_psk_type, __func__,
+                                              "unexpected value of preshared key type: %x", type );
+  }
+  if(( error = ak_buffer_set_ptr( &fctx->epsk_id, in, size, ak_true )) != ak_error_ok )
+    return ak_error_message( error, __func__,
+                                               "incorrect assigning of preshared key identifier" );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! На момент вызова функции должен быть установлен идентификатор предварительно
+    распределенного ключа (`epsk_id`) и должен быть создана структура секретного ключа `epsk`.
+
+    \param fctx Контекст защищенного соединения.
+    \return В случае успеха функция возвращает \ref ak_error_ok. В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_fiot_context_set_psk_key( ak_fiot fctx )
+{
+  struct hash ctx;
+  ak_uint8 out[32];
+
+   if( !ak_buffer_is_assigned( &fctx->epsk_id ))
+     return ak_error_message( fiot_error_wrong_psk_identifier_using, __func__,
+                                                   "using an undefined preshared key identifier" );
+
+  /*! \note В настоящий момент это заглушка. */
+    ak_hash_context_create_streebog256( &ctx );
+    ak_hash_context_ptr( &ctx, fctx->epsk_id.data, fctx->epsk_id.size, out );
+    ak_mac_context_set_key( &fctx->epsk, out, sizeof( out ), ak_true );
+    ak_hash_context_destroy( &ctx );
+
+ ak_error_message( ak_error_ok, __func__, "Ok" );
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_fiot_context_set_server_policy( ak_fiot fctx, crypto_mechanism_t mechanism )
+{
+ /* выполняем необходимые проверки */
+  if( fctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to fiot context" );
+  if( mechanism == not_set_mechanism ) return ak_error_message( fiot_error_wrong_mechanism,
+                                                 __func__, "using an undefined crypto mechanism" );
+  if( ak_fiot_get_key_type( mechanism ) != derivative_key )
+    return ak_error_message( fiot_error_wrong_mechanism, __func__,
+                                           "crypto mechanism have'nt a derivative keys constant" );
+
+  fctx->policy.mechanism = mechanism;
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция устанавливает множество криптографических алгоритмов,
+    которые будут использованы для передачи незашифрованных сообщений в ходе протокола выработки
+    общих ключей.  Для клиента эта функция должна быть вызвана пользователем.
+    Для сервера - функция вызывается в ходе выполнения протокола.
+
+    В ходе выполнения функции инициализируется контекст `fctx->epsk` предварительно распределенного
+    ключа аутентификации, а ключу присваивается значение, соответствующее установленному ранее
+    идентификатору. Если используется аутентификация с помощью сертификатов открытых ключей,
+    то контекст `fctx->epsk` используется для бесключевого контроля елостности передаваемых сообщений.
+
+    Окончательные значения криптографических механизмов,
+    используемых в ходе защищенного взаимодействия, устанавливаются функцией
+    ak_fiot_context_set_secondary_crypto_mechanism().
+
+    \param fctx Контекст защищенного соединения.
+    \param mechanism Константа, описывающая множество используемых
+    криптографических преборазований.
+    \return В случае успеха функция возвращает \ref ak_error_ok. В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_fiot_context_set_initial_crypto_mechanism( ak_fiot fctx, crypto_mechanism_t mechanism )
+{
+  key_type_t ktype;
+  block_cipher_t bcipher;
+  int error = ak_error_ok;
+
+ /* выполняем необходимые проверки */
+  if( fctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to fiot context" );
+  if( mechanism == not_set_mechanism ) return ak_error_message( fiot_error_wrong_mechanism,
+                                                 __func__, "using an undefined crypto mechanism" );
+
+ /* первичные проверки на установленные идентификаторы ключей аутентификации */
+  if(( ktype = ak_fiot_get_key_type( mechanism )) == derivative_key )
+    return ak_error_message( fiot_error_wrong_mechanism, __func__,
+                              "using crypto mechanism with unsupported key type: derivative key" );
+  if(( ktype == ePSK_key ) || ( ktype == iPSK_key )) {
+    if( !ak_buffer_is_assigned( &fctx->epsk_id ))
+      return ak_error_message( fiot_error_wrong_psk_identifier_using, __func__,
+                                                  "identifier for preshared key is not assigned" );
+  }
+
+ /* устанавливаем функцию контроля целостности */
+  ak_mac_context_destroy( &fctx->epsk ); /* удаляем функцию по умолчанию */
+  switch( ak_fiot_get_integrity_function( mechanism )) {
+
+   /* начинаем с инициализации контекста хеширования
+      (используется при аутентификации с использованием сертификатов открытых ключей) */
+    case streebog256_function:
+      if( ktype != undefined_key )
+        return ak_error_message( fiot_error_wrong_psk_identifier_using, __func__,
+                                             "unexpected key type for streebog256 hash function" );
+      if(( error = ak_mac_context_create_oid( &fctx->epsk,
+                                   ak_oid_context_find_by_name( "streebog256" ))) != ak_error_ok )
+        return ak_error_message( error, __func__,
+                                    "incorrect creation of mac context for streebog256 function" );
+      break;
+
+    case streebog512_function:
+      if( ktype != undefined_key )
+        return ak_error_message( fiot_error_wrong_psk_identifier_using, __func__,
+                                             "unexpected key type for streebog256 hash function" );
+      if(( error = ak_mac_context_create_oid( &fctx->epsk,
+                                   ak_oid_context_find_by_name( "streebog512" ))) != ak_error_ok )
+        return ak_error_message( error, __func__,
+                                    "incorrect creation of mac context for streebog512 function" );
+      break;
+
+   /* теперь рассматриваем случаи с использованием симметричного ключа */
+    case hmacStreebog256_function:
+      if(( error = ak_mac_context_create_oid( &fctx->epsk,
+                              ak_oid_context_find_by_name( "hmac-streebog256" ))) != ak_error_ok )
+        return ak_error_message( error, __func__,
+                               "incorrect creation of mac context for hmac-streebog256 function" );
+      if(( error = ak_fiot_context_set_psk_key( fctx )) != ak_error_ok )
+        return ak_error_message( error, __func__,
+                                   "incorrect assigning key value for hmac-streebog256 function" );
+      break;
+
+    case hmacStreebog512_function:
+      if(( error = ak_mac_context_create_oid( &fctx->epsk,
+                              ak_oid_context_find_by_name( "hmac-streebog512" ))) != ak_error_ok )
+        return ak_error_message( error, __func__,
+                               "incorrect creation of mac context for hmac-streebog512 function" );
+      if(( error = ak_fiot_context_set_psk_key( fctx )) != ak_error_ok )
+        return ak_error_message( error, __func__,
+                                   "incorrect assigning key value for hmac-streebog512 function" );
+      break;
+
+    case imgost3413_function:
+      switch( bcipher = ak_fiot_get_block_cipher( mechanism )) {
+        case magma_cipher:
+          if(( error = ak_mac_context_create_oid( &fctx->epsk,
+                                    ak_oid_context_find_by_name( "omac-magma" ))) != ak_error_ok )
+            return ak_error_message( error, __func__,
+                                     "incorrect creation of mac context for omac-magma function" );
+          break;
+        case kuznechik_cipher:
+          if(( error = ak_mac_context_create_oid( &fctx->epsk,
+                                ak_oid_context_find_by_name( "omac-kuznechik" ))) != ak_error_ok )
+            return ak_error_message( error, __func__,
+                                 "incorrect creation of mac context for omac-kuznechik function" );
+          break;
+
+        default: return ak_error_message_fmt( fiot_error_wrong_cipher_type, __func__,
+                             "using crypto mechanism with unsupported block cipher: %x", bcipher );
+      }
+      if(( error = ak_fiot_context_set_psk_key( fctx )) != ak_error_ok )
+        return ak_error_message( error, __func__,
+                                     "incorrect assigning key value for gost34.13-2015 function" );
+      break;
+
+    default: return ak_error_message( fiot_error_wrong_integrity_algorithm, __func__,
+                                                         "using an undefined integrity function" );
+  }
+  fctx->mechanism = mechanism;
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция инициализирует ключевые контексты, используемые клиентом и сервером для
+    передачи зашифрованной и имитозащищенной информации.
+    После инициализации ключевые значения не присваиваются.
+    Это делают отдельные функции выработки ключевой информации.
+
+    \param fctx Контекст защищенного соединения.
+    \param mechanism Константа, описывающая множество используемых
+    криптографических преборазований.
+    \return В случае успеха функция возвращает \ref ak_error_ok. В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_fiot_context_set_secondary_crypto_mechanism( ak_fiot fctx, crypto_mechanism_t mechanism )
+{
+  block_cipher_t bc;
+  int error = ak_error_ok;
+
+ /* выполняем необходимые проверки */
+  if( fctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to fiot context" );
+  if( mechanism == not_set_mechanism ) return ak_error_message( fiot_error_wrong_mechanism,
+                                                 __func__, "using an undefined crypto mechanism" );
+  if( ak_fiot_get_key_type( mechanism ) != derivative_key )
+    return ak_error_message( fiot_error_wrong_mechanism,
+                                    __func__, "using a mechanism with wrong type of secret keys" );
+
+  switch( bc = ak_fiot_get_block_cipher( mechanism )) {
+    case magma_cipher:
+       if(( error = ak_bckey_context_create_magma( &fctx->esfk )) != ak_error_ok )
+         return ak_error_message( error, __func__,
+                                          "incorrect context creation for server encryption key" );
+       if(( error = ak_bckey_context_create_magma( &fctx->ecfk )) != ak_error_ok )
+         return ak_error_message( error, __func__,
+                                          "incorrect context creation for client encryption key" );
+      break;
+
+    case kuznechik_cipher:
+       if(( error = ak_bckey_context_create_kuznechik( &fctx->esfk )) != ak_error_ok )
+         return ak_error_message( error, __func__,
+                                           "incorrect context creation of server encryption key" );
+       if(( error = ak_bckey_context_create_kuznechik( &fctx->ecfk )) != ak_error_ok )
+         return ak_error_message( error, __func__,
+                                           "incorrect context creation of client encryption key" );
+      break;
+
+    default: return ak_error_message( fiot_error_wrong_cipher_type, __func__,
+                                                "using crypto mechanism with wrong block cipher" );
+  }
+
+  switch( ak_fiot_get_integrity_function( mechanism )) {
+   case hmacStreebog256_function:
+      if(( error = ak_mac_context_create_oid( &fctx->isfk,
+                                   ak_oid_context_find_by_name( "streebog256" ))) != ak_error_ok )
+        return ak_error_message( error, __func__,
+                                            "incorrect context creation of server integrity key" );
+      if(( error = ak_mac_context_create_oid( &fctx->icfk,
+                                   ak_oid_context_find_by_name( "streebog256" ))) != ak_error_ok )
+        return ak_error_message( error, __func__,
+                                            "incorrect context creation of client integrity key" );
+     break;
+
+   case hmacStreebog512_function:
+      if(( error = ak_mac_context_create_oid( &fctx->isfk,
+                                   ak_oid_context_find_by_name( "streebog512" ))) != ak_error_ok )
+        return ak_error_message( error, __func__,
+                                            "incorrect context creation of server integrity key" );
+      if(( error = ak_mac_context_create_oid( &fctx->icfk,
+                                   ak_oid_context_find_by_name( "streebog512" ))) != ak_error_ok )
+        return ak_error_message( error, __func__,
+                                            "incorrect context creation of client integrity key" );
+     break;
+
+   case imgost3413_function:
+      if( bc == magma_cipher ) {
+        if(( error = ak_mac_context_create_oid( &fctx->isfk,
+                                    ak_oid_context_find_by_name( "omac-magma" ))) != ak_error_ok )
+          return ak_error_message( error, __func__,
+                                            "incorrect context creation of server integrity key" );
+        if(( error = ak_mac_context_create_oid( &fctx->icfk,
+                                    ak_oid_context_find_by_name( "omac-magma" ))) != ak_error_ok )
+          return ak_error_message( error, __func__,
+                                            "incorrect context creation of client integrity key" );
+      } else {
+        if(( error = ak_mac_context_create_oid( &fctx->isfk,
+                                ak_oid_context_find_by_name( "omac-kuznechik" ))) != ak_error_ok )
+          return ak_error_message( error, __func__,
+                                            "incorrect context creation of server integrity key" );
+        if(( error = ak_mac_context_create_oid( &fctx->icfk,
+                                ak_oid_context_find_by_name( "omac-kuznechik" ))) != ak_error_ok )
+          return ak_error_message( error, __func__,
+                                            "incorrect context creation of client integrity key" );
+      }
+     break;
+
+   default: return ak_error_message( fiot_error_wrong_integrity_algorithm, __func__,
+                                         "using crypto mechanism with wrong integrity function" );
+  }
+
+ /* присваиваем значение константы */
+  fctx->mechanism = mechanism;
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*               Общие функции, не зависящие от конктерного контекста протокола                    */
+/* ----------------------------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param mechanism Значение константы, описывающей набор допустимых/используемых
+    криптографических алгоритмов.
+    \return Функция возвращает идентификатор алгоритма блочного шифрования.                        */
+/* ----------------------------------------------------------------------------------------------- */
+ block_cipher_t ak_fiot_get_block_cipher( const crypto_mechanism_t mechanism )
+{
+  block_cipher_t value = mechanism&0xF;
+
+   if(( value == 0 ) || ( value > null_cipher )) return undefined_cipher;
+  return value;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param mechanism Значение константы, описывающей набор допустимых/используемых
+    криптографических алгоритмов.
+    \return Функция возвращает идентификатор алгоритма выработки имитовставки.                     */
+/* ----------------------------------------------------------------------------------------------- */
+ integrity_function_t ak_fiot_get_integrity_function( const crypto_mechanism_t mechanism )
+{
+  integrity_function_t value = ( mechanism >> 4 )&0xF;
+
+  if(( value == 0 ) || ( value > imgost3413_function )) return undefined_integrity_function;
+ return value;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param mechanism Значение константы, описывающей набор допустимых/используемых
+    криптографических алгоритмов.
+    \return Функция возвращает тип используемого ключа.                                            */
+/* ----------------------------------------------------------------------------------------------- */
+ key_type_t ak_fiot_get_key_type( const crypto_mechanism_t mechanism )
+{
+  key_type_t value = ( mechanism >> 12 )&0x3;
+
+  if(( value == 0 ) || ( value > iPSK_key )) return undefined_key;
+ return value;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param id Значение константы, описывающей набор папаметров эллиптической кривой.
+    \return Функция возвращает размер x-координаты точки кривой (в байтах).                        */
+/* ----------------------------------------------------------------------------------------------- */
+ size_t ak_fiot_get_point_size( const elliptic_curve_t id )
+{
+  switch( id ) {
+    case tc26_gost3410_2012_256_paramsetA:
+    case rfc4357_gost3410_2001_paramsetA:
+    case rfc4357_gost3410_2001_paramsetB:
+    case rfc4357_gost3410_2001_paramsetC: return 32;
+
+    case tc26_gost3410_2012_512_paramsetA:
+    case tc26_gost3410_2012_512_paramsetB:
+    case tc26_gost3410_2012_512_paramsetC: return 64;
+
+    default: return 0;
+  }
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \example test-internal-fiot-context.c                                                          */
-/*! \example test-internal-fiot-unix.c                                                             */
+/*! \example test-internal-fiot-echo-client.c                                                      */
+/*! \example test-internal-fiot-echo-server.c                                                      */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_fiot.c  */
 /* ----------------------------------------------------------------------------------------------- */

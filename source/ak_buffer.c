@@ -282,7 +282,12 @@
 
     if(( ptr = buff->alloc( size )) == NULL )
       return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
+
+    /* сохраняем  предыдущие данные */
     memset( ptr, 0, size );
+    if(( buff->data != NULL ) && ( buff->size != 0 ))
+      memcpy( ptr, buff->data, buff->size );
+
     if(( error = ak_buffer_free( buff )) != ak_error_ok ) {
       ak_error_message( error, __func__, "incorrect buffer memory destroying");
       free( ptr );

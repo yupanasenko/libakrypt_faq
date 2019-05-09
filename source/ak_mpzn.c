@@ -134,7 +134,7 @@
   }
 
  /* старший разряд - по модулю, остальное мусор */
-  generator->random( generator, x, size*sizeof( ak_uint64 ));
+  generator->random( generator, x, ( ssize_t )( size*sizeof( ak_uint64 )));
   x[midx] %= p[midx];
 
  return ak_error_ok;
@@ -202,7 +202,7 @@
     return NULL;
   }
   if( !size ) {
-    ak_error_message( ak_error_zero_length, __func__ , "using a zero legth of input data" );
+    ak_error_message( ak_error_zero_length, __func__ , "using a zero length of input data" );
     return NULL;
   }
 #ifdef LIBAKRYPT_BIG_ENDIAN
@@ -235,6 +235,111 @@
 #else
   return ak_ptr_to_hexstr_static( x, size*sizeof( ak_uint64 ), out, outsize, ak_true );
 #endif
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Вычет `x` записывается в виде последовательности октетов - коэффициентов разложения в системе
+    счисления по основанию 256. Запись производится слева (начиная с младших разрядов)
+    на право (заканчивая старшими разрядами).
+    Память, в которую записывается вычет, должна быть выделена заранее.
+
+    \note Указатель на вычет `x` и указатель `out` на область памяти,
+    куда записывается результат сериализации, могут совпадать.
+
+    \param x Вычет, для которого производится преобразование.
+    \param size Размер вычета в машинных словах - значение, задаваемое константой
+    \ref ak_mpzn256_size или \ref ak_mpzn512_size.
+    \param out Указатель на область памяти, в которую будет помещено сериализованное
+     представление вычета `x`.
+    \param outsize Размер памяти (в октетах) для хранения сериализованного вычета `x`.
+    \param reverse Флаг полного разворота данных.
+    Если флаг истинен, то после сериализации данные переворачиваются, то есть записываются
+    в обратном (big endian) порядке.
+
+    \return В случае успеха, функция возвращает \ref ak_error_ok (ноль). В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mpzn_to_little_endian( ak_uint64* x, const size_t size,
+                                            ak_pointer out, const size_t outsize, ak_bool reverse )
+{
+  ak_uint8 *ptr = out;
+  size_t j = 0, idx = 0, cnt = size*sizeof( ak_uint64 );
+
+  if( x == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                       __func__ , "using a null pointer to mpzn" );
+  if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                             "using a zero length of input data" );
+  if( out == NULL ) return ak_error_message( ak_error_null_pointer,
+                                              __func__ , "using a null pointer to output buffer" );
+  if( outsize < cnt ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                        "using a small memory buffer for output" );
+ /* вычисляем коэффициенты разложения в лоб, без учета используемой архитектуры */
+  for( j = 0; j < size; j++ ) {
+     ak_uint64 tmp = x[j];
+     ptr[idx++] = ( ak_uint8 )tmp%256; tmp >>= 8;
+     ptr[idx++] = ( ak_uint8 )tmp%256; tmp >>= 8;
+     ptr[idx++] = ( ak_uint8 )tmp%256; tmp >>= 8;
+     ptr[idx++] = ( ak_uint8 )tmp%256; tmp >>= 8;
+     ptr[idx++] = ( ak_uint8 )tmp%256; tmp >>= 8;
+     ptr[idx++] = ( ak_uint8 )tmp%256; tmp >>= 8;
+     ptr[idx++] = ( ak_uint8 )tmp%256; tmp >>= 8;
+     ptr[idx++] = ( ak_uint8 )tmp;
+  }
+ /* при необходимости, разворачиваем октеты в обратном порядке */
+  if( reverse ) {
+    for( j = 0; j < cnt/2; j++ ) {
+       ak_uint8 tmp;
+       tmp = ptr[cnt-j-1];
+       ptr[cnt-j-1] = ptr[j];
+       ptr[j] = tmp;
+    }
+  }
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mpzn_set_little_endian( ak_uint64 *x, const size_t size,
+                                     const ak_pointer buff, const size_t buffsize, ak_bool reverse )
+{
+  ak_uint64 tmp = 0;
+  ak_uint8 *ptr = buff;
+  size_t j = 0, idx = 0, cnt = size*sizeof( ak_uint64 );
+
+  if( x == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                       __func__ , "using a null pointer to mpzn" );
+  if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                              "using a zero legth of input data" );
+  if( buff == NULL ) return ak_error_message( ak_error_null_pointer,
+                                               __func__ , "using a null pointer to input buffer" );
+  if( buffsize > cnt ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                       "using a large buffer for mpzn assigning" );
+
+  if( reverse ) {
+    for( j = 0; j < size; j++ ) {
+       tmp = ptr[idx++];
+       tmp <<= 8; tmp += ptr[idx++];
+       tmp <<= 8; tmp += ptr[idx++];
+       tmp <<= 8; tmp += ptr[idx++];
+       tmp <<= 8; tmp += ptr[idx++];
+       tmp <<= 8; tmp += ptr[idx++];
+       tmp <<= 8; tmp += ptr[idx++];
+       tmp <<= 8; tmp += ptr[idx++];
+       x[size-1-j] = tmp;
+    }
+  } else {
+      for( j = 0; j < size; j++ ) {
+         idx = j*sizeof( ak_uint64 ) + 7;
+         tmp = ptr[idx--]; tmp <<= 8;
+         tmp += ptr[idx--]; tmp <<= 8;
+         tmp += ptr[idx--]; tmp <<= 8;
+         tmp += ptr[idx--]; tmp <<= 8;
+         tmp += ptr[idx--]; tmp <<= 8;
+         tmp += ptr[idx--]; tmp <<= 8;
+         tmp += ptr[idx--]; tmp <<= 8;
+         tmp += ptr[idx--]; x[j] = tmp;
+      }
+    }
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
