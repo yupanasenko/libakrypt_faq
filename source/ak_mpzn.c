@@ -13,8 +13,6 @@
  #error Library cannot be compiled without string.h header
 #endif
 
-#include <stdio.h>
-
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_mpzn.h>
 

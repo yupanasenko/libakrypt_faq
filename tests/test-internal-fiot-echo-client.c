@@ -84,6 +84,14 @@
    printf( "echo-client: server authentication is Ok\n" );
 
 
+  /* принудительно ужесточаем ограничения на объем данных;
+     применяется только для тестирования функций выработки производной ключевой информации;
+     стоит отметить, что при тестировании мы используем несбалансированные ограничения
+     для клиента и для сервера. */
+    ctx.policy.restrictions.maxFrameCount = 4;
+    ctx.policy.restrictions.maxFrameKeysCount = 4;
+    ctx.policy.restrictions.maxApplicationSecretCount = 256;
+
   /* часть третья: отправка и получение сообщений */
 
    while( done ) {

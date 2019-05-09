@@ -82,5 +82,17 @@
   printf("kuznechikAEAD: %x -> cipher: %u, integrity func: %d, key type: %d\n",
    m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
 
+  printf("\n restrictions (named constants and values)\n");
+  printf("baseKeyMechanismMagma: 0x%x\n", baseKeyMechanismMagma );
+  printf("baseKeyMechanismKuznechik: 0x%x\n", baseKeyMechanismKuznechik );
+  printf("shortKCMechanismMagma: 0x%x\n", shortKCMechanismMagma );
+  printf("shortKCMechanismKuznechik: 0x%x\n", shortKCMechanismKuznechik );
+  printf("longKCMechanismMagma: 0x%x\n", longKCMechanismMagma );
+  printf("longKCMechanismKuznechik: 0x%x\n", longKCMechanismKuznechik );
+  printf("shortKAMechanismMagma: 0x%x\n", shortKAMechanismMagma );
+  printf("shortKAMechanismKuznechik: 0x%x\n", shortKAMechanismKuznechik );
+  printf("longKAMechanismMagma: 0x%x\n", longKAMechanismMagma );
+  printf("longKAMechanismKuznechik: 0x%x\n", longKAMechanismKuznechik );
+
  return EXIT_SUCCESS;
 }

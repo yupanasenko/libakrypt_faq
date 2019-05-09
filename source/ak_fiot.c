@@ -49,7 +49,7 @@
    key_mechanism_t keymech;
  } crypto_restrictions[ named_restriction_count ] =  {
     { { 16384, 8192, 65535, 255 }, baseKeyMechanismMagma },
-    { { 16384, 4, 4, 255 }, baseKeyMechanismKuznechik }, // 65536, 65535, 255
+    { { 16384, 65536, 65535, 255 }, baseKeyMechanismKuznechik },
     { { 1500, 2048, 65535, 255 }, shortKCMechanismMagma },
     { { 1500, 65536, 65535, 255 },  shortKCMechanismKuznechik },
     { { 16384, 256, 65535, 65535 }, longKCMechanismMagma },
@@ -60,6 +60,24 @@
     { { 16384, 64, 65535, 65535 }, longKAMechanismKuznechik },
     { { 0, 0, 0, 0 }, undefinedKeyMechanism },
 };
+
+/* ----------------------------------------------------------------------------------------------- */
+ static key_mechanism_t ak_fiot_get_restrictions_value( ak_crypto_restriction rest,
+                                                                     size_t size, block_cipher_t bc )
+{
+  size_t idx = 0;
+  key_mechanism_t km;
+
+ /* теперь мы можем определить ограничения на криптографические параметры */
+  if( size > 1500 ) /* получаем константу и потом ищем ее среди заранее готовых */
+    km = ( long_frame | ( ak_fiot_class << 2 ) | ( bc << 4 ));
+   else km = ( small_frame | ( ak_fiot_class << 2 ) | ( bc << 4 ));
+  for( idx = 0; idx < named_restriction_count; idx++ ) {
+     if( crypto_restrictions[idx].keymech == km )
+       *rest = crypto_restrictions[idx].restriction;
+  }
+ return km;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                    функции для работы с контектами протокола sp fiot                            */
@@ -809,8 +827,8 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция инициализирует ключевые контексты, используемые клиентом и сервером для
     передачи зашифрованной и имитозащищенной информации.
-    После инициализации ключевые значения не присваиваются.
-    Это делают отдельные функции выработки ключевой информации.
+    После инициализации ключевые значения не присваиваются - это делают отдельные функции
+    выработки ключевой информации.
 
     \param fctx Контекст защищенного соединения.
     \param mechanism Константа, описывающая множество используемых
@@ -821,6 +839,7 @@
  int ak_fiot_context_set_secondary_crypto_mechanism( ak_fiot fctx, crypto_mechanism_t mechanism )
 {
   block_cipher_t bc;
+  key_mechanism_t km;
   int error = ak_error_ok;
 
  /* выполняем необходимые проверки */
@@ -906,6 +925,12 @@
 
  /* присваиваем значение константы */
   fctx->mechanism = mechanism;
+
+ /* теперь мы можем установить ограничения на криптографические параметры */
+  km = ak_fiot_get_restrictions_value( &fctx->policy.restrictions, fctx->oframe.size, bc );
+  if( ak_log_get_level() >= fiot_log_standard )
+    ak_error_message_fmt( error, __func__,
+                         "assigned mechanism 0x%x with restiction constant 0x%0x", mechanism, km );
  return error;
 }
 

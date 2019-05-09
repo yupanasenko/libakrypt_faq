@@ -230,20 +230,20 @@
 /* ----------------------------------------------------------------------------------------------- */
  typedef enum {
    undefinedKeyMechanism = 0x00,
-   baseKeyMechanismMagma = ( small_frame | base_class | ( magma_cipher << 4 )),
-   baseKeyMechanismKuznechik = ( small_frame | base_class | ( kuznechik_cipher << 4 )),
-   shortKCMechanismMagma = ( small_frame | KC_class | ( magma_cipher << 4 )),
-   shortKCMechanismKuznechik = ( small_frame | KC_class | ( kuznechik_cipher << 4 )),
-   longKCMechanismMagma = ( long_frame | KC_class | ( magma_cipher << 4 )),
-   longKCMechanismKuznechik = ( long_frame | KC_class | ( kuznechik_cipher << 4 )),
-   shortKAMechanismMagma = ( small_frame | KA_class | ( magma_cipher << 4 )),
-   shortKAMechanismKuznechik = ( small_frame | KA_class | ( kuznechik_cipher << 4 )),
-   longKAMechanismMagma =( long_frame | KA_class | ( magma_cipher << 4 )),
-   longKAMechanismKuznechik = ( long_frame | KA_class | ( kuznechik_cipher << 4 ))
+   baseKeyMechanismMagma = ( small_frame | ( base_class << 2 ) | ( magma_cipher << 4 )),
+   baseKeyMechanismKuznechik = ( small_frame | ( base_class << 2 ) | ( kuznechik_cipher << 4 )),
+   shortKCMechanismMagma = ( small_frame | ( KC_class << 2 ) | ( magma_cipher << 4 )),
+   shortKCMechanismKuznechik = ( small_frame | ( KC_class << 2 ) | ( kuznechik_cipher << 4 )),
+   longKCMechanismMagma = ( long_frame | ( KC_class << 2 ) | ( magma_cipher << 4 )),
+   longKCMechanismKuznechik = ( long_frame | ( KC_class << 2 ) | ( kuznechik_cipher << 4 )),
+   shortKAMechanismMagma = ( small_frame | ( KA_class << 2 ) | ( magma_cipher << 4 )),
+   shortKAMechanismKuznechik = ( small_frame | ( KA_class << 2 ) | ( kuznechik_cipher << 4 )),
+   longKAMechanismMagma =( long_frame | ( KA_class << 2 ) | ( magma_cipher << 4 )),
+   longKAMechanismKuznechik = ( long_frame | ( KA_class << 2 ) | ( kuznechik_cipher << 4 ))
 } key_mechanism_t;
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Набор ограничений (параметров) для защищенного взаимодействия, см. прил. Г. */
+/*! \brief Набор ограничений для параметров защищенного взаимодействия, см. прил. Г. */
  typedef struct crypto_restriction {
   /*! \brief Максимальная длина сериализованного представления структуры Frame. */
    unsigned int maxFrameLength;
