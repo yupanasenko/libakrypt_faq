@@ -40,7 +40,7 @@
   /* 2. симметричный ключ аутентификации (если определен) */
    if( ak_buffer_is_assigned( &fctx->epsk_id )) {
      ak_uint8 tmp = ( ak_uint8 )fctx->epsk_id.size;
-     if( border > tmp + 3 ) {
+     if( border > ( size_t )( tmp + 3 )) {
        message[meslen++] = ( ak_uint8 )is_present;
        message[meslen++] = ( ak_uint8 )fctx->epsk_type;
        message[meslen++] = tmp;
@@ -333,6 +333,10 @@
   struct hmac hmac_ctx;
   int error = ak_error_ok;
 
+ /*! \note удалить позже */
+  char str[512];
+
+
  /* в начале формируем общую точку Q на эллиптической кривой */
   ak_wpoint_pow( &fctx->point, &fctx->point, fctx->secret, fctx->curve->size, fctx->curve );
   ak_wpoint_reduce( &fctx->point, fctx->curve );
@@ -342,7 +346,6 @@
     return ak_error_message( error, __func__, "incorrect calculation of secret value" );
 
  /*! \note удалить позже */
-  char str[512];
   ak_error_message( 0, __func__, "");
   ak_ptr_to_hexstr_static( fctx->point.x, fctx->curve->size*sizeof( ak_uint64 ),
                                                                 str, sizeof( str ), ak_false );
@@ -444,6 +447,9 @@
   struct hmac hmac_ctx;
   int error = ak_error_ok;
 
+ /*! \note удалить позже */
+  char str[512];
+
  /* формируем ключевые значения для передачи данных от сервера к клиенту */
   ak_mac_context_finalize( &fctx->comp, NULL, 0, out );
   if(( error = ak_error_get_value()) != ak_error_ok )
@@ -480,7 +486,6 @@
   }
 
  /*! \note удалить позже */
-  char str[512];
   ak_error_message( 0, __func__, "" );
   ak_ptr_to_hexstr_static( fctx->client_ts, 32, str, sizeof( str ), ak_false );
   ak_error_message_fmt( 0, "", "eCHTS: %s", str );
@@ -637,6 +642,9 @@
   size_t meslen = 0;
   ak_uint8 *message =  (( ak_uint8 * )fctx->oframe.data ) + fctx->header_offset + 3, out[64];
 
+ /*! \note здесь удалить */
+  char str[512];
+
   /* формируем сериализованное представление сообщения verifyMessage */
    if( ak_mac_context_is_key_settable( &fctx->epsk )) {
      message[meslen++] = is_present;
@@ -655,8 +663,7 @@
 
    }
 
- /* здесь удалить */
-  char str[512];
+ /*! \note здесь удалить */
   ak_ptr_to_hexstr_static( message, meslen, str, sizeof( str ), ak_false );
   ak_error_message_fmt( 0, __func__, "verify: %s (!)", str );
 

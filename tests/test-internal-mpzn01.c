@@ -31,7 +31,7 @@
  /* преобразуем в little endian последовательность октетов и обратно */
   printf("  octets: " );
   ak_mpzn_to_little_endian( x, ak_mpzn256_size, buffer, sizeof( buffer ), ak_false );
-  for( int i = 0; i < 32; i++ ) printf("%02X ", buffer[i] );
+  for( i = 0; i < 32; i++ ) printf("%02X ", buffer[i] );
   printf("(little endian): ");
   ak_mpzn_set_little_endian( x, ak_mpzn256_size, buffer, 32, ak_false );
   for( i = 0; i < ak_mpzn256_size; i++ ) printf(" %llu", x[i] );
@@ -39,7 +39,7 @@
 
   printf("  octets: " );
   ak_mpzn_to_little_endian( x, ak_mpzn256_size, buffer, sizeof( buffer ), ak_true );
-  for( int i = 0; i < 32; i++ ) printf("%02X ", buffer[i] );
+  for( i = 0; i < 32; i++ ) printf("%02X ", buffer[i] );
   printf("(big endian): ");
   ak_mpzn_set_little_endian( x, ak_mpzn256_size, buffer, 32, ak_true );
   for( i = 0; i < ak_mpzn256_size; i++ ) printf(" %llu", x[i] );
@@ -58,13 +58,13 @@
 
   printf("  octets: " );
   ak_mpzn_to_little_endian( y, ak_mpzn256_size, buffer, sizeof( buffer ), ak_false );
-  for( int i = 0; i < 32; i++ ) printf("%02X ", buffer[i] );
+  for( i = 0; i < 32; i++ ) printf("%02X ", buffer[i] );
   printf("(little endian)\n");
   ak_mpzn_set_little_endian( y, ak_mpzn256_size, buffer, 32, ak_false ); /* преобразуем обратно */
 
   printf("  octets: " );
   ak_mpzn_to_little_endian( y, ak_mpzn256_size, buffer, sizeof( buffer ), ak_true );
-  for( int i = 0; i < 32; i++ ) printf("%02X ", buffer[i] );
+  for( i = 0; i < 32; i++ ) printf("%02X ", buffer[i] );
   printf("(big endian)\n\n");
   ak_mpzn_set_little_endian( y, ak_mpzn256_size, buffer, 32, ak_true ); /* преобразуем обратно */
 
@@ -81,13 +81,13 @@
 
   printf("  octets: " );
   ak_mpzn_to_little_endian( z, ak_mpzn512_size, buffer, sizeof( buffer ), ak_false );
-  for( int i = 0; i < 64; i++ ) printf("%02X ", buffer[i] );
+  for( i = 0; i < 64; i++ ) printf("%02X ", buffer[i] );
   printf("(little endian)\n");
   ak_mpzn_set_little_endian( z, ak_mpzn512_size, buffer, 64, ak_false ); /* преобразуем обратно */
 
   printf("  octets: " );
   ak_mpzn_to_little_endian( z, ak_mpzn512_size, buffer, sizeof( buffer ), ak_true );
-  for( int i = 0; i < 64; i++ ) printf("%02X ", buffer[i] );
+  for( i = 0; i < 64; i++ ) printf("%02X ", buffer[i] );
   printf("(big endian)\n\n");
 
   if( strncmp( s, "00000000000000000000D000000000A9000190000000013800024000000001AE0002E0000000020C000210000000016900015000000000DC0000A00000000064", 128 ) == 0 )

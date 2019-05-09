@@ -46,6 +46,9 @@
   const ak_uint64 magma_const = 0xFFFFFFFF00000000LL;
   const ak_uint64 kuznechik_const = 0xFFFFFFFFFFFFFFFFLL;
 
+ /*! \note удалить позже */
+  char str[512];
+
  /* определяемся с указателями на модифицируемые ключи */
   switch( direct ) {
     case direct_out:
@@ -91,9 +94,8 @@
    }
 
   /*! \note удалить позже */
-  char str[512];
-  ak_ptr_to_hexstr_static( ivec, 32, str, 512, ak_false );
-  ak_error_message_fmt( 0, __func__, "ivec: %s", str );
+   ak_ptr_to_hexstr_static( ivec, 32, str, 512, ak_false );
+   ak_error_message_fmt( 0, __func__, "ivec: %s", str );
 
 
  /* формируем значение ключа шифрования eC(S)FK */
@@ -164,6 +166,10 @@
   int error = ak_error_ok;
   ak_uint8 *ats = NULL, nlen[3] = { 0, 0, 0 };
 
+ /*! \note удалить позже */
+  char str[512];
+
+
  /* определяемся с указателями на модифицируемые ключи */
   switch( direct ) {
     case direct_out:
@@ -214,9 +220,8 @@
    ak_mac_context_destroy( &ctx );
 
   /*! \note удалить позже */
-  char str[512];
-  ak_ptr_to_hexstr_static( ats, 64, str, 512, ak_false );
-  ak_error_message_fmt( 0, __func__, "\nATS: %s [%s]", str, ds );
+   ak_ptr_to_hexstr_static( ats, 64, str, 512, ak_false );
+   ak_error_message_fmt( 0, __func__, "\nATS: %s [%s]", str, ds );
 
   if(( error == ak_error_ok ) && ( ak_log_get_level() >= ak_log_standard ))
     ak_error_message_fmt( ak_error_ok, __func__,
