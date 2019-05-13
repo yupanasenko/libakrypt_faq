@@ -439,9 +439,12 @@
            ak_mac_context_ptr( ikey, oframe, olen, oframe + framelen - ilen );
            olen -= fctx->header_offset;
 
-          /*! \todo здесь надо аккуратно определить iv */
-           ak_bckey_context_xcrypt( ekey, oframe + fctx->header_offset,
+          /*! \todo здесь надо аккуратно определить iv для режима aead */
+           if( ekey->bsize == 16 )
+             ak_bckey_context_xcrypt( ekey, oframe + fctx->header_offset,
                                              oframe + fctx->header_offset, olen, oframe, 8 );
+            else ak_bckey_context_xcrypt( ekey, oframe + fctx->header_offset,
+                                           oframe + fctx->header_offset, olen, oframe+4, 4 );
         }
 
   /* контрольный вывод */
@@ -717,11 +720,14 @@
      return NULL;
    }
 
- /* расшифровываем и проверяем контрольную сумму */
+ /* расшифровываем и проверяем контрольную сумму (aead не работает) */
    if( ftype == encrypted_frame ) {
-    /*! \todo здесь надо аккуратно определить iv */
-     ak_bckey_context_xcrypt( ekey, frame + offset,
+    /*! \todo здесь надо аккуратно определить iv для режима aead */
+     if( ekey->bsize == 16 )
+       ak_bckey_context_xcrypt( ekey, frame + offset,
                                   frame + offset, framelen - offset - ilen - 2, frame, 8 );
+      else ak_bckey_context_xcrypt( ekey, frame + offset,
+                              frame + offset, framelen - offset - ilen - 2, frame + 4, 4 );
    }
    ak_mac_context_ptr( ikey, frame, framelen - ilen - 2, out );
    if( memcmp( frame + framelen - ilen, out, ilen ) != 0 ) {

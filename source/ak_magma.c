@@ -687,7 +687,6 @@
 
  /* меняем значение флага */
   skey->flags ^= skey_flag_set_mask;
-
  return error;
 }
 

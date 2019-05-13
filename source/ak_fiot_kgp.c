@@ -880,8 +880,8 @@
   }
 
   ak_mac_context_clean( &ctx);
-  if(( error = ak_mac_context_update( &ctx, a0, sizeof( a0 ))) != ak_error_ok ) goto labexit;
-  ak_mac_context_finalize( &ctx, an, sizeof( an ), fctx->client_ts );
+  if(( error = ak_mac_context_update( &ctx, an, sizeof( an ))) != ak_error_ok ) goto labexit;
+  ak_mac_context_finalize( &ctx, a0, sizeof( a0 ), fctx->client_ts );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect creation of CATS shared secret" );
     goto labexit;
@@ -896,9 +896,8 @@
   }
 
   ak_mac_context_clean( &ctx);
-  if(( error = ak_mac_context_update( &ctx, a0, sizeof( a0 ))) != ak_error_ok ) goto labexit;
-
-  ak_mac_context_finalize( &ctx, an, sizeof( an ), fctx->server_ts );
+  if(( error = ak_mac_context_update( &ctx, an, sizeof( an ))) != ak_error_ok ) goto labexit;
+  ak_mac_context_finalize( &ctx, a0, sizeof( a0 ), fctx->server_ts );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect creation of SATS shared secret" );
     goto labexit;
@@ -924,6 +923,8 @@
 
  /* уничтожаем контекст */
  labexit:
+  ak_ptr_wipe( a0, sizeof( a0 ), &fctx->plain_rnd, ak_true );
+  ak_ptr_wipe( an, sizeof( an ), &fctx->plain_rnd, ak_true );
   ak_mac_context_destroy( &ctx );
   if( error != ak_error_ok ) ak_error_message( error, __func__,
                               "incorrect calculation of SATA and CATS shared secret information" );
