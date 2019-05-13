@@ -44,8 +44,9 @@ if( LIBAKRYPT_FIOT )
   set( LIBAKRYPT_NETWORK ON )
 endif()
 if( LIBAKRYPT_TLS_13 )
-  set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
-  set( LIBAKRYPT_NETWORK ON )
+ # в настоящее время реализация протокола отсутствует
+ # set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
+ # set( LIBAKRYPT_NETWORK ON )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #

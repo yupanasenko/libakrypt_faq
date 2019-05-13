@@ -77,17 +77,20 @@
   /* устанавливаем идентификатор ключа аутентификации */
    if(( error = ak_fiot_context_set_psk_identifier( &ctx,
                                           ePSK_key, "12345", 5 )) != ak_error_ok ) goto exit;
+   if(( error = ak_fiot_context_set_curve( &ctx,
+                              tc26_gost3410_2012_256_paramsetA )) != ak_error_ok ) goto exit;
    if(( error = ak_fiot_context_set_initial_crypto_mechanism( &ctx,
-                                                   hmac256ePSK )) != ak_error_ok ) goto exit;
+                                             magmaGOST3413ePSK )) != ak_error_ok ) goto exit;
   /* здесь реализация протокола */
    if(( error = ak_fiot_context_keys_generation_protocol( &ctx )) != ak_error_ok ) goto exit;
    printf( "echo-client: server authentication is Ok\n" );
 
+  /* принудительно ужесточаем ограничения на объем передаваемых данных;
 
-  /* принудительно ужесточаем ограничения на объем данных;
-     применяется только для тестирования функций выработки производной ключевой информации;
-     стоит отметить, что при тестировании мы используем несбалансированные ограничения
-     для клиента и для сервера. */
+     изменение ограничений используется нами только для тестирования функций выработки
+     производной ключевой информации и на практике не должно применяться;
+     при тестировании мы используем несбалансированные ограничения для клиента и для сервера. */
+
     ctx.policy.restrictions.maxFrameCount = 4;
     ctx.policy.restrictions.maxFrameKeysCount = 4;
     ctx.policy.restrictions.maxApplicationSecretCount = 256;

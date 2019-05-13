@@ -634,7 +634,7 @@
   if( !(skey->flags&skey_flag_set_key )) return ak_error_message( ak_error_key_value, __func__ ,
                                              "using a secret key context with not assigned value" );
  /* теперь собственно вызов функции обновления контекста */
-  skey->unmask( skey );
+  skey->unmask( skey );  
   error = ak_mac_context_update( ictx, skey->key.data, skey->key.size );
   skey->set_mask( skey );
 

@@ -649,7 +649,6 @@
               }
             }
     }
-
  return error;
 }
 
@@ -679,6 +678,13 @@
      ((ak_uint32 *) skey->key.data)[idx] -= ((ak_uint32 *) skey->mask.data)[idx];
      ((ak_uint32 *) skey->mask.data)[idx] = 0;
   }
+
+ #ifndef LIBAKRYPT_LITTLE_ENDIAN
+   /* делаем обратное переворачивание байт ключа */
+   for( idx = 0; idx < 8; idx++ )
+      ((ak_uint32 *)skey->key.data)[idx] = bswap_32( ((ak_uint32 *)skey->key.data)[idx] );
+ #endif
+
  /* меняем значение флага */
   skey->flags ^= skey_flag_set_mask;
 

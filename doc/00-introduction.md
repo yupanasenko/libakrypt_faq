@@ -53,7 +53,7 @@
    фиксированной размерности 256 и 512 бит.
 
 8. Алгоритмы, реализующие операции в группах точек эллиптических кривых,
-   удовлетворяющих требования стандарта [ГОСТ Р 34.10-2012](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-10-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-protsessy-formirovaniya-i-proverki-elektronnoy-tsifrovoy-podpisi.html).
+   удовлетворяющих требованиям стандарта [ГОСТ Р 34.10-2012](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-10-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-protsessy-formirovaniya-i-proverki-elektronnoy-tsifrovoy-podpisi.html).
    Поддерживаются все отечественные
    эллиптические кривые, регламентированные рекомендациями по стандартизации
    [Р 50.1.114-2016](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-50-1-114-2016-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-parametry-ellipticheskikh-krivykh-dlya-kriptograficheskikh-algoritmov-i-protokolov.html).

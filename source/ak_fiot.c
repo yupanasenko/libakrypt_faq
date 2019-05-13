@@ -154,6 +154,7 @@
 {
    if( fctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                            "using null pointer to fiot context" );
+#if 0
   /* закрываем связанные сокеты */
    if( fctx->iface_enc != undefined_interface ) {
 #ifdef LIBAKRYPT_HAVE_SYSSOCKET_H
@@ -178,6 +179,7 @@
      ak_network_close( fctx->iface_plain );
      fctx->iface_plain = undefined_interface;
    }
+#endif
 
  /* очищаем память буфферов */
   ak_buffer_destroy( &fctx->oframe );
@@ -949,6 +951,15 @@
 
    if(( value == 0 ) || ( value > null_cipher )) return undefined_cipher;
   return value;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ block_cipher_encryption_t ak_fiot_get_block_cipher_encryption( const crypto_mechanism_t mechanism )
+{
+  block_cipher_encryption_t value = ( mechanism >> 8 )&0xF;
+
+  if(( value == 0 ) || ( value > aead_encryption )) return undefined_encryption;
+ return value;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

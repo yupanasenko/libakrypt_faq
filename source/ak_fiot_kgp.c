@@ -332,14 +332,20 @@
   ak_uint8 out[64];
   struct hmac hmac_ctx;
   int error = ak_error_ok;
+  ak_mpzn512 cofactor = ak_mpzn512_one;
 
  /*! \note удалить позже */
   char str[512];
 
-
  /* в начале формируем общую точку Q на эллиптической кривой */
   ak_wpoint_pow( &fctx->point, &fctx->point, fctx->secret, fctx->curve->size, fctx->curve );
+  if( fctx->curve->cofactor != 1 ) { /* здесь мы неявно используем тот факт,
+                                                   что кофактор не больше 4х */
+    cofactor[0] = fctx->curve->cofactor;
+    ak_wpoint_pow( &fctx->point, &fctx->point, cofactor, 1, fctx->curve );
+  }
   ak_wpoint_reduce( &fctx->point, fctx->curve );
+
  /* приводим x-координату к последовательности октетов в little endian */
   if(( error = ak_mpzn_to_little_endian( fctx->point.x, fctx->curve->size,
             fctx->point.x, fctx->curve->size*sizeof( ak_uint64 ), ak_false )) != ak_error_ok )
@@ -350,6 +356,10 @@
   ak_ptr_to_hexstr_static( fctx->point.x, fctx->curve->size*sizeof( ak_uint64 ),
                                                                 str, sizeof( str ), ak_false );
   ak_error_message_fmt( 0, "", "Q.x: %s", str );
+  /* преобразовывать у-координату не обязательно)) */
+  if(( error = ak_mpzn_to_little_endian( fctx->point.y, fctx->curve->size,
+            fctx->point.y, fctx->curve->size*sizeof( ak_uint64 ), ak_false )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect calculation of secret value" );
   ak_ptr_to_hexstr_static( fctx->point.y, fctx->curve->size*sizeof( ak_uint64 ),
                                                                 str, sizeof( str ), ak_false );
   ak_error_message_fmt( 0, "", "Q.y: %s", str );

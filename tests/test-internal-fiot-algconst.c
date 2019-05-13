@@ -11,76 +11,40 @@
 
  int main( void )
 {
-  crypto_mechanism_t m;
+  int idx = 0;
+  struct desc {
+   crypto_mechanism_t c;
+   char *str;
+  } m[17] = {
+    { not_set_mechanism, "not_set_mechanism" },
+    { streebog256, "streebog256" },
+    { streebog512, "streebog512" },
+    { magmaGOST3413ePSK, "magmaGOST3413ePSK" },
+    { kuznechikGOST3413ePSK, "kuznechikGOST3413ePSK" },
+    { magmaGOST3413iPSK, "magmaGOST3413iPSK" },
+    { kuznechikGOST3413iPSK, "kuznechikGOST3413iPSK" },
+    { hmac256ePSK, "hmac256ePSK" },
+    { hmac512ePSK, "hmac512ePSK" },
+    { hmac256iPSK, "hmac256iPSK" },
+    { hmac512iPSK, "hmac256iPSK" },
+    { magmaCTRplusHMAC256, "magmaCTRplusHMAC256" },
+    { magmaCTRplusGOST3413, "magmaCTRplusGOST3413" },
+    { kuznechikCTRplusHMAC256, "kuznechikCTRplusHMAC256" },
+    { kuznechikCTRplusGOST3413, "kuznechikCTRplusGOST3413" },
+    { magmaAEAD, "magmaAEAD" },
+    { kuznechikAEAD, "kuznechikAEAD" },
+  };
 
- /* вывод/проверка значений предустановленных констант криптографических алгоритмов */
-  m = not_set_mechanism;
-  printf("not_set_mechanism: %x -> cipher: %u, integrity func: %d, key type: %d\n",
-   m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
-
-  m = streebog256;
-  printf("streebog256: %x -> cipher: %u, integrity func: %d, key type: %d\n",
-   m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
-
-  m = streebog512;
-  printf("streebog256: %x -> cipher: %u, integrity func: %d, key type: %d\n",
-   m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
-
-  m = magmaGOST3413ePSK;
-  printf("magmaGOST3413ePSK: %x -> cipher: %u, integrity func: %d, key type: %d\n",
-   m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
-
-  m = kuznechikGOST3413ePSK;
-  printf("kuznechikGOST3413ePSK: %x -> cipher: %u, integrity func: %d, key type: %d\n",
-   m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
-
-  m = magmaGOST3413iPSK;
-  printf("magmaGOST3413iPSK: %x -> cipher: %u, integrity func: %d, key type: %d\n",
-   m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
-
-  m = kuznechikGOST3413iPSK;
-  printf("kuznechikGOST3413iPSK: %x -> cipher: %u, integrity func: %d, key type: %d\n",
-   m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
-
-  m = hmac256ePSK;
-  printf("hmac256ePSK: %x -> cipher: %u, integrity func: %d, key type: %d\n",
-   m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
-
-  m = hmac256iPSK;
-  printf("hmac256iPSK: %x -> cipher: %u, integrity func: %d, key type: %d\n",
-   m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
-
-  m = hmac512ePSK;
-  printf("hmac512ePSK: %x -> cipher: %u, integrity func: %d, key type: %d\n",
-   m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
-
-  m = hmac512iPSK;
-  printf("hmac512iPSK: %x -> cipher: %u, integrity func: %d, key type: %d\n",
-   m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
-
-  m = magmaCTRplusHMAC256;
-  printf("magmaCTRplusHMAC256: %x -> cipher: %u, integrity func: %d, key type: %d\n",
-   m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
-
-  m = magmaCTRplusGOST3413;
-  printf("magmaCTRplusGOST3413: %x -> cipher: %u, integrity func: %d, key type: %d\n",
-   m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
-
-  m = kuznechikCTRplusHMAC256;
-  printf("kuznechikCTRplusHMAC256: %x -> cipher: %u, integrity func: %d, key type: %d\n",
-   m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
-
-  m = kuznechikCTRplusGOST3413;
-  printf("kuznechikCTRplusGOST3413: %x -> cipher: %u, integrity func: %d, key type: %d\n",
-   m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
-
-  m = magmaAEAD;
-  printf("magmaAEAD: %x -> cipher: %u, integrity func: %d, key type: %d\n",
-   m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
-
-  m = kuznechikAEAD;
-  printf("kuznechikAEAD: %x -> cipher: %u, integrity func: %d, key type: %d\n",
-   m, ak_fiot_get_block_cipher(m), ak_fiot_get_integrity_function(m), ak_fiot_get_key_type(m));
+  for( idx = 0; idx < 17; idx++ ) {
+     printf("mechanism: %4x -> cipher: %u, encryption_mode: %u, integrity func: %d, key type: %d [%s]\n",
+      m[idx].c,
+      ak_fiot_get_block_cipher(m[idx].c),
+      ak_fiot_get_block_cipher_encryption(m[idx].c),
+      ak_fiot_get_integrity_function(m[idx].c),
+      ak_fiot_get_key_type(m[idx].c),
+      m[idx].str
+     );
+  }
 
   printf("\n restrictions (named constants and values)\n");
   printf("baseKeyMechanismMagma: 0x%x\n", baseKeyMechanismMagma );
