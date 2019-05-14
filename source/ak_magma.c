@@ -676,7 +676,7 @@
 
  /* снимаем маску с ключа */
   for( idx = 0; idx < ( skey->key.size >> 2 ); idx++ ) {
-     ((ak_uint32 *) skey->key.data)[idx] -= ((ak_uint8 *) skey->mask.data)[idx];
+     ((ak_uint32 *) skey->key.data)[idx] -= ((ak_uint32 *) skey->mask.data)[idx];
      ((ak_uint32 *) skey->mask.data)[idx] = 0;
   }
  /* меняем значение флага */
