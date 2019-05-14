@@ -43,8 +43,6 @@
   ak_uint8 ivec[32], dconst[32] = {
    0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F,
    0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9A, 0x9B, 0x9C, 0x9D, 0x9E, 0x9F };
-  const ak_uint64 magma_const = 0xFFFFFFFF00000000LL;
-  const ak_uint64 kuznechik_const = 0xFFFFFFFFFFFFFFFFLL;
 
  /*! \note удалить позже */
   char str[512];
@@ -77,9 +75,9 @@
   if( ekey->bsize == 8 )
     for( i = 0; i < 4; i++ ) {
       #ifndef LIBAKRYPT_LITTLE_ENDIAN
-        ((ak_uint64 *)ivec)[i] = bswap_64( magma_const + ( 4*m + i ));
+        ((ak_uint64 *)ivec)[i] = bswap_64( 0xFFFFFFFF00000000LL + ( 4*m + i ));
       #else
-        ((ak_uint64 *)ivec)[i] = magma_const + ( 4*m + i );
+        ((ak_uint64 *)ivec)[i] = 0xFFFFFFFF00000000LL + ( 4*m + i );
       #endif
     }
    else {
@@ -90,7 +88,7 @@
         ((ak_uint64 *)ivec)[0] = 2*m;
         ((ak_uint64 *)ivec)[2] = 2*m + 1;
       #endif
-        ((ak_uint64 *)ivec)[1] = ((ak_uint64 *)ivec)[3] = kuznechik_const;
+        ((ak_uint64 *)ivec)[1] = ((ak_uint64 *)ivec)[3] = 0xFFFFFFFFFFFFFFFFLL;
    }
 
   /*! \note удалить позже */
@@ -207,14 +205,14 @@
       nlen[0] = ( ak_uint8 )( n%256 );
       nsize = 1;
     }
-  if(( error = ak_mac_context_update( &ctx, nlen, nsize )) != ak_error_ok ) {
+  if(( error = ak_mac_context_update( &ctx, ats, 64 )) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect updating mac context with n value" );
     goto labexit;
   }
-  ak_mac_context_finalize( &ctx, ats, 64, ats );
+  ak_mac_context_finalize( &ctx, nlen, nsize, ats );
   if(( error = ak_error_get_value( )) != ak_error_ok )
     ak_error_message( error, __func__,
-                                "incorrect updating mac context with application traffic secret" );
+                              "incorrect finalizing mac context with application traffic secret" );
   labexit:
    ak_hmac_context_destroy( &hctx );
    ak_mac_context_destroy( &ctx );
