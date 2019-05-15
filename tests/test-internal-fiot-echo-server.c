@@ -17,9 +17,9 @@
 #ifdef LIBAKRYPT_HAVE_SYSSOCKET_H
  #include <sys/socket.h>
 #endif
- #include <arpa/inet.h>
 
  #include <ak_fiot.h>
+
 
  int main( int argc, char *argv[] )
 {

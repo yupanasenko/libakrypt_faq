@@ -45,6 +45,8 @@ extern "C" {
  #else
    #define LIBAKRYPT_BIG_ENDIAN      (4321)
  #endif
+#else
+ #define LIBAKRYPT_LITTLE_ENDIAN     (1234)
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
