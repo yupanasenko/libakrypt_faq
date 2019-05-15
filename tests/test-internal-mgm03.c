@@ -19,14 +19,19 @@
 
  static  ak_uint8 testiv[16] = { /* инициализионный вектор (синхропосылка) */
      0xaa, 0xbb, 0xcc, 0xdd, 0x11, 0x22, 0x33, 0x44, 0xa1, 0xb2, 0xc3, 0xd4, 0x15, 0x26, 0x37, 0x48 };
+
  static ak_uint8 testdata[4] = { 0x00, 0x11, 0xff, 0x12 }; /* данные */
+ static ak_uint8 out[16] = { /* имитовставка */
+    0x6D, 0x96, 0x29, 0xEA, 0x53, 0xCF, 0xE5, 0xD5, 0x77, 0x4F, 0x43, 0x9A, 0x98, 0xB0, 0x8C, 0xA2 };
 
  int main( void )
 {
   size_t i = 0;
   struct mac ictx; /* универсальная структура */
   ak_buffer buffer = NULL;
+  int result = EXIT_FAILURE;
 
+ /* инициализируем библиотеки */
   ak_libakrypt_create( ak_function_log_stderr );
 
  /* создаем контекст */
@@ -36,24 +41,24 @@
 
  /* устанавливаем ключевое значение */
   if( ak_mac_context_set_key( &ictx,
-         testkey, sizeof( testkey ), ak_true ) != ak_error_ok ) {
-    ak_mac_context_destroy( &ictx );
-    return ak_libakrypt_destroy();
-  }
+         testkey, sizeof( testkey ), ak_true ) != ak_error_ok ) goto exit;
 
  /* устанавливаем значение синхропосылки */
-  if( ak_mac_context_set_iv( &ictx, testiv, sizeof( testiv )) != ak_error_ok ) {
-    ak_mac_context_destroy( &ictx );
-    return ak_libakrypt_destroy();
-  }
+  if( ak_mac_context_set_iv( &ictx,
+         testiv, sizeof( testiv )) != ak_error_ok ) goto exit;
 
  /* вычисляем имитовставку от фиксированных данных */
   if(( buffer = ak_mac_context_ptr( &ictx, testdata, sizeof( testdata ), NULL )) != NULL ) {
-    for( i = 0; i < buffer->size; i++ ) printf("%02X", ((ak_uint8 *)buffer->data)[i] );
-    printf(" [icode]\n");
+    for( i = 0; i < buffer->size; i++ ) printf(" %02X", ((ak_uint8 *)buffer->data)[i] );
+    printf(" [icode, ");
+
+    if( ak_ptr_is_equal( out, buffer->data, sizeof( out )) == ak_true ) result = EXIT_SUCCESS;
+    if( result == EXIT_SUCCESS ) printf("Ok]\n"); else printf("Wrong]\n");
     ak_buffer_delete( buffer );
   }
 
-  ak_mac_context_destroy( &ictx );
- return ak_libakrypt_destroy();
+  exit:
+   ak_mac_context_destroy( &ictx );
+   ak_libakrypt_destroy();
+ return result;
 }

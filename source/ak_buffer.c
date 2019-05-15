@@ -129,7 +129,7 @@
     @return Функция возвращает указатель на созданный буффер. Если произошла ошибка,
     то возвращается NULL                                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_buffer_new_ptr( const ak_pointer ptr, const size_t size, const ak_bool flag )
+ ak_buffer ak_buffer_new_ptr( const ak_pointer ptr, const size_t size, const bool_t flag )
 {
   ak_buffer buff = NULL;
   if( ptr == NULL ) { /* присвоение не существующих данных */
@@ -178,7 +178,7 @@
    @return Функция возвращает указатель на созданный буффер. Если произошла ошибка,
    то возвращается NULL, код ошибки может быть получен с помощью вызова ak_error_get_value()       */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_buffer_new_hexstr_size( const char *hexstr , const size_t size, const ak_bool reverse )
+ ak_buffer ak_buffer_new_hexstr_size( const char *hexstr , const size_t size, const bool_t reverse )
 {
   ak_buffer buff = NULL;
   if( hexstr == NULL ) {
@@ -282,7 +282,12 @@
 
     if(( ptr = buff->alloc( size )) == NULL )
       return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
+
+    /* сохраняем  предыдущие данные */
     memset( ptr, 0, size );
+    if(( buff->data != NULL ) && ( buff->size != 0 ))
+      memcpy( ptr, buff->data, buff->size );
+
     if(( error = ak_buffer_free( buff )) != ak_error_ok ) {
       ak_error_message( error, __func__, "incorrect buffer memory destroying");
       free( ptr );
@@ -355,7 +360,7 @@
     @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
     возвращается ее код.                                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_buffer_set_ptr( ak_buffer buff, const ak_pointer ptr, const size_t size, const ak_bool cflag )
+ int ak_buffer_set_ptr( ak_buffer buff, const ak_pointer ptr, const size_t size, const bool_t cflag )
 {
   if( buff == NULL ) {
    ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
@@ -463,7 +468,7 @@
     @return указатель на область памяти, в которой хранится выделенная строка, либо NULL.
     Если при преобразовании произошла ошибка, ее код содержится в переменной ak_errno.             */
 /* ----------------------------------------------------------------------------------------------- */
- char *ak_buffer_to_hexstr( const ak_buffer buff , const ak_bool reverse )
+ char *ak_buffer_to_hexstr( const ak_buffer buff , const bool_t reverse )
 {
   if( buff == NULL ) {
    ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a buffer" );
@@ -545,7 +550,7 @@
     В противном случае, а также в случае возникновения ошибки, возвращается \ref ak_false.
     Код шибки может быть получен с помощью выщова функции ak_error_get_value().                    */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_buffer_is_equal( const ak_buffer left, const ak_buffer right )
+ bool_t ak_buffer_is_equal( const ak_buffer left, const ak_buffer right )
 {
   if( left == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to a left buffer" );
@@ -572,7 +577,7 @@
     @return Функция возвращает ak_error_ok в случае успешного уничтожения данных. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_ptr_wipe( ak_pointer ptr, size_t size, ak_random generator, ak_bool readflag )
+ int ak_ptr_wipe( ak_pointer ptr, size_t size, ak_random generator, bool_t readflag )
 {
   size_t idx = 0;
   int result = ak_error_ok;
@@ -586,7 +591,7 @@
   if( generator->random == NULL ) return ak_error_message( ak_error_undefined_function, __func__,
                                                    "use an undefined context to random generator" );
 
-  if( generator->random( generator, ptr, size ) != ak_error_ok ) {
+  if( generator->random( generator, ptr, (ssize_t) size ) != ak_error_ok ) {
     ak_error_message( ak_error_write_data, __func__, "incorrect memory wiping" );
     memset( ptr, 0, size );
     result = ak_error_write_data;
@@ -641,7 +646,7 @@
     В противном случае, а также в случае возникновения ошибки, возвращается \ref ak_false.
     Код ошибки может быть получен с помощью выщова функции ak_error_get_value().                    */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_buffer_is_assigned( const ak_buffer buff )
+ bool_t ak_buffer_is_assigned( const ak_buffer buff )
 {
   if( buff == NULL ) return ak_false;
   if( buff->data == NULL ) return ak_false;

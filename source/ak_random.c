@@ -27,7 +27,6 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_hash.h>
  #include <ak_mpzn.h>
  #include <ak_tools.h>
 
@@ -101,12 +100,14 @@
     @return В случае успеха функция возвращает \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_random_context_randomize( ak_random rnd, const ak_pointer in, const size_t size )
+ int ak_random_context_randomize( ak_random rnd, const ak_pointer in, const ssize_t size )
 {
  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                         "use a null pointer to random generator" );
  if( in == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                            "use a null pointer to initializator" );
+ if( size <= 0 ) return ak_error_message( ak_error_wrong_length, __func__,
+                                                              "using a buffer with wrong length" );
  if( rnd->randomize_ptr == NULL ) return ak_error_message( ak_error_undefined_function, __func__,
                                            "randomize() function not defined for this generator" );
  return rnd->randomize_ptr( rnd, in, size );
@@ -123,12 +124,14 @@
     @return В случае успеха функция возвращает \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_random_context_random( ak_random rnd, const ak_pointer out, const size_t size )
+ int ak_random_context_random( ak_random rnd, const ak_pointer out, const ssize_t size )
 {
  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                         "use a null pointer to random generator" );
  if( out == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                              "use a null pointer to output data" );
+ if( size <= 0 ) return ak_error_message( ak_error_wrong_length, __func__,
+                                                              "using a buffer with wrong length" );
  if( rnd->random == NULL ) return ak_error_message( ak_error_undefined_function, __func__,
                                                 "this generator has undefined random() function" );
  return rnd->random( rnd, out, size );
@@ -152,11 +155,11 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_uint64 ak_random_value( void )
 {
-  ak_uint64 vtme = time( NULL );
-  ak_uint64 clk = clock();
+  ak_uint64 vtme = ( ak_uint64) time( NULL );
+  ak_uint64 clk = ( ak_uint64 ) clock();
 #ifndef _WIN32
-  ak_uint64 pval = getpid();
-  ak_uint64 uval = getuid();
+  ak_uint64 pval = ( ak_uint64 ) getpid();
+  ak_uint64 uval = ( ak_uint64 ) getuid();
 #else
   ak_uint64 pval = _getpid();
   ak_uint64 uval = 67;
@@ -188,24 +191,18 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_random_lcg_randomize_ptr( ak_random rnd, const ak_pointer ptr, const size_t size )
+ static int ak_random_lcg_randomize_ptr( ak_random rnd, const ak_pointer ptr, const ssize_t size )
 {
-  size_t idx = 0;
+  ssize_t idx = 0;
   ak_uint8 *value = ptr;
 
-  if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
-    return ak_error_null_pointer;
-  }
-  if( ptr == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to initial vector" );
-    return ak_error_null_pointer;
-  }
-  if( !size ) {
-    ak_error_message( ak_error_zero_length, __func__ , "use initial vector with zero length" );
-    return ak_error_null_pointer;
-  }
-  /* сначала начальное значение, потом цикл по всем элементам массива */
+  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                      "use a null pointer to a random generator" );
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                          "use a null pointer to initial vector" );
+  if( size <= 0 ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                          "use initial vector with wrong length" );
+ /* сначала начальное значение, потом цикл по всем элементам массива */
   (( ak_random_lcg ) ( rnd->data ))->val = value[idx];
   do {
         rnd->next( rnd );
@@ -215,24 +212,17 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_random_lcg_random( ak_random rnd, const ak_pointer ptr, const size_t size )
+ static int ak_random_lcg_random( ak_random rnd, const ak_pointer ptr, const ssize_t size )
 {
-  size_t i = 0;
+  ssize_t i = 0;
   ak_uint8 *value = ptr;
 
-  if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
-    return ak_error_null_pointer;
-  }
-  if( ptr == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to data" );
-    return ak_error_null_pointer;
-  }
-  if( !size ) {
-    ak_error_message( ak_error_zero_length, __func__ , "use a data with zero length" );
-    return ak_error_zero_length;
-  }
-
+  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                      "use a null pointer to a random generator" );
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                                    "use a null pointer to data" );
+  if( size <= 0 ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                           "use a data vector with wrong length" );
   for( i = 0; i < size; i++ ) {
     value[i] = (ak_uint8) ((( ak_random_lcg ) ( rnd->data ))->val >> 16 );
     rnd->next( rnd );
@@ -290,10 +280,8 @@
  static int ak_random_xorshift32_next( ak_random rnd )
 {
   ak_uint32 x = 0;
-  if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
-    return ak_error_null_pointer;
-  }
+  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                      "use a null pointer to a random generator" );
 
   x = (( ak_random_xorshift32 )rnd->data)->value;
   x ^= x << 13;
@@ -306,23 +294,17 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  static int ak_random_xorshift32_randomize_ptr( ak_random rnd,
-                                                           const ak_pointer ptr, const size_t size )
+                                                          const ak_pointer ptr, const ssize_t size )
 {
-  size_t idx = 0;
+  ssize_t idx = 0;
   ak_uint8 *value = ptr;
 
-  if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
-    return ak_error_null_pointer;
-  }
-  if( ptr == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to initial vector" );
-    return ak_error_null_pointer;
-  }
-  if( !size ) {
-    ak_error_message( ak_error_zero_length, __func__ , "use initial vector with zero length" );
-    return ak_error_null_pointer;
-  }
+  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                      "use a null pointer to a random generator" );
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                          "use a null pointer to initial vector" );
+  if( size <= 0 ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                          "use initial vector with wrong length" );
   /* сначала начальное значение, потом цикл по всем элементам массива */
   (( ak_random_xorshift32 )rnd->data)->value = ak_max( value[idx], 1 );
   do {
@@ -336,32 +318,25 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_random_xorshift32_random( ak_random rnd, const ak_pointer ptr, const size_t size )
+ static int ak_random_xorshift32_random( ak_random rnd, const ak_pointer ptr, const ssize_t size )
 {
   ak_uint32 *arr = (ak_uint32 *) ptr;
-  size_t i = 0, blocks = ( size >> 2 ), tail = size - ( blocks << 2 );
+  ssize_t i = 0, blocks = ( size >> 2 ), tail = size - ( blocks << 2 );
 
-  if( rnd == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to a random generator" );
-    return ak_error_null_pointer;
-  }
-  if( ptr == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "use a null pointer to data" );
-    return ak_error_null_pointer;
-  }
-  if( !size ) {
-    ak_error_message( ak_error_zero_length, __func__ , "use a data with zero length" );
-    return ak_error_zero_length;
-  }
-
+  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                      "use a null pointer to a random generator" );
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                                    "use a null pointer to data" );
+  if( size <= 0 ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                           "use a data vector with wrong length" );
  /* сначала заполняем блоками по 8 байт */
   for( i = 0; i < blocks; i++ ) {
      arr[i] = (( ak_random_xorshift32 )rnd->data)->value;
      rnd->next( rnd );
   }
  /* потом остаток из младших разрядов */
-  if( tail ) {
-    memcpy( (ak_uint8 *)arr + blocks, &(( ak_random_xorshift32 )rnd->data)->value, tail );
+  if( tail > 0 ) {
+    memcpy( (ak_uint8 *)arr + blocks, &(( ak_random_xorshift32 )rnd->data)->value, ( size_t )tail );
     rnd->next( rnd );
   }
 
@@ -420,22 +395,23 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_random_file_random( ak_random rnd, const ak_pointer ptr, const size_t size )
+ static int ak_random_file_random( ak_random rnd, const ak_pointer ptr, const ssize_t size )
 {
   ak_uint8 *value = ptr;
-  size_t result = 0, count = size;
+  ssize_t result = 0, count = size;
 
   if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                      "use a null pointer to a random generator" );
   if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                                    "use a null pointer to data" );
-  if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
-                                                                  "use a data with zero length" );
+  if( size <= 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                                 "use a data with wrong length" );
   /* считываем несколько байт */
-  slabel:
-  result = read( (( ak_random_file ) ( rnd->data ))->fd, value,
+  slabel: result = read( (( ak_random_file ) ( rnd->data ))->fd, value,
   #ifdef _MSC_VER
     (unsigned int)
+  #else
+    (size_t)
   #endif
     count );
 
@@ -451,10 +427,8 @@
     goto slabel;
   }
   /* если ошибка чтения, то возбуждаем ошибку */
-  if( result == -1 ) {
-    ak_error_message( ak_error_read_data, __func__ , "wrong reading data from file" );
-    return ak_error_read_data;
-  }
+  if( result == -1 ) return ak_error_message( ak_error_read_data, __func__ ,
+                                                                 "wrong reading data from file" );
  return ak_error_ok;
 }
 
@@ -539,8 +513,15 @@
 } *ak_random_winrtl;
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_random_winrtl_random( ak_random rnd, const ak_pointer ptr, const size_t size )
+ static int ak_random_winrtl_random( ak_random rnd, const ak_pointer ptr, const ssize_t size )
 {
+  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                      "use a null pointer to a random generator" );
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                                    "use a null pointer to data" );
+  if( size <= 0 ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                           "use a data vector with wrong length" );
+
   if( !CryptGenRandom( (( ak_random_winrtl )rnd->data)->handle, (DWORD) size, ptr ))
     return ak_error_message( ak_error_undefined_value, __func__,
                                                     "wrong generation of pseudo random sequence" );
@@ -606,233 +587,6 @@
 }
 
 #endif
-
-/* ----------------------------------------------------------------------------------------------- */
-/*                                   реализация класса hashrnd                                     */
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Класс для хранения внутренних состояний генератора hashrnd. */
- typedef struct random_hashrnd {
-  /*! \brief структура используемой бесключевой функции хеширования */
-   struct hash ctx;
-  /*! \brief текущее значение счетчика обработанных блоков */
-   ak_mpzn512 counter;
-  /*! \brief массив выработанных значений */
-   ak_uint8 buffer[64];
-  /*! \brief текущее количество доступных для выдачи октетов */
-   size_t len;
- } *ak_random_hashrnd;
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param rnd Контекст генератора.
-    \return В случае успеха, функция возвращает \ref ak_error_ok. В противном случае
-            возвращается код ошибки.                                                               */
-/* ----------------------------------------------------------------------------------------------- */
- static int ak_random_hashrnd_next( ak_random rnd )
-{
-  ak_random_hashrnd hrnd = NULL;
-  ak_mpzn512 one = ak_mpzn512_one;
-
-  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                    "use a null pointer to a random generator" );
- /* получаем указатель и вырабатываем новый вектор значений */
-  hrnd = ( ak_random_hashrnd )rnd->data;
-  if( hrnd->len != 0 ) return ak_error_message( ak_error_wrong_length, __func__,
-                                                             "unexpected use of next function" );
- /* увеличиваем счетчик */
-  ak_mpzn_add( hrnd->counter, hrnd->counter, one, ak_mpzn512_size );
- /* вычисляем новое хеш-значение */
-  ak_hash_context_ptr( &hrnd->ctx, hrnd->counter, 64, hrnd->buffer );
- /* определяем доступный объем данных для считывания */
-  hrnd->len = hrnd->ctx.hsize;
-
- return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param ptr Указатель на область внутренних данных генератора.                                  */
-/* ----------------------------------------------------------------------------------------------- */
- static void ak_random_hashrnd_free( ak_pointer ptr )
-{
-  int error = ak_error_ok;
-  if( ptr == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__ , "freeing a null pointer to data" );
-    return;
-  }
- /* уничтожаем контекст функции хеширования */
-  if(( error = ak_hash_context_destroy( &(( ak_random_hashrnd )ptr)->ctx )) != ak_error_ok )
-     ak_error_message( error, __func__ , "wrong destroying internal hash function context" );
- /* теперь уничтожаем собственно структуру hashrnd */
-  free(ptr);
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \param rnd Контекст генератора.
-    \param ptr Указатель на область данных, которыми инициалиируется генератор
-    \param size Размер области в байтах
-    \return В случае успеха, функция возвращает \ref ak_error_ok. В противном случае
-            возвращается код ошибки.                                                               */
-/* ----------------------------------------------------------------------------------------------- */
- static int ak_random_hashrnd_randomize_ptr( ak_random rnd,
-                                                           const ak_pointer ptr, const size_t size )
-{
-  ak_random_hashrnd hrnd = NULL;
-  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                     "use a null pointer to a random generator" );
-  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                   "use a null pointer to data" );
-  if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
-                                                                  "use a data with zero length" );
- /* восстанавливаем начальное значение */
-  hrnd = ( ak_random_hashrnd )rnd->data;
-  hrnd->len = 0;
-  memset( hrnd->counter, 0, 64 );
-  memset( hrnd->buffer, 0, 64 );
-
- /* теперь вырабатываем 47 октетов начального заполнения */
-  if(( size <= 47 ) || ( hrnd->ctx.hsize > 64 )) memcpy( hrnd->counter+2, ptr, ak_min( size, 47 ));
-   else {
-          ak_uint8 buffer[64];  /* промежуточный буффер */
-          memset( buffer,  0x11, 64 );
-          ak_hash_context_ptr( &hrnd->ctx, ptr, size, buffer );
-          memcpy( hrnd->counter+2, buffer, 47 );
-   }
- /* вычисляем псевдо-случайные данные */
-  ak_random_hashrnd_next( rnd );
- return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \param rnd Контекст генератора.
-    \param ptr Указатель на область памяти, в которую помещаются вырабатываемые значения
-    \param size Размер области в байтах
-    \return В случае успеха, функция возвращает \ref ak_error_ok. В противном случае
-            возвращается код ошибки.                                                               */
-/* ----------------------------------------------------------------------------------------------- */
- static int ak_random_hashrnd_random( ak_random rnd, const ak_pointer ptr, const size_t size )
-{
-  ak_uint8 *inptr = ptr;
-  size_t realsize = size;
-  ak_random_hashrnd hrnd = NULL;
-
-  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                     "use a null pointer to a random generator" );
-  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                   "use a null pointer to data" );
-  if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
-                                                                  "use a data with zero length" );
-  hrnd = ( ak_random_hashrnd )rnd->data;
-
-  while( realsize > 0 ) {
-    size_t offset = ak_min( realsize, hrnd->len );
-    memcpy( inptr, hrnd->buffer + (hrnd->ctx.hsize - hrnd->len), offset );
-    inptr += offset;
-    realsize -= offset;
-    if(( hrnd->len -= offset ) <= 0 ) /* вычисляем следующий массив данных */
-      ak_random_hashrnd_next( rnd );
-  }
- return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функия создает генератор, вырабатывающий последовательность псевдо-случайных данных с
-    использованием бесключевой функции хеширования согласно рекомендациям по
-    стандартизации Р 1323565.1.006-2017.
-    Параметр oid задает используемый алгоритм хеширования.
-
-    \param generator контекст инициализируемого генератора псевдо-случайных чисел.
-    \param oid идентификатор бесключевой функции хеширования.
-    \return Функция возвращает код ошибки.                                                         */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_random_context_create_hashrnd_oid( ak_random generator, ak_oid oid )
-{
-  struct random rnd;
-  int error = ak_error_ok;
-  ak_random_hashrnd hrnd = NULL;
-  char oidname[32]; /* имя для oid генератора псевдо-случайных чисел */
-
-  if( oid == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                 "using null pointer to hash function OID" );
- /* проверяем, что OID от бесключевой функции хеширования */
-  if( oid->engine != hash_function )
-    return ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
- /* проверяем, что OID от алгоритма, а не от параметров */
-  if( oid->mode != algorithm )
-    return ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
-
- /* создаем генератор */
-  if(( error = ak_random_context_create( generator )) != ak_error_ok )
-    return ak_error_message( error, __func__ , "wrong initialization of random generator" );
-
-  if(( hrnd = generator->data = malloc( sizeof( struct random_hashrnd ))) == NULL )
-    return ak_error_message( ak_error_out_of_memory, __func__ ,
-              "incorrect memory allocation for an internal variables of random generator" );
-
-  /* инициализируем поля и данные внутренней структуры данных */
-   if(( error = ak_hash_context_create_oid( &hrnd->ctx, oid )) != ak_error_ok ) {
-     ak_random_context_destroy( generator );
-     return ak_error_message( error, __func__ ,
-                                   "incorrect creation of internal hash function context" );
-   }
-   hrnd->len = 0;
-   memset( hrnd->counter, 0, 64 );
-   memset( hrnd->buffer, 0, 64 );
-   ak_snprintf( oidname, 30, "hashrnd-%s", oid->name );
-
-   generator->oid = ak_oid_context_find_by_name( oidname );
-   generator->next = ak_random_hashrnd_next;
-   generator->randomize_ptr = ak_random_hashrnd_randomize_ptr;
-   generator->random = ak_random_hashrnd_random;
-   generator->free = ak_random_hashrnd_free;
-
- /* для корректной работы присваиваем какое-то случайное начальное значение,
-    используя для этого другой генератор псевдо-случайных чисел */
-
-#if defined(__unix__) || defined(__APPLE__)
-   error = ak_random_context_create_random( &rnd );
-#else
-   error = ak_random_context_create_xorshift32( &rnd );
-#endif
-   if( error != ak_error_ok ) {
-     ak_random_context_destroy( generator );
-     return ak_error_message( error, __func__ ,
-                                "incorrect creation of internal random generator context" );
-   }
-  /* константа 47 означает, что младшие 16 октетов вектора (область изменения счетчика)
-     останутся нулевыми, также как и один старший октет (согласно рекомендациям Р 1323565.1.006-2017) */
-   ak_random_context_random( &rnd, hrnd->counter+2, 47 );
-   ak_random_context_destroy( &rnd );
-  /* вычисляем псевдо-случайные данные */
-   ak_random_hashrnd_next( generator );
-
- return error;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \param generator контекст инициализируемого генератора псевдо-случайных чисел.                 */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_random_context_create_hashrnd_gosthash94( ak_random generator )
-{
-  return ak_random_context_create_hashrnd_oid( generator,
-                                                      ak_oid_context_find_by_name( "gosthash94" ));
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \param generator контекст инициализируемого генератора псевдо-случайных чисел.                 */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_random_context_create_hashrnd_streebog256( ak_random generator )
-{
-  return ak_random_context_create_hashrnd_oid( generator,
-                                                     ak_oid_context_find_by_name( "streebog256" ));
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \param generator контекст инициализируемого генератора псевдо-случайных чисел.                 */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_random_context_create_hashrnd_streebog512( ak_random generator )
-{
-  return ak_random_context_create_hashrnd_oid( generator,
-                                                     ak_oid_context_find_by_name( "streebog512" ));
-}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param rnd указатель на контекст генератора псевдо-случайных чисел

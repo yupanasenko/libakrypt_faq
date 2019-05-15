@@ -45,15 +45,15 @@
 /* ----------------------------------------------------------------------------------------------- */
  typedef struct oid {
   /*! \brief криптографический механизм   */
-   oid_engines engine;
+   oid_engines_t engine;
   /*! \brief режим использования криптографического алгоритма */
-   oid_modes mode;
+   oid_modes_t mode;
   /*! \brief читаемое имя (для пользователя) */
-   const char *name;
+   char *name;
   /*! \brief собственно OID (cтрока чисел, разделенных точками) */
-   const char *id;
+   char *id;
   /*! \brief соответствующая последовательность октетов в asn1 кодировке. */
-   const ak_uint8 *asn1;
+   ak_uint8 *asn1;
   /*! \brief указатель на данные. */
    ak_pointer *data;
   /*! \brief структура, контролирующая поведение объекта. */
@@ -62,18 +62,17 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Поиск OID его имени. */
- ak_oid ak_oid_context_find_by_name( const char *name );
+ ak_oid ak_oid_context_find_by_name( char *name );
 /*! \brief Поиск OID по его идентификатору (строке цифр, разделенных точками). */
- ak_oid ak_oid_context_find_by_id( const char *id );
+ ak_oid ak_oid_context_find_by_id( char *id );
 /*! \brief Поиск OID по его имени или идентификатору. */
- ak_oid ak_oid_context_find_by_ni( const char *ni );
+ ak_oid ak_oid_context_find_by_ni( char *ni );
 /*! \brief Поиск OID по типу криптографического механизма. */
- ak_oid ak_oid_context_find_by_engine( const oid_engines );
+ ak_oid ak_oid_context_find_by_engine( const oid_engines_t );
 /*! \brief Продолжение поиска OID по типу криптографического механизма. */
- ak_oid ak_oid_context_findnext_by_engine( const ak_oid, const oid_engines );
+ ak_oid ak_oid_context_findnext_by_engine( const ak_oid, const oid_engines_t );
 /*! \brief Проверка соответствия заданного адреса корректному oid. */
- ak_bool ak_oid_context_check( const ak_oid );
-
+ bool_t ak_oid_context_check( const ak_oid );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

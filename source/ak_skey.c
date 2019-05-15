@@ -80,7 +80,7 @@
     return error;
   }
 
- /* номер ключа генерится случайным образом. изменяется позднее, например,
+ /* номер ключа генерится случайным образом; изменяется позднее, например,
                                                            при считывания с файлового носителя */
   if(( error = ak_buffer_create_size( &skey->number,
                 (const size_t) ak_libakrypt_get_option( "key_number_length" ))) != ak_error_ok ) {
@@ -97,7 +97,7 @@
   /* OID ключа устанавливается производящей функцией */
   skey->oid = NULL;
   /* После создания ключа все его флаги не определены */
-  skey->flags = 0;
+  skey->flags = skey_flag_undefined;
  /* В заключение определяем указатели на методы.
     по умолчанию используются механизмы для работы с аддитивной по модулю 2 маской.
 
@@ -148,7 +148,7 @@
   }
   ak_buffer_destroy( &skey->number );
   skey->oid = NULL;
-  skey->flags = 0;
+  skey->flags = skey_flag_undefined;
 
  /* замещаем ключевый данные произвольным мусором */
   memcpy( skey, data, sizeof( struct skey ));
@@ -190,7 +190,7 @@
   if( len < sizeof( out )) { /* используем генератор, отличный от генератора масок */
     struct random generator;
     if( ak_random_context_create_lcg( &generator ) == ak_error_ok ) {
-      ak_random_context_random( &generator, out+len, sizeof( out ) - len ); /* добавляем мусор */
+      ak_random_context_random( &generator, out+len, (ssize_t)( sizeof( out ) - len )); /* добавляем мусор */
       ak_random_context_destroy( &generator );
     }
   }
@@ -256,7 +256,7 @@
   if( (( skey->flags)&skey_flag_set_mask ) == 0 ) {
     /* создаем маску*/
      if(( error = ak_random_context_random( &skey->generator,
-                                           skey->mask.data, skey->mask.size )) != ak_error_ok )
+                                    skey->mask.data, (ssize_t)skey->mask.size )) != ak_error_ok )
        return ak_error_message( error, __func__ , "wrong random mask generation for key buffer" );
     /* накладываем маску на ключ */
      for( idx = 0; idx < skey->key.size; idx++ )
@@ -283,7 +283,7 @@
            /* потом обрабатываем хвост */
             if( tail ) {
                if(( error = ak_random_context_random( &skey->generator,
-                                                                newmask, tail )) != ak_error_ok )
+                                                       newmask, (ssize_t)tail )) != ak_error_ok )
                return ak_error_message( error, __func__ ,
                                                   "wrong random mask generation for key buffer" );
                for( idx = 0; idx < tail; idx++ ) {
@@ -424,7 +424,7 @@
     @return В случае совпадения контрольной суммы ключа функция возвращает истину (\ref ak_true).
     В противном случае, возвращается ложь (\ref ak_false).                                         */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_skey_context_check_icode_xor( ak_skey skey )
+ bool_t ak_skey_context_check_icode_xor( ak_skey skey )
 {
   ak_uint64 result = 0;
   int error = ak_error_ok;
@@ -483,7 +483,7 @@
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_skey_context_set_key( ak_skey skey,
-                                     const ak_pointer ptr, const size_t size, const ak_bool cflag )
+                                     const ak_pointer ptr, const size_t size, const bool_t cflag )
 {
   int error = ak_error_ok;
 
@@ -617,7 +617,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param skey контекст секретного ключа. К моменту вызова функции контекст должен быть
-    инициализирован.
+    инициализирован ключевым значением.
     @param ictx контекст алгоритма итеративного сжатия. К моменту вызова функции контекст должен
     быть инициализирован.
 
@@ -634,7 +634,7 @@
   if( !(skey->flags&skey_flag_set_key )) return ak_error_message( ak_error_key_value, __func__ ,
                                              "using a secret key context with not assigned value" );
  /* теперь собственно вызов функции обновления контекста */
-  skey->unmask( skey );
+  skey->unmask( skey );  
   error = ak_mac_context_update( ictx, skey->key.data, skey->key.size );
   skey->set_mask( skey );
 

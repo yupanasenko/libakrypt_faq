@@ -16,7 +16,7 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_omac.h>
+ #include <ak_bckey.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция устанавливает параметры алгоритма блочного шифрования, передаваемые в качестве
@@ -76,9 +76,11 @@
  return ak_error_ok;
 }
 
+#include <stdio.h>
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param bkey контекст ключа алгоритма блочного шифрованния
-    @return В случае успеха функция возввращает \ref ak_error_ok (ноль).
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_destroy( ak_bckey bkey )
@@ -91,13 +93,14 @@
       ak_error_message( error, __func__ , "wrong deleting of round keys" );
     }
   }
- /* вектор для хранения синхропосылок может быть не определен */
-  if( bkey->ivector.data != NULL ) {
-    if(( error = ak_buffer_wipe( &bkey->ivector, &bkey->key.generator )) != ak_error_ok )
-      ak_error_message( error, __func__, "wrong wiping a temporary vector");
-  }
+
+ /* изменяем значение вектора синхропосылок перед уничтожением */
+  if( ak_buffer_is_assigned( &bkey->ivector ))
+    ak_buffer_wipe( &bkey->ivector, &bkey->key.generator );
   if(( error = ak_buffer_destroy( &bkey->ivector )) != ak_error_ok )
     ak_error_message( error, __func__, "wrong destroying a temporary vector" );
+
+ /* уничтожаем секретный ключ */
   if(( error = ak_skey_context_destroy( &bkey->key )) != ak_error_ok )
     ak_error_message( error, __func__, "wrong destroying a secret key" );
 
@@ -146,10 +149,10 @@
     @param cflag Флаг владения данными. Если он истинен, то данные копируются в область памяти,
     которой владеет ключевой контекст.
 
-    @return Функция возвращает код ошибки. В случае успеха возвращается \ref ak_error_ok.          */
+    @return Функция возвращает код ошибки. В случае успеха возвращается ak_error_ok (ноль).        */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_set_key( ak_bckey bkey,
-                                   const ak_pointer keyptr, const size_t size, const ak_bool cflag )
+                                   const ak_pointer keyptr, const size_t size, const bool_t cflag )
 {
   int error = ak_error_ok;
 
@@ -181,7 +184,7 @@
     @param bkey Контекст ключа блочного алгоритма шифрования.
     @param generator Контекст генератора случайных (псевдослучайных) чисел.
 
-    @return Функция возвращает код ошибки. В случае успеха возвращается \ref ak_error_ok.          */
+    @return Функция возвращает код ошибки. В случае успеха возвращается ak_error_ok.               */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_set_key_random( ak_bckey bkey, ak_random generator )
 {
@@ -220,7 +223,7 @@
     @param salt Случайный вектор, представленный в виде строки символов.
     @param salt_size Длина случайного вектора в байтах
 
-    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    @return В случае успеха возвращается значение ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_set_key_from_password( ak_bckey bkey, const ak_pointer pass,
@@ -381,10 +384,10 @@
         //              мы передаем нулевые значения последних параметров
 \endcode
 
- В данном фрагменте исходный буффер сначала зашифровывается за один вызов функции,
- а потом фрагментами, длина котрых кратна длине блока используемого алгоритма блочного шифрования.
+ В приведенном выше фрагменте исходный буффер сначала зашифровывается за один вызов функции,
+ а потом фрагментами, длина которых кратна длине блока используемого алгоритма блочного шифрования.
  Результаты зашифрования должны совпадать в обоих случаях. Указанное поведение функции позволяет
- зашифровывать данные в случае, когда они поступают фрагментами, например из сети, или хранение
+ зашифровывать данные в случае, когда они поступают фрагментами, например из сети, или когда хранение
  данных полностью в оперативной памяти нецелесообразно (например, шифрование больших файлов).
 
     @param bkey Контекст ключа алгоритма блочного шифрования, на котором происходит
@@ -408,7 +411,7 @@
 {
   int error = ak_error_ok;
   ak_int64 blocks = (ak_int64)size/bkey->bsize,
-            tail = (ak_int64)size%bkey->bsize;
+             tail = (ak_int64)size%bkey->bsize;
   ak_uint64 yaout[2], *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
 
  /* проверяем целостность ключа */
@@ -430,9 +433,11 @@
       return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                               "secondary calling function with undefined value of initial vector" );
   } else {
+     size_t halfsize = bkey->bsize >> 1 ;
+
     /* проверяем длину синхропосылки (если меньше половины блока, то плохо)
         если больше - то лишнее не используется */
-     if( iv_size < ( bkey->bsize >> 1 ))
+     if( iv_size < halfsize )
        return ak_error_message( ak_error_wrong_iv_length, __func__,
                                                               "incorrect length of initial value" );
     /* выделяем память под буффер и помещаем в него значение */
@@ -440,7 +445,10 @@
        return ak_error_message( error, __func__ , "incorrect momory allocation for internal vector" );
 
      memset( bkey->ivector.data, 0, bkey->ivector.size );
-     memcpy( ((ak_uint8 *)bkey->ivector.data) + (bkey->bsize >> 1), iv, iv_size );
+      /* слишком большое значение iv_size может привести к выходу за границы памяти,
+                                                 выделенной под переменную ivector->data */
+     memcpy( ((ak_uint8 *)bkey->ivector.data) + halfsize, iv, ak_min( halfsize, iv_size ));
+
     /* снимаем значение флага */
      if( bkey->key.flags&bckey_flag_not_xcrypt ) bkey->key.flags ^= bckey_flag_not_xcrypt;
     }
@@ -448,22 +456,39 @@
  /* обработка основного массива данных (кратного длине блока) */
   switch( bkey->bsize ) {
     case  8: /* шифр с длиной блока 64 бита */
-      do {
+      while( blocks > 0 ) {
+        #ifndef LIBAKRYPT_LITTLE_ENDIAN
+          ak_uint64 tmp = bswap_64( ((ak_uint64 *)bkey->ivector.data)[0] );
+        #endif
           bkey->encrypt( &bkey->key, bkey->ivector.data, yaout );
           *outptr = *inptr ^ yaout[0];
-          outptr++; inptr++; ((ak_uint64 *)bkey->ivector.data)[0]++;
-      } while( --blocks > 0 );
+          outptr++; inptr++;
+        #ifdef LIBAKRYPT_LITTLE_ENDIAN
+          ((ak_uint64 *)bkey->ivector.data)[0]++;
+        #else
+          ((ak_uint64 *)bkey->ivector.data)[0] = bswap_64( ++tmp );
+        #endif
+        --blocks;
+      };
     break;
 
     case 16: /* шифр с длиной блока 128 бит */
-      do {
+      while( blocks > 0 ) {
+        #ifndef LIBAKRYPT_LITTLE_ENDIAN
+          ak_uint64 tmp = bswap_64( ((ak_uint64 *)bkey->ivector.data)[0] );
+        #endif
           bkey->encrypt( &bkey->key, bkey->ivector.data, yaout );
           *outptr = *inptr ^ yaout[0]; outptr++; inptr++;
           *outptr = *inptr ^ yaout[1]; outptr++; inptr++;
-          ((ak_uint64 *)bkey->ivector.data)[0]++; // здесь мы не учитываем знак переноса
-                                                  // потому что объем данных на одном ключе не должен превышать
-                                                  // 2^64 блоков (контролируется через ресурс ключа)
-      } while( --blocks > 0 );
+        #ifdef LIBAKRYPT_LITTLE_ENDIAN
+          ((ak_uint64 *)bkey->ivector.data)[0]++;
+        #else
+          ((ak_uint64 *)bkey->ivector.data)[0] = bswap_64( ++tmp );
+        #endif                                      /* здесь мы не учитываем знак переноса
+                                                     потому что объем данных на одном ключе не должен превышать
+                                                     2^64 блоков (контролируется через ресурс ключа) */
+        --blocks;
+      };
     break;
 
     default: return ak_error_message( ak_error_wrong_block_cipher,
@@ -505,13 +530,18 @@
    @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
    возвращается указатель на буффер, содержащий результат вычислений. В случае возникновения
    ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
-   ak_error_get_value().                                                                          */
+   ak_error_get_value().                                                                           */
 /* ----------------------------------------------------------------------------------------------- */
  ak_buffer ak_bckey_context_omac( ak_bckey bkey, ak_pointer in, size_t size, ak_pointer out )
 {
   ak_pointer pout = NULL;
   ak_buffer result = NULL;
-  ak_int64 i = 0, one64[2] = { 0x2, 0x0 },
+  ak_int64 i = 0,
+ #ifdef LIBAKRYPT_LITTLE_ENDIAN
+           one64[2] = { 0x02, 0x00 },
+ #else
+           one64[2] = { 0x0200000000000000LL, 0x00LL },
+ #endif
            blocks = (ak_int64)size/bkey->bsize,
            tail = (ak_int64)size%bkey->bsize;
   ak_uint64 yaout[2], akey[2], *inptr = (ak_uint64 *)in;
@@ -540,47 +570,48 @@
   if( !tail ) { tail = bkey->bsize; blocks--; } /* последний блок всегда существует */
 
  /* основной цикл */
-  if( bkey->bsize == 16 ) { /* здесь длина блока равна 128 бита */
-    for( i = 0; i < blocks; i++, inptr += 2 ) {
-       yaout[0] ^= inptr[0];
-       yaout[1] ^= inptr[1];
-       bkey->encrypt( &bkey->key, yaout, yaout );
-    }
+  switch( bkey->bsize ) {
+   case  8 :
+          /* здесь длина блока равна 64 бита */
+            for( i = 0; i < blocks; i++, inptr++ ) {
+               yaout[0] ^= inptr[0];
+               bkey->encrypt( &bkey->key, yaout, yaout );
+            }
 
-  /* вырабатываем ключи для завершения алгортма */
-    bkey->encrypt( &bkey->key, akey, akey );
-    ak_gf128_mul( akey, akey, one64 );
+          /* теперь ключи для завершения алгоритма */
+            bkey->encrypt( &bkey->key, akey, akey );
+            ak_gf64_mul( akey, akey, one64 );
 
-    if( tail < bkey->bsize ) {
-      ak_gf128_mul( akey, akey, one64 );
-      ((ak_uint8 *)akey)[tail] ^= 0x80;
-    }
+            if( tail < bkey->bsize ) {
+              ak_gf64_mul( akey, akey, one64 );
+              ((ak_uint8 *)akey)[tail] ^= 0x80;
+            }
 
-   /* теперь шифруем последний блок*/
-    akey[0] ^= yaout[0]; akey[1] ^= yaout[1];
-    for( i = 0; i < tail; i++ ) ((ak_uint8 *)akey)[i] ^= ((ak_uint8 *)inptr)[i];
-    bkey->encrypt( &bkey->key, akey, akey );
-  }
+          /* теперь шифруем последний блок */
+            akey[0] ^= yaout[0];
+            for( i = 0; i < tail; i++ ) ((ak_uint8 *)akey)[i] ^= ((ak_uint8 *)inptr)[i];
+            bkey->encrypt( &bkey->key, akey, akey );
+          break;
 
-  if( bkey->bsize == 8 ) { /* здесь длина блока равна 64 бита */
-    for( i = 0; i < blocks; i++, inptr++ ) {
-       yaout[0] ^= inptr[0];
-       bkey->encrypt( &bkey->key, yaout, yaout );
-    }
-
-   /* теперь ключи для завершения алгоритма */
-    bkey->encrypt( &bkey->key, akey, akey );
-    ak_gf64_mul( akey, akey, one64 );
-
-    if( tail < bkey->bsize ) {
-      ak_gf64_mul( akey, akey, one64 );
-      ((ak_uint8 *)akey)[tail] ^= 0x80;
-    }
-
-   /* теперь шифруем последний блок */
-    akey[0] ^= yaout[0];
-    for( i = 0; i < tail; i++ ) ((ak_uint8 *)akey)[i] ^= ((ak_uint8 *)inptr)[i];
-    bkey->encrypt( &bkey->key, akey, akey );
+   case 16 :
+          /* здесь длина блока равна 128 бита */
+            for( i = 0; i < blocks; i++, inptr += 2 ) {
+               yaout[0] ^= inptr[0];
+               yaout[1] ^= inptr[1];
+               bkey->encrypt( &bkey->key, yaout, yaout );
+            }
+          /* вырабатываем ключи для завершения алгортма */
+            bkey->encrypt( &bkey->key, akey, akey );
+            ak_gf128_mul( akey, akey, one64 );
+            if( tail < bkey->bsize ) {
+              ak_gf128_mul( akey, akey, one64 );
+              ((ak_uint8 *)akey)[tail] ^= 0x80;
+            }
+          /* теперь шифруем последний блок*/
+            akey[0] ^= yaout[0]; akey[1] ^= yaout[1];
+            for( i = 0; i < tail; i++ ) ((ak_uint8 *)akey)[i] ^= ((ak_uint8 *)inptr)[i];
+            bkey->encrypt( &bkey->key, akey, akey );
+          break;
   }
 
  /* определяем указатель на область памяти, в которую будет помещен результат вычислений */

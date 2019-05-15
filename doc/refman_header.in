@@ -138,16 +138,20 @@
 \vbox{%
 \vspace{0.1\textwidth}
 {\noindent\Huge\bfseries LIBAKRYPT}\\[1\baselineskip]
-{Axel Kenzo \& The Company Of Belles Lettres}\\[5\baselineskip]
+\textsc{версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@} \\[5\baselineskip]
 
-{\textsc{Инструкция по сборке и установке}}\\[1\baselineskip]
-{\textsc{Инструкция по встраиванию}}\\[1\baselineskip]
-{\textsc{Принципы реализации}}\\[1\baselineskip]
+
+{\bfseries\textsc{Инструкция по сборке и установке}}\\[1\baselineskip]
+{\bfseries\textsc{Инструкция по встраиванию}}\\[1\baselineskip]
+{\bfseries\textsc{Принципы реализации}}\\[1\baselineskip]
+
+
+%![axelkenzo](https://avatars3.githubusercontent.com/u/605552?s=400&v=4)
 
 
 \vspace{0.5\textheight}
-\textsc{версия библиотеки @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@} \\[1\baselineskip]
-%{(c) 2014 -- 2018}\\[1\baselineskip]
+{\small\textsc{Axel Kenzo и <<Компания изящной словесности>>~~\copyright~~\today}}\\[1\baselineskip]
+%{(c) 2014 -- 2019}\\[1\baselineskip]
 }% end of vbox
 }% end of parbox
 }% end of hbox

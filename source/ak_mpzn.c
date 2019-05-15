@@ -4,7 +4,10 @@
 /*  Файл ak_mpzn.h                                                                                 */
 /*  - содержит реализации функций для вычислений с большими целыми числами                         */
 /* ----------------------------------------------------------------------------------------------- */
- #ifdef LIBAKRYPT_HAVE_STRING_H
+#ifdef LIBAKRYPT_HAVE_SYSTYPES_H
+ #include <sys/types.h>
+#endif
+#ifdef LIBAKRYPT_HAVE_STRING_H
  #include <string.h>
 #else
  #error Library cannot be compiled without string.h header
@@ -14,15 +17,15 @@
  #include <ak_mpzn.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_HAVE_BUILTIN_MULQ_GCC
+#if LIBAKRYPT_HAVE_BUILTIN_MULQ_GCC
  #define LIBAKRYPT_HAVE_ASM_CODE
  #define umul_ppmm(w1, w0, u, v) \
- __asm__ ("mulq %3" : "=a,a" (w0), "=d,d" (w1) : "%0,0" (u), "r,m" (v))
+   __asm__ ("mulq %3" : "=a,a" (w0), "=d,d" (w1) : "%0,0" (u), "r,m" (v))
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifndef LIBAKRYPT_HAVE_ASM_CODE
- /* реализация метода Карацубы для двух 64-х битных чисел */
+ /* очень хочется, чтобы здесь была реализация метода А.А. Карацубы для двух 64-х битных чисел */
  #define umul_ppmm( w1, w0, u, v )                  \
  do {                                               \
     ak_uint64 __x0, __x1, __x2, __x3;               \
@@ -118,7 +121,7 @@
   if( generator == NULL ) return ak_error_message( ak_error_undefined_value,
                                                 __func__ , "using an undefined random generator" );
 
- /*! @todo Здесь не совсем корректный способ вычисления случайного значения,
+ /*! TODO! Здесь не совсем корректный способ вычисления случайного значения,
            необходимо исправить в дальнейшем */
 
  /* определяем старший значащий разряд у модуля */
@@ -129,7 +132,7 @@
   }
 
  /* старший разряд - по модулю, остальное мусор */
-  generator->random( generator, x, size*sizeof( ak_uint64 ));
+  generator->random( generator, x, ( ssize_t )( size*sizeof( ak_uint64 )));
   x[midx] %= p[midx];
 
  return ak_error_ok;
@@ -151,6 +154,10 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mpzn_set_hexstr( ak_uint64 *x, const size_t size, const char *str )
 {
+  int error = ak_error_ok;
+#ifdef LIBAKRYPT_BIG_ENDIAN
+  size_t i = 0;
+#endif
   if( x == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to mpzn" );
     return ak_error_null_pointer;
@@ -163,7 +170,12 @@
     ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to hexademal string" );
     return ak_error_null_pointer;
   }
- return ak_hexstr_to_ptr( str, x, size*sizeof( ak_uint64 ), ak_true );
+
+  error = ak_hexstr_to_ptr( str, x, size*sizeof( ak_uint64 ), ak_true );
+#ifdef LIBAKRYPT_BIG_ENDIAN
+  for( i = 0; i < size; i++ ) x[i] = bswap_64(x[i]);
+#endif
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -179,21 +191,34 @@
 /* ----------------------------------------------------------------------------------------------- */
  char *ak_mpzn_to_hexstr( ak_uint64 *x, const size_t size )
 {
+#ifdef LIBAKRYPT_BIG_ENDIAN
+  size_t i = 0;
+  ak_mpznmax temp;
+#endif
   if( x == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using a null pointer to mpzn" );
     return NULL;
   }
   if( !size ) {
-    ak_error_message( ak_error_zero_length, __func__ , "using a zero legth of input data" );
+    ak_error_message( ak_error_zero_length, __func__ , "using a zero length of input data" );
     return NULL;
   }
- return ak_ptr_to_hexstr( x, size*sizeof( ak_uint64 ), ak_true );
+#ifdef LIBAKRYPT_BIG_ENDIAN
+  for( i = 0; i < size; i++ ) temp[i] = bswap_64( x[i] );
+  return ak_ptr_to_hexstr( temp, size*sizeof( ak_uint64 ), ak_true );
+#else
+  return ak_ptr_to_hexstr( x, size*sizeof( ak_uint64 ), ak_true );
+#endif
 }
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mpzn_to_hexstr_static( ak_uint64* x, const size_t size,
                                                              ak_pointer out, const size_t outsize )
 {
+#ifdef LIBAKRYPT_BIG_ENDIAN
+  size_t i = 0;
+  ak_mpznmax temp;
+#endif
   if( x == NULL ) return ak_error_message( ak_error_null_pointer,
                                                         __func__ , "using a null pointer to mpzn" );
   if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
@@ -202,7 +227,117 @@
                                         __func__ , "using a null pointer to output string buffer" );
   if( !outsize ) return ak_error_message( ak_error_zero_length, __func__ ,
                                                      "using a zero legth of output string buffer" );
- return ak_ptr_to_hexstr_static( x, size*sizeof( ak_uint64 ), out, outsize, ak_true );
+#ifdef LIBAKRYPT_BIG_ENDIAN
+  for( i = 0; i < size; i++ ) temp[i] = bswap_64( x[i] );
+  return ak_ptr_to_hexstr_static( temp, size*sizeof( ak_uint64 ), out, outsize, ak_true );
+#else
+  return ak_ptr_to_hexstr_static( x, size*sizeof( ak_uint64 ), out, outsize, ak_true );
+#endif
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Вычет `x` записывается в виде последовательности октетов - коэффициентов разложения в системе
+    счисления по основанию 256. Запись производится слева (начиная с младших разрядов)
+    на право (заканчивая старшими разрядами).
+    Память, в которую записывается вычет, должна быть выделена заранее.
+
+    \note Указатель на вычет `x` и указатель `out` на область памяти,
+    куда записывается результат сериализации, могут совпадать.
+
+    \param x Вычет, для которого производится преобразование.
+    \param size Размер вычета в машинных словах - значение, задаваемое константой
+    \ref ak_mpzn256_size или \ref ak_mpzn512_size.
+    \param out Указатель на область памяти, в которую будет помещено сериализованное
+     представление вычета `x`.
+    \param outsize Размер памяти (в октетах) для хранения сериализованного вычета `x`.
+    \param reverse Флаг полного разворота данных.
+    Если флаг истинен, то после сериализации данные переворачиваются, то есть записываются
+    в обратном (big endian) порядке.
+
+    \return В случае успеха, функция возвращает \ref ak_error_ok (ноль). В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mpzn_to_little_endian( ak_uint64* x, const size_t size,
+                                            ak_pointer out, const size_t outsize, bool_t reverse )
+{
+  ak_uint8 *ptr = out;
+  size_t j = 0, idx = 0, cnt = size*sizeof( ak_uint64 );
+
+  if( x == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                       __func__ , "using a null pointer to mpzn" );
+  if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                             "using a zero length of input data" );
+  if( out == NULL ) return ak_error_message( ak_error_null_pointer,
+                                              __func__ , "using a null pointer to output buffer" );
+  if( outsize < cnt ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                        "using a small memory buffer for output" );
+ /* вычисляем коэффициенты разложения в лоб, без учета используемой архитектуры */
+  for( j = 0; j < size; j++ ) {
+     ak_uint64 tmp = x[j];
+     ptr[idx++] = ( ak_uint8 )tmp%256; tmp >>= 8;
+     ptr[idx++] = ( ak_uint8 )tmp%256; tmp >>= 8;
+     ptr[idx++] = ( ak_uint8 )tmp%256; tmp >>= 8;
+     ptr[idx++] = ( ak_uint8 )tmp%256; tmp >>= 8;
+     ptr[idx++] = ( ak_uint8 )tmp%256; tmp >>= 8;
+     ptr[idx++] = ( ak_uint8 )tmp%256; tmp >>= 8;
+     ptr[idx++] = ( ak_uint8 )tmp%256; tmp >>= 8;
+     ptr[idx++] = ( ak_uint8 )tmp;
+  }
+ /* при необходимости, разворачиваем октеты в обратном порядке */
+  if( reverse ) {
+    for( j = 0; j < cnt/2; j++ ) {
+       ak_uint8 tmp;
+       tmp = ptr[cnt-j-1];
+       ptr[cnt-j-1] = ptr[j];
+       ptr[j] = tmp;
+    }
+  }
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mpzn_set_little_endian( ak_uint64 *x, const size_t size,
+                                     const ak_pointer buff, const size_t buffsize, bool_t reverse )
+{
+  ak_uint64 tmp = 0;
+  ak_uint8 *ptr = buff;
+  size_t j = 0, idx = 0, cnt = size*sizeof( ak_uint64 );
+
+  if( x == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                       __func__ , "using a null pointer to mpzn" );
+  if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                              "using a zero legth of input data" );
+  if( buff == NULL ) return ak_error_message( ak_error_null_pointer,
+                                               __func__ , "using a null pointer to input buffer" );
+  if( buffsize > cnt ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                       "using a large buffer for mpzn assigning" );
+
+  if( reverse ) {
+    for( j = 0; j < size; j++ ) {
+       tmp = ptr[idx++];
+       tmp <<= 8; tmp += ptr[idx++];
+       tmp <<= 8; tmp += ptr[idx++];
+       tmp <<= 8; tmp += ptr[idx++];
+       tmp <<= 8; tmp += ptr[idx++];
+       tmp <<= 8; tmp += ptr[idx++];
+       tmp <<= 8; tmp += ptr[idx++];
+       tmp <<= 8; tmp += ptr[idx++];
+       x[size-1-j] = tmp;
+    }
+  } else {
+      for( j = 0; j < size; j++ ) {
+         idx = j*sizeof( ak_uint64 ) + 7;
+         tmp = ptr[idx--]; tmp <<= 8;
+         tmp += ptr[idx--]; tmp <<= 8;
+         tmp += ptr[idx--]; tmp <<= 8;
+         tmp += ptr[idx--]; tmp <<= 8;
+         tmp += ptr[idx--]; tmp <<= 8;
+         tmp += ptr[idx--]; tmp <<= 8;
+         tmp += ptr[idx--]; tmp <<= 8;
+         tmp += ptr[idx--]; x[j] = tmp;
+      }
+    }
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -310,7 +445,7 @@
    @return Функция возвращает \ref ak_true в случае равенства значений.
    В противном случае, возвращается \ref ak_false.                                                 */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_mpzn_cmp_ui( ak_uint64 *x, const size_t size, const ak_uint64 value )
+ bool_t ak_mpzn_cmp_ui( ak_uint64 *x, const size_t size, const ak_uint64 value )
 {
   size_t i = 0;
   if( x[0] != value ) return ak_false;
@@ -327,7 +462,7 @@
 
     \param z   Переменная, в которую помещается результат
     \param x   Множимое число (многкратной точности)
-    \param size Размер множимого числа. Данная ведичина может принимать значения
+    \param size Размер множимого числа. Данная величина может принимать значения
     \ref ak_mpzn256_size или \ref ak_mpzn512_size
     \param d   Множитель, беззнаковое число однократной точности.
     \return    Старший значащий разряд вычисленног произведения.                                   */
@@ -347,7 +482,7 @@
         cy += w[j] < w0;
         m = w1 + cy;
      }
- memcpy( z, w, sizeof( ak_uint64 )*size );
+  memcpy( z, w, sizeof( ak_uint64 )*size );
  return m;
 }
 
@@ -591,7 +726,7 @@
     заданная степень двойки, вычисляется вычет \f$ z \f$,
     удовлетворяющий сравнению \f$z \equiv (x^k)r \pmod{p}\f$.
     Результат \f$ z \f$  является значением вычета \f$ x^k \pmod{p}\f$ в представлении Монтгомери.
-    Величины \f$ k \f$  и \f$ p \f$ задаются как обычные вычеты, \f$ р \f$  отлично от нуля.
+    Величины \f$ k \f$  и \f$ p \f$ задаются как обычные вычеты и \f$ p \f$  отлично от нуля.
 
     @param z Вычет, в который помещается результат
     @param x Вычет, который возводится в степень \f$ k \f$

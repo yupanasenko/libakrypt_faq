@@ -38,7 +38,7 @@
     \b ВНимание! Для работы используются только \f$ n-1 \f$ младший бит. Старший бит принудительно
     получает значение, равное 1.
 
-    @param iv_size Длин синхропосылки в байтах. Длина должна быть отлична от нуля и может быть
+    @param iv_size Длина синхропосылки в байтах. Длина должна быть отлична от нуля и может быть
     меньше, чем длина блока (в этом случае синхропосылка дополняется нулями в старших байтах).
 
     @return В случае успеха функция возвращает \ref ak_error_ok (ноль). В противном случае
@@ -77,7 +77,6 @@
 
   memcpy( ivector, iv, iv_size ); /* копируем нужное количество байт */
  /* принудительно устанавливаем старший бит в 1 */
-  // ivector[iv_size-1] = ( ivector[iv_size-1]&0x7F ) ^ 0x80;
   ivector[authenticationKey->bsize-1] = ( ivector[authenticationKey->bsize-1]&0x7F ) ^ 0x80;
 
  /* зашифровываем необходимое и удаляемся */
@@ -88,16 +87,34 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-#define astep64(DATA)  authenticationKey->encrypt( &authenticationKey->key, &ctx->zcount, &h ); \
-                       ak_gf64_mul( &h, &h, (DATA) ); \
-                       ctx->sum.q[0] ^= h.q[0]; \
-                       ctx->zcount.w[1]++;
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
+ #define astep64(DATA)  authenticationKey->encrypt( &authenticationKey->key, &ctx->zcount, &h ); \
+                        ak_gf64_mul( &h, &h, (DATA) ); \
+                        ctx->sum.q[0] ^= h.q[0]; \
+                        ctx->zcount.w[1]++;
 
-#define astep128(DATA) authenticationKey->encrypt( &authenticationKey->key, &ctx->zcount, &h ); \
-                       ak_gf128_mul( &h, &h, (DATA) ); \
-                       ctx->sum.q[0] ^= h.q[0]; \
-                       ctx->sum.q[1] ^= h.q[1]; \
-                       ctx->zcount.q[1]++;
+ #define astep128(DATA) authenticationKey->encrypt( &authenticationKey->key, &ctx->zcount, &h ); \
+                        ak_gf128_mul( &h, &h, (DATA) ); \
+                        ctx->sum.q[0] ^= h.q[0]; \
+                        ctx->sum.q[1] ^= h.q[1]; \
+                        ctx->zcount.q[1]++;
+
+#else
+ #define astep64(DATA)  authenticationKey->encrypt( &authenticationKey->key, &ctx->zcount, &h ); \
+                        ak_gf64_mul( &h, &h, (DATA) ); \
+                        ctx->sum.q[0] ^= h.q[0]; \
+                        ctx->zcount.w[1] = bswap_32( ctx->zcount.w[1] ); \
+                        ctx->zcount.w[1]++; \
+                        ctx->zcount.w[1] = bswap_32( ctx->zcount.w[1] );
+ #define astep128(DATA) authenticationKey->encrypt( &authenticationKey->key, &ctx->zcount, &h ); \
+                        ak_gf128_mul( &h, &h, (DATA) ); \
+                        ctx->sum.q[0] ^= h.q[0]; \
+                        ctx->sum.q[1] ^= h.q[1]; \
+                        ctx->zcount.q[1] = bswap_64( ctx->zcount.q[1] ); \
+                        ctx->zcount.q[1]++; \
+                        ctx->zcount.q[1] = bswap_64( ctx->zcount.q[1] );
+
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция обрабатывает очередной блок дополнительных данных и
@@ -144,7 +161,7 @@
  if( absize == 16 ) { /* обработка 128-битным шифром */
 
    ctx->abitlen += ( blocks  << 7 );
-   for( ; blocks > 0; blocks--, aptr += 16 ) { astep128( aptr );  }
+   for( ; blocks > 0; blocks--, aptr += 16 ) { astep128( aptr ); }
    if( tail ) {
     memset( temp, 0, 16 );
     memcpy( temp+absize-tail, aptr, (size_t)tail );
@@ -213,18 +230,27 @@
 
  /* формируем последний вектор из длин */
   if(  absize&0x10 ) {
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
     temp.q[0] = ( ak_uint64 )ctx->pbitlen;
     temp.q[1] = ( ak_uint64 )ctx->abitlen;
+#else
+    temp.q[0] = bswap_64(( ak_uint64 )ctx->pbitlen );
+    temp.q[1] = bswap_64(( ak_uint64 )ctx->abitlen );
+#endif
     astep128( temp.b );
-
   } else { /* теперь тоже самое, но для 64-битного шифра */
 
      if(( ctx->abitlen > 0xFFFFFFFF ) || ( ctx->pbitlen > 0xFFFFFFFF )) {
        ak_error_message( ak_error_overflow, __func__, "using an algorithm with very long data" );
        return NULL;
      }
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
      temp.w[0] = (ak_uint32) ctx->pbitlen;
      temp.w[1] = (ak_uint32) ctx->abitlen;
+#else
+     temp.w[0] = bswap_32((ak_uint32) ctx->pbitlen );
+     temp.w[1] = bswap_32((ak_uint32) ctx->abitlen );
+#endif
      astep64( temp.b );
   }
 
@@ -297,14 +323,30 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-#define estep64  encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &e ); \
-                 outp[0] = inp[0] ^ e.q[0]; \
-                 ctx->ycount.w[0]++;
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
+ #define estep64  encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &e ); \
+                  outp[0] = inp[0] ^ e.q[0]; \
+                  ctx->ycount.w[0]++;
 
-#define estep128 encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &e ); \
-                 outp[0] = inp[0] ^ e.q[0]; \
-                 outp[1] = inp[1] ^ e.q[1]; \
-                 ctx->ycount.q[0]++;
+ #define estep128 encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &e ); \
+                  outp[0] = inp[0] ^ e.q[0]; \
+                  outp[1] = inp[1] ^ e.q[1]; \
+                  ctx->ycount.q[0]++;
+
+#else
+ #define estep64  encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &e ); \
+                  outp[0] = inp[0] ^ e.q[0]; \
+                  ctx->ycount.w[0] = bswap_32( ctx->ycount.w[0] ); \
+                  ctx->ycount.w[0]++; \
+                  ctx->ycount.w[0] = bswap_32( ctx->ycount.w[0] );
+
+ #define estep128 encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &e ); \
+                  outp[0] = inp[0] ^ e.q[0]; \
+                  outp[1] = inp[1] ^ e.q[1]; \
+                  ctx->ycount.q[0] = bswap_64( ctx->ycount.q[0] ); \
+                  ctx->ycount.q[0]++; \
+                  ctx->ycount.q[0] = bswap_64( ctx->ycount.q[0] );
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция зашифровывает очередной фрагмент данных и
@@ -441,7 +483,6 @@
 
  return ak_error_ok;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция расшифровывает очередной фрагмент данных и
@@ -775,7 +816,7 @@
             При этом код ошибки может быть получен с
             помощью вызова функции ak_error_get_value().                                           */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_bckey_context_decrypt_mgm( ak_bckey encryptionKey, ak_bckey authenticationKey,
+ bool_t ak_bckey_context_decrypt_mgm( ak_bckey encryptionKey, ak_bckey authenticationKey,
            const ak_pointer adata, const size_t adata_size, const ak_pointer in, ak_pointer out,
                                      const size_t size, const ak_pointer iv, const size_t iv_size,
                                                          ak_pointer icode, const size_t icode_size )
@@ -783,7 +824,7 @@
   size_t bs = 0;
   struct mgm_ctx mgm; /* контекст структуры, в которой хранятся промежуточные данные */
   int error = ak_error_ok;
-  ak_bool result = ak_false;
+  bool_t result = ak_false;
 
  /* проверки ключей */
   if(( encryptionKey == NULL ) && ( authenticationKey == NULL )) {
@@ -852,11 +893,9 @@
     ak_error_set_value( ak_error_ok );
     ak_mgm_context_authentication_finalize( &mgm, authenticationKey, icode2, icode_size );
     if(( error = ak_error_get_value()) != ak_error_ok )
-      ak_error_message( error, __func__, "incorrect finanlize of integrity code" );
+      ak_error_message( error, __func__, "incorrect finalize of integrity code" );
      else {
-      if( !ak_ptr_is_equal( icode, icode2, icode_size ))
-        ak_error_message( ak_error_not_equal_data, __func__, "wrong value of integrity code" );
-       else result = ak_true;
+        if( ak_ptr_is_equal( icode, icode2, icode_size )) result = ak_true;
      }
     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator, ak_true );
 
@@ -1000,7 +1039,7 @@
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mgm_context_set_key( ak_mgm mctx, const ak_pointer ptr,
-                                                            const size_t size, const ak_bool cflag )
+                                                            const size_t size, const bool_t cflag )
 {
   int error = ak_error_ok;
   if( mctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -1169,10 +1208,10 @@
 
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_bckey_test_mgm( void )
+ bool_t ak_bckey_test_mgm( void )
 {
   char *str = NULL;
-  ak_bool result = ak_false;
+  bool_t result = ak_false;
   int error = ak_error_ok, audit = ak_log_get_level();
 
  /* константные значения ключей из ГОСТ Р 34.13-2015 */
@@ -1266,7 +1305,7 @@
     ak_bckey_context_destroy( &kuznechikKeyA );
     ak_bckey_context_destroy( &kuznechikKeyB );
     ak_bckey_context_destroy( &magmaKeyA );
-    ak_error_message( error, __func__, "incorrect assigning a first constant value to Magma key");
+    ak_error_message( error, __func__, "incorrect assigning a third constant value to Magma key");
     return ak_false;
   }
  /* - 4 - */
@@ -1282,7 +1321,7 @@
     ak_bckey_context_destroy( &kuznechikKeyB );
     ak_bckey_context_destroy( &magmaKeyA );
     ak_bckey_context_destroy( &magmaKeyB );
-    ak_error_message( error, __func__, "incorrect assigning a first constant value to Magma key");
+    ak_error_message( error, __func__, "incorrect assigning a fourth constant value to Magma key");
     return ak_false;
   }
 
@@ -1465,11 +1504,10 @@
  return result;
 }
 
-/*! \todo Необходимо сделать цикл тестов со
-    случайными имитовставками, вычисляемыми с помощью класса struct mac. */
 /* ----------------------------------------------------------------------------------------------- */
 /*!  \example test-internal-mgm01.c                                                                */
 /*!  \example test-internal-mgm02.c                                                                */
+/*!  \example test-internal-mgm03.c                                                                */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                       ak_mgm.c  */
 /* ----------------------------------------------------------------------------------------------- */

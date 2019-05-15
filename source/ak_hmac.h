@@ -38,9 +38,6 @@
  int ak_hmac_context_create_streebog256( ak_hmac );
 /*! \brief Создание контекста ключевой функции хеширования HMAC на основе функции Стреебог512. */
  int ak_hmac_context_create_streebog512( ak_hmac );
-/*! \brief Создание контекста ключевой функции хеширования HMAC на основе функции ГОСТ Р 34.11-94
-    с таблицами замен из RFC 4357. */
- int ak_hmac_context_create_gosthash94( ak_hmac );
 /*! \brief Создание контекста ключевой функции хеширования HMAC c помощью заданного oid. */
  int ak_hmac_context_create_oid( ak_hmac , ak_oid );
 /*! \brief Уничтожение контекста функции хеширования. */
@@ -50,7 +47,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Присвоение секретному ключу константного значения. */
- int ak_hmac_context_set_key( ak_hmac , const ak_pointer , const size_t , const ak_bool );
+ int ak_hmac_context_set_key( ak_hmac , const ak_pointer , const size_t , const bool_t );
 /*! \brief Присвоение секретному ключу случайного значения. */
  int ak_hmac_context_set_key_random( ak_hmac , ak_random );
 /*! \brief Присвоение секретному ключу значения, выработанного из пароля */
@@ -74,10 +71,10 @@
  int ak_hmac_context_pbkdf2_streebog512( const ak_pointer , const size_t ,
                    const ak_pointer , const size_t, const size_t , const size_t , ak_pointer );
 /*! \brief Тестирование алгоритмов выработки имитовставки HMAC с отечественными
-    функциями хеширования. */
- ak_bool ak_hmac_test_streebog( void );
+    функциями хеширования семейства Стрибог (ГОСТ Р 34.11-2012). */
+ bool_t ak_hmac_test_streebog( void );
 /*! \brief Тестирование алгоритма PBKDF2, регламентируемого Р 50.1.113-2016. */
- ak_bool ak_hmac_test_pbkdf2( void );
+ bool_t ak_hmac_test_pbkdf2( void );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

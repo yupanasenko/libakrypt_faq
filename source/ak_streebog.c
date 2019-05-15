@@ -1,7 +1,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*  Copyright (c) 2014 - 2019 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
-/*  Файл ak_hash.h                                                                                 */
+/*  Файл ak_streebog.c                                                                             */
 /*  - содержит реализацию алгоритма бесключевого хэширования, регламентируемого ГОСТ Р 34.11-2012  */
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_STDLIB_H
@@ -16,6 +16,7 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
+ #include <ak_hash.h>
  #include <ak_parameters.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -33,16 +34,21 @@
 /*! Преобразование LPS (\b важно: мы предполагаем, что данные содержат 64 байта)                   */
  static inline void streebog_lps( ak_uint64 *result, const ak_uint64 *data )
 {
-  int idx = 0, idx2 = 0;
-  unsigned char *a = (unsigned char *)data; /* приводим к массиву байт */
+  size_t idx = 0, idx2 = 0;
+  const unsigned char *a = ( const unsigned char*) data; /* приводим к массиву байт */
 
   /* Все три преобразования вместе                           */
   /* (этот очень короткий код был предложен Павлом Лебедевым */
   for( idx = 0; idx < 8; idx++ ) {
     ak_uint64 sidx = idx, c = 0;
-    for( idx2 = 0; idx2 < 8; idx2++, sidx += 8 )
+    for( idx2 = 0; idx2 < 8; idx2++, sidx += 8 ) {
       c ^= streebog_Areverse_expand[idx2][gost_pi[a[sidx]]];
+    }
+   #ifdef LIBAKRYPT_LITTLE_ENDIAN
     result[idx] = c;
+   #else
+    result[idx] = bswap_64(c);
+   #endif
   }
 }
 
@@ -55,22 +61,28 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Преобразование G (\b важно: мы предполагаем, что данные содержат 64 байта)                     */
+/*! Преобразование G (\b важно: мы предполагаем, что массивы n и m содержат по 64 байта)                     */
  static inline void streebog_g( struct streebog *ctx, ak_uint64 *n, const ak_uint64 *m )
 {
    int idx = 0;
    ak_uint64 K[8], T[8], B[8];
+
        if( n != NULL ) {
          streebog_x( B, ctx->H, n );
          streebog_lps( K, B );
        }
         else
          streebog_lps( K, ctx->H );
+
        /* K - ключ K1 */
        for( idx = 0; idx < 8; idx++ ) T[idx] = m[idx]; /* memcpy( T, m, 64 ); */
+
        for( idx = 0; idx < 12; idx++ ) {
-          streebog_x( B, T, K ); streebog_lps( T, B ); /* преобразуем текст */
-          streebog_x( B, K, streebog_c[idx] ); streebog_lps( K, B );   /* новый ключ */
+          streebog_x( B, T, K );
+          streebog_lps( T, B ); /* преобразуем текст */
+
+          streebog_x( B, K, streebog_c[idx] );
+          streebog_lps( K, B );   /* новый ключ */
        }
        /* изменяем значение переменной h */
        for ( idx = 0; idx < 8; idx++ ) ctx->H[idx] ^= T[idx] ^ K[idx] ^ m[idx];
@@ -80,9 +92,20 @@
 /*! Преобразование Add (увеличения счетчика длины обработаного сообщения)                          */
  static inline void streebog_add( struct streebog *ctx, ak_uint64 size )
 {
+ #ifdef LIBAKRYPT_LITTLE_ENDIAN
    ak_uint64 tmp = size + ctx->N[0];
    if( tmp < ctx->N[0] ) ctx->N[1]++;
    ctx->N[0] = tmp;  /* такой код позволяет обработать сообщения, длиной не более 2^125 байт */
+ #else
+     ak_uint64 val = bswap_64( ctx->N[0] ),
+               tmp = size + val;
+     if( tmp < val ) {
+       val = bswap_64( ctx->N[1] );
+       val++;
+       ctx->N[1] = bswap_64( val );
+     }
+     ctx->N[0] = bswap_64(tmp);
+ #endif
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -93,12 +116,24 @@
    ak_uint64 carry = 0;
    for( i = 0; i < 8; i++ )
    {
+    #ifdef LIBAKRYPT_LITTLE_ENDIAN
       if( carry ) {
                     ctx->SIGMA[i] ++;
                     if( ctx->SIGMA[i] ) carry = 0;
       }
       ctx->SIGMA[i] += data[i];
       if( ctx->SIGMA[i] < data[i] ) carry = 1;
+    #else
+      ak_uint64 val_data = bswap_64( data[i] ),
+               val_sigma = bswap_64( ctx->SIGMA[i] );
+      if( carry ) {
+                    val_sigma++;
+                    if( val_sigma ) carry = 0;
+      }
+      val_sigma += val_data;
+      if( val_sigma < val_data ) carry = 1;
+      ctx->SIGMA[i] = bswap_64( val_sigma );
+    #endif
    }
 }
 
@@ -335,13 +370,13 @@
 /*!  @return Если тестирование прошло успешно возвращается ak_true (истина). В противном случае,
      возвращается ak_false.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_hash_test_streebog256( void )
+ bool_t ak_hash_test_streebog256( void )
 {
   struct hash ctx; /* контекст функции хеширования */
   ak_uint8 out[32]; /* буффер длиной 32 байта (256 бит) для получения результата */
   char *str = NULL;
   int error = ak_error_ok;
-  ak_bool result = ak_true;
+  bool_t result = ak_true;
   int audit = ak_log_get_level();
 
  /* инициализируем контекст функции хешиирования */
@@ -459,13 +494,13 @@
 /*!  @return Если тестирование прошло успешно возвращается ak_true (истина). В противном случае,
      возвращается ak_false.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_hash_test_streebog512( void )
+ bool_t ak_hash_test_streebog512( void )
 {
   struct hash ctx; /* контекст функции хеширования */
   ak_uint8 out[64]; /* буффер длиной 64 байта (512 бит) для получения результата */
   char *str = NULL;
   int error = ak_error_ok;
-  ak_bool result = ak_true;
+  bool_t result = ak_true;
   int audit = ak_log_get_level();
 
  /* инициализируем контекст функции хешиирования */

@@ -13,9 +13,10 @@
 
  int main( void )
 {
+ size_t i = 0;
  struct hash ctx;
  struct random generator;
- int i = 0, result = EXIT_SUCCESS;
+ int result = EXIT_SUCCESS;
  ak_uint8 data[512], out[8][32], res[32], message[128];
 
  /* 1. инициализируем библиотеку с выводом сообщений в стандартный поток вывода ошибок */
@@ -30,9 +31,10 @@
  /* 3. вычисляем значение хеш-кода:
        нарезаем исходные данные на фрагменты, длина которых
        совпадает с длиной блока обрабатываемых данных. Потом, последовательно, вычисляем
-       значение хэш-кода для последовательно ццвеличинвающихся фрагментов.
+       значение хэш-кода для последовательно увеличивающихся фрагментов.
 
-       Ипользуется тот факт, что функция fimalize() не изменяет текущее состояние контекста. */
+       Ипользуется тот факт, что функция finalize() не изменяет текущее состояние контекста. */
+
    printf("the first experiment:\n");
    ak_hash_context_create_streebog256( &ctx ); /* создаем контекст */
    for( i = 0; i < sizeof(data)/ctx.bsize; i++ ) {
@@ -48,12 +50,13 @@
 
      /* выводим результат */
       ak_ptr_to_hexstr_static( out[i], 32, message, 128, ak_false );
-      printf("hash[%d]: %s\n", i, message );
+      printf("hash[%u]: %s\n", (unsigned int)i, message );
    }
    ak_hash_context_destroy( &ctx );
 
  /* 4. вычисляем ту же последовательность хеш-кодов,
        но теперь для фрагментов с известной заранее длиной */
+
    printf("\nthe second experiment:\n");
    ak_hash_context_create_streebog256( &ctx );
    for( i = 0; i < sizeof(data)/ctx.bsize; i++ ) {
@@ -62,7 +65,7 @@
 
      /* выводим результат */
       ak_ptr_to_hexstr_static( res, 32, message, 128, ak_false );
-      printf("hash[%d]: %s\n", i, message );
+      printf("hash[%u]: %s\n", (unsigned int)i, message );
 
      /* сравниваем новое значение с вычисленным ранее
         при различных результатах меняем возвращаемый результат */

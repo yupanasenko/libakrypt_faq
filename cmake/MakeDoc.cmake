@@ -1,7 +1,40 @@
 # -------------------------------------------------------------------------------------------------- #
 # генерация файла для сборки документации (только для UNIX)
-if( CMAKE_HOST_UNIX )
+# -------------------------------------------------------------------------------------------------- #
+if( LIBAKRYPT_HTML_DOC )
+  find_file( DOXYGEN_BIN doxygen )
+  if( DOXYGEN_BIN )
+  # doxygen найден и документация может быть сгенерирована
+     configure_file( ${CMAKE_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY )
+     file( WRITE ${CMAKE_BINARY_DIR}/make-html-${FULL_VERSION}.sh "#/bin/bash\n" )
+     file( APPEND ${CMAKE_BINARY_DIR}/make-html-${FULL_VERSION}.sh "doxygen Doxyfile\n" )
 
+     find_file( QHELPGENERATOR_BIN qhelpgenerator )
+     if( QHELPGENERATOR_BIN )
+       file( APPEND ${CMAKE_BINARY_DIR}/make-html-${FULL_VERSION}.sh
+          "cp doc/html/libakrypt.qch ${CMAKE_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.qch\n" )
+       file( APPEND ${CMAKE_BINARY_DIR}/make-html-${FULL_VERSION}.sh
+                                                                "rm doc/html/libakrypt.qch\n" )
+     endif()
+     file( APPEND ${CMAKE_BINARY_DIR}/make-html-${FULL_VERSION}.sh
+                                  "tar -cjvf libakrypt-doc-${FULL_VERSION}.tar.bz2 doc/html\n")
+
+     execute_process( COMMAND chmod +x ${CMAKE_BINARY_DIR}/make-html-${FULL_VERSION}.sh )
+     add_custom_target( html ${CMAKE_BINARY_DIR}/make-html-${FULL_VERSION}.sh )
+     message("-- Script for documentation in HTML format is done (now \"make html\" enabled)")
+
+  else()
+    message("-- doxygen not found")
+    exit()
+  endif()
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+if( LIBAKRYPT_PDF_DOC )
+  find_file( DOXYGEN_BIN doxygen )
+  if( DOXYGEN_BIN )
+
+  # doxygen найден и документация может быть сгенерирована
     set( LIBAKRYPT_PDF_HEADER "refman_header.tex" )
     set( LIBAKRYPT_PDF_FOOTER "refman_footer.tex" )
 
@@ -10,31 +43,18 @@ if( CMAKE_HOST_UNIX )
     configure_file( ${CMAKE_SOURCE_DIR}/doc/refman_footer.in
                                                ${CMAKE_BINARY_DIR}/refman_footer.tex @ONLY )
 
-#    execute_process( COMMAND pandoc -f markdown -t latex --top-level-division=chapter ${CMAKE_SOURCE_DIR}/Readme.md -o readme.tex )
-
-    message("-- Creating a fine view for documentation in pdf file - done ")
-    configure_file( ${CMAKE_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY )
-    file( WRITE ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh "#/bin/bash\n" )
-    file( APPEND ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh "doxygen Doxyfile\n" )
-
    # получаем документацию в формате PDF
-    file( APPEND ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh "cd doc/latex\n" )
-    file( APPEND ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh "make\n" )
-    file( APPEND ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh
+    configure_file( ${CMAKE_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY )
+    file( WRITE ${CMAKE_BINARY_DIR}/make-pdf-${FULL_VERSION}.sh "#/bin/bash\n" )
+    file( APPEND ${CMAKE_BINARY_DIR}/make-pdf-${FULL_VERSION}.sh "doxygen Doxyfile\n" )
+    file( APPEND ${CMAKE_BINARY_DIR}/make-pdf-${FULL_VERSION}.sh "cd doc/latex\n" )
+    file( APPEND ${CMAKE_BINARY_DIR}/make-pdf-${FULL_VERSION}.sh "make\n" )
+    file( APPEND ${CMAKE_BINARY_DIR}/make-pdf-${FULL_VERSION}.sh
              "cp refman.pdf ${CMAKE_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.pdf\n" )
-    file( APPEND ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh "cd ../..\n" )
+    file( APPEND ${CMAKE_BINARY_DIR}/make-pdf-${FULL_VERSION}.sh "cd ../..\n" )
 
-   # получаем документацию в формате QCH
-    file( APPEND ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh
-      "cp doc/html/libakrypt.qch ${CMAKE_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.qch\n" )
-    file( APPEND ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh
-                                                        "rm doc/html/libakrypt.qch\n" )
-   # получаем архив с html
-    file( APPEND ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh
-                         "tar -cjvf libakrypt-doc-${FULL_VERSION}.tar.bz2 doc/html\n")
-    message("-- Creating a make-doc-${FULL_VERSION}.sh file - done ")
-    execute_process( COMMAND chmod +x ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh )
-    add_custom_target( doc ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh )
+    execute_process( COMMAND chmod +x ${CMAKE_BINARY_DIR}/make-pdf-${FULL_VERSION}.sh )
+    add_custom_target( pdf ${CMAKE_BINARY_DIR}/make-pdf-${FULL_VERSION}.sh )
+    message("-- Script for documentation in PDF format is done (now \"make pdf\" enabled)")
+  endif()
 endif()
-
-# -------------------------------------------------------------------------------------------------- #

@@ -135,7 +135,7 @@
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_omac_context_set_key( ak_omac gkey, const ak_pointer ptr,
-                                                            const size_t size, const ak_bool cflag )
+                                                            const size_t size, const bool_t cflag )
 {
   int error = ak_error_ok;
   if( gkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -288,7 +288,12 @@
   ak_pointer pout = NULL;
   ak_buffer result = NULL;
   ak_omac gkey = ( ak_omac ) ptr;
-  ak_uint64 *yaptr = NULL, akey[2], eval[2], one64[2] = { 0x2, 0x0 };
+  ak_uint64 *yaptr = NULL, akey[2], eval[2],
+ #ifdef LIBAKRYPT_LITTLE_ENDIAN
+           one64[2] = { 0x02, 0x00 };
+ #else
+           one64[2] = { 0x0200000000000000LL, 0x00LL };
+ #endif
 
   if( gkey == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__,

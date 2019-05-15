@@ -92,14 +92,6 @@
     @return В случае успешного завершения функций возвращает \ref ak_error_ok. В случае
     возникновения ошибки возвращеется ее код.                                                      */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_context_create_gosthash94( ak_hmac hctx )
-{ return ak_hmac_context_create_oid( hctx, ak_oid_context_find_by_name( "hmac-gosthash94" )); }
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param hctx Контекст алгоритма HMAC выработки имитовставки.
-    @return В случае успешного завершения функций возвращает \ref ak_error_ok. В случае
-    возникновения ошибки возвращеется ее код.                                                      */
-/* ----------------------------------------------------------------------------------------------- */
  int ak_hmac_context_destroy( ak_hmac hctx )
 {
   int error = ak_error_ok;
@@ -146,7 +138,7 @@
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_hmac_context_set_key( ak_hmac hctx, const ak_pointer ptr,
-                                                            const size_t size, const ak_bool cflag )
+                                                            const size_t size, const bool_t cflag )
 {
   int error = ak_error_ok;
   if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -585,7 +577,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                            функции для тестирования алгоритма hmac                              */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_hmac_test_streebog( void )
+ bool_t ak_hmac_test_streebog( void )
 {
   ak_uint8 key[32] = {
    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -612,7 +604,7 @@
   char *str = NULL;
   ak_uint8 out[64];
   int error = ak_error_ok;
-  ak_bool result = ak_true;
+  bool_t result = ak_true;
   int audit = ak_log_get_level();
 
  /* 1. тестируем HMAC на основе Стрибог 256 */
@@ -679,7 +671,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_hmac_test_pbkdf2( void )
+ bool_t ak_hmac_test_pbkdf2( void )
 {
   ak_uint8 R1[64] = {
    0x64, 0x77, 0x0a, 0xf7, 0xf7, 0x48, 0xc3, 0xb1, 0xc9, 0xac, 0x83, 0x1d, 0xbc, 0xfd, 0x85, 0xc2,

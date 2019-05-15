@@ -92,7 +92,7 @@
 /*! \brief Тип данных для хранения одной опции библиотеки */
  typedef struct option {
   /*! \brief Человекочитаемое имя опции, используется для поиска и установки значения */
-   const char *name;
+   char *name;
   /*! \brief Численное значение опции (31 значащий бит + знак) */
    ak_int64 value;
  } *ak_option;
@@ -100,7 +100,6 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения опций (значения по-умолчанию) */
  static struct option options[] = {
-     { "big_endian_architecture", ak_false },
      { "log_level", ak_log_standard },
      { "context_manager_size", 32 },
      { "context_manager_max_size", 4096 },
@@ -208,7 +207,7 @@
   else return options[index].value;
 }
 
-
+#ifndef LIBAKRYPT_CONST_CRYPTO_PARAMS
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param hpath Буффер в который будет помещено имя домашнего каталога пользователя.
     @param size Размер буффера в байтах.
@@ -226,10 +225,10 @@
 
  #ifdef _WIN32
   /* в начале определяем, находимся ли мы в консоли MSys */
-   GetEnvironmentVariableA( "HOME", hpath, size );
+   GetEnvironmentVariableA( "HOME", hpath, ( DWORD )size );
   /* если мы находимся не в консоли, то строка hpath должна быть пустой */
    if( strlen( hpath ) == 0 ) {
-     GetEnvironmentVariableA( "USERPROFILE", hpath, size );
+     GetEnvironmentVariableA( "USERPROFILE", hpath, ( DWORD )size );
    }
  #else
    ak_snprintf( hpath, size, "%s", getenv( "HOME" ));
@@ -292,7 +291,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static ak_bool ak_libakrypt_load_one_option( const char *string, const char *field, ak_int64 *value )
+ static bool_t ak_libakrypt_load_one_option( const char *string, const char *field, ak_int64 *value )
 {
   char *ptr = NULL, *endptr = NULL;
   if(( ptr = strstr( string, field )) != NULL ) {
@@ -303,8 +302,14 @@
       return ak_false;
     }
     if(( errno == ERANGE && ( val >= INT_MAX || val <= INT_MIN )) || (errno != 0 && val == 0)) {
-      ak_error_message_fmt( ak_error_undefined_value, __func__,
-                                                     "%s for field %s", strerror( errno ), field );
+     #ifdef _MSC_VER
+       char mbuf[256];
+       strerror_s( mbuf, 256, errno );
+       ak_error_message_fmt( ak_error_undefined_value, __func__, "%s for field %s", mbuf, field );
+     #else
+       ak_error_message_fmt( ak_error_undefined_value, __func__,
+                                                    "%s for field %s", strerror( errno ), field );
+     #endif
     } else {
              *value = val;
              return ak_true;
@@ -331,7 +336,7 @@
  /* нарезаем входные на строки длиной не более чем 1022 символа */
   memset( localbuffer, 0, 1024 );
   for( idx = 0; idx < (size_t) fd->size; idx++ ) {
-     if( fread( &ch, 1, 1, fd->fp ) != 1 ) {
+     if( ak_file_read( fd, &ch, 1 ) != 1 ) {
        ak_file_close(fd);
        return ak_error_message( ak_error_read_data, __func__ ,
                                                          "unexpected end of libakrypt.conf file" );
@@ -405,18 +410,6 @@
 
   /* закрываем */
   ak_file_close(fd);
-
-  /* выводим сообщение об установленных параметрах библиотеки */
-  if( ak_libakrypt_get_option( "log_level" ) > ak_log_standard ) {
-    size_t i = 0;
-
-    ak_error_message_fmt( ak_error_ok, __func__, "libakrypt version: %s", ak_libakrypt_version( ));
-    /* далее мы пропускаем вывод информации об архитектуре,
-       поскольку она будет далее тестироваться отдельно     */
-    for( i = 1; i < ak_libakrypt_options_count(); i++ )
-       ak_error_message_fmt( ak_error_ok, __func__,
-                                   "value of option %s is %d", options[i].name, options[i].value );
-  }
   return ak_error_ok;
 }
 
@@ -448,8 +441,14 @@
   if( mkdir( filename, S_IRWXU ) < 0 ) {
  #endif
     if( errno != EEXIST ) {
+     #ifdef _MSC_VER
+       strerror_s( hpath, FILENAME_MAX, errno ); /* помещаем сообщение об ошибке в ненужный буффер */
+       return ak_error_message_fmt( ak_error_access_file, __func__,
+                                         "wrong creation of %s directory [%s]", filename, hpath );
+     #else
       return ak_error_message_fmt( ak_error_access_file, __func__,
-       "wrong creation of %s directory with error: %s", filename, strerror( errno ));
+                              "wrong creation of %s directory [%s]", filename, strerror( errno ));
+     #endif
     }
   }
 
@@ -466,8 +465,14 @@
   if( mkdir( hpath, S_IRWXU ) < 0 ) {
  #endif
     if( errno != EEXIST ) {
+     #ifdef _MSC_VER
+       strerror_s( hpath, FILENAME_MAX, errno ); /* помещаем сообщение об ошибке в ненужный буффер */
+       return ak_error_message_fmt( ak_error_access_file, __func__,
+                                        "wrong creation of %s directory [%s]", filename, hpath );
+     #else
       return ak_error_message_fmt( ak_error_access_file, __func__,
-       "wrong creation of %s directory with error: %s", filename, strerror( errno ));
+                             "wrong creation of %s directory [%s]", filename, strerror( errno ));
+     #endif
     }
   }
 
@@ -484,9 +489,15 @@
   for( i = 0; i < ak_libakrypt_options_count(); i++ ) {
     memset( hpath, 0, ak_min( 1024, FILENAME_MAX ));
     ak_snprintf( hpath, FILENAME_MAX - 1, "%s = %d\n", options[i].name, options[i].value );
-    if( fwrite( hpath, 1, strlen( hpath ), fd.fp ) < 1 ) {
+    if( ak_file_write( &fd, hpath, strlen( hpath )) < 1 ) {
+     #ifdef _MSC_VER
+      strerror_s( hpath, FILENAME_MAX, errno ); /* помещаем сообщение об ошибке в ненужный буффер */
       ak_error_message_fmt( error = ak_error_write_data, __func__,
-                      "option %s stored with error: %s", options[i].name, strerror( errno ));
+                                 "option %s stored with error [%s]", options[i].name, hpath );
+     #else
+      ak_error_message_fmt( error = ak_error_write_data, __func__,
+                      "option %s stored with error [%s]", options[i].name, strerror( errno ));
+     #endif
     }
   }
   ak_file_close( &fd );
@@ -501,7 +512,7 @@
     если ни в одном из указанных мест файл не найден, то функция создает файл `libakrypt.conf`
     в домашнем каталоге пользователя со значениями по-умолчанию.                                   */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_libakrypt_load_options( void )
+ bool_t ak_libakrypt_load_options( void )
 {
  struct file fd;
  int error = ak_error_ok;
@@ -556,6 +567,23 @@
 
  return ak_true;
 }
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_libakrypt_log_options( void )
+{
+ /* выводим сообщение об установленных параметрах библиотеки */
+  if( ak_libakrypt_get_option( "log_level" ) >= ak_log_maximum ) {
+    size_t i = 0;
+    ak_error_message_fmt( ak_error_ok, __func__, "libakrypt version: %s",
+                                                                     ak_libakrypt_version( ));
+   /* далее мы пропускаем вывод информации об архитектуре,
+    поскольку она будет далее тестироваться отдельно     */
+    for( i = 1; i < ak_libakrypt_options_count(); i++ )
+       ak_error_message_fmt( ak_error_ok, __func__,
+                              "value of option %s is %d", options[i].name, options[i].value );
+   }
+}
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_file_open_to_read( ak_file file, const char *filename )
@@ -575,47 +603,65 @@
     }
   }
 
- /* открываем файл */
-  if(( file->fp = fopen( filename, "rb" )) == NULL )
-    return ak_error_message_fmt( ak_error_open_file, __func__ ,
-                                     "wrong opening a file %s [%s]", filename, strerror( errno ));
  /* заполняем данные */
   file->size = ( ak_int64 )st.st_size;
- #ifdef _WIN32
+ #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+  if(( file->hFile = CreateFile( filename,   /* name of the write */
+                     GENERIC_READ,           /* open for reading */
+                     0,                      /* do not share */
+                     NULL,                   /* default security */
+                     OPEN_EXISTING,          /* open only existing file */
+                     FILE_ATTRIBUTE_NORMAL,  /* normal file */
+                     NULL )                  /* no attr. template */
+      ) == INVALID_HANDLE_VALUE )
+       return ak_error_message_fmt( ak_error_open_file, __func__,
+                                     "wrong opening a file %s [%s]", filename, strerror( errno ));
   file->blksize = 4096;
  #else
+  if(( file->fd = open( filename, O_SYNC|O_RDONLY )) < 0 )
+    return ak_error_message_fmt( ak_error_open_file, __func__ ,
+                                     "wrong opening a file %s [%s]", filename, strerror( errno ));
   file->blksize = ( ak_int64 )st.st_blksize;
  #endif
+
  return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_file_create_to_write( ak_file file, const char *filename )
 {
- #ifdef _WIN32
-  if(( file->fp = fopen( filename, "wb" )) == NULL )
-    return ak_error_message_fmt( ak_error_create_file, __func__,
-                                   "wrong creation a file %s [%s]", filename, strerror( errno ));
- #else
-  int fd = creat( filename, S_IRUSR | S_IWUSR ); /* мы устанавливаем минимальные права */
-  if( fd < 0 ) return ak_error_message_fmt( ak_error_create_file, __func__,
-                                   "wrong creation a file %s [%s]", filename, strerror( errno ));
-  if(( file->fp = fdopen( fd, "wb" )) == NULL )
-    return ak_error_message_fmt( ak_error_create_file, __func__,
-                        "wrong creation a file %s via fdopen [%s]", filename, strerror( errno ));
-#endif
+ #ifndef LIBAKRYPT_HAVE_WINDOWS_H
+  struct stat st;
+ #endif
+
+ /* необходимые проверки */
+  if(( file == NULL ) || ( filename == NULL ))
+    return ak_error_message( ak_error_null_pointer, __func__, "using null pointer" );
 
   file->size = 0;
-#ifdef _WIN32
-  file->blksize = 4096;
-#else
-  struct stat st;
-  if( fstat( fd, &st )) {
-    close( fd );
+ #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+  if(( file->hFile = CreateFile( filename,   /* name of the write */
+                     GENERIC_WRITE,          /* open for writing */
+                     0,                      /* do not share */
+                     NULL,                   /* default security */
+                     CREATE_ALWAYS,          /* create new file only */
+                     FILE_ATTRIBUTE_NORMAL,  /* normal file */
+                     NULL )                  /* no attr. template */
+     ) == INVALID_HANDLE_VALUE )
+      return ak_error_message_fmt( ak_error_create_file, __func__,
+                                    "wrong creation a file %s [%s]", filename, strerror( errno ));
+   file->blksize = 4096;
+
+ #else  /* мы устанавливаем минимальные права: чтение и запись только для владельца */
+  if(( file->fd = creat( filename, S_IRUSR | S_IWUSR )) < 0 )
+    return ak_error_message_fmt( ak_error_create_file, __func__,
+                                   "wrong creation a file %s [%s]", filename, strerror( errno ));
+  if( fstat( file->fd, &st )) {
+    close( file->fd );
     return ak_error_message_fmt( ak_error_access_file,  __func__,
                                 "incorrect access to file %s [%s]", filename, strerror( errno ));
   } else file->blksize = ( ak_int64 )st.st_blksize;
-#endif
+ #endif
 
  return ak_error_ok;
 }
@@ -623,9 +669,45 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_file_close( ak_file file )
 {
-  if( fclose( file->fp ) != 0 ) return ak_error_message_fmt( ak_error_close_file, __func__ ,
+   file->size = 0;
+   file->blksize = 0;
+  #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+   CloseHandle( file->hFile);
+  #else
+   if( close( file->fd ) != 0 ) return ak_error_message_fmt( ak_error_close_file, __func__ ,
                                                  "wrong closing a file [%s]", strerror( errno ));
+  #endif
  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ssize_t ak_file_read( ak_file file, ak_pointer buffer, size_t size )
+{
+ #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+  DWORD dwBytesReaden = 0;
+  BOOL bErrorFlag = ReadFile( file->hFile, buffer, ( DWORD )size,  &dwBytesReaden, NULL );
+  if( bErrorFlag == FALSE ) {
+    ak_error_message( ak_error_read_data, __func__, "unable to read from file");
+    return 0;
+  } else return ( ssize_t ) dwBytesReaden;
+ #else
+  return read( file->fd, buffer, size );
+ #endif
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ssize_t ak_file_write( ak_file file, ak_const_pointer buffer, size_t size )
+{
+ #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+  DWORD dwBytesWritten = 0;
+  BOOL bErrorFlag = WriteFile( file->hFile, buffer, ( DWORD )size,  &dwBytesWritten, NULL );
+  if( bErrorFlag == FALSE ) {
+    ak_error_message( ak_error_write_data, __func__, "unable to write to file");
+    return 0;
+  } else return ( ssize_t ) dwBytesWritten;
+ #else
+  return write( file->fd, buffer, size );
+ #endif
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -646,19 +728,26 @@
     На этом уровне выводятся все сообщения, доступные на первых двух уровнях, а также
     сообщения отладочного характера, позхволяющие прослдедить логику работы функций библиотеки.
 
+    Функция сделана экспортируемой, однако она не позволяет понизить уровень аудита
+    по-сравнению с тем значением, которое указано в конфигурационном файле.
+    Экспорт функции разрешен с целью отладки приложений, использующих библиотеку.
+
     \param level Уровень аудита, может принимать значения \ref ak_log_none,
-    \ref ak_log_standard и \ref ak_log_maximum.
+    \ref ak_log_standard и \ref ak_log_maximum
+
+    \note Допускается передавать в функцию любое целое число, не превосходящее 16.
+    Однако для всех значений от \ref ak_log_maximum  до 16 поведение функции аудита
+    будет одинаковым для. Дополнительный диапазон предназначен для приложений библиотеки.
 
     \return Функция всегда возвращает \ref ak_error_ok (ноль).                                     */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_log_set_level( int level )
 {
- if( level >= ak_log_maximum )
-   return ak_libakrypt_set_option("log_level", ak_log_maximum );
- if( level <= ak_log_none )
-   return ak_libakrypt_set_option("log_level", ak_log_none );
+ int value = ak_max( level, ak_log_get_level( ));
 
- return ak_libakrypt_set_option("log_level", ak_log_standard );
+   if( value < 0 ) return ak_libakrypt_set_option("log_level", ak_log_none );
+   if( value > 16 ) value = 16;
+ return ak_libakrypt_set_option("log_level", value );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -817,18 +906,22 @@
 {
  /* здесь мы выводим в логгер строку вида [pid] function: message (code: n)                        */
   char error_event_string[1024];
+  const char *br0 = "", *br1 = "():", *br = NULL;
+
   memset( error_event_string, 0, 1024 );
+  if(( function == NULL ) || strcmp( function, "" ) == 0 ) br = br0;
+    else br = br1;
 
 #ifdef LIBAKRYPT_HAVE_UNISTD_H
-  if( code < 0 ) ak_snprintf( error_event_string, 1023, "[%d] %s(): %s (code: %d)",
-                                                          getpid(), function, message, code );
-   else ak_snprintf( error_event_string, 1023, "[%d] %s(): %s", getpid(), function, message );
+  if( code < 0 ) ak_snprintf( error_event_string, 1023, "[%d] %s%s %s (code: %d)",
+                                                         getpid(), function, br, message, code );
+   else ak_snprintf( error_event_string, 1023, "[%d] %s%s %s", getpid(), function, br, message );
 #else
  #ifdef _MSC_VER
-  if( code < 0 ) ak_snprintf( error_event_string, 1023, "[%d] %s(): %s (code: %d)",
-                                             GetCurrentProcessId(), function, message, code );
-   else ak_snprintf( error_event_string, 1023, "[%d] %s(): %s",
-                                                   GetCurrentProcessId(), function, message );
+  if( code < 0 ) ak_snprintf( error_event_string, 1023, "[%d] %s%s %s (code: %d)",
+                                             GetCurrentProcessId(), function, br, message, code );
+   else ak_snprintf( error_event_string, 1023, "[%d] %s%s %s",
+                                                   GetCurrentProcessId(), function, br, message );
  #else
    #error Unsupported path to compile, sorry ...
  #endif
@@ -888,7 +981,7 @@
     пользователем с помощью вызова функции free(). В случае ошибки конвертации возвращается NULL.
     Код ошибки может быть получен с помощью вызова функции ak_error_get_code()                     */
 /* ----------------------------------------------------------------------------------------------- */
- char *ak_ptr_to_hexstr( const ak_pointer ptr, const size_t ptr_size, const ak_bool reverse )
+ char *ak_ptr_to_hexstr( ak_const_pointer ptr, const size_t ptr_size, const bool_t reverse )
 {
   char *nullstr = NULL;
   size_t len = 1 + (ptr_size << 1);
@@ -951,8 +1044,8 @@
     @return Если преобразование прошло успешно, возвращается \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_ptr_to_hexstr_static( const ak_pointer ptr, const size_t ptr_size,
-                                     ak_pointer out, const size_t out_size, const ak_bool reverse )
+ int ak_ptr_to_hexstr_static( ak_const_pointer ptr, const size_t ptr_size,
+                                     ak_pointer out, const size_t out_size, const bool_t reverse )
 {
   ak_uint8 *data = ( ak_uint8 * ) ptr;
   size_t len = 1 + (ptr_size << 1);
@@ -1027,7 +1120,7 @@
     @return В случае успеха возвращается ноль. В противном случае, в частности,
                       когда длина строки превышает размер массива, возвращается код ошибки.        */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hexstr_to_ptr( const char *hexstr, ak_pointer ptr, const size_t size, const ak_bool reverse )
+ int ak_hexstr_to_ptr( const char *hexstr, ak_pointer ptr, const size_t size, const bool_t reverse )
 {
   int i = 0;
   ak_uint8 *bdata = ptr;
@@ -1080,10 +1173,10 @@
     В противном случае, а также в случае возникновения ошибки, возвращается \ref ak_false.
     Код шибки может быть получен с помощью выщова функции ak_error_get_value().                    */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_ptr_is_equal( const ak_pointer left, const ak_pointer right, const size_t size )
+ bool_t ak_ptr_is_equal( const ak_pointer left, const ak_pointer right, const size_t size )
 {
   size_t i = 0;
-  ak_bool result = ak_true;
+  bool_t result = ak_true;
   ak_uint8 *lp = left, *rp = right;
 
   if(( left == NULL ) || ( right == NULL )) {

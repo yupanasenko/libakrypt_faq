@@ -1,5 +1,5 @@
 /* Тестовый пример, иллюстрирующий создание серии генераторов,
-   основанных на применении функций хеширования.
+   основанных на применении функций хеширования (hashrnd).
    Пример использует неэкспортируемые функции.
 
    test-internal-random02.c
@@ -22,8 +22,9 @@
   struct random generator;
   int exitcode = EXIT_SUCCESS;
   ak_uint8 cnt[128], buffer[526], out[32], out2[32], string[2050];
-  printf("\nTest for %s hash function\n", oid->name );
 
+  if( oid == NULL ) return EXIT_FAILURE;
+  printf("\nTest for %s hash function\n", oid->name );
   ak_hash_context_create_streebog256( &streebog ); /* хеш для контрольной суммы */
 
  /* 1. создаем константное значение */
@@ -39,7 +40,7 @@
   ak_ptr_to_hexstr_static( out, sizeof( out ), string, sizeof( string ), ak_false );
   printf("hash: %s\n", string );
 
- /* 2. Теперь случайный путь (используем rand( )) */
+ /* 2. теперь генерация тех же данных фрагментами случайной длины (используем rand( )) */
  for( i = 0; i < 10; i++ ) {
     offset = 0;
     len = sizeof( buffer );
@@ -77,7 +78,6 @@
 
   if(( error = test( ak_oid_context_find_by_name( "streebog256" ))) != EXIT_SUCCESS ) goto exitlab;
   if(( error = test( ak_oid_context_find_by_name( "streebog512" ))) != EXIT_SUCCESS ) goto exitlab;
-  if(( error = test( ak_oid_context_find_by_name( "gosthash94" ))) != EXIT_SUCCESS ) goto exitlab;
 
   exitlab: ak_libakrypt_destroy();
  return error;

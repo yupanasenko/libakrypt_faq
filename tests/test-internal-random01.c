@@ -11,32 +11,36 @@
  #include <stdlib.h>
  #include <ak_random.h>
 
- int test_function( const char *name, const char *result, ak_function_random create )
+/* основная тестирующая функция */
+ int test_function( ak_function_random create, const char *result )
 { 
  clock_t time;
  struct random generator;
- ak_uint32 seed = 0x13AE4F0A;
- int i = 0, excode = ak_error_ok, retval = ak_true;
+ ak_uint32 seed = 0x13AE4F0E; /* константа */
+ int i = 0, retval = ak_true;
  ak_uint8 buffer[1024], string[2050];
 
  /* создаем генератор */
-  printf( "%s: ", name ); fflush( stdout );
   create( &generator );
+  printf( "%s: ", generator.oid->name ); fflush( stdout );
 
  /* инициализируем константным значением */
-  excode = ak_random_context_randomize( &generator, &seed, sizeof( seed ));
+  if( generator.randomize_ptr != NULL )
+    ak_random_context_randomize( &generator, &seed, sizeof( seed ));
 
- /* теперь вырабатываем необходимый объем данных - 2ГБ */
-   time = clock();
-   for( i = 0; i < 2*1024*1024; i++ ) ak_random_context_random( &generator, buffer, 1024 );
-   time = clock() - time;
+ /* теперь вырабатываем необходимый объем данных - 256МБ */
+  time = clock();
+  for( i = 0; i < 1024*128; i++ ) ak_random_context_random( &generator, buffer, 1024 );
+  time = clock() - time;
 
-   ak_ptr_to_hexstr_static( buffer, 32, string, 2050, ak_false );
-   printf("%s (%f sec)\n", string, (double)time / (double)CLOCKS_PER_SEC );
+  ak_ptr_to_hexstr_static( buffer, 32, string, 2050, ak_false );
+  printf("%s (%f sec) ", string, (double)time / (double)CLOCKS_PER_SEC );
 
-   if( excode == ak_error_ok ) /* проверка только для тех, кому устанавливали
-                                                                    начальное значение */
-     if( memcmp( result, string, 32 ) != 0 ) retval = ak_false;
+ /* проверка только для тех, кому устанавливали начальное значение */
+  if( result ) {
+    if( memcmp( result, string, 32 ) != 0 ) { printf("Wrong\n"); retval = ak_false; }
+     else { printf("Ok\n"); retval = ak_true; }
+  } else { printf("\n"); retval = ak_true; }
 
   ak_random_context_destroy( &generator );
  return retval;
@@ -44,28 +48,33 @@
 
  int main( void )
 {
+ int error = EXIT_SUCCESS;
+
  printf("random generators speed test for libakrypt, version %s\n", ak_libakrypt_version( ));
  if( !ak_libakrypt_create( NULL )) return ak_libakrypt_destroy();
 
  /* последовательно запускаем генераторы на тестирование */
- if( test_function( "xorshift",
-                    "5CD6E4D62B79C1C97921693A1AC587D608D3B6EA03A72E2AE4B41927E6B82221",
-                    ak_random_context_create_xorshift32 ) != ak_true ) return EXIT_FAILURE;
+ if( test_function( ak_random_context_create_xorshift32,
+      "2B7D8650FA05497B21683B25FEEBD24FA877094796297456958696BBD775C603" ) != ak_true )
+   error =  EXIT_FAILURE;
 
- if( test_function( "lcg",
-                    "A6F1DB7846B992AF9B513A8EF42E898C6035D5696A77D1F7DCF24DD57F55F82D",
-                    ak_random_context_create_lcg ) != ak_true ) return EXIT_FAILURE;
+ if( test_function( ak_random_context_create_lcg,
+      "60ACB367D8624B6D5C3984D78E19A9CC52D9244386003BBFCA80D315387C2F23" ) != ak_true )
+   error = EXIT_FAILURE;
 
 #ifdef WIN32
- if( test_function( "winrtl",
-                    "0000000000000000000000000000000000000000000000000000000000000000",
-                    ak_random_context_create_winrtl ) != ak_true ) return EXIT_FAILURE;
-#else
- if( test_function( "/dev/urandom",
-                    "0000000000000000000000000000000000000000000000000000000000000000",
-                    ak_random_context_create_urandom ) != ak_true ) return EXIT_FAILURE;
+ if( test_function( ak_random_context_create_winrtl, NULL ) != ak_true ) error = EXIT_FAILURE;
+#endif
+#if defined(__unix__) || defined(__APPLE__)
+ if( test_function( ak_random_context_create_urandom, NULL ) != ak_true ) error = EXIT_FAILURE;
+#endif
+
+#ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
+ if( test_function( ak_random_context_create_hashrnd_streebog512,
+      "F59B4AC1EFEEDD34E0BC8875BE96C1EE89901F9153F949DDA6BC666512F41375" ) != ak_true )
+   error = EXIT_FAILURE;
 #endif
 
  ak_libakrypt_destroy();
- return EXIT_SUCCESS;
+ return error;
 }

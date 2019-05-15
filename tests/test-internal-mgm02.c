@@ -21,7 +21,7 @@
      0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01, 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe,
      0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00, 0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x87 };
 
- static  ak_uint8 testiv[16] = { /* инициализионный вектор (синхропосвлка) */
+ static  ak_uint8 testiv[16] = { /* инициализионный вектор (синхропосылка) */
      0xaa, 0xbb, 0xcc, 0xdd, 0x11, 0x22, 0x33, 0x44, 0xa1, 0xb2, 0xc3, 0xd4, 0x15, 0x26, 0x37, 0x48 };
  static ak_uint8 testdata[4] = { 0x00, 0x11, 0xff, 0x12 }; /* данные */
 
@@ -66,7 +66,7 @@
 
   printf("out: ");
   for( i = 0; i < mctx->bkey.bsize; i++ ) printf("%02X ", out[i]);
-  printf(" [%lu octets]\n", mctx->bkey.bsize );
+  printf(" [%u octets]\n", ( unsigned int ) mctx->bkey.bsize );
 
  /* проверяем результат */
   ak_bckey_context_encrypt_mgm( NULL, &mctx->bkey,  /* ключи */
@@ -77,7 +77,7 @@
                               );
   printf("new: ");
   for( i = 0; i < mctx->bkey.bsize; i++ ) printf("%02X ", out[i]);
-  printf(" [%lu octets]\n", mctx->bkey.bsize );
+  printf(" [%u octets]\n", (unsigned int) mctx->bkey.bsize );
   printf("destroy: %d\n", ak_mgm_context_destroy( mctx ));
 
   if( memcmp( out, out1, mctx->bkey.bsize ) != 0 ) return EXIT_FAILURE;

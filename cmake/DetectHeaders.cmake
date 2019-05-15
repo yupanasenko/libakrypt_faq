@@ -36,6 +36,18 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
+  #include <endian.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_ENDIAN )
+
+if( LIBAKRYPT_HAVE_ENDIAN )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_ENDIAN_H" )
+endif()
+
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
   #include <time.h>
   int main( void ) {
      return 0;
@@ -120,6 +132,28 @@ check_c_source_compiles("
 
 if( LIBAKRYPT_HAVE_SYSTYPES )
     set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SYSTYPES_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
+  #include <sys/socket.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_SYSSOCKET )
+
+if( LIBAKRYPT_HAVE_SYSSOCKET )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SYSSOCKET_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
+  #include <sys/select.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_SYSSELECT )
+
+if( LIBAKRYPT_HAVE_SYSSELECT )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SYSSELECT_H" )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -229,6 +263,17 @@ check_c_source_compiles("
 
 if( LIBAKRYPT_HAVE_LIBINTL )
     set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_LIBINTL_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
+  #include <signal.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_SIGNAL )
+
+if( LIBAKRYPT_HAVE_SIGNAL )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SIGNAL_H" )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #

@@ -1,15 +1,30 @@
 # -------------------------------------------------------------------------------------------------- #
+if( WIN32 )
+  if( LIBAKRYPT_FIOT )
+    # ищем реализацию сокетов
+    find_library( LIBAKRYPT_WS2_32 ws2_32 )
+    if( LIBAKRYPT_WS2_32 )
+      message("-- Searching ws2_32 - done ")
+      set( LIBAKRYPT_LIBS ws2_32 )
+    else()
+      message("-- ws2_32 not found")
+      return()
+    endif()
+  endif()
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
 if( MSVC )
 
   # в начале ищем библиотеки, если нет - выходим
-  find_library( PTHREAD pthreadVC2 )
-  if( PTHREAD )
+  find_library( LIBAKRYPT_PTHREAD pthreadVC2 )
+  if( LIBAKRYPT_PTHREAD )
     message("-- Searching pthreadVC2 - done ")
-    set( LIBAKRYPT_LIBS pthreadVC2 )
+    set( LIBAKRYPT_LIBS ${LIBAKRYPT_LIBS} pthreadVC2 )
 
     # потом ищем заголовочный файл, если нет - выходим
-    find_file( PTHREAD_H pthread.h )
-    if( PTHREAD_H )
+    find_file( LIBAKRYPT_PTHREAD_H pthread.h )
+    if( LIBAKRYPT_PTHREAD_H )
       # устанавливаем флаг
       set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_PTHREAD" )
 
@@ -26,12 +41,25 @@ if( MSVC )
 
     else()
       message("-- pthread.h not found")
+      return()
     endif()
   else()
     message("-- pthreadVC2 not found")
+    return()
   endif()
 else()
-  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_PTHREAD" )
+  if( WIN32 )
+
+    find_library( LIBAKRYPT_PTHREAD pthread )
+    if( LIBAKRYPT_PTHREAD )
+      message("-- Searching pthread - done ")
+      set( LIBAKRYPT_LIBS ${LIBAKRYPT_LIBS} pthread )
+      set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_PTHREAD" )
+    endif()
+
+  else()
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_PTHREAD" )
+  endif()
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -57,10 +85,10 @@ if( LIBAKRYPT_GMP_TESTS )
 
     else()
        message("-- gmp.h not found")
-       exit()
+       return()
     endif()
   else()
-    message("-- libgmp not found")
-    exit()
+    message("-- libgmp or gmp.h not found")
+    return()
   endif()
 endif()

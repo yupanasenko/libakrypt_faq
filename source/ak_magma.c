@@ -371,8 +371,13 @@
   for( i = 0; i < 32; i++ ) m[i+1] = (ak_uint8)(( mv >> i) & 0x01 );
 
  /* начинаем движение */
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
   n3 = ((ak_uint32 *) in)[0]^( m[1] * 0xffffffff );
   n4 = ((ak_uint32 *) in)[1];
+#else
+  n3 = bswap_32( ((ak_uint32 *) in)[0] )^( m[1] * 0xffffffff );
+  n4 = bswap_32( ((ak_uint32 *) in)[1] );
+#endif
 
   p = n3; p -= mp[m[ 1]][7]; p += kp[m[ 1]][7] + m[ 1]; n4 ^= ak_magma_gostf_boxes( p, m[ 2] ^ m[ 0], m[ 1] );
   p = n4; p -= mp[m[ 2]][6]; p += kp[m[ 2]][6] + m[ 2]; n3 ^= ak_magma_gostf_boxes( p, m[ 3] ^ m[ 1], m[ 2] );
@@ -410,7 +415,11 @@
   p = n3; p -= mp[m[31]][6]; p += kp[m[31]][6] + m[31]; n4 ^= ak_magma_gostf_boxes( p, m[32] ^ m[30], m[31] );
   p = n4; p -= mp[m[32]][7]; p += kp[m[32]][7] + m[32]; n3 ^= ak_magma_gostf_boxes( p, m[33] ^ m[31], m[32] );
 
+ #ifdef LIBAKRYPT_LITTLE_ENDIAN
   ((ak_uint32 *)out)[0] = n4^( m[32] * 0xffffffff ); ((ak_uint32 *)out)[1] = n3;
+ #else
+  ((ak_uint32 *)out)[0] = bswap_32( n4 )^( m[32] * 0xffffffff ); ((ak_uint32 *)out)[1] = bswap_32( n3 );
+ #endif
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -437,8 +446,13 @@
   for( i = 0; i < 32; i++ ) m[i+1] = (ak_uint8)((mv >> i) & 0x01 );
 
  /* начинаем движение */
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
   n3 = ((ak_uint32 *) in)[0]^( m[1] * 0xffffffff );
   n4 = ((ak_uint32 *) in)[1];
+#else
+  n3 = bswap_32( ((ak_uint32 *) in)[0] )^( m[1] * 0xffffffff );
+  n4 = bswap_32( ((ak_uint32 *) in)[1] );
+#endif
 
   p = (n3 - mp[m[ 1]][7]); p += kp[m[ 1]][7] + m[ 1]; n4 ^= ak_magma_gostf_boxes(p, m[ 2] ^ m[ 0], m[ 1] );
   p = (n4 - mp[m[ 2]][6]); p += kp[m[ 2]][6] + m[ 2]; n3 ^= ak_magma_gostf_boxes(p, m[ 3] ^ m[ 1], m[ 2] );
@@ -476,7 +490,11 @@
   p = (n3 - mp[m[31]][6]); p += kp[m[31]][6] + m[31]; n4 ^= ak_magma_gostf_boxes(p, m[32] ^ m[30], m[31] );
   p = (n4 - mp[m[32]][7]); p += kp[m[32]][7] + m[32]; n3 ^= ak_magma_gostf_boxes(p, m[33] ^ m[31], m[32] );
 
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
   ((ak_uint32 *)out)[0] = n4 ^ (m[32] * 0xffffffff); ((ak_uint32 *)out)[1] = n3;
+#else
+  ((ak_uint32 *)out)[0] = bswap_32( n4 ) ^ (m[32] * 0xffffffff); ((ak_uint32 *)out)[1] = bswap_32( n3 );
+#endif
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -580,26 +598,35 @@
 
  /* проверяем длину ключа */
   if( skey->key.size != 32 ) return ak_error_message( ak_error_undefined_value, __func__ ,
-                                                          "using a key buffer with wrong length" );
+                                                          "using a key buffer with wrong length" ); 
  /* проверяем, установлена ли маска ранее */
   if( (( skey->flags)&skey_flag_set_mask ) == 0 ) {
+
+ #ifndef LIBAKRYPT_LITTLE_ENDIAN
+   /* переворачиваем байты ключа для соответствия little endian */
+   for( idx = 0; idx < 8; idx++ )
+      ((ak_uint32 *)skey->key.data)[idx] = bswap_32( ((ak_uint32 *)skey->key.data)[idx] );
+ #endif
+
     /* создаем маску*/
      if(( error = ak_random_context_random( &skey->generator,
-                                           skey->mask.data, skey->mask.size )) != ak_error_ok )
+                                   skey->mask.data, (ssize_t) skey->mask.size )) != ak_error_ok )
        return ak_error_message( error, __func__ , "wrong random mask generation for key buffer" );
+
     /* накладываем маску на ключ */
      for( idx = 0; idx < (skey->key.size >> 2); idx++ )
         ((ak_uint32 *) skey->key.data)[idx] += ((ak_uint32 *) skey->mask.data)[idx];
+
     /* меняем значение флага */
      skey->flags |= skey_flag_set_mask;
-
   } else { /* если маска уже установлена, то мы ее сменяем */
-           /* для очень длинных ключей маска не изменяется */
+
+           /* для очень длинных ключей маска не изменяется */ /* выге проверка, что длина маски равна 32!! */
             if( skey->mask.size > sizeof( newmask ))
               return ak_error_message( ak_error_wrong_length, __func__ ,
                                                      "unsupported length for secret key buffer" );
             if(( error = ak_random_context_random( &skey->generator,
-                                                     newmask, skey->mask.size )) != ak_error_ok )
+                                           newmask, (ssize_t) skey->mask.size )) != ak_error_ok )
               return ak_error_message( error, __func__ ,
                                                   "wrong random mask generation for key buffer" );
            /* меняем маску для вектора, хранящегося в структуре skey */
@@ -612,7 +639,7 @@
             if(( data = ( struct magma_encrypted_keys *)skey->data ) == NULL ) return error;
             for( j = 0; j < 2; j++ ) {
               if(( error = ak_random_context_random( &skey->generator,
-                                                     newmask, skey->mask.size )) != ak_error_ok )
+                                           newmask, (ssize_t) skey->mask.size )) != ak_error_ok )
                 return ak_error_message( error, __func__ ,
                                                   "wrong random mask generation for key buffer" );
               for( idx = 0; idx < ( skey->key.size >> 2 ); idx++ ) {
@@ -622,7 +649,6 @@
               }
             }
     }
-
  return error;
 }
 
@@ -649,12 +675,18 @@
 
  /* снимаем маску с ключа */
   for( idx = 0; idx < ( skey->key.size >> 2 ); idx++ ) {
-     ((ak_uint32 *) skey->key.data)[idx] -= ((ak_uint8 *) skey->mask.data)[idx];
+     ((ak_uint32 *) skey->key.data)[idx] -= ((ak_uint32 *) skey->mask.data)[idx];
      ((ak_uint32 *) skey->mask.data)[idx] = 0;
   }
+
+ #ifndef LIBAKRYPT_LITTLE_ENDIAN
+   /* делаем обратное переворачивание байт ключа */
+   for( idx = 0; idx < 8; idx++ )
+      ((ak_uint32 *)skey->key.data)[idx] = bswap_32( ((ak_uint32 *)skey->key.data)[idx] );
+ #endif
+
  /* меняем значение флага */
   skey->flags ^= skey_flag_set_mask;
-
  return error;
 }
 
@@ -754,23 +786,31 @@
     @return В случае совпадения контрольной суммы ключа функция возвращает истину (\ref ak_true).
     В противном случае, возвращается ложь (\ref ak_false).                                         */
 /* ----------------------------------------------------------------------------------------------- */
- static ak_bool ak_skey_context_check_icode_additive( ak_skey skey )
+ static bool_t ak_skey_context_check_icode_additive( ak_skey skey )
 {
   ak_uint64 result = 0;
   int error = ak_error_ok;
 
  /* выполняем стандартные проверки */
-  if(( error = ak_skey_context_check( skey )) != ak_error_ok )
-    return ak_error_message( error, __func__ , "using invalid secret key" );
+  if(( error = ak_skey_context_check( skey )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "using invalid secret key" );
+    return ak_false;
+  }
 
  /* проверяем наличие и длину ключа */
-  if( skey->key.size != 32 ) return ak_error_message( ak_error_wrong_length, __func__ ,
-                                                           "using a key buffer with wrong length" );
-  if( skey->icode.data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                    "using undefined mask buffer" );
-  if( skey->icode.size != 8 ) return ak_error_message( ak_error_wrong_length, __func__ ,
-                                                  "using integrity code buffer with wrong length" );
-
+  if( skey->key.size != 32 ) {
+    ak_error_message( ak_error_wrong_length, __func__ , "using a key buffer with wrong length" );
+    return ak_false;
+  }
+  if( skey->icode.data == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__ , "using undefined mask buffer" );
+    return ak_false;
+  }
+  if( skey->icode.size != 8 ) {
+    ak_error_message( ak_error_wrong_length, __func__ ,
+                                              "using integrity code buffer with wrong length" );
+    return ak_false;
+  }
  /* теперь, собственно вычисление контрольной суммы */
   ak_skey_context_icode_additive_sum( skey, &result );
  /* и сравнение */
@@ -825,13 +865,13 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
 /* ----------------------------------------------------------------------------------------------- */
 /*! Тестирование производится в соответствии с примерами из ГОСТ Р 34.12-2015 и ГОСТ Р 34.13-2015. */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_bckey_test_magma( void )
+ bool_t ak_bckey_test_magma( void )
 {
   char *str = NULL;
   ak_uint8 out[32];
   struct bckey bkey; /* контекст используемого для тестов ключа */
   int error = ak_error_ok, audit = ak_log_get_level();
-  ak_bool result = ak_true;
+  bool_t result = ak_true;
 
   ak_uint8 gost3412_2015_key[32] = { /* тестовый ключ из ГОСТ Р 34.12-2015, приложение А.2 */
      0xff, 0xfe, 0xfd, 0xfc, 0xfb, 0xfa, 0xf9, 0xf8, 0xf7, 0xf6, 0xf5, 0xf4, 0xf3, 0xf2, 0xf1, 0xf0,
@@ -844,23 +884,29 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
   ak_uint8 b[8] = { 0x3d, 0xca, 0xd8, 0xc2, 0xe5, 0x01, 0xe9, 0x4e };
 
  /* открытый текст из ГОСТ Р 34.13-2015, приложение А.2 */
-  ak_uint64 in_3413_2015_text[4] = {
-                  0x92def06b3c130a59, 0xdb54c704f8189d20, 0x4a98fb2e67a8024c, 0x8912409b17b57e41 };
+  ak_uint8 in_3413_2015_text[32] = {
+     0x59, 0x0a, 0x13, 0x3c, 0x6b, 0xf0, 0xde, 0x92, 0x20, 0x9d, 0x18, 0xf8, 0x04, 0xc7, 0x54, 0xdb,
+     0x4c, 0x02, 0xa8, 0x67, 0x2e, 0xfb, 0x98, 0x4a, 0x41, 0x7e, 0xb5, 0x17, 0x9b, 0x40, 0x12, 0x89 };
+
  /* зашифрованный в режиме простой замены текст из ГОСТ Р 34.13-2015, приложение А.2 */
-  ak_uint64 out_3413_2015_ecb_text[4] = {
-                  0x2b073f0494f372a0, 0xde70e715d3556e48, 0x11d8d9e9eacfbc1e, 0x7c68260996c67efb };
+  ak_uint8 out_3413_2015_ecb_text[32] = {
+     0xa0, 0x72, 0xf3, 0x94, 0x04, 0x3f, 0x07, 0x2b, 0x48, 0x6e, 0x55, 0xd3, 0x15, 0xe7, 0x70, 0xde,
+     0x1e, 0xbc, 0xcf, 0xea, 0xe9, 0xd9, 0xd8, 0x11, 0xfb, 0x7e, 0xc6, 0x96, 0x09, 0x26, 0x68, 0x7c };
 
  /* синхропосылка и зашифрованный в режиме гаммирования текст из ГОСТ Р 34.13-2015, приложение А.2 */
   ak_uint8 ctr_iv[4] = { 0x78, 0x56, 0x34, 0x12 },
              xiv1[4] = { 0x61, 0x2D, 0x93, 0x42 };
+
+  ak_uint8 out_3413_2015_ctr_text[32] = {
+     0x3c, 0xb9, 0xb7, 0x97, 0x0c, 0x11, 0x98, 0x4e, 0x69, 0x5d, 0xe8, 0xd6, 0x93, 0x0d, 0x25, 0x3e,
+     0xef, 0xdb, 0xb2, 0x07, 0x88, 0x86, 0x6d, 0x13, 0x2d, 0xa1, 0x52, 0xab, 0x80, 0xb6, 0x8e, 0x56 };
+
   ak_uint8 xin1[13] = {
     0x31, 0xEA, 0x54, 0xBB, 0xB7, 0xE5, 0xE5, 0x1C, 0xAE, 0xEB, 0x79, 0x28, 0x71 };
   ak_uint8 xout1[13] = {
     0x7C, 0xC9, 0x83, 0x3D, 0x5D, 0x1B, 0x9E, 0x81, 0x07, 0x94, 0x9F, 0x58, 0x15 };
 
-  ak_uint64 out_3413_2015_ctr_text[4] = {
-                  0x4e98110c97b7b93c, 0x3e250d93d6e85d69, 0x136d868807b2dbef, 0x568eb680ab52a12d };
-
+ /* тестовое значение имитовставки */
   ak_uint8 imito[8] = { 0xBB, 0xC5, 0x30, 0x20, 0x10, 0x72, 0x4E, 0x15 };
 
  /* 1. Инициализируем ключ алгоритма Магма */
@@ -995,16 +1041,16 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
   ak_bckey_context_omac( &bkey, in_3413_2015_text, sizeof( in_3413_2015_text ), out );
   if(( error = ak_error_get_value()) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong omac calculation" );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
   if( !ak_ptr_is_equal( out, imito, 8 )) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
                                    "the omac integrity mode test from GOST R 34.13-2015 is wrong");
     ak_log_set_message( str = ak_ptr_to_hexstr( out, 8, ak_true )); free( str );
     ak_log_set_message( str = ak_ptr_to_hexstr( imito, 8, ak_true )); free( str );
-    ak_bckey_context_destroy( &bkey );
-    return ak_false;
+    result = ak_false;
+    goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                                      "the omac integrity mode test from GOST R 34.13-2015 is Ok" );

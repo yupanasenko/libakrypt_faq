@@ -1,6 +1,5 @@
-/* Цель настоящего примера - вывести список всех доступных в библиотеке oid,
-   не смотря на то, что библиотека не предоставляет доступа к внутреннему
-   массиву oid.
+/* Тестовый пример, иллюстрирующий процедуры поиска oid по заданному криптографическому
+   механизму, а также использование oid для создания и удаления функций хеширования.
    Пример использует неэкспортируемые функции.
 
    test-internal-oid03.c
@@ -9,39 +8,46 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <ak_oid.h>
+ #include <ak_hash.h>
+ #include <ak_random.h>
 
  int main( void )
 {
-  size_t i;
-  ak_oid oid;
+ ak_oid oid;
+ int count = 0;
+ ak_uint8 data[64], string[512];
+ ak_uint8 test[12] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb };
 
  /* инициализируем библиотеку */
-  if( !ak_libakrypt_create( ak_function_log_stderr ))
-    return ak_libakrypt_destroy();
+  if( !ak_libakrypt_create( NULL )) return ak_libakrypt_destroy();
 
- /* находим какой-нибудь OID
-    поскольку мы не знаем какой OID в дальнейшем будет первым в массиве */
-  if(( oid = ak_oid_context_find_by_engine( block_cipher )) == NULL ) {
-    ak_error_message( ak_error_oid_engine, __func__, "cannot find a block cipher");
-    ak_libakrypt_destroy();
-    return EXIT_FAILURE;
-  };
+ /* перебираем все oid для функций хэширования и их параметров */
+  oid = ak_oid_context_find_by_engine( hash_function );
 
- /* движемся по массиву oid в конец (пока не найдем строку из неопределенных значений) */
-  while(( oid->engine != undefined_engine ) && ( oid->mode != undefined_mode ))
-     oid = (ak_oid)(((ak_uint8 *)oid) + sizeof( struct oid ));
+  while( oid != NULL ) {
+    if( oid->mode == kbox_params ) {
+      ak_ptr_to_hexstr_static( oid->data, 16*8, string, 512, ak_false );
+      printf("\nkbox: %s (%s)\ndata: %s\n", oid->name, oid->id, string );
+    }
+    if( oid->mode == algorithm ) {
+      struct hash ctx;
 
- /* зная общее число oid - получаем первый */
-  oid = (ak_oid)(((ak_uint8 *)oid) - ak_libakrypt_oids_count()*sizeof( struct oid ));
+      ++count;
+      printf("\n%s (%s)\n", oid->name, oid->id );
 
- /* выводим все oid, начиная с начала */
-  for( i = 0; i < ak_libakrypt_oids_count(); i++ ) {
-     printf("%s [%s (%s), oid: %s]\n",
-        oid->name, ak_libakrypt_get_engine_name( oid->engine ),
-                       ak_libakrypt_get_mode_name( oid->mode ), oid->id );
-     oid = (ak_oid)(((ak_uint8 *)oid) + sizeof( struct oid ));
+     /* создаем контекст по oid, вычисляем код целостности и удаляем контекст */
+      ak_hash_context_create_oid( &ctx, oid );
+      ak_hash_context_ptr( &ctx, test, sizeof( test ), data );
+      ak_ptr_to_hexstr_static( data, ctx.hsize, string, 512, ak_false );
+      printf("code: %s\n", string );
+      ak_hash_context_destroy( &ctx );
+    }
+
+   /* выполняем поиск следующего */
+    oid = ak_oid_context_findnext_by_engine( oid, hash_function );
   }
 
- ak_libakrypt_destroy();
+  printf("founded %d hash functions\n", count );
+  ak_libakrypt_destroy();
  return EXIT_SUCCESS;
 }

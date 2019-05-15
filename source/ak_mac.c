@@ -202,7 +202,8 @@
     для инициализации может использоваться идентификатор
     - алгоритма бесключевого хеширования,
     - алгоритма HMAC,
-    - алгоритма выработки имитовставки ГОСТ Р 34.10-2013.
+    - алгоритма выработки имитовставки ГОСТ Р 34.10-2013,
+    - алгоритма выработки имитовставки MGM.
 
     @param ictx Указатель на структуру struct mac.
     @param oid Идентификатор криптографического алгоритма
@@ -327,6 +328,22 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! @param ctx Указатель на структуру struct mac.
+    @return Функция \ref ak_true если присвоение ключа допустимо,
+    в противном случае возвращается \ref ak_false.                                                 */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mac_context_is_key_settable( ak_mac ictx )
+{
+   switch( ictx->engine )
+  {
+    case hmac_function:
+    case omac_function:
+    case mgm_function: return ak_true;
+    default: return ak_false;
+  }
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! @param ictx Указатель на контекст сжимающего отображения (структуру struct mac).
     К моменту вызова функции контекст должен быть инициализирован.
     @param ptr Указатель на данные, которые будут интерпретироваться в качестве значения ключа.
@@ -344,7 +361,7 @@
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mac_context_set_key( ak_mac ictx, const ak_pointer ptr,
-                                                           const size_t size , const ak_bool cflag )
+                                                           const size_t size , const bool_t cflag )
 {
   int error = ak_error_ok;
   if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -581,7 +598,7 @@
     return NULL;
   }
  /* теперь обрабатываем файл с данными */
-  read_label: len = fread( localbuffer, 1, block_size, file.fp );
+  read_label: len = ( size_t ) ak_file_read( &file, localbuffer, block_size );
   if( len == block_size ) {
     ak_mac_context_update( ictx, localbuffer, block_size ); /* добавляем считанные данные */
     goto read_label;
@@ -597,6 +614,41 @@
   ak_file_close( &file );
   free( localbuffer );
  return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \details Функция используется в протокольных реализациях для
+    вычисления значений секретных ключей, зависящих, как от случайных данных, вырабатываемых в
+    ходе проткола, так и от заранее распределенных ключей.
+
+    \param uctx Контекст, значение которого обновляется. Как правило, это контекст
+    функции хеширования.
+
+    \param kctx Контекст, содержащий в себе секретный ключ, значением которого обновляется
+    первый контекст. Как правило, это контекст предварительно распределенного ключа.
+    \return В случае успеха функуия вохвращает \re ak_error_ok (ноль). В противном случае,
+    функция возвращает код ошибки.                                                                 */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mac_context_update_mac_context_key( ak_mac uctx, ak_mac kctx )
+{
+  ak_skey skey = NULL;
+
+  if( uctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                   "using a null pointer to updated mac context" );
+  if( kctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                "using a null pointer to secret key mac context" );
+ /* получаем указатель на секретный ключ */
+  switch( kctx->engine ) {
+    case hmac_function: skey = ( ak_skey )( &(( ak_hmac )kctx->ctx)->key );
+      break;
+    case omac_function: skey = ( ak_skey )( &(( ak_omac )kctx->ctx)->bkey.key );
+      break;
+    case mgm_function: skey = ( ak_skey )( &(( ak_mgm )( kctx->ctx ))->bkey.key );
+      break;
+    default: return ak_error_message( ak_error_oid_engine, __func__,
+                                            "using an unsupported engine for secret key context" );
+  }
+ return ak_skey_context_mac_context_update( skey, uctx );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -649,7 +701,7 @@
     хеширования с помощью прямого вычисления для данных с известной длиной и с помощью класса
     \ref mac для случайной траектории вычислений.                                             */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_mac_test_hash_functions( void )
+ bool_t ak_mac_test_hash_functions( void )
 {
   struct hash ctx;
   ak_oid oid = NULL;
@@ -668,7 +720,7 @@
     goto label_exit;
   }
 
- /* перебираем все oid в поисках алгоритмов хеширования */
+ /* перебираем все oid в поисках доступных алгоритмов хеширования */
   oid = ak_oid_context_find_by_engine( hash_function );
   while( oid != NULL ) {
     if( oid->mode == algorithm ) {
@@ -685,7 +737,7 @@
               if( ak_ptr_is_equal( out, out+64, ctx.hsize )) {
                 if( audit >= ak_log_maximum )
                   ak_error_message_fmt( ak_error_ok, __func__ ,
-                                         "hash algorithm for %s function is Ok", ctx.oid->name );
+                                        "mac realization of \"%s\" is Ok", ctx.oid->name );
                 } else {
                    char *str = NULL;
                    ak_error_message_fmt( error = ak_error_not_equal_data, __func__ ,
@@ -719,7 +771,7 @@
     хеширования семейства HMAC с помощью прямого вычисления для данных с известной длиной и
     с помощью класса \ref mac для случайной траектории вычислений.                                 */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_mac_test_hmac_functions( void )
+ bool_t ak_mac_test_hmac_functions( void )
 {
   struct hmac ctx;
   ak_oid oid = NULL;
@@ -755,7 +807,8 @@
              /* здесь данные вычислены и принимается решение о совпадении значений */
               if( ak_ptr_is_equal( out, out+64, ctx.ctx.hsize )) {
                 if( audit >= ak_log_maximum )
-                  ak_error_message_fmt( ak_error_ok, __func__ , "%s algorithm is Ok", oid->name );
+                  ak_error_message_fmt( ak_error_ok, __func__ ,
+                                   "mac realization of \"%s\" is Ok", oid->name );
                 } else {
                    char *str = NULL;
                    ak_error_message_fmt( error = ak_error_not_equal_data, __func__ ,
@@ -786,7 +839,7 @@
     эталонными значениями из ГОСТ Р 34.13-2015, здесь проверяется эквивалентность реализации
     для класса bckey (она же используется в omac) и mac.                                           */
 /* ----------------------------------------------------------------------------------------------- */
- ak_bool ak_mac_test_omac_functions( void )
+ bool_t ak_mac_test_omac_functions( void )
 {
   size_t i = 0;
   struct mac mctx;
@@ -851,13 +904,16 @@
       ak_omac_context_destroy( &octx );
       ak_mac_context_destroy( &mctx );
       if( ak_log_get_level() >= ak_log_maximum )
-        ak_error_message_fmt( ak_error_ok, __func__ , "%s algorithm is Ok", oid->name );
+        ak_error_message_fmt( ak_error_ok, __func__ , "mac realization of \"%s\" is Ok", oid->name );
     }
     oid = ak_oid_context_findnext_by_engine( oid, omac_function );
   }
 
-return ak_true;
+ return ak_true;
 }
+
+/*! \todo Необходимо сделать цикл тестов со
+    случайными имитовставками, вычисляемыми с помощью класса struct mac. */
 
 /*! -----------------------------------------------------------------------------------------------
     \example test-internal-mac01.c                                                                 */
