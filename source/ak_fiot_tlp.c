@@ -39,8 +39,9 @@
   size_t m = 0, n = 0;
   ak_bckey ekey = NULL;
   int error = ak_error_ok;
+  ak_uint64 ivec[4];
   ak_uint8 i = 0, key[32], key2[32], *ats = NULL;
-  ak_uint8 ivec[32], dconst[32] = {
+  ak_uint8 dconst[32] = {
    0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F,
    0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9A, 0x9B, 0x9C, 0x9D, 0x9E, 0x9F };
 
@@ -75,20 +76,20 @@
   if( ekey->bsize == 8 )
     for( i = 0; i < 4; i++ ) {
       #ifndef LIBAKRYPT_LITTLE_ENDIAN
-        ((ak_uint64 *)ivec)[i] = bswap_64( 0xFFFFFFFF00000000LL + ( 4*m + i ));
+        ivec[i] = bswap_64( 0xFFFFFFFF00000000LL + ( 4*m + i ));
       #else
-        ((ak_uint64 *)ivec)[i] = 0xFFFFFFFF00000000LL + ( 4*m + i );
+        ivec[i] = 0xFFFFFFFF00000000LL + ( 4*m + i );
       #endif
     }
    else {
       #ifndef LIBAKRYPT_LITTLE_ENDIAN
-        ((ak_uint64 *)ivec)[0] = bswap_64( 2*m );
-        ((ak_uint64 *)ivec)[2] = bswap_64( 2*m + 1 );
+        ivec[0] = bswap_64( 2*m );
+        ivec[2] = bswap_64( 2*m + 1 );
       #else
-        ((ak_uint64 *)ivec)[0] = 2*m;
-        ((ak_uint64 *)ivec)[2] = 2*m + 1;
+        ivec[0] = 2*m;
+        ivec[2] = 2*m + 1;
       #endif
-        ((ak_uint64 *)ivec)[1] = ((ak_uint64 *)ivec)[3] = 0xFFFFFFFFFFFFFFFFLL;
+        ivec[1] = ivec[3] = 0xFFFFFFFFFFFFFFFFLL;
    }
 
   /*! \note удалить позже */
