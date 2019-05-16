@@ -1105,7 +1105,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция преобразует строку символов, содержащую последовательность шестнадцатеричных цифр,
-    в массив данных.
+    в массив данных. Строка символов должна быть строкой, оканчивающейся нулем (NULL string).
 
     @param hexstr Строка символов.
     @param ptr Указатель на область памяти (массив), в которую будут размещаться данные.
@@ -1173,11 +1173,11 @@
     В противном случае, а также в случае возникновения ошибки, возвращается \ref ak_false.
     Код шибки может быть получен с помощью выщова функции ak_error_get_value().                    */
 /* ----------------------------------------------------------------------------------------------- */
- bool_t ak_ptr_is_equal( const ak_pointer left, const ak_pointer right, const size_t size )
+ bool_t ak_ptr_is_equal( ak_const_pointer left, ak_const_pointer right, const size_t size )
 {
   size_t i = 0;
   bool_t result = ak_true;
-  ak_uint8 *lp = left, *rp = right;
+  const ak_uint8 *lp = left, *rp = right;
 
   if(( left == NULL ) || ( right == NULL )) {
     ak_error_message( ak_error_null_pointer, __func__, "using a null pointer" );

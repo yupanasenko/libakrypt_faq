@@ -37,6 +37,7 @@ option( LIBAKRYPT_CONST_CRYPTO_PARAMS "Build library with const values of crypto
 option( LIBAKRYPT_NETWORK "Build library with network communications support" OFF )
 option( LIBAKRYPT_FIOT "Build library with FIOT protocol support" OFF )
 option( LIBAKRYPT_TLS_13 "Build library with TLS 1.3 protocol support" OFF )
+option( LIBAKRYPT_AKRYPT "Build library with console akrypt application" ON )
 
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_FIOT )
@@ -47,6 +48,9 @@ if( LIBAKRYPT_TLS_13 )
  # в настоящее время реализация протокола отсутствует
  # set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
  # set( LIBAKRYPT_NETWORK ON )
+endif()
+if( LIBAKRYPT_AKRYPT )
+  set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -103,6 +107,20 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_mgm.c
   )
   add_compile_options( -DLIBAKRYPT_CRYPTO_FUNCTIONS=ON )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+if( LIBAKRYPT_AKRYPT )
+  set( AKRYPT_SOURCES
+                    akrypt/akrypt.c
+                    akrypt/akrypt_show.c
+                    akrypt/akrypt_hash.c )
+  set( AKRYPT_FILES
+                    akrypt/akrypt.h
+                    akrypt/akrypt.po
+                    akrypt/getopt.h
+                    akrypt/getopt.c
+                    akrypt/Readme.md )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -202,6 +220,20 @@ if( LIBAKRYPT_LIBS )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
+# сборка консольной утилиты для работы с функциями библиотеки
+if( LIBAKRYPT_AKRYPT )
+  if( LIBAKRYPT_HAVE_GETOPT )
+  else()
+    set( AKRYPT_SOURCES ${AKRYPT_SOURCES} akrypt/getopt.c )
+  endif()
+  if( LIBAKRYPT_STATIC_LIB )
+    add_executable( akrypt${LIBAKRYPT_EXT} ${AKRYPT_SOURCES} )
+    target_include_directories( akrypt${LIBAKRYPT_EXT} PUBLIC "akrypt" )
+    target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+  endif()
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
 # тестовые примеры для арифметических операций
 set( ARITHMETIC_TESTS_LIST
                  mpzn-convert
@@ -280,7 +312,6 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  internal-mgm04
   )
 endif()
-
 if( LIBAKRYPT_FIOT )
   set( INTERNAL_FIOT_TEST_LIST
                  internal-fiot-algconst

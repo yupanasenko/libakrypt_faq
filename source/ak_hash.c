@@ -12,6 +12,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_mac.h>
+ #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция устанавливает значение полей структуры struct hash в значения по-умолчанию.
@@ -207,6 +208,149 @@
 
   ak_mac_context_destroy( &ictx );
  return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                        реализация функций внешнего интерфейса                                   */
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция принимает на вход строку с именем или идентификатором алгоритма бесключевого
+    хэширования и возвращает дескриптор контекста функции хеширования.
+
+    @param ni Имя или идентификатор (строка, содержащая числа с точками) алгоритма хэширования.
+    @param description Строка символов, описывающая создаваемый контекст алгоритма
+    бесключевого хэширования. Может принимать значение NULL.
+
+    @return В случае успеха функция возвращает дескриптор созданного контекста.
+    В случае возникновения ошибки возвращается значение \ref ak_error_wrong_handle.                */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_hash_new_oid_ni( const char *ni, const char *description )
+{
+  ak_hash ctx = NULL;
+  int error = ak_error_ok;
+  ak_oid oid = ak_oid_context_find_by_ni( ni );
+
+  /* проверяем входной параметр */
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect value of name/identifier" );
+    return ak_error_wrong_handle;
+  }
+  /* выделяем память и создаем контекст алгоритма хеширования */
+  if(( ctx = malloc( sizeof( struct hash ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ , "incorrect memory allocation" );
+    return ak_error_wrong_handle;
+  }
+  if(( error = ((ak_function_hash_create *)oid->func.create)( ctx )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "incorrect creation of hash function context" );
+    if( ctx != NULL ) free( ctx );
+    return ak_error_wrong_handle;
+  }
+
+  /* помещаем контекст в менеджер контекстов и возвращаем полученный дескриптор */
+ return ak_libakrypt_add_context( ctx , hash_function , description );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_hash_new_streebog256( const char *description )
+{
+ return ak_hash_new_oid_ni( "streebog256", description );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_hash_new_streebog512( const char *description )
+{
+ return ak_hash_new_oid_ni( "streebog512", description );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param handle Дескриптор контекста функции хеширования.
+    @return Функция возвращает количество байт, которые занимает результат примения функции
+    хэширования. В случае, если дескриптор задан неверно, то возвращаемое значение не определено.
+    В этом случае код ошибки моет быть получен с помощью вызова функции ak_error_get_value().      */
+/* ----------------------------------------------------------------------------------------------- */
+ size_t ak_hash_get_size( ak_handle handle )
+{
+  ak_hash ctx = NULL;
+  oid_engines_t engine;
+
+  if(( ctx = ak_handle_get_context( handle, &engine )) == NULL ) {
+      ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+      return 0;
+  }
+  if( engine != hash_function ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "wrong oid engine for given handle" );
+    return 0;
+  }
+ return ctx->hsize;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция вычисляет хеш-код от заданной области памяти на которую указывает in. Размер памяти
+    задается в байтах в переменной size. Результат вычислений помещается в область памяти,
+    на которую указывает out. Если out равен NULL, то функция создает новый буффер
+    (структуру struct buffer), помещает в нее вычисленное значение и возвращает на указатель на
+    буффер. Буффер должен позднее быть удален с помощью вызова ak_buffer_delete().
+
+    @param handle Дескриптор алгоритма хеширования.
+    @param in Указатель на входные данные для которых вычисляется хеш-код.
+    @param size Размер входных данных в байтах.
+    @param out Область памяти, куда будет помещен результат. Память должна быть заранее выделена.
+    Размер выделяемой памяти может быть определен с помощью вызова ak_hash_get_size().
+    Указатель out может принимать значение NULL.
+
+    @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+    возвращается указатель на буффер, содержащий результат вычислений. В случае возникновения
+    ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_hash_ptr( ak_handle handle, const ak_pointer in, const size_t size, ak_pointer out )
+{
+  ak_hash ctx = NULL;
+  oid_engines_t engine;
+
+  if(( ctx = ak_handle_get_context( handle, &engine )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+    return NULL;
+  }
+  if( engine != hash_function ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "wrong oid engine for given handle" );
+    return NULL;
+  }
+
+  return ak_hash_context_ptr( ctx, in, size, out );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция вычисляет хеш-код от заданного файла. Результат вычислений помещается в область памяти,
+    на которую указывает out. Если out равен NULL, то функция создает новый буффер
+    (структуру struct buffer), помещает в нее вычисленное значение и возвращает на указатель на
+    буффер. Буффер должен позднее быть удален с помощью вызова ak_buffer_delete().
+
+    @param handle Дескриптор алгоритма хеширования.
+    @param filename Имя файла, для которого вычисляется значение хеш-кода.
+    @param out Область памяти, куда будет помещен результат. Память должна быть заранее выделена.
+    Размер выделяемой памяти может быть определен с помощью вызова ak_hash_get_size().
+    Указатель out может принимать значение NULL.
+
+    @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+    возвращается указатель на буффер, содержащий результат вычислений. В случае возникновения
+    ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_hash_file( ak_handle handle, const char *filename, ak_pointer out )
+{
+  ak_hash ctx = NULL;
+  oid_engines_t engine;
+
+  if(( ctx = ak_handle_get_context( handle, &engine )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+    return NULL;
+  }
+  if( engine != hash_function ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "wrong oid engine for given handle" );
+    return NULL;
+  }
+
+  return ak_hash_context_file( ctx, filename, out );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

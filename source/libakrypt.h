@@ -347,12 +347,14 @@ extern "C" {
  dll_export bool_t ak_libakrypt_dynamic_control_test( void );
 
 /* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup hash_functions Механизмы бесключевого хэширования
+ *  \details Данная группа функций позволяет создавать дескрипторы алгоритмов хэширования и
+ *  использовать их для вычисления хэш-кодов от заданных файлов или областей памяти.
+ * @{*/
 /*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
  dll_export ak_handle ak_hash_new_streebog256( const char * );
 /*! \brief Создание дескриптора бесключевой функции хеширования Стрибог512. */
  dll_export ak_handle ak_hash_new_streebog512( const char * );
-/*! \brief Создание дескриптора бесключевой функции хеширования ГОСТ Р 34.11-94. */
- dll_export ak_handle ak_hash_new_gosthash94( const char * );
 /*! \brief Создание дескриптора бесключевой функции хеширования. */
  dll_export ak_handle ak_hash_new_oid_ni( const char *, const char * );
 /*! \brief Получение длины хэш-кода (в байтах). */
@@ -361,6 +363,7 @@ extern "C" {
  dll_export ak_buffer ak_hash_ptr( ak_handle , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Вычисление хэш-кода для заданного файла. */
  dll_export ak_buffer ak_hash_file( ak_handle , const char *, ak_pointer );
+/** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Удаление объекта, связанного с заданным дескриптором. */
@@ -445,7 +448,7 @@ extern "C" {
 /*! \brief Конвертация строки шестнадцатеричных символов в массив данных. */
  dll_export int ak_hexstr_to_ptr( const char *, ak_pointer , const size_t , const bool_t );
 /*! \brief Сравнение двух областей памяти. */
- dll_export bool_t ak_ptr_is_equal( const ak_pointer, const ak_pointer , const size_t );
+ dll_export bool_t ak_ptr_is_equal( ak_const_pointer, ak_const_pointer , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция устанавливает домашний каталог пользователя. */
