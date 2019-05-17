@@ -345,13 +345,13 @@
     получен с помощью вызова функции ak_error_get_value().                                         */
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_context_manager_add_node( ak_context_manager manager, const ak_pointer ctx,
-                                                     const oid_engines_t engine, char *description )
+                                              const oid_engines_t engine, const char *description )
 {
   size_t idx = 0;
   int error = ak_error_ok;
   ak_context_node node = NULL;
   ak_handle handle = ak_error_wrong_handle;
-  char *defaultstr = (char *) description;
+  const char *defaultstr = description;
 
  /* минимальные проверки */
   if( manager == NULL ) {
@@ -568,7 +568,8 @@
     возникновения ошибки возвращается значение \ref ak_error_wrong_handle. Код ошибки может быть
     получен с помощью вызова функции ak_error_get_value().                                         */
 /* ----------------------------------------------------------------------------------------------- */
- ak_handle ak_libakrypt_add_context( ak_pointer ctx, const oid_engines_t engine, char *description )
+ ak_handle ak_libakrypt_add_context( ak_pointer ctx,
+                                               const oid_engines_t engine, const char *description )
 {
   ak_context_manager manager = NULL;
   ak_handle handle = ak_error_wrong_handle;

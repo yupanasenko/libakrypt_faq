@@ -76,7 +76,7 @@
  int ak_context_manager_morealloc( ak_context_manager );
 /*! \brief Добавление контекста в структуру управления контекстами. */
  ak_handle ak_context_manager_add_node( ak_context_manager ,
-                                              const ak_pointer , const oid_engines_t , char * );
+                                           const ak_pointer , const oid_engines_t , const char * );
 /*! \brief Удаление контекста из структуры управления контекстами. */
  int ak_context_manager_delete_node( ak_context_manager , ak_handle );
 /*! \brief Получение точного значения дескриптора по индексу массива. */
@@ -94,7 +94,7 @@
 /*! \brief Получение указателя на глобальную структуру управления контекстами. */
  ak_context_manager ak_libakrypt_get_context_manager( void );
 /*! \brief Помещение созданного объекта в глобальную структуру управления контекстами. */
- ak_handle ak_libakrypt_add_context( ak_pointer , const oid_engines_t , char * );
+ ak_handle ak_libakrypt_add_context( ak_pointer , const oid_engines_t , const char * );
 /*! \brief Получение контекста по заданному дескриптору и типу контекста. */
  ak_pointer ak_handle_get_context( ak_handle , oid_engines_t * );
 
