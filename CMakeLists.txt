@@ -37,7 +37,7 @@ option( LIBAKRYPT_CONST_CRYPTO_PARAMS "Build library with const values of crypto
 option( LIBAKRYPT_NETWORK "Build library with network communications support" OFF )
 option( LIBAKRYPT_FIOT "Build library with FIOT protocol support" OFF )
 option( LIBAKRYPT_TLS_13 "Build library with TLS 1.3 protocol support" OFF )
-option( LIBAKRYPT_AKRYPT "Build library with console akrypt application" ON )
+option( LIBAKRYPT_AKRYPT "Build console akrypt application" OFF )
 
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_FIOT )
