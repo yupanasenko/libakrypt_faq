@@ -9,6 +9,9 @@
  #include <string.h>
  #include <stdlib.h>
  #include <akrypt.h>
+#ifdef _MSC_VER
+ #include <strsafe.h>
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
  char audit_filename[1024];
@@ -142,23 +145,41 @@
                                           ak_function_find *function, ak_pointer ptr, bool_t tree )
 {
   int error = ak_error_ok;
-  char filename[FILENAME_MAX];
 
 #ifdef _WIN32
   WIN32_FIND_DATA ffd;
   TCHAR szDir[MAX_PATH];
+  char filename[MAX_PATH];
   HANDLE hFind = INVALID_HANDLE_VALUE;
-  size_t length_of_arg, length_of_mask;
+  size_t rlen = 0, mlen = 0;
 
-  StringCchLength( root, MAX_PATH, &length_of_arg);
-  StringCchLength( mask, MAX_PATH, &length_of_mask);
+ #ifdef _MSC_VER
+  if( FAILED( StringCchLength( root, MAX_PATH-1, &rlen )))
+    return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                             "incorret length for root variable" );
+  if( FAILED( StringCchLength( mask, MAX_PATH-1, &mlen )))
+    return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                            "incorrect length for mask variable" );
+ #else
+  rlen = strlen( root ); mlen = strlen( mask );
+ #endif
 
-  if( length_of_arg > (MAX_PATH - ( length_of_mask + 2 )))
+  if( rlen > (MAX_PATH - ( mlen + 2 )))
     return ak_error_message_fmt( ak_error_wrong_length, __func__ , "directory path too long" );
 
-  StringCchCopy( szDir, MAX_PATH, root );
-  StringCchCat( szDir, MAX_PATH, TEXT("\\") );
-  StringCchCat( szDir, MAX_PATH, mask );
+ #ifdef _MSC_VER
+  if( FAILED( StringCchCopy( szDir, MAX_PATH-1, root )))
+    return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                            "incorrect copying of root variable" );
+  if( FAILED( StringCchCat( szDir, MAX_PATH-1, TEXT( "\\" ))))
+    return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                      "incorrect copying of directory separator" );
+  if( FAILED( StringCchCat( szDir, MAX_PATH-1, mask )))
+    return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                            "incorrect copying of mask variable" );
+ #else
+  ak_snprintf( szDir, MAX_PATH-1, "%s\\%s", root, mask );
+ #endif
 
  /* начинаем поиск */
   if(( hFind = FindFirstFile( szDir, &ffd )) == INVALID_HANDLE_VALUE )
@@ -171,18 +192,42 @@
          if( !strcmp( ffd.cFileName, ".." )) continue;
 
          if( tree ) { // выполняем рекурсию для вложенных каталогов
-           StringCchCopy( szDir, MAX_PATH, root );
-           StringCchCat( szDir, MAX_PATH, TEXT("\\") );
-           StringCchCat( szDir, MAX_PATH, ffd.cFileName );
+           memset( szDir, 0, MAX_PATH );
+          #ifdef _MSC_VER
+           if( FAILED( StringCchCopy( szDir, MAX_PATH-1, root )))
+             return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                            "incorrect copying of root variable" );
+           if( FAILED( StringCchCat( szDir, MAX_PATH-1, TEXT( "\\" ))))
+             return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                      "incorrect copying of directory separator" );
+           if( FAILED( StringCchCat( szDir, MAX_PATH-1,  ffd.cFileName )))
+             return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                                "incorrect copying of file name" );
+          #else
+           ak_snprintf( szDir, MAX_PATH-1, "%s\\%s", root,  ffd.cFileName );
+          #endif
+
            if(( error = akrypt_find( szDir, mask, function, ptr, tree )) != ak_error_ok )
-             ak_error_message_fmt( error, __func__, _("access to \"%s\" directory denied"), filename );
+             ak_error_message_fmt( error,
+                                         __func__, "access to \"%s\" directory denied", filename );
          }
        } else {
                if( ffd.dwFileAttributes &FILE_ATTRIBUTE_SYSTEM ) continue;
-               StringCchCopy( filename, MAX_PATH, root );
-               StringCchCat( filename, MAX_PATH, TEXT("\\") );
-               StringCchCat( filename, MAX_PATH, ffd.cFileName );
-               function( filename, ptr );
+                 memset( filename, 0, FILENAME_MAX );
+                #ifdef _MSC_VER
+                 if( FAILED( StringCchCopy( filename, MAX_PATH-1, root )))
+                   return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                            "incorrect copying of root variable" );
+                 if( FAILED( StringCchCat( filename, MAX_PATH-1, TEXT( "\\" ))))
+                   return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                      "incorrect copying of directory separator" );
+                 if( FAILED( StringCchCat( filename, MAX_PATH-1,  ffd.cFileName )))
+                   return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                               "incorrect copying of file namme" );
+                #else
+                 ak_snprintf( filename, MAX_PATH-1, "%s\\%s", root,  ffd.cFileName );
+                #endif
+                 function( filename, ptr );
               }
 
   } while( FindNextFile( hFind, &ffd ) != 0);
@@ -192,6 +237,7 @@
 #else
   DIR *dp = NULL;
   struct dirent *ent = NULL;
+  char filename[FILENAME_MAX];
 
  /* открываем каталог */
   errno = 0;

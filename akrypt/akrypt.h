@@ -11,8 +11,8 @@
  #include <libakrypt.h>
  #include <getopt.h>
  #ifdef _WIN32
+  #include <windows.h>
   #include <tchar.h>
-  #include <strsafe.h>
  #else
   #define TCHAR char
  #endif

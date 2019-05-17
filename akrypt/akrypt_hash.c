@@ -32,7 +32,12 @@
 {
   int next_option = 0, idx = 0;
   enum { do_nothing, do_hash, do_check } work = do_hash;
-  char *algorithm_ni = "streebog256", *pattern = "*", *checkfile = NULL;
+  char *algorithm_ni = "streebog256", *checkfile = NULL,
+   #ifdef _WIN32
+       *pattern = "*.*";
+   #else
+       *pattern = "*";
+   #endif
 
   const struct option long_options[] = {
      { "help",             0, NULL,  'h' },
