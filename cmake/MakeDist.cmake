@@ -7,36 +7,15 @@ if( CMAKE_HOST_UNIX )
 
   # создаем каталог и копируем файлы с исходными текстами
   file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/source\n")
-  foreach( file ${HEADERS} ${SOURCES} ${MAIN_HEADER} )
-    file( APPEND ${MYDFILE}
-            "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/${file} libakrypt-${FULL_VERSION}/source\n")
-  endforeach()
+  file( APPEND ${MYDFILE} "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/source/* libakrypt-${FULL_VERSION}/source\n")
 
   # создаем каталог examples и копируем файлы с примерами, неэкспортируемые тесты + арифметика)
   file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/examples\n")
-  foreach( file ${EXAMPLES_LIST} )
-    file( APPEND ${MYDFILE}
-     "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/examples/example-${file}.c libakrypt-${FULL_VERSION}/examples\n")
-  endforeach()
+  file( APPEND ${MYDFILE} "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/examples/example-*.c libakrypt-${FULL_VERSION}/examples\n")
 
   # создаем каталог tests и копируем файлы с тестами (неэкспортируемые функции + арифметика)
   file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/tests\n")
-  foreach( file ${INTERNAL_TEST_LIST} )
-    file( APPEND ${MYDFILE}
-     "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/tests/test-${file}.c libakrypt-${FULL_VERSION}/tests\n")
-  endforeach()
-  foreach( file ${INTERNAL_TEST_LIST_EXAMPLES} )
-    file( APPEND ${MYDFILE}
-     "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/tests/test-${file}.c libakrypt-${FULL_VERSION}/tests\n")
-  endforeach()
-  foreach( file ${ARITHMETIC_TESTS_LIST} )
-    file( APPEND ${MYDFILE}
-     "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/tests/test-${file}.c libakrypt-${FULL_VERSION}/tests\n")
-  endforeach()
-  foreach( file ${INTERNAL_FIOT_TEST_LIST} )
-    file( APPEND ${MYDFILE}
-     "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/tests/test-${file}.c libakrypt-${FULL_VERSION}/tests\n")
-  endforeach()
+  file( APPEND ${MYDFILE} "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/tests/test-*.c libakrypt-${FULL_VERSION}/tests\n")
 
 #  # создаем каталог asn1 и копируем файлы с реализацией asn1
 #  file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/asn1\n" )
@@ -77,7 +56,7 @@ if( CMAKE_HOST_UNIX )
   # собираем дистрибутив
   file( APPEND ${MYDFILE} "tar -cjvf libakrypt-${FULL_VERSION}.tar.bz2 libakrypt-${FULL_VERSION}\n")
   file( APPEND ${MYDFILE} "rm -R libakrypt-${FULL_VERSION}\n")
-#  file( APPEND ${MYDFILE} "akrypt hash -r -o libakrypt-${FULL_VERSION}.streebog256 libakrypt-${FULL_VERSION}.tar.bz2\n")
+  file( APPEND ${MYDFILE} "akrypt hash -r -o libakrypt-${FULL_VERSION}.streebog256 libakrypt-${FULL_VERSION}.tar.bz2\n")
 
   message("-- Creating a make-dist-${FULL_VERSION}.sh file - done ")
   execute_process( COMMAND chmod +x ${MYDFILE} )

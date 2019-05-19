@@ -37,7 +37,7 @@ option( LIBAKRYPT_CONST_CRYPTO_PARAMS "Build library with const values of crypto
 option( LIBAKRYPT_NETWORK "Build library with network communications support" OFF )
 option( LIBAKRYPT_FIOT "Build library with FIOT protocol support" OFF )
 option( LIBAKRYPT_TLS_13 "Build library with TLS 1.3 protocol support" OFF )
-option( LIBAKRYPT_AKRYPT "Build library with console akrypt application" ON )
+option( LIBAKRYPT_AKRYPT "Build console akrypt application" OFF )
 
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_FIOT )
@@ -52,6 +52,14 @@ endif()
 if( LIBAKRYPT_AKRYPT )
   set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
 endif()
+
+# -------------------------------------------------------------------------------------------------- #
+# подключаем модули CMake для тонкой настройки параметров сборки
+set( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
+include( DetectFlags )
+include( DetectHeaders )
+include( DetectLibraries )
+include( DetectIntrinsics )
 
 # -------------------------------------------------------------------------------------------------- #
 # множество исходных текстов библиотеки и вспомогательных файлов
@@ -106,7 +114,15 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_omac.c
                     source/ak_mgm.c
   )
-  add_compile_options( -DLIBAKRYPT_CRYPTO_FUNCTIONS=ON )
+  add_compile_options( -DLIBAKRYPT_CRYPTO_FUNCTIONS=ON )  
+  if( LIBAKRYPT_HAVE_SYSUN )
+    set( SOURCES    ${SOURCES}
+                    source/ak_udsrnd.c )
+  endif()
+  if( LIBAKRYPT_HAVE_WINDOWS )
+    set( SOURCES    ${SOURCES}
+                    source/ak_winrnd.c )
+  endif()
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -158,6 +174,7 @@ set( CMAKES         cmake/DetectFlags.cmake
 )
 set( DOCS           doc/00-introduction.md
                     doc/01-install-guide.md
+                    doc/02-primciples.md
                     doc/Doxyfile.in
                     doc/refman_footer.in
                     doc/refman_header.in
@@ -169,14 +186,6 @@ set( OTHERS         CMakeLists.txt
                     libakrypt.rc.in
                     LICENSE
 )
-
-# -------------------------------------------------------------------------------------------------- #
-# подключаем модули CMake для тонкой настройки параметров сборки
-set( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
-include( DetectFlags )
-include( DetectHeaders )
-include( DetectLibraries )
-include( DetectIntrinsics )
 
 # -------------------------------------------------------------------------------------------------- #
 # определяемся с местом хранения файла с конфигурацией библиотеки
@@ -313,6 +322,11 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  internal-bckey04
                  internal-mgm04
   )
+  if( LIBAKRYPT_HAVE_SYSUN )
+    set( INTERNAL_TEST_LIST_EXAMPLES
+                 ${INTERNAL_TEST_LIST_EXAMPLES}
+                 internal-random03 )
+  endif()
 endif()
 if( LIBAKRYPT_FIOT )
   set( INTERNAL_FIOT_TEST_LIST
