@@ -15,8 +15,7 @@
   ak_oid oid;
 
  /* инициализируем библиотеку */
-  if( !ak_libakrypt_create( ak_function_log_stderr ))
-    return ak_libakrypt_destroy();
+  if( !ak_libakrypt_create( NULL )) return ak_libakrypt_destroy();
 
  /* находим какой-нибудь OID
     поскольку мы не знаем какой OID в дальнейшем будет первым в массиве */
@@ -35,8 +34,10 @@
   oid = (ak_oid)(((ak_uint8 *)oid) - ak_libakrypt_oids_count()*sizeof( struct oid ));
 
  /* выводим все oid, начиная с начала */
+  printf("%-40s %-16s %-14s %s\n", "name", "engine", "mode", "oid" );
+  printf("----------------------------------------------------------------------------------------------\n");
   for( i = 0; i < ak_libakrypt_oids_count(); i++ ) {
-     printf("%s [%s (%s), oid: %s]\n",
+     printf("%-40s %-16s %-14s %s\n",
         oid->name, ak_libakrypt_get_engine_name( oid->engine ),
                        ak_libakrypt_get_mode_name( oid->mode ), oid->id );
      oid = (ak_oid)(((ak_uint8 *)oid) + sizeof( struct oid ));

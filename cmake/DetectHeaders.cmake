@@ -143,6 +143,17 @@ check_c_source_compiles("
 
 if( LIBAKRYPT_HAVE_SYSSOCKET )
     set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SYSSOCKET_H" )
+    check_c_source_compiles("
+      #include <sys/un.h>
+      #include <sys/socket.h>
+      int main( void ) {
+         struct sockaddr_un sock;
+        return 0;
+      }" LIBAKRYPT_HAVE_SYSUN )
+
+    if( LIBAKRYPT_HAVE_SYSUN )
+      set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SYSUN_H" )
+    endif()
 endif()
 
 # -------------------------------------------------------------------------------------------------- #

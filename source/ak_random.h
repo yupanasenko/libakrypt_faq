@@ -66,7 +66,6 @@
 /*! \brief Инициализация контекста, реализующего интерфейс доступа к генератору псевдо-случайных чисел, предоставляемому ОС Windows. */
  int ak_random_context_create_winrtl( ak_random );
 #endif
-
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
 /*! \brief Инициализация контекста генератора, основанного на применении функции хеширования Стрибог-256. */
  int ak_random_context_create_hashrnd_streebog256( ak_random );
@@ -75,7 +74,10 @@
 /*! \brief Инициализация контекста генератора, основанного на применении функции хеширования, определяемой по ее идентификатору. */
  int ak_random_context_create_hashrnd_oid( ak_random , ak_oid );
 #endif
-
+#ifdef LIBAKRYPT_HAVE_SYSUN_H
+/*! \brief Инициализация контекста генератора, считывающего случайные значения из сокета домена unix. */
+ int ak_random_context_create_unix_domain_socket( ak_random , const char * , ssize_t );
+#endif
 /*! \brief Инициализация контекста генератора по заданному OID алгоритма генерации псевдо-случайных чисел. */
  int ak_random_context_create_oid( ak_random, ak_oid );
 /*! \brief Установка внутреннего состояния генератора псевдо-случайных чисел. */

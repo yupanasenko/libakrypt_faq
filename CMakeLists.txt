@@ -54,6 +54,14 @@ if( LIBAKRYPT_AKRYPT )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
+# подключаем модули CMake для тонкой настройки параметров сборки
+set( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
+include( DetectFlags )
+include( DetectHeaders )
+include( DetectLibraries )
+include( DetectIntrinsics )
+
+# -------------------------------------------------------------------------------------------------- #
 # множество исходных текстов библиотеки и вспомогательных файлов
 set( MAIN_HEADER    source/libakrypt.h )
 
@@ -106,7 +114,11 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_omac.c
                     source/ak_mgm.c
   )
-  add_compile_options( -DLIBAKRYPT_CRYPTO_FUNCTIONS=ON )
+  add_compile_options( -DLIBAKRYPT_CRYPTO_FUNCTIONS=ON )  
+  if( LIBAKRYPT_HAVE_SYSUN )
+    set( SOURCES    ${SOURCES}
+                    source/ak_udsrandom.c )
+  endif()
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -169,14 +181,6 @@ set( OTHERS         CMakeLists.txt
                     libakrypt.rc.in
                     LICENSE
 )
-
-# -------------------------------------------------------------------------------------------------- #
-# подключаем модули CMake для тонкой настройки параметров сборки
-set( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
-include( DetectFlags )
-include( DetectHeaders )
-include( DetectLibraries )
-include( DetectIntrinsics )
 
 # -------------------------------------------------------------------------------------------------- #
 # определяемся с местом хранения файла с конфигурацией библиотеки
@@ -311,6 +315,11 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  internal-bckey04
                  internal-mgm04
   )
+  if( LIBAKRYPT_HAVE_SYSUN )
+    set( INTERNAL_TEST_LIST_EXAMPLES
+                 ${INTERNAL_TEST_LIST_EXAMPLES}
+                 internal-random03 )
+  endif()
 endif()
 if( LIBAKRYPT_FIOT )
   set( INTERNAL_FIOT_TEST_LIST
