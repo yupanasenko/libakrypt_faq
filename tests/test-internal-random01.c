@@ -28,9 +28,9 @@
   if( generator.randomize_ptr != NULL )
     ak_random_context_randomize( &generator, &seed, sizeof( seed ));
 
- /* теперь вырабатываем необходимый объем данных - 256МБ */
+ /* теперь вырабатываем необходимый тестовый объем данных */
   time = clock();
-  for( i = 0; i < 1024*128; i++ ) ak_random_context_random( &generator, buffer, 1024 );
+  for( i = 0; i < 1024*4; i++ ) ak_random_context_random( &generator, buffer, 1024 );
   time = clock() - time;
 
   ak_ptr_to_hexstr_static( buffer, 32, string, 2050, ak_false );
@@ -54,13 +54,25 @@
  if( !ak_libakrypt_create( NULL )) return ak_libakrypt_destroy();
 
  /* последовательно запускаем генераторы на тестирование */
- if( test_function( ak_random_context_create_xorshift32,
-      "2B7D8650FA05497B21683B25FEEBD24FA877094796297456958696BBD775C603" ) != ak_true )
-   error =  EXIT_FAILURE;
+ #ifdef LIBAKRYPT_LITTLE_ENDIAN
+   if( test_function( ak_random_context_create_xorshift32,
+      "9D7130C59C3775ABBF9A50BD3C9AE26E2E990589FEC3287E752AB1ACCA1F06B6" ) != ak_true )
+     error =  EXIT_FAILURE;
+ #else
+   if( test_function( ak_random_context_create_xorshift32,
+      "A389BD971359E6CADF96904ABE650625CA9487D517AF56A252166BFF72514D2B" ) != ak_true )
+     error =  EXIT_FAILURE;
+ #endif
 
- if( test_function( ak_random_context_create_lcg,
-      "60ACB367D8624B6D5C3984D78E19A9CC52D9244386003BBFCA80D315387C2F23" ) != ak_true )
-   error = EXIT_FAILURE;
+ #ifdef LIBAKRYPT_LITTLE_ENDIAN
+   if( test_function( ak_random_context_create_lcg,
+      "206C732798220B2D1CF944974ED9698C1299E40346C0FB7F8A4093D5F83CEFE3" ) != ak_true )
+     error = EXIT_FAILURE;
+ #else
+   if( test_function( ak_random_context_create_lcg,
+      "47B7EF2B729133A3E9853E0F4FFE040154A7622B7827E71BC6E48DFF98C27F61" ) != ak_true )
+     error = EXIT_FAILURE;
+ #endif
 
 #ifdef WIN32
  if( test_function( ak_random_context_create_winrtl, NULL ) != ak_true ) error = EXIT_FAILURE;
@@ -70,9 +82,15 @@
 #endif
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
- if( test_function( ak_random_context_create_hashrnd_streebog512,
-      "F59B4AC1EFEEDD34E0BC8875BE96C1EE89901F9153F949DDA6BC666512F41375" ) != ak_true )
-   error = EXIT_FAILURE;
+ #ifdef LIBAKRYPT_LITTLE_ENDIAN
+   if( test_function( ak_random_context_create_hashrnd_streebog512,
+      "5ED8CE19B9F99E0E4837EAF2140A5E8FE3217BC9F1940CBEA34975FA8968E293" ) != ak_true )
+     error = EXIT_FAILURE;
+ #else
+   if( test_function( ak_random_context_create_hashrnd_streebog512,
+      "1005517034F6C6EB6DEDD3F7259BFB71AF06BC1F2AA2EFD554B090E2A4CB096D" ) != ak_true )
+     error = EXIT_FAILURE;
+ #endif
 #endif
 
  ak_libakrypt_destroy();

@@ -117,7 +117,11 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   add_compile_options( -DLIBAKRYPT_CRYPTO_FUNCTIONS=ON )  
   if( LIBAKRYPT_HAVE_SYSUN )
     set( SOURCES    ${SOURCES}
-                    source/ak_udsrandom.c )
+                    source/ak_udsrnd.c )
+  endif()
+  if( LIBAKRYPT_HAVE_WINDOWS )
+    set( SOURCES    ${SOURCES}
+                    source/ak_winrnd.c )
   endif()
 endif()
 
@@ -170,6 +174,7 @@ set( CMAKES         cmake/DetectFlags.cmake
 )
 set( DOCS           doc/00-introduction.md
                     doc/01-install-guide.md
+                    doc/02-primciples.md
                     doc/Doxyfile.in
                     doc/refman_footer.in
                     doc/refman_header.in
