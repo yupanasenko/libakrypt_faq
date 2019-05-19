@@ -74,7 +74,7 @@
      error = EXIT_FAILURE;
  #endif
 
-#ifdef WIN32
+#ifdef _WIN32
  if( test_function( ak_random_context_create_winrtl, NULL ) != ak_true ) error = EXIT_FAILURE;
 #endif
 #if defined(__unix__) || defined(__APPLE__)
