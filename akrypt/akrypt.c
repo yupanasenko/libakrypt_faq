@@ -77,6 +77,7 @@
 
  /* выполняем команду пользователя */
   if( akrypt_check_command( "show", argv[1] )) return akrypt_show( argc, argv );
+  if( akrypt_check_command( "h", argv[1] )) return akrypt_hash( argc, argv );
   if( akrypt_check_command( "hash", argv[1] )) return akrypt_hash( argc, argv );
 
  /* ничего не подошло, выводим сообщение об ошибке */
@@ -344,9 +345,9 @@
   printf(_("akrypt (crypto application based on libakrypt library, version: %s)\n"),
                                                                          ak_libakrypt_version( ));
   printf(_("usage \"akrypt command [options] [files]\"\n\n"));
-  printf(_("available commands:\n"));
-  printf(_("  hash   calculation and checking integrity codes\n"));
-  printf(_("  show   show useful information\n\n"));
+  printf(_("available commands (in short and long forms):\n"));
+  printf(_("  h  hash   calculation and checking integrity codes\n"));
+  printf(_("     show   show useful information\n\n"));
   printf(_("also try:\n"));
   printf(_("  \"akrypt command --help\" to get information about command options\n"));
   printf(_("  \"man akrypt\" to get more information about akrypt programm and some examples\n"));
