@@ -5,7 +5,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /* тест для операции сложения чисел */
- ak_bool add_test( size_t size, size_t count )
+ bool_t add_test( size_t size, size_t count )
 {
   size_t i = 0, val = 0;
   mpz_t xm, ym, zm, tm;
@@ -57,7 +57,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /* тест для операций сравнения и вычитания чисел */
- ak_bool sub_test( size_t size, size_t count )
+ bool_t sub_test( size_t size, size_t count )
 {
   int res = 0;
   size_t i = 0, val = 0, zerocnt = 0, limbwrong = 0;
@@ -121,7 +121,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /* тест для операции умножения чисел */
- ak_bool mul_test( size_t size, size_t count )
+ bool_t mul_test( size_t size, size_t count )
 {
   size_t i = 0, val = 0;
   mpz_t xm, ym, zm, tm;
@@ -175,7 +175,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /* тест для операции умножения большого числа на одноразрядное */
- ak_bool mul_ui_test( size_t size, size_t count )
+ bool_t mul_ui_test( size_t size, size_t count )
 {
   size_t i = 0, val = 0;
   ak_uint64 d = 0;
