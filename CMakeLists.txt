@@ -310,6 +310,8 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  internal-bckey02
                  internal-bckey02-magma
                  internal-bckey03
+                 internal-bckey05
+                 internal-omac_acpkm
                  internal-mac01
                  internal-mgm01
                  internal-mgm02
