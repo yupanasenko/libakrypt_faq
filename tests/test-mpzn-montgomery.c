@@ -6,7 +6,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /* тест для операции сложения вычетов в представлении монтгомери */
- ak_bool add_montgomery_test( size_t size, const char *prime, size_t count )
+ bool_t add_montgomery_test( size_t size, const char *prime, size_t count )
 {
   size_t i = 0, val = 0;
   mpz_t xm, ym, zm, tm, pm;
@@ -79,7 +79,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /* тест для операции умножения вычетов в представлении монтгомери */
- ak_bool mul_montgomery_test( size_t size, const char *prime, ak_uint64 n0, size_t count )
+ bool_t mul_montgomery_test( size_t size, const char *prime, ak_uint64 n0, size_t count )
 {
   size_t i = 0, errors_gmp = 0, val = 0;
   mpz_t xm, ym, zm, tm, pm, rm, gm, sm, um, nm;
