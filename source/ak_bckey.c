@@ -37,7 +37,7 @@
 
     Следующие поля принимают значения по-умолчанию
     - bkey.key.data -- указатель на служебную область памяти
-    - bkey.key.resource.counter -- максимально возможное число обрабатываемых блоков информации
+    - bkey.key.resource.value.counter -- максимально возможное число обрабатываемых блоков информации
     - bkey.key.oid -- идентификатор алгоритма шифрования
     - bkey.key.set_mask -- функция установки или смены маски ключа
     - bkey.key.unmask -- функция снятия маски с ключа
@@ -82,8 +82,6 @@
 
  return ak_error_ok;
 }
-
-#include <stdio.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param bkey контекст ключа алгоритма блочного шифрованния
@@ -282,10 +280,10 @@
                                         __func__, "incorrect integrity code of secret key value" );
  /* уменьшаем значение ресурса ключа */
   blocks = (ak_uint64 ) size/bkey->bsize;
-  if( bkey->key.resource.counter < blocks )
+  if( bkey->key.resource.value.counter < blocks )
     return ak_error_message( ak_error_low_key_resource,
                                                    __func__ , "low resource of block cipher key" );
-   else bkey->key.resource.counter -= blocks;
+   else bkey->key.resource.value.counter -= blocks;
 
  /* теперь приступаем к зашифрованию данных */
   switch( bkey->bsize ) {
@@ -339,10 +337,10 @@
                                         __func__, "incorrect integrity code of secret key value" );
  /* уменьшаем значение ресурса ключа */
   blocks = (ak_uint64 ) size/bkey->bsize;
-  if( bkey->key.resource.counter < blocks )
+  if( bkey->key.resource.value.counter < blocks )
     return ak_error_message( ak_error_low_key_resource,
                                                    __func__ , "low resource of block cipher key" );
-   else bkey->key.resource.counter -= blocks;
+   else bkey->key.resource.value.counter -= blocks;
 
  /* теперь приступаем к расшифрованию данных */
   switch( bkey->bsize ) {
@@ -369,159 +367,28 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param bkey Контекст ключа алгоритма блочного шифрования.
-    @return В случае возникновения ошибки функция возвращает ее код, в противном случае
-    возвращается ak_error_ok (ноль)                                                                */
- /* ----------------------------------------------------------------------------------------------- */
- static int ak_acpkm( ak_bckey bkey )
-{
-
-  bkey->key.unmask(&bkey->key);
-  ak_uint64 *new_key = bkey->key.key.alloc(bkey->key.key.size);
-  ak_uint64 *new_key_for_set = new_key;
-  ak_uint64 *D = (ak_uint64 *) acpkm_D;
-  for( size_t i=0; i < bkey->key.key.size; i+=bkey->bsize ) {
-    switch( bkey->bsize ) {
-      case  8: /* шифр с длиной блока 64 бита */
-        bkey->encrypt( &bkey->key, D++, new_key++ );
-        break;
-      case 16: /* шифр с длиной блока 128 бит */
-        bkey->encrypt( &bkey->key, D, new_key );
-        D += 2; new_key += 2;
-        break;
-      default: return ak_error_message( ak_error_wrong_block_cipher,
-                                            __func__ , "incorrect block size of block cipher key" );
-    }
-  }
-
-  if (ak_bckey_context_set_key(bkey, new_key_for_set, bkey->key.key.size, ak_true) != ak_error_ok)
-    return ak_error_message( ak_error_key_usage,
-                            __func__ , "can't replace key by new using acpkm" );
-  bkey->key.key.free(new_key_for_set);
-  return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param bkey Контекст ключа алгоритма блочного шифрования.
-    @param in Указатель на область памяти, где хранятся входные (зашифровываемые) данные
-    @param out Указатель на область памяти, куда помещаются зашифрованные данные
-    (этот указатель может совпадать с in)
-    @param size Размер зашировываемых данных (в байтах). Для режима простой замены
-    длина зашифровываемых данных должна быть кратна длине блока.
-    @param section_size длина секции (d ,fqnf[), которая шифруется на одном ключе
-    @param iv имитовставка
-    @param iv_size длина имитовставки
-
-    @return В случае возникновения ошибки функция возвращает ее код, в противном случае
-    возвращается ak_error_ok (ноль)                                                                */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_bckey_context_ctr_acpkm( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size,
-                                                  size_t section_size, ak_pointer iv, size_t iv_size)
-{
-  int error = ak_error_ok;
-  ak_uint64 *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
-  ak_uint64 out_buf[2];
-
-  /* выполняем проверку размера входных данных */
-   if( size%bkey->bsize != 0 )
-     return ak_error_message( ak_error_wrong_block_cipher_length,
-                             __func__ , "the length of input data is not divided by block length" );
-  /* выполняем проверку размера входных данных */
-   if( section_size%bkey->bsize != 0 )
-     return ak_error_message( ak_error_wrong_block_cipher_length,
-                             __func__ , "the length of section is not divided by block length" );
-
- /* проверяем целостность ключа */
-  if( bkey->key.check_icode( &bkey->key ) != ak_true )
-    return ak_error_message( ak_error_wrong_key_icode,
-                                        __func__, "incorrect integrity code of secret key value" );
-
-  ak_uint64 ctr[2] = {0x0, 0x0};
-  switch( bkey->bsize ) {
-    case  8: /* шифр с длиной блока 64 бита */
-      if (iv_size != 4)
-        return ak_error_message( ak_error_wrong_block_cipher_length,
-                                __func__ , "the length of initialization vector is incorrect" );
-      ctr[0] = ((ak_uint64 *) iv)[0] << 32;
-    break;
-
-    case 16: /* шифр с длиной блока 128 бит */
-      if (iv_size != 8)
-        return ak_error_message( ak_error_wrong_block_cipher_length,
-                                __func__ , "the length of initialization vector is incorrect" );
-      ctr[1] = ((ak_uint64 *) iv)[0];
-    break;
-    default: return ak_error_message( ak_error_wrong_block_cipher,
-                                          __func__ , "incorrect block size of block cipher key" );
-  }
-
-  for( size_t sections_encoded = 0; sections_encoded < size; sections_encoded += section_size ) {
-    size_t encoding_data_size = section_size < (size - sections_encoded) ? section_size : (size - sections_encoded);
-    ak_int64 blocks = (ak_uint64) encoding_data_size/bkey->bsize;
-   /* уменьшаем значение ресурса ключа */
-    if( bkey->key.resource.counter < blocks )
-      return ak_error_message( ak_error_low_key_resource,
-                                                     __func__ , "low resource of block cipher key" );
-     else bkey->key.resource.counter -= blocks;
-
-
-   /* теперь приступаем к зашифрованию данных */
-    switch( bkey->bsize ) {
-      case  8: /* шифр с длиной блока 64 бита */
-        do {
-          bkey->encrypt( &bkey->key, ctr, out_buf );
-          ctr[0] += 1;
-          ((ak_uint64 *) outptr)[0] = ((ak_uint64 *) inptr)[0] ^ out_buf[0];
-          outptr += 1; inptr += 1;
-        } while( --blocks > 0 );
-      break;
-
-      case 16: /* шифр с длиной блока 128 бит */
-        do {
-          bkey->encrypt( &bkey->key, ctr, out_buf );
-          ctr[0] += 1; if ( ctr[0] == 0 ) ctr[1] += 1;
-          ((ak_uint64 *) outptr)[0] = ((ak_uint64 *) inptr)[0]  ^ out_buf[0];
-          ((ak_uint64 *) outptr)[1] = ((ak_uint64 *) inptr)[1]  ^ out_buf[1];
-          inptr += 2; outptr += 2;
-        } while( --blocks > 0 );
-      break;
-      default: return ak_error_message( ak_error_wrong_block_cipher,
-                                            __func__ , "incorrect block size of block cipher key" );
-    }
-
-   /*берем следующий ключ*/
-    if( (error = ak_acpkm(bkey)) != ak_error_ok )
-      return ak_error_message( error, __func__ , "error when generate new key" );
-  }
-
- /* перемаскируем ключ */
-  if(( error = bkey->key.set_mask( &bkey->key )) != ak_error_ok )
-    return ak_error_message( error, __func__ , "wrong remasking of secret key" );
-
- return error;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! В режиме гаммирования операцией зашифрования является сложение открытого текста по модулю два
-    с последовательностью, вырабатываемой блочным шифром, поэтому, для зашифрования и расшифрования
-    информациии используется одна и таже функция.
+/*! В режиме гаммирования операцией шифрования является сложение открытого текста по модулю два
+    с последовательностью, вырабатываемой блочным шифром, поэтому для зашифрования и расшифрования
+    информациии используется одна и та же функция.
 
     Значение синхропосылки `iv` копируется в контекст секретного ключа (область памяти, на которую
     указывает `iv` не изменяется) и, в ходе реализации режима гаммирования, преобразуется.
     Преобразованное значение сохраняется в контексте секретного ключа в буффере `skey.ivector`.
-    Данное значение может быть использовано при повторном вызове функции ak_bckey_context_xcrypt().
+    Данное значение может быть использовано при повторном вызове функции ak_bckey_context_ctr().
     Следующий пример иллюстрирует сказанное.
 
 \code
+
  // шифрование буффера с данными одним фрагментом
-  ak_bckey_context_xcrypt( key, in, out, size, iv, 4 );
+  ak_bckey_context_ctr( key, in, out, size, iv, 4 );
 
  // тот же результат может быть получен за несколько вызовов
-  ak_bckey_context_xcrypt( &key, in, out, 16, iv, 4 );
-  ak_bckey_context_xcrypt( &key, in+16, out+16, 16, NULL, 0 );
-  ak_bckey_context_xcrypt( &key, in+32, out+32, size-32, NULL, 0 );
+  ak_bckey_context_ctr( &key, in, out, 16, iv, 4 );
+  ak_bckey_context_ctr( &key, in+16, out+16, 16, NULL, 0 );
+  ak_bckey_context_ctr( &key, in+32, out+32, size-32, NULL, 0 );
         // для того, чтобы использовать внутреннее значение синхропосылки,
         //              мы передаем нулевые значения последних параметров
+
 \endcode
 
  В приведенном выше фрагменте исходный буффер сначала зашифровывается за один вызов функции,
@@ -546,7 +413,7 @@
     @return В случае возникновения ошибки функция возвращает ее код, в противном случае
     возвращается ak_error_ok (ноль)                                                                */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_bckey_context_xcrypt( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size,
+ int ak_bckey_context_ctr( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size,
                                                                      ak_pointer iv, size_t iv_size )
 {
   int error = ak_error_ok;
@@ -559,17 +426,17 @@
     return ak_error_message( ak_error_wrong_key_icode, __func__,
                                                    "incorrect integrity code of secret key value" );
  /* уменьшаем значение ресурса ключа */
-  if( bkey->key.resource.counter < ( blocks + ( tail > 0 )))
+  if( bkey->key.resource.value.counter < ( blocks + ( tail > 0 )))
     return ak_error_message( ak_error_low_key_resource,
                                                     __func__ , "low resource of block cipher key" );
-   else bkey->key.resource.counter -= ( blocks + ( tail > 0 ));
+   else bkey->key.resource.value.counter -= ( blocks + ( tail > 0 ));
 
  /* выбираем, как вычислять синхропосылку */
   if(( iv == NULL ) || ( iv_size == 0 )) { /* запрос на использование внутреннего значения */
     if( ak_buffer_is_assigned( &bkey->ivector ) != ak_true )
       return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                   "first calling function with undefined value of initial vector" );
-    if( bkey->key.flags&bckey_flag_not_xcrypt )
+    if( bkey->key.flags&bckey_flag_not_ctr )
       return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                               "secondary calling function with undefined value of initial vector" );
   } else {
@@ -590,7 +457,7 @@
      memcpy( ((ak_uint8 *)bkey->ivector.data) + halfsize, iv, ak_min( halfsize, iv_size ));
 
     /* снимаем значение флага */
-     if( bkey->key.flags&bckey_flag_not_xcrypt ) bkey->key.flags ^= bckey_flag_not_xcrypt;
+     if( bkey->key.flags&bckey_flag_not_ctr ) bkey->key.flags ^= bckey_flag_not_ctr;
     }
 
  /* обработка основного массива данных (кратного длине блока) */
@@ -646,12 +513,146 @@
    /* запрещаем дальнейшее использование xcrypt на данном значении синхропосылки,
                                            поскольку обрабатываемые данные не кратны длине блока. */
     memset( bkey->ivector.data, 0, bkey->ivector.size );
-    bkey->key.flags |= bckey_flag_not_xcrypt;
+    bkey->key.flags |= bckey_flag_not_ctr;
   }
 
  /* перемаскируем ключ */
   if(( error = bkey->key.set_mask( &bkey->key )) != ak_error_ok )
     ak_error_message( error, __func__ , "wrong remasking of secret key" );
+
+ return error;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param bkey Контекст ключа алгоритма блочного шифрования.
+    @return В случае возникновения ошибки функция возвращает ее код, в противном случае
+    возвращается ak_error_ok (ноль)                                                                */
+ /* ----------------------------------------------------------------------------------------------- */
+ static int ak_acpkm( ak_bckey bkey )
+{
+
+  bkey->key.unmask(&bkey->key);
+  ak_uint64 *new_key = bkey->key.key.alloc(bkey->key.key.size);
+  ak_uint64 *new_key_for_set = new_key;
+  ak_uint64 *D = (ak_uint64 *) acpkm_D;
+  for( size_t i=0; i < bkey->key.key.size; i+=bkey->bsize ) {
+    switch( bkey->bsize ) {
+      case  8: /* шифр с длиной блока 64 бита */
+        bkey->encrypt( &bkey->key, D++, new_key++ );
+        break;
+      case 16: /* шифр с длиной блока 128 бит */
+        bkey->encrypt( &bkey->key, D, new_key );
+        D += 2; new_key += 2;
+        break;
+      default: return ak_error_message( ak_error_wrong_block_cipher,
+                                            __func__ , "incorrect block size of block cipher key" );
+    }
+  }
+
+  if (ak_bckey_context_set_key(bkey, new_key_for_set, bkey->key.key.size, ak_true) != ak_error_ok)
+    return ak_error_message( ak_error_key_usage,
+                            __func__ , "can't replace key by new using acpkm" );
+  bkey->key.key.free(new_key_for_set);
+  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param bkey Контекст ключа алгоритма блочного шифрования.
+    @param in Указатель на область памяти, где хранятся входные (зашифровываемые) данные
+    @param out Указатель на область памяти, куда помещаются зашифрованные данные
+    (этот указатель может совпадать с in)
+    @param size Размер зашировываемых данных (в байтах). Для режима простой замены
+    длина зашифровываемых данных должна быть кратна длине блока.
+    @param section_size длина секции (в байтах), которая шифруется на одном ключе
+    @param iv имитовставка
+    @param iv_size длина имитовставки
+
+    @return В случае возникновения ошибки функция возвращает ее код, в противном случае
+    возвращается ak_error_ok (ноль)                                                                */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_bckey_context_ctr_acpkm( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size,
+                                                  size_t section_size, ak_pointer iv, size_t iv_size)
+{
+  int error = ak_error_ok;
+  ak_uint64 *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
+  ak_uint64 out_buf[2];
+
+  /* выполняем проверку размера входных данных */
+   if( size%bkey->bsize != 0 )
+     return ak_error_message( ak_error_wrong_block_cipher_length,
+                             __func__ , "the length of input data is not divided by block length" );
+  /* выполняем проверку размера входных данных */
+   if( section_size%bkey->bsize != 0 )
+     return ak_error_message( ak_error_wrong_block_cipher_length,
+                             __func__ , "the length of section is not divided by block length" );
+
+ /* проверяем целостность ключа */
+  if( bkey->key.check_icode( &bkey->key ) != ak_true )
+    return ak_error_message( ak_error_wrong_key_icode,
+                                        __func__, "incorrect integrity code of secret key value" );
+
+  ak_uint64 ctr[2] = {0x0, 0x0};
+  switch( bkey->bsize ) {
+    case  8: /* шифр с длиной блока 64 бита */
+      if (iv_size != 4)
+        return ak_error_message( ak_error_wrong_block_cipher_length,
+                                __func__ , "the length of initialization vector is incorrect" );
+      ctr[0] = ((ak_uint64 *) iv)[0] << 32;
+    break;
+
+    case 16: /* шифр с длиной блока 128 бит */
+      if (iv_size != 8)
+        return ak_error_message( ak_error_wrong_block_cipher_length,
+                                __func__ , "the length of initialization vector is incorrect" );
+      ctr[1] = ((ak_uint64 *) iv)[0];
+    break;
+    default: return ak_error_message( ak_error_wrong_block_cipher,
+                                          __func__ , "incorrect block size of block cipher key" );
+  }
+
+  for( size_t sections_encoded = 0; sections_encoded < size; sections_encoded += section_size ) {
+    size_t encoding_data_size = section_size < (size - sections_encoded) ? section_size : (size - sections_encoded);
+    ak_int64 blocks = (ak_uint64) encoding_data_size/bkey->bsize;
+   /* уменьшаем значение ресурса ключа */
+    if( bkey->key.resource.value.counter < blocks )
+      return ak_error_message( ak_error_low_key_resource,
+                                                     __func__ , "low resource of block cipher key" );
+     else bkey->key.resource.value.counter -= blocks;
+
+
+   /* теперь приступаем к зашифрованию данных */
+    switch( bkey->bsize ) {
+      case  8: /* шифр с длиной блока 64 бита */
+        do {
+          bkey->encrypt( &bkey->key, ctr, out_buf );
+          ctr[0] += 1;
+          ((ak_uint64 *) outptr)[0] = ((ak_uint64 *) inptr)[0] ^ out_buf[0];
+          outptr += 1; inptr += 1;
+        } while( --blocks > 0 );
+      break;
+
+      case 16: /* шифр с длиной блока 128 бит */
+        do {
+          bkey->encrypt( &bkey->key, ctr, out_buf );
+          ctr[0] += 1; if ( ctr[0] == 0 ) ctr[1] += 1;
+          ((ak_uint64 *) outptr)[0] = ((ak_uint64 *) inptr)[0]  ^ out_buf[0];
+          ((ak_uint64 *) outptr)[1] = ((ak_uint64 *) inptr)[1]  ^ out_buf[1];
+          inptr += 2; outptr += 2;
+        } while( --blocks > 0 );
+      break;
+      default: return ak_error_message( ak_error_wrong_block_cipher,
+                                            __func__ , "incorrect block size of block cipher key" );
+    }
+
+   /*берем следующий ключ*/
+    if( (error = ak_acpkm(bkey)) != ak_error_ok )
+      return ak_error_message( error, __func__ , "error when generate new key" );
+  }
+
+ /* перемаскируем ключ */
+  if(( error = bkey->key.set_mask( &bkey->key )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "wrong remasking of secret key" );
 
  return error;
 }
@@ -700,10 +701,10 @@
   }
 
  /* уменьшаем значение ресурса ключа */
-  if( bkey->key.resource.counter < ( blocks + ( tail > 0 ))) {
+  if( bkey->key.resource.value.counter < ( blocks + ( tail > 0 ))) {
     ak_error_message( ak_error_low_key_resource, __func__ , "low resource of block cipher key" );
     return NULL;
-  } else bkey->key.resource.counter -= ( blocks + ( tail > 0 )); /* уменьшаем ресурс ключа */
+  } else bkey->key.resource.value.counter -= ( blocks + ( tail > 0 )); /* уменьшаем ресурс ключа */
 
   memset( akey, 0, sizeof( akey ));
   memset( yaout, 0, sizeof( yaout ));
@@ -824,9 +825,9 @@
   }
 
  /* уменьшаем значение ресурса ключа */
-  if( bkey->key.resource.counter < section_size/bkey->bsize ) {
+  if( bkey->key.resource.value.counter < section_size/bkey->bsize ) {
     return ak_error_message( ak_error_low_key_resource, __func__ , "low resource of block cipher key" );
-  } else bkey->key.resource.counter -= section_size/bkey->bsize; /* уменьшаем ресурс ключа */
+  } else bkey->key.resource.value.counter -= section_size/bkey->bsize; /* уменьшаем ресурс ключа */
 
   bkey->key.unmask(&bkey->key);
   ak_uint64 gen_key[4];

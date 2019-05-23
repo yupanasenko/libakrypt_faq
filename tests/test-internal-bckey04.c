@@ -98,8 +98,8 @@
   size_t len = 0, bsize = 0;
 
  /* принудительно изменяем ресурс ключа */
-  key->key.resource.counter = ( mbsize*1024*1024 )/key->bsize;
-  printf(" key resource changed to %lu blocks\n", (unsigned long int)key->key.resource.counter );
+  key->key.resource.value.counter = ( mbsize*1024*1024 )/key->bsize;
+  printf(" key resource changed to %lu blocks\n", (unsigned long int)key->key.resource.value.counter );
 
  /* открываем файлы */
   if( ak_file_open_to_read( &in, from ) == ak_error_ok )
@@ -114,12 +114,12 @@
   time = clock();
   len = ( size_t ) ak_file_read( &in, buffer, bsize );
   if( len > 0 ) {
-    ak_bckey_context_xcrypt( key, buffer, buffer, len, constiv, key->bsize/2 );
+    ak_bckey_context_ctr( key, buffer, buffer, len, constiv, key->bsize/2 );
     ak_file_write( &out, buffer, len );
   }
   do{
      if(( len = ( size_t ) ak_file_read( &in, buffer, bsize )) > 0 ) {
-       ak_bckey_context_xcrypt( key, buffer, buffer, len, NULL, 0 );
+       ak_bckey_context_ctr( key, buffer, buffer, len, NULL, 0 );
        ak_file_write( &out, buffer, len );
      }
   } while( len );

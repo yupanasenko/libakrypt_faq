@@ -71,7 +71,7 @@
     return error;
   }
   skey->data = NULL;
-  memset( &(skey->resource), 0, sizeof( union resource ));
+  memset( &(skey->resource), 0, sizeof( union resource )); /* ресурс ключа не определен */
 
  /* инициализируем генератор масок */
   if(( error = ak_random_context_create_xorshift32( &skey->generator )) != ak_error_ok ) {

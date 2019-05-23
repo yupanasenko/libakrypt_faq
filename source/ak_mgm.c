@@ -59,7 +59,7 @@
  if(( authenticationKey->key.flags&skey_flag_set_key ) == 0 )
    return ak_error_message( ak_error_key_value, __func__,
                                          "using block cipher key context with undefined key value");
- if( authenticationKey->key.resource.counter <= 0 )
+ if( authenticationKey->key.resource.value.counter <= 0 )
    return ak_error_message( ak_error_low_key_resource, __func__, "using key with low key resource");
 
  if( iv == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
@@ -81,7 +81,7 @@
 
  /* зашифровываем необходимое и удаляемся */
   authenticationKey->encrypt( &authenticationKey->key, ivector, &ctx->zcount );
-  authenticationKey->key.resource.counter--;
+  authenticationKey->key.resource.value.counter--;
 
  return ak_error_ok;
 }
@@ -153,9 +153,9 @@
   if(( adata == NULL ) || ( adata_size == 0 )) return ak_error_ok;
 
  /* проверка ресурса ключа */
-  if( authenticationKey->key.resource.counter <= (resource = blocks + (tail > 0)))
+  if( authenticationKey->key.resource.value.counter <= (resource = blocks + (tail > 0)))
    return ak_error_message( ak_error_low_key_resource, __func__, "using key with low key resource");
-  else authenticationKey->key.resource.counter -= resource;
+  else authenticationKey->key.resource.value.counter -= resource;
 
  /* теперь основной цикл */
  if( absize == 16 ) { /* обработка 128-битным шифром */
@@ -220,10 +220,10 @@
   }
 
  /* традиционная проверка ресурса */
-  if( authenticationKey->key.resource.counter <= 0 ) {
+  if( authenticationKey->key.resource.value.counter <= 0 ) {
     ak_error_message( ak_error_low_key_resource, __func__, "using key with low key resource");
     return NULL;
-  } else authenticationKey->key.resource.counter--;
+  } else authenticationKey->key.resource.value.counter--;
 
  /* закрываем добавление шифруемых данных */
    ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
@@ -298,7 +298,7 @@
  if(( encryptionKey->key.flags&skey_flag_set_key ) == 0 )
            return ak_error_message( ak_error_key_value, __func__,
                                                "using secret key context with undefined key value");
- if( encryptionKey->key.resource.counter <= 0 )
+ if( encryptionKey->key.resource.value.counter <= 0 )
    return ak_error_message( ak_error_low_key_resource, __func__, "using key with low key resource");
 
  if( iv == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
@@ -317,7 +317,7 @@
 
  /* зашифровываем необходимое и удаляемся */
   encryptionKey->encrypt( &encryptionKey->key, ivector, &ctx->ycount );
-  encryptionKey->key.resource.counter--;
+  encryptionKey->key.resource.value.counter--;
 
  return ak_error_ok;
 }
@@ -389,17 +389,17 @@
 
  /* проверка ресурса ключа выработки имитовставки */
   if( authenticationKey != NULL ) {
-    if( authenticationKey->key.resource.counter <= ( ssize_t )(resource = blocks + (tail > 0)))
+    if( authenticationKey->key.resource.value.counter <= ( ssize_t )(resource = blocks + (tail > 0)))
       return ak_error_message( ak_error_low_key_resource, __func__,
                                                 "using authentication key with low key resource");
-    else authenticationKey->key.resource.counter -= resource;
+    else authenticationKey->key.resource.value.counter -= resource;
   }
 
  /* проверка ресурса ключа шифрования */
-  if( encryptionKey->key.resource.counter <= ( ssize_t )resource )
+  if( encryptionKey->key.resource.value.counter <= ( ssize_t )resource )
    return ak_error_message( ak_error_low_key_resource, __func__,
                                                    "using encryption key with low key resource");
-  else encryptionKey->key.resource.counter -= resource;
+  else encryptionKey->key.resource.value.counter -= resource;
 
  /* теперь обработка данных */
   memset( &e, 0, 16 );
@@ -525,17 +525,17 @@
 
  /* проверка ресурса ключа выработки имитовставки */
   if( authenticationKey != NULL ) {
-    if( authenticationKey->key.resource.counter <= ( ssize_t )(resource = blocks + (tail > 0)))
+    if( authenticationKey->key.resource.value.counter <= ( ssize_t )(resource = blocks + (tail > 0)))
       return ak_error_message( ak_error_low_key_resource, __func__,
                                                 "using authentication key with low key resource");
-    else authenticationKey->key.resource.counter -= resource;
+    else authenticationKey->key.resource.value.counter -= resource;
   }
 
  /* проверка ресурса ключа шифрования */
-  if( encryptionKey->key.resource.counter <= ( ssize_t )resource )
+  if( encryptionKey->key.resource.value.counter <= ( ssize_t )resource )
    return ak_error_message( ak_error_low_key_resource, __func__,
                                                    "using encryption key with low key resource");
-  else encryptionKey->key.resource.counter -= resource;
+  else encryptionKey->key.resource.value.counter -= resource;
 
  /* теперь обработка данных */
   memset( &e, 0, 16 );

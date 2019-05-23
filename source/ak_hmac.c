@@ -66,7 +66,8 @@
   hctx->key.oid = oid;
 
  /* устанавливаем ресурс ключа */
-  hctx->key.resource.counter = ak_libakrypt_get_option( "hmac_key_count_resource" );
+  hctx->key.resource.type = key_using_resource;
+  hctx->key.resource.value.counter = ak_libakrypt_get_option( "hmac_key_count_resource" );
 
  return error;
 }
@@ -238,7 +239,7 @@
   if( !((hctx->key.flags)&skey_flag_set_key )) return ak_error_message( ak_error_key_value,
                                                __func__ , "using hmac key with unassigned value" );
 
-  if( hctx->key.resource.counter <= 1 ) return ak_error_message( ak_error_low_key_resource,
+  if( hctx->key.resource.value.counter <= 1 ) return ak_error_message( ak_error_low_key_resource,
                                             __func__, "using hmac key context with low resource" );
                       /* нам надо два раза использовать ключ => ресурс должен быть не менее двух */
   if( hctx->ctx.bsize > sizeof( buffer )) return ak_error_message( ak_error_wrong_length,
@@ -265,7 +266,7 @@
 
  /* перемаскируем ключ и меняем его ресурс */
   hctx->key.set_mask( &hctx->key );
-  hctx->key.resource.counter--; /* мы использовали ключ один раз */
+  hctx->key.resource.value.counter--; /* мы использовали ключ один раз */
 
  return error;
 }
@@ -291,7 +292,7 @@
  /* проверяем наличие ключа и его ресурс */
   if( !((hctx->key.flags)&skey_flag_set_key )) return ak_error_message( ak_error_key_value,
                                                __func__ , "using hmac key with unassigned value" );
-  if( hctx->key.resource.counter <= 0 ) return ak_error_message( ak_error_low_key_resource,
+  if( hctx->key.resource.value.counter <= 0 ) return ak_error_message( ak_error_low_key_resource,
                                             __func__, "using hmac key context with low resource" );
 
   return hctx->ctx.update( &hctx->ctx, data, size );
@@ -372,7 +373,7 @@
 
  /* ресурс ключа */
   hctx->key.set_mask( &hctx->key );
-  hctx->key.resource.counter--; /* мы использовали ключ один раз */
+  hctx->key.resource.value.counter--; /* мы использовали ключ один раз */
 
  /* последний update/finalize и возврат результата */
   if( hctx->ctx.bsize == hctx->ctx.hsize ) {
