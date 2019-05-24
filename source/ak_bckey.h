@@ -68,6 +68,10 @@
  int ak_bckey_context_set_key_from_password( ak_bckey , const ak_pointer , const size_t ,
                                                                 const ak_pointer , const size_t );
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Инициализация ключа алгоритма блочного шифрования значением другого ключа */
+ int ak_bckey_context_create_and_set_bckey( ak_bckey , ak_bckey );
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Зашифрование данных в режиме простой замены. */
  int ak_bckey_context_encrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
 /*! \brief Расшифрование данных в режиме простой замены. */

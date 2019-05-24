@@ -846,8 +846,9 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
   };
 
  /* устанавливаем ресурс использования серетного ключа */
-  bkey->key.resource.type = block_counter_resource;
-  bkey->key.resource.value.counter = ak_libakrypt_get_option( "magma_cipher_resource" );
+  if(( error = ak_skey_context_set_resource( &bkey->key,
+                            block_counter_resource, "magma_cipher_resource" )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect assigning \"magma_cipher_resource\" option" );
 
  /* устанавливаем методы */
   bkey->key.set_mask = ak_skey_context_set_mask_additive;

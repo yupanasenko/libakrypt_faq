@@ -66,9 +66,9 @@
   hctx->key.oid = oid;
 
  /* устанавливаем ресурс ключа */
-  hctx->key.resource.type = key_using_resource;
-  hctx->key.resource.value.counter = ak_libakrypt_get_option( "hmac_key_count_resource" );
-
+  if(( error = ak_skey_context_set_resource( &hctx->key,
+                                key_using_resource, "hmac_key_count_resource" )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect assigning \"hmac_key_count_resource\" option" );
  return error;
 }
 

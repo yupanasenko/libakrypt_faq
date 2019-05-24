@@ -367,8 +367,9 @@
   };
 
  /* устанавливаем ресурс использования серетного ключа */
-  bkey->key.resource.type = block_counter_resource;
-  bkey->key.resource.value.counter = ak_libakrypt_get_option( "kuznechik_cipher_resource" );
+  if(( error = ak_skey_context_set_resource( &bkey->key,
+                            block_counter_resource, "kuznechik_cipher_resource" )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect assigning \"kuznechik_cipher_resource\" option" );
 
  /* устанавливаем методы */
   bkey->schedule_keys = ak_kuznechik_schedule_keys;

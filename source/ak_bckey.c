@@ -85,7 +85,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param bkey контекст ключа алгоритма блочного шифрованния
-    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    @return В случае успеха функция возввращает \ref ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_destroy( ak_bckey bkey )
@@ -154,7 +154,7 @@
     @param cflag Флаг владения данными. Если он истинен, то данные копируются в область памяти,
     которой владеет ключевой контекст.
 
-    @return Функция возвращает код ошибки. В случае успеха возвращается ak_error_ok (ноль).        */
+    @return Функция возвращает код ошибки. В случае успеха возвращается \ref ak_error_ok (ноль).   */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_set_key( ak_bckey bkey,
                                    const ak_pointer keyptr, const size_t size, const bool_t cflag )
@@ -173,7 +173,9 @@
     return ak_error_message( error, __func__ , "incorrect assigning of fixed key data" );
 
  /* выполняем развертку раундовых ключей */
-  if( bkey->schedule_keys != NULL ) bkey->schedule_keys( &bkey->key );
+  if( bkey->schedule_keys != NULL ) error = bkey->schedule_keys( &bkey->key );
+  if( error != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect execution of key scheduling procedure" );
 
  return error;
 }
@@ -189,7 +191,7 @@
     @param bkey Контекст ключа блочного алгоритма шифрования.
     @param generator Контекст генератора случайных (псевдослучайных) чисел.
 
-    @return Функция возвращает код ошибки. В случае успеха возвращается ak_error_ok.               */
+    @return Функция возвращает код ошибки. В случае успеха возвращается \ref ak_error_ok.          */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_set_key_random( ak_bckey bkey, ak_random generator )
 {
@@ -205,7 +207,9 @@
     return ak_error_message( error, __func__ , "incorrect assigning of random key data" );
 
  /* выполняем развертку раундовых ключей */
-  if( bkey->schedule_keys != NULL ) bkey->schedule_keys( &bkey->key );
+  if( bkey->schedule_keys != NULL ) error = bkey->schedule_keys( &bkey->key );
+  if( error != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect execution of key scheduling procedure" );
 
  return error;
 }
@@ -228,7 +232,7 @@
     @param salt Случайный вектор, представленный в виде строки символов.
     @param salt_size Длина случайного вектора в байтах
 
-    @return В случае успеха возвращается значение ak_error_ok. В противном случае
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_set_key_from_password( ak_bckey bkey, const ak_pointer pass,
@@ -245,8 +249,56 @@
     return ak_error_message( error, __func__ , "incorrect assigning for given password" );
 
  /* выполняем развертку раундовых ключей */
-  if( bkey->schedule_keys != NULL ) bkey->schedule_keys( &bkey->key );
+  if( bkey->schedule_keys != NULL ) error = bkey->schedule_keys( &bkey->key );
+  if( error != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect execution of key scheduling procedure" );
 
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param bkey Контекст создаваемого ключа.
+    @param rkey Контекст ключа, значение которого дублируется.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_bckey_context_create_and_set_bckey( ak_bckey bkey, ak_bckey rkey )
+{
+  int error = ak_error_ok;
+  if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                          "using null pointer to first block cipher key context" );
+  if( rkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                         "using null pointer to second block cipher key context" );
+
+  if(( error = ak_skey_context_create_and_set_skey( &bkey->key, &rkey->key )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect assigning of secret key" );
+
+ /* структура, хранящая синхропосылку инициализируется нулевым значением */
+  if(( error = ak_buffer_create( &bkey->ivector )) != ak_error_ok ) {
+    if( ak_skey_context_destroy( &bkey->key ) != ak_error_ok )
+      ak_error_message( ak_error_get_value(), __func__, "wrong destroying a secret key" );
+    return ak_error_message( error, __func__, "wrong memory allocation for temporary vector");
+  }
+
+ /* устанавливаем методы */
+  bkey->bsize = rkey->bsize;
+  bkey->encrypt = rkey->encrypt;
+  bkey->decrypt = rkey->decrypt;
+  bkey->schedule_keys = rkey->schedule_keys;
+  bkey->delete_keys = rkey->delete_keys;
+
+ /* выполняем развертку раундовых ключей */
+  if( bkey->schedule_keys != NULL ) error = bkey->schedule_keys( &bkey->key );
+  if( error != ak_error_ok ) {
+    ak_bckey_context_destroy( bkey );
+    return ak_error_message( error, __func__, "incorrect execution of key scheduling procedure" );
+  }
+ /* выполняем забытое: перемаскируем секретный ключ */
+  if(( error = bkey->key.set_mask( &bkey->key )) != ak_error_ok ) {
+    ak_bckey_context_destroy( bkey );
+    ak_error_message( error, __func__, "incorrect secret key remasking" );
+  }
  return error;
 }
 

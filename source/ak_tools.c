@@ -536,7 +536,7 @@
      }
      return ak_true;
    } else {
-       ak_error_message_fmt( error, __func__, "wrong options reading from %s file", name );
+         ak_error_message_fmt( error, __func__, "file %s exists, but contains invalid data", name );
        return ak_false;
      }
  }
@@ -599,10 +599,16 @@
   if( stat( filename, &st ) < 0 ) {
 #endif
     switch( errno ) {
-      case EACCES: return ak_error_message_fmt( ak_error_access_file, __func__,
+      case EACCES:
+        if( ak_log_get_level() >= ak_log_maximum )
+          ak_error_message_fmt( ak_error_access_file, __func__,
                                  "incorrect access to file %s [%s]", filename, strerror( errno ));
-      default: return ak_error_message_fmt( ak_error_open_file, __func__ ,
+        return ak_error_access_file;
+      default:
+        if( ak_log_get_level() >= ak_log_maximum )
+          ak_error_message_fmt( ak_error_open_file, __func__ ,
                                      "wrong opening a file %s [%s]", filename, strerror( errno ));
+        return ak_error_open_file;
     }
   }
 
