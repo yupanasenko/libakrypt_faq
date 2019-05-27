@@ -88,7 +88,12 @@
   printf("\n");
 
  /* первый раз шифруем  с помощью кузнечика*/
-  ak_bckey_context_ctr_acpkm( &key1, in1, in1, size1, section_size1, iv1, iv_size1 );
+  if(( error = ak_bckey_context_ctr_acpkm( &key1, in1, in1, size1,
+                                          section_size1, iv1, iv_size1 )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "encorrect acpkm encryption" );
+    goto lab_exit;
+  }
+
   printf("cipher text for kuznechik\n");
   for( i = 0; i < size1; i++ ) printf("%02X", in1[i] );
   printf("\n");
@@ -109,9 +114,10 @@
   if( !memcmp( out2, in2, size2)) printf(" Ok\n");
     else { printf(" Wrong\n"); error = EXIT_FAILURE; goto lab_exit; }
 
-  ak_bckey_context_destroy( &key1 );
-  ak_bckey_context_destroy( &key2 );
-  lab_exit: ak_libakrypt_destroy();
+  lab_exit:
+   ak_bckey_context_destroy( &key1 );
+   ak_bckey_context_destroy( &key2 );
+   ak_libakrypt_destroy();
 
   return error;
 }

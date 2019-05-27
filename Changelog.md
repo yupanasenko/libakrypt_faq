@@ -3,10 +3,13 @@
 
 ## Изменения в версии 0.7.13
 
- - Добавлен ряд функций для работы с контекстами секретных ключей:
-     ak_skey_context_set_resource()
-     ak_skey_context_create_and_set_skey()
-     ak_bckey_context_create_and_set_bckey()
+ - Добавлена реализация двух режимов работы блочных шифров:
+   * ACPKM для шифрования данных ( функция ak_bckey_context_ctr_acpkm() )
+   * OMAC-ACPKM для выработки имитовставки.
+ - Добавлен ряд служебных функций для работы с контекстами секретных ключей:
+   * ak_skey_context_set_resource()
+   * ak_skey_context_create_and_set_skey()
+   * ak_bckey_context_create_and_set_bckey()
  - Название функции гаммирования для блочных шифров приведено к виду, соответствующему тексту стандарта,
    а именно ak_bckey_context_ctr()
 

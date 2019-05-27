@@ -121,19 +121,16 @@
  /* выполняем стандартные проверки */
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer,
                                                  __func__ , "using a null pointer to secret key" );
-  if( skey->data == NULL ) return ak_error_message( ak_error_null_pointer,
-                                   __func__ , "using a null pointer to secret key internal data" );
- /* теперь очистка и освобождение памяти */
-  if(( error = ak_ptr_wipe( skey->data, sizeof( ak_kuznechik_expanded_keys ),
-                                                  &skey->generator, ak_true )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "incorrect wiping an internal data" );
-    memset( skey->data, 0, sizeof( ak_kuznechik_expanded_keys ));
-  }
   if( skey->data != NULL ) {
+   /* теперь очистка и освобождение памяти */
+    if(( error = ak_ptr_wipe( skey->data, sizeof( ak_kuznechik_expanded_keys ),
+                                                  &skey->generator, ak_true )) != ak_error_ok ) {
+      ak_error_message( error, __func__, "incorrect wiping an internal data" );
+      memset( skey->data, 0, sizeof( ak_kuznechik_expanded_keys ));
+    }
     free( skey->data );
     skey->data = NULL;
   }
-
  return error;
 }
 

@@ -71,7 +71,7 @@
     return error;
   }
   skey->data = NULL;
-  memset( &(skey->resource), 0, sizeof( union resource )); /* ресурс ключа не определен */
+  memset( &(skey->resource), 0, sizeof( struct resource )); /* ресурс ключа не определен */
 
  /* инициализируем генератор масок */
   if(( error = ak_random_context_create_xorshift32( &skey->generator )) != ak_error_ok ) {
@@ -500,7 +500,7 @@
   memcpy( skey->icode.data, rkey->icode.data, rkey->icode.size );
  /* копируем ресурс ключа */
   skey->resource.type = rkey->resource.type;
-  skey->resource.value = skey->resource.value;
+  skey->resource.value.counter = rkey->resource.value.counter;
 
  /* поскольку на уровне класса skey определить размер skey->data не представляется возможным,
         копирование внутренних данных должно реализовываться функциями классов - наследников */

@@ -592,7 +592,7 @@
  /* готовим область для хранения данных */
   block_size = ak_max( ( size_t )file.blksize, ictx->bsize );
  /* здесь мы выделяем локальный буффер для считывания/обработки данных */
-  if((localbuffer = ( ak_uint8 * ) malloc( block_size )) == NULL ) {
+  if((localbuffer = ( ak_uint8 * ) ak_libakrypt_aligned_malloc( block_size )) == NULL ) {
     ak_file_close( &file );
     ak_error_message( ak_error_out_of_memory, __func__ , "memory allocation error for local buffer" );
     return NULL;

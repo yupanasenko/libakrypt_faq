@@ -108,7 +108,7 @@
 
   bsize = ( size_t )in.blksize;
   printf(" one block size: %lu\n", (unsigned long int)(bsize));
-  buffer = malloc( bsize );
+  buffer = ak_libakrypt_aligned_malloc( bsize );
 
  /* теперь собственно зашифрование */
   time = clock();

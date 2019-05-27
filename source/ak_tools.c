@@ -114,9 +114,9 @@
   /* значение константы задает максимальный объем зашифрованной информации на одном ключе в 32 Mб:
                              2097152 блока x 16 байт на блок = 33.554.432 байт = 32768 Кб = 32 Mб  */
      { "kuznechik_cipher_resource", 2097152 },
-     { "ackpm_message_count", 4096 },
-     { "ackpm_section_magma_block_count", 128 },
-     { "ackpm_section_kuznechuk_block_count", 512 },
+     { "acpkm_message_count", 4096 },
+     { "acpkm_section_magma_block_count", 128 },
+     { "acpkm_section_kuznechik_block_count", 512 },
 
      { NULL, 0 } /* завершающая константа, должна всегда принимать нулевые значения */
  };
