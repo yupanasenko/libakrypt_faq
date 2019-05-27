@@ -38,6 +38,7 @@ option( LIBAKRYPT_NETWORK "Build library with network communications support" OF
 option( LIBAKRYPT_FIOT "Build library with FIOT protocol support" OFF )
 option( LIBAKRYPT_TLS_13 "Build library with TLS 1.3 protocol support" OFF )
 option( LIBAKRYPT_AKRYPT "Build console akrypt application" OFF )
+option( LIBAKRYPT_PKCS_15_CONTAINER "Build library with PKCS#15 container generating and parsing functions" ON )
 
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_FIOT )
@@ -160,6 +161,36 @@ if( LIBAKRYPT_FIOT )
                     source/ak_fiot_tlp.c
                     source/ak_fiot_kgp.c
   )
+  add_compile_options( -DLIBAKRYPT_FIOT=ON )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+if( LIBAKRYPT_PKCS_15_CONTAINER )
+  set( HEADERS      ${HEADERS}
+          source/kc_asn1_codec.h
+          source/kc_includes.h
+          source/kc_key_manager.h
+          source/kc_libakrypt.h
+          source/kc_pkcs_algs_and_prms.h
+          source/kc_pkcs_common_types.h
+          source/kc_pkcs_container.h
+          source/kc_pkcs_gost_secret_key.h
+          source/kc_pointer_server.h
+          source/kc_tools.h
+          source/kc_transform.h
+          )
+  set( SOURCES      ${SOURCES}
+          source/kc_asn1_read.c
+          source/kc_asn1_write.c
+          source/kc_key_manager.c
+          source/kc_libakrypt.c
+          source/kc_pkcs_common_types.c
+          source/kc_pkcs_container.c
+          source/kc_pkcs_gost_secret_key.c
+          source/kc_pointer_server.c
+          source/kc_tools.c
+          source/kc_transform.c
+          )
   add_compile_options( -DLIBAKRYPT_FIOT=ON )
 endif()
 
@@ -338,6 +369,11 @@ if( LIBAKRYPT_FIOT )
                  internal-fiot-echo-server
     )
   endif()
+endif()
+if( LIBAKRYPT_PKCS_15_CONTAINER )
+  set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
+          internal-pkcs-15-container
+          )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
