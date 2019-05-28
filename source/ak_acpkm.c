@@ -81,43 +81,6 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param bkey Контекст ключа алгоритма блочного шифрования.
-    @return В случае возникновения ошибки функция возвращает ее код, в противном случае
-    возвращается ak_error_ok (ноль)                                                                */
- /* ----------------------------------------------------------------------------------------------- */
- static int ak_acpkm( ak_bckey bkey )
-{
-  ak_uint8 acpkm_D[32] = {
-     0x9f, 0x9e, 0x9d, 0x9c, 0x9b, 0x9a, 0x99, 0x98, 0x97, 0x96, 0x95, 0x94, 0x93, 0x92, 0x91, 0x90,
-     0x8f, 0x8e, 0x8d, 0x8c, 0x8b, 0x8a, 0x89, 0x88, 0x87, 0x86, 0x85, 0x84, 0x83, 0x82, 0x81, 0x80
-};
-
-  bkey->key.unmask(&bkey->key);
-  ak_uint64 *new_key = bkey->key.key.alloc(bkey->key.key.size);
-  ak_uint64 *new_key_for_set = new_key;
-  ak_uint64 *D = (ak_uint64 *) acpkm_D;
-  for( size_t i=0; i < bkey->key.key.size; i+=bkey->bsize ) {
-    switch( bkey->bsize ) {
-      case  8: /* шифр с длиной блока 64 бита */
-        bkey->encrypt( &bkey->key, D++, new_key++ );
-        break;
-      case 16: /* шифр с длиной блока 128 бит */
-        bkey->encrypt( &bkey->key, D, new_key );
-        D += 2; new_key += 2;
-        break;
-      default: return ak_error_message( ak_error_wrong_block_cipher,
-                                            __func__ , "incorrect block size of block cipher key" );
-    }
-  }
-
-  if (ak_bckey_context_set_key(bkey, new_key_for_set, bkey->key.key.size, ak_true) != ak_error_ok)
-    return ak_error_message( ak_error_key_usage,
-                            __func__ , "can't replace key by new using acpkm" );
-  bkey->key.key.free(new_key_for_set);
-  return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_LITTLE_ENDIAN
   #define acpkm_block64 {\
               nkey.encrypt( &nkey.key, ctr, yaout );\
@@ -293,12 +256,54 @@
  return error;
 }
 
+#if 0
+ /* ----------------------------------------------------------------------------------------------- */
+ /*! @param bkey Контекст ключа алгоритма блочного шифрования.
+     @return В случае возникновения ошибки функция возвращает ее код, в противном случае
+     возвращается ak_error_ok (ноль)                                                                */
+  /* ----------------------------------------------------------------------------------------------- */
+  static int ak_acpkm( ak_bckey bkey )
+ {
+   ak_uint8 acpkm_D[32] = {
+      0x9f, 0x9e, 0x9d, 0x9c, 0x9b, 0x9a, 0x99, 0x98, 0x97, 0x96, 0x95, 0x94, 0x93, 0x92, 0x91, 0x90,
+      0x8f, 0x8e, 0x8d, 0x8c, 0x8b, 0x8a, 0x89, 0x88, 0x87, 0x86, 0x85, 0x84, 0x83, 0x82, 0x81, 0x80
+ };
+
+   size_t i;
+   ak_uint64 *new_key = bkey->key.key.alloc(bkey->key.key.size);
+   ak_uint64 *new_key_for_set = new_key;
+   ak_uint64 *D = (ak_uint64 *) acpkm_D;
+
+   bkey->key.unmask(&bkey->key);
+   for( i = 0; i < bkey->key.key.size; i+=bkey->bsize ) {
+     switch( bkey->bsize ) {
+       case  8: /* шифр с длиной блока 64 бита */
+         bkey->encrypt( &bkey->key, D++, new_key++ );
+         break;
+       case 16: /* шифр с длиной блока 128 бит */
+         bkey->encrypt( &bkey->key, D, new_key );
+         D += 2; new_key += 2;
+         break;
+       default: return ak_error_message( ak_error_wrong_block_cipher,
+                                             __func__ , "incorrect block size of block cipher key" );
+     }
+   }
+
+   if (ak_bckey_context_set_key(bkey, new_key_for_set, bkey->key.key.size, ak_true) != ak_error_ok)
+     return ak_error_message( ak_error_key_usage,
+                             __func__ , "can't replace key by new using acpkm" );
+   bkey->key.key.free(new_key_for_set);
+   return ak_error_ok;
+ }
+
+
 /* ----------------------------------------------------------------------------------------------- */
  static int ak_get_next_key( ak_bckey bkey, ak_uint64 ctr[2], ak_uint64 ki[4], ak_uint64 ki1[2], ak_uint64 *T, ak_uint64 Ts)
 {
+  ak_uint64 i;
   ak_uint64 blocks = 1 + (ak_uint64) bkey->key.key.size / bkey->bsize;
 
-  for(ak_uint64 i=0; i < blocks; ++i) {
+  for( i=0; i < blocks; ++i) {
     switch( bkey->bsize ) {
       case  8: /* шифр с длиной блока 64 бита */
         bkey->encrypt( &bkey->key, ctr, i+1 == blocks ? ki1 : ki + 3 - i );
@@ -465,6 +470,7 @@
 
  return ak_error_ok;
 }
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
  bool_t ak_bckey_test_acpkm( void )
@@ -581,7 +587,6 @@
 
  return ak_true;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_acpkm.c */
