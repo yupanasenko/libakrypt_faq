@@ -191,7 +191,7 @@ if( LIBAKRYPT_PKCS_15_CONTAINER )
           source/kc_tools.c
           source/kc_transform.c
           )
-  add_compile_options( -DLIBAKRYPT_FIOT=ON )
+  add_compile_options( -DLIBAKRYPT_PKCS_15_CONTAINER=ON )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
