@@ -84,7 +84,7 @@ int ps_set(s_ptr_server* p_ps, byte* from, size_t len, uint8_t mode)
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int ps_realloc(s_ptr_server* p_ps, uint32_t new_size)
+int ps_realloc(s_ptr_server* p_ps, size_t new_size)
 {
     size_t old_size;
     byte* p_new_mem;
@@ -123,7 +123,7 @@ int ps_realloc(s_ptr_server* p_ps, uint32_t new_size)
 /* ----------------------------------------------------------------------------------------------- */
 int ps_move_cursor(s_ptr_server* p_ps, size_t num)
 {
-    uint32_t free_size;
+    size_t free_size;
 
     if((!p_ps) || !p_ps->mp_begin)
         return 0;
@@ -143,10 +143,10 @@ int ps_move_cursor(s_ptr_server* p_ps, size_t num)
     }
     else
     {
-        free_size = (uint32_t)(p_ps->mp_curr - p_ps->mp_begin);
+        free_size = (size_t)(p_ps->mp_curr - p_ps->mp_begin);
 
         if (free_size < num)
-            ps_realloc(p_ps, (uint32_t)(ps_get_full_size(p_ps) * 1.5));
+            ps_realloc(p_ps, (size_t)(ps_get_full_size(p_ps) * 1.5));
 
         p_ps->mp_curr -= num;
     }
@@ -166,7 +166,7 @@ size_t ps_get_curr_size(s_ptr_server* p_ps)
         return 0;
 
     if(p_ps->m_mode == PS_R_MODE || p_ps->m_mode == PS_W_MODE)
-        return (uint32_t)(p_ps->mp_end - p_ps->mp_curr);
+        return (size_t)(p_ps->mp_end - p_ps->mp_curr);
     else
         return 0;
 }

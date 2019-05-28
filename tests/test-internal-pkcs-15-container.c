@@ -14,7 +14,7 @@ int gen_random_key(struct extended_key *p_kc_key, char *label, date sd, date ed,
 int main()
 {
     int error;
-    uint8_t i;
+    size_t i;
     struct extended_key* pp_kc_keys[2];
     struct extended_key** pp_kc_keys_from_container;
     ak_uint8 num_of_keys;
@@ -33,7 +33,6 @@ int main()
         pp_kc_keys[i] = malloc(sizeof(struct extended_key));
         gen_random_key(pp_kc_keys[i], key_label, start_date, end_date, flags);
     }
-    print_container_info(pp_kc_keys, sizeof(pp_kc_keys) / sizeof(pp_kc_keys[i]));
 
     /* Создаем контейнер */
     p_container_der = NULL;
@@ -43,7 +42,7 @@ int main()
 
     /* Выводим получившийся результат */
     printf("Container: ");
-    for (ak_uint32 i = 0; i < container_der_size; ++i)
+    for (i = 0; i < container_der_size; ++i)
     {
         printf("%02X ", p_container_der[i]);
     }

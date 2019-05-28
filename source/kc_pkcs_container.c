@@ -9,7 +9,7 @@ int pkcs_15_generate_token(s_pkcs_15_token *p_pkcs_15_token, byte **pp_data, siz
 
     int error = ak_error_ok;
     s_der_buffer pkcs_token_der;
-    ps_alloc(&pkcs_token_der, 512, PS_W_MODE);
+    ps_alloc(&pkcs_token_der, 2000, PS_W_MODE);
 
     s_der_buffer objects = {0};
     if(p_pkcs_15_token->mpp_pkcs_15_objects && p_pkcs_15_token->m_obj_size)

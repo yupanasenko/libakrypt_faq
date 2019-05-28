@@ -213,7 +213,8 @@ static int decrypt_content_enc_key(s_recipient_info* p_recipient_info, ak_skey p
         return ak_error_message(error, __func__, "problem with parsing CEK");
 
     /*TODO: комментарий для Алексея Юрьевича: здесь необходимо вызвать
-            фунцию расшифрования ключа CEK и сравнить имитовставку */
+            фунцию расшифрования ключа CEK и сравнить имитовставку.
+            Данные для расшифрования находятся в переменной encrypted_cek. */
 
     memcpy((byte*)p_cek->key.data, (byte*)encrypted_cek.data, encrypted_cek.size / 2);
     memcpy((byte*)p_cek->mask.data, (byte*)encrypted_cek.data + encrypted_cek.size / 2, encrypted_cek.size / 2);
