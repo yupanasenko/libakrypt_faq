@@ -1,7 +1,7 @@
 # Libakrypt
 
 Libakrypt is a free and open source library (crypto module) distributed under
-the MIT License. This library written in C11 and provides some interfaces for 
+the MIT License. This library written in C99 and provides some interfaces for
 key management, data encryption, integrity checking, signing messages and verifying
 of digital signatures. The main goal of Libakrypt is implementation a lot of Russian
 crypto mechanisms, decribed by national standards and methodological recomendations
