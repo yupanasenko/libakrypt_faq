@@ -24,8 +24,8 @@
 /* ----------------------------------------------------------------------------------------------- */
  void ak_gf64_mul_uint64( ak_pointer z, ak_pointer x, ak_pointer y )
 {
- int i = 0, n = 0;
- ak_uint64 zv = 0,
+ int i = 0;
+ ak_uint64 zv = 0, n1,
 #ifdef LIBAKRYPT_LITTLE_ENDIAN
    t = ((ak_uint64 *)y)[0], s = ((ak_uint64 *)x)[0];
 #else
@@ -35,9 +35,9 @@
 
    if( t&0x1 ) zv ^= s;
    t >>= 1;
-   n = ( s >> 63 );
+   n1 = s&0x8000000000000000LL;
    s <<= 1;
-   if( n ) s ^= 0x1B;
+   if( n1 ) s ^= 0x1B;
  }
 #ifdef LIBAKRYPT_LITTLE_ENDIAN
  ((ak_uint64 *)z)[0] = zv;
@@ -54,7 +54,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  void ak_gf128_mul_uint64( ak_pointer z, ak_pointer x, ak_pointer y )
 {
- int i = 0, n = 0;
+ int i = 0;
  ak_uint64 t,
 #ifdef LIBAKRYPT_LITTLE_ENDIAN
   s0 = ((ak_uint64 *)x)[0], s1 = ((ak_uint64 *)x)[1];
@@ -74,9 +74,7 @@
  for( i = 0; i < 64; i++ ) {
    if( t&0x1 ) { ((ak_uint64 *)z)[0] ^= s0; ((ak_uint64 *)z)[1] ^= s1; }
    t >>= 1;
-   n = s1 >> 63;
-   s1 <<= 1; s1 ^= ( s0 >> 63 ); s0 <<= 1;
-   if( n ) s0 ^= 0x87;
+   ak_gf128_mul_theta( s1, s0 );
  }
 
  /* вычисляем  произведение для старшей половины */
@@ -90,9 +88,7 @@
 
    if( t&0x1 ) { ((ak_uint64 *)z)[0] ^= s0; ((ak_uint64 *)z)[1] ^= s1; }
    t >>= 1;
-   n = s1 >> 63;
-   s1 <<= 1; s1 ^= ( s0 >> 63 ); s0 <<= 1;
-   if( n ) s0 ^= 0x87;
+   ak_gf128_mul_theta( s1, s0 );
  }
 
  if( t&0x1 ) {
@@ -289,6 +285,8 @@
     }
     x = y; y = z;
   }
+ if( ak_log_get_level() >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__, "one thousand iterations for random values is Ok");
 #endif
  return ak_true;
 }
@@ -389,6 +387,8 @@
      return ak_false;
    }
  }
+ if( ak_log_get_level() >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__, "one thousand iterations for random values is Ok");
 #endif
  return ak_true;
 }
