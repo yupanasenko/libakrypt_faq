@@ -847,7 +847,7 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
 
  /* устанавливаем ресурс использования серетного ключа */
   if(( error = ak_skey_context_set_resource( &bkey->key,
-                            block_counter_resource, "magma_cipher_resource" )) != ak_error_ok )
+                      block_counter_resource, "magma_cipher_resource", 0, 0 )) != ak_error_ok )
     ak_error_message( error, __func__, "incorrect assigning \"magma_cipher_resource\" option" );
 
  /* устанавливаем методы */

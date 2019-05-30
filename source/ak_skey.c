@@ -448,26 +448,64 @@
 
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \param skey Контекст секретного ключа.
-    \param type Тип присваиваемого ресурса.
-    \param option Строка с имененм опции, значение которой присваивается
+/*! Присвоение времени происходит следующим образом. Если `not_before` равно нулю, то
+    устанавливается текущее время. Если `not_after` равно нулю или меньше, чем `not_before`,
+    то временной интервал действия ключа устанавливается равным 365 дней.
+
+    \param skey Контекст секретного ключа.
+    \param not_before Время, начиная с которого ключ действителен. Значение, равное нулю,
+    означает, что будет установлено текущее время.
+    \param not_after Время, начиная с которого ключ недействителен.
     \return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_skey_context_set_resource( ak_skey skey, resource_t type, const char *option )
+ int ak_skey_context_set_resource_time( ak_skey skey, time_t not_before, time_t not_after )
+{
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using a null pointer to secret key" );
+ /* устанавливаем временной интервал */
+  if( not_before == 0 ) skey->resource.time.not_before = time( NULL );
+    else skey->resource.time.not_before = not_before;
+  if( not_after == 0 ) skey->resource.time.not_after = skey->resource.time.not_before + 31536000;
+    else {
+      if( not_after > skey->resource.time.not_before ) skey->resource.time.not_after = not_after;
+        else skey->resource.time.not_after = skey->resource.time.not_before + 31536000;
+    }
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Счетчику присваивается значение, определенное заданной опцией библиотеки.
+
+    Присвоение времени происходит следующим образом. Если `not_before` равно нулю, то
+    устанавливается текущее время. Если `not_after` равно нулю или меньше, чем `not_before`,
+    то временной интервал действия ключа устанавливается равным 365 дней.
+
+    \param skey Контекст секретного ключа.
+    \param type Тип присваиваемого ресурса.
+    \param option Строка с имененм опции, значение которой присваивается.
+    \param not_before Время, начиная с которого ключ действителен. Значение, равное нулю,
+    означает, что будет установлено текущее время.
+    \param not_after Время, начиная с которого ключ недействителен.
+    \return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_context_set_resource( ak_skey skey, counter_resource_t type, const char *option,
+                                                               time_t not_before, time_t not_after )
 {
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using a null pointer to secret key" );
   if( option == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                            "using a null pointer to option name" );
-  switch( skey->resource.type = type ) {
+  ak_skey_context_set_resource_time( skey, not_before, not_after );
+  switch( skey->resource.value.type = type ) {
     case block_counter_resource:
     case key_using_resource:
       if(( skey->resource.value.counter =
                   ak_libakrypt_get_option( option )) != ak_error_wrong_option ) return ak_error_ok;
         else return ak_error_wrong_option;
-    default: return ak_error_wrong_option;
   }
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -499,8 +537,7 @@
   memcpy( skey->mask.data, rkey->mask.data, rkey->mask.size );
   memcpy( skey->icode.data, rkey->icode.data, rkey->icode.size );
  /* копируем ресурс ключа */
-  skey->resource.type = rkey->resource.type;
-  skey->resource.value.counter = rkey->resource.value.counter;
+  memcpy( &skey->resource, &rkey->resource, sizeof( struct resource ));
 
  /* поскольку на уровне класса skey определить размер skey->data не представляется возможным,
         копирование внутренних данных должно реализовываться функциями классов - наследников */
@@ -618,11 +655,11 @@
                                                 "using a null pointer to random number generator" );
  /* присваиваем случайный ключ и случайную маску
     тем самым точное значение ключа ни как не фигурирует */
-  if(( error =
-            ak_random_context_random( generator, skey->key.data, skey->key.size )) != ak_error_ok )
+  if(( error = ak_random_context_random( generator, skey->key.data,
+                                                     ( ssize_t ) skey->key.size )) != ak_error_ok )
     return ak_error_message( error, __func__ , "wrong generation a secret key" );
-  if(( error =
-          ak_random_context_random( generator, skey->mask.data, skey->mask.size )) != ak_error_ok )
+  if(( error = ak_random_context_random( generator, skey->mask.data,
+                                                    ( ssize_t ) skey->mask.size )) != ak_error_ok )
     return ak_error_message( error, __func__ , "wrong generation a mask" );
 
  /* меняем значение флага на установленное */

@@ -365,7 +365,7 @@
 
  /* устанавливаем ресурс использования серетного ключа */
   if(( error = ak_skey_context_set_resource( &bkey->key,
-                            block_counter_resource, "kuznechik_cipher_resource" )) != ak_error_ok )
+                      block_counter_resource, "kuznechik_cipher_resource", 0, 0 )) != ak_error_ok )
     ak_error_message( error, __func__, "incorrect assigning \"kuznechik_cipher_resource\" option" );
 
  /* устанавливаем методы */

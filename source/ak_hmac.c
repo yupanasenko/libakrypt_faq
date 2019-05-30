@@ -67,7 +67,7 @@
 
  /* устанавливаем ресурс ключа */
   if(( error = ak_skey_context_set_resource( &hctx->key,
-                                key_using_resource, "hmac_key_count_resource" )) != ak_error_ok )
+                          key_using_resource, "hmac_key_count_resource", 0, 0 )) != ak_error_ok )
     ak_error_message( error, __func__, "incorrect assigning \"hmac_key_count_resource\" option" );
  return error;
 }
