@@ -63,8 +63,8 @@
    эллиптические кривые, регламентированные рекомендациями по стандартизации
    [Р 50.1.114-2016](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-50-1-114-2016-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-parametry-ellipticheskikh-krivykh-dlya-kriptograficheskikh-algoritmov-i-protokolov.html).
 
-11. Процедуры выработки и проверки электронной подписи, регламентированные
-   стандартом [ГОСТ Р 34.10-2012](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-10-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-protsessy-formirovaniya-i-proverki-elektronnoy-tsifrovoy-podpisi.html).
+11. Процедуры выработки и проверки электронной подписи, регламентированные стандартом
+ [ГОСТ Р 34.10-2012](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-10-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-protsessy-formirovaniya-i-proverki-elektronnoy-tsifrovoy-podpisi.html).
 
 ## Платформы и компиляторы
 

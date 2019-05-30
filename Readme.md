@@ -69,4 +69,3 @@ in `doc` directory or libakrypt-doc-0.x.pdf (in russian).
 
 Since this version still under development we don't recomended to use it
 in real security applications.
-
