@@ -2,14 +2,23 @@
 
 int pkcs_15_generate_token(s_pkcs_15_token* p_pkcs_15_token, byte** pp_data, size_t* p_size)
 {
+    int error;
+    s_der_buffer pkcs_token_der;
+    s_der_buffer objects;
+    s_der_buffer key_management_info;
+    s_der_buffer token_ver;
+    size_t token_len;
+
+    memset(&pkcs_token_der, 0, sizeof(s_der_buffer));
+    memset(&objects, 0, sizeof(s_der_buffer));
+    memset(&key_management_info, 0, sizeof(s_der_buffer));
+    memset(&token_ver, 0, sizeof(s_der_buffer));
+
     if (!p_pkcs_15_token || !pp_data || !p_size)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-    s_der_buffer pkcs_token_der;
     ps_alloc(&pkcs_token_der, 2000, PS_W_MODE);
 
-    s_der_buffer objects = {0};
     if (p_pkcs_15_token->mpp_pkcs_15_objects && p_pkcs_15_token->m_obj_size)
     {
         if ((error = pkcs_15_put_pkcs_objects(&pkcs_token_der,
@@ -21,7 +30,7 @@ int pkcs_15_generate_token(s_pkcs_15_token* p_pkcs_15_token, byte** pp_data, siz
     else
         return ak_error_message(ak_error_invalid_value, __func__, "objects absent");
 
-    s_der_buffer key_management_info = {0};
+
     if (p_pkcs_15_token->m_info_size!=0)
     {
         size_t key_management_info_len = 0;
@@ -59,13 +68,11 @@ int pkcs_15_generate_token(s_pkcs_15_token* p_pkcs_15_token, byte** pp_data, siz
         }
     }
 
-    s_der_buffer token_ver = {0};
-
     if ((error = asn_put_universal_tlv(TINTEGER, (void*) &p_pkcs_15_token->m_version, 0, &pkcs_token_der, &token_ver))
             !=ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding token version");
 
-    size_t token_len = ps_get_full_size(&objects)+
+    token_len = ps_get_full_size(&objects)+
             ps_get_full_size(&key_management_info)+
             ps_get_full_size(&token_ver);
 
@@ -84,12 +91,14 @@ int pkcs_15_generate_token(s_pkcs_15_token* p_pkcs_15_token, byte** pp_data, siz
 int pkcs_15_put_pkcs_objects(s_der_buffer* p_pkcs_15_token, s_pkcs_15_object** pp_pkcs_15_objects, int8_t size,
         s_der_buffer* p_pkcs_15_object_der)
 {
+    int error;
+    size_t objects_len;
+
     if (!p_pkcs_15_token || !pp_pkcs_15_objects || !size || !p_pkcs_15_object_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
 
-    size_t objects_len = 0;
+    objects_len = 0;
     for (int8_t i = 0; i<size; i++)
     {
         if (!pp_pkcs_15_objects[i])
@@ -112,16 +121,20 @@ int pkcs_15_put_obj(s_der_buffer* p_pkcs_15_token,
         s_pkcs_15_object* p_pkcs_15_object,
         s_der_buffer* p_added_pkcs_15_object_der)
 {
+    int error;
+    s_der_buffer direct_object;
+    size_t direct_object_len;
+
+    memset(&direct_object, 0, sizeof(s_der_buffer));
+
     if (!p_pkcs_15_token || !p_pkcs_15_object || !p_added_pkcs_15_object_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
 
-    s_der_buffer direct_object = {0};
     if ((error = pkcs_15_put_obj_direct(p_pkcs_15_token, p_pkcs_15_object, &direct_object))!=ak_error_ok)
         return ak_error_message(error, __func__, "problems with adding object direct");
 
-    size_t direct_object_len = ps_get_full_size(&direct_object);
+    direct_object_len = ps_get_full_size(&direct_object);
     if ((error = ps_move_cursor(p_pkcs_15_token, asn_get_len_byte_cnt(direct_object_len)+1))!=ak_error_ok)
         return ak_error_message(error, __func__, "problems with moving cursor");
 
@@ -150,12 +163,16 @@ int pkcs_15_put_obj_direct(s_der_buffer* p_pkcs_15_token,
         s_pkcs_15_object* p_pkcs_15_object,
         s_der_buffer* p_direct_pkcs_15_object_der)
 {
+    int error;
+    s_der_buffer gost_key;
+    size_t gost_key_len;
+
+    memset(&gost_key, 0, sizeof(s_der_buffer));
+
     if (!p_pkcs_15_token || !p_pkcs_15_object || !p_direct_pkcs_15_object_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
 
-    s_der_buffer gost_key = {0};
     switch (p_pkcs_15_object->m_type)
     {
     case SEC_KEY:
@@ -167,7 +184,7 @@ int pkcs_15_put_obj_direct(s_der_buffer* p_pkcs_15_token,
     default:return ak_error_message(ak_error_invalid_value, __func__, "unknown type of object");
     }
 
-    size_t gost_key_len = (size_t) ps_get_full_size(&gost_key);
+    gost_key_len = (size_t) ps_get_full_size(&gost_key);
 
     if ((error = ps_move_cursor(p_pkcs_15_token, asn_get_len_byte_cnt(gost_key_len)+1))!=ak_error_ok)
         return ak_error_message(error, __func__, "problems with moving cursor");
@@ -187,15 +204,20 @@ int pkcs_15_put_obj_direct(s_der_buffer* p_pkcs_15_token,
 int pkcs_15_put_key_management_info(s_der_buffer* p_pkcs_15_token, s_key_management_info* p_key_management_info,
         s_der_buffer* p_key_management_info_der)
 {
+    int error = ak_error_ok;
+    s_der_buffer key_info;
+    s_der_buffer key_id;
+
+    memset(&key_info, 0, sizeof(s_der_buffer));
+    memset(&key_id, 0, sizeof(s_der_buffer));
+
     if (!p_pkcs_15_token || !p_key_management_info || !p_key_management_info_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
     if (p_key_management_info->m_key_id.m_val_len>255)
         return ak_error_message(ak_error_wrong_length, __func__, "key id length can't be more than 255 bytes");
 
-    int error = ak_error_ok;
 
-    s_der_buffer key_info = {0};
     switch (p_key_management_info->m_type)
     {
     case PWD_INFO:
@@ -214,10 +236,8 @@ int pkcs_15_put_key_management_info(s_der_buffer* p_pkcs_15_token, s_key_managem
                 "adding pwri into key management info does not realized yet");
     }
 
-    s_der_buffer key_id = {0};
 
-    if ((error =
-                 asn_put_universal_tlv(TOCTET_STRING, (void*) &p_key_management_info->m_key_id, 0, p_pkcs_15_token,
+    if ((error = asn_put_universal_tlv(TOCTET_STRING, (void*) &p_key_management_info->m_key_id, 0, p_pkcs_15_token,
                          &key_id))
             !=ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding key id");
@@ -234,16 +254,23 @@ int pkcs_15_put_key_management_info(s_der_buffer* p_pkcs_15_token, s_key_managem
 
 int pkcs_15_put_password_info(s_der_buffer* p_pkcs_15_token, s_pwd_info* p_pwd_info, s_der_buffer* p_pwd_info_der)
 {
+    int error;
+    s_der_buffer alg_id;
+    s_der_buffer hint;
+    size_t password_info_len;
+
+    memset(&alg_id, 0, sizeof(s_der_buffer));
+    memset(&hint, 0, sizeof(s_der_buffer));
+
     if (!p_pkcs_15_token || !p_pwd_info || !p_pwd_info_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
 
-    s_der_buffer alg_id = {0};
+
     if ((error = pkcs_15_put_alg_id(p_pkcs_15_token, p_pwd_info, &alg_id))!=ak_error_ok)
         return ak_error_message(error, __func__, "problems with adding algorithm id");
 
-    s_der_buffer hint = {0};
+
     if (p_pwd_info->m_hint!=NULL)
     {
         if ((error = asn_put_universal_tlv(TUTF8_STRING, (void*) &p_pwd_info->m_hint, 0, p_pkcs_15_token, &hint))
@@ -251,7 +278,7 @@ int pkcs_15_put_password_info(s_der_buffer* p_pkcs_15_token, s_pwd_info* p_pwd_i
             return ak_error_message(error, __func__, "problem with adding password hint");
     }
 
-    size_t password_info_len = ps_get_full_size(&alg_id)+ps_get_full_size(&hint);
+    password_info_len = ps_get_full_size(&alg_id)+ps_get_full_size(&hint);
 
     if ((error = ps_move_cursor(p_pkcs_15_token, asn_get_len_byte_cnt(password_info_len)+1))!=ak_error_ok)
         return ak_error_message(error, __func__, "problems with moving cursor");
@@ -272,15 +299,21 @@ int pkcs_15_put_password_info(s_der_buffer* p_pkcs_15_token, s_pwd_info* p_pwd_i
 
 int pkcs_15_put_alg_id(s_der_buffer* p_pkcs_15_token, s_pwd_info* p_pwd_info, s_der_buffer* p_alg_id_der)
 {
+    int error;
+    s_der_buffer params_pbkdf2;
+    s_der_buffer algorithm;
+    size_t alg_id_len;
+
+    memset(&params_pbkdf2, 0, sizeof(s_der_buffer));
+    memset(&algorithm, 0, sizeof(s_der_buffer));
+
     if (!p_pkcs_15_token || !p_pwd_info || !p_alg_id_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
     if (!p_pwd_info->m_algorithm)
         return ak_error_message(ak_error_null_pointer, __func__, "algorithm oid absent");
 
-    int error = ak_error_ok;
 
-    s_der_buffer params_pbkdf2 = {0};
     if (p_pwd_info->m_salt.mp_value!=NULL)
     {
         if ((error = pkcs_15_put_params_pbkdf2(p_pkcs_15_token, p_pwd_info, &params_pbkdf2))!=ak_error_ok)
@@ -300,14 +333,13 @@ int pkcs_15_put_alg_id(s_der_buffer* p_pkcs_15_token, s_pwd_info* p_pwd_info, s_
                 p_pwd_info->m_prf_id,
                 "1.2.840.113549.1.5.12");
 
-    s_der_buffer algorithm = {0};
     if ((error =
                  asn_put_universal_tlv(TOBJECT_IDENTIFIER, (void*) &p_pwd_info->m_algorithm, 0, p_pkcs_15_token,
                          &algorithm))
             !=ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding algorithm oid");
 
-    size_t alg_id_len = ps_get_full_size(&params_pbkdf2)+ps_get_full_size(&algorithm);
+    alg_id_len = ps_get_full_size(&params_pbkdf2)+ps_get_full_size(&algorithm);
     if ((error = asn_put_universal_tlv(TSEQUENCE, 0, alg_id_len, p_pkcs_15_token, p_alg_id_der))!=ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding sequence tag and length");
 
@@ -316,6 +348,19 @@ int pkcs_15_put_alg_id(s_der_buffer* p_pkcs_15_token, s_pwd_info* p_pwd_info, s_
 
 int pkcs_15_put_params_pbkdf2(s_der_buffer* p_pkcs_15_token, s_pwd_info* p_pwd_info, s_der_buffer* p_parameters_der)
 {
+    int error = ak_error_ok;
+    s_der_buffer prf = {0};
+    s_der_buffer key_length = {0};
+    s_der_buffer iteration_count = {0};
+    s_der_buffer salt = {0};
+    size_t parameters_len;
+
+    memset(&prf, 0, sizeof(s_der_buffer));
+    memset(&key_length, 0, sizeof(s_der_buffer));
+    memset(&iteration_count, 0, sizeof(s_der_buffer));
+    memset(&salt, 0, sizeof(s_der_buffer));
+
+
     if (!p_pkcs_15_token || !p_pwd_info || !p_parameters_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
@@ -327,9 +372,6 @@ int pkcs_15_put_params_pbkdf2(s_der_buffer* p_pkcs_15_token, s_pwd_info* p_pwd_i
 
     if (!p_pwd_info->m_prf_id)
         return ak_error_message(ak_error_null_pointer, __func__, "prf oid absent");
-
-    s_der_buffer prf = {0};
-    int error = ak_error_ok;
 
     /*
      * При выработке ключа по схеме PBKDF2
@@ -359,7 +401,7 @@ int pkcs_15_put_params_pbkdf2(s_der_buffer* p_pkcs_15_token, s_pwd_info* p_pwd_i
 
     }
 
-    s_der_buffer key_length = {0};
+
     if (p_pwd_info->m_key_len.mp_value!=NULL)
     {
         if ((error = asn_put_universal_tlv(TINTEGER, (void*) &p_pwd_info->m_key_len, 0, p_pkcs_15_token, &key_length))
@@ -367,7 +409,7 @@ int pkcs_15_put_params_pbkdf2(s_der_buffer* p_pkcs_15_token, s_pwd_info* p_pwd_i
             return ak_error_message(error, __func__, "problem with adding key length");
     }
 
-    s_der_buffer iteration_count = {0};
+
     if ((error = asn_put_universal_tlv(TINTEGER,
             (void*) &p_pwd_info->m_iteration_count,
             0,
@@ -379,12 +421,12 @@ int pkcs_15_put_params_pbkdf2(s_der_buffer* p_pkcs_15_token, s_pwd_info* p_pwd_i
      * Значение соли всегда представляется
      * в виде строки октетов
      */
-    s_der_buffer salt = {0};
+
     if ((error = asn_put_universal_tlv(TOCTET_STRING, (void*) &p_pwd_info->m_salt, 0, p_pkcs_15_token, &salt))
             !=ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding salt");
 
-    size_t parameters_len = ps_get_full_size(&prf)+
+    parameters_len = ps_get_full_size(&prf)+
             ps_get_full_size(&key_length)+
             ps_get_full_size(&iteration_count)+
             ps_get_full_size(&salt);
@@ -404,13 +446,21 @@ int pkcs_15_put_params_pbkdf2(s_der_buffer* p_pkcs_15_token, s_pwd_info* p_pwd_i
 
 int pkcs_15_parse_token(byte* p_data, size_t size, s_pkcs_15_token* p_pkcs_15_token)
 {
+    int error;
+    tag tag;
+    size_t len;
+    uint8_t len_byte_cnt;
+    s_der_buffer token;
+
+    tag = 0;
+    len = 0;
+    len_byte_cnt = 0;
+    memset(&token, 0, sizeof(s_der_buffer));
+
+
     if (!p_data || !size || !p_pkcs_15_token)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-    tag tag = 0;
-    size_t len = 0;
-    uint8_t len_byte_cnt = 0;
     asn_get_tag(p_data, &tag);
     if (tag!=(CONSTRUCTED | TSEQUENCE))
         return ak_error_invalid_token;
@@ -418,7 +468,6 @@ int pkcs_15_parse_token(byte* p_data, size_t size, s_pkcs_15_token* p_pkcs_15_to
     if ((error = asn_get_len(p_data+1, &len, &len_byte_cnt))!=ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting data length");
 
-    s_der_buffer token = {0};
     if ((error = ps_set(&token, p_data+1+len_byte_cnt, len, PS_R_MODE))!=ak_error_ok)
         return ak_error_message(error, __func__, "problems with setting pointer server");
 
@@ -443,12 +492,16 @@ int pkcs_15_parse_token(byte* p_data, size_t size, s_pkcs_15_token* p_pkcs_15_to
 
 int pkcs_15_get_key_management_info(s_der_buffer* p_pkcs_15_token_der, s_pkcs_15_token* p_pkcs_15_token)
 {
+    int error;
+    uint8_t num_of_kmi_objs;
+    s_der_buffer key_management_info;
+
+    num_of_kmi_objs = 0;
+    memset(&key_management_info, 0, sizeof(s_der_buffer));
+
     if (!p_pkcs_15_token_der || !p_pkcs_15_token)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-    uint8_t num_of_kmi_objs = 0;
-    s_der_buffer key_management_info = {0};
 
     if ((error = asn_get_expected_tlv((CONTEXT_SPECIFIC | CONSTRUCTED | 0u), p_pkcs_15_token_der,
             (void*) &key_management_info))!=ak_error_ok)
@@ -476,18 +529,26 @@ int pkcs_15_get_key_management_info(s_der_buffer* p_pkcs_15_token_der, s_pkcs_15
 
 int pkcs_15_get_sngl_kmi(s_der_buffer* p_key_management_info_der, s_pkcs_15_token* p_pkcs_15_token)
 {
+    int error;
+    tag tag;
+    size_t len;
+    uint8_t len_byte_cnt;
+    s_key_management_info* p_sngl_kmi;
+    s_der_buffer sngl_info;
+
+    tag = 0;
+    len = 0;
+    len_byte_cnt = 0;
+    memset(&sngl_info, 0, sizeof(s_der_buffer));
+
+
     if (!p_key_management_info_der || !p_pkcs_15_token)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-    tag tag = 0;
-    size_t len = 0;
-    uint8_t len_byte_cnt = 0;
-    s_key_management_info* p_sngl_kmi = calloc(1, sizeof(s_key_management_info));
+    p_sngl_kmi = calloc(1, sizeof(s_key_management_info));
     if (!p_sngl_kmi)
         return ak_error_message(ak_error_out_of_memory, __func__, "alloc memory fail");
 
-    s_der_buffer sngl_info = {0};
     if ((error = asn_get_expected_tlv((CONSTRUCTED | TSEQUENCE), p_key_management_info_der, (void*) &sngl_info))
             !=ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting single key management info in der");
@@ -542,12 +603,15 @@ int pkcs_15_get_sngl_kmi(s_der_buffer* p_key_management_info_der, s_pkcs_15_toke
 
 int pkcs_15_get_password_info(s_der_buffer* p_sngl_kmi_der, s_pwd_info* p_pwd_info)
 {
+    int error;
+    tag tag;
+    s_der_buffer pwd_info;
+
+    tag = 0;
+
     if (!p_sngl_kmi_der || !p_pwd_info)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-    tag tag = 0;
-    s_der_buffer pwd_info;
     memset(&pwd_info, 0, sizeof(s_der_buffer));
     if ((error = asn_get_expected_tlv((CONTEXT_SPECIFIC | CONSTRUCTED | PWD_INFO), p_sngl_kmi_der, (void*) &pwd_info))
             !=ak_error_ok)
@@ -572,12 +636,15 @@ int pkcs_15_get_password_info(s_der_buffer* p_sngl_kmi_der, s_pwd_info* p_pwd_in
 
 int pkcs_15_get_alg_id(s_der_buffer* p_pwd_info_der, s_pwd_info* p_pwd_info)
 {
+    int error = ak_error_ok;
+    s_der_buffer alg_id;
+
+    memset(&alg_id, 0, sizeof(s_der_buffer));
+
+
     if (!p_pwd_info_der || !p_pwd_info)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-
-    s_der_buffer alg_id = {0};
     if ((error = asn_get_expected_tlv((CONSTRUCTED | TSEQUENCE), p_pwd_info_der, (void*) &alg_id))!=ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting algorithm id in der");
 
@@ -598,13 +665,19 @@ int pkcs_15_get_alg_id(s_der_buffer* p_pwd_info_der, s_pwd_info* p_pwd_info)
 
 int pkcs_15_get_params_pbkdf2(s_der_buffer* p_alg_id_der, s_pwd_info* p_pwd_info)
 {
+    int error;
+    tag tag = 0;
+    s_der_buffer pbkdf2_prms;
+    s_der_buffer prf_der;
+
+    tag = 0;
+    memset(&pbkdf2_prms, 0, sizeof(s_der_buffer));
+    memset(&prf_der , 0, sizeof(s_der_buffer));
+
     if (!p_alg_id_der || !p_pwd_info)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-    tag tag = 0;
 
-    s_der_buffer pbkdf2_prms = {0};
     if ((error = asn_get_expected_tlv((CONSTRUCTED | TSEQUENCE), p_alg_id_der, (void*) &pbkdf2_prms))!=ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting PBKDF2 parameters in der");
 
@@ -622,7 +695,6 @@ int pkcs_15_get_params_pbkdf2(s_der_buffer* p_alg_id_der, s_pwd_info* p_pwd_info
             return ak_error_message(error, __func__, "problems with getting key length");
     }
 
-    s_der_buffer prf_der = {0};
     if ((error = asn_get_expected_tlv((CONSTRUCTED | TSEQUENCE), &pbkdf2_prms, (void*) &prf_der))!=ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting prf in der");
 
@@ -640,12 +712,17 @@ int pkcs_15_get_params_pbkdf2(s_der_buffer* p_alg_id_der, s_pwd_info* p_pwd_info
 
 int pkcs_15_get_pkcs_objects(s_der_buffer* p_pkcs_15_token_der, s_pkcs_15_token* p_pkcs_15_token)
 {
+    int error;
+    s_der_buffer pkcs_15_objects;
+    uint8_t num_of_pkcs_15_objects;
+
+    memset(&pkcs_15_objects , 0, sizeof(s_der_buffer));
+    num_of_pkcs_15_objects = 0;
+
+
     if (!p_pkcs_15_token_der || !p_pkcs_15_token)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-    s_der_buffer pkcs_15_objects = {0};
-    uint8_t num_of_pkcs_15_objects = 0;
 
     if ((error = asn_get_expected_tlv((CONSTRUCTED | TSEQUENCE), p_pkcs_15_token_der, (void*) &pkcs_15_objects))
             !=ak_error_ok)
@@ -675,14 +752,21 @@ int pkcs_15_get_pkcs_objects(s_der_buffer* p_pkcs_15_token_der, s_pkcs_15_token*
 
 int pkcs_15_get_obj(s_der_buffer* p_pkcs_15_objects_der, s_pkcs_15_object* p_pkcs_15_object)
 {
+    int error;
+    tag tag;
+    size_t len;
+    uint8_t len_byte_cnt;
+    s_der_buffer pkcs_15_sngl_object_der;
+
+    tag = 0;
+    len = 0;
+    len_byte_cnt = 0;
+    memset(&pkcs_15_sngl_object_der , 0, sizeof(s_der_buffer));
+
+
     if (!p_pkcs_15_objects_der || !p_pkcs_15_object)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-    tag tag = 0;
-    size_t len = 0;
-    uint8_t len_byte_cnt = 0;
-    s_der_buffer pkcs_15_sngl_object_der = {0};
 
     asn_get_tag(p_pkcs_15_objects_der->mp_curr, &tag);
     switch (tag)
@@ -739,14 +823,19 @@ int pkcs_15_get_obj(s_der_buffer* p_pkcs_15_objects_der, s_pkcs_15_object* p_pkc
 
     return error;
 }
+
 int pkcs_15_get_direct_obj(s_der_buffer* p_pkcs_15_object_der, s_pkcs_15_object* p_pkcs_15_object)
 {
+    int error;
+    tag tag;
+    s_der_buffer direct_object_der;
+
+    tag = 0;
+    memset(&direct_object_der , 0, sizeof(s_der_buffer));
+
     if (!p_pkcs_15_object_der || !p_pkcs_15_object)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-    tag tag = 0;
-    s_der_buffer direct_object_der = {0};
 
     if ((error = asn_get_expected_tlv((CONTEXT_SPECIFIC | CONSTRUCTED | 0u),
             p_pkcs_15_object_der,

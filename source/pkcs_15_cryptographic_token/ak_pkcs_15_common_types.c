@@ -55,11 +55,18 @@ int pkcs_15_put_object_direct_protected(s_der_buffer* p_pkcs_15_token,
 int pkcs_15_put_common_object_attributes(s_der_buffer* p_pkcs_15_token, s_common_obj_attrs* p_obj_attrs,
         s_der_buffer* p_common_object_attributes_der)
 {
+    int error;
+    s_der_buffer flags;
+    s_der_buffer label;
+    size_t common_object_attributes_len;
+
+    memset(&flags, 0, sizeof(s_der_buffer));
+    memset(&label, 0, sizeof(s_der_buffer));
+
     if (!p_pkcs_15_token || !p_obj_attrs || !p_common_object_attributes_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    s_der_buffer flags = {0};
-    int error = ak_error_ok;
+    error = ak_error_ok;
     if (p_obj_attrs->m_flags.mp_value!=NULL)
     {
         if ((error = asn_put_universal_tlv(TBIT_STRING, (void*) &p_obj_attrs->m_flags, 0, p_pkcs_15_token, &flags))
@@ -67,7 +74,6 @@ int pkcs_15_put_common_object_attributes(s_der_buffer* p_pkcs_15_token, s_common
             return ak_error_message(error, __func__, "problem with adding common object flags");
     }
 
-    s_der_buffer label = {0};
     if (p_obj_attrs->m_label!=NULL)
     {
         if ((error = asn_put_universal_tlv(TUTF8_STRING, (void*) &p_obj_attrs->m_label, 0, p_pkcs_15_token, &label))
@@ -75,7 +81,7 @@ int pkcs_15_put_common_object_attributes(s_der_buffer* p_pkcs_15_token, s_common
             return ak_error_message(error, __func__, "problem with adding object label");
     }
 
-    size_t common_object_attributes_len = ps_get_full_size(&label)+ps_get_full_size(&flags);
+    common_object_attributes_len = ps_get_full_size(&label)+ps_get_full_size(&flags);
     if (common_object_attributes_len)
     {
         if ((error = asn_put_universal_tlv(TSEQUENCE,
@@ -95,11 +101,28 @@ int pkcs_15_put_common_object_attributes(s_der_buffer* p_pkcs_15_token, s_common
 int pkcs_15_put_common_key_attributes(s_der_buffer* p_pkcs_15_token, s_common_key_attrs* p_key_attrs,
         s_der_buffer* p_common_key_attributes_der)
 {
+    int error;
+    s_der_buffer end_date;
+    s_der_buffer start_date;
+    s_der_buffer key_reference;
+    s_der_buffer access_flags;
+    s_der_buffer native;
+    s_der_buffer usage;
+    s_der_buffer id;
+    size_t common_key_attributes_len;
+
+    memset(&end_date , 0, sizeof(s_der_buffer));
+    memset(&start_date , 0, sizeof(s_der_buffer));
+    memset(&key_reference , 0, sizeof(s_der_buffer));
+    memset(&access_flags , 0, sizeof(s_der_buffer));
+    memset(&native , 0, sizeof(s_der_buffer));
+    memset(&usage , 0, sizeof(s_der_buffer));
+    memset(&id , 0, sizeof(s_der_buffer));
+
+
     if (!p_pkcs_15_token || !p_key_attrs || !p_common_key_attributes_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    s_der_buffer end_date = {0};
-    int error = ak_error_ok;
     if (p_key_attrs->m_end_date)
     {
         uint8_t end_date_len = (uint8_t) asn_get_gentime_byte_cnt(p_key_attrs->m_end_date);
@@ -122,7 +145,6 @@ int pkcs_15_put_common_key_attributes(s_der_buffer* p_pkcs_15_token, s_common_ke
             return ak_error_message(error, __func__, "problems with making union of asn data");
     }
 
-    s_der_buffer start_date = {0};
     if (p_key_attrs->m_start_date)
     {
         if ((error = asn_put_universal_tlv(TGENERALIZED_TIME,
@@ -133,7 +155,6 @@ int pkcs_15_put_common_key_attributes(s_der_buffer* p_pkcs_15_token, s_common_ke
             return ak_error_message(error, __func__, "problem with adding key start date");
     }
 
-    s_der_buffer key_reference = {0};
     if (p_key_attrs->m_key_reference.mp_value)
     {
         if ((error = asn_put_universal_tlv(TINTEGER,
@@ -144,7 +165,6 @@ int pkcs_15_put_common_key_attributes(s_der_buffer* p_pkcs_15_token, s_common_ke
             return ak_error_message(error, __func__, "problem with adding key reference");
     }
 
-    s_der_buffer access_flags = {0};
     if (p_key_attrs->m_access_flags.mp_value)
     {
         if ((error = asn_put_universal_tlv(TBIT_STRING,
@@ -155,7 +175,6 @@ int pkcs_15_put_common_key_attributes(s_der_buffer* p_pkcs_15_token, s_common_ke
             return ak_error_message(error, __func__, "problem with adding key access flags");
     }
 
-    s_der_buffer native = {0};
     if (!p_key_attrs->m_native)
     {
         if ((error = asn_put_universal_tlv(TBOOLEAN, (void*) &p_key_attrs->m_native, 0, p_pkcs_15_token, &native))
@@ -163,7 +182,6 @@ int pkcs_15_put_common_key_attributes(s_der_buffer* p_pkcs_15_token, s_common_ke
             return ak_error_message(error, __func__, "problem with adding key native attribute");
     }
 
-    s_der_buffer usage = {0};
     if (p_key_attrs->m_usage.mp_value)
     {
         if ((error = asn_put_universal_tlv(TBIT_STRING, (void*) &p_key_attrs->m_usage, 0, p_pkcs_15_token, &usage))
@@ -173,7 +191,6 @@ int pkcs_15_put_common_key_attributes(s_der_buffer* p_pkcs_15_token, s_common_ke
     else
         return ak_error_message(ak_error_invalid_value, __func__, "usage flags absent");
 
-    s_der_buffer id = {0};
     if (p_key_attrs->m_id.mp_value)
     {
         if ((error = asn_put_universal_tlv(TOCTET_STRING, (void*) &p_key_attrs->m_id, 0, p_pkcs_15_token, &id))
@@ -183,7 +200,7 @@ int pkcs_15_put_common_key_attributes(s_der_buffer* p_pkcs_15_token, s_common_ke
     else
         return ak_error_message(ak_error_invalid_value, __func__, "key id absent");
 
-    size_t common_key_attributes_len = ps_get_full_size(&end_date)+
+    common_key_attributes_len = ps_get_full_size(&end_date)+
             ps_get_full_size(&start_date)+
             ps_get_full_size(&key_reference)+
             ps_get_full_size(&access_flags)+
@@ -198,16 +215,6 @@ int pkcs_15_put_common_key_attributes(s_der_buffer* p_pkcs_15_token, s_common_ke
             p_common_key_attributes_der))!=ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding sequence tag and length");
 
-    // TODO: проверить логику алгоритма
-//    if(common_key_attributes_len)
-//    {
-//        asn_put_universal_tlv(TSEQUENCE, NULL, common_key_attributes_len, p_pkcs_15_token, p_common_key_attributes_der);
-//    }
-//    else
-//    {
-//        p_common_key_attributes_der->mp_begin = p_common_key_attributes_der->mp_curr = p_common_key_attributes_der->mp_end = NULL;
-//    }
-
     return error;
 }
 
@@ -216,11 +223,13 @@ int pkcs_15_put_recipient_infos(s_der_buffer* p_pkcs_15_token,
         uint8_t num_of_recipient_infos,
         s_der_buffer* p_recipient_infos_der)
 {
+    int error;
+    uint8_t recipient_infos_len;
+
     if (!p_pkcs_15_token || !pp_recipient_infos || !num_of_recipient_infos || !p_recipient_infos_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    uint8_t RIs_len = 0;
-    int error = ak_error_ok;
+    recipient_infos_len = 0;
 
     for (uint8_t i = 0; i<num_of_recipient_infos; i++)
     {
@@ -231,10 +240,10 @@ int pkcs_15_put_recipient_infos(s_der_buffer* p_pkcs_15_token,
         if ((error = pkcs_15_put_single_recipient_info(p_pkcs_15_token, pp_recipient_infos[i], &recipient_info))
                 !=ak_error_ok)
             return ak_error_message(error, __func__, "problem with adding recipient info");
-        RIs_len += ps_get_full_size(&recipient_info);
+        recipient_infos_len += ps_get_full_size(&recipient_info);
     }
 
-    if ((error = asn_put_universal_tlv(TSET, NULL, RIs_len, p_pkcs_15_token, p_recipient_infos_der))!=ak_error_ok)
+    if ((error = asn_put_universal_tlv(TSET, NULL, recipient_infos_len, p_pkcs_15_token, p_recipient_infos_der))!=ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding set tag and length");
 
     return error;
@@ -243,10 +252,10 @@ int pkcs_15_put_recipient_infos(s_der_buffer* p_pkcs_15_token,
 int pkcs_15_put_single_recipient_info(s_der_buffer* p_pkcs_15_token, s_recipient_info* p_sngl_recipient_info,
         s_der_buffer* p_sngl_recipient_info_der)
 {
+    int error;
+
     if (!p_pkcs_15_token || !p_sngl_recipient_info || !p_sngl_recipient_info_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
-
-    int error = ak_error_ok;
 
     switch (p_sngl_recipient_info->m_type)
     {
@@ -266,12 +275,28 @@ int pkcs_15_put_single_recipient_info(s_der_buffer* p_pkcs_15_token, s_recipient
 
 int pkcs_15_put_kekri(s_der_buffer* p_pkcs_15_token, s_kekri* p_kekri, s_der_buffer* p_kekri_der)
 {
+    int error;
+    s_der_buffer encrypted_key;
+    s_der_buffer key_encryption_algorithm;
+    s_der_buffer date;
+    s_der_buffer key_identifire;
+    s_der_buffer version;
+    s_der_buffer key_id;
+    size_t key_id_len;
+    size_t kekri_len;
+
+    memset(&encrypted_key, 0, sizeof(s_der_buffer));
+    memset(&key_encryption_algorithm, 0, sizeof(s_der_buffer));
+    memset(&date, 0, sizeof(s_der_buffer));
+    memset(&key_identifire, 0, sizeof(s_der_buffer));
+    memset(&version, 0, sizeof(s_der_buffer));
+    memset(&key_id, 0, sizeof(s_der_buffer));
+
+
     if (!p_pkcs_15_token || !p_kekri || !p_kekri_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
 
-    s_der_buffer encrypted_key = {0};
     if (!p_kekri->m_encrypted_key.mp_value)
         return ak_error_message(ak_error_null_pointer, __func__, "encrypted key absent");
 
@@ -281,13 +306,11 @@ int pkcs_15_put_kekri(s_der_buffer* p_pkcs_15_token, s_kekri* p_kekri, s_der_buf
             !=ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding encrypted key");
 
-    s_der_buffer key_encryption_algorithm = {0};
     if ((error = pkcs_15_put_key_encryption_algorithm(p_pkcs_15_token, p_kekri, &key_encryption_algorithm))
             !=ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding key encryption algorithm");
 
     // ----- добавляем kekid, вложенный в sequence -----
-    s_der_buffer date = {0};
     if (p_kekri->m_date)
     {
         if ((error = asn_put_universal_tlv(TGENERALIZED_TIME, (void*) &p_kekri->m_date, 0, p_pkcs_15_token, &date))
@@ -298,7 +321,6 @@ int pkcs_15_put_kekri(s_der_buffer* p_pkcs_15_token, s_kekri* p_kekri, s_der_buf
     if (!p_kekri->m_key_identifire.mp_value)
         return ak_error_message(ak_error_null_pointer, __func__, "key identifier absent");
 
-    s_der_buffer key_identifire = {0};
     if ((error = asn_put_universal_tlv(TOCTET_STRING,
             (void*) &p_kekri->m_key_identifire,
             0,
@@ -306,8 +328,7 @@ int pkcs_15_put_kekri(s_der_buffer* p_pkcs_15_token, s_kekri* p_kekri, s_der_buf
             &key_identifire))!=ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding key identifier");
 
-    size_t key_id_len = ps_get_full_size(&date)+ps_get_full_size(&key_identifire);
-    s_der_buffer key_id = {0};
+    key_id_len = ps_get_full_size(&date)+ps_get_full_size(&key_identifire);
     if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, key_id_len, p_pkcs_15_token, &key_id))!=ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding sequence tag and length");
     // ----- конец добавления kekid -----
@@ -315,12 +336,11 @@ int pkcs_15_put_kekri(s_der_buffer* p_pkcs_15_token, s_kekri* p_kekri, s_der_buf
     if (!p_kekri->m_version.mp_value)
         return ak_error_message(ak_error_null_pointer, __func__, "kekri version absent");
 
-    s_der_buffer version = {0};
     if ((error = asn_put_universal_tlv(TINTEGER, (void*) &p_kekri->m_version, 0, p_pkcs_15_token, &version))
             !=ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding version attribute");
 
-    size_t kekri_len = ps_get_full_size(&version)+
+    kekri_len = ps_get_full_size(&version)+
             ps_get_full_size(&key_id)+
             ps_get_full_size(&key_encryption_algorithm)+
             ps_get_full_size(&encrypted_key);
@@ -343,10 +363,11 @@ int pkcs_15_put_kekri(s_der_buffer* p_pkcs_15_token, s_kekri* p_kekri, s_der_buf
 int pkcs_15_put_key_encryption_algorithm(s_der_buffer* p_pkcs_15_token, s_kekri* p_kekri,
         s_der_buffer* p_key_encryption_algorithm_der)
 {
+    int error;
+    size_t key_enc_alg_len;
+
     if (!p_pkcs_15_token || !p_kekri || !p_key_encryption_algorithm_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
-
-    int error = ak_error_ok;
 
     if (!p_kekri->m_key_enc_alg_id)
         return ak_error_message(ak_error_null_pointer, __func__, "key encryption algorithm info absent");
@@ -354,10 +375,13 @@ int pkcs_15_put_key_encryption_algorithm(s_der_buffer* p_pkcs_15_token, s_kekri*
     if (!p_kekri->m_key_enc_alg_id)
         return ak_error_message(ak_error_null_pointer, __func__, "identifier of key encryption algorithm absent");
 
-    size_t key_enc_alg_len = 0;
+    key_enc_alg_len = 0;
     if (0==strcmp(p_kekri->m_key_enc_alg_id, "1.2.643.2.2.13.1"))
     {
-        s_der_buffer params = {0};
+        s_der_buffer params;
+
+        memset(&params, 0, sizeof(s_der_buffer));
+
         if (p_kekri->m_prm_set_type==GOST_KEY_WRAP_SET)
         {
             s_gost28147_89_key_wrap_prms parameters = *((s_gost28147_89_key_wrap_prms*) p_kekri->m_prm_set.p_key_wrap_set);
@@ -412,15 +436,24 @@ int pkcs_15_put_key_encryption_algorithm(s_der_buffer* p_pkcs_15_token, s_kekri*
 int pkcs_15_put_encrypted_content_info(s_der_buffer* p_pkcs_15_token, s_enveloped_data* p_enveloped_data,
         s_der_buffer* p_encrypted_content_info_der)
 {
+    int error;
+    size_t encrypted_contetnt_len;
+    s_der_buffer encrypted_contetnt;
+    s_der_buffer content_enc_alg;
+    s_der_buffer content_type;
+    size_t encrypted_content_info_len;
+
+    memset(&encrypted_contetnt, 0, sizeof(s_der_buffer));
+    memset(&content_enc_alg, 0, sizeof(s_der_buffer));
+    memset(&content_type, 0, sizeof(s_der_buffer));
+
+
     if (!p_pkcs_15_token || !p_enveloped_data || !p_encrypted_content_info_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-
     //TODO: добавить AnprotectedAttrs.
 
-    s_der_buffer encrypted_contetnt = {0};
-    size_t encrypted_contetnt_len = p_enveloped_data->m_encrypted_content.m_val_len;
+    encrypted_contetnt_len = p_enveloped_data->m_encrypted_content.m_val_len;
     if ((error =
                  ps_move_cursor(p_pkcs_15_token, encrypted_contetnt_len+asn_get_len_byte_cnt(encrypted_contetnt_len)+1))
             !=ak_error_ok)
@@ -442,12 +475,12 @@ int pkcs_15_put_encrypted_content_info(s_der_buffer* p_pkcs_15_token, s_envelope
             PS_U_MODE))!=ak_error_ok)
         return ak_error_message(error, __func__, "problems with making union of asn data");
 
-    s_der_buffer content_enc_alg = {0};
+
     if ((error = pkcs_15_put_content_encryption_algorithm(p_pkcs_15_token, p_enveloped_data, &content_enc_alg))
             !=ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding content encryption algorithm");
 
-    s_der_buffer content_type = {0};
+
     if ((error = asn_put_universal_tlv(TOBJECT_IDENTIFIER,
             (void*) &p_enveloped_data->m_content_type,
             0,
@@ -455,7 +488,7 @@ int pkcs_15_put_encrypted_content_info(s_der_buffer* p_pkcs_15_token, s_envelope
             &content_type))!=ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding content type oid");
 
-    size_t encrypted_content_info_len = ps_get_full_size(&encrypted_contetnt)+
+    encrypted_content_info_len = ps_get_full_size(&encrypted_contetnt)+
             ps_get_full_size(&content_enc_alg)+
             ps_get_full_size(&content_type);
 
@@ -473,13 +506,16 @@ int pkcs_15_put_content_encryption_algorithm(s_der_buffer* p_pkcs_15_token,
         s_enveloped_data* p_enveloped_data,
         s_der_buffer* p_content_enc_alg_der)
 {
+    int error;
+    size_t content_enc_alg_len;
+
     if (!p_pkcs_15_token || !p_enveloped_data || !p_content_enc_alg_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
     if (!p_enveloped_data->m_content_enc_alg_id)
         return ak_error_message(ak_error_null_pointer, __func__, "content encryption algorithm absent");
 
-    int error = ak_error_ok;
-    size_t content_enc_alg_len = 0;
+    error = ak_error_ok;
+    content_enc_alg_len = 0;
     if (0==strcmp(p_enveloped_data->m_content_enc_alg_id, "1.2.643.2.4.3.2.2"))
     {
         s_der_buffer params = {0};
@@ -516,15 +552,20 @@ int pkcs_15_put_content_encryption_algorithm(s_der_buffer* p_pkcs_15_token,
 
 int pkcs_15_get_object_direct_protected(s_der_buffer* p_object_der, s_enveloped_data* p_enveloped_data)
 {
+    int error;
+    tag tag;
+    size_t len;
+    uint8_t len_byte_cnt;
+    s_der_buffer enveloped_data_der;
+
+    tag = 0;
+    len = 0;
+    len_byte_cnt = 0;
+    memset(&enveloped_data_der, 0, sizeof(s_der_buffer));
+
     if (!p_object_der || !p_enveloped_data)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-    tag tag = 0;
-    size_t len = 0;
-    uint8_t len_byte_cnt = 0;
-
-    s_der_buffer enveloped_data_der = {0};
     if ((error = asn_get_expected_tlv(CONTEXT_SPECIFIC | CONSTRUCTED | 2u, p_object_der, (void*) &enveloped_data_der))
             !=ak_error_ok)
     {
@@ -573,11 +614,14 @@ int pkcs_15_get_object_direct_protected(s_der_buffer* p_object_der, s_enveloped_
 
 int pkcs_15_get_common_object_attributes(s_der_buffer* p_object_der, s_common_obj_attrs* p_obj_attrs)
 {
+    int error;
+    s_der_buffer object_attrs;
+
+    memset(&object_attrs, 0, sizeof(s_der_buffer));
+
     if (!p_object_der || !p_obj_attrs)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-    s_der_buffer object_attrs = {0};
 
     if ((error = asn_get_expected_tlv(CONSTRUCTED | TSEQUENCE, p_object_der, (void*) &object_attrs))!=ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting common object attributes in der");
@@ -599,11 +643,14 @@ int pkcs_15_get_common_object_attributes(s_der_buffer* p_object_der, s_common_ob
 
 int pkcs_15_get_common_key_attributes(s_der_buffer* p_object_der, s_common_key_attrs* p_key_attrs)
 {
+    int error = ak_error_ok;
+    s_der_buffer key_attrs;
+
+    memset(&key_attrs, 0, sizeof(s_der_buffer));
+
     if (!p_object_der || !p_key_attrs)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-    s_der_buffer key_attrs = {0};
 
     if ((error = asn_get_expected_tlv(CONSTRUCTED | TSEQUENCE, p_object_der, (void*) &key_attrs))!=ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting common key attributes in der");
@@ -683,13 +730,16 @@ int pkcs_15_get_common_key_attributes(s_der_buffer* p_object_der, s_common_key_a
 
 int pkcs_15_get_recipient_infos(s_der_buffer* p_enveloped_data_der, s_enveloped_data* p_enveloped_data)
 {
+    int error;
+    uint8_t num_of_ri;
+    s_der_buffer recipient_infos_der;
+
+    num_of_ri = 0;
+    memset(&recipient_infos_der, 0, sizeof(s_der_buffer));
+
     if (!p_enveloped_data_der || !p_enveloped_data)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-    uint8_t num_of_ri = 0;
-
-    s_der_buffer recipient_infos_der = {0};
     if ((error = asn_get_expected_tlv(CONSTRUCTED | TSET, p_enveloped_data_der, (void*) &recipient_infos_der))
             !=ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting recipient infos in der");
@@ -719,13 +769,17 @@ int pkcs_15_get_recipient_infos(s_der_buffer* p_enveloped_data_der, s_enveloped_
 
 int pkcs_15_get_sngl_recipient_info(s_der_buffer* p_recipient_infos_der, s_recipient_info* p_sngl_recipient_info)
 {
+    int error;
+    tag tag;
+    size_t len;
+    uint8_t len_byte_cnt;
+
+    tag = 0;
+    len = 0;
+    len_byte_cnt = 0;
+
     if (!p_recipient_infos_der || !p_sngl_recipient_info)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
-
-    int error = ak_error_ok;
-    tag tag = 0;
-    size_t len = 0;
-    uint8_t len_byte_cnt = 0;
 
     asn_get_tag(p_recipient_infos_der->mp_curr, &tag);
     switch (tag)
@@ -757,12 +811,16 @@ int pkcs_15_get_sngl_recipient_info(s_der_buffer* p_recipient_infos_der, s_recip
 
 int pkcs_15_get_kekri(s_der_buffer* p_recipient_infos_der, s_kekri* p_kekri)
 {
+    int error;
+    s_der_buffer kekri_der;
+    s_der_buffer kek_id_der;
+
+    memset(&kekri_der, 0, sizeof(s_der_buffer));
+    memset(&kek_id_der, 0, sizeof(s_der_buffer));
+
     if (!p_recipient_infos_der || !p_kekri)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-    s_der_buffer kekri_der = {0};
-    s_der_buffer kek_id_der = {0};
 
     if ((error = asn_get_expected_tlv(CONTEXT_SPECIFIC | CONSTRUCTED | KEKRI, p_recipient_infos_der,
             (void*) &kekri_der))
@@ -797,14 +855,20 @@ int pkcs_15_get_kekri(s_der_buffer* p_recipient_infos_der, s_kekri* p_kekri)
 
 int pkcs_15_get_key_encryption_algorithm(s_der_buffer* p_kekri_der, s_kekri* p_kekri)
 {
+    int error;
+    size_t len;
+    uint8_t len_byte_cnt;
+    s_der_buffer key_enc_ald_der;
+    s_der_buffer prms_der;
+
+    len = 0;
+    len_byte_cnt = 0;
+    memset(&key_enc_ald_der, 0, sizeof(s_der_buffer));
+    memset(&prms_der, 0, sizeof(s_der_buffer));
+
     if (!p_kekri_der || !p_kekri)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-    size_t len = 0;
-    uint8_t len_byte_cnt = 0;
-    s_der_buffer key_enc_ald_der = {0};
-    s_der_buffer prms_der = {0};
     if ((error = asn_get_expected_tlv(CONSTRUCTED | TSEQUENCE, p_kekri_der, (void*) &key_enc_ald_der))!=ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting key encryption algorithm in der");
 
@@ -861,11 +925,14 @@ int pkcs_15_get_key_encryption_algorithm(s_der_buffer* p_kekri_der, s_kekri* p_k
 
 int pkcs_15_get_encrypted_content_info(s_der_buffer* p_enveloped_data_der, s_enveloped_data* p_enveloped_data)
 {
+    int error;
+    s_der_buffer enc_content_info;
+
+    memset(&enc_content_info, 0, sizeof(s_der_buffer));
+
     if (!p_enveloped_data_der || !p_enveloped_data)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-    s_der_buffer enc_content_info = {0};
     if ((error = asn_get_expected_tlv(CONSTRUCTED | TSEQUENCE, p_enveloped_data_der, (void*) &enc_content_info))
             !=ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting key encryption algorithm in der");
@@ -906,15 +973,21 @@ int pkcs_15_get_encrypted_content_info(s_der_buffer* p_enveloped_data_der, s_env
 int pkcs_15_get_content_encryption_algorithm(s_der_buffer* p_encrypted_content_info_der,
         s_enveloped_data* p_enveloped_data)
 {
+    int error = ak_error_ok;
+    size_t len;
+    uint8_t len_byte_cnt;
+    s_der_buffer content_enc_alg_der;
+    s_der_buffer prms_der;
+
+    len = 0;
+    len_byte_cnt = 0;
+    memset(&content_enc_alg_der, 0, sizeof(s_der_buffer));
+    memset(&prms_der, 0, sizeof(s_der_buffer));
+
+
     if (!p_encrypted_content_info_der || !p_enveloped_data)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    int error = ak_error_ok;
-    size_t len = 0;
-    uint8_t len_byte_cnt = 0;
-
-    s_der_buffer content_enc_alg_der = {0};
-    s_der_buffer prms_der = {0};
     if ((error =
                  asn_get_expected_tlv(CONSTRUCTED | TSEQUENCE, p_encrypted_content_info_der,
                          (void*) &content_enc_alg_der))

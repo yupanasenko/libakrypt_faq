@@ -10,14 +10,14 @@
 int ps_alloc(s_ptr_server* p_ps, size_t size, uint8_t mode)
 {
     if (!p_ps)
-        return ak_error_null_pointer;
+        return ak_error_message(ak_error_null_pointer, __func__, "input value is null");
 
     if (mode!=PS_R_MODE)
     {
         if (mode!=PS_W_MODE)
         {
             memset(p_ps, 0, sizeof(s_ptr_server));
-            return ak_error_wrong_ps_mode;
+            return ak_error_message(ak_error_wrong_ps_mode, __func__, "wrong ps mode");
         }
     }
 
@@ -25,7 +25,7 @@ int ps_alloc(s_ptr_server* p_ps, size_t size, uint8_t mode)
     if (!p_ps->mp_begin)
     {
         memset(p_ps, 0, sizeof(s_ptr_server));
-        return ak_error_null_pointer;
+        return ak_error_message(ak_error_null_pointer, __func__, "null value");
     }
 
     p_ps->mp_end = p_ps->mp_begin+size;
@@ -51,14 +51,14 @@ int ps_alloc(s_ptr_server* p_ps, size_t size, uint8_t mode)
 int ps_set(s_ptr_server* p_ps, byte* from, size_t len, uint8_t mode)
 {
     if (!p_ps || !from)
-        return ak_error_null_pointer;
+        return ak_error_message(ak_error_null_pointer, __func__, "input value is null");
 
     if (mode!=PS_U_MODE)
     {
         if (mode!=PS_R_MODE)
         {
             if (mode!=PS_W_MODE)
-                return ak_error_wrong_ps_mode;
+                return ak_error_message(ak_error_wrong_ps_mode, __func__, "wrong ps mode");
         }
     }
 
@@ -94,15 +94,15 @@ int ps_realloc(s_ptr_server* p_ps, size_t new_size)
         return 0;
 
     if (p_ps->m_mode!=PS_W_MODE)
-        return ak_error_wrong_ps_mode;
+        return ak_error_message(ak_error_wrong_ps_mode, __func__, "wrong ps mode");
 
     old_size = ps_get_curr_size(p_ps);
     if (new_size<old_size)
-        return ak_error_invalid_value;
+        return ak_error_message(ak_error_invalid_value, __func__, "invalid value");
 
     p_new_mem = (byte*) malloc(new_size);
     if (!p_new_mem)
-        return ak_error_null_pointer;
+        return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
     printf("realloc mem! new size = %zu\n", new_size);
 
@@ -132,13 +132,13 @@ int ps_move_cursor(s_ptr_server* p_ps, size_t num)
     if (p_ps->m_mode!=PS_W_MODE)
     {
         if (p_ps->m_mode!=PS_R_MODE)
-            return ak_error_wrong_ps_mode;
+            return ak_error_message(ak_error_wrong_ps_mode, __func__, "wrong ps mode");
     }
 
     if (p_ps->m_mode==PS_R_MODE)
     {
         if (num>ps_get_curr_size(p_ps))
-            return ak_error_wrong_length;
+            return ak_error_message(ak_error_wrong_length, __func__, "wrong length");
 
         p_ps->mp_curr += num;
     }

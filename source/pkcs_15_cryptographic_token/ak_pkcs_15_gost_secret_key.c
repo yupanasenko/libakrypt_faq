@@ -149,25 +149,14 @@ int pkcs_15_put_gost_secret_key_attributes(s_der_buffer* p_pkcs_15_token_der, s_
         s_der_buffer* p_gost_secret_key_attributes_der)
 {
     int error;
-//  s_der_buffer key_info_der;
     s_der_buffer direct_protected_key_der;
     size_t gost_sec_key_attrs_der_len;
 
-    error = ak_error_ok;
-//  memset(&key_info_der, 0, sizeof(key_info_der));
     memset(&direct_protected_key_der, 0, sizeof(direct_protected_key_der));
-    gost_sec_key_attrs_der_len = 0;
 
     if (!p_pkcs_15_token_der || !p_key || !p_gost_secret_key_attributes_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    /* Добавляем параметры для алгоритма, в котором используется ключ */
-    /* В текущей версии не используется */
-//  if(p_key->m_key_info.m_parameters_id)
-//  {
-//      if((error = pkcs_15_put_key_info(p_pkcs_15_token_der, &p_key->m_key_info, &key_info_der)) != ak_error_ok)
-//          return ak_error_message(error, __func__, "problem with adding key info");
-//  }
 
     /* Добавляем зашифрованный ключ и информацию о шифровании */
     if ((error = pkcs_15_put_object_direct_protected(p_pkcs_15_token_der,
@@ -319,6 +308,14 @@ int pkcs_15_put_key_info(s_der_buffer* p_pkcs_15_token_der, s_key_info* p_key_in
 int pkcs_15_put_gost28147_89_prms(s_der_buffer* p_pkcs_15_token_der, s_gost28147_89_prms* p_params,
         s_der_buffer* p_params_der)
 {
+    int error;
+    s_der_buffer encryption_param_set;
+    s_der_buffer iv;
+    size_t papams_len;
+
+    memset(&encryption_param_set, 0, sizeof(s_der_buffer));
+    memset(&iv, 0, sizeof(s_der_buffer));
+
     if (!p_pkcs_15_token_der || !p_params || !p_params_der || !p_params->m_iv.mp_value
             || !p_params->m_encryption_param_set)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
@@ -326,8 +323,6 @@ int pkcs_15_put_gost28147_89_prms(s_der_buffer* p_pkcs_15_token_der, s_gost28147
     if (p_params->m_iv.m_val_len!=8)
         return ak_error_message(ak_error_invalid_value, __func__, "iv length must be 8");
 
-    int error = ak_error_ok;
-    s_der_buffer encryption_param_set = {0};
     if ((error = asn_put_universal_tlv(TOBJECT_IDENTIFIER,
             (void*) &p_params->m_encryption_param_set,
             0,
@@ -335,12 +330,11 @@ int pkcs_15_put_gost28147_89_prms(s_der_buffer* p_pkcs_15_token_der, s_gost28147
             &encryption_param_set))!=ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding content encryption parameter set id");
 
-    s_der_buffer iv = {0};
     if ((error = asn_put_universal_tlv(TOCTET_STRING, (void*) &p_params->m_iv, 0, p_pkcs_15_token_der, &iv))
             !=ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding iv");
 
-    size_t papams_len = ps_get_full_size(&iv)+ps_get_full_size(&encryption_param_set);
+    papams_len = ps_get_full_size(&iv)+ps_get_full_size(&encryption_param_set);
 
     if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, papams_len, p_pkcs_15_token_der, p_params_der))!=ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding sequence tag and length");

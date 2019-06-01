@@ -56,10 +56,10 @@ int asn_put_int(integer val, byte* p_buff)
         return ak_error_message(ak_error_null_pointer, __func__, "bad pointer to buffer");
 
     if (!val.mp_value)
-        return ak_error_null_pointer;
+        return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
     if (!val.m_positive && !(val.mp_value[0] & 0x80u))
-        return ak_error_wrong_asn1_encode;
+        return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong asn1 encode");
 
     if (!val.m_positive)
     {
@@ -91,7 +91,7 @@ int asn_put_utf8string(utf8_string str, byte* p_buff)
         return ak_error_message(ak_error_null_pointer, __func__, "bad pointer to buffer");
 
     if (!str)
-        return ak_error_null_pointer;
+        return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
     memcpy(p_buff, str, strlen((char*) str));
 
@@ -110,7 +110,7 @@ int asn_put_octetstr(octet_string src, byte* p_buff)
         return ak_error_message(ak_error_null_pointer, __func__, "bad pointer to buffer");
 
     if (!src.mp_value)
-        return ak_error_null_pointer;
+        return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
     memcpy(p_buff, src.mp_value, src.m_val_len);
 
@@ -129,7 +129,7 @@ int asn_put_vsblstr(visible_string str, byte* p_buff)
         return ak_error_message(ak_error_null_pointer, __func__, "bad pointer to buffer");
 
     if (!str)
-        return ak_error_null_pointer;
+        return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
     memcpy(p_buff, str, strlen(str));
 
@@ -154,7 +154,7 @@ int asn_put_objid(object_identifier obj_id, byte* p_buff)
         return ak_error_message(ak_error_null_pointer, __func__, "bad pointer to buffer");
 
     if (!obj_id)
-        return ak_error_null_pointer;
+        return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
     num = (size_t) strtoul((char*) obj_id, &p_objid_end, 10);
     obj_id = ++p_objid_end;
@@ -198,10 +198,10 @@ int asn_put_bitstr(bit_string src, byte* p_buff)
         return ak_error_message(ak_error_null_pointer, __func__, "bad pointer to buffer");
 
     if (!src.mp_value)
-        return ak_error_null_pointer;
+        return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
     if (src.m_unused>7 || !src.m_val_len)
-        return ak_error_wrong_asn1_encode;
+        return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong asn1 encode");
 
     *(p_buff++) = src.m_unused;
     memcpy(p_buff, src.mp_value, src.m_val_len);
@@ -349,30 +349,30 @@ int asn_put_universal_tlv(uint8_t tag_number,
         s_ptr_server* p_main_ps,
         s_ptr_server* p_result)
 {
+    int error;
     size_t value_len;
     size_t len_byte_cnt;
 
     if (!tag_number || !p_main_ps || !p_result)
-        return ak_error_null_pointer;
+        return ak_error_message(ak_error_null_pointer, __func__, "input argument is null");
 
     value_len = 0;
     len_byte_cnt = 0;
-    int error = ak_error_ok;
 
     if (tag_number==TOCTET_STRING)
     {
         octet_string str = *((octet_string*) p_data);
 
         if (!p_data)
-            return ak_error_null_pointer;
+            return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
         if (!str.mp_value)
-            return ak_error_null_pointer;
+            return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
         value_len = str.m_val_len;
         len_byte_cnt = asn_get_len_byte_cnt(value_len);
         if (!len_byte_cnt)
-            return ak_error_wrong_asn1_encode;
+            return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong asn1 encode");
 
         if ((error = ps_move_cursor(p_main_ps, 1+len_byte_cnt+value_len))!=ak_error_ok)
             return ak_error_message(error, __func__, "problems with moving cursor");
@@ -384,10 +384,10 @@ int asn_put_universal_tlv(uint8_t tag_number,
     {
         integer num = *((integer*) p_data);
         if (!p_data)
-            return ak_error_null_pointer;
+            return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
         if (!num.mp_value)
-            return ak_error_null_pointer;
+            return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
         value_len = num.m_val_len;
         if (num.m_positive && (num.mp_value[0] & 0x80u))
@@ -395,7 +395,7 @@ int asn_put_universal_tlv(uint8_t tag_number,
 
         len_byte_cnt = asn_get_len_byte_cnt(value_len);
         if (!len_byte_cnt)
-            return ak_error_wrong_asn1_encode;
+            return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong asn1 encode");
 
         if ((error = ps_move_cursor(p_main_ps, 1+len_byte_cnt+value_len))!=ak_error_ok)
             return ak_error_message(error, __func__, "problems with moving cursor");
@@ -408,16 +408,16 @@ int asn_put_universal_tlv(uint8_t tag_number,
         bit_string str = *((bit_string*) p_data);
 
         if (!p_data)
-            return ak_error_null_pointer;
+            return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
         if (!str.mp_value)
-            return ak_error_null_pointer;
+            return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
         value_len = str.m_val_len+1; // 1 - для хранения кол-ва неиспользуемых битов
 
         len_byte_cnt = asn_get_len_byte_cnt(value_len);
         if (!len_byte_cnt)
-            return ak_error_wrong_asn1_encode;
+            return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong asn1 encode");
 
         if ((error = ps_move_cursor(p_main_ps, 1+len_byte_cnt+value_len))!=ak_error_ok)
             return ak_error_message(error, __func__, "problems with moving cursor");
@@ -430,13 +430,13 @@ int asn_put_universal_tlv(uint8_t tag_number,
         generalized_time time = *((generalized_time*) p_data);
 
         if (!p_data)
-            return ak_error_null_pointer;
+            return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
         value_len = asn_get_gentime_byte_cnt(time);
-
         len_byte_cnt = asn_get_len_byte_cnt(value_len);
+
         if (!len_byte_cnt)
-            return ak_error_wrong_asn1_encode;
+            return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong asn1 encode");
 
         if ((error = ps_move_cursor(p_main_ps, 1+len_byte_cnt+value_len))!=ak_error_ok)
             return ak_error_message(error, __func__, "problems with moving cursor");
@@ -449,13 +449,13 @@ int asn_put_universal_tlv(uint8_t tag_number,
         object_identifier oid = *((object_identifier*) p_data);
 
         if (!p_data)
-            return ak_error_null_pointer;
+            return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
         value_len = asn_get_oid_byte_cnt(oid);
 
         len_byte_cnt = asn_get_len_byte_cnt(value_len);
         if (!len_byte_cnt)
-            return ak_error_wrong_asn1_encode;
+            return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong asn1 encode");
 
         if ((error = ps_move_cursor(p_main_ps, 1+len_byte_cnt+value_len))!=ak_error_ok)
             return ak_error_message(error, __func__, "problems with moving cursor");
@@ -469,11 +469,11 @@ int asn_put_universal_tlv(uint8_t tag_number,
         value_len = strlen((char*) str);
 
         if (!p_data)
-            return ak_error_null_pointer;
+            return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
         len_byte_cnt = asn_get_len_byte_cnt(value_len);
         if (!len_byte_cnt)
-            return ak_error_wrong_asn1_encode;
+            return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong asn1 encode");
 
         if ((error = ps_move_cursor(p_main_ps, 1+len_byte_cnt+value_len))!=ak_error_ok)
             return ak_error_message(error, __func__, "problems with moving cursor");
@@ -486,13 +486,13 @@ int asn_put_universal_tlv(uint8_t tag_number,
         boolean bval = *((boolean*) p_data);
 
         if (!p_data)
-            return ak_error_null_pointer;
+            return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
         value_len = 1;
 
         len_byte_cnt = asn_get_len_byte_cnt(value_len);
         if (!len_byte_cnt)
-            return ak_error_wrong_asn1_encode;
+            return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong asn1 encode");
 
         if ((error = ps_move_cursor(p_main_ps, 1+len_byte_cnt+value_len))!=ak_error_ok)
             return ak_error_message(error, __func__, "problems with moving cursor");
@@ -507,7 +507,7 @@ int asn_put_universal_tlv(uint8_t tag_number,
 
         len_byte_cnt = asn_get_len_byte_cnt(value_len);
         if (!len_byte_cnt)
-            return ak_error_wrong_asn1_encode;
+            return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong asn1 encode");
 
         if ((error = ps_move_cursor(p_main_ps, 1+len_byte_cnt))!=ak_error_ok)
             return ak_error_message(error, __func__, "problems with moving cursor");

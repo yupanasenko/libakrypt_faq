@@ -456,6 +456,7 @@ int asn_get_num_of_elems_in_constructed_obj(s_ptr_server* p_data, uint8_t* p_num
 
     data_copy = *p_data;
     *p_num_of_elems = 0;
+
     while (ps_get_curr_size(&data_copy))
     {
         if ((error = asn_get_len(data_copy.mp_curr+1, &value_len, &len_byte_cnt))!=ak_error_ok)

@@ -37,7 +37,7 @@ int set_asn_utf8_string(utf8_string* p_asn_1_utf8_string, ak_pointer p_val)
 
     *p_asn_1_utf8_string = malloc(size*sizeof(char));
     if (!(*p_asn_1_utf8_string))
-        return ak_error_out_of_memory;
+        return ak_error_message(ak_error_out_of_memory, __func__, "out of mem");
 
     memcpy((char*) *p_asn_1_utf8_string, (char*) p_val, size);
 
@@ -56,7 +56,7 @@ int set_asn_visible_string(visible_string* p_asn_1_visible_string, const char* p
 
     *p_asn_1_visible_string = (visible_string) malloc(size);
     if (!(*p_asn_1_visible_string))
-        return ak_error_out_of_memory;
+        return ak_error_message(ak_error_out_of_memory, __func__, "out of mem");
 
     memcpy(*p_asn_1_visible_string, p_val, size);
 
@@ -78,11 +78,14 @@ int set_asn_object_identifier(object_identifier* p_asn_1_object_identifier, cons
 int set_asn_integer(integer* p_asn_int, int32_t val)
 {
 
+    byte* p_val;
+    int32_t val_len;
+
     if (!p_asn_int)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
     p_asn_int->m_positive = (val>=0);
-    int32_t val_len = p_asn_int->m_val_len = sizeof(val);
+    val_len = p_asn_int->m_val_len = sizeof(val);
 
     if (val==0 || val==-1)
     {
@@ -112,7 +115,7 @@ int set_asn_integer(integer* p_asn_int, int32_t val)
         }
     }
 
-    byte* p_val = p_asn_int->mp_value = (byte*) malloc(val_len);
+    p_val = p_asn_int->mp_value = (byte*) malloc(val_len);
 
     if (val_len==1)
         *p_val = (byte) val;
@@ -163,7 +166,7 @@ int asn_integer_to_int64(integer* p_asn_val, ak_int64* p_value)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
     if (p_asn_val->m_val_len>sizeof(ak_int64) || (p_asn_val->m_positive && (p_asn_val->mp_value[0] & 0x80)))
-        return ak_error_invalid_value;
+        return ak_error_message(ak_error_invalid_value, __func__, "invalid value");
 
     *p_value = 0;
     for (i = 0; i<p_asn_val->m_val_len; i++)
@@ -186,7 +189,7 @@ int asn_utf8_to_byte_arr(utf8_string* p_src, byte** pp_dst)
     str_size = strlen((char*) p_src)+1;
     *pp_dst = malloc(str_size);
     if (!*pp_dst)
-        return ak_error_null_pointer;
+        return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
     memcpy(*pp_dst, p_src, str_size);
 
@@ -218,7 +221,7 @@ int asn_generalized_time_to_date(generalized_time time, date date)
 int set_usage_flags(bit_string asn_val, key_usage_flags_t* flags)
 {
     if (asn_val.m_val_len>2)
-        return ak_error_invalid_value;
+        return ak_error_message(ak_error_invalid_value, __func__, "invalid input value");
 
     *flags = 0;
     *flags ^= asn_val.mp_value[0];
@@ -234,7 +237,6 @@ int set_key_id(octet_string id, ak_skey p_key)
 {
 
     //TODO проверка??
-
 
     // Если под хранение идентификатора недостаточно памяти, то перевыделяем ее
     if (p_key->number.size<id.m_val_len)
@@ -260,37 +262,37 @@ int date_to_asn_generalized_time(date current_date, generalized_time* result)
     // Корректные значения года: диапазон от 1970 до 9999
     if (current_date[0]<1970 || current_date[0]>9999)
     {
-        return ak_error_invalid_value;
+        return ak_error_message(ak_error_invalid_value, __func__, "invalid year input value");
     }
 
     // Корректные значения месяца: диапазон от 1 до 12
     if (current_date[1]<1 || current_date[1]>12)
     {
-        return ak_error_invalid_value;
+        return ak_error_message(ak_error_invalid_value, __func__, "invalid month input value");
     }
 
     // Корректные значения дня: диапазон от 1 до 31
     if (current_date[2]<1 || current_date[2]>31)
     {
-        return ak_error_invalid_value;
+        return ak_error_message(ak_error_invalid_value, __func__, "invalid day input value");
     }
 
     // Корректные значения часа: диапазон от 0 до 23
     if (current_date[3]<0 || current_date[3]>23)
     {
-        return ak_error_invalid_value;
+        return ak_error_message(ak_error_invalid_value, __func__, "invalid hour input value");
     }
 
     // Корректные значения минуты: диапазон от 0 до 59
     if (current_date[4]<0 || current_date[4]>59)
     {
-        return ak_error_invalid_value;
+        return ak_error_message(ak_error_invalid_value, __func__, "invalid minute input value");
     }
 
     // Корректные значения секунды: диапазон от 0 до 59
     if (current_date[5]<0 || current_date[5]>59)
     {
-        return ak_error_invalid_value;
+        return ak_error_message(ak_error_invalid_value, __func__, "invalid second input value");
     }
 
     sprintf(date_time, "%d-%02d-%02d %02d:%02d:%02d UTC",
@@ -306,18 +308,19 @@ int generate_random_bytes(octet_string* p_data, const size_t size)
 {
 
     int error;
+    ak_context_manager p_context;
 
     if (!p_data || (size<=0))
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    ak_context_manager p_context = ak_libakrypt_get_context_manager();
+    p_context = ak_libakrypt_get_context_manager();
 
     p_data->mp_value = malloc(size*sizeof(p_data->mp_value));
     p_data->m_val_len = size;
 
     if (!p_data->mp_value)
     {
-        return ak_error_null_pointer;
+        return ak_error_message(ak_error_null_pointer, __func__, "null value");
     }
 
     if ((error = (p_context->key_generator.random(&p_context->key_generator, p_data->mp_value, p_data->m_val_len)))
@@ -391,18 +394,30 @@ static int fill_enveloped_data(ak_skey sec_key, s_enveloped_data* enveloped_data
     ak_context_manager p_context;
     struct bckey cek;
     struct buffer gost_key_der;
-    byte mac[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+    byte mac[4];
     s_gost28147_89_prms* p_content_enc_prms;
     octet_string iv;
     s_kekri* kekri;
     s_gost28147_89_key_wrap_prms* p_key_wrap_prms;
-    byte ukm[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    byte ukm[8];
     struct buffer cek_plus_mask;
     struct buffer encrypted_key_mac;
     struct buffer encrypted_key_der;
     s_recipient_info** recipient_infos;
     s_recipient_info* recipient_info;
-    uint8_t recipient_infos_size = 1;
+    uint8_t recipient_infos_size;
+
+    // Пример заполнения mac и ukm
+    for (int i = 0; i < 4; ++i) {
+        mac[i] = 0xFF;
+    }
+
+    for (int i = 0; i < 8; ++i) {
+        ukm[i] = 0xFF;
+    }
+
+    recipient_infos_size = 1;
+
 
     if (!sec_key || !enveloped_data || !kek)
     {
@@ -610,15 +625,18 @@ static int put_key_management_info(s_key_management_info* current_key_info, ak_b
 static int put_gost_secret_key(s_gost_sec_key* gost_sec_key, struct extended_key* p_inp_keys, ak_bckey kek)
 {
 
+    int error;
+    s_common_obj_attrs obj_attrs;
+    s_common_key_attrs common_key_attrs;
+    byte key_usage_flags[2];
+
+    key_usage_flags[0] = (byte) ((p_inp_keys->flags >> 8) & 0xFFu);
+    key_usage_flags[1] = (byte) (p_inp_keys->flags & 0xFF);
+
     if (!gost_sec_key || !p_inp_keys || !kek)
     {
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
     }
-
-    int error;
-    s_common_obj_attrs obj_attrs;
-    s_common_key_attrs common_key_attrs;
-    byte key_usage_flags[2] = {(byte) ((p_inp_keys->flags >> 8) & 0xFFu), (byte) (p_inp_keys->flags & 0xFF)};
 
     // CommonObjectAttributes
     memset(&obj_attrs, 0, sizeof(obj_attrs));
@@ -666,7 +684,6 @@ static int decrypt_content_enc_key(s_recipient_info* p_recipient_info, ak_skey p
     int error;
     struct buffer encrypted_cek;
     struct buffer encrypted_cek_mac;
-    s_gost28147_89_key_wrap_prms* p_key_enc_prms;
 
     if (p_recipient_info->m_type!=KEKRI)
         return ak_error_message(ak_error_invalid_value, __func__, "only kekri support");
@@ -866,7 +883,6 @@ int read_keys_from_container(byte* password,
     struct bckey kek;
     struct extended_key** pp_keys;
 
-    error = ak_error_ok;
     memset(&main_token, 0, sizeof(main_token));
 
     /* Разбираем контейнер */
