@@ -29,27 +29,32 @@
  * В этом режиме смещение указателья на тек. позицию происходит справа налево.
 */
 typedef struct {
-  /*! \brief указатель на начало данных */
-  byte* mp_begin;
-  /*! \brief указатель на текущую позицию */
-  byte* mp_curr;
-  /*! \brief указатель на первый байт после данных */
-  byte* mp_end;
-  /*! \brief режим использования сервера */
-  uint8_t m_mode;
+    /*! \brief указатель на начало данных */
+    byte *mp_begin;
+    /*! \brief указатель на текущую позицию */
+    byte *mp_curr;
+    /*! \brief указатель на первый байт после данных */
+    byte *mp_end;
+    /*! \brief режим использования сервера */
+    uint8_t m_mode;
 } s_ptr_server;
 
 /*! \brief Метод для выделения памяти под объект типа s_ptr_server. */
-int ps_alloc(s_ptr_server* p_ps, size_t size, uint8_t mode);
+int ps_alloc(s_ptr_server *p_ps, size_t size, uint8_t mode);
+
 /*! \brief Метод для перевыделения памяти под объект типа s_ptr_server. */
-int ps_realloc(s_ptr_server* p_ps, size_t new_size);
+int ps_realloc(s_ptr_server *p_ps, size_t new_size);
+
 /*! \brief Метод для установления значений объект типа s_ptr_server. */
-int ps_set(s_ptr_server* p_ps, byte* from, size_t len, uint8_t mode);
+int ps_set(s_ptr_server *p_ps, byte *from, size_t len, uint8_t mode);
+
 /*! \brief Метод для перемещения указателя на текующую позицию. */
-int ps_move_cursor(s_ptr_server* p_ps, size_t num);
+int ps_move_cursor(s_ptr_server *p_ps, size_t num);
+
 /*! \brief Метод для получения текущего размера данных. */
-size_t ps_get_curr_size(s_ptr_server* p_ps);
+size_t ps_get_curr_size(s_ptr_server *p_ps);
+
 /*! \brief Метод для получения размера памяти выделенного под объект типа s_ptr_server. */
-size_t ps_get_full_size(s_ptr_server* p_ps);
+size_t ps_get_full_size(s_ptr_server *p_ps);
 
 #endif //__AK_PS_H__
