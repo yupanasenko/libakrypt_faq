@@ -1,4 +1,4 @@
-#include "kc_asn1_codec.h"
+#include <pkcs_15_cryptographic_token/ak_asn_codec.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! На данный момент разбираюся только теги,
@@ -195,7 +195,7 @@ int  asn_get_objid(byte* p_buff, size_t len, object_identifier* p_objid)
     if(!p_buff || !p_objid)
         return ak_error_null_pointer;
 
-    size_t value;
+    uint32_t value;
     size_t curr_size;
     if(((p_buff[0] / 40) > 2) || ((p_buff[0] % 40) > 32))
         return ak_error_wrong_asn1_decode;
@@ -224,7 +224,7 @@ int  asn_get_objid(byte* p_buff, size_t len, object_identifier* p_objid)
             return ak_error_wrong_asn1_decode;
         }
 
-        sprintf(obj_id + curr_size, ".%d", value);
+        sprintf(obj_id + curr_size, ".%u", value);
     }
 
     *p_objid = obj_id;
@@ -296,6 +296,7 @@ int  asn_get_bool(byte* p_buff, size_t len, boolean* p_value)
 /* ----------------------------------------------------------------------------------------------- */
 int asn_get_generalized_time(byte* p_buff, size_t len, generalized_time* p_time)
 {
+    generalized_time date_time;
     if(!p_buff || !p_time)
         return ak_error_null_pointer;
 
@@ -306,7 +307,7 @@ int asn_get_generalized_time(byte* p_buff, size_t len, generalized_time* p_time)
     }
 
     /* Дополнительные 9 байтов для символов пробела, тире и т.д. */
-    generalized_time date_time = (generalized_time)malloc(len + 9);
+    date_time = (generalized_time)malloc(len + 9);
     date_time[0] = '\0';
 
     /* YYYY */
@@ -360,13 +361,17 @@ int asn_get_generalized_time(byte* p_buff, size_t len, generalized_time* p_time)
 /* ----------------------------------------------------------------------------------------------- */
 int asn_get_expected_tlv(tag expected_tag, s_ptr_server *p_curr_ps, void *p_result)
 {
+    int error;
+    tag real_tag;
+    size_t value_len;
+    uint8_t  len_byte_cnt;
+
     if(!expected_tag || !p_curr_ps|| !p_result)
         return ak_error_null_pointer;
 
-    int error = ak_error_ok;
-    tag real_tag = 0;
-    size_t value_len = 0;
-    uint8_t  len_byte_cnt = 0;
+    real_tag = 0;
+    value_len = 0;
+    len_byte_cnt = 0;
 
     if ((error = asn_get_tag(p_curr_ps->mp_curr, &real_tag)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting tag");
@@ -424,7 +429,7 @@ int asn_get_expected_tlv(tag expected_tag, s_ptr_server *p_curr_ps, void *p_resu
     if ((error = ps_move_cursor(p_curr_ps, value_len)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with moving cursor");
 
-    return error;
+    return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -435,11 +440,14 @@ int asn_get_expected_tlv(tag expected_tag, s_ptr_server *p_curr_ps, void *p_resu
 /* ----------------------------------------------------------------------------------------------- */
 int asn_get_num_of_elems_in_constructed_obj(s_ptr_server *p_data, uint8_t *p_num_of_elems)
 {
-    size_t value_len = 0;
-    uint8_t  len_byte_cnt = 0;
-    int error = ak_error_ok;
+    int error;
+    size_t value_len;
+    uint8_t  len_byte_cnt;
+    s_ptr_server data_copy;
+    value_len = 0;
+    len_byte_cnt = 0;
 
-    s_ptr_server data_copy = *p_data;
+    data_copy = *p_data;
     *p_num_of_elems = 0;
     while (ps_get_curr_size(&data_copy))
     {
@@ -452,7 +460,7 @@ int asn_get_num_of_elems_in_constructed_obj(s_ptr_server *p_data, uint8_t *p_num
         *p_num_of_elems += 1;
     }
 
-    return error;
+    return ak_error_ok;
 }
 
 void asn_free_int(integer* p_val)

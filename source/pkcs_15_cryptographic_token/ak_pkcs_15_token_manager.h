@@ -2,15 +2,14 @@
 #define ASN_1_CONVERSION_KC_LIBAKRYPT_H
 
 
-#include "kc_asn1_codec.h"
-#include "kc_pkcs_gost_secret_key.h"
+#include "ak_asn_codec.h"
+#include "ak_pkcs_15_gost_secret_key.h"
 #include "ak_bckey.h"
-#include "kc_pkcs_container.h"
-#include "kc_pkcs_gost_secret_key.h"
+#include "ak_pkcs_15_token.h"
+#include "ak_pkcs_15_gost_secret_key.h"
 
 typedef unsigned int date[6];
 
-#include "kc_tools.h"
 #include <ak_context_manager.h>
 
 
@@ -48,10 +47,6 @@ struct extended_key {
  */
 int read_keys_from_container(byte* password, size_t pwd_size, byte* inp_container, size_t inp_container_size, struct extended_key*** out_keys, ak_uint8* num_of_out_keys);
 
-§static int get_extended_key(s_pkcs_15_object* p_obj, struct skey* p_kek, struct extended_key* p_key);
-static int decrypt_enveloped_data(s_enveloped_data* p_enveloped_data, ak_skey p_kek, ak_skey p_libakrypt_key);
-static int decrypt_content_enc_key(s_recipient_info* p_recipient_info, ak_skey p_kek, ak_skey p_cek);
-
 /**
  *
  * @param pp_inp_keys
@@ -63,6 +58,7 @@ static int decrypt_content_enc_key(s_recipient_info* p_recipient_info, ak_skey p
 int write_keys_to_container(struct extended_key** pp_inp_keys, ak_uint8 num_of_inp_keys, ak_pointer password, size_t password_size, byte** pp_out_container, size_t * p_out_container_size);
 
 
+char* key_usage_flags_to_str(key_usage_flags_t flags);
 
 
 

@@ -1,5 +1,5 @@
 #include <ak_buffer.h>
-#include "kc_pkcs_gost_secret_key.h"
+#include "ak_pkcs_15_gost_secret_key.h"
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param p_pkcs_15_token_der указатель на токен, содержащий всю DER последовательность
@@ -592,7 +592,6 @@ int pkcs_15_make_gost_key_value_mask(ak_buffer masked_key, ak_buffer mask, ssize
 int pkcs_15_make_enc_key_plus_mac_seq(ak_buffer encrypted_cek, ak_buffer mac, ak_buffer encrypted_key_der)
 {
     int error;
-    uint8_t i;
     size_t enc_cek_der_len;
     size_t mac_der_len;
     size_t enc_key_der_len;
@@ -654,14 +653,18 @@ int pkcs_15_parse_gost_key_value_mask(ak_buffer gost_kvm_der, ak_buffer masked_k
         return ak_error_invalid_value;
 
     ++p_curr_pos;
-    asn_get_len(p_curr_pos, &data_len, &len_byte_cnt);
+    if((error = asn_get_len(p_curr_pos, &data_len, &len_byte_cnt)) != ak_error_ok)
+        return ak_error_message(error, __func__, "problem with getting data length");
     p_curr_pos += len_byte_cnt;
 
     key_len = (data_len - counter_var_size) / 2;
 
-    ak_buffer_set_ptr(masked_key, p_curr_pos, key_len, ak_true);
+    if((error = ak_buffer_set_ptr(masked_key, p_curr_pos, key_len, ak_true)) != ak_error_ok)
+        return ak_error_message(error, __func__, "problem with getting masked key from DER sequence");
     p_curr_pos += key_len;
-    ak_buffer_set_ptr(mask, p_curr_pos, key_len, ak_true);
+
+    if((error = ak_buffer_set_ptr(mask, p_curr_pos, key_len, ak_true)) != ak_error_ok)
+        return ak_error_message(error, __func__, "problem with getting mask from DER sequence");
     p_curr_pos += key_len;
 
     *counter = 0;
@@ -696,8 +699,8 @@ int pkcs_15_parse_enc_key_plus_mac_seq(octet_string encrypted_key_der, ak_buffer
         return ak_error_invalid_value;
 
     ++p_curr_pos;
-    if(asn_get_len(p_curr_pos, &data_len, &len_byte_cnt) != ak_error_ok)
-        return ak_error_invalid_value;
+    if((error = asn_get_len(p_curr_pos, &data_len, &len_byte_cnt)) != ak_error_ok)
+        return ak_error_message(error, __func__, "problem with getting data length");
     p_curr_pos += len_byte_cnt;
 
     /* Декодируем значение ключа и маски */
@@ -706,11 +709,12 @@ int pkcs_15_parse_enc_key_plus_mac_seq(octet_string encrypted_key_der, ak_buffer
         return ak_error_invalid_value;
 
     ++p_curr_pos;
-    if(asn_get_len(p_curr_pos, &data_len, &len_byte_cnt) != ak_error_ok)
-        return ak_error_invalid_value;
+    if((error = asn_get_len(p_curr_pos, &data_len, &len_byte_cnt)) != ak_error_ok)
+        return ak_error_message(error, __func__, "problem with getting data length");
     p_curr_pos += len_byte_cnt;
 
-    ak_buffer_create_size(p_encrypted_cek, data_len);
+    if((error = ak_buffer_create_size(p_encrypted_cek, data_len)) != ak_error_ok)
+        return ak_error_message(error, __func__, "problem with creating buffer for data");
     memcpy(p_encrypted_cek->data, p_curr_pos, data_len);
     p_curr_pos += data_len;
 
@@ -721,11 +725,12 @@ int pkcs_15_parse_enc_key_plus_mac_seq(octet_string encrypted_key_der, ak_buffer
         return ak_error_invalid_value;
 
     ++p_curr_pos;
-    if(asn_get_len(p_curr_pos, &data_len, &len_byte_cnt) != ak_error_ok)
-        return ak_error_invalid_value;
+    if((error = asn_get_len(p_curr_pos, &data_len, &len_byte_cnt)) != ak_error_ok)
+        return ak_error_message(error, __func__, "problem with getting data length");
     p_curr_pos += len_byte_cnt;
 
-    ak_buffer_create_size(p_mac, data_len);
+    if((error = ak_buffer_create_size(p_mac, data_len)) != ak_error_ok)
+        return ak_error_message(error, __func__, "problem with creating buffer for data");
     memcpy(p_mac->data, p_curr_pos, data_len);
 
     return ak_error_ok;

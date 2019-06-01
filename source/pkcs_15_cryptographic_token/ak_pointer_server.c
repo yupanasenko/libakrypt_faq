@@ -1,4 +1,4 @@
-#include "kc_pointer_server.h"
+#include "ak_pointer_server.h"
 #include <libakrypt.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -103,7 +103,7 @@ int ps_realloc(s_ptr_server* p_ps, size_t new_size)
     if(!p_new_mem)
         return ak_error_null_pointer;
 
-    printf("realloc mem! new size = %d\n", new_size);
+    printf("realloc mem! new size = %zu\n", new_size);
 
     memmove(p_new_mem + (new_size - old_size), p_ps->mp_curr, old_size);
 

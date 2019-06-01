@@ -1,5 +1,5 @@
-#include "kc_pkcs_common_types.h"
-#include "kc_pkcs_gost_secret_key.h"
+#include "ak_pkcs_15_common_types.h"
+#include "ak_pkcs_15_gost_secret_key.h"
 
 int pkcs_15_put_object_direct_protected(s_der_buffer *p_pkcs_15_token,
                                         s_enveloped_data *p_enveloped_data,

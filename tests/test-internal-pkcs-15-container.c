@@ -1,6 +1,14 @@
+/*
+ * Цель данного примера - продемонстрировать процесс
+ * создания и разбора контейнера хранения ключевой
+ * информации, соответствующего стандарту PKCS 15.
+ * При этом в контейнер помещается случайный ключ для
+ * алгоритма Магма.
+ */
+
 #include <libakrypt.h>
-#include "kc_libakrypt.h"
 #include <ak_bckey.h>
+#include <pkcs_15_cryptographic_token/ak_pkcs_15_token_manager.h>
 
 char password[] = "123";
 char key_label[] = "This is test key";
@@ -37,16 +45,20 @@ int main()
     /* Создаем контейнер */
     p_container_der = NULL;
     container_der_size = 0;
-    write_keys_to_container(pp_kc_keys, sizeof(pp_kc_keys) / sizeof(pp_kc_keys[0]), password, strlen(password),
-                            &p_container_der, &container_der_size);
+    if((error = write_keys_to_container(pp_kc_keys, sizeof(pp_kc_keys) / sizeof(pp_kc_keys[0]), password, strlen(password), &p_container_der, &container_der_size)) != ak_error_ok)
+    {
+        ak_error_message(error, __func__, "can't write keys to container");
+        return ak_libakrypt_destroy();
+    }
 
     /* Выводим получившийся результат */
-    printf("Container: ");
+    printf("Container in DER code: ");
     for (i = 0; i < container_der_size; ++i)
     {
         printf("%02X ", p_container_der[i]);
     }
-    printf("\nSize: %d bytes\n", container_der_size);
+    printf("\nSize: %zd bytes\n", container_der_size);
+    printf("You can parse this byte sequence in any ASN.1 decoder and you'll see the structure of container\n");
 
     /* Разбираем контейнер */
     pp_kc_keys_from_container = NULL;
@@ -64,7 +76,6 @@ void print_container_info(struct extended_key** pp_keys, uint8_t num_of_keys)
 {
     uint8_t i, j;
     struct extended_key* p_key;
-    struct oid key_alg_oid;
 
     for(i = 0; i < num_of_keys; i++)
     {
@@ -132,7 +143,7 @@ int gen_random_key(struct extended_key *p_kc_key, char *label, date sd, date ed,
     memset(p_kc_key, 0, sizeof(struct extended_key));
     p_kc_key->key.sec_key = p_random_libakrypt_key;  // Добавляем ключ
     p_kc_key->key_type = SEC_KEY;                    // Указываем тип ключа (секретный, публичный, приватный)
-    p_kc_key->label = key_label;                     // Добавляем человечу понятное название ключа
+    p_kc_key->label = key_label;                     // Добавляем человеку понятное название ключа
     p_kc_key->flags = flags;                         // Указываем флаги использования ключа
 
     for (int j = 0; j < 6; ++j)

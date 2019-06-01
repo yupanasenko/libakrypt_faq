@@ -2,10 +2,15 @@
 // Created by Anton Sakharov on 2019-04-17.
 //
 
+/*
+ * Данный файл определяет набор структур, которые используются для
+ * хранения параметров различных алгоритмов.
+ */
+
 #ifndef ASN_1_CONVERSION_KC_PKCS_ALGS_AND_PRMS_H
 #define ASN_1_CONVERSION_KC_PKCS_ALGS_AND_PRMS_H
 
-#include "kc_pkcs_common_types.h"
+#include "ak_pkcs_15_common_types.h"
 
 typedef enum {
     GOST_CONTENT_ENC_SET = 1, // соответствует структуре s_gost28147_89_prms

@@ -1,9 +1,9 @@
 #ifndef ASN_1_CONVERSION_COMMONPKCSTYPES_H
 #define ASN_1_CONVERSION_COMMONPKCSTYPES_H
 
-#include "kc_asn1_codec.h"
-#include "kc_pointer_server.h"
-#include "kc_pkcs_algs_and_prms.h"
+#include "ak_asn_codec.h"
+#include "ak_pointer_server.h"
+#include "ak_pkcs_15_algs_prms.h"
 
 typedef s_ptr_server s_der_buffer;
 

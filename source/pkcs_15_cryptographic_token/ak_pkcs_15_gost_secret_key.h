@@ -4,8 +4,8 @@
 #include "kc_includes.h"
 //#include "asn1_codec.h"
 //#include "PointerServer.h"
-#include "kc_pkcs_common_types.h"
-#include "kc_pkcs_algs_and_prms.h"
+#include "ak_pkcs_15_common_types.h"
+#include "ak_pkcs_15_algs_prms.h"
 
 /*! \brief Секретный ключ блочного алгоритма шифрования. */
 typedef struct

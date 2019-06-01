@@ -1,17 +1,18 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Файл kc_asn1_codec.h                                                                           */
-/*  - содержит перечень стандартных типов ASN.1;                                                    */
-/*  - содержит перечень описаний функций кодирования и декодирования стандартных типов ASN.1;       */
+/*  Файл ak_asn_codec.h                                                                           */
+/*  - содержит перечень стандартных типов ASN.1;                                                   */
+/*  - содержит перечень описаний функций кодирования и декодирования стандартных типов ASN.1;      */
 /* ----------------------------------------------------------------------------------------------- */
-#ifndef ASN1_SECKEY_RW_ASN1_READ_H
-#define ASN1_SECKEY_RW_ASN1_READ_H
+#ifndef __AK_ASN_H__
+#define __AK_ASN_H__
 
 #include "kc_includes.h"
-#include "kc_pointer_server.h"
 
 #include <libakrypt.h>
+#include <pkcs_15_cryptographic_token/ak_pointer_server.h>
 
-/*! \brief флаги, определяющий класс данных ASN.1. */
+
+/*! \brief флаги, определяющие класс данных ASN.1. */
 #define UNIVERSAL           0x00u
 #define APPLICATION         0x40u
 #define CONTEXT_SPECIFIC    0x80u
@@ -50,7 +51,8 @@
 #define TCHARACTER_STRING   0x1Du
 #define TBMP_STRING         0x1Eu
 
-struct s_asn_int_type{
+/*! \brief Струкртура, хранящая целочисленые значения в соответствии с ASN.1. */
+struct s_asn_int_type {
     /*! \brief массив, содержащий значение в формате big-endian. */
     byte* mp_value;
     /*! \brief размер массива с данными. */
@@ -59,14 +61,16 @@ struct s_asn_int_type{
     bool m_positive;
 };
 
-struct s_asn_oct_str_type{
+/*! \brief Струкртура, хранящая массив байтов в соответствии с ASN.1. */
+struct s_asn_oct_str_type {
     /*! \brief массив, содержащий значение. */
     byte* mp_value;
     /*! \brief размер массива с данными. */
     size_t m_val_len;
 };
 
-struct s_asn_bit_str_type{
+/*! \brief Струкртура, хранящая "битовую строку" в соответствии с ASN.1. */
+struct s_asn_bit_str_type {
     /*! \brief массив, содержащий значение. */
     byte* mp_value;
     /*! \brief размер массива с данными. */
@@ -139,11 +143,11 @@ int asn_get_expected_tlv(tag expected_tag, s_ptr_server *p_curr_ps, void *p_resu
 /*! \brief Метод для определения кол-ва элементов в блоке данных DER последовательности. */
 int asn_get_num_of_elems_in_constructed_obj(s_ptr_server *p_data, uint8_t *p_num_of_elems);
 /*! \brief Метод для определения необходимого кол-ва памяти для хранения длины данных. */
-uint8_t asn_get_len_byte_cnt(size_t len);
+ak_uint8 asn_get_len_byte_cnt(size_t len);
 /*! \brief Метод для определения необходимого кол-ва памяти для хранения идентификатора объекта. */
-int8_t asn_get_oid_byte_cnt(object_identifier oid);
+ak_uint8 asn_get_oid_byte_cnt(object_identifier oid);
 /*! \brief Метод для определения необходимого кол-ва памяти для хранения времени в общепринятом формате. */
-int8_t asn_get_gentime_byte_cnt(generalized_time time);
+ak_uint8 asn_get_gentime_byte_cnt(generalized_time time);
 
 
 /*! \brief Освобождение памяти. */
@@ -156,4 +160,4 @@ void asn_free_bitstr(bit_string* p_val);
 void asn_free_generalized_time(generalized_time* p_val);
 
 
-#endif /* ASN1_SECKEY_RW_ASN1_READ_H */
+#endif /* __AK_ASN_H__ */

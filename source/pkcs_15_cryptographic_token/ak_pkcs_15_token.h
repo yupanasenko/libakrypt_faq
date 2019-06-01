@@ -1,7 +1,7 @@
 #ifndef ASN_1_CONVERSION_PKCSCONTAINER_H
 #define ASN_1_CONVERSION_PKCSCONTAINER_H
 
-#include "kc_pkcs_gost_secret_key.h"
+#include "ak_pkcs_15_gost_secret_key.h"
 
 typedef enum {
     PRI_KEY = 0,

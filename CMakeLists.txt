@@ -167,29 +167,23 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_PKCS_15_CONTAINER )
   set( HEADERS      ${HEADERS}
-          source/kc_asn1_codec.h
-          source/kc_includes.h
-          source/kc_key_manager.h
-          source/kc_libakrypt.h
-          source/kc_pkcs_algs_and_prms.h
-          source/kc_pkcs_common_types.h
-          source/kc_pkcs_container.h
-          source/kc_pkcs_gost_secret_key.h
-          source/kc_pointer_server.h
-          source/kc_tools.h
-          source/kc_transform.h
+          source/pkcs_15_cryptographic_token/ak_asn_codec.h
+          source/pkcs_15_cryptographic_token/kc_includes.h
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_token_manager.h
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_algs_prms.h
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_common_types.h
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_token.h
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_gost_secret_key.h
+          source/pkcs_15_cryptographic_token/ak_pointer_server.h
           )
   set( SOURCES      ${SOURCES}
-          source/kc_asn1_read.c
-          source/kc_asn1_write.c
-          source/kc_key_manager.c
-          source/kc_libakrypt.c
-          source/kc_pkcs_common_types.c
-          source/kc_pkcs_container.c
-          source/kc_pkcs_gost_secret_key.c
-          source/kc_pointer_server.c
-          source/kc_tools.c
-          source/kc_transform.c
+          source/pkcs_15_cryptographic_token/ak_asn_read.c
+          source/pkcs_15_cryptographic_token/ak_asn_write.c
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_token_manager.c
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_common_types.c
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_token.c
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_gost_secret_key.c
+          source/pkcs_15_cryptographic_token/ak_pointer_server.c
           )
   add_compile_options( -DLIBAKRYPT_PKCS_15_CONTAINER=ON )
 endif()
