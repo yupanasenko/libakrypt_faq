@@ -324,7 +324,7 @@ int generate_random_bytes(octet_string* p_data, const size_t size)
     }
 
     if ((error = (p_context->key_generator.random(&p_context->key_generator, p_data->mp_value, p_data->m_val_len)))
-            ==ak_error_ok)
+            !=ak_error_ok)
     {
         return ak_error_message(error, __func__, "error in generating random bytes");
     }
