@@ -28,10 +28,10 @@
  * В этом режиме смещение указателья на тек. позицию происходит справа налево.
 */
 typedef struct {
-    byte* mp_begin;
-    byte* mp_curr;
-    byte* mp_end;
-    uint8_t m_mode;
+  byte* mp_begin;
+  byte* mp_curr;
+  byte* mp_end;
+  uint8_t m_mode;
 } s_ptr_server;
 
 /*! \brief Метод для выделения памяти под объект типа s_ptr_server. */
@@ -46,6 +46,5 @@ int ps_move_cursor(s_ptr_server* p_ps, size_t num);
 size_t ps_get_curr_size(s_ptr_server* p_ps);
 /*! \brief Метод для получения размера памяти выделенного под объект типа s_ptr_server. */
 size_t ps_get_full_size(s_ptr_server* p_ps);
-
 
 #endif //ASN1_SECKEY_RW_POINTERSERVER_H
