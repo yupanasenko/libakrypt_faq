@@ -1,11 +1,14 @@
-#ifndef ASN1_SECKEY_RW_SECRETKEY_H
-#define ASN1_SECKEY_RW_SECRETKEY_H
+/* ----------------------------------------------------------------------------------------------- */
+/*  Файле ak_pkcs_15_gost_secret_key.h содержит структуру, хранящую информацию о секретном ключе,  */
+/*  а также методы по кодировани и декодированию данной информации.                                */
+/* ----------------------------------------------------------------------------------------------- */
+
+#ifndef __AK_PKCS_GOST_SEC_KEY_H__
+#define __AK_PKCS_GOST_SEC_KEY_H__
 
 #include "kc_includes.h"
-//#include "asn1_codec.h"
-//#include "PointerServer.h"
-#include "ak_pkcs_15_common_types.h"
-#include "ak_pkcs_15_algs_prms.h"
+#include <pkcs_15_cryptographic_token/ak_pkcs_15_common_types.h>
+#include <pkcs_15_cryptographic_token/ak_pkcs_15_algs_prms.h>
 
 /*! \brief Секретный ключ блочного алгоритма шифрования. */
 typedef struct {
@@ -29,7 +32,7 @@ typedef struct {
   //s_key_info m_key_info;
 } s_gost_sec_key;
 
-/** Методы добавления данных */
+/** Методы добавления данных **/
 
 /*! \brief Добавление секретного ключа в DER последовательность. */
 int pkcs_15_put_gost_key(s_der_buffer* p_pkcs_15_token_der, s_gost_sec_key* p_key, s_der_buffer* p_gost_key_der);
@@ -50,7 +53,7 @@ int pkcs_15_make_gost_key_value_mask(ak_buffer masked_key, ak_buffer mask, ssize
 /*! \brief Преобразование ключа, маскив в DER последовательность. (Используется во время заполнения структуры s_recipient_info)*/
 int pkcs_15_make_enc_key_plus_mac_seq(ak_buffer encrypted_cek, ak_buffer mac, ak_buffer encrypted_key_der);
 
-/** Методы декодирования данных */
+/** Методы декодирования данных **/
 
 /*! \brief Декодирование секретного ключа из DER последовательности. */
 int pkcs_15_get_gost_key(s_der_buffer* p_object_der, s_gost_sec_key* p_key);
@@ -73,4 +76,4 @@ int pkcs_15_put_gost28147_89_prms(s_der_buffer* p_pkcs_15_token_der, s_gost28147
 
 void pcks_15_free_gost_sec_key(s_gost_sec_key* key);
 
-#endif /* ASN1_SECKEY_RW_SECRETKEY_H */
+#endif /* __AK_PKCS_GOST_SEC_KEY_H__ */
