@@ -1,5 +1,5 @@
 #include <ak_buffer.h>
-#include "ak_pkcs_15_gost_secret_key.h"
+#include <pkcs_15_cryptographic_token/ak_pkcs_15_gost_secret_key.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param p_pkcs_15_token_der указатель на токен, содержащий всю DER последовательность
@@ -270,7 +270,8 @@ int pkcs_15_put_key_info(s_der_buffer *p_pkcs_15_token_der, s_key_info *p_key_in
     /* Добавляем идентификатор параметров */
     if (p_key_info->m_parameters_id != NULL)
     {
-        s_der_buffer crypto_pro_param_set = {0};
+        s_der_buffer crypto_pro_param_set;
+        memset(&crypto_pro_param_set, 0, sizeof(s_der_buffer));
         if (0 == strcmp(p_key_info->m_parameters_id, "1.2.643.7.1.2.5.1.1"))
         {
             if ((error = asn_put_universal_tlv(TOBJECT_IDENTIFIER,
@@ -283,8 +284,7 @@ int pkcs_15_put_key_info(s_der_buffer *p_pkcs_15_token_der, s_key_info *p_key_in
             parameters_der = crypto_pro_param_set;
         }
         else
-            return ak_error_message_fmt(ak_error_wrong_oid, __func__,
-                                        "algorithm (%s) doesn't support", p_key_info->m_parameters_id);
+            return ak_error_message_fmt(ak_error_wrong_oid, __func__, "algorithm (%s) doesn't support", p_key_info->m_parameters_id);
     }
 
     /* Вариант хранения непосредственно значений параметров пока не реализован */

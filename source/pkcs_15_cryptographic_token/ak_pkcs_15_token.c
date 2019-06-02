@@ -38,7 +38,8 @@ int pkcs_15_generate_token(s_pkcs_15_token *p_pkcs_15_token, byte **pp_data, siz
 
         for (uint8_t i = 0; i < p_pkcs_15_token->m_info_size; i++)
         {
-            s_der_buffer sngl_key_management_info = {0};
+            s_der_buffer sngl_key_management_info;
+            memset(&sngl_key_management_info, 0, sizeof(s_der_buffer));
             if (!p_pkcs_15_token->mpp_key_infos[i])
                 return ak_error_message(ak_error_null_pointer, __func__, "bad pointer to key management info");
 
@@ -101,10 +102,12 @@ int pkcs_15_put_pkcs_objects(s_der_buffer *p_pkcs_15_token, s_pkcs_15_object **p
     objects_len = 0;
     for (int8_t i = 0; i < size; i++)
     {
+        s_der_buffer added_object;
+
         if (!pp_pkcs_15_objects[i])
             return ak_error_message(ak_error_null_pointer, __func__, "object absent");
 
-        s_der_buffer added_object = {0};
+        memset(&added_object, 0, sizeof(s_der_buffer));
         if ((error = pkcs_15_put_obj(p_pkcs_15_token, pp_pkcs_15_objects[i], &added_object)) != ak_error_ok)
             return ak_error_message(error, __func__, "problems with adding object");
         objects_len += ps_get_full_size(&added_object);
@@ -350,10 +353,10 @@ int pkcs_15_put_alg_id(s_der_buffer *p_pkcs_15_token, s_pwd_info *p_pwd_info, s_
 
 int pkcs_15_put_params_pbkdf2(s_der_buffer *p_pkcs_15_token, s_pwd_info *p_pwd_info, s_der_buffer *p_parameters_der) {
     int error = ak_error_ok;
-    s_der_buffer prf = {0};
-    s_der_buffer key_length = {0};
-    s_der_buffer iteration_count = {0};
-    s_der_buffer salt = {0};
+    s_der_buffer prf;
+    s_der_buffer key_length;
+    s_der_buffer iteration_count;
+    s_der_buffer salt;
     size_t parameters_len;
 
     memset(&prf, 0, sizeof(s_der_buffer));
@@ -389,7 +392,8 @@ int pkcs_15_put_params_pbkdf2(s_der_buffer *p_pkcs_15_token, s_pwd_info *p_pwd_i
                                     "1.2.643.7.1.1.4.2");
     else
     {
-        s_der_buffer algorithm = {0};
+        s_der_buffer algorithm;
+        memset(&algorithm, 0, sizeof(s_der_buffer));
         if ((error =
                      asn_put_universal_tlv(TOBJECT_IDENTIFIER, (void *) &p_pwd_info->m_prf_id, 0, p_pkcs_15_token,
                                            &algorithm))
