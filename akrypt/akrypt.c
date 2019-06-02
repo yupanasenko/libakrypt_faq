@@ -346,7 +346,7 @@
                                                                          ak_libakrypt_version( ));
   printf(_("usage \"akrypt command [options] [files]\"\n\n"));
   printf(_("available commands (in short and long forms):\n"));
-  printf(_("  h  hash   calculation and checking integrity codes\n"));
+  printf(_("  h  hash   calculation and/or checking integrity codes\n"));
   printf(_("     show   show useful information\n\n"));
   printf(_("also try:\n"));
   printf(_("  \"akrypt command --help\" to get information about command options\n"));

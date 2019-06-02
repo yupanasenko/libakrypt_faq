@@ -59,9 +59,11 @@
 
   добавить параметры вывода результатов
   --tag  create a BSD-style checksum
-
   --status don't output anything, status code shows success
 */
+
+ /* проверка наличия параметров */
+  if( argc < 3 ) return akrypt_hash_help();
 
  /* инициализируем переменную */
   memset( &ic, 0, sizeof( struct hash_info ));
@@ -130,7 +132,7 @@
                      break;
        }
    } while( next_option != -1 );
-   if( work == do_nothing ) return EXIT_FAILURE;
+   if( work == do_nothing ) return akrypt_hash_help();
 
  /* начинаем работу с криптографическими примитивами */
    if( ak_libakrypt_create( audit ) != ak_true ) return ak_libakrypt_destroy();
@@ -145,10 +147,9 @@
    switch( work )
   {
     case do_hash: /* вычисляем контрольную сумму */
-                   for( idx = 1; idx < argc; idx++ ) {
-                       int type = akrypt_file_or_directory( argv[idx] );
-                       switch( type )
-                      {
+                   for( idx = 2; idx < argc; idx++ ) {
+                      switch( akrypt_file_or_directory( argv[idx] ))
+                     {
                        case DT_DIR: akrypt_find( argv[idx], pattern, akrypt_hash_function, &ic, ic.tree );
                                     break;
                        case DT_REG: akrypt_hash_function( argv[idx] , &ic );
@@ -156,7 +157,7 @@
                        default:    /* убираем из перебираемого списка параметры опций */
                                     if( strlen( argv[idx] ) && ( argv[idx][0] == '-' )) idx++;
                            break;
-                      }
+                     }
                    }
                    break;
 
@@ -271,7 +272,6 @@
   printf(_("available options:\n"));
   printf(_(" -a, --algorithm <ni>    set the algorithm, where \"ni\" is name or identifier of hash function\n" ));
   printf(_("                         default algorithm is \"streebog256\" defined by GOST R 34.10-2012\n" ));
-  printf(_("     --audit <file>      set the output file for errors and libakrypt audit system messages\n" ));
   printf(_(" -c, --check <file>      check previously generated integrity codes\n" ));
   printf(_("     --dont-show-stat    don't show a statistical results after checking\n"));
   printf(_("     --ignore-missing    don't breake a check when file is missing\n" ));
@@ -280,6 +280,7 @@
   printf(_("     --quiet             don't print OK for each successfully verified file\n"));
   printf(_(" -r, --recursive         recursive search of files\n" ));
   printf(_("     --reverse-order     output of integrity code in reverse byte order\n" ));
+  printf(_("     --audit <file>      set the output file for errors and libakrypt audit system messages\n" ));
   printf(_(" -h, --help              show this information\n\n" ));
 
  return EXIT_SUCCESS;

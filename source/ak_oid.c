@@ -218,7 +218,6 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  static const char *libakrypt_engine_names[] = {
-    "undefined engine",
     "identifier",
     "block cipher",
     "stream cipher",
@@ -231,12 +230,12 @@
     "sign function",
     "verify function",
     "random generator",
-    "oid engine"
+    "oid engine",
+    "undefined engine",
 };
 
 /* ----------------------------------------------------------------------------------------------- */
  static const char *libakrypt_mode_names[] = {
-    "undefined mode",
     "algorithm",
     "parameter",
     "wcurve params",
@@ -251,7 +250,8 @@
     "xts",
     "xtsmac",
     "xcrypt",
-    "a8"
+    "a8",
+    "undefined mode"
 };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -268,8 +268,8 @@
 /* ----------------------------------------------------------------------------------------------- */
  const char *ak_libakrypt_get_engine_name( const oid_engines_t engine )
 {
-  if(( engine < undefined_engine ) || ( engine > oid_engine )) {
-    ak_error_message( ak_error_oid_engine, __func__, "incorrect value of engine" );
+  if( engine > undefined_engine ) {
+    ak_error_message_fmt( ak_error_oid_engine, __func__, "incorrect value of engine: %d", engine );
     return ak_null_string;
   }
  return libakrypt_engine_names[engine];
@@ -281,11 +281,34 @@
 /* ----------------------------------------------------------------------------------------------- */
  const char *ak_libakrypt_get_mode_name( const oid_modes_t mode )
 {
-  if(( mode < undefined_mode ) || ( mode > a8 )) {
-    ak_error_message( ak_error_oid_mode, __func__, "incorrect value of engine mode" );
+  if( mode > undefined_mode ) {
+    ak_error_message_fmt( ak_error_oid_mode, __func__, "incorrect value of engine mode: %d", mode );
     return ak_null_string;
   }
  return libakrypt_mode_names[mode];
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param index Индекс стурктуры oid
+    @param engine Указатель на переменную, куда будет помещено значение engine
+    @param mode Указатель на переменную, куда будет помещено значение mode
+    @param name Указатель на строку, в которой будет помещено название oid
+    @param oid Указатель на строку, в которой будет помещена последовательность чисел,
+    разделенных точками.
+    @return Функция возвращает \ref ak_error_ok (ноль) в случае успеха. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_libakrypt_get_oid_by_index( const size_t index,
+                                 oid_engines_t *engine, oid_modes_t *mode, char **name, char **oid )
+{
+ if( index >= ak_libakrypt_oids_count()) return ak_error_wrong_index;
+
+  *engine = libakrypt_oids[index].engine;
+  *mode = libakrypt_oids[index].mode;
+  *name = libakrypt_oids[index].name;
+  *oid = libakrypt_oids[index].id;
+
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
