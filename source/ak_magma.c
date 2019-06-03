@@ -508,16 +508,16 @@
     @return В случае успеха функция возвращает ak_error_ok. В противном случае,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_magma_context_free_keys (ak_skey skey)
+ static int ak_magma_context_delete_keys (ak_skey skey)
 {
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using a null pointer to secret key" );
  /* если ключ был создан, но ему не было присвоено значение, здесь возникнет ошибка */
-  if( skey->data == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                      "unexpected null pointer to internal data" );
-
-  ak_ptr_wipe( skey->data, sizeof( struct magma_encrypted_keys ), &skey->generator, ak_true );
-  free( skey->data );
+  if( skey->data != NULL ) {
+    ak_ptr_wipe( skey->data, sizeof( struct magma_encrypted_keys ), &skey->generator, ak_true );
+    free( skey->data );
+    skey->data = NULL;
+  }
  return ak_error_ok;
 }
 
@@ -540,7 +540,7 @@
   if( skey->check_icode( skey ) != ak_true ) return ak_error_message( ak_error_wrong_key_icode,
                                                 __func__ , "using key with wrong integrity code" );
  /* удаляем былое */
-  if( skey->data != NULL ) ak_magma_context_free_keys( skey );
+  if( skey->data != NULL ) ak_magma_context_delete_keys( skey );
 
   if(( data = ak_libakrypt_aligned_malloc( sizeof( struct magma_encrypted_keys ))) == NULL )
     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
@@ -846,7 +846,9 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
   };
 
  /* устанавливаем ресурс использования серетного ключа */
-  bkey->key.resource.counter = ak_libakrypt_get_option( "magma_cipher_resource" );
+  if(( error = ak_skey_context_set_resource( &bkey->key,
+                            block_counter_resource, "magma_cipher_resource" )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect assigning \"magma_cipher_resource\" option" );
 
  /* устанавливаем методы */
   bkey->key.set_mask = ak_skey_context_set_mask_additive;
@@ -855,7 +857,7 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
   bkey->key.check_icode = ak_skey_context_check_icode_additive;
 
   bkey->schedule_keys = ak_magma_context_schedule_keys;
-  bkey->delete_keys = ak_magma_context_free_keys;
+  bkey->delete_keys = ak_magma_context_delete_keys;
   bkey->encrypt = ak_magma_encrypt_with_random_walk;
   bkey->decrypt = ak_magma_decrypt_with_random_walk;
 
@@ -978,7 +980,7 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
                           "the ecb mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
 
  /* 5. Тестируем режим гаммирования (счетчика) согласно ГОСТ Р34.13-2015 */
-  if( ak_bckey_context_xcrypt( &bkey, in_3413_2015_text, out, 32, ctr_iv, sizeof( ctr_iv )) != ak_error_ok ) {
+  if( ak_bckey_context_ctr( &bkey, in_3413_2015_text, out, 32, ctr_iv, sizeof( ctr_iv )) != ak_error_ok ) {
     ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong plain text encryption" );
     result = ak_false;
     goto exit;
@@ -991,7 +993,7 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
     result = ak_false;
     goto exit;
   }
-  if( ak_bckey_context_xcrypt( &bkey, out_3413_2015_ctr_text, out, 32, ctr_iv, sizeof( ctr_iv )) != ak_error_ok ) {
+  if( ak_bckey_context_ctr( &bkey, out_3413_2015_ctr_text, out, 32, ctr_iv, sizeof( ctr_iv )) != ak_error_ok ) {
     ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong cipher text decryption" );
     result = ak_false;
     goto exit;
@@ -1008,7 +1010,7 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
                           "the counter mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
 
  /* 6. Тестируем режим гаммирования (счетчика) на длинах, не кратных длине блока. */
-  if( ak_bckey_context_xcrypt( &bkey, xin1, out, 13, xiv1, 4 ) != ak_error_ok ) {
+  if( ak_bckey_context_ctr( &bkey, xin1, out, 13, xiv1, 4 ) != ak_error_ok ) {
     ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong plain text encryption" );
     result = ak_false;
     goto exit;
@@ -1021,7 +1023,7 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
     result = ak_false;
     goto exit;
   }
-  if( ak_bckey_context_xcrypt( &bkey, xout1, out, 13, xiv1, 4 ) != ak_error_ok ) {
+  if( ak_bckey_context_ctr( &bkey, xout1, out, 13, xiv1, 4 ) != ak_error_ok ) {
     ak_error_message_fmt( ak_error_get_value(), __func__ , "wrong cipher text decryption" );
     result = ak_false;
     goto exit;

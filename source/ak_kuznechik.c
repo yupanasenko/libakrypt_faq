@@ -121,19 +121,16 @@
  /* выполняем стандартные проверки */
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer,
                                                  __func__ , "using a null pointer to secret key" );
-  if( skey->data == NULL ) return ak_error_message( ak_error_null_pointer,
-                                   __func__ , "using a null pointer to secret key internal data" );
- /* теперь очистка и освобождение памяти */
-  if(( error = ak_ptr_wipe( skey->data, sizeof( ak_kuznechik_expanded_keys ),
-                                                  &skey->generator, ak_true )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "incorrect wiping an internal data" );
-    memset( skey->data, 0, sizeof( ak_kuznechik_expanded_keys ));
-  }
   if( skey->data != NULL ) {
+   /* теперь очистка и освобождение памяти */
+    if(( error = ak_ptr_wipe( skey->data, sizeof( ak_kuznechik_expanded_keys ),
+                                                  &skey->generator, ak_true )) != ak_error_ok ) {
+      ak_error_message( error, __func__, "incorrect wiping an internal data" );
+      memset( skey->data, 0, sizeof( ak_kuznechik_expanded_keys ));
+    }
     free( skey->data );
     skey->data = NULL;
   }
-
  return error;
 }
 
@@ -367,11 +364,11 @@
   };
 
  /* устанавливаем ресурс использования серетного ключа */
-  bkey->key.resource.counter = ak_libakrypt_get_option( "kuznechik_cipher_resource" );
+  if(( error = ak_skey_context_set_resource( &bkey->key,
+                            block_counter_resource, "kuznechik_cipher_resource" )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect assigning \"kuznechik_cipher_resource\" option" );
 
  /* устанавливаем методы */
- // bkey->key.set_mask =  ak_kuznechik_set_mask_xor;
-
   bkey->schedule_keys = ak_kuznechik_schedule_keys;
   bkey->delete_keys = ak_kuznechik_delete_keys;
   bkey->encrypt = ak_kuznechik_encrypt_with_mask;
@@ -512,7 +509,7 @@
                 "the ecb mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
 
  /* 4. Тестируем режим гаммирования (счетчика) согласно ГОСТ Р34.13-2015 */
-  if(( error = ak_bckey_context_xcrypt( &bkey, inlong, myout, 64, ivctr, 8 )) != ak_error_ok ) {
+  if(( error = ak_bckey_context_ctr( &bkey, inlong, myout, 64, ivctr, 8 )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong counter mode encryption" );
     result = ak_false;
     goto exit;
@@ -526,7 +523,7 @@
     goto exit;
   }
 
-  if(( error = ak_bckey_context_xcrypt( &bkey, outctr, myout, 64, ivctr, 8 )) != ak_error_ok ) {
+  if(( error = ak_bckey_context_ctr( &bkey, outctr, myout, 64, ivctr, 8 )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong counter mode decryption" );
     result = ak_false;
     goto exit;
@@ -543,7 +540,7 @@
                "the counter mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
 
  /* 5. Тестируем режим гаммирования (счетчика) на длинах, не кратных длине блока. */
-  if( ak_bckey_context_xcrypt( &bkey, xin1, myout, 23, xiv1, 8 ) != ak_error_ok ) {
+  if( ak_bckey_context_ctr( &bkey, xin1, myout, 23, xiv1, 8 ) != ak_error_ok ) {
     ak_error_message( ak_error_get_value(), __func__ , "wrong plain text encryption" );
     result = ak_false;
     goto exit;
@@ -557,7 +554,7 @@
     goto exit;
   }
 
-  if( ak_bckey_context_xcrypt( &bkey, xout1, myout, 23, xiv1, 8 ) != ak_error_ok ) {
+  if( ak_bckey_context_ctr( &bkey, xout1, myout, 23, xiv1, 8 ) != ak_error_ok ) {
     ak_error_message( ak_error_get_value(), __func__ , "wrong cipher text decryption" );
     result = ak_false;
     goto exit;

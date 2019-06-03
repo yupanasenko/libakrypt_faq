@@ -33,7 +33,7 @@ if( CMAKE_HOST_UNIX )
   endif()
 
 # ручная деинсталляция
-  if( ${CMAKE_INSTALL_PREFIX} )
+  if( CMAKE_INSTALL_PREFIX )
   else()
    set( CMAKE_INSTALL_PREFIX "/usr/local" )
   endif()

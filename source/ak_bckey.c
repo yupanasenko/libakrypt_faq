@@ -30,7 +30,7 @@
 
     Следующие поля принимают значения по-умолчанию
     - bkey.key.data -- указатель на служебную область памяти
-    - bkey.key.resource.counter -- максимально возможное число обрабатываемых блоков информации
+    - bkey.key.resource.value.counter -- максимально возможное число обрабатываемых блоков информации
     - bkey.key.oid -- идентификатор алгоритма шифрования
     - bkey.key.set_mask -- функция установки или смены маски ключа
     - bkey.key.unmask -- функция снятия маски с ключа
@@ -76,11 +76,9 @@
  return ak_error_ok;
 }
 
-#include <stdio.h>
-
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param bkey контекст ключа алгоритма блочного шифрованния
-    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    @return В случае успеха функция возввращает \ref ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_destroy( ak_bckey bkey )
@@ -128,6 +126,36 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! @param bkey контекст ключа алгоритма блочного шифрованния
+    @param oid Идентификатор алгоритма HMAC - ключевой функции хеширования.
+    @return В случае успешного завершения функция возвращает \ref ak_error_ok. В случае
+    возникновения ошибки возвращеется ее код.                                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_bckey_context_create_oid( ak_bckey bkey, ak_oid oid )
+{
+  int error = ak_error_ok;
+  if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                  "using a null pointer to block cipher context" );
+  if( oid == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                           "using a null pointer to oid context" );
+ /* проверяем, что OID от правильного алгоритма выработки */
+  if( oid->engine != block_cipher )
+    return ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
+ /* проверяем, что OID от алгоритма, а не от параметров */
+  if( oid->mode != algorithm )
+    return ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
+ /* проверяем, что производящая функция определена */
+  if( oid->func.create == NULL )
+    return ak_error_message( ak_error_undefined_function, __func__ ,
+                                             "using block cipher oid with undefined constructor" );
+ /* инициализируем контекст функции хеширования */
+  if(( error = (( ak_function_bckey_create *)oid->func.create )( bkey )) != ak_error_ok )
+    return ak_error_message_fmt( error, __func__,
+                                        "invalid creation of %s block cipher context", oid->name );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция присваивает контексту ключа алгоритма блочного шифрования заданное значение,
     содержащееся в области памяти, на которую указывает аргумент функции keyptr.
     При инициализации значение ключа \b копируется в контекст ключа, если флаг cflag истиннен.
@@ -149,7 +177,7 @@
     @param cflag Флаг владения данными. Если он истинен, то данные копируются в область памяти,
     которой владеет ключевой контекст.
 
-    @return Функция возвращает код ошибки. В случае успеха возвращается ak_error_ok (ноль).        */
+    @return Функция возвращает код ошибки. В случае успеха возвращается \ref ak_error_ok (ноль).   */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_set_key( ak_bckey bkey,
                                    const ak_pointer keyptr, const size_t size, const bool_t cflag )
@@ -168,7 +196,9 @@
     return ak_error_message( error, __func__ , "incorrect assigning of fixed key data" );
 
  /* выполняем развертку раундовых ключей */
-  if( bkey->schedule_keys != NULL ) bkey->schedule_keys( &bkey->key );
+  if( bkey->schedule_keys != NULL ) error = bkey->schedule_keys( &bkey->key );
+  if( error != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect execution of key scheduling procedure" );
 
  return error;
 }
@@ -184,7 +214,7 @@
     @param bkey Контекст ключа блочного алгоритма шифрования.
     @param generator Контекст генератора случайных (псевдослучайных) чисел.
 
-    @return Функция возвращает код ошибки. В случае успеха возвращается ak_error_ok.               */
+    @return Функция возвращает код ошибки. В случае успеха возвращается \ref ak_error_ok.          */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_set_key_random( ak_bckey bkey, ak_random generator )
 {
@@ -200,7 +230,9 @@
     return ak_error_message( error, __func__ , "incorrect assigning of random key data" );
 
  /* выполняем развертку раундовых ключей */
-  if( bkey->schedule_keys != NULL ) bkey->schedule_keys( &bkey->key );
+  if( bkey->schedule_keys != NULL ) error = bkey->schedule_keys( &bkey->key );
+  if( error != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect execution of key scheduling procedure" );
 
  return error;
 }
@@ -223,7 +255,7 @@
     @param salt Случайный вектор, представленный в виде строки символов.
     @param salt_size Длина случайного вектора в байтах
 
-    @return В случае успеха возвращается значение ak_error_ok. В противном случае
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_set_key_from_password( ak_bckey bkey, const ak_pointer pass,
@@ -240,8 +272,58 @@
     return ak_error_message( error, __func__ , "incorrect assigning for given password" );
 
  /* выполняем развертку раундовых ключей */
-  if( bkey->schedule_keys != NULL ) bkey->schedule_keys( &bkey->key );
+  if( bkey->schedule_keys != NULL ) error = bkey->schedule_keys( &bkey->key );
+  if( error != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect execution of key scheduling procedure" );
 
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param bkey Контекст создаваемого ключа.
+    @param rkey Контекст ключа, значение которого дублируется.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_bckey_context_create_and_set_bckey( ak_bckey bkey, ak_bckey rkey )
+{
+  int error = ak_error_ok;
+  if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                          "using null pointer to first block cipher key context" );
+  if( rkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                         "using null pointer to second block cipher key context" );
+
+  if(( error = ak_skey_context_create_and_set_skey( &bkey->key, &rkey->key )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect assigning of secret key" );
+
+ /* структура, хранящая синхропосылку инициализируется нулевым значением */
+  if(( error = ak_buffer_create_size( &bkey->ivector, rkey->ivector.size )) != ak_error_ok ) {
+    if( ak_skey_context_destroy( &bkey->key ) != ak_error_ok )
+      ak_error_message( ak_error_get_value(), __func__, "wrong destroying a secret key" );
+    return ak_error_message( error, __func__, "wrong memory allocation for temporary vector");
+  }
+  if( bkey->ivector.data != NULL ) /* копируем данные */
+    memcpy( bkey->ivector.data, rkey->ivector.data, rkey->ivector.size );
+
+ /* устанавливаем методы */
+  bkey->bsize = rkey->bsize;
+  bkey->encrypt = rkey->encrypt;
+  bkey->decrypt = rkey->decrypt;
+  bkey->schedule_keys = rkey->schedule_keys;
+  bkey->delete_keys = rkey->delete_keys;
+
+ /* выполняем развертку раундовых ключей */
+  if( bkey->schedule_keys != NULL ) error = bkey->schedule_keys( &bkey->key );
+  if( error != ak_error_ok ) {
+    ak_bckey_context_destroy( bkey );
+    return ak_error_message( error, __func__, "incorrect execution of key scheduling procedure" );
+  }
+ /* выполняем забытое: перемаскируем секретный ключ */
+  if(( error = bkey->key.set_mask( &bkey->key )) != ak_error_ok ) {
+    ak_bckey_context_destroy( bkey );
+    ak_error_message( error, __func__, "incorrect secret key remasking" );
+  }
  return error;
 }
 
@@ -275,10 +357,10 @@
                                         __func__, "incorrect integrity code of secret key value" );
  /* уменьшаем значение ресурса ключа */
   blocks = (ak_uint64 ) size/bkey->bsize;
-  if( bkey->key.resource.counter < blocks )
+  if( bkey->key.resource.value.counter < blocks )
     return ak_error_message( ak_error_low_key_resource,
                                                    __func__ , "low resource of block cipher key" );
-   else bkey->key.resource.counter -= blocks;
+   else bkey->key.resource.value.counter -= blocks;
 
  /* теперь приступаем к зашифрованию данных */
   switch( bkey->bsize ) {
@@ -332,10 +414,10 @@
                                         __func__, "incorrect integrity code of secret key value" );
  /* уменьшаем значение ресурса ключа */
   blocks = (ak_uint64 ) size/bkey->bsize;
-  if( bkey->key.resource.counter < blocks )
+  if( bkey->key.resource.value.counter < blocks )
     return ak_error_message( ak_error_low_key_resource,
                                                    __func__ , "low resource of block cipher key" );
-   else bkey->key.resource.counter -= blocks;
+   else bkey->key.resource.value.counter -= blocks;
 
  /* теперь приступаем к расшифрованию данных */
   switch( bkey->bsize ) {
@@ -362,26 +444,28 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! В режиме гаммирования операцией зашифрования является сложение открытого текста по модулю два
-    с последовательностью, вырабатываемой блочным шифром, поэтому, для зашифрования и расшифрования
-    информациии используется одна и таже функция.
+/*! В режиме гаммирования операцией шифрования является сложение открытого текста по модулю два
+    с последовательностью, вырабатываемой блочным шифром, поэтому для зашифрования и расшифрования
+    информациии используется одна и та же функция.
 
     Значение синхропосылки `iv` копируется в контекст секретного ключа (область памяти, на которую
     указывает `iv` не изменяется) и, в ходе реализации режима гаммирования, преобразуется.
     Преобразованное значение сохраняется в контексте секретного ключа в буффере `skey.ivector`.
-    Данное значение может быть использовано при повторном вызове функции ak_bckey_context_xcrypt().
+    Данное значение может быть использовано при повторном вызове функции ak_bckey_context_ctr().
     Следующий пример иллюстрирует сказанное.
 
 \code
+
  // шифрование буффера с данными одним фрагментом
-  ak_bckey_context_xcrypt( key, in, out, size, iv, 4 );
+  ak_bckey_context_ctr( key, in, out, size, iv, 4 );
 
  // тот же результат может быть получен за несколько вызовов
-  ak_bckey_context_xcrypt( &key, in, out, 16, iv, 4 );
-  ak_bckey_context_xcrypt( &key, in+16, out+16, 16, NULL, 0 );
-  ak_bckey_context_xcrypt( &key, in+32, out+32, size-32, NULL, 0 );
+  ak_bckey_context_ctr( &key, in, out, 16, iv, 4 );
+  ak_bckey_context_ctr( &key, in+16, out+16, 16, NULL, 0 );
+  ak_bckey_context_ctr( &key, in+32, out+32, size-32, NULL, 0 );
         // для того, чтобы использовать внутреннее значение синхропосылки,
         //              мы передаем нулевые значения последних параметров
+
 \endcode
 
  В приведенном выше фрагменте исходный буффер сначала зашифровывается за один вызов функции,
@@ -404,9 +488,9 @@
     ошибки.
 
     @return В случае возникновения ошибки функция возвращает ее код, в противном случае
-    возвращается ak_error_ok (ноль)                                                                */
+    возвращается \ref ak_error_ok (ноль)                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_bckey_context_xcrypt( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size,
+ int ak_bckey_context_ctr( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size,
                                                                      ak_pointer iv, size_t iv_size )
 {
   int error = ak_error_ok;
@@ -419,17 +503,17 @@
     return ak_error_message( ak_error_wrong_key_icode, __func__,
                                                    "incorrect integrity code of secret key value" );
  /* уменьшаем значение ресурса ключа */
-  if( bkey->key.resource.counter < ( blocks + ( tail > 0 )))
+  if( bkey->key.resource.value.counter < ( blocks + ( tail > 0 )))
     return ak_error_message( ak_error_low_key_resource,
                                                     __func__ , "low resource of block cipher key" );
-   else bkey->key.resource.counter -= ( blocks + ( tail > 0 ));
+   else bkey->key.resource.value.counter -= ( blocks + ( tail > 0 ));
 
  /* выбираем, как вычислять синхропосылку */
   if(( iv == NULL ) || ( iv_size == 0 )) { /* запрос на использование внутреннего значения */
     if( ak_buffer_is_assigned( &bkey->ivector ) != ak_true )
       return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                   "first calling function with undefined value of initial vector" );
-    if( bkey->key.flags&bckey_flag_not_xcrypt )
+    if( bkey->key.flags&bckey_flag_not_ctr )
       return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                               "secondary calling function with undefined value of initial vector" );
   } else {
@@ -450,7 +534,7 @@
      memcpy( ((ak_uint8 *)bkey->ivector.data) + halfsize, iv, ak_min( halfsize, iv_size ));
 
     /* снимаем значение флага */
-     if( bkey->key.flags&bckey_flag_not_xcrypt ) bkey->key.flags ^= bckey_flag_not_xcrypt;
+     if( bkey->key.flags&bckey_flag_not_ctr ) bkey->key.flags ^= bckey_flag_not_ctr;
     }
 
  /* обработка основного массива данных (кратного длине блока) */
@@ -506,7 +590,7 @@
    /* запрещаем дальнейшее использование xcrypt на данном значении синхропосылки,
                                            поскольку обрабатываемые данные не кратны длине блока. */
     memset( bkey->ivector.data, 0, bkey->ivector.size );
-    bkey->key.flags |= bckey_flag_not_xcrypt;
+    bkey->key.flags |= bckey_flag_not_ctr;
   }
 
  /* перемаскируем ключ */
@@ -560,10 +644,10 @@
   }
 
  /* уменьшаем значение ресурса ключа */
-  if( bkey->key.resource.counter < ( blocks + ( tail > 0 ))) {
+  if( bkey->key.resource.value.counter < ( blocks + ( tail > 0 ))) {
     ak_error_message( ak_error_low_key_resource, __func__ , "low resource of block cipher key" );
     return NULL;
-  } else bkey->key.resource.counter -= ( blocks + ( tail > 0 )); /* уменьшаем ресурс ключа */
+  } else bkey->key.resource.value.counter -= ( blocks + ( tail > 0 )); /* уменьшаем ресурс ключа */
 
   memset( akey, 0, sizeof( akey ));
   memset( yaout, 0, sizeof( yaout ));

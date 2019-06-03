@@ -71,7 +71,7 @@
     return error;
   }
   skey->data = NULL;
-  memset( &(skey->resource), 0, sizeof( union resource ));
+  memset( &(skey->resource), 0, sizeof( struct resource )); /* ресурс ключа не определен */
 
  /* инициализируем генератор масок */
   if(( error = ak_random_context_create_xorshift32( &skey->generator )) != ak_error_ok ) {
@@ -143,7 +143,7 @@
 
   ak_random_context_destroy( &skey->generator );
   if( skey->data != NULL ) {
-   /* при установленном флаге прамять не очищаем */
+   /* при установленном флаге память не очищаем */
     if( !((skey->flags)&skey_flag_data_not_free )) free( skey->data );
   }
   ak_buffer_destroy( &skey->number );
@@ -444,6 +444,83 @@
  /* и сравнение */
   if( memcmp( skey->icode.data, &result, 8 )) return ak_false;
    else return ak_true;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param skey Контекст секретного ключа.
+    \param type Тип присваиваемого ресурса.
+    \param option Строка с имененм опции, значение которой присваивается
+    \return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_context_set_resource( ak_skey skey, resource_t type, const char *option )
+{
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using a null pointer to secret key" );
+  if( option == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                           "using a null pointer to option name" );
+  switch( skey->resource.type = type ) {
+    case block_counter_resource:
+    case key_using_resource:
+      if(( skey->resource.value.counter =
+                  ak_libakrypt_get_option( option )) != ak_error_wrong_option ) return ak_error_ok;
+        else return ak_error_wrong_option;
+    default: return ak_error_wrong_option;
+  }
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \details В большинстве криптографических механизмов копирование ключевой информации
+    представляется излишним. Однако в режимах шифрования с динамическим изменением ключа шифрования
+    такая функция необходима для возможности вернуться в исходную точку.
+
+    Функция совмещает в себе две процедуры - инииализацию первого контекста в соответствии с
+    алгоритмом, определяемым вторым контекстом и присвоение ключевого значения, содержащегося во
+    втором контексте.
+
+    \param skey Контекст секретного ключа, для которого выполняется процедура инициализации.
+    \param rkey Контекст, значение которого присваивается.
+    \return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_context_create_and_set_skey( ak_skey skey, ak_skey rkey )
+{
+  int error = ak_error_ok;
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                      "using a null pointer to first secret key" );
+  if( rkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                     "using a null pointer to second secret key" );
+  if(( error = ak_skey_context_create( skey, rkey->key.size, rkey->icode.size )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect creation of secret key" );
+
+ /*копируем данные и указатели на функции */
+  memcpy( skey->key.data, rkey->key.data, rkey->key.size );
+  memcpy( skey->mask.data, rkey->mask.data, rkey->mask.size );
+  memcpy( skey->icode.data, rkey->icode.data, rkey->icode.size );
+ /* копируем ресурс ключа */
+  skey->resource.type = rkey->resource.type;
+  skey->resource.value.counter = rkey->resource.value.counter;
+
+ /* поскольку на уровне класса skey определить размер skey->data не представляется возможным,
+        копирование внутренних данных должно реализовываться функциями классов - наследников */
+  skey->data = NULL;
+  skey->oid = rkey->oid;
+  skey->flags = rkey->flags;
+
+  skey->set_mask = rkey->set_mask;
+  skey->unmask = rkey->unmask;
+  skey->set_icode = rkey->set_icode;
+  skey->check_icode = rkey->check_icode;
+
+ /* перемаскируем ключ, значения которого были скопированы */
+  if(( error = rkey->set_mask( rkey )) != ak_error_ok ) {
+    ak_skey_context_destroy( skey );
+    return ak_error_message( error, __func__, "incorrect remasking of second key" );
+  }
+ /* корректное перемаскирование инициализированного ключа возможно
+                                        только после инициализации поля skey->data  */
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -119,7 +119,7 @@
         в дереве библиотеки: 1.2.643.2.52.1.6 - алгоритмы блочного шифрования
         в дереве библиотеки: 1.2.643.2.52.1.7 - параметры алгоритмов блочного шифрования */
 
-   { block_cipher, algorithm, "magma", "1.2.643.2.2.21", NULL, NULL,
+   { block_cipher, algorithm, "magma", "1.2.643.7.1.1.5.1", NULL, NULL,
                                { ( ak_function_void *) ak_bckey_context_create_magma,
                                       ( ak_function_void *) ak_bckey_context_destroy,
                                        ( ak_function_void *) ak_bckey_context_delete, NULL, NULL }},

@@ -440,9 +440,9 @@
 
           /*! \todo здесь надо аккуратно определить iv для режима aead */
            if( ekey->bsize == 16 )
-             ak_bckey_context_xcrypt( ekey, oframe + fctx->header_offset,
+             ak_bckey_context_ctr( ekey, oframe + fctx->header_offset,
                                              oframe + fctx->header_offset, olen, oframe, 8 );
-            else ak_bckey_context_xcrypt( ekey, oframe + fctx->header_offset,
+            else ak_bckey_context_ctr( ekey, oframe + fctx->header_offset,
                                            oframe + fctx->header_offset, olen, oframe+4, 4 );
         }
 
@@ -723,9 +723,9 @@
    if( ftype == encrypted_frame ) {
     /*! \todo здесь надо аккуратно определить iv для режима aead */
      if( ekey->bsize == 16 )
-       ak_bckey_context_xcrypt( ekey, frame + offset,
+       ak_bckey_context_ctr( ekey, frame + offset,
                                   frame + offset, framelen - offset - ilen - 2, frame, 8 );
-      else ak_bckey_context_xcrypt( ekey, frame + offset,
+      else ak_bckey_context_ctr( ekey, frame + offset,
                               frame + offset, framelen - offset - ilen - 2, frame + 4, 4 );
    }
    ak_mac_context_ptr( ikey, frame, framelen - ilen - 2, out );

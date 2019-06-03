@@ -98,8 +98,8 @@
   struct mgm_ctx mctx;
 
  /* принудительно изменяем ресурс ключа */
-  key->key.resource.counter = ( 2*mbsize*1024*1024 )/key->bsize;
-  printf(" key resource changed to %lu blocks\n", (unsigned long int)key->key.resource.counter );
+  key->key.resource.value.counter = ( 2*mbsize*1024*1024 )/key->bsize;
+  printf(" key resource changed to %lu blocks\n", (unsigned long int)key->key.resource.value.counter );
 
  /* открываем файлы */
   if( ak_file_open_to_read( &in, from ) == ak_error_ok )
@@ -156,8 +156,8 @@
   struct mgm_ctx mctx;
 
  /* принудительно изменяем ресурс ключа */
-  key->key.resource.counter = ( 2*mbsize*1024*1024 )/key->bsize;
-  printf(" key resource changed to %lu blocks\n", (unsigned long int)key->key.resource.counter );
+  key->key.resource.value.counter = ( 2*mbsize*1024*1024 )/key->bsize;
+  printf(" key resource changed to %lu blocks\n", (unsigned long int)key->key.resource.value.counter );
 
  /* открываем файлы */
   if( ak_file_open_to_read( &in, from ) == ak_error_ok )

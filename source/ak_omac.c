@@ -246,10 +246,10 @@
                                                __func__ , "using omac key with unassigned value" );
  /* проверяем ресурс ключа */
   blocks = (ak_int64)size/gkey->bkey.bsize;
-  if( gkey->bkey.key.resource.counter <= blocks + 2 ) /* плюс два вызова на финализацию */
+  if( gkey->bkey.key.resource.value.counter <= blocks + 2 ) /* плюс два вызова на финализацию */
     return ak_error_message( ak_error_low_key_resource,
                                             __func__, "using omac key context with low resource" );
-  else gkey->bkey.key.resource.counter -= blocks;
+  else gkey->bkey.key.resource.value.counter -= blocks;
 
  /* основной цикл */
   yaptr = (ak_uint64 *)gkey->yaout.data;
@@ -311,11 +311,11 @@
     return NULL;
   }
  /* проверяем ресурс ключа */
-  if( gkey->bkey.key.resource.counter < 2 ) {
+  if( gkey->bkey.key.resource.value.counter < 2 ) {
     ak_error_message( ak_error_low_key_resource,
                                             __func__, "using omac key context with low resource" );
     return NULL;
-  } else gkey->bkey.key.resource.counter -= 2;
+  } else gkey->bkey.key.resource.value.counter -= 2;
 
  /* готовим временные переменные */
   memset( akey, 0, sizeof( akey ));

@@ -46,7 +46,7 @@
   switch( fork( )) {
    case -1: return EXIT_FAILURE;
    case  0: /*  потомок */
-            error = client(); /* запускаем клиенсткую часть */
+            error = client(); /* запускаем клиентскую часть */
             break;
    default: /* родитель */
             close(0);

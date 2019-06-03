@@ -20,7 +20,7 @@ project( libakrypt C )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 7 )
-set( MINOR_VERSION 12 )
+set( MINOR_VERSION 13 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -114,6 +114,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_magma.c
                     source/ak_omac.c
                     source/ak_mgm.c
+                    source/ak_acpkm.c
   )
   add_compile_options( -DLIBAKRYPT_CRYPTO_FUNCTIONS=ON )  
   if( LIBAKRYPT_HAVE_SYSUN )
@@ -332,9 +333,11 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  internal-sign01
                  internal-sign02
                  internal-bckey01
+                 internal-bckey01a
                  internal-bckey02
                  internal-bckey02-magma
                  internal-bckey03
+                 internal-bckey05
                  internal-mac01
                  internal-mgm01
                  internal-mgm02

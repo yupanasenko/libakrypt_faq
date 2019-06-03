@@ -41,15 +41,15 @@
 
  /* первый раз шифруем одним махом весь буффер */
   memset( out, 0, size ); /* обнуляем шифртекст */
-  ak_bckey_context_xcrypt( &key, in, out, size, iv, sizeof( iv ));
+  ak_bckey_context_ctr( &key, in, out, size, iv, sizeof( iv ));
   printf("cipher text:\n ");
   for( i = 0; i < size; i++ ) printf("%02X", out[i] );
   printf(" (one call)\n");
 
  /* второй раз шифруем фрагментами (длина которых кратна длине блока) */
-  ak_bckey_context_xcrypt( &key, in, out1, 16, iv, sizeof( iv ));
-  ak_bckey_context_xcrypt( &key, in+16, out1+16, 16, NULL, 0 );
-  ak_bckey_context_xcrypt( &key, in+32, out1+32, size-32, NULL, 0 );
+  ak_bckey_context_ctr( &key, in, out1, 16, iv, sizeof( iv ));
+  ak_bckey_context_ctr( &key, in+16, out1+16, 16, NULL, 0 );
+  ak_bckey_context_ctr( &key, in+32, out1+32, size-32, NULL, 0 );
   printf("cipher text:\n ");
   for( i = 0; i < size; i++ ) printf("%02X", out1[i] );
   printf(" (some calls)\n");
