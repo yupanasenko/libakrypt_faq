@@ -126,17 +126,17 @@ typedef struct {
 /** Методы добавления данных **/
 
 /*! \brief Добавление зашифрованного объекта в DER последовательность. */
-int pkcs_15_put_object_direct_protected(s_der_buffer *p_pkcs_15_token,
+int pkcs_15_put_object_direct_protected(s_der_buffer *p_pkcs_15_token_der,
                                         s_enveloped_data *p_enveloped_data,
                                         s_der_buffer *p_enveloped_data_der);
 
 /*! \brief Добавление общих атрибутов объектов в DER последовательность. */
-int pkcs_15_put_common_object_attributes(s_der_buffer *p_pkcs_15_token,
+int pkcs_15_put_common_object_attributes(s_der_buffer *p_pkcs_15_token_der,
                                          s_common_obj_attrs *p_obj_attrs,
                                          s_der_buffer *p_common_object_attributes_der);
 
 /*! \brief Добавление общих атрибутов ключей в DER последовательность. */
-int pkcs_15_put_common_key_attributes(s_der_buffer *p_pkcs_15_token,
+int pkcs_15_put_common_key_attributes(s_der_buffer *p_pkcs_15_token_der,
                                       s_common_key_attrs *p_key_attrs,
                                       s_der_buffer *p_common_key_attributes_der);
 
