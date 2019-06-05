@@ -8,9 +8,9 @@
  #include <akrypt.h>
 
 /* ----------------------------------------------------------------------------------------------- */
- int akrypt_hash_help( void );
- int akrypt_hash_function( const char * , ak_pointer );
- int akrypt_hash_check_function( char * , ak_pointer );
+ int akrypt_icode_help( void );
+ int akrypt_icode_function( const char * , ak_pointer );
+ int akrypt_icode_check_function( char * , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
  static struct hash_info {
@@ -28,7 +28,7 @@
   } ic;
 
 /* ----------------------------------------------------------------------------------------------- */
- int akrypt_hash( int argc, TCHAR *argv[] )
+ int akrypt_icode( int argc, TCHAR *argv[] )
 {
   int next_option = 0, idx = 0;
   enum { do_nothing, do_hash, do_check } work = do_hash;
@@ -44,7 +44,7 @@
      { "audit",            1, NULL,  255 },
      { "algorithm",        1, NULL,  'a' },
      { "check",            1, NULL,  'c' },
-     { "pattern",          1, NULL,  'p' },
+     { "mask",             1, NULL,  'm' },
      { "output",           1, NULL,  'o' },
      { "recursive",        0, NULL,  'r' },
      { "reverse-order",    0, NULL,  254 },
@@ -63,7 +63,7 @@
 */
 
  /* проверка наличия параметров */
-  if( argc < 3 ) return akrypt_hash_help();
+  if( argc < 3 ) return akrypt_icode_help();
 
  /* инициализируем переменную */
   memset( &ic, 0, sizeof( struct hash_info ));
@@ -73,10 +73,10 @@
 
  /* разбираем опции командной строки */
   do {
-       next_option = getopt_long( argc, argv, "ha:c:o:p:r", long_options, NULL );
+       next_option = getopt_long( argc, argv, "ha:c:o:m:r", long_options, NULL );
        switch( next_option )
       {
-         case 'h' : return akrypt_hash_help();
+         case 'h' : return akrypt_icode_help();
          case 255 : /* получили от пользователя имя файла для вывода аудита */
                      akrypt_set_audit( optarg );
                      break;
@@ -119,7 +119,7 @@
                             }
                      break;
 
-         case 'p' : /* устанавливаем дополнительную маску для поиска файлов */
+         case 'm' : /* устанавливаем дополнительную маску для поиска файлов */
                      pattern = optarg;
                      break;
 
@@ -132,13 +132,13 @@
                      break;
        }
    } while( next_option != -1 );
-   if( work == do_nothing ) return akrypt_hash_help();
+   if( work == do_nothing ) return akrypt_icode_help();
 
  /* начинаем работу с криптографическими примитивами */
    if( ak_libakrypt_create( audit ) != ak_true ) return ak_libakrypt_destroy();
 
  /* создаем дескриптор алгоритма хеширования */
-   if(( ic.handle = ak_hash_new_oid_ni( algorithm_ni, NULL )) == ak_error_wrong_handle ) {
+   if(( ic.handle = ak_hash_new_oid( algorithm_ni, NULL )) == ak_error_wrong_handle ) {
      printf(_("\"%s\" is incorrect name/identifier for hash function\n"), algorithm_ni );
      goto lab_exit;
    }
@@ -150,9 +150,9 @@
                    for( idx = 2; idx < argc; idx++ ) {
                       switch( akrypt_file_or_directory( argv[idx] ))
                      {
-                       case DT_DIR: akrypt_find( argv[idx], pattern, akrypt_hash_function, &ic, ic.tree );
+                       case DT_DIR: akrypt_find( argv[idx], pattern, akrypt_icode_function, &ic, ic.tree );
                                     break;
-                       case DT_REG: akrypt_hash_function( argv[idx] , &ic );
+                       case DT_REG: akrypt_icode_function( argv[idx] , &ic );
                                     break;
                        default:    /* убираем из перебираемого списка параметры опций */
                                     if( strlen( argv[idx] ) && ( argv[idx][0] == '-' )) idx++;
@@ -162,7 +162,7 @@
                    break;
 
     case do_check: /* проверяем контрольную сумму */
-                   ak_file_read_by_lines( checkfile, akrypt_hash_check_function, &ic );
+                   ak_file_read_by_lines( checkfile, akrypt_icode_check_function, &ic );
                    if( ic.show_stat ) {
                      printf(_("\ntotal: %lu files, where: correct %lu, wrong %lu.\n\n"),
                                (unsigned long int)ic.total, (unsigned long int)ic.successed,
@@ -180,7 +180,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int akrypt_hash_function( const char *filename, ak_pointer ptr )
+ int akrypt_icode_function( const char *filename, ak_pointer ptr )
 {
   int error = ak_error_ok;
   struct hash_info *ic = ptr;
@@ -215,7 +215,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int akrypt_hash_check_function( char *string, ak_pointer ptr )
+ int akrypt_icode_check_function( char *string, ak_pointer ptr )
 {
   int error = ak_error_ok;
   size_t offset = 0, isize = 0;
@@ -266,17 +266,17 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int akrypt_hash_help( void )
+ int akrypt_icode_help( void )
 {
-  printf(_("akrypt hash [options] [directories or files]  - calculation or checking integrity codes for given files\n\n"));
+  printf(_("akrypt icode [options] [files or directories]  - calculation or checking integrity codes for given files\n\n"));
   printf(_("available options:\n"));
   printf(_(" -a, --algorithm <ni>    set the algorithm, where \"ni\" is name or identifier of hash function\n" ));
   printf(_("                         default algorithm is \"streebog256\" defined by GOST R 34.10-2012\n" ));
   printf(_(" -c, --check <file>      check previously generated integrity codes\n" ));
   printf(_("     --dont-show-stat    don't show a statistical results after checking\n"));
   printf(_("     --ignore-missing    don't breake a check when file is missing\n" ));
+  printf(_(" -m, --mask <str>        set the pattern which is used to find files\n" ));
   printf(_(" -o, --output <file>     set the output file for generated integrity codes\n" ));
-  printf(_(" -p, --pattern <str>     set the pattern which is used to find files\n" ));
   printf(_("     --quiet             don't print OK for each successfully verified file\n"));
   printf(_(" -r, --recursive         recursive search of files\n" ));
   printf(_("     --reverse-order     output of integrity code in reverse byte order\n" ));

@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2018 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2019 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Файл akrypt.c                                                                                  */
 /*  - содержит реализацию консольного клиента, иллюстрирующего работу библиотеки libakrypt         */
@@ -77,8 +77,8 @@
 
  /* выполняем команду пользователя */
   if( akrypt_check_command( "show", argv[1] )) return akrypt_show( argc, argv );
-  if( akrypt_check_command( "h", argv[1] )) return akrypt_hash( argc, argv );
-  if( akrypt_check_command( "hash", argv[1] )) return akrypt_hash( argc, argv );
+  if( akrypt_check_command( "i", argv[1] )) return akrypt_icode( argc, argv );
+  if( akrypt_check_command( "icode", argv[1] )) return akrypt_icode( argc, argv );
 
  /* ничего не подошло, выводим сообщение об ошибке */
   ak_log_set_function( ak_function_log_stderr );
@@ -346,7 +346,7 @@
                                                                          ak_libakrypt_version( ));
   printf(_("usage \"akrypt command [options] [files]\"\n\n"));
   printf(_("available commands (in short and long forms):\n"));
-  printf(_("  h  hash   calculation and/or checking integrity codes\n"));
+  printf(_("  i  icode  calculation and/or checking integrity codes\n"));
   printf(_("     show   show useful information\n\n"));
   printf(_("also try:\n"));
   printf(_("  \"akrypt command --help\" to get information about command options\n"));

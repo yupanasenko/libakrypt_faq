@@ -15,7 +15,7 @@
 # сборка при MinGW из консоли MSYS (WINDOWS)
 # cmake -G "MinGW Makefiles" -D CMAKE_C_COMPILER=gcc path && mingw32-make
 # -------------------------------------------------------------------------------------------------- #
-cmake_minimum_required( VERSION 3.2 )
+cmake_minimum_required( VERSION 2.7 )
 project( libakrypt C )
 
 set( HEAD_VERSION 0 )
@@ -131,13 +131,15 @@ if( LIBAKRYPT_AKRYPT )
   set( AKRYPT_SOURCES
                     akrypt/akrypt.c
                     akrypt/akrypt_show.c
-                    akrypt/akrypt_hash.c )
+                    akrypt/akrypt_icode.c )
   set( AKRYPT_FILES
                     akrypt/akrypt.h
                     akrypt/akrypt.po
                     akrypt/getopt.h
                     akrypt/getopt.c
-                    akrypt/Readme.md )
+                    akrypt/Readme.md
+                    akrypt/akrypt.1
+                    akrypt/akrypt.md )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #

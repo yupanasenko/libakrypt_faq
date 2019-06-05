@@ -357,7 +357,7 @@ extern "C" {
 /*! \brief Создание дескриптора бесключевой функции хеширования Стрибог512. */
  dll_export ak_handle ak_hash_new_streebog512( const char * );
 /*! \brief Создание дескриптора бесключевой функции хеширования. */
- dll_export ak_handle ak_hash_new_oid_ni( const char *, const char * );
+ dll_export ak_handle ak_hash_new_oid( const char *, const char * );
 /*! \brief Получение длины хэш-кода (в байтах). */
  dll_export size_t ak_hash_get_size( ak_handle );
 /*! \brief Вычисление хэш-кода для заданной области памяти. */
@@ -365,6 +365,9 @@ extern "C" {
 /*! \brief Вычисление хэш-кода для заданного файла. */
  dll_export ak_buffer ak_hash_file( ak_handle , const char *, ak_pointer );
 /** @} */
+
+/* ----------------------------------------------------------------------------------------------- */
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Удаление объекта, связанного с заданным дескриптором. */

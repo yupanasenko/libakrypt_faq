@@ -93,7 +93,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /* реализации пользовательских команд */
- int akrypt_hash( int argc, TCHAR *argv[] );
+ int akrypt_icode( int argc, TCHAR *argv[] );
  int akrypt_show( int argc, TCHAR *argv[] );
 
  #endif

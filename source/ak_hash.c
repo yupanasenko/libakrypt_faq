@@ -223,7 +223,7 @@
     @return В случае успеха функция возвращает дескриптор созданного контекста.
     В случае возникновения ошибки возвращается значение \ref ak_error_wrong_handle.                */
 /* ----------------------------------------------------------------------------------------------- */
- ak_handle ak_hash_new_oid_ni( const char *ni, const char *description )
+ ak_handle ak_hash_new_oid( const char *ni, const char *description )
 {
   ak_hash ctx = NULL;
   int error = ak_error_ok;
@@ -252,13 +252,13 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_hash_new_streebog256( const char *description )
 {
- return ak_hash_new_oid_ni( "streebog256", description );
+ return ak_hash_new_oid( "streebog256", description );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_hash_new_streebog512( const char *description )
 {
- return ak_hash_new_oid_ni( "streebog512", description );
+ return ak_hash_new_oid( "streebog512", description );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
