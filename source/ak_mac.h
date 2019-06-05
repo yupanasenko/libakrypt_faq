@@ -74,7 +74,7 @@
     инициализационного вектора (синхропосылки). */
  int ak_mac_context_set_iv( ak_mac , const ak_pointer , const size_t );
 /*! \brief Проверка, можно ли присваивать контексту секретный ключ. */
- int ak_mac_context_is_key_settable( ak_mac );
+ bool_t ak_mac_context_is_key_settable( ak_mac );
 /*! \brief Присвоение контексту сжимающего отображения (секретному ключу) константного значения. */
  int ak_mac_context_set_key( ak_mac , const ak_pointer , const size_t , const bool_t );
 

@@ -332,7 +332,7 @@
     @return Функция \ref ak_true если присвоение ключа допустимо,
     в противном случае возвращается \ref ak_false.                                                 */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_mac_context_is_key_settable( ak_mac ictx )
+ bool_t ak_mac_context_is_key_settable( ak_mac ictx )
 {
    switch( ictx->engine )
   {
