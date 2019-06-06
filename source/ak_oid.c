@@ -18,6 +18,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_parameters.h>
+ #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения OID библиотеки */
@@ -365,15 +366,85 @@
   *engine = libakrypt_oids[index].engine;
   *mode = libakrypt_oids[index].mode;
 
- /* проверяем размер выделенной области памяти и копируем занчения */
+ /* проверяем размер выделенной области памяти и копируем значения */
   if( name_size < 1 + (len = strlen( libakrypt_oids[index].name )))
-    return ak_error_message( ak_error_overflow, __func__, "isufficent memory for name value" );
+    return ak_error_message( ak_error_overflow, __func__, "isufficient memory for name value" );
   memcpy( name, libakrypt_oids[index].name, len );
   name[len] = 0;
 
   if( oid_size < 1 + (len = strlen( libakrypt_oids[index].id )))
-    return ak_error_message( ak_error_overflow, __func__, "isufficent memory for oid value" );
+    return ak_error_message( ak_error_overflow, __func__, "isufficient memory for oid value" );
   memcpy( oid, libakrypt_oids[index].id, len );
+  oid[len] = 0;
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \note Память, для хранения имени и идентификатора алгоритма должна быть выделена заранее.
+    Необходимый объем памяти должен быть не менее, чем значение, возвращаемое функцией
+    ak_libakrypt_get_oid_max_length().
+
+    @param handle Дескриптор алгоритма, для которого получается информация.
+    @param engine Указатель на переменную, куда будет помещено значение engine
+    @param mode Указатель на переменную, куда будет помещено значение mode
+    @param name Указатель на строку, в которую будет скопировано имя алгоритма
+    @param name_size Размер буффера, в который будет скопировано имя алгоритма.
+    @param oid Указатель на строку, в которую будет скопирован OID -  последовательность чисел,
+    разделенных точками.
+    @param oid_size Размер буффера, в который будет скопирован идентификатор алгоритма.
+    @return Функция возвращает \ref ak_error_ok (ноль) в случае успеха. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_libakrypt_get_oid_by_handle( ak_handle handle, oid_engines_t *engine, oid_modes_t *mode,
+                              char *name, const size_t name_size, char *oid, const size_t oid_size )
+{
+  size_t len = 0;
+  ak_pointer ctx = NULL;
+  ak_oid handleOID = NULL;
+
+  if(( ctx = ak_handle_get_context( handle, engine )) == NULL )
+     return ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+
+  switch( *engine ) {
+    case hash_function:
+      handleOID = (( ak_hash )ctx )->oid;
+      break;
+
+    case hmac_function:
+      handleOID = (( ak_hmac )ctx )->key.oid;
+      break;
+
+    case omac_function:
+      handleOID = (( ak_omac )ctx )->bkey.key.oid;
+      break;
+
+    case mgm_function:
+      handleOID = (( ak_mgm )ctx )->bkey.key.oid;
+      break;
+
+    case mac_function:
+      handleOID = (( ak_mac )ctx )->oid;
+      break;
+
+    default: return ak_error_message( ak_error_wrong_handle, __func__,
+                                                        "unsupported or incorrect engine of handle" );
+  }
+  if( handleOID == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "incorrect pointer to internal oid structure" );
+  if( handleOID->engine != *engine ) return ak_error_message( ak_error_not_equal_data, __func__,
+                                                      "internal error with different engine values" );
+  *mode = handleOID->mode;
+
+ /* проверяем размер выделенной области памяти и копируем значения */
+  if( name_size < 1 + (len = strlen( handleOID->name )))
+    return ak_error_message( ak_error_overflow, __func__, "isufficient memory for name value" );
+  memcpy( name, handleOID->name, len );
+  name[len] = 0;
+
+  if( oid_size < 1 + (len = strlen( handleOID->id )))
+    return ak_error_message( ak_error_overflow, __func__, "isufficient memory for oid value" );
+  memcpy( oid, handleOID->id, len );
   oid[len] = 0;
 
  return ak_error_ok;
@@ -388,7 +459,6 @@
   while( --index >= 0 ) {
     if( strlen(libakrypt_oids[index].name) > len ) len = strlen(libakrypt_oids[index].name );
     if( strlen(libakrypt_oids[index].id) > len ) len = strlen(libakrypt_oids[index].id );
-    ak_error_message_fmt( 0, "", "index: %d -> len: %lu", index, len );
   }
  return 1 + len;
 }

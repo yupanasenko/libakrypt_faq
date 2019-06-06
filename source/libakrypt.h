@@ -388,6 +388,10 @@ extern "C" {
  dll_export ak_handle ak_mac_new_mgm_kuznechik( const char * );
 /*! \brief Создание дескриптора произвольного алгоритма вычисления кода аутентификации. */
  dll_export ak_handle ak_mac_new_oid( const char *, const char * );
+/*! \brief Проверка, допускает ли алгоритм использование секретного ключа. */
+ dll_export bool_t ak_mac_is_key_settable( ak_handle );
+/*! \brief Проверка, допускает ли алгоритм использование синхропосылки. */
+ dll_export bool_t ak_mac_is_iv_settable( ak_handle );
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -438,6 +442,9 @@ extern "C" {
  dll_export size_t ak_libakrypt_get_oid_max_length( void );
 /*! \brief Получение информации об oid с заданным индексом. */
  dll_export int ak_libakrypt_get_oid_by_index( const size_t ,
+                  oid_engines_t * , oid_modes_t * , char * , const size_t, char * , const size_t );
+/*! \brief Получение информации об oid алгоритма по его handle. */
+ dll_export int ak_libakrypt_get_oid_by_handle( ak_handle ,
                   oid_engines_t * , oid_modes_t * , char * , const size_t, char * , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */

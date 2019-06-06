@@ -811,6 +811,52 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! @param handle Дескриптор алгоритма итерационного сжатия.
+    @return Функция возвращает истину, если алгоритм допускает использование секретного ключа.
+    В противном случае возвращается ложь. Также ложь возвращается в случае ошибки.
+    В этом случае код ошибки можно получить с помощью вызова ak_error_get_value().                 */
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_mac_is_key_settable( ak_handle handle )
+{
+  ak_mac ctx = NULL;
+  oid_engines_t engine;
+
+  if(( ctx = ak_handle_get_context( handle, &engine )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+    return ak_false;
+  }
+  if( engine != mac_function ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "wrong oid engine for given handle" );
+    return ak_false;
+  }
+
+ return ak_mac_context_is_key_settable( ctx );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param handle Дескриптор алгоритма итерационного сжатия.
+    @return Функция возвращает истину, если алгоритм допускает использование секретного ключа.
+    В противном случае возвращается ложь. Также ложь возвращается в случае ошибки.
+    В этом случае код ошибки можно получить с помощью вызова ak_error_get_value().                 */
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_mac_is_iv_settable( ak_handle handle )
+{
+  ak_mac ctx = NULL;
+  oid_engines_t engine;
+
+  if(( ctx = ak_handle_get_context( handle, &engine )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+    return ak_false;
+  }
+  if( engine != mac_function ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "wrong oid engine for given handle" );
+    return ak_false;
+  }
+
+ return ak_mac_context_is_iv_settable( ctx );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup mac_functions
  *  В данной группе собраны функции внешнего интерфейса, предназначенные для
  *  вычисления итеративных сжимающих отображений, к которым относятся как бесключевые
