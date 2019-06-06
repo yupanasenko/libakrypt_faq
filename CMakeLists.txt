@@ -275,6 +275,11 @@ set( EXAMPLES_LIST hello
                    log
                    buffer
 )
+if( LIBAKRYPT_CRYPTO_FUNCTIONS )
+  set( EXAMPLES_LIST ${EXAMPLES_LIST}
+                   mac
+  )
+endif()
 
 # организуем сборку примеров со статической линковкой
 if( LIBAKRYPT_STATIC_LIB )

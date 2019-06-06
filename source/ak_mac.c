@@ -18,6 +18,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_mac.h>
  #include <ak_tools.h>
+ #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция инициализирует контекст структуры struct mac в значения, определяемые
@@ -32,6 +33,9 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mac_context_create_hash( ak_mac ictx, ak_hash hctx )
 {
+  char oid[32];
+  int error = ak_error_ok;
+
  /* вначале, необходимые проверки */
   if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using null pointer to mac context" );
@@ -56,7 +60,13 @@
   ictx->finalize = hctx->finalize;
   ictx->free = NULL;
 
- return ak_error_ok;
+ /* формируем oid алгоритма, добавляя приставку mac к его имени */
+  ak_snprintf( oid, sizeof( oid ), "mac-%s", hctx->oid->name );
+  if(( ictx->oid = ak_oid_context_find_by_name( oid )) == NULL ) {
+    error = ak_error_get_value();
+    ak_mac_context_destroy( ictx );
+  }
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -72,6 +82,9 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mac_context_create_hmac( ak_mac ictx, ak_hmac hctx )
 {
+  char oid[32];
+  int error = ak_error_ok;
+
  /* вначале, необходимые проверки */
   if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using null pointer to mac context" );
@@ -93,7 +106,13 @@
   ictx->finalize = ak_hmac_context_finalize;
   ictx->free = NULL;
 
- return ak_error_ok;
+ /* формируем oid алгоритма, добавляя приставку mac к его имени */
+  ak_snprintf( oid, sizeof( oid ), "mac-%s", hctx->key.oid->name );
+  if(( ictx->oid = ak_oid_context_find_by_name( oid )) == NULL ) {
+    error = ak_error_get_value();
+    ak_mac_context_destroy( ictx );
+  }
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -109,6 +128,9 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mac_context_create_omac( ak_mac ictx, ak_omac octx )
 {
+  char oid[32];
+  int error = ak_error_ok;
+
  /* вначале, необходимые проверки */
   if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using null pointer to mac context" );
@@ -130,7 +152,13 @@
   ictx->finalize = ak_omac_context_finalize;
   ictx->free = NULL;
 
- return ak_error_ok;
+ /* формируем oid алгоритма, добавляя приставку mac к его имени */
+  ak_snprintf( oid, sizeof( oid ), "mac-%s", octx->bkey.key.oid->name );
+  if(( ictx->oid = ak_oid_context_find_by_name( oid )) == NULL ) {
+    error = ak_error_get_value();
+    ak_mac_context_destroy( ictx );
+  }
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -146,6 +174,9 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mac_context_create_mgm( ak_mac ictx, ak_mgm mctx )
 {
+  char oid[32];
+  int error = ak_error_ok;
+
  /* вначале, необходимые проверки */
   if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using null pointer to mac context" );
@@ -167,7 +198,13 @@
   ictx->finalize = ak_mgm_context_finalize;
   ictx->free = NULL;
 
- return ak_error_ok;
+ /* формируем oid алгоритма, добавляя приставку mac к его имени */
+  ak_snprintf( oid, sizeof( oid ), "mac-%s", mctx->bkey.key.oid->name );
+  if(( ictx->oid = ak_oid_context_find_by_name( oid )) == NULL ) {
+    error = ak_error_get_value();
+    ak_mac_context_destroy( ictx );
+  }
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -243,16 +280,16 @@
             "incorrect initialization of mac function context with %s omac function", oid->name );
     break;
 
-    case mgm_function: /* создаем функцию выработки имитовставки ГОСТ Р 34.13-2015. */
+    case mgm_function: /* создаем функцию выработки имитовставки на основе алгоритма MGM. */
       if(( error = ak_mac_context_create_oid_common( ictx, oid, sizeof( struct mgm ),
                          (ak_function_mac_create*) ak_mac_context_create_mgm )) != ak_error_ok )
         return ak_error_message_fmt( error, __func__,
             "incorrect initialization of mac function context with %s omac function", oid->name );
     break;
 
-    default: return ak_error_message( ak_error_oid_engine, __func__, "using oid with wrong engine" );
+    default:
+          return ak_error_message( ak_error_oid_engine, __func__, "using oid with wrong engine" );
   }
-
  return error;
 }
 
@@ -294,6 +331,20 @@
      } else
          ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to mac context" );
  return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param ctx Указатель на структуру struct mac.
+    @return Функция \ref ak_true если присвоение ключа допустимо,
+    в противном случае возвращается \ref ak_false.                                                 */
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_mac_context_is_iv_settable( ak_mac ictx )
+{
+   switch( ictx->engine )
+  {
+    case mgm_function: return ak_true;
+    default: return ak_false;
+  }
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -383,6 +434,16 @@
   if( error != ak_error_ok ) ak_error_message( error, __func__ ,
                                                         "incorrect assigning a secret key value" );
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_oid ak_mac_context_get_oid( ak_mac ictx )
+{
+  if( ictx == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to null mac context" );
+    return NULL;
+  }
+ return ictx->oid;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -652,6 +713,113 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*                        реализация функций внешнего интерфейса                                   */
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция принимает на вход строку с именем или идентификатором алгоритма бесключевого
+    хэширования или алгоритма вычисления имитовставки,
+    и возвращает дескриптор созданного контекста.
+
+    @param ni Имя или идентификатор (строка, содержащая числа с точками) алгоритма
+    бесключевого хэширования или вычисления имитовставки. В качестве допустимых имен могут
+    выступать те, для которых поле `engine` принимает значения:
+     - \ref hash_function
+     - \ref hmac_function
+     - \ref omac_function
+     - \ref mgm_function
+     - \ref mac_function
+    @param description Строка символов, описывающая создаваемый контекст.
+    Может принимать значение NULL.
+
+    @return В случае успеха функция возвращает дескриптор созданного контекста.
+    В случае возникновения ошибки возвращается значение \ref ak_error_wrong_handle.                */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_mac_new_oid( const char *ni, const char *description )
+{
+  ak_mac ctx = NULL;
+  int error = ak_error_ok;
+  ak_oid oid = ak_oid_context_find_by_ni( ni );
+
+ /* проверяем входной параметр */
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect value of name/identifier" );
+    return ak_error_wrong_handle;
+  }
+  if( oid->engine == mac_function ) /* по oid однозначно получаем указатель на конструктор */
+    return ((ak_function_mac_new_oid *)oid->func.create)( description );
+
+ /* выделяем память и создаем контекст алгоритма итерационного сжатия */
+  if(( ctx = malloc( sizeof( struct mac ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ , "incorrect memory allocation" );
+    return ak_error_wrong_handle;
+  }
+ /* инициализируем контекст */
+  if(( error = ak_mac_context_create_oid( ctx, oid )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "incorrect creation of mac function context" );
+    if( ctx != NULL ) free( ctx );
+    return ak_error_wrong_handle;
+  }
+ /* помещаем контекст в менеджер контекстов и возвращаем полученный дескриптор */
+ return ak_libakrypt_add_context( ctx , mac_function , description );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_mac_new_streebog256( const char *description )
+{
+ return ak_mac_new_oid( "streebog256", description );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_mac_new_streebog512( const char *description )
+{
+ return ak_mac_new_oid( "streebog512", description );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_mac_new_hmac_streebog256( const char *description )
+{
+ return ak_mac_new_oid( "hmac-streebog256", description );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_mac_new_hmac_streebog512( const char *description )
+{
+ return ak_mac_new_oid( "hmac-streebog512", description );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_mac_new_omac_magma( const char *description )
+{
+ return ak_mac_new_oid( "omac-magma", description );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_mac_new_omac_kuznechik( const char *description )
+{
+ return ak_mac_new_oid( "omac-kuznechik", description );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_mac_new_mgm_magma( const char *description )
+{
+ return ak_mac_new_oid( "mgm-magma", description );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_mac_new_mgm_kuznechik( const char *description )
+{
+ return ak_mac_new_oid( "mgm-kuznechik", description );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup mac_functions
+ *  В данной группе собраны функции внешнего интерфейса, предназначенные для
+ *  вычисления итеративных сжимающих отображений, к которым относятся как бесключевые
+ *  функции хеширования, так и алгоритмы выработки имитовставки.
+ *
+ *  Далее тра-ляля и тру-ляля :)
+ */
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                              функции для тестирования                                           */
 /* ----------------------------------------------------------------------------------------------- */
 
@@ -916,6 +1084,7 @@
     случайными имитовставками, вычисляемыми с помощью класса struct mac. */
 
 /*! -----------------------------------------------------------------------------------------------
+    \example example-mac.c
     \example test-internal-mac01.c                                                                 */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                       ak_mac.c  */

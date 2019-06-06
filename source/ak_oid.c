@@ -113,7 +113,47 @@
                                          ( ak_function_void *) ak_mgm_context_destroy,
                                          ( ak_function_void *) ak_mgm_context_delete, NULL, NULL }},
 
-  /*    в дереве библиотеки: 1.2.643.2.52.1.5 - параметры функций ключевого хеширования (имитозащиты) */
+  /*    в дереве библиотеки: 1.2.643.2.52.1.5 - параметры итерационных сжимающих отображений */
+   { mac_function, algorithm, "mac-streebog256", "1.2.643.2.52.1.5.1", NULL, NULL,
+                                        { (ak_function_void *) ak_mac_new_streebog256,
+                                         ( ak_function_void *) ak_mac_context_destroy,
+                                         ( ak_function_void *) ak_mac_context_delete, NULL, NULL }},
+
+   { mac_function, algorithm, "mac-streebog512", "1.2.643.2.52.1.5.2", NULL, NULL,
+                                       { (ak_function_void *) ak_mac_new_streebog512,
+                                         ( ak_function_void *) ak_mac_context_destroy,
+                                         ( ak_function_void *) ak_mac_context_delete, NULL, NULL }},
+
+   { mac_function, algorithm, "mac-hmac-streebog256", "1.2.643.2.52.1.5.3", NULL, NULL,
+                                   { (ak_function_void *) ak_mac_new_hmac_streebog256,
+                                         ( ak_function_void *) ak_mac_context_destroy,
+                                         ( ak_function_void *) ak_mac_context_delete, NULL, NULL }},
+
+   { mac_function, algorithm, "mac-hmac-streebog512", "1.2.643.2.52.1.5.4", NULL, NULL,
+                                   { (ak_function_void *) ak_mac_new_hmac_streebog512,
+                                         ( ak_function_void *) ak_mac_context_destroy,
+                                         ( ak_function_void *) ak_mac_context_delete, NULL, NULL }},
+
+   { mac_function, algorithm, "mac-omac-magma", "1.2.643.2.52.1.5.5", NULL, NULL,
+                                         { (ak_function_void *) ak_mac_new_omac_magma,
+                                         ( ak_function_void *) ak_mac_context_destroy,
+                                         ( ak_function_void *) ak_mac_context_delete, NULL, NULL }},
+
+   { mac_function, algorithm, "mac-omac-kuznechik", "1.2.643.2.52.1.5.6", NULL, NULL,
+                                     { (ak_function_void *) ak_mac_new_omac_kuznechik,
+                                         ( ak_function_void *) ak_mac_context_destroy,
+                                         ( ak_function_void *) ak_mac_context_delete, NULL, NULL }},
+
+   { mac_function, algorithm, "mac-mgm-magma", "1.2.643.2.52.1.5.7", NULL, NULL,
+                                          { (ak_function_void *) ak_mac_new_mgm_magma,
+                                         ( ak_function_void *) ak_mac_context_destroy,
+                                         ( ak_function_void *) ak_mac_context_delete, NULL, NULL }},
+
+   { mac_function, algorithm, "mac-mgm-kuznechik", "1.2.643.2.52.1.5.8", NULL, NULL,
+                                      { (ak_function_void *) ak_mac_new_mgm_kuznechik,
+                                         ( ak_function_void *) ak_mac_context_destroy,
+                                         ( ak_function_void *) ak_mac_context_delete, NULL, NULL }},
+
 
   /* 6. идентификаторы алгоритмов блочного шифрования
         в дереве библиотеки: 1.2.643.2.52.1.6 - алгоритмы блочного шифрования
@@ -300,26 +340,57 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param index Индекс стурктуры oid
+/*! \note Память, для хранения имени и идентификатора алгоритма должна быть выделена заранее.
+    Необходимый объем памяти должен быть не менее, чем значение, возвращаемое функцией
+    ak_libakrypt_get_oid_max_length().
+
+    @param index Индекс статической структуры oid
     @param engine Указатель на переменную, куда будет помещено значение engine
     @param mode Указатель на переменную, куда будет помещено значение mode
-    @param name Указатель на строку, в которой будет помещено название oid
-    @param oid Указатель на строку, в которой будет помещена последовательность чисел,
+    @param name Указатель на строку, в которую будет скопировано имя алгоритма
+    @param name_size Размер буффера, в который будет скопировано имя алгоритма.
+    @param oid Указатель на строку, в которую будет скопирован OID -  последовательность чисел,
     разделенных точками.
+    @param oid_size Размер буффера, в который будет скопирован идентификатор алгоритма.
     @return Функция возвращает \ref ak_error_ok (ноль) в случае успеха. В противном случае,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_get_oid_by_index( const size_t index,
-                                 oid_engines_t *engine, oid_modes_t *mode, char **name, char **oid )
+ int ak_libakrypt_get_oid_by_index( const size_t index, oid_engines_t *engine, oid_modes_t *mode,
+                              char *name, const size_t name_size, char *oid, const size_t oid_size )
 {
- if( index >= ak_libakrypt_oids_count()) return ak_error_wrong_index;
+  size_t len = 0;
+  if( index >= ak_libakrypt_oids_count())
+    return ak_error_message( ak_error_wrong_index, __func__, "incorrect index value" );
 
   *engine = libakrypt_oids[index].engine;
   *mode = libakrypt_oids[index].mode;
-  *name = libakrypt_oids[index].name;
-  *oid = libakrypt_oids[index].id;
+
+ /* проверяем размер выделенной области памяти и копируем занчения */
+  if( name_size < 1 + (len = strlen( libakrypt_oids[index].name )))
+    return ak_error_message( ak_error_overflow, __func__, "isufficent memory for name value" );
+  memcpy( name, libakrypt_oids[index].name, len );
+  name[len] = 0;
+
+  if( oid_size < 1 + (len = strlen( libakrypt_oids[index].id )))
+    return ak_error_message( ak_error_overflow, __func__, "isufficent memory for oid value" );
+  memcpy( oid, libakrypt_oids[index].id, len );
+  oid[len] = 0;
 
  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ size_t ak_libakrypt_get_oid_max_length( void )
+{
+  size_t len = 0;
+  ssize_t index = ( ssize_t )ak_libakrypt_oids_count();
+
+  while( --index >= 0 ) {
+    if( strlen(libakrypt_oids[index].name) > len ) len = strlen(libakrypt_oids[index].name );
+    if( strlen(libakrypt_oids[index].id) > len ) len = strlen(libakrypt_oids[index].id );
+    ak_error_message_fmt( 0, "", "index: %d -> len: %lu", index, len );
+  }
+ return 1 + len;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

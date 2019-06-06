@@ -349,8 +349,9 @@ extern "C" {
  dll_export bool_t ak_libakrypt_dynamic_control_test( void );
 
 /* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup hash_functions Функции внешнего интерфейса для работы с алгоритмами хэширования
- *  \details Функции из данной группы предназначены для ...
+/** \addtogroup hash_functions Функции для хэширования информации
+ *  \details В данной группе собраны функции внешнего интерфейса, предназначенные для
+ *  работы с функциями хеширования семейства Стрибог, регламентируемых ГОСТ Р 34.11-2012.
  * @{*/
 /*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
  dll_export ak_handle ak_hash_new_streebog256( const char * );
@@ -367,7 +368,27 @@ extern "C" {
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
-
+/** \addtogroup mac_functions Функции для вычисления имитовставок
+ * @{*/
+/*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
+ dll_export ak_handle ak_mac_new_streebog256( const char * );
+/*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
+ dll_export ak_handle ak_mac_new_streebog512( const char * );
+/*! \brief Создание дескриптора функции HMAC на основе алгоритма Стрибог256. */
+ dll_export ak_handle ak_mac_new_hmac_streebog256( const char * );
+/*! \brief Создание дескриптора функции HMAC на основе алгоритма Стрибог512. */
+ dll_export ak_handle ak_mac_new_hmac_streebog512( const char * );
+/*! \brief Создание дескриптора функции выработки имитовставки OMAC на основе алгоритма Магма. */
+ dll_export ak_handle ak_mac_new_omac_magma( const char * );
+/*! \brief Создание дескриптора функции выработки имитовставки OMAC на основе алгоритма Кузнечик. */
+ dll_export ak_handle ak_mac_new_omac_kuznechik( const char * );
+/*! \brief Создание дескриптора функции выработки имитовставки OMAC на основе алгоритма Магма. */
+ dll_export ak_handle ak_mac_new_mgm_magma( const char * );
+/*! \brief Создание дескриптора функции выработки имитовставки OMAC на основе алгоритма Kузнечик. */
+ dll_export ak_handle ak_mac_new_mgm_kuznechik( const char * );
+/*! \brief Создание дескриптора произвольного алгоритма вычисления кода аутентификации. */
+ dll_export ak_handle ak_mac_new_oid( const char *, const char * );
+/** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Удаление объекта, связанного с заданным дескриптором. */
@@ -412,9 +433,13 @@ extern "C" {
  dll_export const char *ak_libakrypt_get_mode_name( const oid_modes_t );
 /*! \brief Получение общего количества определенных OID библиотеки. */
  dll_export size_t ak_libakrypt_oids_count( void );
+/*! \brief Функция возвращает максимальную длину массива, необходимого для хранения имени или
+    идентификатора алгоритма. */
+ dll_export size_t ak_libakrypt_get_oid_max_length( void );
 /*! \brief Получение информации об oid с заданным индексом. */
  dll_export int ak_libakrypt_get_oid_by_index( const size_t ,
-                                              oid_engines_t * , oid_modes_t * , char ** , char ** );
+                  oid_engines_t * , oid_modes_t * , char * , const size_t, char * , const size_t );
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание буффера заданного размера. */
  dll_export ak_buffer ak_buffer_new_size( const size_t );

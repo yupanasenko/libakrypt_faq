@@ -15,6 +15,7 @@
   char *value = NULL;
   oid_engines_t engine = 0;
   oid_modes_t mode = 0;
+  char algorithmName[128], algorithmOID[128];
 
   const struct option long_options[] = {
      { "help",             0, NULL,  'h' },
@@ -77,10 +78,10 @@
          printf("-----------------------------------------------------------------------------------------------\n");
        }
        for( i = 0; i < ak_libakrypt_oids_count(); i++ ) {
-          char *name = NULL, *oid = NULL;
-          if( ak_libakrypt_get_oid_by_index( i, &engine, &mode, &name, &oid ) == ak_error_ok )
-            printf(" %-40s %-16s %-14s %s\n", name, ak_libakrypt_get_engine_name( engine ),
-                                                         ak_libakrypt_get_mode_name( mode ), oid );
+          if( ak_libakrypt_get_oid_by_index( i, &engine, &mode,
+                algorithmName, sizeof( algorithmName ), algorithmOID, sizeof( algorithmOID )) == ak_error_ok )
+            printf(" %-40s %-16s %-14s %s\n", algorithmName, ak_libakrypt_get_engine_name( engine ),
+                                                            ak_libakrypt_get_mode_name( mode ), algorithmOID );
        }
        break;
 
@@ -90,27 +91,27 @@
          printf("-----------------------------------------------------------------------------------------------\n");
        }
        for( i = 0; i < ak_libakrypt_oids_count(); i++ ) {
-          char *name = NULL, *oid = NULL;
           const char *enginestr = NULL;
-          if( ak_libakrypt_get_oid_by_index( i, &engine, &mode, &name, &oid ) != ak_error_ok ) continue;
+          if( ak_libakrypt_get_oid_by_index( i, &engine, &mode,
+            algorithmName, sizeof( algorithmName ), algorithmOID, sizeof( algorithmOID )) != ak_error_ok ) continue;
 
          /* проверяем совпадение имени */
           enginestr = ak_libakrypt_get_engine_name( engine );
-          if( strstr( name, value ) != NULL ) {
-            printf(" %-40s %-16s %-14s %s\n", name, enginestr,
-                                                         ak_libakrypt_get_mode_name( mode ), oid );
+          if( strstr( algorithmName, value ) != NULL ) {
+            printf(" %-40s %-16s %-14s %s\n", algorithmName, enginestr,
+                                                         ak_libakrypt_get_mode_name( mode ), algorithmOID );
             continue;
           }
          /* проверяем совпадение с engine */
-          if( strstr( enginestr, value) != NULL ) {
-            printf(" %-40s %-16s %-14s %s\n", name, enginestr,
-                                                         ak_libakrypt_get_mode_name( mode ), oid );
+          if( strstr( enginestr, value ) != NULL ) {
+            printf(" %-40s %-16s %-14s %s\n", algorithmName, enginestr,
+                                                         ak_libakrypt_get_mode_name( mode ), algorithmOID );
             continue;
           }
          /* в заключение, проверяем OID*/
-          if( strstr( oid, value) != NULL ) {
-            printf(" %-40s %-16s %-14s %s\n", name, enginestr,
-                                                         ak_libakrypt_get_mode_name( mode ), oid );
+          if( strstr( algorithmOID, value) != NULL ) {
+            printf(" %-40s %-16s %-14s %s\n", algorithmName, enginestr,
+                                                         ak_libakrypt_get_mode_name( mode ), algorithmOID );
             continue;
           }
        }
