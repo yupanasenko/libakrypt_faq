@@ -78,6 +78,8 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Проверка, можно ли присваивать контексту инициализационный вектор. */
  bool_t ak_mac_context_is_iv_settable( ak_mac );
+/*! \brief Получение размера используемой синхрополсылки (в байтах). */
+ size_t ak_mac_context_get_iv_size( ak_mac );
 /*! \brief Присвоение контексту сжимающего отображения значения
     инициализационного вектора (синхропосылки). */
  int ak_mac_context_set_iv( ak_mac , const ak_pointer , const size_t );
@@ -85,6 +87,11 @@
  bool_t ak_mac_context_is_key_settable( ak_mac );
 /*! \brief Присвоение контексту сжимающего отображения (секретному ключу) константного значения. */
  int ak_mac_context_set_key( ak_mac , const ak_pointer , const size_t , const bool_t );
+/*! \brief Присвоение секретному ключу случайного значения. */
+ int ak_mac_context_set_key_random( ak_mac , ak_random );
+/*! \brief Присвоение секретному ключу значения, выработанного из пароля */
+ int ak_mac_context_set_key_from_password( ak_mac , const ak_pointer , const size_t ,
+                                                                 const ak_pointer , const size_t );
 /*! \brief Получение идентификатора сжимающего отображения. */
  ak_oid ak_mac_context_get_oid( ak_mac );
 
@@ -96,7 +103,7 @@
 /*! \brief Обновление состояния и вычисление результата применения сжимающего отображения. */
  ak_buffer ak_mac_context_finalize( ak_mac , const ak_pointer , const size_t , ak_pointer );
 /*! \brief Применение сжимающего отображения к заданной области памяти. */
- ak_buffer ak_mac_context_ptr( ak_mac , const ak_pointer , const size_t , ak_pointer );
+ ak_buffer ak_mac_context_ptr( ak_mac , ak_pointer , const size_t , ak_pointer );
 /*! \brief Применение сжимающего отображения к заданному файлу. */
  ak_buffer ak_mac_context_file( ak_mac , const char* , ak_pointer );
 

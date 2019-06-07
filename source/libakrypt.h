@@ -368,7 +368,7 @@ extern "C" {
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup mac_functions Функции для вычисления имитовставок
+/** \addtogroup mac_functions Функции итерационного сжатия
  * @{*/
 /*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
  dll_export ak_handle ak_mac_new_streebog256( const char * );
@@ -386,12 +386,27 @@ extern "C" {
  dll_export ak_handle ak_mac_new_mgm_magma( const char * );
 /*! \brief Создание дескриптора функции выработки имитовставки OMAC на основе алгоритма Kузнечик. */
  dll_export ak_handle ak_mac_new_mgm_kuznechik( const char * );
-/*! \brief Создание дескриптора произвольного алгоритма вычисления кода аутентификации. */
+/*! \brief Создание дескриптора произвольного алгоритма итерационного сжатия. */
  dll_export ak_handle ak_mac_new_oid( const char *, const char * );
 /*! \brief Проверка, допускает ли алгоритм использование секретного ключа. */
  dll_export bool_t ak_mac_is_key_settable( ak_handle );
+/*! \brief Присвоение ключу случайного значения. */
+ dll_export int ak_mac_set_key_random( ak_handle );
+/*! \brief Присвоение значения, выработанного из пароля. */
+ dll_export int ak_mac_set_key_from_password( ak_handle, const ak_pointer , const size_t ,
+                                                                 const ak_pointer , const size_t );
 /*! \brief Проверка, допускает ли алгоритм использование синхропосылки. */
  dll_export bool_t ak_mac_is_iv_settable( ak_handle );
+/*! \brief Присвоение значения используемой в алгоритме синхропосылки. */
+ dll_export int ak_mac_set_iv( ak_handle, ak_pointer , const size_t );
+/*! \brief Получение длины используемой синхропосылки (в байтах). */
+ dll_export size_t ak_mac_get_iv_size( ak_handle );
+/*! \brief Получение длины результата работы алгоритма итерационного сжатия (в байтах). */
+ dll_export size_t ak_mac_get_size( ak_handle );
+/*! \brief Вычисление результата работы алгоритма итерационного сжатия для заданной области памяти. */
+ dll_export ak_buffer ak_mac_ptr( ak_handle , ak_pointer , const size_t , ak_pointer );
+/*! \brief Вычисление результата работы алгоритма итерационного сжатия для заданного файла. */
+ dll_export ak_buffer ak_mac_file( ak_handle , const char *, ak_pointer );
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */

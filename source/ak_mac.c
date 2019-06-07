@@ -354,7 +354,7 @@
     инициализационного вектора.
     @param size Размер данных, на которые указывает `iv` (размер в байтах).
 
-    \b Примечание. Большинство алгоритмов выработки имитовставки не требуют наличия
+    \note Большинство алгоритмов выработки имитовставки не требуют наличия
     инициализационного вектора. Для таких алгоритмов функция будет возвращать ошибку.
 
     @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
@@ -376,6 +376,22 @@
   if( error != ak_error_ok ) ak_error_message( error, __func__ ,
                                                          "incorrect assigning an initial vector" );
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param ictx Указатель на контекст сжимающего отображения (структуру struct mac).
+    @return Для алгоритмов, допускающих использование синхропосылки будет возвращено значение,
+    отличное от нуля. Для всех остальных - будет возвращен ноль.                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ size_t ak_mac_context_get_iv_size( ak_mac ictx )
+{
+  if( ictx == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using a null pointer to null mac context" );
+    return 0;
+  }
+  if( ictx->engine == mgm_function ) return ictx->bsize;
+ return 0;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -416,7 +432,7 @@
 {
   int error = ak_error_ok;
   if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                      "using a null pointer to null mac context" );
+                                                           "using a null pointer to mac context" );
    switch( ictx->engine )
   {
     case hmac_function:
@@ -427,6 +443,87 @@
       break;
     case mgm_function:
       error = ak_mgm_context_set_key(( ak_mgm )ictx->ctx, ptr, size, cflag );
+      break;
+    default: return ak_error_message( ak_error_key_usage, __func__,
+                                                           "using a key for non-key mac context" );
+  }
+  if( error != ak_error_ok ) ak_error_message( error, __func__ ,
+                                                        "incorrect assigning a secret key value" );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает ключу случайное (псевдо-случайное) значение, размер которого определяется
+    используемым алгоритмом выработки имитовставки. Способ выработки случайного значения определяется
+    используемым генератором случайных (псевдо-случайных) чисел.
+
+    @param hctx Контекст алгоритма итерационного сжатия (имитовставки).
+    @param generator Контекст генератора псевдо-случайных чисел.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mac_context_set_key_random( ak_mac ictx, ak_random generator )
+{
+  int error = ak_error_ok;
+  if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                          "using a null pointer to mac context" );
+   switch( ictx->engine )
+  {
+    case hmac_function:
+      error = ak_hmac_context_set_key_random(( ak_hmac )ictx->ctx, generator );
+      break;
+    case omac_function:
+      error = ak_omac_context_set_key_random(( ak_omac )ictx->ctx, generator );
+      break;
+    case mgm_function:
+      error = ak_mgm_context_set_key_random(( ak_mgm )ictx->ctx, generator );
+      break;
+    default: return ak_error_message( ak_error_key_usage, __func__,
+                                                           "using a key for non-key mac context" );
+  }
+  if( error != ak_error_ok ) ak_error_message( error, __func__ ,
+                                                        "incorrect assigning a secret key value" );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает ключу значение, выработанное из заданного пароля при помощи
+    алгоритма PBKDF2, описанного  в рекомендациях по стандартизации Р 50.1.111-2016.
+    Пароль должен быть непустой строкой символов в формате utf8.
+
+    Количество итераций алгоритма PBKDF2 определяется опцией библиотеки `pbkdf2_iteration_count`,
+    значение которой может быть опредедено с помощью вызова функции ak_libakrypt_get_option().
+
+    @param hctx Контекст алгоритма итерационного сжатия (имитовставки).
+    @param pass Пароль, представленный в виде строки символов.
+    @param pass_size Длина пароля в байтах.
+    @param salt Случайная последовательность, представленная в виде строки символов.
+    @param salt_size Длина случайной последовательности в байтах.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mac_context_set_key_from_password( ak_mac ictx,
+                                                const ak_pointer pass, const size_t pass_size,
+                                                   const ak_pointer salt, const size_t salt_size )
+{
+  int error = ak_error_ok;
+  if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                           "using a null pointer to mac context" );
+   switch( ictx->engine )
+  {
+    case hmac_function:
+      error = ak_hmac_context_set_key_from_password(( ak_hmac )ictx->ctx,
+                                                                pass, pass_size, salt, salt_size );
+      break;
+    case omac_function:
+      error = ak_omac_context_set_key_from_password(( ak_omac )ictx->ctx,
+                                                                pass, pass_size, salt, salt_size );
+      break;
+    case mgm_function:
+      error = ak_mgm_context_set_key_from_password(( ak_mgm )ictx->ctx,
+                                                                pass, pass_size, salt, salt_size );
       break;
     default: return ak_error_message( ak_error_key_usage, __func__,
                                                            "using a key for non-key mac context" );
@@ -453,15 +550,17 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mac_context_clean( ak_mac ictx )
 {
+  int error = ak_error_ok;
   if( ictx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using a null pointer to null mac context" );
   if( ictx->clean == NULL ) return ak_error_message( ak_error_undefined_function, __func__ ,
                                                              "using an undefined clean function" );
   if( ictx->data != NULL ) memset( ictx->data, 0, ictx->bsize );
   ictx->length = 0;
-  ictx->clean( ictx->ctx );
+  if(( error = ictx->clean( ictx->ctx )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect cleaning of mac context" );
 
- return ak_error_ok;
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -577,7 +676,7 @@
     ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
     ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- ak_buffer ak_mac_context_ptr( ak_mac ictx, const ak_pointer in, const size_t size, ak_pointer out )
+ ak_buffer ak_mac_context_ptr( ak_mac ictx, ak_pointer in, const size_t size, ak_pointer out )
 {
   int error = ak_error_ok;
   size_t tail = 0;
@@ -763,11 +862,21 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \param description Пользовательское описание создаваемого дескриптора.
+    \return Функция возвращает созданный дескриптор. В случае возникновения ошибки возвращается
+    значение \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_mac_new_streebog256( const char *description )
 {
  return ak_mac_new_oid( "streebog256", description );
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param description Пользовательское описание создаваемого дескриптора.
+    \return Функция возвращает созданный дескриптор. В случае возникновения ошибки возвращается
+    значение \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_mac_new_streebog512( const char *description )
 {
@@ -775,11 +884,21 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \param description Пользовательское описание создаваемого дескриптора.
+    \return Функция возвращает созданный дескриптор. В случае возникновения ошибки возвращается
+    значение \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_mac_new_hmac_streebog256( const char *description )
 {
  return ak_mac_new_oid( "hmac-streebog256", description );
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param description Пользовательское описание создаваемого дескриптора.
+    \return Функция возвращает созданный дескриптор. В случае возникновения ошибки возвращается
+    значение \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_mac_new_hmac_streebog512( const char *description )
 {
@@ -787,11 +906,21 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \param description Пользовательское описание создаваемого дескриптора.
+    \return Функция возвращает созданный дескриптор. В случае возникновения ошибки возвращается
+    значение \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_mac_new_omac_magma( const char *description )
 {
  return ak_mac_new_oid( "omac-magma", description );
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param description Пользовательское описание создаваемого дескриптора.
+    \return Функция возвращает созданный дескриптор. В случае возникновения ошибки возвращается
+    значение \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_mac_new_omac_kuznechik( const char *description )
 {
@@ -799,11 +928,21 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \param description Пользовательское описание создаваемого дескриптора.
+    \return Функция возвращает созданный дескриптор. В случае возникновения ошибки возвращается
+    значение \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_mac_new_mgm_magma( const char *description )
 {
  return ak_mac_new_oid( "mgm-magma", description );
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param description Пользовательское описание создаваемого дескриптора.
+    \return Функция возвращает созданный дескриптор. В случае возникновения ошибки возвращается
+    значение \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_mac_new_mgm_kuznechik( const char *description )
 {
@@ -835,6 +974,81 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param handle Дескриптор алгоритма итерационного сжатия.
+    @return В случае успеха функция возвращает значение \ref ak_error_ok. В случае ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mac_set_key_random( ak_handle handle )
+{
+  ak_mac ctx = NULL;
+  oid_engines_t engine;
+  int error = ak_error_ok;
+  ak_context_manager manager = NULL;
+
+ /* получаем доступ к контексту алгоритма */
+  if(( ctx = ak_handle_get_context( handle, &engine )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+    return ak_false;
+  }
+  if( engine != mac_function ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "wrong oid engine for given handle" );
+    return ak_false;
+  }
+
+ /* получаем доступ к генератору случайных чисел */
+  if(( manager = ak_libakrypt_get_context_manager()) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__,
+                                                   "incorrecrt access to context manager" );
+ /* теперь вырабатываем ключ */
+  if(( error = ak_mac_context_set_key_random( ctx, &manager->key_generator )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect assigning a secret key value" );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает ключу значение, выработанное из заданного пароля при помощи
+    алгоритма PBKDF2, описанного  в рекомендациях по стандартизации Р 50.1.111-2016.
+    Пароль должен быть непустой строкой символов в формате utf8.
+
+    Количество итераций алгоритма PBKDF2 определяется опцией библиотеки `pbkdf2_iteration_count`,
+    значение которой может быть опредедено с помощью вызова функции ak_libakrypt_get_option().
+
+    @param handle Дескриптор алгоритма итерационного сжатия.
+    @param pass Пароль, представленный в виде строки символов.
+    @param pass_size Длина пароля в байтах.
+    @param salt Случайная последовательность, представленная в виде строки символов.
+    @param salt_size Длина случайной последовательности в байтах.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mac_set_key_from_password( ak_handle handle, const ak_pointer pass,
+                           const size_t pass_size, const ak_pointer salt, const size_t salt_size )
+{
+  ak_mac ctx = NULL;
+  oid_engines_t engine;
+  int error = ak_error_ok;
+
+ /* получаем доступ к контексту алгоритма */
+  if(( ctx = ak_handle_get_context( handle, &engine )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+    return ak_false;
+  }
+  if( engine != mac_function ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "wrong oid engine for given handle" );
+    return ak_false;
+  }
+
+ /* теперь вырабатываем ключ */
+  if(( error = ak_mac_context_set_key_from_password( ctx,
+                                               pass, pass_size, salt, salt_size )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect assigning a secret key value" );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param handle Дескриптор алгоритма итерационного сжатия.
     @return Функция возвращает истину, если алгоритм допускает использование секретного ключа.
     В противном случае возвращается ложь. Также ложь возвращается в случае ошибки.
     В этом случае код ошибки можно получить с помощью вызова ak_error_get_value().                 */
@@ -857,10 +1071,159 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! @param handle Дескриптор алгоритма итерационного сжатия.
+    @param iv Указатель на данные, которые будут интерпретироваться в качестве
+    инициализационного вектора (синхропосылки).
+    @param size Размер данных, на которые указывает `iv` (размер в байтах).
+
+    \note Большинство алгоритмов выработки имитовставки не требуют наличия
+    инициализационного вектора. Для таких алгоритмов функция будет возвращать ошибку.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_mac_set_iv( ak_handle handle, ak_pointer iv, const size_t iv_size )
+{
+  ak_mac ctx = NULL;
+  oid_engines_t engine;
+
+  if(( ctx = ak_handle_get_context( handle, &engine )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+    return ak_false;
+  }
+  if( engine != mac_function ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "wrong oid engine for given handle" );
+    return ak_false;
+  }
+
+ return ak_mac_context_set_iv( ctx, iv, iv_size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param handle Дескриптор алгоритма итерационного сжатия.
+    @return Для алгоритмов, допускающих использование синхропосылки будет возвращено значение,
+    отличное от нуля. Для всех остальных - будет возвращен ноль.                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ size_t ak_mac_get_iv_size( ak_handle handle )
+{
+  ak_mac ctx = NULL;
+  oid_engines_t engine;
+
+  if(( ctx = ak_handle_get_context( handle, &engine )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+    return 0;
+  }
+  if( engine != mac_function ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "wrong oid engine for given handle" );
+    return 0;
+  }
+ return ak_mac_context_get_iv_size( ctx );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param handle Дескриптор алгоритма итерационного сжатия.
+    @return Функция возвращает количество байт, которые занимает результат примения алгоритма
+    итерационного сжатия. В случае, если дескриптор задан неверно, то возвращаемое значение не
+    определено. В случае возникновения ошибки ее код может быть получен с помощью вызова
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ size_t ak_mac_get_size( ak_handle handle )
+{
+  ak_mac ctx = NULL;
+  oid_engines_t engine;
+
+  if(( ctx = ak_handle_get_context( handle, &engine )) == NULL ) {
+      ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+      return 0;
+  }
+  if( engine != mac_function ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "wrong oid engine for given handle" );
+    return 0;
+  }
+ return ctx->hsize;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция применяет алгоритм итерационного сжатия к заданной области памяти на которую
+    указывает in. Размер памяти задается в байтах в переменной size. Результат вычислений помещается
+    в область памяти, на которую указывает out. Если out равен NULL, то функция создает новый буффер
+    (структуру struct buffer), помещает в нее вычисленное значение и возвращает на указатель на
+    буффер. Буффер должен позднее быть удален пользователем с помощью вызова ak_buffer_delete().
+
+    @param handle Дескриптор алгоритма итерационного сжатия. В качестве алгоритма может
+    выступать как функция хэширования, так и алгоритм выработки имитовставки.
+    @param in Указатель на входные данные для которых вычисляется хеш-код.
+    @param size Размер входных данных в байтах.
+    @param out Область памяти, куда будет помещен результат. Память должна быть заранее выделена.
+    Размер выделяемой памяти может быть определен с помощью вызова ak_mac_get_size().
+    Указатель out может принимать значение NULL.
+
+    @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+    возвращается указатель на буффер, содержащий результат вычислений. В случае возникновения
+    ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_mac_ptr( ak_handle handle, ak_pointer in, const size_t size, ak_pointer out )
+{
+  ak_mac ctx = NULL;
+  oid_engines_t engine;
+
+  if(( ctx = ak_handle_get_context( handle, &engine )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+    return NULL;
+  }
+  if( engine != mac_function ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "wrong oid engine for given handle" );
+    return NULL;
+  }
+
+  return ak_mac_context_ptr( ctx, in, size, out );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция применяет алгоритм итерационного сжатия к заданному файлу. Результат вычислений
+    помещается в область памяти, на которую указывает out. Если out равен NULL, то функция создает
+    новый буффер (структуру struct buffer), помещает в нее вычисленное значение и возвращает на указатель на
+    буффер. Буффер должен позднее быть удален пользователем с помощью вызова ak_buffer_delete().
+
+    @param handle Дескриптор алгоритма итерационного сжатия.
+    @param filename Имя файла, для которого вычисляется значение хеш-кода.
+    @param out Область памяти, куда будет помещен результат. Память должна быть заранее выделена.
+    Размер выделяемой памяти может быть определен с помощью вызова ak_hash_get_size().
+    Указатель out может принимать значение NULL.
+
+    @return Функция возвращает NULL, если указатель out не есть NULL, в противном случае
+    возвращается указатель на буффер, содержащий результат вычислений. В случае возникновения
+    ошибки возвращается NULL, при этом код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_buffer ak_mac_file( ak_handle handle, const char *filename, ak_pointer out )
+{
+  ak_mac ctx = NULL;
+  oid_engines_t engine;
+
+  if(( ctx = ak_handle_get_context( handle, &engine )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
+    return NULL;
+  }
+  if( engine != mac_function ) {
+    ak_error_message( ak_error_oid_engine, __func__ , "wrong oid engine for given handle" );
+    return NULL;
+  }
+
+  return ak_mac_context_file( ctx, filename, out );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup mac_functions
- *  В данной группе собраны функции внешнего интерфейса, предназначенные для
- *  вычисления итеративных сжимающих отображений, к которым относятся как бесключевые
- *  функции хеширования, так и алгоритмы выработки имитовставки.
+ *
+ * Под функциями итерационного сжатия в библиотеке подразумеваются:
+ *  - функции бесключевого хэширования, позволяющие выработать контрольную сумму
+ *  - ключевые функции хэширования, позволяющие выработать значение имитовставки.
+ *
+ * Библиотека реализует единый интерфейс к указанным классам алгоритмов,
+ * минимизируя множество экспортируемых функций.
  *
  *  Далее тра-ляля и тру-ляля :)
  */
