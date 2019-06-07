@@ -376,6 +376,7 @@
      return ak_false;
    }
 
+#ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  /* инициализируем структуру управления контекстами */
    if(( error = ak_libakrypt_create_context_manager()) != ak_error_ok ) {
      ak_error_message( error, __func__, "initialization of context manager is wrong" );
@@ -388,6 +389,7 @@
                                   "incorrect initialization of kuznechik predefined tables" );
     return ak_false;
   }
+#endif
 
  /* процедура полного тестирования всех криптографических алгоритмов
     занимает крайне много времени, особенно на встраиваемых платформах,
@@ -414,10 +416,12 @@
   if( error != ak_error_ok )
     ak_error_message( error, __func__ , "before destroing library holds an error" );
 
+#ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  /* уничтожаем структуру управления контекстами */
   if( ak_libakrypt_destroy_context_manager() != ak_error_ok ) {
     ak_error_message( ak_error_get_value(), __func__, "destroying of context manager is wrong" );
   }
+#endif
 
   if( ak_log_get_level() != ak_log_none )
     ak_error_message( ak_error_ok, __func__ , "all crypto mechanisms successfully destroyed" );

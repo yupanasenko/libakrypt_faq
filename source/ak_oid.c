@@ -399,6 +399,7 @@
  int ak_libakrypt_get_oid_by_handle( ak_handle handle, oid_engines_t *engine, oid_modes_t *mode,
                               char *name, const size_t name_size, char *oid, const size_t oid_size )
 {
+#ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
   size_t len = 0;
   ak_pointer ctx = NULL;
   ak_oid handleOID = NULL;
@@ -448,6 +449,10 @@
   oid[len] = 0;
 
  return ak_error_ok;
+#else
+ return ak_error_message( ak_error_undefined_function, __func__,
+  "this function not work properly while LIBAKRYPT_CRYPTO_FUNCTIONS is undefined" );
+#endif
 }
 
 /* ----------------------------------------------------------------------------------------------- */

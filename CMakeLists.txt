@@ -128,6 +128,7 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_AKRYPT )
+  set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
   set( AKRYPT_SOURCES
                     akrypt/akrypt.c
                     akrypt/akrypt_show.c
