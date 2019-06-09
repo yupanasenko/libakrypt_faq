@@ -544,6 +544,35 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! @param hctx Контекст алгоритма итерационного сжатия (имитовставки).
+
+    @return В случае успеха возвращается указатель на ресурс ключа.
+    В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова функции
+    ak_error_get_value().                                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_resource ak_mac_context_get_resource( ak_mac ictx )
+{
+  if( ictx == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to mac context" );
+    return NULL;
+  }
+  if( !ak_mac_context_is_key_settable( ictx )) {
+    ak_error_message( ak_error_key_usage, __func__,
+                                         "this type of mac context not supported secret key" );
+    return NULL;
+  }
+   switch( ictx->engine )
+  {
+    case hmac_function: return &(( ak_hmac )ictx->ctx)->key.resource;
+    case omac_function: return &(( ak_omac )ictx->ctx)->bkey.key.resource;
+    case mgm_function: return &(( ak_mgm)ictx->ctx)->bkey.key.resource;
+    default: ak_error_message( ak_error_key_usage, __func__,
+                                                  "using a resource for non-key mac context" );
+  }
+ return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! @param ictx Указатель на структуру struct mac.
     @return В случае успеха возвращается ak_error_ok (ноль). В случае возникновения ошибки
     возвращается ее код.                                                                           */
@@ -730,6 +759,7 @@
   ak_uint8 *localbuffer; /* место для локального считывания информации */
   size_t block_size = 4096; /* оптимальная длина блока для Windows пока не ясна */
   ak_buffer result = NULL;
+  ak_resource resource = NULL;
 
  /* выполняем необходимые проверки */
   if( ictx == NULL ) {
@@ -745,8 +775,41 @@
     return NULL;
   }
 
+  if( ak_mac_context_is_key_settable( ictx )) {
+   /* проверка ресурса до старта вычислений */
+    if(( resource = ak_mac_context_get_resource( ictx )) == NULL ) {
+      ak_error_message( ak_error_get_value(), __func__, "wrong access to mac context resource" );
+      ak_file_close( &file );
+      return NULL;
+    }
+   /* проверяем доступное количество блоков */
+    switch( resource->value.type ) {
+     case block_counter_resource:
+       if( resource->value.counter < ( file.size / ( ssize_t )ictx->bsize )) {
+         ak_error_message_fmt( ak_error_low_key_resource, __func__,
+                 "value of block_counter_resource is low: have %lu, need: %lu",
+                                resource->value.counter, ( file.size / ( ssize_t )ictx->bsize ));
+         ak_file_close( &file );
+         return NULL;
+       }
+       break;
+     case key_using_resource:
+       if( resource->value.counter > 0 ) resource->value.counter--;
+         else {
+           ak_error_message( ak_error_low_key_resource, __func__,
+                                                       "value of key_using_resource is low" );
+           ak_file_close( &file );
+           return NULL;
+         }
+       break;
+    }
+  }
+
  /* для файла нулевой длины результатом будет хеш от нулевого вектора */
-  ak_mac_context_clean( ictx );
+  if(( error = ak_mac_context_clean( ictx )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorret cleaning a mac context");
+    return NULL;
+  }
   if( !file.size ) return ak_mac_context_finalize( ictx, "", 0, out );
 
  /* готовим область для хранения данных */
