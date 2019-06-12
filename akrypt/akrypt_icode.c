@@ -8,6 +8,26 @@
  #include <stdlib.h>
  #include <akrypt.h>
 
+#if defined(_WIN32) || defined(_WIN64)
+ char* strtok_r( char *str, const char *delim, char **nextp)
+{
+ char *ret;
+
+    if (str == NULL) { str = *nextp; }
+
+    str += strspn(str, delim);
+    if (*str == '\0') { return NULL; }
+
+    ret = str;
+    str += strcspn(str, delim);
+
+    if (*str) { *str++ = '\0'; }
+
+    *nextp = str;
+    return ret;
+}
+#endif
+
 /* ----------------------------------------------------------------------------------------------- */
  int akrypt_icode_help( void );
  int akrypt_icode_function( const char * , ak_pointer );
@@ -330,7 +350,9 @@
    /* вырабатываем случайное iv */
    /*! \todo Надо сделать действительно случайный выбор начального значения. */
     memset( ivector, 0x1e, sizeof( ivector ));
-    (( short int *)&ivector)[0] = ( short int )ic.stat_total;
+    ivector[0] = ( ak_uint8 )( ic.stat_total % 256 );
+    ivector[1] = ( ak_uint8 )(( ic.stat_total - ( ic.stat_total % 256 )) >> 8 );
+
     if(( error = ak_mac_set_iv( ic.handle, ivector, ivlen )) != ak_error_ok ) {
       if( ic.tag ) fprintf( ic.outfp, "%s (%s) = skipped\n", ic.algorithm_ni, filename );
         else fprintf( ic.outfp, "skipped %s\n", filename );

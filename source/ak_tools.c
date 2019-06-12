@@ -1176,9 +1176,10 @@
 /* ----------------------------------------------------------------------------------------------- */
  ssize_t ak_hexstr_size( const char *hexstr )
 {
+  ssize_t len = 0;
   if( hexstr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                             "using null pointer to a hex string" );
-  ssize_t len = ( ssize_t ) strlen( hexstr );
+                                                             "using null pointer to a hex string" ); 
+  len = ( ssize_t ) strlen( hexstr );
   if( len&1 ) len++;
   len >>= 1;
 
