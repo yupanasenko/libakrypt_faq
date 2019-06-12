@@ -18,24 +18,25 @@
   char algorithmName[128], algorithmOID[128];
 
   const struct option long_options[] = {
-     { "help",             0, NULL,  'h' },
-     { "audit",            1, NULL,  255 },
      { "oids",             0, NULL,  254 },
      { "oid",              1, NULL,  253 },
      { "engines",          0, NULL,  252 },
      { "options",          0, NULL,  251 },
      { "without-caption",  0, NULL,  250 },
      { "modes",            0, NULL,  249 },
+
+     { "audit",            1, NULL,   2  },
+     { "help",             0, NULL,   1  },
      { NULL,               0, NULL,   0  }
   };
 
  /* разбираем опции командной строки */
   do {
-       next_option = getopt_long( argc, argv, "h", long_options, NULL );
+       next_option = getopt_long( argc, argv, "", long_options, NULL );
        switch( next_option )
       {
-         case 'h' : return akrypt_show_help();
-         case 255 : /* получили от пользователя имя файла для вывода аудита */
+         case  1  : return akrypt_show_help();
+         case  2  : /* получили от пользователя имя файла для вывода аудита */
                      akrypt_set_audit( optarg );
                      break;
 
@@ -167,7 +168,7 @@
 
   printf(_("\ncommon akrypt options:\n"));
   printf(_("     --audit <file>      set the output file for errors and libakrypt audit system messages\n" ));
-  printf(_(" -h, --help              show this information\n\n"));
+  printf(_("     --help              show this information\n\n"));
 
  return EXIT_SUCCESS;
 }

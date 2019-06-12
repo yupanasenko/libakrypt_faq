@@ -157,7 +157,7 @@
  #ifdef _MSC_VER
   if( FAILED( StringCchLength( root, MAX_PATH-1, &rlen )))
     return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
-                                                             "incorret length for root variable" );
+                                                             "incorrect length for root variable" );
   if( FAILED( StringCchLength( mask, MAX_PATH-1, &mlen )))
     return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
                                                             "incorrect length for mask variable" );

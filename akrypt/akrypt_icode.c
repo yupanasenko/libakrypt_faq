@@ -8,31 +8,13 @@
  #include <stdlib.h>
  #include <akrypt.h>
 
-#if defined(_WIN32) || defined(_WIN64)
- char* strtok_r( char *str, const char *delim, char **nextp)
-{
- char *ret;
-
-    if (str == NULL) { str = *nextp; }
-
-    str += strspn(str, delim);
-    if (*str == '\0') { return NULL; }
-
-    ret = str;
-    str += strcspn(str, delim);
-
-    if (*str) { *str++ = '\0'; }
-
-    *nextp = str;
-    return ret;
-}
-#endif
-
 /* ----------------------------------------------------------------------------------------------- */
  int akrypt_icode_help( void );
  int akrypt_icode_function( const char * , ak_pointer );
  int akrypt_icode_check_function( char * , ak_pointer );
-
+#if defined(_WIN32) || defined(_WIN64)
+ char* strtok_r( char *, const char *, char ** );
+#endif
 /* ----------------------------------------------------------------------------------------------- */
  static struct icode_info {
     ak_handle handle;
@@ -510,6 +492,27 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+#if defined(_WIN32) || defined(_WIN64)
+ char* strtok_r( char *str, const char *delim, char **nextp)
+{
+ char *ret;
+
+    if (str == NULL) { str = *nextp; }
+
+    str += strspn(str, delim);
+    if (*str == '\0') { return NULL; }
+
+    ret = str;
+    str += strcspn(str, delim);
+
+    if (*str) { *str++ = '\0'; }
+
+    *nextp = str;
+    return ret;
+}
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
  int akrypt_icode_help( void )
 {
   printf(_("akrypt icode [options] [files or directories]  - calculation and/or checking integrity codes for given files\n\n"));
@@ -527,11 +530,11 @@
   printf(_("     --reverse-order     output of integrity code in reverse byte order\n" ));
   printf(_("     --status            don't output anything, status code shows success\n" ));
   printf(_("     --tag               create a BSD-style checksum\n" ));
-  printf(_(" -t, --template <str>    set the pattern which is used to find files\n" ));
+  printf(_(" -t, --template <str>    set the pattern which is used to find files\n"));
 
   printf(_("\ncommon akrypt options:\n"));
   printf(_("     --audit <file>      set the output file for errors and libakrypt audit system messages\n" ));
-  printf(_("     --help              show this information\n\n" ));
+  printf(_("     --help              show this information\n\n"));
 
  return EXIT_SUCCESS;
 }
