@@ -349,7 +349,7 @@ extern "C" {
  dll_export bool_t ak_libakrypt_dynamic_control_test( void );
 
 /* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup mac_functions Функции итерационного сжатия
+/** \addtogroup mac_functions Функции итерационного сжатия (Внешний интрефейс)
  * @{*/
 /*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
  dll_export ak_handle ak_mac_new_streebog256( const char * );

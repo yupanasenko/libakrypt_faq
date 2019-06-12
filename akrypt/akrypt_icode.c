@@ -11,9 +11,11 @@
 /* ----------------------------------------------------------------------------------------------- */
  int akrypt_icode_help( void );
  int akrypt_icode_function( const char * , ak_pointer );
+ int akrypt_icode_check_function( char * , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
  static struct icode_info {
+    ak_handle handle;
   /*! \brief Дескриптор файла для вывода результатов */
     FILE *outfp;
   /*! \brief Имя используемого алгоритма */
@@ -22,6 +24,8 @@
     char *checkfile;
   /*! \brief Шаблон для поиска файлов */
     char *template;
+   /*! \brief Количество строк файла с контрольными суммами. */
+    size_t stat_lines;
    /*! \brief Общее количество обработанных файлов */
     size_t stat_total;
    /*! \brief Количество корректных кодов */
@@ -31,17 +35,13 @@
    /*! \brief Флаг разворота выводимых/вводимых результатов */
     bool_t reverse_order;
    /*! \brief не прекращать проверку, если файл отсутствует */
-    bool_t ignore_missing;
+    bool_t ignore_errors;
    /*! \brief Не выводить Ok при успешной проверке */
     bool_t quiet;
    /*! \brief Вывод результата в стиле BSD */
     bool_t tag;
    /*! \brief Молчаливая проверка */
     bool_t status;
-   /*! \brief Массив для хранения iv */
-    ak_uint8 iv_pointer[32];
-   /*! \brief Размер iv */
-    ssize_t iv_length;
    /*! \brief Имя файла для вывода результатов */
     char outfile[FILENAME_MAX];
    /*! \brief Буффер для хранения пароля */
@@ -58,13 +58,9 @@
 /* ----------------------------------------------------------------------------------------------- */
  int akrypt_icode( int argc, TCHAR *argv[] )
 {
-  bool_t result = ak_false;
   int next_option = 0, idx = 0,
       error = ak_error_ok, exit_status = EXIT_FAILURE;
   enum { do_nothing, do_hash, do_check } work = do_hash;
-  char algorithmName[128], algorithmOID[128];
-  oid_modes_t mode = undefined_mode;
-  oid_engines_t engine = undefined_engine;
 
   const struct option long_options[] = {
    /* сначала уникальные */
@@ -74,13 +70,12 @@
      { "output",              1, NULL,  'o' },
      { "recursive",           0, NULL,  'r' },
      { "reverse-order",       0, NULL,  254 },
-     { "ignore-missing",      0, NULL,  253 },
+     { "ignore-errors",       0, NULL,  253 },
      { "quiet",               0, NULL,  252 },
      { "dont-show-stat",      0, NULL,  251 },
      { "tag",                 0, NULL,  250 },
      { "status",              0, NULL,  249 },
-     { "password",            0, NULL,  'p' },
-     { "iv",                  1, NULL,  248 },
+     { "password",            1, NULL,  248 },
 
     /* потом общие */
      { "audit",               1, NULL,   2  },
@@ -92,6 +87,7 @@
   if( argc < 3 ) return akrypt_icode_help();
 
  /* инициализируем переменные */
+  ic.handle = ak_error_wrong_handle;
   ic.outfp = stdout;
   ic.tree = ak_false;
   ic.algorithm_ni = "streebog256";
@@ -103,18 +99,17 @@
    "*";
   #endif
   ic.dont_stat_show = ak_false;
+  ic.stat_lines = 0;
   ic.stat_total = 0;
   ic.stat_successed = 0;
   ic.reverse_order = ak_false;
-  ic.ignore_missing = ak_false;
+  ic.ignore_errors = ak_false;
   ic.quiet = ak_false;
   ic.tag = ak_false;
   ic.status = ak_false;
   memset( ic.outfile, 0, sizeof( ic.outfile ));
   memset( ic.password, 0, sizeof( ic.password ));
   ic.pass_flag = ak_false;
-  memset( ic.iv_pointer, 0, sizeof( ic.iv_pointer ));
-  ic.iv_length = 0;
   memcpy( ic.salt, "akrypt saltx", 12 );
 
  /* разбираем опции командной строки */
@@ -165,7 +160,7 @@
                      break;
 
          case 253 : /* игонорировать сообщения об ошибках */
-                     ic.ignore_missing = ak_true;
+                     ic.ignore_errors = ak_true;
                      break;
 
          case 252 : /* гасить вывод Ок при проверке */
@@ -188,17 +183,10 @@
                      ic.pass_flag = ak_true;
                      break;
 
-         case 248 : /* явно заданное значение синхрополсылки */
-                     ic.iv_length = ak_hexstr_size( optarg );
-                     if(( ic.iv_length < 0 ) || (( size_t )ic.iv_length > sizeof( ic.iv_pointer ))) {
-                       printf( _("initail vector has wrong length\n"));
-                       return EXIT_FAILURE;
-                     }
-                     if( ak_hexstr_to_ptr( optarg,
-                            ic.iv_pointer, sizeof( ic.iv_pointer ), ak_false ) != ak_error_ok ) {
-                      printf( _("initail vector is not correct hexademal string\n"));
-                      return EXIT_FAILURE;
-                     }
+         case 248 : /* передача пароля через коммандную строку */
+                     memset( ic.password, 0, sizeof( ic.password ));
+                     strncpy( ic.password, optarg, sizeof( ic.password ) -1 );
+                     ic.pass_flag = ak_true;
                      break;
 
          default:   /* обрабатываем ошибочные параметры */
@@ -211,32 +199,26 @@
  /* начинаем работу с криптографическими примитивами */
   if( ak_libakrypt_create( audit ) != ak_true ) return ak_libakrypt_destroy();
 
- /* проверяем корректность введенного имени алгоритма */
-  for( idx = 0; ( size_t )idx < ak_libakrypt_oids_count(); idx++ ) {
-     ak_libakrypt_get_oid_by_index( ( size_t )idx, &engine, &mode,
-         algorithmName, sizeof( algorithmName ), algorithmOID, sizeof( algorithmOID ));
-     if( strncmp( ic.algorithm_ni, algorithmName, strlen( ic.algorithm_ni )) == 0 ) {
-       result = ak_true;
-       break;
-     }
-  }
-  if( !result ) {
+ /* создаем дескриптор алгоритма итерационного сжатия */
+  if((ic.handle = ak_mac_new_oid( ic.algorithm_ni, NULL )) == ak_error_wrong_handle ) {
     printf(_("\"%s\" is incorrect name/identifier for mac or hash function\n"), ic.algorithm_ni );
     goto lab_exit;
   }
 
  /* проверяем, нужен ли ключ */
-  if(( engine == hmac_function ) || ( engine == mac_function ) ||
-     ( engine == omac_function ) || ( engine == mgm_function )) {
+  if( ak_mac_is_key_settable( ic.handle )) {
     /* в настоящее время поддерживаются только ключи, выработанные из пароля */
     if( ic.pass_flag ) {
-      printf("input password: ");
-      error = ak_password_read( ic.password, sizeof( ic.password ));
-      printf("\n");
-      if( error != ak_error_ok ) goto lab_exit;
+      if( strlen( ic.password ) == 0 ) {
+        printf("input password: ");
+        error = ak_password_read( ic.password, sizeof( ic.password ));
+        printf("\n");
+        if( error != ak_error_ok ) goto lab_prexit;
+      } else { /* пароль уже установлен */ }
+
     } else {
-         printf(_("algorithm \"%s\" needs a secret key\n"), ic.algorithm_ni );
-         goto lab_exit;
+           printf(_("algorithm \"%s\" needs a secret key\n"), ic.algorithm_ni );
+           goto lab_prexit;
       }
   }
 
@@ -256,18 +238,32 @@
             break;
          }
       }
+      exit_status = EXIT_SUCCESS;
       break;
 
     case do_check: /* проверяем контрольную сумму */
+      if(( error = ak_file_read_by_lines( ic.checkfile, akrypt_icode_check_function, NULL )) == ak_error_ok )
+        exit_status = EXIT_SUCCESS;
+      if( !ic.status ) {
+        if( !ic.dont_stat_show ) {
+          printf(_("\n%s [%lu lines, %lu files, where: correct %lu, wrong %lu]\n\n"),
+                  ic.checkfile, (unsigned long int)ic.stat_lines,
+                  (unsigned long int)ic.stat_total, (unsigned long int)ic.stat_successed,
+                                         (unsigned long int)( ic.stat_total - ic.stat_successed ));
+         }
+       }
+      if( ic.stat_total == ic.stat_successed ) exit_status = EXIT_SUCCESS;
+       else exit_status = EXIT_FAILURE;
       break;
 
     default:
       break;
    }
-   exit_status = EXIT_SUCCESS;
 
  /* корректно завершаем работу */
-  lab_exit:
+  lab_prexit:
+   ak_handle_delete( ic.handle );
+  lab_exit:  
    if( ic.outfp != NULL ) fclose( ic.outfp );
    ak_libakrypt_destroy();
  return exit_status;
@@ -276,15 +272,21 @@
 /* ----------------------------------------------------------------------------------------------- */
  int akrypt_icode_function( const char *filename, ak_pointer ptr )
 {
+  size_t ivlen = 0;
+  bool_t ivf = ak_false;
   int error = ak_error_ok;
   char flongname[FILENAME_MAX];
-  ak_handle handle = ak_error_wrong_handle;
-  ak_uint8 out[255], outstr[512];
+  ak_uint8 out[127], outstr[256], ivector[31], outiv[64];
+
+  ( void )ptr;
+  memset( out, 0, sizeof( out ));
+  memset( outstr, 0, sizeof( outstr ));
+  memset( ivector, 0, sizeof( ivector ));
+  memset( outiv, 0, sizeof( outiv ));
+  ak_error_set_value( ak_error_ok );
 
  /* увеличиваем количество обработанных файлов */
-  ( void )ptr;
   ic.stat_total++;
-  ak_error_set_value( ak_error_ok );
 
  /* файл для вывода результатов не хешируем */
   if( ic.outfp != NULL ) {
@@ -297,29 +299,52 @@
     if( !strncmp( flongname, audit_filename, 1022 )) return ak_error_ok;
   }
 
- /* создаем дескриптор алгоритма итерационного сжатия */
-  if(( handle = ak_mac_new_oid( ic.algorithm_ni, NULL )) == ak_error_wrong_handle ) {
-    printf(_("\"%s\" is incorrect name/identifier for mac or hash function\n"), ic.algorithm_ni );
-    return ak_error_get_value();
+ /* проверяем длины */
+  if( ak_mac_get_size( ic.handle ) > sizeof( out )) {
+    if( ic.tag ) fprintf( ic.outfp, "%s (%s) = skipped\n", ic.algorithm_ni, filename );
+      else fprintf( ic.outfp, "skipped %s\n", filename );
+    return ak_error_message_fmt( error, __func__,
+                                      "using mac algorithm with large integrity code size");
   }
 
  /* проверяем, что алгоритм допускает использование ключа */
-  if( ak_mac_is_key_settable( handle )) {
+  if( ak_mac_is_key_settable( ic.handle )) {
    /* в настоящее время поддерживаются только ключи, выработанные из пароля */
     if( ic.pass_flag ) {
-      if(( error = ak_mac_set_key_from_password( handle, ic.password, strlen( ic.password ),
-                                              ic.salt, sizeof( ic.salt ))) != ak_error_ok ) {
+      if(( error = ak_mac_set_key_from_password( ic.handle, ic.password,
+                       strlen( ic.password ), ic.salt, sizeof( ic.salt ))) != ak_error_ok ) {
         printf(_("incorrect setting a secret key\n"));
-        goto lab_exit;
+        return ak_error_message( error, __func__, "incrorrect setting a secret key" );
       }
     } else { }
   }
 
+ /* проверяем, что алгоритм допускает использование синхропосылки */
+  if( ak_mac_is_iv_settable( ic.handle )) {
+    ivlen = ak_mac_get_iv_size( ic.handle );
+    if( ivlen > sizeof( out )) {
+      if( ic.tag ) fprintf( ic.outfp, "%s (%s) = skipped\n", ic.algorithm_ni, filename );
+        else fprintf( ic.outfp, "skipped %s\n", filename );
+      return ak_error_message_fmt( error, __func__, "using mac algorithm with large iv size");
+    }
+   /* вырабатываем случайное iv */
+   /*! \todo Надо сделать действительно случайный выбор начального значения. */
+    memset( ivector, 0x1e, sizeof( ivector ));
+    (( short int *)&ivector)[0] = ( short int )ic.stat_total;
+    if(( error = ak_mac_set_iv( ic.handle, ivector, ivlen )) != ak_error_ok ) {
+      if( ic.tag ) fprintf( ic.outfp, "%s (%s) = skipped\n", ic.algorithm_ni, filename );
+        else fprintf( ic.outfp, "skipped %s\n", filename );
+      return ak_error_message_fmt( error, __func__, "using setting initial value");
+    }
+   /* устанавливаем флаг */
+    ivf = ak_true;
+  }
+
  /* теперь начинаем процесс */
-  ak_mac_file( handle, filename, out );
+  ak_mac_file( ic.handle, filename, out );
   if(( error = ak_error_get_value( )) != ak_error_ok ) {
     if( ic.tag ) fprintf( ic.outfp, "%s (%s) = skipped\n", ic.algorithm_ni, filename );
-      else fprintf( ic.outfp, _("skipped %s\n"), filename );
+      else fprintf( ic.outfp, "skipped %s\n", filename );
     return ak_error_message_fmt( error, __func__,
                                "incorrect evaluation integrity code for \"%s\" file", filename );
   }
@@ -327,25 +352,139 @@
  /* вывод результатов в следующих форматах
     linux:
       контрольная_сумма имя_файла
-      контрольная_сумма синхропосылка имя_файла
+      контрольная_сумма имя_файла синхропосылка
 
     bsd:
       алгоритм (имя_файла) = контрольная_сумма
       алгоритм (имя_файла) = контрольная_сумма (синхропосылка) */
 
-  ak_ptr_to_hexstr_static( out, ak_mac_get_size( handle ),
-                                                     outstr, sizeof( outstr ), ic.reverse_order );
+  if( ivf ) {
+    if(( error = ak_ptr_to_hexstr_static( ivector, ivlen,
+                                 outiv, sizeof( outiv ), ic.reverse_order )) != ak_error_ok ) {
+      if( ic.tag ) fprintf( ic.outfp, "%s (%s) = skipped\n", ic.algorithm_ni, filename );
+        else fprintf( ic.outfp, "skipped %s\n", filename );
+      return ak_error_message( error, __func__, "incorrect convert random initial value" );
+    }
+  }
 
+  if(( error = ak_ptr_to_hexstr_static( out, ak_mac_get_size( ic.handle ),
+                                 outstr, sizeof( outstr ), ic.reverse_order )) != ak_error_ok ) {
+    if( ic.tag ) {
+      fprintf( ic.outfp, "%s (%s) = skipped\n", ic.algorithm_ni, filename );
+    } else  {
+       fprintf( ic.outfp, "skipped %s\n", filename );
+      }
+    return ak_error_message( error, __func__, "incorrect convert output value" );
+  }
+
+ /* теперь вывод результата */
   if( ic.tag ) { /* вывод bsd */
-    fprintf( ic.outfp, "%s (%s) = %s\n", ic.algorithm_ni, filename, outstr );
+    if( ivf ) fprintf( ic.outfp, "%s (%s) = %s (%s)\n", ic.algorithm_ni, filename, outstr, outiv );
+      else fprintf( ic.outfp, "%s (%s) = %s\n", ic.algorithm_ni, filename, outstr );
 
   } else { /* вывод линуксовый */
-      fprintf( ic.outfp, "%s %s\n", outstr, filename );
+      if( ivf ) fprintf( ic.outfp, "%s %s %s\n", outstr, filename, outiv );
+       else fprintf( ic.outfp, "%s %s\n", outstr, filename );
+    }
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int akrypt_icode_check_function( char *string, ak_pointer ptr )
+{
+  size_t ivlen = 0;
+  int error = ak_error_ok;
+  int reterrror = ak_error_undefined_value;
+  ak_uint8 out[64], out2[64], outiv[32];
+  char *token = NULL, *substr = NULL, *filename = NULL, *icode = NULL, *ivec = NULL;
+
+ /* инициализируем значения локальных переменных */
+  (void)ptr;
+  ic.stat_lines++;
+  if( ic.ignore_errors ) reterrror = ak_error_ok;
+
+ /* получаем первый токен */
+  if(( icode = strtok_r( string, " ", &substr )) == NULL ) return reterrror;
+
+ /*  у нас есть имя алгоритма => проверяем */
+  if( strncmp( icode, ic.algorithm_ni, strlen( ic.algorithm_ni )) == 0 ) {
+   /* первый токен совпал с именем алгоритма => разбираем BSD вывод */
+    filename = strtok_r( substr, " ", &substr );
+    if( strlen(filename) < 3 ) return reterrror;
+    filename[ strlen(filename) -1 ] = 0;
+    filename++;
+
+    if(( token = strtok_r( substr, " ", &substr )) == NULL ) return reterrror;
+    if(( icode = strtok_r( substr, " ", &substr )) == NULL ) return reterrror;
+    if(( error = ak_hexstr_to_ptr( icode, out2, sizeof( out2 ), ic.reverse_order )) != ak_error_ok ) {
+      return ak_error_message_fmt( ak_error_ok, __func__, "incorrect icode string %s\n", icode );
     }
 
-  lab_exit:
-   ak_handle_delete( handle );
- return error;
+    if(( ivec = strtok_r( substr, " ", &substr )) != NULL ) {
+      if( strlen(ivec) < 3 ) ivec = NULL;
+       else {
+        ivec[ strlen(ivec) -1 ] = 0;
+        ivec++;
+      }
+      if(( error = ak_hexstr_to_ptr( ivec, outiv, sizeof( outiv ), ic.reverse_order )) != ak_error_ok )
+        ivec = NULL;
+    }
+  } else {
+   /* предполагаем, что вывод linux */
+    if(( error = ak_hexstr_to_ptr( icode, out2, sizeof( out2 ), ic.reverse_order )) != ak_error_ok ) {
+      return ak_error_message_fmt( ak_error_ok, __func__, "incorrect icode string %s\n", icode );
+    }
+
+    if(( filename = strtok_r( substr, " ", &substr )) == NULL ) return reterrror;
+
+    if(( ivec = strtok_r( substr, " ", &substr )) != NULL ) {
+      if(( error = ak_hexstr_to_ptr( ivec, outiv, sizeof( outiv ), ic.reverse_order )) != ak_error_ok )
+        ivec = NULL;
+    }
+  }
+
+ /* приступаем к проверке*/
+  ic.stat_total++;
+
+ /* проверяем, что алгоритм допускает использование ключа */
+  if( ak_mac_is_key_settable( ic.handle )) {
+   /* в настоящее время поддерживаются только ключи, выработанные из пароля */
+    if( ic.pass_flag ) {
+      if(( error = ak_mac_set_key_from_password( ic.handle, ic.password,
+                       strlen( ic.password ), ic.salt, sizeof( ic.salt ))) != ak_error_ok ) {
+        return ak_error_message( reterrror, __func__, "incrorrect setting a secret key" );
+      }
+    } else
+       return ak_error_message( reterrror, __func__, "not defined password for key generation" );
+  }
+
+ /* проверяем, что алгоритм допускает использование синхропосылки */
+  if( ak_mac_is_iv_settable( ic.handle )) {
+    if( ivec == NULL ) return ak_error_message( reterrror, __func__,
+                                                           "not defined value of initial vector" );
+    ivlen = ak_mac_get_iv_size( ic.handle );
+    if( 2*ivlen != strlen( ivec )) return ak_error_message( reterrror, __func__,
+                                                            "incorrect length of initial vector" );
+    if( ak_mac_set_iv( ic.handle, outiv, ivlen ) != ak_error_ok )
+      return ak_error_message( reterrror, __func__, "incorrect setting of initial vector" );
+  }
+
+  ak_mac_file( ic.handle, filename, out );
+  if(( error = ak_error_get_value( )) != ak_error_ok ) {
+    if( !ic.status ) printf("%s Wrong\n", filename );
+    ak_error_message_fmt( reterrror, __func__,
+                               "incorrect evaluation integrity code for \"%s\" file", filename );
+  }
+  if( ak_ptr_is_equal( out, out2, ak_mac_get_size( ic.handle )) == ak_true ) {
+    if( !ic.status ) {
+      if( ic.quiet ) printf("%s\n", filename );
+        else printf("%s Ok\n", filename );
+    }
+    ic.stat_successed++;
+  } else
+     if( !ic.status ) printf("%s Wrong\n", filename );
+
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -357,11 +496,10 @@
   printf(_("                         default algorithm is \"streebog256\" defined by GOST R 34.10-2012\n" ));
   printf(_(" -c, --check <file>      check previously generated macs or integrity codes\n" ));
   printf(_("     --dont-show-stat    don't show a statistical results after checking\n"));
-  printf(_("     --ignore-missing    don't breake a check when file is missing\n" ));
-  printf(_("     --iv <hexstr>       initial value as hexademal string, which used in some mac algorithms,\n"));
-  printf(_("                         if value is not defined it's choosen randomly\n"));
+  printf(_("     --ignore-errors     don't breake a check when file is missing or corrupted\n" ));
   printf(_(" -o, --output <file>     set the output file for generated integrity codes\n" ));
-  printf(_(" -p  --password          use password to generate a secret key, which used in mac algorithms\n"));
+  printf(_(" -p                      load the password from console to generate a secret key\n"));
+  printf(_("     --password <pass>   set the password directly in command line\n"));
   printf(_("     --quiet             don't print OK for each successfully verified file\n"));
   printf(_(" -r, --recursive         recursive search of files\n" ));
   printf(_("     --reverse-order     output of integrity code in reverse byte order\n" ));
@@ -369,10 +507,9 @@
   printf(_("     --tag               create a BSD-style checksum\n" ));
   printf(_(" -t, --template <str>    set the pattern which is used to find files\n" ));
 
-  printf(_("\ncommon options:\n"));
+  printf(_("\ncommon akrypt options:\n"));
   printf(_("     --audit <file>      set the output file for errors and libakrypt audit system messages\n" ));
   printf(_("     --help              show this information\n\n" ));
-//  printf(_("  --key ?
 
  return EXIT_SUCCESS;
 }

@@ -165,7 +165,7 @@
   printf(_("     --modes             show all types of cryptographic modes\n"));
   printf(_("     --without-caption   don't show a caption for displayed values\n"));
 
-  printf(_("\ncommon options:\n"));
+  printf(_("\ncommon akrypt options:\n"));
   printf(_("     --audit <file>      set the output file for errors and libakrypt audit system messages\n" ));
   printf(_(" -h, --help              show this information\n\n"));
 
