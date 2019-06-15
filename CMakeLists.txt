@@ -169,7 +169,6 @@ endif()
 if( LIBAKRYPT_PKCS_15_CONTAINER )
   set( HEADERS      ${HEADERS}
           source/pkcs_15_cryptographic_token/ak_asn_codec.h
-          source/pkcs_15_cryptographic_token/kc_includes.h
           source/pkcs_15_cryptographic_token/ak_pkcs_15_token_manager.h
           source/pkcs_15_cryptographic_token/ak_pkcs_15_algs_prms.h
           source/pkcs_15_cryptographic_token/ak_pkcs_15_common_types.h
