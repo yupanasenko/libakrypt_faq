@@ -26,7 +26,7 @@ typedef enum {
     NON_REPUDIATION = 0x0040u
 } en_usage_bits;
 
-typedef uint16_t key_usage_flags_t;
+typedef ushort key_usage_flags_t;
 
 /*! \brief Структура, хранящая общие атрибуты объекта PKCS 15 Object. */
 typedef struct {

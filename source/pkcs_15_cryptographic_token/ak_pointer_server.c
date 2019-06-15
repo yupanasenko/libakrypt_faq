@@ -1,3 +1,14 @@
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+#include <stdlib.h>
+#else
+#error Library cannot be compiled without stdlib.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STRING_H
+#include <string.h>
+#else
+#error Library cannot be compiled without string.h header
+#endif
+
 #include "ak_pointer_server.h"
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -20,7 +31,7 @@ int ps_alloc(s_ptr_server *p_ps, size_t size, uint8_t mode) {
         }
     }
 
-    p_ps->mp_begin = (byte *) malloc(size);
+    p_ps->mp_begin = (ak_byte *) malloc(size);
     if (!p_ps->mp_begin)
     {
         memset(p_ps, 0, sizeof(s_ptr_server));
@@ -47,7 +58,7 @@ int ps_alloc(s_ptr_server *p_ps, size_t size, uint8_t mode) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int ps_set(s_ptr_server *p_ps, byte *from, size_t len, uint8_t mode) {
+int ps_set(s_ptr_server *p_ps, ak_byte *from, size_t len, uint8_t mode) {
     if (!p_ps || !from)
         return ak_error_message(ak_error_null_pointer, __func__, "input value is null");
 
@@ -89,7 +100,7 @@ int ps_set(s_ptr_server *p_ps, byte *from, size_t len, uint8_t mode) {
 /* ----------------------------------------------------------------------------------------------- */
 int ps_realloc(s_ptr_server *p_ps, size_t new_size) {
     size_t old_size;
-    byte *p_new_mem;
+    ak_byte *p_new_mem;
 
     if ((!p_ps) || !p_ps->mp_begin)
         return 0;
@@ -101,11 +112,12 @@ int ps_realloc(s_ptr_server *p_ps, size_t new_size) {
     if (new_size < old_size)
         return ak_error_message(ak_error_invalid_value, __func__, "invalid value");
 
-    p_new_mem = (byte *) malloc(new_size);
+    p_new_mem = (ak_byte *) malloc(new_size);
     if (!p_new_mem)
         return ak_error_message(ak_error_null_pointer, __func__, "null value");
 
-    printf("realloc mem! new size = %zu\n", new_size);
+    ak_error_message_fmt(ak_error_out_of_memory , __func__, "realloc mem! new size = %zu\n", new_size);
+    ak_error_set_value(ak_error_ok);
 
     memmove(p_new_mem + (new_size - old_size), p_ps->mp_curr, old_size);
 

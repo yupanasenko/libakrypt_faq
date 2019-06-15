@@ -1,3 +1,20 @@
+
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+#include <stdlib.h>
+#else
+#error Library cannot be compiled without stdlib.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STRING_H
+#include <string.h>
+#else
+#error Library cannot be compiled without string.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STDIO_H
+#include <stdio.h>
+#else
+#error Library cannot be compiled without stdio.h header
+#endif
+
 #include "ak_pkcs_15_token_manager.h"
 #include <assert.h>
 
@@ -12,7 +29,7 @@ const object_identifier CONTENT_TYPE = {"1.2.840.113549.1.7.1"};
 const object_identifier CONTENT_ENG_ALGORITHM = {"1.2.643.2.4.3.2.2"};
 const object_identifier CRYPTO_PRO_PARAM_A = {"1.2.643.2.2.31.1"};
 
-int set_asn_boolean(boolean *p_asn_1_bool, bool val) {
+int set_asn_boolean(boolean *p_asn_1_bool, bool_t val) {
 
     if (!p_asn_1_bool)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
@@ -73,7 +90,7 @@ int set_asn_object_identifier(object_identifier *p_asn_1_object_identifier, cons
 
 int set_asn_integer(integer *p_asn_int, int32_t val) {
 
-    byte *p_val;
+    ak_byte *p_val;
     int32_t val_len;
 
     if (!p_asn_int)
@@ -84,7 +101,7 @@ int set_asn_integer(integer *p_asn_int, int32_t val) {
 
     if (val == 0 || val == -1)
     {
-        p_asn_int->mp_value = malloc(sizeof(byte));
+        p_asn_int->mp_value = malloc(sizeof(ak_byte));
         *p_asn_int->mp_value = val;
         p_asn_int->m_val_len = 1;
         return ak_error_ok;
@@ -110,25 +127,25 @@ int set_asn_integer(integer *p_asn_int, int32_t val) {
         }
     }
 
-    p_val = p_asn_int->mp_value = (byte *) malloc(val_len);
+    p_val = p_asn_int->mp_value = (ak_byte *) malloc(val_len);
 
     if (val_len == 1)
-        *p_val = (byte) val;
+        *p_val = (ak_byte) val;
     else
     {
         while (--val_len >= 0)
-            *(p_val++) = (byte) ((val >> (8u * val_len)) & 0xFFu);
+            *(p_val++) = (ak_byte) ((val >> (8u * val_len)) & 0xFFu);
     }
 
     return ak_error_ok;
 }
 
-int set_asn_bit_string(bit_string *p_asn_1_bit_string, const byte *p_val, uint32_t size, uint8_t num_of_unused_bits) {
+int set_asn_bit_string(bit_string *p_asn_1_bit_string, const ak_byte *p_val, uint32_t size, uint8_t num_of_unused_bits) {
 
     if (!p_asn_1_bit_string || !p_val || (size <= 0) || (num_of_unused_bits <= 0))
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    p_asn_1_bit_string->mp_value = (byte *) malloc(size);
+    p_asn_1_bit_string->mp_value = (ak_byte *) malloc(size);
     p_asn_1_bit_string->m_val_len = size;
     p_asn_1_bit_string->m_unused = num_of_unused_bits;
 
@@ -137,12 +154,12 @@ int set_asn_bit_string(bit_string *p_asn_1_bit_string, const byte *p_val, uint32
     return ak_error_ok;
 }
 
-int set_asn_octet_string(octet_string *p_asn_1_octet_string, const byte *p_val, uint32_t size) {
+int set_asn_octet_string(octet_string *p_asn_1_octet_string, const ak_byte *p_val, uint32_t size) {
 
     if (!p_asn_1_octet_string || !p_val || (size <= 0))
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    p_asn_1_octet_string->mp_value = (byte *) malloc(size);
+    p_asn_1_octet_string->mp_value = (ak_byte *) malloc(size);
     p_asn_1_octet_string->m_val_len = size;
 
     memcpy(p_asn_1_octet_string->mp_value, p_val, size);
@@ -171,7 +188,7 @@ int asn_integer_to_int64(integer *p_asn_val, ak_int64 *p_value) {
     return ak_error_ok;
 }
 
-int asn_utf8_to_byte_arr(utf8_string *p_src, byte **pp_dst) {
+int asn_utf8_to_byte_arr(utf8_string *p_src, ak_byte **pp_dst) {
     size_t str_size;
 
     if (!p_src)
@@ -378,12 +395,12 @@ static int fill_enveloped_data(ak_skey sec_key, s_enveloped_data *enveloped_data
     ak_context_manager p_context;
     struct bckey cek;
     struct buffer gost_key_der;
-    byte mac[4];
+    ak_byte mac[4];
     s_gost28147_89_prms *p_content_enc_prms;
     octet_string iv;
     s_kekri *kekri;
     s_gost28147_89_key_wrap_prms *p_key_wrap_prms;
-    byte ukm[8];
+    ak_byte ukm[8];
     struct buffer cek_plus_mask;
     struct buffer encrypted_key_mac;
     struct buffer encrypted_key_der;
@@ -435,7 +452,7 @@ static int fill_enveloped_data(ak_skey sec_key, s_enveloped_data *enveloped_data
     }
 
     if ((error =
-                 pkcs_15_make_gost_key_value_mask(&sec_key->key, &sec_key->mask, sec_key->resource.counter,
+                 pkcs_15_make_gost_key_value_mask(&sec_key->key, &sec_key->mask, sec_key->resource.value.counter,
                                                   &gost_key_der))
         != ak_error_ok)
     {
@@ -451,7 +468,7 @@ static int fill_enveloped_data(ak_skey sec_key, s_enveloped_data *enveloped_data
 
     // Заполняем encryptedContent
     enveloped_data->m_encrypted_content.m_val_len = gost_key_der.size + sizeof(mac);
-    enveloped_data->m_encrypted_content.mp_value = (byte *) malloc(enveloped_data->m_encrypted_content.m_val_len);
+    enveloped_data->m_encrypted_content.mp_value = (ak_byte *) malloc(enveloped_data->m_encrypted_content.m_val_len);
 
     if (!enveloped_data->m_encrypted_content.mp_value)
     {
@@ -512,7 +529,7 @@ static int fill_enveloped_data(ak_skey sec_key, s_enveloped_data *enveloped_data
     }
 
     memcpy(cek_plus_mask.data, cek.key.key.data, cek.key.key.size);
-    memcpy((byte *) cek_plus_mask.data + cek.key.key.size, cek.key.mask.data, cek.key.mask.size);
+    memcpy((ak_byte *) cek_plus_mask.data + cek.key.key.size, cek.key.mask.data, cek.key.mask.size);
 
     // TODO Заменить на реальное значение
 
@@ -612,10 +629,10 @@ static int put_gost_secret_key(s_gost_sec_key *gost_sec_key, struct extended_key
     int error;
     s_common_obj_attrs obj_attrs;
     s_common_key_attrs common_key_attrs;
-    byte key_usage_flags[2];
+    ak_byte key_usage_flags[2];
 
-    key_usage_flags[0] = (byte) ((p_inp_keys->flags >> 8) & 0xFFu);
-    key_usage_flags[1] = (byte) (p_inp_keys->flags & 0xFF);
+    key_usage_flags[0] = (ak_byte) ((p_inp_keys->flags >> 8) & 0xFFu);
+    key_usage_flags[1] = (ak_byte) (p_inp_keys->flags & 0xFF);
 
     if (!gost_sec_key || !p_inp_keys || !kek)
     {
@@ -641,7 +658,7 @@ static int put_gost_secret_key(s_gost_sec_key *gost_sec_key, struct extended_key
     set_asn_bit_string(&common_key_attrs.m_usage, key_usage_flags, sizeof(key_usage_flags), 6);
 
     // Заполняем native константным значением
-    set_asn_boolean(&common_key_attrs.m_native, true);
+    set_asn_boolean(&common_key_attrs.m_native, ak_true);
 
     // Заполняем startDate
     date_to_asn_generalized_time(p_inp_keys->start_date, &common_key_attrs.m_start_date);
@@ -688,8 +705,8 @@ static int decrypt_content_enc_key(s_recipient_info *p_recipient_info, ak_skey p
             фунцию расшифрования ключа CEK и сравнить имитовставку.
             Данные для расшифрования находятся в переменной encrypted_cek. */
 
-    memcpy((byte *) p_cek->key.data, (byte *) encrypted_cek.data, encrypted_cek.size / 2);
-    memcpy((byte *) p_cek->mask.data, (byte *) encrypted_cek.data + encrypted_cek.size / 2, encrypted_cek.size / 2);
+    memcpy((ak_byte *) p_cek->key.data, (ak_byte *) encrypted_cek.data, encrypted_cek.size / 2);
+    memcpy((ak_byte *) p_cek->mask.data, (ak_byte *) encrypted_cek.data + encrypted_cek.size / 2, encrypted_cek.size / 2);
 
     /* Устанавливаем флаги наличия ключа и маски */
     p_cek->flags |= skey_flag_set_key | skey_flag_set_mask;
@@ -771,7 +788,7 @@ static int decrypt_enveloped_data(s_enveloped_data *p_enveloped_data, ak_skey p_
     if ((error = pkcs_15_parse_gost_key_value_mask(&encrypted_content,
                                                    &p_libakrypt_key->key,
                                                    &p_libakrypt_key->mask,
-                                                   &p_libakrypt_key->resource.counter)) != ak_error_ok)
+                                                   &p_libakrypt_key->resource.value.counter)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with parsing key value mask");
 
     /* Устанавливаем флаги наличия ключа и маски */
@@ -850,9 +867,9 @@ static int get_extended_key(s_pkcs_15_object *p_obj, struct skey *p_kek, struct 
     return ak_error_ok;
 }
 
-int read_keys_from_container(byte *password,
+int read_keys_from_container(ak_byte *password,
                              size_t pwd_size,
-                             byte *inp_container,
+                             ak_byte *inp_container,
                              size_t inp_container_size,
                              struct extended_key ***ppp_out_keys,
                              ak_uint8 *num_of_out_keys) {
@@ -916,7 +933,7 @@ int write_keys_to_container(struct extended_key **pp_inp_keys,
                             ak_uint8 num_of_inp_keys,
                             ak_pointer password,
                             size_t password_size,
-                            byte **pp_out_container,
+                            ak_byte **pp_out_container,
                             size_t *p_out_container_size) {
 
     int error;

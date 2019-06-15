@@ -6,6 +6,10 @@
  * алгоритма Магма.
  */
 
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
 #include <libakrypt.h>
 #include <ak_bckey.h>
 #include <pkcs_15_cryptographic_token/ak_pkcs_15_token_manager.h>
@@ -26,7 +30,7 @@ int main()
     struct extended_key* pp_kc_keys[2];
     struct extended_key** pp_kc_keys_from_container;
     ak_uint8 num_of_keys;
-    byte* p_container_der;
+    ak_byte* p_container_der;
     size_t container_der_size;
 
     /* Инициализируем библиотеку */
@@ -63,7 +67,7 @@ int main()
     /* Разбираем контейнер */
     pp_kc_keys_from_container = NULL;
     num_of_keys = 0;
-    read_keys_from_container((byte*)password, strlen(password), p_container_der, container_der_size, &pp_kc_keys_from_container, &num_of_keys);
+    read_keys_from_container((ak_byte*)password, strlen(password), p_container_der, container_der_size, &pp_kc_keys_from_container, &num_of_keys);
 
     /* Выводим оинформацию о содержимом контейнера */
     print_container_info(pp_kc_keys_from_container, num_of_keys);
@@ -105,7 +109,7 @@ void print_container_info(struct extended_key** pp_keys, uint8_t num_of_keys)
             printf("\t%-20s", "Key id:");
             for(j = 0; j < p_key->key.sec_key->key.number.size; j++)
             {
-                printf("%02X", *((byte*)p_key->key.sec_key->key.number.data + j));
+                printf("%02X", *((ak_byte*)p_key->key.sec_key->key.number.data + j));
             }
             putchar('\n');
         }

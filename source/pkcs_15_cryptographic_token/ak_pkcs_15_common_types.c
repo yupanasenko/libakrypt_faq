@@ -1,3 +1,14 @@
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+#include <stdlib.h>
+#else
+#error Library cannot be compiled without stdlib.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STRING_H
+#include <string.h>
+#else
+#error Library cannot be compiled without string.h header
+#endif
+
 #include "ak_pkcs_15_common_types.h"
 #include "ak_pkcs_15_gost_secret_key.h"
 
@@ -678,7 +689,7 @@ int pkcs_15_get_common_key_attributes(s_der_buffer* p_object_der, s_common_key_a
             if (error != ak_error_diff_tags)
                 return ak_error_message(error, __func__, "problems with getting key native attribute");
             else
-                p_key_attrs->m_native = true;
+                p_key_attrs->m_native = ak_true;
         }
     }
 
@@ -814,7 +825,8 @@ int pkcs_15_get_sngl_recipient_info(s_der_buffer* p_recipient_infos_der, s_recip
         if ((error = pkcs_15_get_kekri(p_recipient_infos_der, p_sngl_recipient_info->m_ri.mp_kekri)) != ak_error_ok)
             return ak_error_message(error, __func__, "problems with getting single recipient info");
         break;
-    default:break;
+    default:
+        return ak_error_message(ak_error_invalid_value, __func__, "unallowed type of recipient info");
     }
 
     return error;

@@ -6,7 +6,6 @@
 #ifndef __AK_PS_H__
 #define __AK_PS_H__
 
-#include "kc_includes.h"
 #include <libakrypt.h>
 
 /*! \brief Режимы использования сервера. */
@@ -30,23 +29,23 @@
 */
 typedef struct {
     /*! \brief указатель на начало данных */
-    byte *mp_begin;
+    ak_byte *mp_begin;
     /*! \brief указатель на текущую позицию */
-    byte *mp_curr;
+    ak_byte *mp_curr;
     /*! \brief указатель на первый байт после данных */
-    byte *mp_end;
+    ak_byte *mp_end;
     /*! \brief режим использования сервера */
-    uint8_t m_mode;
+    ak_uint8 m_mode;
 } s_ptr_server;
 
 /*! \brief Метод для выделения памяти, на которую указывает объект типа s_ptr_server. */
-int ps_alloc(s_ptr_server *p_ps, size_t size, uint8_t mode);
+int ps_alloc(s_ptr_server *p_ps, size_t size, ak_uint8 mode);
 
 /*! \brief Метод для перевыделения памяти, на которую указывает объект типа s_ptr_server. */
 int ps_realloc(s_ptr_server *p_ps, size_t new_size);
 
 /*! \brief Метод для установления значений объект типа s_ptr_server. */
-int ps_set(s_ptr_server *p_ps, byte *from, size_t len, uint8_t mode);
+int ps_set(s_ptr_server *p_ps, ak_byte *from, size_t len, ak_uint8 mode);
 
 /*! \brief Метод для перемещения указателя на текующую позицию. */
 int ps_move_cursor(s_ptr_server *p_ps, size_t num);

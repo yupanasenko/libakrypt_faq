@@ -43,9 +43,9 @@ struct extended_key {
 };
 
 /*! \brief Метод для считывания ключей из контейнера. */
-int read_keys_from_container(byte *password,
+int read_keys_from_container(ak_byte *password,
                              size_t pwd_size,
-                             byte *inp_container,
+                             ak_byte *inp_container,
                              size_t inp_container_size,
                              struct extended_key ***out_keys,
                              ak_uint8 *num_of_out_keys);
@@ -55,7 +55,7 @@ int write_keys_to_container(struct extended_key **pp_inp_keys,
                             ak_uint8 num_of_inp_keys,
                             ak_pointer password,
                             size_t password_size,
-                            byte **pp_out_container,
+                            ak_byte **pp_out_container,
                             size_t *p_out_container_size);
 
 /*! \brief Метод для преобразования флагов предназначения ключа в удобочитаемую строку. */

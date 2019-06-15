@@ -6,7 +6,6 @@
 #ifndef __AK_PKCS_GOST_SEC_KEY_H__
 #define __AK_PKCS_GOST_SEC_KEY_H__
 
-#include "kc_includes.h"
 #include <pkcs_15_cryptographic_token/ak_pkcs_15_common_types.h>
 #include <pkcs_15_cryptographic_token/ak_pkcs_15_algs_prms.h>
 

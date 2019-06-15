@@ -1,3 +1,24 @@
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+#include <stdlib.h>
+#else
+#error Library cannot be compiled without stdlib.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STRING_H
+#include <string.h>
+#else
+#error Library cannot be compiled without string.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STDIO_H
+#include <stdio.h>
+#else
+#error Library cannot be compiled without stdio.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_CTYPE_H
+#include <ctype.h>
+#else
+#error Library cannot be compiled without ctype.h header
+#endif
+
 #include <pkcs_15_cryptographic_token/ak_asn_codec.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -9,7 +30,7 @@
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_get_tag(byte *p_buff, tag *p_tag) {
+int asn_get_tag(ak_byte *p_buff, tag *p_tag) {
     if (!p_buff || !p_tag)
         return ak_error_null_pointer;
 
@@ -28,7 +49,7 @@ int asn_get_tag(byte *p_buff, tag *p_tag) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_get_len(byte *p_buff, size_t *p_len, uint8_t *p_len_byte_cnt) {
+int asn_get_len(ak_byte *p_buff, size_t *p_len, uint8_t *p_len_byte_cnt) {
     if (!p_buff || !p_len_byte_cnt)
         return ak_error_null_pointer;
 
@@ -61,7 +82,7 @@ int asn_get_len(byte *p_buff, size_t *p_len, uint8_t *p_len_byte_cnt) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_get_int(byte *p_buff, size_t len, integer *p_val) {
+int asn_get_int(ak_byte *p_buff, size_t len, integer *p_val) {
     size_t val_len;
 
     if (!p_buff || !p_val)
@@ -77,7 +98,7 @@ int asn_get_int(byte *p_buff, size_t len, integer *p_val) {
         return ak_error_out_of_memory;
     }
 
-    p_val->m_positive = (*p_buff & 0x80u) ? false : true;
+    p_val->m_positive = (*p_buff & 0x80u) ? ak_false : ak_true;
 
     if (p_val->m_positive && val_len > 1)
     {
@@ -112,7 +133,7 @@ int asn_get_int(byte *p_buff, size_t len, integer *p_val) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_get_utf8string(byte *p_buff, size_t len, utf8_string *p_str) {
+int asn_get_utf8string(ak_byte *p_buff, size_t len, utf8_string *p_str) {
     utf8_string str;
 
     if (!p_buff || !p_str)
@@ -136,11 +157,11 @@ int asn_get_utf8string(byte *p_buff, size_t len, utf8_string *p_str) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_get_octetstr(byte *p_buff, size_t len, octet_string *p_dst) {
+int asn_get_octetstr(ak_byte *p_buff, size_t len, octet_string *p_dst) {
     if (!p_buff || !p_dst)
         return ak_error_null_pointer;
 
-    p_dst->mp_value = (byte *) malloc(len);
+    p_dst->mp_value = (ak_byte *) malloc(len);
     if (!p_dst->mp_value)
     {
         memset(p_dst, 0, sizeof(octet_string));
@@ -160,7 +181,7 @@ int asn_get_octetstr(byte *p_buff, size_t len, octet_string *p_dst) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_get_vsblstr(byte *p_buff, size_t len, visible_string *p_str) {
+int asn_get_vsblstr(ak_byte *p_buff, size_t len, visible_string *p_str) {
     visible_string str;
 
     if (!p_buff || !p_str)
@@ -188,7 +209,7 @@ int asn_get_vsblstr(byte *p_buff, size_t len, visible_string *p_str) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_get_objid(byte *p_buff, size_t len, object_identifier *p_objid) {
+int asn_get_objid(ak_byte *p_buff, size_t len, object_identifier *p_objid) {
     uint32_t value;
     size_t curr_size;
     object_identifier obj_id;
@@ -238,11 +259,11 @@ int asn_get_objid(byte *p_buff, size_t len, object_identifier *p_objid) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_get_bitstr(byte *p_buff, size_t len, bit_string *p_dst) {
+int asn_get_bitstr(ak_byte *p_buff, size_t len, bit_string *p_dst) {
     if (!p_buff || !p_dst)
         return ak_error_null_pointer;
 
-    p_dst->mp_value = (byte *) malloc((size_t) len - 1);
+    p_dst->mp_value = (ak_byte *) malloc((size_t) len - 1);
     if (!p_dst->mp_value)
     {
         memset(p_dst, 0, sizeof(bit_string));
@@ -271,7 +292,7 @@ int asn_get_bitstr(byte *p_buff, size_t len, bit_string *p_dst) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_get_bool(byte *p_buff, size_t len, boolean *p_value) {
+int asn_get_bool(ak_byte *p_buff, size_t len, boolean *p_value) {
     if (!p_buff || !p_value)
         return ak_error_null_pointer;
 
@@ -290,7 +311,7 @@ int asn_get_bool(byte *p_buff, size_t len, boolean *p_value) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_get_generalized_time(byte *p_buff, size_t len, generalized_time *p_time) {
+int asn_get_generalized_time(ak_byte *p_buff, size_t len, generalized_time *p_time) {
     generalized_time date_time;
 
     if (!p_buff || !p_time)

@@ -7,8 +7,6 @@
 #ifndef __AK_ASN_H__
 #define __AK_ASN_H__
 
-#include "kc_includes.h"
-
 #include <libakrypt.h>
 #include <pkcs_15_cryptographic_token/ak_pointer_server.h>
 
@@ -55,17 +53,17 @@
 /*! \brief Струкртура, хранящая целочисленые значения в соответствии с ASN.1. */
 struct s_asn_int_type {
     /*! \brief массив, содержащий значение в формате big-endian. */
-    byte *mp_value;
+    ak_byte *mp_value;
     /*! \brief размер массива с данными. */
     size_t m_val_len;
     /*! \brief флаг, определяющий знак числа. */
-    bool m_positive;
+    bool_t m_positive;
 };
 
 /*! \brief Струкртура, хранящая массив байтов в соответствии с ASN.1. */
 struct s_asn_oct_str_type {
     /*! \brief массив, содержащий значение. */
-    byte *mp_value;
+    ak_byte *mp_value;
     /*! \brief размер массива с данными. */
     size_t m_val_len;
 };
@@ -73,19 +71,19 @@ struct s_asn_oct_str_type {
 /*! \brief Струкртура, хранящая "битовую строку" в соответствии с ASN.1. */
 struct s_asn_bit_str_type {
     /*! \brief массив, содержащий значение. */
-    byte *mp_value;
+    ak_byte *mp_value;
     /*! \brief размер массива с данными. */
     size_t m_val_len;
     /*! \brief кол-во неиспользуемых битов в последнем байте
                (возмжные значения от 0 до 7 включительно). */
-    uint8_t m_unused;
+    ak_uint8 m_unused;
 };
 
-typedef byte tag;
+typedef ak_byte tag;
 
 /*! \brief Псевдонимы базовых типов ASN.1 */
-typedef bool boolean;
-typedef byte *utf8_string;
+typedef bool_t boolean;
+typedef ak_byte *utf8_string;
 typedef char *visible_string;
 typedef char *generalized_time;
 typedef char *object_identifier;
@@ -94,69 +92,69 @@ typedef struct s_asn_bit_str_type bit_string;
 typedef struct s_asn_oct_str_type octet_string;
 
 /*! \brief Декодирование тега из DER последовательности. */
-int asn_get_tag(byte *p_buff, tag *p_tag);
+int asn_get_tag(ak_byte *p_buff, tag *p_tag);
 
 /*! \brief Декодирование длины данных из DER последовательности. */
-int asn_get_len(byte *p_buff, size_t *p_len, uint8_t *p_len_byte_cnt);
+int asn_get_len(ak_byte *p_buff, size_t *p_len, ak_uint8 *p_len_byte_cnt);
 
 /*! \brief Декодирование целого числа из DER последовательности. */
-int asn_get_int(byte *p_buff, size_t len, integer *p_val);
+int asn_get_int(ak_byte *p_buff, size_t len, integer *p_val);
 
 /*! \brief Декодирование UTF-8 строки из DER последовательности. */
-int asn_get_utf8string(byte *p_buff, size_t len, utf8_string *p_str);
+int asn_get_utf8string(ak_byte *p_buff, size_t len, utf8_string *p_str);
 
 /*! \brief Декодирование массива октетов из DER последовательности. */
-int asn_get_octetstr(byte *p_buff, size_t len, octet_string *p_dst);
+int asn_get_octetstr(ak_byte *p_buff, size_t len, octet_string *p_dst);
 
 /*! \brief Декодирование строки из DER последовательности. */
-int asn_get_vsblstr(byte *p_buff, size_t len, visible_string *p_str);
+int asn_get_vsblstr(ak_byte *p_buff, size_t len, visible_string *p_str);
 
 /*! \brief Декодирование идентификатора объекта из DER последовательности. */
-int asn_get_objid(byte *p_buff, size_t len, object_identifier *p_objid);
+int asn_get_objid(ak_byte *p_buff, size_t len, object_identifier *p_objid);
 
 /*! \brief Декодирование массива байтов, представляющих произвольные флаги, из DER последовательности. */
-int asn_get_bitstr(byte *p_buff, size_t len, bit_string *p_dst);
+int asn_get_bitstr(ak_byte *p_buff, size_t len, bit_string *p_dst);
 
 /*! \brief Декодирование значения типа boolean из DER последовательности. */
-int asn_get_bool(byte *p_buff, size_t len, boolean *p_value);
+int asn_get_bool(ak_byte *p_buff, size_t len, boolean *p_value);
 
 /*! \brief Декодирование времени, представленном в общепринятом формате, из DER последовательности. */
-int asn_get_generalized_time(byte *p_buff, size_t len, generalized_time *p_time);
+int asn_get_generalized_time(ak_byte *p_buff, size_t len, generalized_time *p_time);
 
 /*! \brief Добавление тега в DER последовательность. */
-int asn_put_tag(tag tag, byte *p_buff);
+int asn_put_tag(tag tag, ak_byte *p_buff);
 
 /*! \brief Добавление длины данных в DER последовательность. */
-int asn_put_len(size_t len, byte *p_buff);
+int asn_put_len(size_t len, ak_byte *p_buff);
 
 /*! \brief Добавление целого числа в DER последовательность. */
-int asn_put_int(integer val, byte *p_buff);
+int asn_put_int(integer val, ak_byte *p_buff);
 
 /*! \brief Добавление UTF-8 строки в DER последовательность. */
-int asn_put_utf8string(utf8_string str, byte *p_buff);
+int asn_put_utf8string(utf8_string str, ak_byte *p_buff);
 
 /*! \brief Добавление массива октетов в DER последовательность. */
-int asn_put_octetstr(octet_string src, byte *p_buff);
+int asn_put_octetstr(octet_string src, ak_byte *p_buff);
 
 /*! \brief Добавление строки в DER последовательность. */
-int asn_put_vsblstr(visible_string str, byte *p_buff);
+int asn_put_vsblstr(visible_string str, ak_byte *p_buff);
 
 /*! \brief Добавление идентификатора объекта в DER последовательность. */
-int asn_put_objid(object_identifier obj_id, byte *p_buff);
+int asn_put_objid(object_identifier obj_id, ak_byte *p_buff);
 
 /*! \brief Добавление массива байтов, представляющих произвольные флаги, в DER последовательность. */
-int asn_put_bitstr(bit_string src, byte *p_buff);
+int asn_put_bitstr(bit_string src, ak_byte *p_buff);
 
 /*! \brief Добавление значения типа boolean в DER последовательность. */
-int asn_put_bool(boolean val, byte *p_buff);
+int asn_put_bool(boolean val, ak_byte *p_buff);
 
 /*! \brief Добавление времени, представленном в общепринятом формате, в DER последовательность. */
-int asn_put_generalized_time(generalized_time time, byte *p_buff);
+int asn_put_generalized_time(generalized_time time, ak_byte *p_buff);
 
 
 /* Tools */
 /*! \brief Метод для добавления стандартных типов данных в DER последовательность. */
-int asn_put_universal_tlv(uint8_t tag_number,
+int asn_put_universal_tlv(ak_uint8 tag_number,
                           void *p_data,
                           size_t seq_or_set_len,
                           s_ptr_server *p_main_ps,
@@ -166,7 +164,7 @@ int asn_put_universal_tlv(uint8_t tag_number,
 int asn_get_expected_tlv(tag expected_tag, s_ptr_server *p_curr_ps, void *p_result);
 
 /*! \brief Метод для определения кол-ва элементов в блоке данных DER последовательности. */
-int asn_get_num_of_elems_in_constructed_obj(s_ptr_server *p_data, uint8_t *p_num_of_elems);
+int asn_get_num_of_elems_in_constructed_obj(s_ptr_server *p_data, ak_uint8 *p_num_of_elems);
 
 /*! \brief Метод для определения необходимого кол-ва памяти для хранения длины данных. */
 ak_uint8 asn_get_len_byte_cnt(size_t len);

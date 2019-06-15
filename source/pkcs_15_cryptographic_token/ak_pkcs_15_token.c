@@ -1,6 +1,17 @@
+#ifdef LIBAKRYPT_HAVE_STRING_H
+#include <string.h>
+#else
+#error Library cannot be compiled without string.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+#include <stdlib.h>
+#else
+#error Library cannot be compiled without stdlib.h header
+#endif
+
 #include "ak_pkcs_15_token.h"
 
-int pkcs_15_generate_token(s_pkcs_15_token *p_pkcs_15_token, byte **pp_data, size_t *p_size) {
+int pkcs_15_generate_token(s_pkcs_15_token *p_pkcs_15_token, ak_byte **pp_data, size_t *p_size) {
     int error;
     s_der_buffer pkcs_token_der;
     s_der_buffer objects;
@@ -36,7 +47,7 @@ int pkcs_15_generate_token(s_pkcs_15_token *p_pkcs_15_token, byte **pp_data, siz
         if (!p_pkcs_15_token->mpp_key_infos)
             return ak_error_message(ak_error_null_pointer, __func__, "key management info absent");
 
-        for (uint8_t i = 0; i < p_pkcs_15_token->m_info_size; i++)
+        for (ak_uint8 i = 0; i < p_pkcs_15_token->m_info_size; i++)
         {
             s_der_buffer sngl_key_management_info;
             memset(&sngl_key_management_info, 0, sizeof(s_der_buffer));
@@ -82,7 +93,7 @@ int pkcs_15_generate_token(s_pkcs_15_token *p_pkcs_15_token, byte **pp_data, siz
         return ak_error_message(error, __func__, "problem with adding sequence tag and length");
 
     *p_size = (size_t) ps_get_curr_size(&pkcs_token_der);
-    *pp_data = (byte *) calloc(*p_size, sizeof(byte));
+    *pp_data = (ak_byte *) calloc(*p_size, sizeof(ak_byte));
     memcpy(*pp_data, pkcs_token_der.mp_curr, *p_size);
 
     free(pkcs_token_der.mp_begin);
@@ -449,7 +460,7 @@ int pkcs_15_put_params_pbkdf2(s_der_buffer *p_pkcs_15_token, s_pwd_info *p_pwd_i
 
 
 
-int pkcs_15_parse_token(byte *p_data, size_t size, s_pkcs_15_token *p_pkcs_15_token) {
+int pkcs_15_parse_token(ak_byte *p_data, size_t size, s_pkcs_15_token *p_pkcs_15_token) {
     int error;
     tag tag;
     size_t len;

@@ -1,3 +1,19 @@
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+#include <stdlib.h>
+#else
+#error Library cannot be compiled without stdlib.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STRING_H
+#include <string.h>
+#else
+#error Library cannot be compiled without string.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_CTYPE_H
+#include <ctype.h>
+#else
+#error Library cannot be compiled without ctype.h header
+#endif
+
 #include <pkcs_15_cryptographic_token/ak_asn_codec.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -6,7 +22,7 @@
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_put_tag(tag tag, byte *p_buff) {
+int asn_put_tag(tag tag, ak_byte *p_buff) {
     if (!p_buff)
         return ak_error_message(ak_error_null_pointer, __func__, "bad pointer to buffer");
 
@@ -20,7 +36,7 @@ int asn_put_tag(tag tag, byte *p_buff) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_put_len(size_t len, byte *p_buff) {
+int asn_put_len(size_t len, ak_byte *p_buff) {
     int8_t len_byte_cnt;
 
     if (!p_buff)
@@ -31,12 +47,12 @@ int asn_put_len(size_t len, byte *p_buff) {
         return ak_error_message(ak_error_null_pointer, __func__, "wrong length");
 
     if (len_byte_cnt == 1)
-        *p_buff = (byte) len;
+        *p_buff = (ak_byte) len;
     else
     {
-        *(p_buff++) = (byte) (0x80u ^ (uint8_t) (--len_byte_cnt));
+        *(p_buff++) = (ak_byte) (0x80u ^ (uint8_t) (--len_byte_cnt));
         while (--len_byte_cnt >= 0)
-            *(p_buff++) = (byte) ((len >> (8u * len_byte_cnt)) & 0xFFu);
+            *(p_buff++) = (ak_byte) ((len >> (8u * len_byte_cnt)) & 0xFFu);
     }
 
     return ak_error_ok;
@@ -48,7 +64,7 @@ int asn_put_len(size_t len, byte *p_buff) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_put_int(integer val, byte *p_buff) {
+int asn_put_int(integer val, ak_byte *p_buff) {
     if (!p_buff)
         return ak_error_message(ak_error_null_pointer, __func__, "bad pointer to buffer");
 
@@ -82,7 +98,7 @@ int asn_put_int(integer val, byte *p_buff) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_put_utf8string(utf8_string str, byte *p_buff) {
+int asn_put_utf8string(utf8_string str, ak_byte *p_buff) {
     if (!p_buff)
         return ak_error_message(ak_error_null_pointer, __func__, "bad pointer to buffer");
 
@@ -100,7 +116,7 @@ int asn_put_utf8string(utf8_string str, byte *p_buff) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_put_octetstr(octet_string src, byte *p_buff) {
+int asn_put_octetstr(octet_string src, ak_byte *p_buff) {
     if (!p_buff)
         return ak_error_message(ak_error_null_pointer, __func__, "bad pointer to buffer");
 
@@ -118,7 +134,7 @@ int asn_put_octetstr(octet_string src, byte *p_buff) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_put_vsblstr(visible_string str, byte *p_buff) {
+int asn_put_vsblstr(visible_string str, ak_byte *p_buff) {
     if (!p_buff)
         return ak_error_message(ak_error_null_pointer, __func__, "bad pointer to buffer");
 
@@ -139,7 +155,7 @@ int asn_put_vsblstr(visible_string str, byte *p_buff) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_put_objid(object_identifier obj_id, byte *p_buff) {
+int asn_put_objid(object_identifier obj_id, ak_byte *p_buff) {
     size_t num;
     object_identifier p_objid_end;
 
@@ -152,7 +168,7 @@ int asn_put_objid(object_identifier obj_id, byte *p_buff) {
     num = (size_t) strtoul((char *) obj_id, &p_objid_end, 10);
     obj_id = ++p_objid_end;
     num = num * 40 + (size_t) strtol((char *) obj_id, &p_objid_end, 10);
-    *(p_buff++) = (byte) num;
+    *(p_buff++) = (ak_byte) num;
 
     while (*p_objid_end != '\0')
     {
@@ -161,19 +177,19 @@ int asn_put_objid(object_identifier obj_id, byte *p_buff) {
 
         if (num > 0x7Fu)
         {
-            byte seven_bits;
+            ak_byte seven_bits;
             int8_t i;
             i = 3;
             while (i > 0)
             {
-                seven_bits = (byte) ((num >> ((uint8_t) i * 7u)) & 0x7Fu);
+                seven_bits = (ak_byte) ((num >> ((uint8_t) i * 7u)) & 0x7Fu);
                 if (seven_bits)
-                    *(p_buff++) = (byte) (0x80u ^ seven_bits);
+                    *(p_buff++) = (ak_byte) (0x80u ^ seven_bits);
                 i--;
             }
         }
 
-        *(p_buff++) = (byte) (num & 0x7Fu);
+        *(p_buff++) = (ak_byte) (num & 0x7Fu);
     }
 
     return ak_error_ok;
@@ -185,7 +201,7 @@ int asn_put_objid(object_identifier obj_id, byte *p_buff) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_put_bitstr(bit_string src, byte *p_buff) {
+int asn_put_bitstr(bit_string src, ak_byte *p_buff) {
     if (!p_buff)
         return ak_error_message(ak_error_null_pointer, __func__, "bad pointer to buffer");
 
@@ -207,7 +223,7 @@ int asn_put_bitstr(bit_string src, byte *p_buff) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_put_bool(boolean val, byte *p_buff) {
+int asn_put_bool(boolean val, ak_byte *p_buff) {
     if (!p_buff)
         return ak_error_message(ak_error_null_pointer, __func__, "bad pointer to buffer");
 
@@ -225,7 +241,7 @@ int asn_put_bool(boolean val, byte *p_buff) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int asn_put_generalized_time(generalized_time time, byte *p_buff) {
+int asn_put_generalized_time(generalized_time time, ak_byte *p_buff) {
     int8_t byte_cnt;
 
     if (!p_buff)
@@ -243,7 +259,7 @@ int asn_put_generalized_time(generalized_time time, byte *p_buff) {
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of year value");
-        *(p_buff++) = (byte) *(time++);
+        *(p_buff++) = (ak_byte) *(time++);
     }
     time++;
 
@@ -252,7 +268,7 @@ int asn_put_generalized_time(generalized_time time, byte *p_buff) {
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of month value");
-        *(p_buff++) = (byte) *(time++);
+        *(p_buff++) = (ak_byte) *(time++);
     }
     time++;
 
@@ -261,7 +277,7 @@ int asn_put_generalized_time(generalized_time time, byte *p_buff) {
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of day value");
-        *(p_buff++) = (byte) *(time++);
+        *(p_buff++) = (ak_byte) *(time++);
     }
     time++;
 
@@ -270,7 +286,7 @@ int asn_put_generalized_time(generalized_time time, byte *p_buff) {
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of hour value");
-        *(p_buff++) = (byte) *(time++);
+        *(p_buff++) = (ak_byte) *(time++);
     }
     time++;
 
@@ -279,7 +295,7 @@ int asn_put_generalized_time(generalized_time time, byte *p_buff) {
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of minute value");
-        *(p_buff++) = (byte) *(time++);
+        *(p_buff++) = (ak_byte) *(time++);
     }
     time++;
 
@@ -288,7 +304,7 @@ int asn_put_generalized_time(generalized_time time, byte *p_buff) {
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of second value");
-        *(p_buff++) = (byte) *(time++);
+        *(p_buff++) = (ak_byte) *(time++);
     }
 
     /* .mmm */
@@ -303,12 +319,12 @@ int asn_put_generalized_time(generalized_time time, byte *p_buff) {
                                     __func__,
                                     "wrong format of quota of second value (it can't end by 0 symbol)");
 
-        *(p_buff++) = (byte) *(time++); // помещаем символ точки
+        *(p_buff++) = (ak_byte) *(time++); // помещаем символ точки
         for (uint8_t i = 0; i < ms_cnt; i++)
         {
             if (!isdigit(*time))
                 return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of quota of second value");
-            *(p_buff++) = (byte) *(time++);
+            *(p_buff++) = (ak_byte) *(time++);
         }
     }
 

@@ -87,7 +87,7 @@ typedef struct {
 /** Методы добавления данных **/
 
 /*! \brief Метод по сбору контейнера в DER последовательность. */
-int pkcs_15_generate_token(s_pkcs_15_token *p_pkcs_15_token, byte **pp_data, size_t *p_size);
+int pkcs_15_generate_token(s_pkcs_15_token *p_pkcs_15_token, ak_byte **pp_data, size_t *p_size);
 
 /*! \brief Добавление объектов в DER последовательность. */
 int pkcs_15_put_pkcs_objects(s_der_buffer *p_pkcs_15_token,
@@ -122,7 +122,7 @@ int pkcs_15_put_params_pbkdf2(s_der_buffer *p_pkcs_15_token, s_pwd_info *p_pwd_i
 /** Методы декодирования данных **/
 
 /*! \brief Метод по разбору DER последовательности, представляющую контейнер ключевой информации. */
-int pkcs_15_parse_token(byte *p_data, size_t size, s_pkcs_15_token *p_pkcs_15_token);
+int pkcs_15_parse_token(ak_byte *p_data, size_t size, s_pkcs_15_token *p_pkcs_15_token);
 
 /*! \brief Декодирование объектов контейнера из DER последовательности. */
 int pkcs_15_get_pkcs_objects(s_der_buffer *p_pkcs_15_token_der, s_pkcs_15_token *p_pkcs_15_token);

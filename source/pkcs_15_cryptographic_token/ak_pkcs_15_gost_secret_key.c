@@ -1,3 +1,14 @@
+#ifdef LIBAKRYPT_HAVE_STRING_H
+#include <string.h>
+#else
+#error Library cannot be compiled without string.h header
+#endif
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+#include <stdlib.h>
+#else
+#error Library cannot be compiled without stdlib.h header
+#endif
+
 #include <ak_buffer.h>
 #include <pkcs_15_cryptographic_token/ak_pkcs_15_gost_secret_key.h>
 
@@ -562,10 +573,10 @@ int pkcs_15_get_key_info(s_der_buffer *p_key_der, s_key_info *p_key_info) {
 /* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_make_gost_key_value_mask(ak_buffer masked_key, ak_buffer mask, ssize_t counter, ak_buffer gost_kvm_der) {
     int error;
-    uint8_t i;
-    uint8_t counter_var_size;
+    ak_uint8 i;
+    ak_uint8 counter_var_size;
     size_t key_val_mask_len;
-    uint8_t len_byte_cnt;
+    ak_uint8 len_byte_cnt;
     s_der_buffer kvm_der;
 
     if (!masked_key || !mask || !gost_kvm_der)
@@ -582,7 +593,7 @@ int pkcs_15_make_gost_key_value_mask(ak_buffer masked_key, ak_buffer mask, ssize
 
     for (i = 0; i < counter_var_size; i++)
     {
-        kvm_der.mp_curr[counter_var_size - i - 1] = (byte) ((counter >> (i * 8u)) & 0xFFu);
+        kvm_der.mp_curr[counter_var_size - i - 1] = (ak_byte) ((counter >> (i * 8u)) & 0xFFu);
     }
 
     if ((error = ps_move_cursor(&kvm_der, masked_key->size)) != ak_error_ok)
@@ -603,7 +614,7 @@ int pkcs_15_make_gost_key_value_mask(ak_buffer masked_key, ak_buffer mask, ssize
     if ((error = asn_put_len(key_val_mask_len, kvm_der.mp_curr + 1)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding data length");
 
-    ak_buffer_set_ptr(gost_kvm_der, kvm_der.mp_begin, ps_get_full_size(&kvm_der), true);
+    ak_buffer_set_ptr(gost_kvm_der, kvm_der.mp_begin, ps_get_full_size(&kvm_der), ak_true);
     free(kvm_der.mp_begin);
 
     return ak_error_ok;
@@ -649,7 +660,7 @@ int pkcs_15_make_enc_key_plus_mac_seq(ak_buffer encrypted_cek, ak_buffer mac, ak
     asn_put_tag(CONSTRUCTED | TSEQUENCE, enc_key_der.mp_curr);
     asn_put_len(enc_cek_der_len + mac_der_len, enc_key_der.mp_curr + 1);
 
-    ak_buffer_set_ptr(encrypted_key_der, enc_key_der.mp_begin, ps_get_full_size(&enc_key_der), true);
+    ak_buffer_set_ptr(encrypted_key_der, enc_key_der.mp_begin, ps_get_full_size(&enc_key_der), ak_true);
     free(enc_key_der.mp_begin);
 
     return ak_error_ok;
@@ -666,7 +677,7 @@ int pkcs_15_make_enc_key_plus_mac_seq(ak_buffer encrypted_cek, ak_buffer mac, ak
 int pkcs_15_parse_gost_key_value_mask(ak_buffer gost_kvm_der, ak_buffer masked_key, ak_buffer mask, ssize_t *counter) {
     int error;
     uint8_t i;
-    byte *p_curr_pos;
+    ak_byte *p_curr_pos;
     tag curr_tag;
     size_t data_len;
     uint8_t len_byte_cnt;
@@ -714,7 +725,7 @@ int pkcs_15_parse_gost_key_value_mask(ak_buffer gost_kvm_der, ak_buffer masked_k
 /* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_parse_enc_key_plus_mac_seq(octet_string encrypted_key_der, ak_buffer p_encrypted_cek, ak_buffer p_mac) {
     int error;
-    byte *p_curr_pos;
+    ak_byte *p_curr_pos;
     tag curr_tag;
     size_t data_len;
     uint8_t len_byte_cnt;
