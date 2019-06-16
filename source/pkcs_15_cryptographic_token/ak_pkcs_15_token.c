@@ -11,6 +11,13 @@
 
 #include "ak_pkcs_15_token.h"
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token указатель на структуру, содержащую всю информацию о токене
+    @param pp_data указатель на указатель на выходную DER последовательность
+    @param p_size размер получившийся DER последовательности
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_generate_token(s_pkcs_15_token *p_pkcs_15_token, ak_byte **pp_data, size_t *p_size) {
     int error;
     s_der_buffer pkcs_token_der;
@@ -27,20 +34,20 @@ int pkcs_15_generate_token(s_pkcs_15_token *p_pkcs_15_token, ak_byte **pp_data, 
     if (!p_pkcs_15_token || !pp_data || !p_size)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
+    /* Выделяем память под DER последовательность */
     ps_alloc(&pkcs_token_der, 2000, PS_W_MODE);
 
+    /* Добавляем объекты PKCS 15 Objects в DER последовательность */
     if (p_pkcs_15_token->mpp_pkcs_15_objects && p_pkcs_15_token->m_obj_size)
     {
-        if ((error = pkcs_15_put_pkcs_objects(&pkcs_token_der,
-                                              p_pkcs_15_token->mpp_pkcs_15_objects,
-                                              p_pkcs_15_token->m_obj_size,
-                                              &objects)) != ak_error_ok)
+        if ((error = pkcs_15_put_pkcs_objects(&pkcs_token_der, p_pkcs_15_token->mpp_pkcs_15_objects, p_pkcs_15_token->m_obj_size, &objects)) != ak_error_ok)
             return ak_error_message(error, __func__, "problems with adding objects");
     }
     else
         return ak_error_message(ak_error_invalid_value, __func__, "objects absent");
 
 
+    /* Добавляем объект keyManagementInfo в DER последовательность, если он присутствует */
     if (p_pkcs_15_token->m_info_size != 0)
     {
         size_t key_management_info_len = 0;
@@ -49,13 +56,13 @@ int pkcs_15_generate_token(s_pkcs_15_token *p_pkcs_15_token, ak_byte **pp_data, 
 
         for (ak_uint8 i = 0; i < p_pkcs_15_token->m_info_size; i++)
         {
+            /* Добавляем один элемент объекта keyManagementInfo в DER последовательность */
             s_der_buffer sngl_key_management_info;
             memset(&sngl_key_management_info, 0, sizeof(s_der_buffer));
             if (!p_pkcs_15_token->mpp_key_infos[i])
                 return ak_error_message(ak_error_null_pointer, __func__, "bad pointer to key management info");
 
-            if ((error = pkcs_15_put_key_management_info(&pkcs_token_der, p_pkcs_15_token->mpp_key_infos[i],
-                                                         &sngl_key_management_info)) != ak_error_ok)
+            if ((error = pkcs_15_put_key_management_info(&pkcs_token_der, p_pkcs_15_token->mpp_key_infos[i], &sngl_key_management_info)) != ak_error_ok)
                 return ak_error_message(error, __func__, "problems with adding key management info");
 
             key_management_info_len += ps_get_full_size(&sngl_key_management_info);
@@ -67,46 +74,53 @@ int pkcs_15_generate_token(s_pkcs_15_token *p_pkcs_15_token, ak_byte **pp_data, 
                 ak_error_ok)
                 return ak_error_message(error, __func__, "problems with moving cursor");
 
+            /* Добавляем тег и длину объекта keyManagementInfo в DER последовательность */
             asn_put_tag(CONTEXT_SPECIFIC | CONSTRUCTED | 0u, pkcs_token_der.mp_curr);
 
             if ((error = asn_put_len(key_management_info_len, pkcs_token_der.mp_curr + 1)) != ak_error_ok)
                 return ak_error_message_fmt(error, __func__, "problem with adding key management info length");
 
-            if ((error = ps_set(&key_management_info, pkcs_token_der.mp_curr, key_management_info_len
-                                                                              +
-                                                                              asn_get_len_byte_cnt(
-                                                                                      key_management_info_len) +
-                                                                              1, PS_U_MODE)) != ak_error_ok)
+            if ((error = ps_set(&key_management_info, pkcs_token_der.mp_curr, key_management_info_len + asn_get_len_byte_cnt(key_management_info_len) + 1, PS_U_MODE)) != ak_error_ok)
                 return ak_error_message(error, __func__, "problems with making union of asn data");
         }
     }
 
-    if ((error = asn_put_universal_tlv(TINTEGER, (void *) &p_pkcs_15_token->m_version, 0, &pkcs_token_der, &token_ver))
-        != ak_error_ok)
+    /* Добавляем версию токена в DER последовательность */
+    if ((error = asn_put_universal_tlv(TINTEGER, (void *) &p_pkcs_15_token->m_version, 0, &pkcs_token_der, &token_ver)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding token version");
 
     token_len = ps_get_full_size(&objects) +
                 ps_get_full_size(&key_management_info) +
                 ps_get_full_size(&token_ver);
 
+    /* Добавляем тег и длину токена в DER последовательность */
     if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, token_len, &pkcs_token_der, &token_ver)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding sequence tag and length");
 
+    /* Переносим получившуюся DER последовательность в блок помяти, в точности соответствующий ее размерам */
     *p_size = (size_t) ps_get_curr_size(&pkcs_token_der);
     *pp_data = (ak_byte *) calloc(*p_size, sizeof(ak_byte));
     memcpy(*pp_data, pkcs_token_der.mp_curr, *p_size);
 
+    /* Освобождаем память */
     free(pkcs_token_der.mp_begin);
 
     return error;
 }
 
-int pkcs_15_put_pkcs_objects(s_der_buffer *p_pkcs_15_token, s_pkcs_15_object **pp_pkcs_15_objects, int8_t size,
-                             s_der_buffer *p_pkcs_15_object_der) {
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на токен, содержащий всю DER последовательность
+    @param pp_pkcs_15_objects массив указателей на объекты PKCS15Object
+    @param size размер массива pp_pkcs_15_objects
+    @param p_pkcs_15_object_der результат закодирования объектов PKCS15Object
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+int pkcs_15_put_pkcs_objects(s_der_buffer *p_pkcs_15_token_der, s_pkcs_15_object **pp_pkcs_15_objects, int8_t size, s_der_buffer *p_pkcs_15_object_der) {
     int error;
     size_t objects_len;
 
-    if (!p_pkcs_15_token || !pp_pkcs_15_objects || !size || !p_pkcs_15_object_der)
+    if (!p_pkcs_15_token_der || !pp_pkcs_15_objects || !size || !p_pkcs_15_object_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
 
@@ -118,43 +132,51 @@ int pkcs_15_put_pkcs_objects(s_der_buffer *p_pkcs_15_token, s_pkcs_15_object **p
         if (!pp_pkcs_15_objects[i])
             return ak_error_message(ak_error_null_pointer, __func__, "object absent");
 
+        /* Добавляем отдельный объект PKCS15Object в DER последовательность */
         memset(&added_object, 0, sizeof(s_der_buffer));
-        if ((error = pkcs_15_put_obj(p_pkcs_15_token, pp_pkcs_15_objects[i], &added_object)) != ak_error_ok)
+        if ((error = pkcs_15_put_obj(p_pkcs_15_token_der, pp_pkcs_15_objects[i], &added_object)) != ak_error_ok)
             return ak_error_message(error, __func__, "problems with adding object");
         objects_len += ps_get_full_size(&added_object);
     }
 
-    if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, objects_len, p_pkcs_15_token, p_pkcs_15_object_der))
-        != ak_error_ok)
+    /* Добавляем тег и длину всех объектов PKCS15Object в DER последовательность */
+    if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, objects_len, p_pkcs_15_token_der, p_pkcs_15_object_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding sequence tag and length");
 
     return ak_error_ok;
 }
 
-int pkcs_15_put_obj(s_der_buffer *p_pkcs_15_token,
-                    s_pkcs_15_object *p_pkcs_15_object,
-                    s_der_buffer *p_added_pkcs_15_object_der) {
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция добавляет объект, используя вариант objects из структуры PathOrObjects (см. PKCS 15)
+    @param p_pkcs_15_token_der указатель на токен, содержащий всю DER последовательность
+    @param p_pkcs_15_objects указатель на объект PKCS15Object
+    @param p_added_pkcs_15_object_der результат закодирования объекта PKCS15Object
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+int pkcs_15_put_obj(s_der_buffer *p_pkcs_15_token_der, s_pkcs_15_object *p_pkcs_15_object, s_der_buffer *p_added_pkcs_15_object_der) {
     int error;
     s_der_buffer direct_object;
     size_t direct_object_len;
 
     memset(&direct_object, 0, sizeof(s_der_buffer));
 
-    if (!p_pkcs_15_token || !p_pkcs_15_object || !p_added_pkcs_15_object_der)
+    if (!p_pkcs_15_token_der || !p_pkcs_15_object || !p_added_pkcs_15_object_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-
-    if ((error = pkcs_15_put_obj_direct(p_pkcs_15_token, p_pkcs_15_object, &direct_object)) != ak_error_ok)
+    /* Добавляем объект PKCS15Object в DER последовательность, при этом атрибуты объекта (метка, флаги использования и т.д. хранятся в открытом виде) */
+    if ((error = pkcs_15_put_obj_direct(p_pkcs_15_token_der, p_pkcs_15_object, &direct_object)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with adding object direct");
 
     direct_object_len = ps_get_full_size(&direct_object);
-    if ((error = ps_move_cursor(p_pkcs_15_token, asn_get_len_byte_cnt(direct_object_len) + 1)) != ak_error_ok)
+    if ((error = ps_move_cursor(p_pkcs_15_token_der, asn_get_len_byte_cnt(direct_object_len) + 1)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with moving cursor");
 
+    /* Добавляем тег и длину объекта PKCS15Object в DER последовательность */
     switch (p_pkcs_15_object->m_type)
     {
         case SEC_KEY:
-            asn_put_tag(CONTEXT_SPECIFIC | CONSTRUCTED | 3u, p_pkcs_15_token->mp_curr);
+            asn_put_tag(CONTEXT_SPECIFIC | CONSTRUCTED | 3u, p_pkcs_15_token_der->mp_curr);
             break;
         case PRI_KEY:
             return ak_error_message(ak_error_invalid_value, __func__, "adding private keys does not realized yet");
@@ -164,36 +186,37 @@ int pkcs_15_put_obj(s_der_buffer *p_pkcs_15_token,
             return ak_error_message(ak_error_invalid_value, __func__, "unknown type of object");
     }
 
-    if ((error = asn_put_len(direct_object_len, p_pkcs_15_token->mp_curr + 1)) != ak_error_ok)
+    if ((error = asn_put_len(direct_object_len, p_pkcs_15_token_der->mp_curr + 1)) != ak_error_ok)
         return ak_error_message_fmt(error, __func__, "problem with adding object length");
 
-    if ((error = ps_set(p_added_pkcs_15_object_der,
-                        p_pkcs_15_token->mp_curr,
-                        direct_object_len + asn_get_len_byte_cnt(direct_object_len) + 1,
-                        PS_U_MODE)) != ak_error_ok)
+    if ((error = ps_set(p_added_pkcs_15_object_der, p_pkcs_15_token_der->mp_curr, direct_object_len + asn_get_len_byte_cnt(direct_object_len) + 1, PS_U_MODE)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with making union of asn data");
 
     return error;
 }
 
-int pkcs_15_put_obj_direct(s_der_buffer *p_pkcs_15_token,
-                           s_pkcs_15_object *p_pkcs_15_object,
-                           s_der_buffer *p_direct_pkcs_15_object_der) {
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на токен, содержащий всю DER последовательность
+    @param p_pkcs_15_objects указатель на объект PKCS15Object
+    @param p_direct_pkcs_15_object_der результат закодирования объекта PKCS15Object
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+int pkcs_15_put_obj_direct(s_der_buffer *p_pkcs_15_token_der, s_pkcs_15_object *p_pkcs_15_object, s_der_buffer *p_direct_pkcs_15_object_der) {
     int error;
     s_der_buffer gost_key;
     size_t gost_key_len;
 
     memset(&gost_key, 0, sizeof(s_der_buffer));
 
-    if (!p_pkcs_15_token || !p_pkcs_15_object || !p_direct_pkcs_15_object_der)
+    if (!p_pkcs_15_token_der || !p_pkcs_15_object || !p_direct_pkcs_15_object_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-
+    /* Добавляем объект ключа в DER последовательность */
     switch (p_pkcs_15_object->m_type)
     {
         case SEC_KEY:
-            if ((error = pkcs_15_put_gost_key(p_pkcs_15_token, p_pkcs_15_object->m_obj.mp_sec_key, &gost_key)) !=
-                ak_error_ok)
+            if ((error = pkcs_15_put_gost_key(p_pkcs_15_token_der, p_pkcs_15_object->m_obj.mp_sec_key, &gost_key)) != ak_error_ok)
                 return ak_error_message(error, __func__, "problems with adding gost key");
             break;
         case PRI_KEY:
@@ -206,31 +229,41 @@ int pkcs_15_put_obj_direct(s_der_buffer *p_pkcs_15_token,
 
     gost_key_len = (size_t) ps_get_full_size(&gost_key);
 
-    if ((error = ps_move_cursor(p_pkcs_15_token, asn_get_len_byte_cnt(gost_key_len) + 1)) != ak_error_ok)
+    if ((error = ps_move_cursor(p_pkcs_15_token_der, asn_get_len_byte_cnt(gost_key_len) + 1)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with moving cursor");
 
-    asn_put_tag(CONTEXT_SPECIFIC | CONSTRUCTED | 0u, p_pkcs_15_token->mp_curr);
+    /* Добавляем длину объекта и тег, определяющий, что атрибуты объекта хранятся в открытом виде, в DER последовательность */
+    asn_put_tag(CONTEXT_SPECIFIC | CONSTRUCTED | 0u, p_pkcs_15_token_der->mp_curr);
 
-    if ((error = asn_put_len(gost_key_len, p_pkcs_15_token->mp_curr + 1)) != ak_error_ok)
+    if ((error = asn_put_len(gost_key_len, p_pkcs_15_token_der->mp_curr + 1)) != ak_error_ok)
         return ak_error_message_fmt(error, __func__, "problem with adding gost key length");
 
-    if ((error = ps_set(p_direct_pkcs_15_object_der, p_pkcs_15_token->mp_curr,
+    if ((error = ps_set(p_direct_pkcs_15_object_der, p_pkcs_15_token_der->mp_curr,
                         gost_key_len + asn_get_len_byte_cnt(gost_key_len) + 1, PS_U_MODE)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with making union of asn data");
 
     return error;
 }
 
-int pkcs_15_put_key_management_info(s_der_buffer *p_pkcs_15_token, s_key_management_info *p_key_management_info,
-                                    s_der_buffer *p_key_management_info_der) {
-    int error = ak_error_ok;
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на токен, содержащий всю DER последовательность
+    @param p_key_management_info указатель на объект keyManagementInfo
+    @param p_key_management_info_der результат закодирования объекта keyManagementInfo
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+int pkcs_15_put_key_management_info(s_der_buffer *p_pkcs_15_token_der, s_key_management_info *p_key_management_info, s_der_buffer *p_key_management_info_der) {
+    int error;
     s_der_buffer key_info;
     s_der_buffer key_id;
+    size_t key_management_info_len;
 
+    error = ak_error_ok;
+    key_management_info_len = 0;
     memset(&key_info, 0, sizeof(s_der_buffer));
     memset(&key_id, 0, sizeof(s_der_buffer));
 
-    if (!p_pkcs_15_token || !p_key_management_info || !p_key_management_info_der)
+    if (!p_pkcs_15_token_der || !p_key_management_info || !p_key_management_info_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
     if (p_key_management_info->m_key_id.m_val_len > 255)
@@ -240,38 +273,37 @@ int pkcs_15_put_key_management_info(s_der_buffer *p_pkcs_15_token, s_key_managem
     switch (p_key_management_info->m_type)
     {
         case PWD_INFO:
-            if ((error = pkcs_15_put_password_info(p_pkcs_15_token, p_key_management_info->m_key_info.mp_pwd_info,
-                                                   &key_info))
-                != ak_error_ok)
+            /* Добавляем информацию об алгоритме выработки ключа по паролю в DER последовательность */
+            if ((error = pkcs_15_put_password_info(p_pkcs_15_token_der, p_key_management_info->m_key_info.mp_pwd_info, &key_info)) != ak_error_ok)
                 return ak_error_message(error, __func__, "problems with adding password info");
             break;
         case KEKRI:
-            return ak_error_message(ak_error_invalid_value,
-                                    __func__,
-                                    "adding kekri into key management info does not realized yet");
+            return ak_error_message(ak_error_invalid_value, __func__, "adding kekri into key management info does not realized yet");
         case PWRI:
-            return ak_error_message(ak_error_invalid_value,
-                                    __func__,
-                                    "adding pwri into key management info does not realized yet");
+            return ak_error_message(ak_error_invalid_value, __func__, "adding pwri into key management info does not realized yet");
     }
 
 
-    if ((error = asn_put_universal_tlv(TOCTET_STRING, (void *) &p_key_management_info->m_key_id, 0, p_pkcs_15_token,
-                                       &key_id))
-        != ak_error_ok)
+    /* Добавляем идентификатор ключа, которым был зашифрован ключ шифрования контента в DER последовательность */
+    if ((error = asn_put_universal_tlv(TOCTET_STRING, (void *) &p_key_management_info->m_key_id, 0, p_pkcs_15_token_der, &key_id)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding key id");
 
-    int key_management_info_len = ps_get_full_size(&key_info) + ps_get_full_size(&key_id);
-    if ((error =
-                 asn_put_universal_tlv(TSEQUENCE, NULL, key_management_info_len, p_pkcs_15_token,
-                                       p_key_management_info_der))
-        != ak_error_ok)
+    /* Добавляем тег и длину объекта keyManagementInfo в DER последовательность */
+    key_management_info_len = ps_get_full_size(&key_info) + ps_get_full_size(&key_id);
+    if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, key_management_info_len, p_pkcs_15_token_der, p_key_management_info_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding sequence tag and length");
 
     return error;
 }
 
-int pkcs_15_put_password_info(s_der_buffer *p_pkcs_15_token, s_pwd_info *p_pwd_info, s_der_buffer *p_pwd_info_der) {
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на токен, содержащий всю DER последовательность
+    @param p_pwd_info указатель на объект passwordInfo
+    @param p_pwd_info_der результат закодирования объекта passwordInfo
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+int pkcs_15_put_password_info(s_der_buffer *p_pkcs_15_token_der, s_pwd_info *p_pwd_info, s_der_buffer *p_pwd_info_der) {
     int error;
     s_der_buffer alg_id;
     s_der_buffer hint;
@@ -280,41 +312,46 @@ int pkcs_15_put_password_info(s_der_buffer *p_pkcs_15_token, s_pwd_info *p_pwd_i
     memset(&alg_id, 0, sizeof(s_der_buffer));
     memset(&hint, 0, sizeof(s_der_buffer));
 
-    if (!p_pkcs_15_token || !p_pwd_info || !p_pwd_info_der)
+    if (!p_pkcs_15_token_der || !p_pwd_info || !p_pwd_info_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-
-    if ((error = pkcs_15_put_alg_id(p_pkcs_15_token, p_pwd_info, &alg_id)) != ak_error_ok)
+    /* Добавляем информацию о схеме выработки ключа в DER последовательность */
+    if ((error = pkcs_15_put_alg_id(p_pkcs_15_token_der, p_pwd_info, &alg_id)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with adding algorithm id");
 
-
+    /* Добавляем подсказку для пароля, если она присутствует, в DER последовательность */
     if (p_pwd_info->m_hint != NULL)
     {
-        if ((error = asn_put_universal_tlv(TUTF8_STRING, (void *) &p_pwd_info->m_hint, 0, p_pkcs_15_token, &hint))
+        if ((error = asn_put_universal_tlv(TUTF8_STRING, (void *) &p_pwd_info->m_hint, 0, p_pkcs_15_token_der, &hint))
             != ak_error_ok)
             return ak_error_message(error, __func__, "problem with adding password hint");
     }
 
     password_info_len = ps_get_full_size(&alg_id) + ps_get_full_size(&hint);
 
-    if ((error = ps_move_cursor(p_pkcs_15_token, asn_get_len_byte_cnt(password_info_len) + 1)) != ak_error_ok)
+    if ((error = ps_move_cursor(p_pkcs_15_token_der, asn_get_len_byte_cnt(password_info_len) + 1)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with moving cursor");
 
-    asn_put_tag(CONTEXT_SPECIFIC | CONSTRUCTED | 0u, p_pkcs_15_token->mp_curr);
+    /* Добавляем тег и длину данных (об алгоритме выработки ключа по паролю) в DER последовательность */
+    asn_put_tag(CONTEXT_SPECIFIC | CONSTRUCTED | 0u, p_pkcs_15_token_der->mp_curr);
 
-    if ((error = asn_put_len(password_info_len, p_pkcs_15_token->mp_curr + 1)) != ak_error_ok)
+    if ((error = asn_put_len(password_info_len, p_pkcs_15_token_der->mp_curr + 1)) != ak_error_ok)
         return ak_error_message_fmt(error, __func__, "problem with adding gost key length");
 
-    if ((error = ps_set(p_pwd_info_der,
-                        p_pkcs_15_token->mp_curr,
-                        password_info_len + asn_get_len_byte_cnt(password_info_len) + 1,
-                        PS_U_MODE)) != ak_error_ok)
+    if ((error = ps_set(p_pwd_info_der, p_pkcs_15_token_der->mp_curr, password_info_len + asn_get_len_byte_cnt(password_info_len) + 1, PS_U_MODE)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with making union of asn data");
 
     return error;
 }
 
-int pkcs_15_put_alg_id(s_der_buffer *p_pkcs_15_token, s_pwd_info *p_pwd_info, s_der_buffer *p_alg_id_der) {
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на токен, содержащий всю DER последовательность
+    @param p_pwd_info указатель на объект passwordInfo
+    @param p_alg_id_der результат закодирования информации о схеме выработки ключа по паролю
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+int pkcs_15_put_alg_id(s_der_buffer *p_pkcs_15_token_der, s_pwd_info *p_pwd_info, s_der_buffer *p_alg_id_der) {
     int error;
     s_der_buffer params_pbkdf2;
     s_der_buffer algorithm;
@@ -323,46 +360,44 @@ int pkcs_15_put_alg_id(s_der_buffer *p_pkcs_15_token, s_pwd_info *p_pwd_info, s_
     memset(&params_pbkdf2, 0, sizeof(s_der_buffer));
     memset(&algorithm, 0, sizeof(s_der_buffer));
 
-    if (!p_pkcs_15_token || !p_pwd_info || !p_alg_id_der)
+    if (!p_pkcs_15_token_der || !p_pwd_info || !p_alg_id_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
     if (!p_pwd_info->m_algorithm)
         return ak_error_message(ak_error_null_pointer, __func__, "algorithm oid absent");
 
+    /* При выработке ключа из пароля всегда используется схема PBKDF2 */
+    if (0 != strcmp(p_pwd_info->m_algorithm, "1.2.840.113549.1.5.12"))
+        return ak_error_message_fmt(ak_error_wrong_oid, __func__, "algorithm (%s) is prohibited and must be other (%s)", p_pwd_info->m_prf_id, "1.2.840.113549.1.5.12");
 
     if (p_pwd_info->m_salt.mp_value != NULL)
     {
-        if ((error = pkcs_15_put_params_pbkdf2(p_pkcs_15_token, p_pwd_info, &params_pbkdf2)) != ak_error_ok)
-        {
+        /* Добавляем параметры для выработки ключа по схеме PBKDF2 в DER последовательность */
+        if ((error = pkcs_15_put_params_pbkdf2(p_pkcs_15_token_der, p_pwd_info, &params_pbkdf2)) != ak_error_ok)
             return ak_error_message(error, __func__, "problems with adding algorithm id");
-        }
     }
 
-    /*
-     * При выработке ключа из пароля всегда
-     * используется схема PBKDF2
-     */
-    if (0 != strcmp(p_pwd_info->m_algorithm, "1.2.840.113549.1.5.12"))
-        return ak_error_message_fmt(ak_error_wrong_oid,
-                                    __func__,
-                                    "algorithm (%s) is prohibited and must be other (%s)",
-                                    p_pwd_info->m_prf_id,
-                                    "1.2.840.113549.1.5.12");
-
-    if ((error =
-                 asn_put_universal_tlv(TOBJECT_IDENTIFIER, (void *) &p_pwd_info->m_algorithm, 0, p_pkcs_15_token,
-                                       &algorithm))
-        != ak_error_ok)
+    /* Добавляем идентификатор схемы PBKDF2 в DER последовательность */
+    if ((error = asn_put_universal_tlv(TOBJECT_IDENTIFIER, (void *) &p_pwd_info->m_algorithm, 0, p_pkcs_15_token_der, &algorithm)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding algorithm oid");
 
+    /* Добавляем тег и длину данных о выработке ключа по паролю в DER последовательность */
     alg_id_len = ps_get_full_size(&params_pbkdf2) + ps_get_full_size(&algorithm);
-    if ((error = asn_put_universal_tlv(TSEQUENCE, 0, alg_id_len, p_pkcs_15_token, p_alg_id_der)) != ak_error_ok)
+    if ((error = asn_put_universal_tlv(TSEQUENCE, 0, alg_id_len, p_pkcs_15_token_der, p_alg_id_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding sequence tag and length");
 
     return error;
 }
 
-int pkcs_15_put_params_pbkdf2(s_der_buffer *p_pkcs_15_token, s_pwd_info *p_pwd_info, s_der_buffer *p_parameters_der) {
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на токен, содержащий всю DER последовательность
+    @param p_pwd_info указатель на объект passwordInfo
+    @param p_parameters_der результат закодирования информации о параметрах для алгоритма выработки
+           ключа по паролю
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+int pkcs_15_put_params_pbkdf2(s_der_buffer *p_pkcs_15_token_der, s_pwd_info *p_pwd_info, s_der_buffer *p_parameters_der) {
     int error = ak_error_ok;
     s_der_buffer prf;
     s_der_buffer key_length;
@@ -375,8 +410,7 @@ int pkcs_15_put_params_pbkdf2(s_der_buffer *p_pkcs_15_token, s_pwd_info *p_pwd_i
     memset(&iteration_count, 0, sizeof(s_der_buffer));
     memset(&salt, 0, sizeof(s_der_buffer));
 
-
-    if (!p_pkcs_15_token || !p_pwd_info || !p_parameters_der)
+    if (!p_pkcs_15_token_der || !p_pwd_info || !p_parameters_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
     if (p_pwd_info->m_salt.mp_value == NULL)
@@ -396,50 +430,35 @@ int pkcs_15_put_params_pbkdf2(s_der_buffer *p_pkcs_15_token, s_pwd_info *p_pwd_i
      * (см. Р 50.1.111-2016 пункт 7.1)
      */
     if (0 != strcmp(p_pwd_info->m_prf_id, "1.2.643.7.1.1.4.2"))
-        return ak_error_message_fmt(ak_error_wrong_oid,
-                                    __func__,
-                                    "algorithm (%s) is prohibited and must be other (%s)",
-                                    p_pwd_info->m_prf_id,
-                                    "1.2.643.7.1.1.4.2");
+        return ak_error_message_fmt(ak_error_wrong_oid, __func__, "algorithm (%s) is prohibited and must be other (%s)", p_pwd_info->m_prf_id, "1.2.643.7.1.1.4.2");
     else
     {
+        /* Добавляем идентификатор хеш функии, используемой при выработке ключа, в DER последовательность */
         s_der_buffer algorithm;
         memset(&algorithm, 0, sizeof(s_der_buffer));
-        if ((error =
-                     asn_put_universal_tlv(TOBJECT_IDENTIFIER, (void *) &p_pwd_info->m_prf_id, 0, p_pkcs_15_token,
-                                           &algorithm))
-            != ak_error_ok)
+        if ((error = asn_put_universal_tlv(TOBJECT_IDENTIFIER, (void *) &p_pwd_info->m_prf_id, 0, p_pkcs_15_token_der, &algorithm)) != ak_error_ok)
             return ak_error_message(error, __func__, "problem with adding algorithm oid");
 
+        /* Добавляем тег и длину данных об используемой хеш функции в DER последовательность */
         size_t prf_len = ps_get_full_size(&algorithm);
-        if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, prf_len, p_pkcs_15_token, &prf)) != ak_error_ok)
+        if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, prf_len, p_pkcs_15_token_der, &prf)) != ak_error_ok)
             return ak_error_message(error, __func__, "problem with adding sequence tag and length");
-
     }
 
-
+    /* Добавляем длину выходного ключа, если он присутствует, в DER последовательность */
     if (p_pwd_info->m_key_len.mp_value != NULL)
     {
-        if ((error = asn_put_universal_tlv(TINTEGER, (void *) &p_pwd_info->m_key_len, 0, p_pkcs_15_token, &key_length))
-            != ak_error_ok)
+        if ((error = asn_put_universal_tlv(TINTEGER, (void *) &p_pwd_info->m_key_len, 0, p_pkcs_15_token_der, &key_length)) != ak_error_ok)
             return ak_error_message(error, __func__, "problem with adding key length");
     }
 
-
-    if ((error = asn_put_universal_tlv(TINTEGER,
-                                       (void *) &p_pwd_info->m_iteration_count,
-                                       0,
-                                       p_pkcs_15_token,
-                                       &iteration_count)) != ak_error_ok)
+    /* Добавляем счетчик итераций алгоритма в DER последовательность */
+    if ((error = asn_put_universal_tlv(TINTEGER, (void *) &p_pwd_info->m_iteration_count, 0, p_pkcs_15_token_der, &iteration_count)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding iteration count");
 
-    /*
-     * Значение соли всегда представляется
-     * в виде строки октетов
-     */
-
-    if ((error = asn_put_universal_tlv(TOCTET_STRING, (void *) &p_pwd_info->m_salt, 0, p_pkcs_15_token, &salt))
-        != ak_error_ok)
+    /* Добавляем соль в DER последовательность */
+    /* Значение соли всегда представляется в виде строки октетов */
+    if ((error = asn_put_universal_tlv(TOCTET_STRING, (void *) &p_pwd_info->m_salt, 0, p_pkcs_15_token_der, &salt)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding salt");
 
     parameters_len = ps_get_full_size(&prf) +
@@ -447,18 +466,15 @@ int pkcs_15_put_params_pbkdf2(s_der_buffer *p_pkcs_15_token, s_pwd_info *p_pwd_i
                      ps_get_full_size(&iteration_count) +
                      ps_get_full_size(&salt);
 
-    if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, parameters_len, p_pkcs_15_token, p_parameters_der))
+    /* Добавляем тег и длину данных о параметрах схемы PBKDF2 в DER последовательность */
+    if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, parameters_len, p_pkcs_15_token_der, p_parameters_der))
         != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding sequence tag and length");
-
-    //TODO: Дописать реализацию;
 
     return 0;
 }
 
 /*            ------------- Parser -------------            */
-
-
 
 int pkcs_15_parse_token(ak_byte *p_data, size_t size, s_pkcs_15_token *p_pkcs_15_token) {
     int error;
@@ -784,9 +800,7 @@ int pkcs_15_get_obj(s_der_buffer *p_pkcs_15_objects_der, s_pkcs_15_object *p_pkc
             p_pkcs_15_object->m_type = SEC_KEY;
             break;
         case (CONTEXT_SPECIFIC | CONSTRUCTED | PRI_KEY):
-            ak_error_message(ak_error_invalid_value,
-                             __func__,
-                             "getting private key does not realized yet");
+            ak_error_message(ak_error_invalid_value, __func__, "getting private key does not realized yet");
             if ((error = asn_get_len(p_pkcs_15_objects_der->mp_curr + 1, &len, &len_byte_cnt)) != ak_error_ok)
                 return ak_error_message(error, __func__, "problems with getting data length");
 
@@ -794,9 +808,7 @@ int pkcs_15_get_obj(s_der_buffer *p_pkcs_15_objects_der, s_pkcs_15_object *p_pkc
                 return ak_error_message(error, __func__, "problems with moving cursor");
             break;
         case (CONTEXT_SPECIFIC | CONSTRUCTED | PUB_KEY):
-            ak_error_message(ak_error_invalid_value,
-                             __func__,
-                             "getting public key does not realized yet");
+            ak_error_message(ak_error_invalid_value, __func__, "getting public key does not realized yet");
             if ((error = asn_get_len(p_pkcs_15_objects_der->mp_curr + 1, &len, &len_byte_cnt)) != ak_error_ok)
                 return ak_error_message(error, __func__, "problems with getting data length");
 
@@ -818,9 +830,7 @@ int pkcs_15_get_obj(s_der_buffer *p_pkcs_15_objects_der, s_pkcs_15_object *p_pkc
                 return ak_error_message(error, __func__, "problems with getting object direct");
             break;
         case (CONTEXT_SPECIFIC | CONSTRUCTED | 2u):
-            ak_error_message(ak_error_invalid_value,
-                             __func__,
-                             "getting direct protected object does not realized yet");
+            ak_error_message(ak_error_invalid_value, __func__, "getting direct protected object does not realized yet");
             if ((error = asn_get_len(pkcs_15_sngl_object_der.mp_curr + 1, &len, &len_byte_cnt)) != ak_error_ok)
                 return ak_error_message(error, __func__, "problems with getting data length");
 

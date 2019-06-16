@@ -90,34 +90,34 @@ typedef struct {
 int pkcs_15_generate_token(s_pkcs_15_token *p_pkcs_15_token, ak_byte **pp_data, size_t *p_size);
 
 /*! \brief Добавление объектов в DER последовательность. */
-int pkcs_15_put_pkcs_objects(s_der_buffer *p_pkcs_15_token,
+int pkcs_15_put_pkcs_objects(s_der_buffer *p_pkcs_15_token_der,
                              s_pkcs_15_object **pp_pkcs_15_objects,
                              int8_t size,
                              s_der_buffer *p_pkcs_15_object_der);
 
 /*! \brief Добавление конкретного объекта в DER последовательность. */
-int pkcs_15_put_obj(s_der_buffer *p_pkcs_15_token,
+int pkcs_15_put_obj(s_der_buffer *p_pkcs_15_token_der,
                     s_pkcs_15_object *p_pkcs_15_object,
                     s_der_buffer *p_added_pkcs_15_object_der);
 
 /*! \brief Добавление объекта в открытом виде в DER последовательность. */
-int pkcs_15_put_obj_direct(s_der_buffer *p_pkcs_15_token,
+int pkcs_15_put_obj_direct(s_der_buffer *p_pkcs_15_token_der,
                            s_pkcs_15_object *p_pkcs_15_object,
                            s_der_buffer *p_direct_pkcs_15_object_der);
 
 /*! \brief Добавление информации о выработке ключа KEK в DER последовательность. */
-int pkcs_15_put_key_management_info(s_der_buffer *p_pkcs_15_token,
+int pkcs_15_put_key_management_info(s_der_buffer *p_pkcs_15_token_der,
                                     s_key_management_info *p_key_management_info,
                                     s_der_buffer *p_key_management_info_der);
 
 /*! \brief Добавление информации о выработке ключа KEK из пароля в DER последовательность. */
-int pkcs_15_put_password_info(s_der_buffer *p_pkcs_15_token, s_pwd_info *p_pwd_info, s_der_buffer *p_pwd_info_der);
+int pkcs_15_put_password_info(s_der_buffer *p_pkcs_15_token_der, s_pwd_info *p_pwd_info, s_der_buffer *p_pwd_info_der);
 
 /*! \brief Добавление информации об алгоритме выработки ключа из пароля в DER последовательность. */
-int pkcs_15_put_alg_id(s_der_buffer *p_pkcs_15_token, s_pwd_info *p_pwd_info, s_der_buffer *p_alg_id_der);
+int pkcs_15_put_alg_id(s_der_buffer *p_pkcs_15_token_der, s_pwd_info *p_pwd_info, s_der_buffer *p_alg_id_der);
 
 /*! \brief Добавление информации о параметрах алгоритма PBKDF2 в DER последовательность. */
-int pkcs_15_put_params_pbkdf2(s_der_buffer *p_pkcs_15_token, s_pwd_info *p_pwd_info, s_der_buffer *p_parameters_der);
+int pkcs_15_put_params_pbkdf2(s_der_buffer *p_pkcs_15_token_der, s_pwd_info *p_pwd_info, s_der_buffer *p_parameters_der);
 
 /** Методы декодирования данных **/
 

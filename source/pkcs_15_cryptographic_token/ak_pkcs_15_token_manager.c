@@ -1,4 +1,3 @@
-
 #ifdef LIBAKRYPT_HAVE_STDLIB_H
 #include <stdlib.h>
 #else
