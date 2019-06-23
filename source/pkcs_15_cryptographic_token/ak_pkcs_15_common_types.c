@@ -13,9 +13,9 @@
 #include "ak_pkcs_15_gost_secret_key.h"
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param p_pkcs_15_token_der указатель на объект, в котором храниться результат кодирования токена
+/*! @param p_pkcs_15_token_der указатель на объект, в котором хранится результат кодирования токена
     @param p_enveloped_data указатель на объект EnvelopedData
-    @param p_enveloped_data_der указатель на объект, в котором храниться результат кодирования
+    @param p_enveloped_data_der указатель на объект, в котором хранится результат кодирования
            EnvelopedData
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
@@ -67,9 +67,17 @@ int pkcs_15_put_object_direct_protected(s_der_buffer* p_pkcs_15_token_der, s_env
     if ((error = ps_set(p_enveloped_data_der, p_pkcs_15_token_der->mp_curr, enveloped_data_der_len + asn_get_len_byte_cnt(enveloped_data_der_len) + 1, PS_U_MODE)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with making union of asn data");
 
-    return error;
+    return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на объект, в котором хранится результат кодирования токена
+    @param p_obj_attrs указатель на общие атрибуты объекта
+    @param p_common_object_attributes_der указатель на объект, в котором хранится результат кодирования
+           CommonObjectAttributes
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_put_common_object_attributes(s_der_buffer* p_pkcs_15_token_der, s_common_obj_attrs* p_obj_attrs, s_der_buffer* p_common_object_attributes_der)
 {
     int error;
@@ -77,20 +85,21 @@ int pkcs_15_put_common_object_attributes(s_der_buffer* p_pkcs_15_token_der, s_co
     s_der_buffer label_der;
     size_t common_object_attributes_len;
 
+    error = ak_error_ok;
     memset(&flags_der, 0, sizeof(s_der_buffer));
     memset(&label_der, 0, sizeof(s_der_buffer));
 
     if (!p_pkcs_15_token_der || !p_obj_attrs || !p_common_object_attributes_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    error = ak_error_ok;
+    /* Добавляем флаги, если они присутствуют */
     if (p_obj_attrs->m_flags.mp_value != NULL)
     {
-        if ((error = asn_put_universal_tlv(TBIT_STRING, (void*) &p_obj_attrs->m_flags, 0, p_pkcs_15_token_der, &flags_der))
-                != ak_error_ok)
+        if ((error = asn_put_universal_tlv(TBIT_STRING, (void*) &p_obj_attrs->m_flags, 0, p_pkcs_15_token_der, &flags_der)) != ak_error_ok)
             return ak_error_message(error, __func__, "problem with adding common object flags");
     }
 
+    /* Добавляем метку объекта, если она присутствует */
     if (p_obj_attrs->m_label != NULL)
     {
         if ((error = asn_put_universal_tlv(TUTF8_STRING, (void*) &p_obj_attrs->m_label, 0, p_pkcs_15_token_der, &label_der))
@@ -101,22 +110,25 @@ int pkcs_15_put_common_object_attributes(s_der_buffer* p_pkcs_15_token_der, s_co
     common_object_attributes_len = ps_get_full_size(&label_der) + ps_get_full_size(&flags_der);
     if (common_object_attributes_len)
     {
-        if ((error = asn_put_universal_tlv(TSEQUENCE,
-                NULL,
-                common_object_attributes_len,
-                p_pkcs_15_token_der,
-                p_common_object_attributes_der)) != ak_error_ok)
+        if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, common_object_attributes_len, p_pkcs_15_token_der, p_common_object_attributes_der)) != ak_error_ok)
             return ak_error_message(error, __func__, "problem with adding sequence tag and length");
     }
     else
         p_common_object_attributes_der->mp_begin = p_common_object_attributes_der->mp_curr =
         p_common_object_attributes_der->mp_end = NULL;
 
-    return error;
+    return ak_error_ok;
 }
 
-int pkcs_15_put_common_key_attributes(s_der_buffer* p_pkcs_15_token_der, s_common_key_attrs* p_key_attrs,
-        s_der_buffer* p_common_key_attributes_der)
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на объект, в котором хранится результат кодирования токена
+    @param p_obj_attrs указатель на общие атрибуты объекта ключа
+    @param p_key_attrs указатель на объект, в котором хранится результат кодирования
+           CommonKeyAttributes
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+int pkcs_15_put_common_key_attributes(s_der_buffer* p_pkcs_15_token_der, s_common_key_attrs* p_key_attrs, s_der_buffer* p_common_key_attributes_der)
 {
     int error;
     s_der_buffer end_date_der;
@@ -139,6 +151,7 @@ int pkcs_15_put_common_key_attributes(s_der_buffer* p_pkcs_15_token_der, s_commo
     if (!p_pkcs_15_token_der || !p_key_attrs || !p_common_key_attributes_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
+    /* Добавляем дату окночания периода действия ключа */
     if (p_key_attrs->m_end_date)
     {
         uint8_t end_date_len = (uint8_t) asn_get_gentime_byte_cnt(p_key_attrs->m_end_date);
@@ -162,26 +175,24 @@ int pkcs_15_put_common_key_attributes(s_der_buffer* p_pkcs_15_token_der, s_commo
             return ak_error_message(error, __func__, "problems with making union of asn data");
     }
 
+    /* Добавляем дату начала периода действия ключа */
     if (p_key_attrs->m_start_date)
     {
-        if ((error = asn_put_universal_tlv(TGENERALIZED_TIME,
-                (void*) &p_key_attrs->m_start_date,
-                0,
-                p_pkcs_15_token_der,
-                &start_date)) != ak_error_ok)
+        if ((error = asn_put_universal_tlv(TGENERALIZED_TIME, (void*) &p_key_attrs->m_start_date, 0, p_pkcs_15_token_der, &start_date)) != ak_error_ok)
             return ak_error_message(error, __func__, "problem with adding key start date");
     }
 
+    /* Добавляем ссылку */
+    /*TODO: комментарий для Алексея Юрьевича: В стандартке PCKS 15, сказано,
+       что данный атрибут используется только в смарт-картах,
+       так что его использовать нет необходимости */
     if (p_key_attrs->m_key_reference.mp_value)
     {
-        if ((error = asn_put_universal_tlv(TINTEGER,
-                (void*) &p_key_attrs->m_key_reference,
-                0,
-                p_pkcs_15_token_der,
-                &key_reference)) != ak_error_ok)
+        if ((error = asn_put_universal_tlv(TINTEGER, (void*) &p_key_attrs->m_key_reference, 0, p_pkcs_15_token_der, &key_reference)) != ak_error_ok)
             return ak_error_message(error, __func__, "problem with adding key reference");
     }
 
+    /* Добавляем флаги доступа ключа */
     if (p_key_attrs->m_access_flags.mp_value)
     {
         if ((error = asn_put_universal_tlv(TBIT_STRING,
@@ -192,6 +203,7 @@ int pkcs_15_put_common_key_attributes(s_der_buffer* p_pkcs_15_token_der, s_commo
             return ak_error_message(error, __func__, "problem with adding key access flags");
     }
 
+    /* Добавляем атрибут native */
     if (!p_key_attrs->m_native)
     {
         if ((error = asn_put_universal_tlv(TBOOLEAN, (void*) &p_key_attrs->m_native, 0, p_pkcs_15_token_der, &native))
@@ -199,6 +211,7 @@ int pkcs_15_put_common_key_attributes(s_der_buffer* p_pkcs_15_token_der, s_commo
             return ak_error_message(error, __func__, "problem with adding key native attribute");
     }
 
+    /* Добавляем флаги использования ключа */
     if (p_key_attrs->m_usage.mp_value)
     {
         if ((error = asn_put_universal_tlv(TBIT_STRING, (void*) &p_key_attrs->m_usage, 0, p_pkcs_15_token_der, &usage))
@@ -208,6 +221,7 @@ int pkcs_15_put_common_key_attributes(s_der_buffer* p_pkcs_15_token_der, s_commo
     else
         return ak_error_message(ak_error_invalid_value, __func__, "usage flags absent");
 
+    /* Добавляем уникальный идентификатор ключа */
     if (p_key_attrs->m_id.mp_value)
     {
         if ((error = asn_put_universal_tlv(TOCTET_STRING, (void*) &p_key_attrs->m_id, 0, p_pkcs_15_token_der, &id))
@@ -225,20 +239,22 @@ int pkcs_15_put_common_key_attributes(s_der_buffer* p_pkcs_15_token_der, s_commo
             ps_get_full_size(&usage) +
             ps_get_full_size(&id);
 
-    if ((error = asn_put_universal_tlv(TSEQUENCE,
-            NULL,
-            common_key_attributes_len,
-            p_pkcs_15_token_der,
-            p_common_key_attributes_der)) != ak_error_ok)
+    if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, common_key_attributes_len, p_pkcs_15_token_der, p_common_key_attributes_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding sequence tag and length");
 
-    return error;
+    return ak_error_ok;
 }
 
-int pkcs_15_put_recipient_infos(s_der_buffer* p_pkcs_15_token,
-        s_recipient_info** pp_recipient_infos,
-        uint8_t num_of_recipient_infos,
-        s_der_buffer* p_recipient_infos_der)
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на объект, в котором хранится результат кодирования токена
+    @param pp_recipient_infos массив указателей на s_recipient_info
+    @param num_of_recipient_infos кол-во элементов в массиве pp_recipient_infos
+    @param p_recipient_infos_der указатель на объект, в котором хранится результат кодирования
+           RecipientInfos
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+int pkcs_15_put_recipient_infos(s_der_buffer* p_pkcs_15_token, s_recipient_info** pp_recipient_infos, uint8_t num_of_recipient_infos, s_der_buffer* p_recipient_infos_der)
 {
     int error;
     uint8_t recipient_infos_len;
@@ -254,44 +270,60 @@ int pkcs_15_put_recipient_infos(s_der_buffer* p_pkcs_15_token,
         if (!pp_recipient_infos[i])
             return ak_error_message(ak_error_null_pointer, __func__, "recipient info absent");
 
+        /* Добавляем RecipientInfo */
         memset(&recipient_info, 0, sizeof(s_der_buffer));
-        if ((error = pkcs_15_put_single_recipient_info(p_pkcs_15_token, pp_recipient_infos[i], &recipient_info))
-                != ak_error_ok)
+        if ((error = pkcs_15_put_single_recipient_info(p_pkcs_15_token, pp_recipient_infos[i], &recipient_info)) != ak_error_ok)
             return ak_error_message(error, __func__, "problem with adding recipient info");
+
         recipient_infos_len += ps_get_full_size(&recipient_info);
     }
 
-    if ((error = asn_put_universal_tlv(TSET, NULL, recipient_infos_len, p_pkcs_15_token, p_recipient_infos_der)) !=
-            ak_error_ok)
+    if ((error = asn_put_universal_tlv(TSET, NULL, recipient_infos_len, p_pkcs_15_token, p_recipient_infos_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding set tag and length");
 
-    return error;
+    return ak_error_ok;
 }
 
-int pkcs_15_put_single_recipient_info(s_der_buffer* p_pkcs_15_token, s_recipient_info* p_sngl_recipient_info,
-        s_der_buffer* p_sngl_recipient_info_der)
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на объект, в котором хранится результат кодирования токена
+    @param p_sngl_recipient_info указатель на один объект RecipientInfo
+    @param p_sngl_recipient_info_der указатель на объект, в котором хранится результат кодирования
+           одного объекта RecipientInfo
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+int pkcs_15_put_single_recipient_info(s_der_buffer* p_pkcs_15_token, s_recipient_info* p_sngl_recipient_info, s_der_buffer* p_sngl_recipient_info_der)
 {
     int error;
 
     if (!p_pkcs_15_token || !p_sngl_recipient_info || !p_sngl_recipient_info_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
+    /* Добавляем определенный тип объекта RecipientInfo */
     switch (p_sngl_recipient_info->m_type)
     {
-    case KEKRI:
-        if ((error = pkcs_15_put_kekri(p_pkcs_15_token, p_sngl_recipient_info->m_ri.mp_kekri,
-                p_sngl_recipient_info_der))
-                != ak_error_ok)
-            return ak_error_message(error, __func__, "problem with adding kekri recipient info");
-        break;
-    case PWRI:
-        // TODO: написать реализацию для вариатна PWRI.
-        return ak_error_message(ak_error_invalid_value, __func__, "do not realized yet");
-    default:return ak_error_message(ak_error_invalid_value, __func__, "unacceptable type of recipient info");
+        case KEKRI:
+            if ((error = pkcs_15_put_kekri(p_pkcs_15_token, p_sngl_recipient_info->m_ri.mp_kekri,
+                    p_sngl_recipient_info_der))
+                    != ak_error_ok)
+                return ak_error_message(error, __func__, "problem with adding kekri recipient info");
+            break;
+        case PWRI:
+            // TODO: написать реализацию для вариатна PWRI.
+            return ak_error_message(ak_error_invalid_value, __func__, "do not realized yet");
+        default:
+            return ak_error_message(ak_error_invalid_value, __func__, "unacceptable type of recipient info");
     }
-    return error;
+    return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на объект, в котором хранится результат кодирования токена
+    @param p_kekri указатель на KEKRI
+    @param p_kekri_der указатель на объект, в котором хранится результат кодирования KEKRI
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_put_kekri(s_der_buffer* p_pkcs_15_token, s_kekri* p_kekri, s_der_buffer* p_kekri_der)
 {
     int error;
@@ -317,32 +349,26 @@ int pkcs_15_put_kekri(s_der_buffer* p_pkcs_15_token, s_kekri* p_kekri, s_der_buf
     if (!p_kekri->m_encrypted_key.mp_value)
         return ak_error_message(ak_error_null_pointer, __func__, "encrypted key absent");
 
-    if ((error =
-                 asn_put_universal_tlv(TOCTET_STRING, (void*) &p_kekri->m_encrypted_key, 0, p_pkcs_15_token,
-                         &encrypted_key))
-            != ak_error_ok)
+    /* Добавляем зашифрованный ключ CEK */
+    if ((error = asn_put_universal_tlv(TOCTET_STRING, (void*) &p_kekri->m_encrypted_key, 0, p_pkcs_15_token, &encrypted_key)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding encrypted key");
 
-    if ((error = pkcs_15_put_key_encryption_algorithm(p_pkcs_15_token, p_kekri, &key_encryption_algorithm))
-            != ak_error_ok)
+    /* Добавляем информацию об алгоритме шифрования ключа CEK */
+    if ((error = pkcs_15_put_key_encryption_algorithm(p_pkcs_15_token, p_kekri, &key_encryption_algorithm)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding key encryption algorithm");
 
-    // ----- добавляем kekid, вложенный в sequence -----
+    // ----- Добавляем kekid, вложенный в sequence -----
     if (p_kekri->m_date)
     {
-        if ((error = asn_put_universal_tlv(TGENERALIZED_TIME, (void*) &p_kekri->m_date, 0, p_pkcs_15_token, &date))
-                != ak_error_ok)
+        if ((error = asn_put_universal_tlv(TGENERALIZED_TIME, (void*) &p_kekri->m_date, 0, p_pkcs_15_token, &date)) != ak_error_ok)
             return ak_error_message(error, __func__, "problem with adding date attribute");
     }
 
     if (!p_kekri->m_key_identifire.mp_value)
         return ak_error_message(ak_error_null_pointer, __func__, "key identifier absent");
 
-    if ((error = asn_put_universal_tlv(TOCTET_STRING,
-            (void*) &p_kekri->m_key_identifire,
-            0,
-            p_pkcs_15_token,
-            &key_identifire)) != ak_error_ok)
+    /* Добавляем уникальный идентификатор ключа CEK */
+    if ((error = asn_put_universal_tlv(TOCTET_STRING, (void*) &p_kekri->m_key_identifire, 0, p_pkcs_15_token, &key_identifire)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding key identifier");
 
     key_id_len = ps_get_full_size(&date) + ps_get_full_size(&key_identifire);
@@ -353,8 +379,8 @@ int pkcs_15_put_kekri(s_der_buffer* p_pkcs_15_token, s_kekri* p_kekri, s_der_buf
     if (!p_kekri->m_version.mp_value)
         return ak_error_message(ak_error_null_pointer, __func__, "kekri version absent");
 
-    if ((error = asn_put_universal_tlv(TINTEGER, (void*) &p_kekri->m_version, 0, p_pkcs_15_token, &version))
-            != ak_error_ok)
+    /* Добавляем версию объекта KEKRI */
+    if ((error = asn_put_universal_tlv(TINTEGER, (void*) &p_kekri->m_version, 0, p_pkcs_15_token, &version)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding version attribute");
 
     kekri_len = ps_get_full_size(&version) +
@@ -369,17 +395,20 @@ int pkcs_15_put_kekri(s_der_buffer* p_pkcs_15_token, s_kekri* p_kekri, s_der_buf
     if ((error = asn_put_len(kekri_len, p_pkcs_15_token->mp_curr + 1)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding kekri length");
 
-    if ((error =
-                 ps_set(p_kekri_der, p_pkcs_15_token->mp_curr, kekri_len + asn_get_len_byte_cnt(kekri_len) + 1,
-                         PS_U_MODE))
-            != ak_error_ok)
+    if ((error = ps_set(p_kekri_der, p_pkcs_15_token->mp_curr, kekri_len + asn_get_len_byte_cnt(kekri_len) + 1, PS_U_MODE)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with making union of asn data");
 
-    return error;
+    return ak_error_ok;
 }
 
-int pkcs_15_put_key_encryption_algorithm(s_der_buffer* p_pkcs_15_token, s_kekri* p_kekri,
-        s_der_buffer* p_key_encryption_algorithm_der)
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на объект, в котором хранится результат кодирования токена
+    @param p_kekri указатель на KEKRI
+    @param p_kekri_der указатель на объект, в котором хранится результат кодирования KEKRI
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+int pkcs_15_put_key_encryption_algorithm(s_der_buffer* p_pkcs_15_token, s_kekri* p_kekri, s_der_buffer* p_key_encryption_algorithm_der)
 {
     int error;
     size_t key_enc_alg_len;
@@ -401,6 +430,7 @@ int pkcs_15_put_key_encryption_algorithm(s_der_buffer* p_pkcs_15_token, s_kekri*
 
         memset(&params, 0, sizeof(s_der_buffer));
 
+        /* Добавляем параметры для алгоритма шифрования ключа CEK */
         if (p_kekri->m_prm_set_type == GOST_KEY_WRAP_SET)
         {
             s_der_buffer ukm;
@@ -415,17 +445,14 @@ int pkcs_15_put_key_encryption_algorithm(s_der_buffer* p_pkcs_15_token, s_kekri*
             if (parameters.m_ukm.m_val_len != 8)
                 return ak_error_message(ak_error_invalid_value, __func__, "ukm length must be 8");
 
+            /* Добавляем случайное 64 битное число UKM */
             memset(&ukm, 0, sizeof(s_der_buffer));
-            if ((error = asn_put_universal_tlv(TOCTET_STRING, (void*) &parameters.m_ukm, 0, p_pkcs_15_token, &ukm))
-                    != ak_error_ok)
+            if ((error = asn_put_universal_tlv(TOCTET_STRING, (void*) &parameters.m_ukm, 0, p_pkcs_15_token, &ukm)) != ak_error_ok)
                 return ak_error_message(error, __func__, "problem with adding ukm");
 
+            /* Добавляем идентификатор набора параметров */
             memset(&enc_prm_set, 0, sizeof(s_der_buffer));
-            if ((error = asn_put_universal_tlv(TOBJECT_IDENTIFIER,
-                    (void*) &parameters.m_enc_prm_set,
-                    0,
-                    p_pkcs_15_token,
-                    &enc_prm_set)) != ak_error_ok)
+            if ((error = asn_put_universal_tlv(TOBJECT_IDENTIFIER, (void*) &parameters.m_enc_prm_set, 0, p_pkcs_15_token, &enc_prm_set)) != ak_error_ok)
                 return ak_error_message(error, __func__, "problem with adding encryption parameter set");
 
             size_t prms_len = ps_get_full_size(&ukm) + ps_get_full_size(&enc_prm_set);
@@ -433,34 +460,34 @@ int pkcs_15_put_key_encryption_algorithm(s_der_buffer* p_pkcs_15_token, s_kekri*
                 return ak_error_message(error, __func__, "problem with adding sequence tag and length");
         }
 
+        /* Добавляем идентификатор алгоритма шифрования ключа CEK */
         memset(&id, 0, sizeof(s_der_buffer));
-        if ((error =
-                     asn_put_universal_tlv(TOBJECT_IDENTIFIER, (void*) &p_kekri->m_key_enc_alg_id, 0, p_pkcs_15_token,
-                             &id))
-                != ak_error_ok)
+        if ((error = asn_put_universal_tlv(TOBJECT_IDENTIFIER, (void*) &p_kekri->m_key_enc_alg_id, 0, p_pkcs_15_token, &id)) != ak_error_ok)
             return ak_error_message(error, __func__, "problem with adding key encryption algorithm");
 
         key_enc_alg_len = ps_get_full_size(&params) + ps_get_full_size(&id);
     }
     else
-        return ak_error_message_fmt(ak_error_wrong_oid,
-                __func__,
-                "algorithm (%s) doesn't support",
-                p_kekri->m_key_enc_alg_id);
+        return ak_error_message_fmt(ak_error_wrong_oid, __func__, "algorithm (%s) doesn't support", p_kekri->m_key_enc_alg_id);
 
-    if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, key_enc_alg_len, p_pkcs_15_token,
-            p_key_encryption_algorithm_der))
-            != ak_error_ok)
+    if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, key_enc_alg_len, p_pkcs_15_token, p_key_encryption_algorithm_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding sequence tag and length");
 
-    return error;
+    return ak_error_ok;
 }
 
-int pkcs_15_put_encrypted_content_info(s_der_buffer* p_pkcs_15_token, s_enveloped_data* p_enveloped_data,
-        s_der_buffer* p_encrypted_content_info_der)
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на объект, в котором хранится результат кодирования токена
+    @param p_enveloped_data указатель на EnvelopedData
+    @param p_encrypted_content_info_der указатель на объект, в котором хранится результат кодирования
+           EnvelopedData
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+int pkcs_15_put_encrypted_content_info(s_der_buffer* p_pkcs_15_token, s_enveloped_data* p_enveloped_data, s_der_buffer* p_encrypted_content_info_der)
 {
     int error;
-    size_t encrypted_contetnt_len;
+    size_t encrypted_content_len;
     s_der_buffer encrypted_contetnt;
     s_der_buffer content_enc_alg;
     s_der_buffer content_type;
@@ -473,59 +500,51 @@ int pkcs_15_put_encrypted_content_info(s_der_buffer* p_pkcs_15_token, s_envelope
     if (!p_pkcs_15_token || !p_enveloped_data || !p_encrypted_content_info_der)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    //TODO: добавить AnprotectedAttrs.
-
-    encrypted_contetnt_len = p_enveloped_data->m_encrypted_content.m_val_len;
-    if ((error =
-                 ps_move_cursor(p_pkcs_15_token,
-                         encrypted_contetnt_len + asn_get_len_byte_cnt(encrypted_contetnt_len) + 1))
-            != ak_error_ok)
+    encrypted_content_len = p_enveloped_data->m_encrypted_content.m_val_len;
+    if ((error = ps_move_cursor(p_pkcs_15_token, encrypted_content_len + asn_get_len_byte_cnt(encrypted_content_len) + 1) ) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with moving cursor");
 
+    /* Добавляем тег зашифрованного контента */
     asn_put_tag(CONTEXT_SPECIFIC | PRIMITIVE | 0u, p_pkcs_15_token->mp_curr);
 
-    if ((error = asn_put_len(encrypted_contetnt_len, p_pkcs_15_token->mp_curr + 1)) != ak_error_ok)
+    /* Добавляем длину зашифрованного контента */
+    if ((error = asn_put_len(encrypted_content_len, p_pkcs_15_token->mp_curr + 1)) != ak_error_ok)
         return ak_error_message_fmt(error, __func__, "problem with adding encrypted content length");
 
-    if ((error = asn_put_octetstr(p_enveloped_data->m_encrypted_content,
-            p_pkcs_15_token->mp_curr + 1 + asn_get_len_byte_cnt(encrypted_contetnt_len)))
-            != ak_error_ok)
+    /* Добавляем зашифрованный контент */
+    if ((error = asn_put_octetstr(p_enveloped_data->m_encrypted_content, p_pkcs_15_token->mp_curr + 1 + asn_get_len_byte_cnt(encrypted_content_len))) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with adding encrypted content");
 
-    if ((error = ps_set(&encrypted_contetnt,
-            p_pkcs_15_token->mp_curr,
-            1 + asn_get_len_byte_cnt(encrypted_contetnt_len) + encrypted_contetnt_len,
-            PS_U_MODE)) != ak_error_ok)
+    if ((error = ps_set(&encrypted_contetnt, p_pkcs_15_token->mp_curr, 1 + asn_get_len_byte_cnt(encrypted_content_len) + encrypted_content_len, PS_U_MODE)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with making union of asn data");
 
-    if ((error = pkcs_15_put_content_encryption_algorithm(p_pkcs_15_token, p_enveloped_data, &content_enc_alg))
-            != ak_error_ok)
+    /* Добавляем информацию о шифровании контента */
+    if ((error = pkcs_15_put_content_encryption_algorithm(p_pkcs_15_token, p_enveloped_data, &content_enc_alg)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding content encryption algorithm");
 
-    if ((error = asn_put_universal_tlv(TOBJECT_IDENTIFIER,
-            (void*) &p_enveloped_data->m_content_type,
-            0,
-            p_pkcs_15_token,
-            &content_type)) != ak_error_ok)
+    /* Добавляем идентификатор зашифрованного контента */
+    if ((error = asn_put_universal_tlv(TOBJECT_IDENTIFIER, (void*) &p_enveloped_data->m_content_type, 0, p_pkcs_15_token, &content_type)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding content type oid");
 
     encrypted_content_info_len = ps_get_full_size(&encrypted_contetnt) +
             ps_get_full_size(&content_enc_alg) +
             ps_get_full_size(&content_type);
 
-    if ((error = asn_put_universal_tlv(TSEQUENCE,
-            NULL,
-            encrypted_content_info_len,
-            p_pkcs_15_token,
-            p_encrypted_content_info_der)) != ak_error_ok)
+    if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, encrypted_content_info_len, p_pkcs_15_token, p_encrypted_content_info_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding sequence tag and length");
 
-    return error;
+    return ak_error_ok;
 }
 
-int pkcs_15_put_content_encryption_algorithm(s_der_buffer* p_pkcs_15_token,
-        s_enveloped_data* p_enveloped_data,
-        s_der_buffer* p_content_enc_alg_der)
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на объект, в котором хранится результат кодирования токена
+    @param p_enveloped_data указатель на EnvelopedData
+    @param p_content_enc_alg_der указатель на объект, в котором хранится результат кодирования
+           ContentEncryptoinAlgorithm
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+int pkcs_15_put_content_encryption_algorithm(s_der_buffer* p_pkcs_15_token, s_enveloped_data* p_enveloped_data, s_der_buffer* p_content_enc_alg_der)
 {
     int error;
     size_t content_enc_alg_len;
@@ -541,38 +560,36 @@ int pkcs_15_put_content_encryption_algorithm(s_der_buffer* p_pkcs_15_token,
     content_enc_alg_len = 0;
     if (0 == strcmp(p_enveloped_data->m_content_enc_alg_id, "1.2.643.2.4.3.2.2"))
     {
+        /* Добавляем параметры шифрования контента */
         memset(&params, 0, sizeof(s_der_buffer));
         if (p_enveloped_data->m_prm_set_type == GOST_CONTENT_ENC_SET)
         {
-            if ((error = pkcs_15_put_gost28147_89_prms(p_pkcs_15_token,
-                    p_enveloped_data->m_prm_set.p_content_enc_prm_set,
-                    &params)) != ak_error_ok)
+            if ((error = pkcs_15_put_gost28147_89_prms(p_pkcs_15_token, p_enveloped_data->m_prm_set.p_content_enc_prm_set, &params)) != ak_error_ok)
                 return ak_error_message(error, __func__, "problem with adding gost parameters");
         }
 
+        /* Добавляем идентификатор алгоритма шифрования контента */
         memset(&id, 0, sizeof(s_der_buffer));
-        if ((error = asn_put_universal_tlv(TOBJECT_IDENTIFIER,
-                (void*) &p_enveloped_data->m_content_enc_alg_id,
-                0,
-                p_pkcs_15_token,
-                &id)) != ak_error_ok)
+        if ((error = asn_put_universal_tlv(TOBJECT_IDENTIFIER, (void*) &p_enveloped_data->m_content_enc_alg_id, 0, p_pkcs_15_token, &id)) != ak_error_ok)
             return ak_error_message(error, __func__, "problem with adding content encryption algorithm id");
 
         content_enc_alg_len = ps_get_full_size(&params) + ps_get_full_size(&id);
     }
     else
-        return ak_error_message_fmt(ak_error_wrong_oid,
-                __func__,
-                "algorithm (%s) doesn't support",
-                p_enveloped_data->m_content_enc_alg_id);
+        return ak_error_message_fmt(ak_error_wrong_oid, __func__, "algorithm (%s) doesn't support", p_enveloped_data->m_content_enc_alg_id);
 
-    if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, content_enc_alg_len, p_pkcs_15_token, p_content_enc_alg_der))
-            != ak_error_ok)
+    if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, content_enc_alg_len, p_pkcs_15_token, p_content_enc_alg_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding sequence tag and length");
 
-    return error;
+    return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_object_der указатель на DER последовательность
+    @param p_enveloped_data указатель на EnvelopedData
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_get_object_direct_protected(s_der_buffer* p_object_der, s_enveloped_data* p_enveloped_data)
 {
     int error;
@@ -589,8 +606,7 @@ int pkcs_15_get_object_direct_protected(s_der_buffer* p_object_der, s_enveloped_
     if (!p_object_der || !p_enveloped_data)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    if ((error = asn_get_expected_tlv(CONTEXT_SPECIFIC | CONSTRUCTED | 2u, p_object_der, (void*) &enveloped_data_der))
-            != ak_error_ok)
+    if ((error = asn_get_expected_tlv(CONTEXT_SPECIFIC | CONSTRUCTED | 2u, p_object_der, (void*) &enveloped_data_der)) != ak_error_ok)
     {
         if (error != ak_error_diff_tags)
             return ak_error_message(error, __func__, "problems with getting protected object in der");
@@ -598,10 +614,11 @@ int pkcs_15_get_object_direct_protected(s_der_buffer* p_object_der, s_enveloped_
             return error;
     }
 
-    if ((error = asn_get_expected_tlv(TINTEGER, &enveloped_data_der, (void*) &p_enveloped_data->m_version))
-            != ak_error_ok)
+    /* Считываем версию EnvelopedData */
+    if ((error = asn_get_expected_tlv(TINTEGER, &enveloped_data_der, (void*) &p_enveloped_data->m_version)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting gost enveloped data version");
 
+    /* Считываем OriginatorInfo */
     asn_get_tag(enveloped_data_der.mp_curr, &tag);
     if (tag == (CONTEXT_SPECIFIC | CONSTRUCTED | 0u))
     {
@@ -613,9 +630,11 @@ int pkcs_15_get_object_direct_protected(s_der_buffer* p_object_der, s_enveloped_
             return ak_error_message(error, __func__, "problems with moving cursor");
     }
 
+    /* Считываем RecipientInfos */
     if ((error = pkcs_15_get_recipient_infos(&enveloped_data_der, p_enveloped_data)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting recipient infos");
 
+    /* Считываем зашифрованный контент и информацию о его шифровании */
     if ((error = pkcs_15_get_encrypted_content_info(&enveloped_data_der, p_enveloped_data)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting encrypted content info");
 
@@ -632,9 +651,15 @@ int pkcs_15_get_object_direct_protected(s_der_buffer* p_object_der, s_enveloped_
     if (ps_get_curr_size(&enveloped_data_der) != 0)
         return ak_error_invalid_token;
 
-    return error;
+    return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_object_der указатель на DER последовательность
+    @param p_obj_attrs указатель на CommonObjectAttributes
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_get_common_object_attributes(s_der_buffer* p_object_der, s_common_obj_attrs* p_obj_attrs)
 {
     int error;
@@ -648,12 +673,14 @@ int pkcs_15_get_common_object_attributes(s_der_buffer* p_object_der, s_common_ob
     if ((error = asn_get_expected_tlv(CONSTRUCTED | TSEQUENCE, p_object_der, (void*) &object_attrs)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting common object attributes in der");
 
+    /* Считываем метку объекта */
     if ((error = asn_get_expected_tlv(TUTF8_STRING, &object_attrs, (void*) &p_obj_attrs->m_label)) != ak_error_ok)
     {
         if (error != ak_error_diff_tags)
             return ak_error_message(error, __func__, "problems with getting object lable");
     }
 
+    /* Считываем флаги объекта */
     if ((error = asn_get_expected_tlv(TBIT_STRING, &object_attrs, (void*) &p_obj_attrs->m_flags)) != ak_error_ok)
     {
         if (error != ak_error_diff_tags)
@@ -663,6 +690,12 @@ int pkcs_15_get_common_object_attributes(s_der_buffer* p_object_der, s_common_ob
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_object_der указатель на DER последовательность
+    @param p_key_attrs указатель на CommonKeyAttributes
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_get_common_key_attributes(s_der_buffer* p_object_der, s_common_key_attrs* p_key_attrs)
 {
     int error = ak_error_ok;
@@ -676,12 +709,15 @@ int pkcs_15_get_common_key_attributes(s_der_buffer* p_object_der, s_common_key_a
     if ((error = asn_get_expected_tlv(CONSTRUCTED | TSEQUENCE, p_object_der, (void*) &key_attrs)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting common key attributes in der");
 
+    /* Считываем уникальный идентификатор ключа */
     if ((error = asn_get_expected_tlv(TOCTET_STRING, &key_attrs, (void*) &p_key_attrs->m_id)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting key id");
 
+    /* Считываем флаги использования ключа */
     if ((error = asn_get_expected_tlv(TBIT_STRING, &key_attrs, (void*) &p_key_attrs->m_usage)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting key usage flags");
 
+    /* Считываем атрибут native */
     if (ps_get_curr_size(&key_attrs))
     {
         if ((error = asn_get_expected_tlv(TBOOLEAN, &key_attrs, (void*) &p_key_attrs->m_native)) != ak_error_ok)
@@ -693,6 +729,7 @@ int pkcs_15_get_common_key_attributes(s_der_buffer* p_object_der, s_common_key_a
         }
     }
 
+    /* Считываем флаги доступа */
     if (ps_get_curr_size(&key_attrs))
     {
         if ((error = asn_get_expected_tlv(TBIT_STRING, &key_attrs, (void*) &p_key_attrs->m_access_flags)) !=
@@ -703,6 +740,7 @@ int pkcs_15_get_common_key_attributes(s_der_buffer* p_object_der, s_common_key_a
         }
     }
 
+    /* Считываем ссылку на ключ */
     if (ps_get_curr_size(&key_attrs))
     {
         if ((error = asn_get_expected_tlv(TINTEGER, &key_attrs, (void*) &p_key_attrs->m_key_reference)) != ak_error_ok)
@@ -712,24 +750,24 @@ int pkcs_15_get_common_key_attributes(s_der_buffer* p_object_der, s_common_key_a
         }
     }
 
+    /* Считываем дату начала периода действия ключа */
     if (ps_get_curr_size(&key_attrs))
     {
-        if ((error = asn_get_expected_tlv(TGENERALIZED_TIME, &key_attrs, (void*) &p_key_attrs->m_start_date)) !=
-                ak_error_ok)
+        if ((error = asn_get_expected_tlv(TGENERALIZED_TIME, &key_attrs, (void*) &p_key_attrs->m_start_date)) != ak_error_ok)
         {
             if (error != ak_error_diff_tags)
                 return ak_error_message(error, __func__, "problems with getting key start date");
         }
     }
 
+    /* Считываем дату окончания периода действия ключа */
     if (ps_get_curr_size(&key_attrs))
     {
         // В переменную end_date_der запишется значение атрибута end date,
         // которое затем передается в функцию декодирования Generalized time
         s_der_buffer end_date_der;
         memset(&end_date_der, 0, sizeof(s_der_buffer));
-        if ((error = asn_get_expected_tlv(CONTEXT_SPECIFIC | PRIMITIVE | 0u, &key_attrs, (void*) &end_date_der))
-                != ak_error_ok)
+        if ((error = asn_get_expected_tlv(CONTEXT_SPECIFIC | PRIMITIVE | 0u, &key_attrs, (void*) &end_date_der)) != ak_error_ok)
         {
             if (error != ak_error_diff_tags)
                 return ak_error_message(error, __func__, "problems with getting key end date");
@@ -737,19 +775,22 @@ int pkcs_15_get_common_key_attributes(s_der_buffer* p_object_der, s_common_key_a
                 return ak_error_invalid_token;
         }
 
-        if ((error =
-                     asn_get_generalized_time(end_date_der.mp_curr, ps_get_full_size(&end_date_der),
-                             &p_key_attrs->m_end_date))
-                != ak_error_ok)
+        if ((error = asn_get_generalized_time(end_date_der.mp_curr, ps_get_full_size(&end_date_der), &p_key_attrs->m_end_date)) != ak_error_ok)
             return ak_error_message(error, __func__, "problems with getting key end date");
     }
 
     if (ps_get_curr_size(&key_attrs) != 0)
         return ak_error_invalid_token;
 
-    return error;
+    return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_enveloped_data_der указатель на DER последовательность
+    @param p_enveloped_data указатель на EnvelopedData
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_get_recipient_infos(s_der_buffer* p_enveloped_data_der, s_enveloped_data* p_enveloped_data)
 {
     int error;
@@ -762,8 +803,7 @@ int pkcs_15_get_recipient_infos(s_der_buffer* p_enveloped_data_der, s_enveloped_
     if (!p_enveloped_data_der || !p_enveloped_data)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    if ((error = asn_get_expected_tlv(CONSTRUCTED | TSET, p_enveloped_data_der, (void*) &recipient_infos_der))
-            != ak_error_ok)
+    if ((error = asn_get_expected_tlv(CONSTRUCTED | TSET, p_enveloped_data_der, (void*) &recipient_infos_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting recipient infos in der");
 
     asn_get_num_of_elems_in_constructed_obj(&recipient_infos_der, &num_of_ri);
@@ -778,17 +818,23 @@ int pkcs_15_get_recipient_infos(s_der_buffer* p_enveloped_data_der, s_enveloped_
         if (!p_enveloped_data->mpp_recipient_infos[i])
             return ak_error_message(ak_error_out_of_memory, __func__, "alloc memory fail");
 
-        if ((error = pkcs_15_get_sngl_recipient_info(&recipient_infos_der, p_enveloped_data->mpp_recipient_infos[i]))
-                != ak_error_ok)
+        /* Считываем отдельный объект RecipientInfo */
+        if ((error = pkcs_15_get_sngl_recipient_info(&recipient_infos_der, p_enveloped_data->mpp_recipient_infos[i])) != ak_error_ok)
             return ak_error_message(error, __func__, "problems with getting single recipient info");
     }
 
     if (ps_get_curr_size(&recipient_infos_der) != 0)
         return ak_error_invalid_token;
 
-    return error;
+    return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_recipient_infos_der указатель на DER последовательность
+    @param p_sngl_recipient_info указатель на RecipientInfo
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_get_sngl_recipient_info(s_der_buffer* p_recipient_infos_der, s_recipient_info* p_sngl_recipient_info)
 {
     int error;
@@ -803,13 +849,12 @@ int pkcs_15_get_sngl_recipient_info(s_der_buffer* p_recipient_infos_der, s_recip
     if (!p_recipient_infos_der || !p_sngl_recipient_info)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
+    /* Считываем определенный тип RecipientInfo */
     asn_get_tag(p_recipient_infos_der->mp_curr, &tag);
     switch (tag)
     {
     case (CONTEXT_SPECIFIC | CONSTRUCTED | PWRI):
-        ak_error_message(ak_error_invalid_value,
-                __func__,
-                "getting password recipient info does not realized yet");
+        ak_error_message(ak_error_invalid_value, __func__, "getting password recipient info does not realized yet");
         if ((error = asn_get_len(p_recipient_infos_der->mp_curr + 1, &len, &len_byte_cnt)) != ak_error_ok)
             return ak_error_message(error, __func__, "problems with getting data length");
 
@@ -829,9 +874,15 @@ int pkcs_15_get_sngl_recipient_info(s_der_buffer* p_recipient_infos_der, s_recip
         return ak_error_message(ak_error_invalid_value, __func__, "unallowed type of recipient info");
     }
 
-    return error;
+    return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_recipient_infos_der указатель на DER последовательность
+    @param p_kekri указатель на KEKRI
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_get_kekri(s_der_buffer* p_recipient_infos_der, s_kekri* p_kekri)
 {
     int error;
@@ -844,15 +895,14 @@ int pkcs_15_get_kekri(s_der_buffer* p_recipient_infos_der, s_kekri* p_kekri)
     if (!p_recipient_infos_der || !p_kekri)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    if ((error = asn_get_expected_tlv(CONTEXT_SPECIFIC | CONSTRUCTED | KEKRI, p_recipient_infos_der,
-            (void*) &kekri_der))
-            != ak_error_ok)
+    if ((error = asn_get_expected_tlv(CONTEXT_SPECIFIC | CONSTRUCTED | KEKRI, p_recipient_infos_der, (void*) &kekri_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting kekri in der");
 
+    /* Считываем версию KEKRI */
     if ((error = asn_get_expected_tlv(TINTEGER, &kekri_der, (void*) &p_kekri->m_version)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting kekri version");
 
-    // ----- декодируем kekid, вложенный в sequence -----
+    // ----- Считываем kekid, вложенный в sequence -----
     if ((error = asn_get_expected_tlv(CONSTRUCTED | TSEQUENCE, &kekri_der, (void*) &kek_id_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting kek id in der");
 
@@ -863,18 +913,26 @@ int pkcs_15_get_kekri(s_der_buffer* p_recipient_infos_der, s_kekri* p_kekri)
         return ak_error_invalid_token;
     // ----- конец декодирования kekid -----
 
+    /* Считываем ифнормацию об алгоритме шифрования ключа CEK */
     if ((error = pkcs_15_get_key_encryption_algorithm(&kekri_der, p_kekri)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting key encryption algorithm");
 
+    /* Считываем зашифрованный ключ CEK */
     if ((error = asn_get_expected_tlv(TOCTET_STRING, &kekri_der, (void*) &p_kekri->m_encrypted_key)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting encrypted key (CEK)");
 
     if (ps_get_curr_size(&kekri_der) != 0)
         return ak_error_invalid_token;
 
-    return error;
+    return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_kekri_der указатель на DER последовательность
+    @param p_kekri указатель на KEKRI
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_get_key_encryption_algorithm(s_der_buffer* p_kekri_der, s_kekri* p_kekri)
 {
     int error;
@@ -894,30 +952,29 @@ int pkcs_15_get_key_encryption_algorithm(s_der_buffer* p_kekri_der, s_kekri* p_k
     if ((error = asn_get_expected_tlv(CONSTRUCTED | TSEQUENCE, p_kekri_der, (void*) &key_enc_ald_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting key encryption algorithm in der");
 
-    if ((error = asn_get_expected_tlv(TOBJECT_IDENTIFIER, &key_enc_ald_der, (void*) &p_kekri->m_key_enc_alg_id))
-            != ak_error_ok)
+    /* Считываем идентификатор алгоритма шифрования ключа CEK */
+    if ((error = asn_get_expected_tlv(TOBJECT_IDENTIFIER, &key_enc_ald_der, (void*) &p_kekri->m_key_enc_alg_id)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting key encryption algorithm in der");
 
     if (0 == strcmp(p_kekri->m_key_enc_alg_id, "1.2.643.2.2.13.1"))
     {
+        /* Считываем параметры алгоритма шифрования ключа CEK */
         if (ps_get_curr_size(&key_enc_ald_der))
         {
             s_gost28147_89_key_wrap_prms* p_key_wrap_prms = malloc(sizeof(s_gost28147_89_key_wrap_prms));
             if (!p_key_wrap_prms)
                 return ak_error_message(ak_error_out_of_memory, __func__, "alloc memory fail");
 
-            if ((error = asn_get_expected_tlv(CONSTRUCTED | TSEQUENCE, &key_enc_ald_der, (void*) &prms_der))
-                    != ak_error_ok)
+            if ((error = asn_get_expected_tlv(CONSTRUCTED | TSEQUENCE, &key_enc_ald_der, (void*) &prms_der)) != ak_error_ok)
                 return ak_error_message(error, __func__, "problems with getting key wrap algorithm parameters in der");
 
-            if ((error = asn_get_expected_tlv(TOBJECT_IDENTIFIER, &prms_der, (void*) &p_key_wrap_prms->m_enc_prm_set))
-                    != ak_error_ok)
+            /* Считываем идентификатор набора параметров шифрования ключа CEK */
+            if ((error = asn_get_expected_tlv(TOBJECT_IDENTIFIER, &prms_der, (void*) &p_key_wrap_prms->m_enc_prm_set)) != ak_error_ok)
                 return ak_error_message(error, __func__, "problems with getting encryption parameters set oid");
 
             if (ps_get_curr_size(&prms_der))
             {
-                if ((error = asn_get_expected_tlv(TOCTET_STRING, &prms_der, (void*) &p_key_wrap_prms->m_ukm))
-                        != ak_error_ok)
+                if ((error = asn_get_expected_tlv(TOCTET_STRING, &prms_der, (void*) &p_key_wrap_prms->m_ukm)) != ak_error_ok)
                     return ak_error_message(error, __func__, "problems with getting ukm value");
             }
 
@@ -942,9 +999,15 @@ int pkcs_15_get_key_encryption_algorithm(s_der_buffer* p_kekri_der, s_kekri* p_k
     if (ps_get_curr_size(&key_enc_ald_der) != 0)
         return ak_error_invalid_token;
 
-    return error;
+    return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_enveloped_data_der указатель на DER последовательность
+    @param p_enveloped_data указатель на EnvelopedData
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_get_encrypted_content_info(s_der_buffer* p_enveloped_data_der, s_enveloped_data* p_enveloped_data)
 {
     int error;
@@ -955,26 +1018,25 @@ int pkcs_15_get_encrypted_content_info(s_der_buffer* p_enveloped_data_der, s_env
     if (!p_enveloped_data_der || !p_enveloped_data)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    if ((error = asn_get_expected_tlv(CONSTRUCTED | TSEQUENCE, p_enveloped_data_der, (void*) &enc_content_info))
-            != ak_error_ok)
+    if ((error = asn_get_expected_tlv(CONSTRUCTED | TSEQUENCE, p_enveloped_data_der, (void*) &enc_content_info)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting key encryption algorithm in der");
 
-    if ((error = asn_get_expected_tlv(TOBJECT_IDENTIFIER, &enc_content_info,
-            (void*) &p_enveloped_data->m_content_type))
-            != ak_error_ok)
+    /* Считываем идентификатор контента */
+    if ((error = asn_get_expected_tlv(TOBJECT_IDENTIFIER, &enc_content_info, (void*) &p_enveloped_data->m_content_type)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting content type oid");
 
+    /* Считываем информацию о шифровании контента */
     if ((error = pkcs_15_get_content_encryption_algorithm(&enc_content_info, p_enveloped_data)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting content encryption algorithm");
 
+    /* Считываем зашифрованный контент */
     if (ps_get_curr_size(&enc_content_info))
     {
         // В переменную enc_content запишется значение зашифрованных дынных,
         // которое затем передается в функцию декодирования octet string
         s_der_buffer enc_content;
         memset(&enc_content, 0, sizeof(s_der_buffer));
-        if ((error = asn_get_expected_tlv(CONTEXT_SPECIFIC | PRIMITIVE | 0u, &enc_content_info, (void*) &enc_content))
-                != ak_error_ok)
+        if ((error = asn_get_expected_tlv(CONTEXT_SPECIFIC | PRIMITIVE | 0u, &enc_content_info, (void*) &enc_content)) != ak_error_ok)
         {
             if (error != ak_error_diff_tags)
                 return ak_error_message(error, __func__, "problems with getting encrypted content");
@@ -982,22 +1044,23 @@ int pkcs_15_get_encrypted_content_info(s_der_buffer* p_enveloped_data_der, s_env
                 return ak_error_invalid_token;
         }
 
-        if ((error = asn_get_octetstr(enc_content.mp_curr,
-                ps_get_full_size(&enc_content),
-                &p_enveloped_data->m_encrypted_content)) != ak_error_ok)
+        if ((error = asn_get_octetstr(enc_content.mp_curr, ps_get_full_size(&enc_content), &p_enveloped_data->m_encrypted_content)) != ak_error_ok)
             return ak_error_message(error, __func__, "problems with getting key end date");
     }
 
     if (ps_get_curr_size(&enc_content_info) != 0)
         return ak_error_invalid_token;
 
-    return error;
-}
-
-int pkcs_15_get_content_encryption_algorithm(s_der_buffer* p_encrypted_content_info_der,
-        s_enveloped_data* p_enveloped_data)
+    return ak_error_ok;
+}/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_encrypted_content_info_der указатель на DER последовательность
+    @param p_enveloped_data указатель на EnvelopedData
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+int pkcs_15_get_content_encryption_algorithm(s_der_buffer* p_encrypted_content_info_der, s_enveloped_data* p_enveloped_data)
 {
-    int error = ak_error_ok;
+    int error;
     size_t len;
     uint8_t len_byte_cnt;
     s_der_buffer content_enc_alg_der;
@@ -1011,37 +1074,31 @@ int pkcs_15_get_content_encryption_algorithm(s_der_buffer* p_encrypted_content_i
     if (!p_encrypted_content_info_der || !p_enveloped_data)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-    if ((error =
-                 asn_get_expected_tlv(CONSTRUCTED | TSEQUENCE, p_encrypted_content_info_der,
-                         (void*) &content_enc_alg_der))
-            != ak_error_ok)
+    if ((error = asn_get_expected_tlv(CONSTRUCTED | TSEQUENCE, p_encrypted_content_info_der, (void*) &content_enc_alg_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting content encryption algorithm in der");
 
-    if ((error = asn_get_expected_tlv(TOBJECT_IDENTIFIER,
-            &content_enc_alg_der,
-            (void*) &p_enveloped_data->m_content_enc_alg_id)) != ak_error_ok)
+    /* Считываем идентификатор алгоритма шифрования контента */
+    if ((error = asn_get_expected_tlv(TOBJECT_IDENTIFIER, &content_enc_alg_der, (void*) &p_enveloped_data->m_content_enc_alg_id)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting content encryption algorithm in der");
 
     if (0 == strcmp(p_enveloped_data->m_content_enc_alg_id, "1.2.643.2.4.3.2.2"))
     {
+        /* Считываем параметры алгоритма шифрования контента */
         if (ps_get_curr_size(&content_enc_alg_der))
         {
             s_gost28147_89_prms* p_gost_prms = calloc(1, sizeof(s_gost28147_89_prms));
             if (!p_gost_prms)
                 return ak_error_message(ak_error_out_of_memory, __func__, "alloc memory fail");
 
-            if ((error = asn_get_expected_tlv(CONSTRUCTED | TSEQUENCE, &content_enc_alg_der, (void*) &prms_der))
-                    != ak_error_ok)
-                return ak_error_message(error,
-                        __func__,
-                        "problems with getting content encryption algorithm parameters in der");
+            if ((error = asn_get_expected_tlv(CONSTRUCTED | TSEQUENCE, &content_enc_alg_der, (void*) &prms_der)) != ak_error_ok)
+                return ak_error_message(error, __func__, "problems with getting content encryption algorithm parameters in der");
 
+            /* Считываем вектор инициализации */
             if ((error = asn_get_expected_tlv(TOCTET_STRING, &prms_der, (void*) &p_gost_prms->m_iv)) != ak_error_ok)
                 return ak_error_message(error, __func__, "problems with getting iv value");
 
-            if ((error = asn_get_expected_tlv(TOBJECT_IDENTIFIER, &prms_der,
-                    (void*) &p_gost_prms->m_encryption_param_set))
-                    != ak_error_ok)
+            /* Считываем идентификатор набора параметров алгоритма шифрования контента */
+            if ((error = asn_get_expected_tlv(TOBJECT_IDENTIFIER, &prms_der, (void*) &p_gost_prms->m_encryption_param_set)) != ak_error_ok)
                 return ak_error_message(error, __func__, "problems with getting encryption parameters set oid");
 
             p_enveloped_data->m_prm_set_type = GOST_CONTENT_ENC_SET;
@@ -1065,7 +1122,7 @@ int pkcs_15_get_content_encryption_algorithm(s_der_buffer* p_encrypted_content_i
     if (ps_get_curr_size(&content_enc_alg_der) != 0)
         return ak_error_invalid_token;
 
-    return error;
+    return ak_error_ok;
 }
 
 void pkcs_15_free_key_info(s_key_info* p_ki)

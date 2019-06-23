@@ -105,7 +105,7 @@ int pkcs_15_generate_token(s_pkcs_15_token *p_pkcs_15_token, ak_byte **pp_data, 
     /* Освобождаем память */
     free(pkcs_token_der.mp_begin);
 
-    return error;
+    return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -192,7 +192,7 @@ int pkcs_15_put_obj(s_der_buffer *p_pkcs_15_token_der, s_pkcs_15_object *p_pkcs_
     if ((error = ps_set(p_added_pkcs_15_object_der, p_pkcs_15_token_der->mp_curr, direct_object_len + asn_get_len_byte_cnt(direct_object_len) + 1, PS_U_MODE)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with making union of asn data");
 
-    return error;
+    return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -242,7 +242,7 @@ int pkcs_15_put_obj_direct(s_der_buffer *p_pkcs_15_token_der, s_pkcs_15_object *
                         gost_key_len + asn_get_len_byte_cnt(gost_key_len) + 1, PS_U_MODE)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with making union of asn data");
 
-    return error;
+    return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -293,7 +293,7 @@ int pkcs_15_put_key_management_info(s_der_buffer *p_pkcs_15_token_der, s_key_man
     if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, key_management_info_len, p_pkcs_15_token_der, p_key_management_info_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding sequence tag and length");
 
-    return error;
+    return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -341,7 +341,7 @@ int pkcs_15_put_password_info(s_der_buffer *p_pkcs_15_token_der, s_pwd_info *p_p
     if ((error = ps_set(p_pwd_info_der, p_pkcs_15_token_der->mp_curr, password_info_len + asn_get_len_byte_cnt(password_info_len) + 1, PS_U_MODE)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with making union of asn data");
 
-    return error;
+    return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -386,7 +386,7 @@ int pkcs_15_put_alg_id(s_der_buffer *p_pkcs_15_token_der, s_pwd_info *p_pwd_info
     if ((error = asn_put_universal_tlv(TSEQUENCE, 0, alg_id_len, p_pkcs_15_token_der, p_alg_id_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding sequence tag and length");
 
-    return error;
+    return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -467,15 +467,21 @@ int pkcs_15_put_params_pbkdf2(s_der_buffer *p_pkcs_15_token_der, s_pwd_info *p_p
                      ps_get_full_size(&salt);
 
     /* Добавляем тег и длину данных о параметрах схемы PBKDF2 в DER последовательность */
-    if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, parameters_len, p_pkcs_15_token_der, p_parameters_der))
-        != ak_error_ok)
+    if ((error = asn_put_universal_tlv(TSEQUENCE, NULL, parameters_len, p_pkcs_15_token_der, p_parameters_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with adding sequence tag and length");
 
-    return 0;
+    return ak_error_ok;
 }
 
 /*            ------------- Parser -------------            */
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_data указатель на DER последовательность
+    @param size размер DER последовательности
+    @param p_pkcs_15_token указатель на структуру, хранящую информацию о контейнере
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_parse_token(ak_byte *p_data, size_t size, s_pkcs_15_token *p_pkcs_15_token) {
     int error;
     tag tag;
@@ -488,7 +494,6 @@ int pkcs_15_parse_token(ak_byte *p_data, size_t size, s_pkcs_15_token *p_pkcs_15
     len_byte_cnt = 0;
     memset(&token, 0, sizeof(s_der_buffer));
 
-
     if (!p_data || !size || !p_pkcs_15_token)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
@@ -499,12 +504,15 @@ int pkcs_15_parse_token(ak_byte *p_data, size_t size, s_pkcs_15_token *p_pkcs_15
     if ((error = asn_get_len(p_data + 1, &len, &len_byte_cnt)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting data length");
 
+    /* Содаем объект s_der_buffer, в который записывается токен */
     if ((error = ps_set(&token, p_data + 1 + len_byte_cnt, len, PS_R_MODE)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with setting pointer server");
 
+    /* Считываем версию токена */
     if ((error = asn_get_expected_tlv(TINTEGER, &token, (void *) &p_pkcs_15_token->m_version)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting token version");
 
+    /* Считываем keyManagementInfo, если эти данные присутствуют */
     asn_get_tag(token.mp_curr, &tag);
     if (tag == (CONTEXT_SPECIFIC | CONSTRUCTED | 0u))
     {
@@ -512,15 +520,23 @@ int pkcs_15_parse_token(ak_byte *p_data, size_t size, s_pkcs_15_token *p_pkcs_15
             return ak_error_message(error, __func__, "problems with getting key management info");
     }
 
+    /* Считываем объекты из контенера */
     if ((error = pkcs_15_get_pkcs_objects(&token, p_pkcs_15_token)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting pkcs 15 objects");
 
+    /* Проверяем, что не осталось непрочитанных данных */
     if (ps_get_curr_size(&token) != 0)
         return ak_error_invalid_token;
 
-    return error;
+    return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на DER последовательность
+    @param p_pkcs_15_token указатель на структуру, хранящую информацию о контейнере
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_get_key_management_info(s_der_buffer *p_pkcs_15_token_der, s_pkcs_15_token *p_pkcs_15_token) {
     int error;
     uint8_t num_of_kmi_objs;
@@ -532,11 +548,11 @@ int pkcs_15_get_key_management_info(s_der_buffer *p_pkcs_15_token_der, s_pkcs_15
     if (!p_pkcs_15_token_der || !p_pkcs_15_token)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
+    /* Проверяем, что тег соответствует стандарту */
+    if ((error = asn_get_expected_tlv((CONTEXT_SPECIFIC | CONSTRUCTED | 0u), p_pkcs_15_token_der, (void *) &key_management_info)) != ak_error_ok)
+        return ak_error_message(error, __func__, "problems with key management info");
 
-    if ((error = asn_get_expected_tlv((CONTEXT_SPECIFIC | CONSTRUCTED | 0u), p_pkcs_15_token_der,
-                                      (void *) &key_management_info)) != ak_error_ok)
-        return ak_error_message(error, __func__, "problems with getting token version");
-
+    /* Вычисляем кол-во элементов в объекте keyManagementInfo */
     if ((error = asn_get_num_of_elems_in_constructed_obj(&key_management_info, &num_of_kmi_objs)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting num of elements in constructed data object");
 
@@ -545,18 +561,26 @@ int pkcs_15_get_key_management_info(s_der_buffer *p_pkcs_15_token_der, s_pkcs_15
     if (!p_pkcs_15_token->mpp_key_infos)
         return ak_error_message(ak_error_out_of_memory, __func__, "alloc memory fail");
 
+    /* Считываем отдельный элемент в объекте keyManagementInfo */
     while (ps_get_curr_size(&key_management_info))
     {
         if ((error = pkcs_15_get_sngl_kmi(&key_management_info, p_pkcs_15_token)) != ak_error_ok)
             return ak_error_message(error, __func__, "problems with getting single key management info");
     }
 
+    /* Проверяем, что не осталось непрочитанных данных */
     if (ps_get_curr_size(&key_management_info) != 0)
         return ak_error_invalid_token;
 
-    return error;
+    return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на DER последовательность
+    @param p_pkcs_15_token указатель на структуру, хранящую информацию о контейнере
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_get_sngl_kmi(s_der_buffer *p_key_management_info_der, s_pkcs_15_token *p_pkcs_15_token) {
     int error;
     tag tag;
@@ -570,7 +594,6 @@ int pkcs_15_get_sngl_kmi(s_der_buffer *p_key_management_info_der, s_pkcs_15_toke
     len_byte_cnt = 0;
     memset(&sngl_info, 0, sizeof(s_der_buffer));
 
-
     if (!p_key_management_info_der || !p_pkcs_15_token)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
@@ -578,8 +601,7 @@ int pkcs_15_get_sngl_kmi(s_der_buffer *p_key_management_info_der, s_pkcs_15_toke
     if (!p_sngl_kmi)
         return ak_error_message(ak_error_out_of_memory, __func__, "alloc memory fail");
 
-    if ((error = asn_get_expected_tlv((CONSTRUCTED | TSEQUENCE), p_key_management_info_der, (void *) &sngl_info))
-        != ak_error_ok)
+    if ((error = asn_get_expected_tlv((CONSTRUCTED | TSEQUENCE), p_key_management_info_der, (void *) &sngl_info)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting single key management info in der");
 
     if ((error = asn_get_expected_tlv(TOCTET_STRING, &sngl_info, (void *) &p_sngl_kmi->m_key_id)) != ak_error_ok)
@@ -587,6 +609,7 @@ int pkcs_15_get_sngl_kmi(s_der_buffer *p_key_management_info_der, s_pkcs_15_toke
 
     asn_get_tag(sngl_info.mp_curr, &tag);
 
+    /* Определяем тип элемента и считываем соответствующие данные */
     if (tag == (CONTEXT_SPECIFIC | CONSTRUCTED | PWD_INFO))
     {
         p_sngl_kmi->m_type = PWD_INFO;
@@ -602,8 +625,7 @@ int pkcs_15_get_sngl_kmi(s_der_buffer *p_key_management_info_der, s_pkcs_15_toke
     }
     else if (tag == (CONTEXT_SPECIFIC | CONSTRUCTED | PWRI))
     {
-        ak_error_message(ak_error_invalid_value, __func__,
-                         "getting pwri into key management info does not realized yet");
+        ak_error_message(ak_error_invalid_value, __func__, "getting pwri into key management info does not realized yet");
         if ((error = asn_get_len(p_key_management_info_der->mp_curr + 1, &len, &len_byte_cnt)) != ak_error_ok)
             return ak_error_message(error, __func__, "problems with getting data length");
 
@@ -612,8 +634,7 @@ int pkcs_15_get_sngl_kmi(s_der_buffer *p_key_management_info_der, s_pkcs_15_toke
     }
     else if (tag == (CONTEXT_SPECIFIC | CONSTRUCTED | KEKRI))
     {
-        ak_error_message(ak_error_invalid_value, __func__,
-                         "getting kekri into key management info does not realized yet");
+        ak_error_message(ak_error_invalid_value, __func__, "getting kekri into key management info does not realized yet");
         if ((error = asn_get_len(p_key_management_info_der->mp_curr + 1, &len, &len_byte_cnt)) != ak_error_ok)
             return ak_error_message(error, __func__, "problems with getting data length");
 
@@ -621,15 +642,22 @@ int pkcs_15_get_sngl_kmi(s_der_buffer *p_key_management_info_der, s_pkcs_15_toke
             return ak_error_message(error, __func__, "problems with moving cursor");
     }
 
+    /* Проверяем, что не осталось непрочитанных данных */
     if (ps_get_curr_size(&sngl_info) != 0)
         return ak_error_invalid_token;
 
     p_pkcs_15_token->mpp_key_infos[p_pkcs_15_token->m_info_size] = p_sngl_kmi;
     p_pkcs_15_token->m_info_size++;
 
-    return error;
+    return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на DER последовательность
+    @param p_pkcs_15_token указатель на структуру, хранящую информацию о контейнере
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_get_password_info(s_der_buffer *p_sngl_kmi_der, s_pwd_info *p_pwd_info) {
     int error;
     tag tag;
@@ -656,12 +684,19 @@ int pkcs_15_get_password_info(s_der_buffer *p_sngl_kmi_der, s_pwd_info *p_pwd_in
     if ((error = pkcs_15_get_alg_id(&pwd_info, p_pwd_info)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting algorithm id");
 
+    /* Проверяем, что не осталось непрочитанных данных */
     if (ps_get_curr_size(&pwd_info) != 0)
         return ak_error_invalid_token;
 
-    return error;
+    return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на DER последовательность
+    @param p_pkcs_15_token указатель на структуру, хранящую информацию о контейнере
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_get_alg_id(s_der_buffer *p_pwd_info_der, s_pwd_info *p_pwd_info) {
     int error = ak_error_ok;
     s_der_buffer alg_id;
@@ -675,21 +710,30 @@ int pkcs_15_get_alg_id(s_der_buffer *p_pwd_info_der, s_pwd_info *p_pwd_info) {
     if ((error = asn_get_expected_tlv((CONSTRUCTED | TSEQUENCE), p_pwd_info_der, (void *) &alg_id)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting algorithm id in der");
 
+    /* Считываем алгоритм диверсификации ключа */
     if ((error = asn_get_expected_tlv((TOBJECT_IDENTIFIER), &alg_id, (void *) &p_pwd_info->m_algorithm)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting algorithm identifier");
 
+    /* Считываем параметры для алгоритма PBDKF2 */
     if (ps_get_curr_size(&alg_id))
     {
         if ((error = pkcs_15_get_params_pbkdf2(&alg_id, p_pwd_info)) != ak_error_ok)
             return ak_error_message(error, __func__, "problems with getting PBKDF2 parameters");
     }
 
+    /* Проверяем, что не осталось непрочитанных данных */
     if (ps_get_curr_size(&alg_id) != 0)
         return ak_error_invalid_token;
 
-    return error;
+    return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на DER последовательность
+    @param p_pkcs_15_token указатель на структуру, хранящую информацию о контейнере
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_get_params_pbkdf2(s_der_buffer *p_alg_id_der, s_pwd_info *p_pwd_info) {
     int error;
     tag tag = 0;
@@ -703,17 +747,19 @@ int pkcs_15_get_params_pbkdf2(s_der_buffer *p_alg_id_der, s_pwd_info *p_pwd_info
     if (!p_alg_id_der || !p_pwd_info)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-
     if ((error = asn_get_expected_tlv((CONSTRUCTED | TSEQUENCE), p_alg_id_der, (void *) &pbkdf2_prms)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting PBKDF2 parameters in der");
 
+    /* Считываем значение соли */
     if ((error = asn_get_expected_tlv((TOCTET_STRING), &pbkdf2_prms, (void *) &p_pwd_info->m_salt)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting salt");
 
+    /* Считываем значение счетчика итераций */
     if ((error = asn_get_expected_tlv((TINTEGER), &pbkdf2_prms, (void *) &p_pwd_info->m_iteration_count)) !=
         ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting iteration count");
 
+    /* Считываем длину ключа, ечли она присутвствует */
     asn_get_tag(pbkdf2_prms.mp_curr, &tag);
     if (tag == TINTEGER)
     {
@@ -725,18 +771,27 @@ int pkcs_15_get_params_pbkdf2(s_der_buffer *p_alg_id_der, s_pwd_info *p_pwd_info
     if ((error = asn_get_expected_tlv((CONSTRUCTED | TSEQUENCE), &pbkdf2_prms, (void *) &prf_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting prf in der");
 
+    /* Считываем идентификатор функции хеширования, используемой в PBDKF2 */
     if ((error = asn_get_expected_tlv((TOBJECT_IDENTIFIER), &prf_der, (void *) &p_pwd_info->m_prf_id)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting prf");
 
+    /* Проверяем, что не осталось непрочитанных данных */
     if (ps_get_curr_size(&prf_der) != 0)
         return ak_error_invalid_token;
 
+    /* Проверяем, что не осталось непрочитанных данных */
     if (ps_get_curr_size(&pbkdf2_prms) != 0)
         return ak_error_invalid_token;
 
-    return error;
+    return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на DER последовательность
+    @param p_pkcs_15_token указатель на структуру, хранящую информацию о контейнере
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_get_pkcs_objects(s_der_buffer *p_pkcs_15_token_der, s_pkcs_15_token *p_pkcs_15_token) {
     int error;
     s_der_buffer pkcs_15_objects;
@@ -749,11 +804,11 @@ int pkcs_15_get_pkcs_objects(s_der_buffer *p_pkcs_15_token_der, s_pkcs_15_token 
     if (!p_pkcs_15_token_der || !p_pkcs_15_token)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-
     if ((error = asn_get_expected_tlv((CONSTRUCTED | TSEQUENCE), p_pkcs_15_token_der, (void *) &pkcs_15_objects))
         != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting pkcs 15 objects in der");
 
+    /* Подсчитываем кол-во объектов в контейнере */
     if ((error = asn_get_num_of_elems_in_constructed_obj(&pkcs_15_objects, &num_of_pkcs_15_objects)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting num of elements in constructed data object");
 
@@ -766,16 +821,24 @@ int pkcs_15_get_pkcs_objects(s_der_buffer *p_pkcs_15_token_der, s_pkcs_15_token 
         if (!p_pkcs_15_token->mpp_pkcs_15_objects[i])
             return ak_error_message(ak_error_out_of_memory, __func__, "alloc memory fail");
 
+        /* Считываем объект */
         if ((error = pkcs_15_get_obj(&pkcs_15_objects, p_pkcs_15_token->mpp_pkcs_15_objects[i])) != ak_error_ok)
             return ak_error_message(error, __func__, "problems with getting object");
     }
 
+    /* Проверяем, что не осталось непрочитанных данных */
     if (ps_get_curr_size(&pkcs_15_objects) != 0)
         return ak_error_invalid_token;
 
-    return error;
+    return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на DER последовательность
+    @param p_pkcs_15_token указатель на структуру, хранящую информацию о контейнере
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_get_obj(s_der_buffer *p_pkcs_15_objects_der, s_pkcs_15_object *p_pkcs_15_object) {
     int error;
     tag tag;
@@ -788,11 +851,10 @@ int pkcs_15_get_obj(s_der_buffer *p_pkcs_15_objects_der, s_pkcs_15_object *p_pkc
     len_byte_cnt = 0;
     memset(&pkcs_15_sngl_object_der, 0, sizeof(s_der_buffer));
 
-
     if (!p_pkcs_15_objects_der || !p_pkcs_15_object)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-
+    /* Определяем тип объекта и считываем его значение */
     asn_get_tag(p_pkcs_15_objects_der->mp_curr, &tag);
     switch (tag)
     {
@@ -822,6 +884,7 @@ int pkcs_15_get_obj(s_der_buffer *p_pkcs_15_objects_der, s_pkcs_15_object *p_pkc
     if ((error = asn_get_expected_tlv(tag, p_pkcs_15_objects_der, (void *) &pkcs_15_sngl_object_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting pkcs 15 object in der");
 
+    /* Определяем способ храниения объекта (с шифрованием атрибутов или нет) */
     asn_get_tag(pkcs_15_sngl_object_der.mp_curr, &tag);
     switch (tag)
     {
@@ -840,12 +903,19 @@ int pkcs_15_get_obj(s_der_buffer *p_pkcs_15_objects_der, s_pkcs_15_object *p_pkc
             break;
     }
 
+    /* Проверяем, что не осталось непрочитанных данных */
     if (ps_get_curr_size(&pkcs_15_sngl_object_der) != 0)
         return ak_error_invalid_token;
 
-    return error;
+    return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_pkcs_15_token_der указатель на DER последовательность
+    @param p_pkcs_15_token указатель на структуру, хранящую информацию о контейнере
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int pkcs_15_get_direct_obj(s_der_buffer *p_pkcs_15_object_der, s_pkcs_15_object *p_pkcs_15_object) {
     int error;
     tag tag;
@@ -857,12 +927,10 @@ int pkcs_15_get_direct_obj(s_der_buffer *p_pkcs_15_object_der, s_pkcs_15_object 
     if (!p_pkcs_15_object_der || !p_pkcs_15_object)
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
 
-
-    if ((error = asn_get_expected_tlv((CONTEXT_SPECIFIC | CONSTRUCTED | 0u),
-                                      p_pkcs_15_object_der,
-                                      (void *) &direct_object_der)) != ak_error_ok)
+    if ((error = asn_get_expected_tlv((CONTEXT_SPECIFIC | CONSTRUCTED | 0u), p_pkcs_15_object_der, (void *) &direct_object_der)) != ak_error_ok)
         return ak_error_message(error, __func__, "problems with getting pkcs 15 direct object in der");
 
+    /* Считываем объект секретного ключа */
     asn_get_tag(direct_object_der.mp_curr, &tag);
     switch (tag)
     {
@@ -878,10 +946,11 @@ int pkcs_15_get_direct_obj(s_der_buffer *p_pkcs_15_object_der, s_pkcs_15_object 
             break;
     }
 
+    /* Проверяем, что не осталось непрочитанных данных */
     if (ps_get_curr_size(&direct_object_der) != 0)
         return ak_error_invalid_token;
 
-    return error;
+    return ak_error_ok;
 }
 
 void free_pkcs_15_token(s_pkcs_15_token *p_pkcs_15_token) {
