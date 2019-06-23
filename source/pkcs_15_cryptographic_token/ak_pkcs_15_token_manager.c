@@ -28,6 +28,12 @@ const object_identifier CONTENT_TYPE = {"1.2.840.113549.1.7.1"};
 const object_identifier CONTENT_ENG_ALGORITHM = {"1.2.643.2.4.3.2.2"};
 const object_identifier CRYPTO_PRO_PARAM_A = {"1.2.643.2.2.31.1"};
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_asn_1_bool указатель на переменную, в которую запишется значение
+    @param val значение, которое нужно записать
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int set_asn_boolean(boolean *p_asn_1_bool, bool_t val) {
 
     if (!p_asn_1_bool)
@@ -38,6 +44,12 @@ int set_asn_boolean(boolean *p_asn_1_bool, bool_t val) {
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_asn_1_bool указатель на переменную, в которую запишется значение
+    @param val значение, которое нужно записать
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int set_asn_utf8_string(utf8_string *p_asn_1_utf8_string, ak_pointer p_val) {
 
     /* Предполагается, что на вход фун-ции подается
@@ -58,6 +70,12 @@ int set_asn_utf8_string(utf8_string *p_asn_1_utf8_string, ak_pointer p_val) {
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_asn_1_bool указатель на переменную, в которую запишется значение
+    @param val значение, которое нужно записать
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int set_asn_visible_string(visible_string *p_asn_1_visible_string, const char *p_val) {
 
     size_t size;
@@ -76,6 +94,12 @@ int set_asn_visible_string(visible_string *p_asn_1_visible_string, const char *p
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_asn_1_bool указатель на переменную, в которую запишется значение
+    @param val значение, которое нужно записать
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int set_asn_object_identifier(object_identifier *p_asn_1_object_identifier, const char *p_val) {
 
     if (!p_asn_1_object_identifier || !p_val)
@@ -87,6 +111,12 @@ int set_asn_object_identifier(object_identifier *p_asn_1_object_identifier, cons
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_asn_1_bool указатель на переменную, в которую запишется значение
+    @param val значение, которое нужно записать
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int set_asn_integer(integer *p_asn_int, int32_t val) {
 
     ak_byte *p_val;
@@ -139,6 +169,12 @@ int set_asn_integer(integer *p_asn_int, int32_t val) {
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_asn_1_bool указатель на переменную, в которую запишется значение
+    @param val значение, которое нужно записать
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int set_asn_bit_string(bit_string *p_asn_1_bit_string, const ak_byte *p_val, uint32_t size, uint8_t num_of_unused_bits) {
 
     if (!p_asn_1_bit_string || !p_val || (size <= 0) || (num_of_unused_bits <= 0))
@@ -153,6 +189,12 @@ int set_asn_bit_string(bit_string *p_asn_1_bit_string, const ak_byte *p_val, uin
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_asn_1_bool указатель на переменную, в которую запишется значение
+    @param val значение, которое нужно записать
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int set_asn_octet_string(octet_string *p_asn_1_octet_string, const ak_byte *p_val, uint32_t size) {
 
     if (!p_asn_1_octet_string || !p_val || (size <= 0))
@@ -166,6 +208,12 @@ int set_asn_octet_string(octet_string *p_asn_1_octet_string, const ak_byte *p_va
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_asn_1_bool указатель на переменную, в которую запишется значение
+    @param val значение, которое нужно записать
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int asn_integer_to_int64(integer *p_asn_val, ak_int64 *p_value) {
 
     size_t i;
@@ -187,6 +235,12 @@ int asn_integer_to_int64(integer *p_asn_val, ak_int64 *p_value) {
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_asn_1_bool указатель на переменную, в которую запишется значение
+    @param val значение, которое нужно записать
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int asn_utf8_to_byte_arr(utf8_string *p_src, ak_byte **pp_dst) {
     size_t str_size;
 
@@ -203,6 +257,12 @@ int asn_utf8_to_byte_arr(utf8_string *p_src, ak_byte **pp_dst) {
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_asn_1_bool указатель на переменную, в которую запишется значение
+    @param val значение, которое нужно записать
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int asn_generalized_time_to_date(generalized_time time, date date) {
     //TODO проверка??
 
@@ -224,6 +284,12 @@ int asn_generalized_time_to_date(generalized_time time, date date) {
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_asn_1_bool указатель на переменную, в которую запишется значение
+    @param val значение, которое нужно записать
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int set_usage_flags(bit_string asn_val, key_usage_flags_t *flags) {
     if (asn_val.m_val_len > 2)
         return ak_error_message(ak_error_invalid_value, __func__, "invalid input value");
@@ -238,6 +304,12 @@ int set_usage_flags(bit_string asn_val, key_usage_flags_t *flags) {
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_asn_1_bool указатель на переменную, в которую запишется значение
+    @param val значение, которое нужно записать
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int set_key_id(octet_string id, ak_skey p_key) {
 
     //TODO проверка??
@@ -256,6 +328,12 @@ int set_key_id(octet_string id, ak_skey p_key) {
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_asn_1_bool указатель на переменную, в которую запишется значение
+    @param val значение, которое нужно записать
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int date_to_asn_generalized_time(date current_date, generalized_time *result) {
 
     //TODO проверка??
@@ -307,6 +385,12 @@ int date_to_asn_generalized_time(date current_date, generalized_time *result) {
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_asn_1_bool указатель на переменную, в которую запишется значение
+    @param val значение, которое нужно записать
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 int generate_random_bytes(octet_string *p_data, const size_t size) {
 
     int error;
@@ -334,6 +418,12 @@ int generate_random_bytes(octet_string *p_data, const size_t size) {
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_asn_1_bool указатель на переменную, в которую запишется значение
+    @param val значение, которое нужно записать
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 static int pkcs_15_kek_generator(ak_bckey p_key, ak_pointer password, size_t pwd_len, s_key_management_info *p_kmi) {
     int error;
     ak_int64 iteration_cnt;
@@ -388,7 +478,14 @@ static int pkcs_15_kek_generator(ak_bckey p_key, ak_pointer password, size_t pwd
     return ak_error_ok;
 }
 
-static int fill_enveloped_data(ak_skey sec_key, s_enveloped_data *enveloped_data, ak_bckey kek) {
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param sec_key указатель на ceкрутный ключ
+    @param p_enveloped_data указатель на объект EnvelopedData
+    @param kek значение, которое нужно записать
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+static int fill_enveloped_data(ak_skey sec_key, s_enveloped_data *p_enveloped_data, ak_bckey kek) {
 
     int error;
     ak_context_manager p_context;
@@ -421,13 +518,13 @@ static int fill_enveloped_data(ak_skey sec_key, s_enveloped_data *enveloped_data
     recipient_infos_size = 1;
 
 
-    if (!sec_key || !enveloped_data || !kek)
+    if (!sec_key || !p_enveloped_data || !kek)
     {
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
     }
 
     // Заполняем version
-    set_asn_integer(&enveloped_data->m_version, 2);
+    set_asn_integer(&p_enveloped_data->m_version, 2);
 
     // Создаем Content Encryption Key
 
@@ -466,16 +563,16 @@ static int fill_enveloped_data(ak_skey sec_key, s_enveloped_data *enveloped_data
     // Заполняем encryptedContentInfo
 
     // Заполняем encryptedContent
-    enveloped_data->m_encrypted_content.m_val_len = gost_key_der.size + sizeof(mac);
-    enveloped_data->m_encrypted_content.mp_value = (ak_byte *) malloc(enveloped_data->m_encrypted_content.m_val_len);
+    p_enveloped_data->m_encrypted_content.m_val_len = gost_key_der.size + sizeof(mac);
+    p_enveloped_data->m_encrypted_content.mp_value = (ak_byte *) malloc(p_enveloped_data->m_encrypted_content.m_val_len);
 
-    if (!enveloped_data->m_encrypted_content.mp_value)
+    if (!p_enveloped_data->m_encrypted_content.mp_value)
     {
         return ak_error_null_pointer;
     }
 
-    memcpy(enveloped_data->m_encrypted_content.mp_value, gost_key_der.data, gost_key_der.size);
-    memcpy(enveloped_data->m_encrypted_content.mp_value + gost_key_der.size, mac, sizeof(mac));
+    memcpy(p_enveloped_data->m_encrypted_content.mp_value, gost_key_der.data, gost_key_der.size);
+    memcpy(p_enveloped_data->m_encrypted_content.mp_value + gost_key_der.size, mac, sizeof(mac));
 
     if ((error = ak_buffer_destroy(&gost_key_der)) != ak_error_ok)
     {
@@ -483,7 +580,7 @@ static int fill_enveloped_data(ak_skey sec_key, s_enveloped_data *enveloped_data
     }
 
     // Заполняем contentEncryptionAlgorithm
-    set_asn_object_identifier(&enveloped_data->m_content_enc_alg_id, CONTENT_ENG_ALGORITHM);
+    set_asn_object_identifier(&p_enveloped_data->m_content_enc_alg_id, CONTENT_ENG_ALGORITHM);
     p_content_enc_prms = calloc(1, sizeof(s_gost28147_89_prms));
 
     if ((error = generate_random_bytes(&iv, 8)) != ak_error_ok)
@@ -494,11 +591,11 @@ static int fill_enveloped_data(ak_skey sec_key, s_enveloped_data *enveloped_data
     set_asn_octet_string(&p_content_enc_prms->m_iv, iv.mp_value, iv.m_val_len);
     set_asn_object_identifier(&p_content_enc_prms->m_encryption_param_set, CRYPTO_PRO_PARAM_A);
 
-    enveloped_data->m_prm_set_type = GOST_CONTENT_ENC_SET;
-    enveloped_data->m_prm_set.p_content_enc_prm_set = p_content_enc_prms;
+    p_enveloped_data->m_prm_set_type = GOST_CONTENT_ENC_SET;
+    p_enveloped_data->m_prm_set.p_content_enc_prm_set = p_content_enc_prms;
 
     // Заполняем contentType
-    set_asn_object_identifier(&enveloped_data->m_content_type, CONTENT_TYPE);
+    set_asn_object_identifier(&p_enveloped_data->m_content_type, CONTENT_TYPE);
 
     // Заполняем recipientInfos
 
@@ -577,8 +674,8 @@ static int fill_enveloped_data(ak_skey sec_key, s_enveloped_data *enveloped_data
     recipient_infos = malloc(sizeof(s_recipient_info *) * recipient_infos_size);
     recipient_infos[0] = recipient_info;
 
-    enveloped_data->mpp_recipient_infos = recipient_infos;
-    enveloped_data->m_ri_size = recipient_infos_size;
+    p_enveloped_data->mpp_recipient_infos = recipient_infos;
+    p_enveloped_data->m_ri_size = recipient_infos_size;
 
     if ((error = ak_bckey_context_destroy(&cek)) != ak_error_ok)
     {
@@ -588,8 +685,14 @@ static int fill_enveloped_data(ak_skey sec_key, s_enveloped_data *enveloped_data
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param current_key_info указатель на структуру, в которой хранится объект KeyManagementInfo в
+           виде пригодном для кодирования в DER последовательнсоть
+    @param key_id уникальный идентификатор ключа (в данном случае ключа CEK)
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 static int put_key_management_info(s_key_management_info *current_key_info, ak_buffer key_id) {
-
     int error;
     ak_int64 pbkdf2_iteration_count; // значение номера для pbkdf2_iteration_count
     s_pwd_info *pwd_info; // структура passwordInfo
@@ -623,17 +726,25 @@ static int put_key_management_info(s_key_management_info *current_key_info, ak_b
     return ak_error_ok;
 }
 
-static int put_gost_secret_key(s_gost_sec_key *gost_sec_key, struct extended_key *p_inp_keys, ak_bckey kek) {
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param gost_sec_key указатель на структуру, в которой хранится значение ключа в виде пригодном
+           для кодирования в DER последовательнсоть
+    @param p_inp_key указатель на переменную, в которой хранится значение ключа
+    @param kek ключ для шифрования ключа CEK
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+static int put_gost_secret_key(s_gost_sec_key *gost_sec_key, struct extended_key *p_inp_key, ak_bckey kek) {
 
     int error;
     s_common_obj_attrs obj_attrs;
     s_common_key_attrs common_key_attrs;
     ak_byte key_usage_flags[2];
 
-    key_usage_flags[0] = (ak_byte) ((p_inp_keys->flags >> 8) & 0xFFu);
-    key_usage_flags[1] = (ak_byte) (p_inp_keys->flags & 0xFF);
+    key_usage_flags[0] = (ak_byte) ((p_inp_key->flags >> 8) & 0xFFu);
+    key_usage_flags[1] = (ak_byte) (p_inp_key->flags & 0xFF);
 
-    if (!gost_sec_key || !p_inp_keys || !kek)
+    if (!gost_sec_key || !p_inp_key || !kek)
     {
         return ak_error_message(ak_error_null_pointer, __func__, "invalid arguments");
     }
@@ -641,7 +752,7 @@ static int put_gost_secret_key(s_gost_sec_key *gost_sec_key, struct extended_key
     // CommonObjectAttributes
     memset(&obj_attrs, 0, sizeof(obj_attrs));
     // Заполняем label
-    set_asn_utf8_string(&obj_attrs.m_label, p_inp_keys->label);
+    set_asn_utf8_string(&obj_attrs.m_label, p_inp_key->label);
 
     // Записываем в s_gost_sec_key
     gost_sec_key->m_obj_attrs = obj_attrs;
@@ -650,8 +761,7 @@ static int put_gost_secret_key(s_gost_sec_key *gost_sec_key, struct extended_key
     memset(&common_key_attrs, 0, sizeof(s_common_key_attrs));
 
     // Заполняем iD
-    set_asn_octet_string(&common_key_attrs.m_id, p_inp_keys->key.sec_key->key.number.data,
-                         p_inp_keys->key.sec_key->key.number.size);
+    set_asn_octet_string(&common_key_attrs.m_id, p_inp_key->key.sec_key->key.number.data, p_inp_key->key.sec_key->key.number.size);
 
     // Заполняем usage
     set_asn_bit_string(&common_key_attrs.m_usage, key_usage_flags, sizeof(key_usage_flags), 6);
@@ -660,18 +770,17 @@ static int put_gost_secret_key(s_gost_sec_key *gost_sec_key, struct extended_key
     set_asn_boolean(&common_key_attrs.m_native, ak_true);
 
     // Заполняем startDate
-    date_to_asn_generalized_time(p_inp_keys->start_date, &common_key_attrs.m_start_date);
+    date_to_asn_generalized_time(p_inp_key->start_date, &common_key_attrs.m_start_date);
 
     // Заполняем endDate
-    date_to_asn_generalized_time(p_inp_keys->end_date, &common_key_attrs.m_end_date);
+    date_to_asn_generalized_time(p_inp_key->end_date, &common_key_attrs.m_end_date);
 
     // Записываем в s_gost_sec_key
     gost_sec_key->m_key_attrs = common_key_attrs;
 
     set_asn_object_identifier(&gost_sec_key->m_key_type_gost, KEY_TYPE_GOST);
 
-    if ((error = fill_enveloped_data(&p_inp_keys->key.sec_key->key, &gost_sec_key->m_enveloped_data, kek))
-        != ak_error_ok)
+    if ((error = fill_enveloped_data(&p_inp_key->key.sec_key->key, &gost_sec_key->m_enveloped_data, kek)) != ak_error_ok)
     {
         return ak_error_message(error, __func__, "problem with fill of enveloped data");
     }
@@ -679,6 +788,13 @@ static int put_gost_secret_key(s_gost_sec_key *gost_sec_key, struct extended_key
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_recipient_info указатель на объект RecipientInfo
+    @param p_kek указатель на ключ KEK
+    @param p_cek указатель на переменную, в которую запишется значение ключа CEK
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 static int decrypt_content_enc_key(s_recipient_info *p_recipient_info, ak_skey p_kek, ak_skey p_cek) {
     int error;
     struct buffer encrypted_cek;
@@ -692,12 +808,9 @@ static int decrypt_content_enc_key(s_recipient_info *p_recipient_info, ak_skey p
     /* Создаем контекст ключа KEK */
     // Сравниваем идентификатор ключа из структуры KeyManagementInfo и KEKRI
     if (memcmp(p_kekri->m_key_identifire.mp_value, p_kek->number.data, p_kek->number.size) != 0)
-        return ak_error_message(ak_error_invalid_value,
-                                __func__,
-                                "id from kekri doesn't match id from key management info");
+        return ak_error_message(ak_error_invalid_value, __func__, "id from kekri doesn't match id from key management info");
 
-    if ((error = pkcs_15_parse_enc_key_plus_mac_seq(p_kekri->m_encrypted_key, &encrypted_cek, &encrypted_cek_mac))
-        != ak_error_ok)
+    if ((error = pkcs_15_parse_enc_key_plus_mac_seq(p_kekri->m_encrypted_key, &encrypted_cek, &encrypted_cek_mac)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with parsing CEK");
 
     /*TODO: комментарий для Алексея Юрьевича: здесь необходимо вызвать
@@ -724,6 +837,13 @@ static int decrypt_content_enc_key(s_recipient_info *p_recipient_info, ak_skey p
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_enveloped_data указатель на объект EnvelopedData
+    @param p_kek указатель на ключ KEK
+    @param p_libakrypt_key указатель на переменную, в которую запишутся расшифрованные данные
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 static int decrypt_enveloped_data(s_enveloped_data *p_enveloped_data, ak_skey p_kek, ak_skey p_libakrypt_key) {
     int error;
     struct bckey cek;
@@ -776,18 +896,13 @@ static int decrypt_enveloped_data(s_enveloped_data *p_enveloped_data, ak_skey p_
     ak_buffer_create_size(&encrypted_content, p_enveloped_data->m_encrypted_content.m_val_len - 4);
     memcpy(encrypted_content.data, p_enveloped_data->m_encrypted_content.mp_value, encrypted_content.size);
     ak_buffer_create_size(&encrypted_content_mac, 4);
-    memcpy(encrypted_content_mac.data,
-           p_enveloped_data->m_encrypted_content.mp_value + encrypted_content.size,
-           encrypted_content_mac.size);
+    memcpy(encrypted_content_mac.data, p_enveloped_data->m_encrypted_content.mp_value + encrypted_content.size, encrypted_content_mac.size);
 
     /*TODO: комментарий для Алексея Юрьевича: здесь необходимо вызвать
-            фунцию расшифрования данных и сравнить имитовставку */
+            фунцию расшифрования данных, после чего сравнить имитовставку */
 
     /* Переносим значение ключа, маски, счетчика в структуру skey */
-    if ((error = pkcs_15_parse_gost_key_value_mask(&encrypted_content,
-                                                   &p_libakrypt_key->key,
-                                                   &p_libakrypt_key->mask,
-                                                   &p_libakrypt_key->resource.value.counter)) != ak_error_ok)
+    if ((error = pkcs_15_parse_gost_key_value_mask(&encrypted_content, &p_libakrypt_key->key, &p_libakrypt_key->mask, &p_libakrypt_key->resource.value.counter)) != ak_error_ok)
         return ak_error_message(error, __func__, "problem with parsing key value mask");
 
     /* Устанавливаем флаги наличия ключа и маски */
@@ -807,6 +922,13 @@ static int decrypt_enveloped_data(s_enveloped_data *p_enveloped_data, ak_skey p_
     return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param p_obj указатель на объект PKCS15Object
+    @param p_kek указатель на объект KEK
+    @param p_key указатель на переменную, в которую запишется объект из контейнера
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
 static int get_extended_key(s_pkcs_15_object *p_obj, struct skey *p_kek, struct extended_key *p_key) {
     int error;
     s_gost_sec_key *p_pkcs_sec_key;
@@ -836,7 +958,6 @@ static int get_extended_key(s_pkcs_15_object *p_obj, struct skey *p_kek, struct 
     {
         p_key->label = malloc(strlen((char *) p_pkcs_sec_key->m_obj_attrs.m_label) + 1);
         strcpy((char *) p_key->label, (char *) p_pkcs_sec_key->m_obj_attrs.m_label);
-        //asn_utf8_to_byte_arr(&p_pkcs_sec_key->m_obj_attrs.m_label, &p_key->key_label);
     }
 
     // уникальный идентификатор ключа
@@ -854,8 +975,7 @@ static int get_extended_key(s_pkcs_15_object *p_obj, struct skey *p_kek, struct 
         asn_generalized_time_to_date(p_pkcs_sec_key->m_key_attrs.m_end_date, p_key->end_date);
 
     /* Расшифровываем ключ */
-    if ((error = decrypt_enveloped_data(&p_pkcs_sec_key->m_enveloped_data, p_kek, &p_libakrypt_sec_key->key))
-        != ak_error_ok)
+    if ((error = decrypt_enveloped_data(&p_pkcs_sec_key->m_enveloped_data, p_kek, &p_libakrypt_sec_key->key)) != ak_error_ok)
     {
         ak_bckey_context_destroy(p_libakrypt_sec_key);
         return ak_error_message(error, __func__, "problem with decrypting enveloped data");
@@ -866,12 +986,17 @@ static int get_extended_key(s_pkcs_15_object *p_obj, struct skey *p_kek, struct 
     return ak_error_ok;
 }
 
-int read_keys_from_container(ak_byte *password,
-                             size_t pwd_size,
-                             ak_byte *inp_container,
-                             size_t inp_container_size,
-                             struct extended_key ***ppp_out_keys,
-                             ak_uint8 *num_of_out_keys) {
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param password пароль, из которого вырабатывается ключ для шифрования данных
+    @param pwd_size длинна пароля в байтах
+    @param inp_container указатель на DER последовательность
+    @param inp_container_size длинна DER последовательности в байтах
+    @param ppp_out_keys указатель на массив указателей на объекты из контейнера
+    @param num_of_out_keys количество объектов в контейнере
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+int read_keys_from_container(ak_byte *password, size_t pwd_size, ak_byte *inp_container, size_t inp_container_size, struct extended_key ***ppp_out_keys, ak_uint8 *num_of_out_keys) {
 
     int error;
     uint8_t i;
@@ -928,12 +1053,17 @@ int read_keys_from_container(ak_byte *password,
     return ak_error_ok;
 }
 
-int write_keys_to_container(struct extended_key **pp_inp_keys,
-                            ak_uint8 num_of_inp_keys,
-                            ak_pointer password,
-                            size_t password_size,
-                            ak_byte **pp_out_container,
-                            size_t *p_out_container_size) {
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param pp_inp_keys массив указателей на объекты, которые необходимо добавить в контенер
+    @param num_of_inp_keys количество объектов
+    @param password пароль (в кодировке UTF-8), из которого вырабатывается ключ для шифрования данных
+    @param password_size длинна пароля в байтах
+    @param pp_out_container указатель на массив с выходной DER последовательностью
+    @param p_out_container_size размер DER последовательности
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+int write_keys_to_container(struct extended_key **pp_inp_keys, ak_uint8 num_of_inp_keys, ak_pointer password, size_t password_size, ak_byte **pp_out_container, size_t *p_out_container_size) {
 
     int error;
     struct bckey kek;
@@ -1060,6 +1190,7 @@ char *key_usage_flags_to_str(key_usage_flags_t flags) {
     if (flags == 0)
         return NULL;
 
+    /* 112 - максимально возможный размер строки */
     char *str = calloc(112, sizeof(char));
     if (flags & ENCRYPT)
     { strcat(str, "ENCRYPT | "); }
@@ -1082,6 +1213,7 @@ char *key_usage_flags_to_str(key_usage_flags_t flags) {
     if (flags & NON_REPUDIATION)
     { strcat(str, "NON_REPUDIATION | "); }
 
+    /* Обрезаем последние 2 пробела и вертикальную черту " | " */
     str[strlen(str) - 3] = '\0';
     return str;
 }
