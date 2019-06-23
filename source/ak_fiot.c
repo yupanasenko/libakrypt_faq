@@ -280,6 +280,9 @@
   /* тип ключа аутентификации нам не ясен */
    fctx->epsk_type = undefined_key;
 
+  /* флаги расширений */
+   fctx->extensionFlags = 0;
+
  return error;
 }
 
@@ -1006,6 +1009,28 @@
 
     default: return 0;
   }
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ const char *ak_fiot_get_message_name( message_t mtype )
+{
+  switch( mtype ) {
+    case undefined_message: return "undefined message";
+    case client_hello: return "clientHello message";
+    case server_hello: return "serverHello message";
+    case verify_message: return "verify message";
+    case application_data: return "applicationData message";
+    case alert_message: return "alert message";
+    case generate_psk: return "generatePSK message";
+    case extension_request_certificate: return "requestCertificate extension";
+    case extension_certificate: return "certificate extension";
+    case extension_set_certificate: return "setCertificate extension";
+    case extension_inform_certificate: return "informCertificate extension";
+    case extension_request_identifer: return "requestIdentifier extension";
+    case extension_key_mechanism: return "keyMachanism extension";
+  }
+  ak_error_message( fiot_error_message_type, __func__, "using incorrect message type" );
+ return ak_null_string;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
