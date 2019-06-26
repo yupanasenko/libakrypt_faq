@@ -132,7 +132,8 @@ if( LIBAKRYPT_AKRYPT )
   set( AKRYPT_SOURCES
                     akrypt/akrypt.c
                     akrypt/akrypt_show.c
-                    akrypt/akrypt_icode.c )
+                    akrypt/akrypt_icode.c
+                    akrypt/akrypt_mgm.c ) # убрать
   set( AKRYPT_FILES
                     akrypt/akrypt.h
                     akrypt/akrypt.po

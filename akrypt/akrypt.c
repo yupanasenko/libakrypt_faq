@@ -80,6 +80,9 @@
   if( akrypt_check_command( "i", argv[1] )) return akrypt_icode( argc, argv );
   if( akrypt_check_command( "icode", argv[1] )) return akrypt_icode( argc, argv );
 
+  if( akrypt_check_command( "mgm", argv[1] )) return akrypt_mgm( argc, argv );
+
+
  /* ничего не подошло, выводим сообщение об ошибке */
   ak_log_set_function( ak_function_log_stderr );
   ak_error_message_fmt( ak_error_undefined_function,
