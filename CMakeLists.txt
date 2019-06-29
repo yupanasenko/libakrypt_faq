@@ -20,7 +20,7 @@ project( libakrypt C )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 7 )
-set( MINOR_VERSION 14 )
+set( MINOR_VERSION 15 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -132,8 +132,7 @@ if( LIBAKRYPT_AKRYPT )
   set( AKRYPT_SOURCES
                     akrypt/akrypt.c
                     akrypt/akrypt_show.c
-                    akrypt/akrypt_icode.c
-                    akrypt/akrypt_mgm.c ) # убрать
+                    akrypt/akrypt_icode.c )
   set( AKRYPT_FILES
                     akrypt/akrypt.h
                     akrypt/akrypt.po
@@ -331,6 +330,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                                    # при запуске make test
                  internal-bckey04
                  internal-mgm04
+                 internal-mgm05
   )
   if( LIBAKRYPT_HAVE_SYSUN )
     set( INTERNAL_TEST_LIST_EXAMPLES

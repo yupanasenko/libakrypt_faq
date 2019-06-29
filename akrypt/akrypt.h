@@ -96,9 +96,6 @@
  int akrypt_icode( int argc, TCHAR *argv[] );
  int akrypt_show( int argc, TCHAR *argv[] );
 
-/* удалить */
- int akrypt_mgm( int argc, TCHAR *argv[] );
-
  #endif
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                       akrypt.h  */
