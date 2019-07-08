@@ -1,3 +1,4 @@
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
 # -------------------------------------------------------------------------------------------------- #
 # сборка по умолчанию
 # cmake path && make
@@ -169,6 +170,7 @@ endif()
 if( LIBAKRYPT_PKCS_15_CONTAINER )
   set( HEADERS      ${HEADERS}
           source/pkcs_15_cryptographic_token/ak_asn_codec.h
+          source/asn_processor/ak_asn_codec_new.h
           source/pkcs_15_cryptographic_token/ak_pkcs_15_token_manager.h
           source/pkcs_15_cryptographic_token/ak_pkcs_15_algs_prms.h
           source/pkcs_15_cryptographic_token/ak_pkcs_15_common_types.h
@@ -179,6 +181,9 @@ if( LIBAKRYPT_PKCS_15_CONTAINER )
   set( SOURCES      ${SOURCES}
           source/pkcs_15_cryptographic_token/ak_asn_read.c
           source/pkcs_15_cryptographic_token/ak_asn_write.c
+          source/asn_processor/ak_asn_tree_manager.c
+          source/asn_processor/ak_asn_read_new.c
+          source/asn_processor/ak_asn_write_new.c
           source/pkcs_15_cryptographic_token/ak_pkcs_15_token_manager.c
           source/pkcs_15_cryptographic_token/ak_pkcs_15_common_types.c
           source/pkcs_15_cryptographic_token/ak_pkcs_15_token.c
@@ -369,6 +374,7 @@ endif()
 if( LIBAKRYPT_PKCS_15_CONTAINER )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
           internal-pkcs-15-container
+          internal-asn-handler
           )
 endif()
 
