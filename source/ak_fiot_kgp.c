@@ -743,7 +743,7 @@
                                                             "using fiot context with wrong role" );
          }
          if( !ak_buffer_is_assigned( id )) { /* идентификатор ранее не определялся */
-           if(( error = ak_buffer_set_ptr( &fctx->client_id,
+           if(( error = ak_buffer_set_ptr( id, //&fctx->client_id,
                                                      data+1, length-1, ak_true )) != ak_error_ok )
              return ak_error_message( error, __func__, "incorrect assigning a buffer value" );
          } else /* нам уже задано какое-то значение */
