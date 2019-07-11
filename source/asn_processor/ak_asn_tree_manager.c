@@ -58,7 +58,7 @@ static char tag_description[20] = "\0";
 /*! \brief Массив, содержащий префикс в выводимой строке с типом данных. */
 static char prefix[1000] = "\0";
 
-int ak_asn_create_constructed_tlv(ak_asn_tlv p_tlv, tag data_tag, bool_t free_mem)
+static int ak_asn_create_constructed_tlv(ak_asn_tlv p_tlv, tag data_tag)
 {
     if(!(data_tag & CONSTRUCTED))
         return ak_error_message(ak_error_invalid_value, __func__, "data must be constructed");;
@@ -84,12 +84,12 @@ int ak_asn_create_constructed_tlv(ak_asn_tlv p_tlv, tag data_tag, bool_t free_me
     p_tlv->m_data.m_constructed_data->m_alloc_size = 10;
     p_tlv->m_data.m_constructed_data->m_curr_size = 0;
 
-    p_tlv->m_free_mem = free_mem;
+    p_tlv->m_free_mem = ak_false;
 
     return ak_error_ok;
 }
 
-int ak_asn_create_primitive_tlv(ak_asn_tlv p_tlv, tag data_tag, size_t data_len, ak_pointer p_data, bool_t free_mem)
+static int ak_asn_create_primitive_tlv(ak_asn_tlv p_tlv, tag data_tag, size_t data_len, ak_pointer p_data, bool_t free_mem)
 {
     if((data_tag & PRIMITIVE) != 0)
         return ak_error_message(ak_error_invalid_value, __func__, "data must be primitive");
@@ -102,50 +102,109 @@ int ak_asn_create_primitive_tlv(ak_asn_tlv p_tlv, tag data_tag, size_t data_len,
     p_tlv->m_len_byte_cnt = new_asn_get_len_byte_cnt(data_len);
 
     /* Добавляем данные */
-    p_tlv->m_data.m_primitive_data = p_data;
+    if(free_mem)
+    {
+        p_tlv->m_data.m_primitive_data = malloc(data_len * sizeof(ak_byte));
+        if(!p_tlv->m_data.m_primitive_data)
+            return ak_error_out_of_memory;
+
+        memcpy(p_tlv->m_data.m_primitive_data, p_data, data_len);
+    }
+    else
+        p_tlv->m_data.m_primitive_data = p_data;
 
     p_tlv->m_free_mem = free_mem;
 
     return ak_error_ok;
 }
 
-int ak_asn_add_nested_elem(ak_asn_tlv p_tlv_parent, ak_asn_tlv p_tlv_child)
+int ak_asn_construct_data_ctx_create(ak_asn_tlv p_tlv, tag constructed_data_tag)
+{
+    int error; /* Код ошибки */
+
+    if(!p_tlv)
+        return ak_error_null_pointer;
+
+    if(constructed_data_tag & CONSTRUCTED)
+    {
+        if((error = ak_asn_create_constructed_tlv(p_tlv, constructed_data_tag)) != ak_error_ok)
+            return ak_error_message(error, __func__, "failure to create constructed tlv");
+    }
+    else
+        return ak_error_message(ak_error_invalid_value, __func__, "tag must specify constructed data");
+
+    return ak_error_ok;
+}
+
+
+int ak_asn_primitive_data_ctx_create(ak_asn_tlv p_tlv, tag data_tag, ak_uint32 data_len, ak_byte* p_data)
+{
+    int error; /* Код ошибки */
+
+    if(!p_tlv || !p_data)
+        return ak_error_null_pointer;
+
+    if((data_tag & PRIMITIVE) == 0)
+    {
+        if((error = ak_asn_create_primitive_tlv(p_tlv, data_tag, data_len, p_data, ak_true)) != ak_error_ok)
+            return ak_error_message(error, __func__, "failure to create primitive tlv");
+    }
+    else
+        return ak_error_message(ak_error_invalid_value, __func__, "tag must specify primitive data");
+
+    return ak_error_ok;
+}
+
+
+// TODO: Проверить правильность работы функции
+int ak_asn_add_nested_elems(ak_asn_tlv p_tlv_parent, ak_asn_tlv pp_tlv_children[], ak_uint8 count)
 {
     ak_uint8 index; /* Индекс элемента */
-    if(!p_tlv_parent || !p_tlv_child)
+    ak_uint8 curr_size; /* Текущее кол-во элементов в массиве */
+
+    if(!p_tlv_parent || !pp_tlv_children)
         return ak_error_null_pointer;
 
     if(!(p_tlv_parent->m_tag & CONSTRUCTED))
         return ak_error_message(ak_error_invalid_value, __func__, "parent element must be constructed");
 
-    if(p_tlv_parent->m_data.m_constructed_data->m_curr_size == p_tlv_parent->m_data.m_constructed_data->m_alloc_size)
+    if(!count)
+        return ak_error_message(ak_error_invalid_value, __func__, "children count equal to zero");
+
+    curr_size = p_tlv_parent->m_data.m_constructed_data->m_curr_size;
+    while(curr_size + count > p_tlv_parent->m_data.m_constructed_data->m_alloc_size)
     {
-        ak_asn_tlv* pp_new_mem;
         ak_uint32  new_size;
 
-
-        new_size = p_tlv_parent->m_data.m_constructed_data->m_curr_size + 10;
+        new_size = curr_size + 10;
         if(new_size > 255)
             return ak_error_message(ak_error_out_of_memory, __func__, "change type for storing number of nested elements");
 
-        pp_new_mem = malloc(new_size * sizeof(ak_asn_tlv));
-        if(!pp_new_mem)
-            return ak_error_out_of_memory;
+        ak_asn_realloc((ak_pointer*)&p_tlv_parent->m_data.m_constructed_data->m_arr_of_data, curr_size, new_size);
 
-        memcpy(pp_new_mem, p_tlv_parent->m_data.m_constructed_data->m_arr_of_data, p_tlv_parent->m_data.m_constructed_data->m_curr_size);
+//        pp_new_mem = malloc(new_size * sizeof(ak_asn_tlv));
+//        if(!pp_new_mem)
+//            return ak_error_out_of_memory;
+//
+//        memcpy(pp_new_mem, p_tlv_parent->m_data.m_constructed_data->m_arr_of_data, p_tlv_parent->m_data.m_constructed_data->m_curr_size);
 
         p_tlv_parent->m_data.m_constructed_data->m_alloc_size = (ak_uint8)new_size;
-
-        free(p_tlv_parent->m_data.m_constructed_data->m_arr_of_data);
-
-        p_tlv_parent->m_data.m_constructed_data->m_arr_of_data = pp_new_mem;
+//
+//        free(p_tlv_parent->m_data.m_constructed_data->m_arr_of_data);
+//
+//        p_tlv_parent->m_data.m_constructed_data->m_arr_of_data = pp_new_mem;
     }
 
-    index = p_tlv_parent->m_data.m_constructed_data->m_curr_size;
-    p_tlv_parent->m_data.m_constructed_data->m_arr_of_data[index] = p_tlv_child;
-    p_tlv_parent->m_data.m_constructed_data->m_curr_size++;
-    p_tlv_parent->m_data_len += TAG_LEN + p_tlv_child->m_len_byte_cnt + p_tlv_child->m_data_len;
+    for(index = 0; index < count; index++)
+    {
+        //index = p_tlv_parent->m_data.m_constructed_data->m_curr_size;
+        p_tlv_parent->m_data.m_constructed_data->m_arr_of_data[curr_size + index] = pp_tlv_children[index];
+        p_tlv_parent->m_data_len += TAG_LEN + pp_tlv_children[index]->m_len_byte_cnt + pp_tlv_children[index]->m_data_len;
+    }
+
+    p_tlv_parent->m_data.m_constructed_data->m_curr_size += count;
     p_tlv_parent->m_len_byte_cnt = new_asn_get_len_byte_cnt(p_tlv_parent->m_data_len);
+
     return ak_error_ok;
 }
 
@@ -462,4 +521,149 @@ void ak_asn_print_hex_data(ak_byte* p_data, ak_uint32 size)
     {
         printf("%02X ", p_data[i]);
     }
+}
+
+int ak_asn_decode(ak_pointer p_asn_data, size_t size, ak_asn_tlv p_tlv)
+{
+    ak_byte* p_begin;  /* Указатель на начало tlv */ //FIXME можно обойтись без него
+    ak_byte* p_curr;   /* Указатель на текущую позицию */
+    ak_byte* p_end;    /* Указатель на конец tlv */
+    tag      data_tag; /* Тег данных */
+    size_t   data_len; /* Длина данных */
+    int error;         /* Код ошибки */
+
+    if(!p_asn_data || !size || !p_tlv)
+        return ak_error_null_pointer;
+
+    p_begin = p_curr = p_asn_data;
+    p_end = p_begin + size;
+
+    new_asn_get_tag(&p_curr, &data_tag);
+    if(data_tag & CONSTRUCTED)
+    {
+        ak_asn_tlv p_nested_tlv;
+        if (ak_asn_create_constructed_tlv(p_tlv, data_tag) != ak_error_ok)
+            return -1;
+
+        new_asn_get_len(&p_curr, &data_len);
+
+        while(p_tlv->m_data_len < data_len)
+        {
+            p_nested_tlv = malloc(sizeof(s_asn_tlv_t));
+            if (!p_nested_tlv)
+                return ak_error_out_of_memory;
+            ak_asn_decode(p_curr, data_len, p_nested_tlv);
+
+            ak_asn_add_nested_elems(p_tlv, p_nested_tlv);
+            p_curr += 1 + p_nested_tlv->m_len_byte_cnt + p_nested_tlv->m_data_len;
+        }
+//        p_tlv->m_data.m_constructed_data->m_arr_of_data[0] = p_nested_tlv;
+//        p_tlv->m_data.m_constructed_data->m_curr_size++;
+    }
+    else
+    {
+        new_asn_get_len(&p_curr, &data_len);
+        if(p_curr + data_len > p_end)
+            return ak_error_message(ak_error_wrong_length, __func__, "wrong data length");
+
+        if((error = ak_asn_create_primitive_tlv(p_tlv, data_tag, data_len, p_curr, ak_false)) != ak_error_ok)
+            return ak_error_message(error, __func__, "can not create primitive tlv");
+    }
+
+    return ak_error_ok;
+}
+
+static int ak_asn_encode_tlv(ak_asn_tlv p_tlv, ak_byte** pp_pos, ak_byte* p_end)
+{
+    int error;      /* Код ошибки */
+    ak_uint32 size; /* Размер кодируемых данных */
+
+    if(!pp_pos || !p_end || !p_tlv)
+        return ak_error_null_pointer;
+
+    /* Вычисляем длину кодируемых в данный момент данных,
+     * чтобы проверить выход за границы выделенной памяти */
+    ak_asn_get_size(p_tlv, &size);
+    if((*pp_pos + size) > p_end)
+        return ak_error_message(ak_error_out_of_memory, __func__, "need more memory for encoding");
+
+    if(p_tlv->m_tag & CONSTRUCTED) /* Кодирование составных данных */
+    {
+        ak_uint8 index; /* Индекс элемента в массиве элементов составного объекта */
+
+        if((error = new_asn_put_tag(p_tlv->m_tag, pp_pos)) != ak_error_ok)
+            return ak_error_message(error, __func__, "failure in adding tag");
+
+        if((error = new_asn_put_len(p_tlv->m_data_len, p_tlv->m_len_byte_cnt, pp_pos)) != ak_error_ok)
+            return ak_error_message(error, __func__, "failure in adding data length");
+
+        for(index = 0; index < p_tlv->m_data.m_constructed_data->m_curr_size; index++)
+        {
+            if((error = ak_asn_encode_tlv(p_tlv->m_data.m_constructed_data->m_arr_of_data[index], pp_pos, p_end)) != ak_error_ok)
+                return error; /* Никакого сообщения не выводится, иначе выведется много одинаковых строчек (из-за рекурсии) */
+        }
+    }
+    else /* Кодирование примитивных данных */
+    {
+        new_asn_put_tag(p_tlv->m_tag, pp_pos);
+        new_asn_put_len(p_tlv->m_data_len, p_tlv->m_len_byte_cnt, pp_pos);
+        memcpy(*pp_pos, p_tlv->m_data.m_primitive_data, p_tlv->m_data_len);
+        (*pp_pos) +=  p_tlv->m_data_len;
+    }
+
+    return ak_error_ok;
+}
+
+int ak_asn_encode(ak_asn_tlv p_tlv, ak_byte** pp_asn_data, ak_uint32* p_size)
+{
+    int error; /* Код ошибки */
+    ak_byte* p_curr_pos; /* Указатель на текущую позицию в буфере с ASN.1 данными */
+
+    if(!pp_asn_data || !p_size || !p_tlv)
+        return ak_error_null_pointer;
+
+    /* Пересчитываем длины, чтобы защититься от нежелательных ошибок */
+    if((error = ak_asn_update_size(p_tlv)) != ak_error_ok)
+        return ak_error_message(error, __func__, "failure in recalculating size");
+
+    /* Вычисляем объем памяти, необходимый для кодирования данных */
+    if((error = ak_asn_get_size(p_tlv, p_size)) != ak_error_ok)
+        return ak_error_message(error, __func__, "failure in getting size");
+
+    /* Выделяем память */
+    *pp_asn_data = p_curr_pos = (ak_byte*)malloc(*p_size);
+    if(!p_curr_pos)
+    {
+        *p_size = 0;
+        return ak_error_out_of_memory;
+    }
+
+    /* Кодируем данные */
+    if((error = ak_asn_encode_tlv(p_tlv, &p_curr_pos, p_curr_pos + (*p_size))) != ak_error_ok)
+        return ak_error_message(error, __func__, "failure in encoding ASN.1 data");
+
+    return ak_error_ok;
+}
+
+int ak_asn_realloc(ak_pointer* pp_mem, size_t old_size, size_t new_size)
+{
+    ak_pointer p_new_mem;
+
+    if(!pp_mem)
+        return ak_error_wrong_length;
+
+    if(!(*pp_mem) || (new_size <= old_size))
+        return ak_error_invalid_value;
+
+    p_new_mem = malloc(new_size * sizeof(ak_asn_tlv));
+    if(!p_new_mem)
+        return ak_error_out_of_memory;
+
+    memcpy(p_new_mem, *pp_mem, old_size);
+
+    free(*pp_mem);
+
+    *pp_mem = p_new_mem;
+
+    return ak_error_ok;
 }

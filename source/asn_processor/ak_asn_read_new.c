@@ -23,55 +23,7 @@
 #error Library cannot be compiled without ctype.h header
 #endif
 
-int ak_asn_decode(ak_pointer p_asn_data, size_t size, ak_asn_tlv p_tlv)
-{
-    ak_byte* p_begin;  /* Указатель на начало tlv */ //FIXME можно обойтись без него
-    ak_byte* p_curr;   /* Указатель на текущую позицию */
-    ak_byte* p_end;    /* Указатель на конец tlv */
-    tag      data_tag; /* Тег данных */
-    size_t   data_len; /* Длина данных */
-    int error;         /* Код ошибки */
 
-    if(!p_asn_data || !size || !p_tlv)
-        return ak_error_null_pointer;
-
-    p_begin = p_curr = p_asn_data;
-    p_end = p_begin + size;
-
-    new_asn_get_tag(&p_curr, &data_tag);
-    if(data_tag & CONSTRUCTED)
-    {
-        ak_asn_tlv p_nested_tlv;
-        if (ak_asn_create_constructed_tlv(p_tlv, data_tag, ak_false) != ak_error_ok)
-            return -1;
-
-        new_asn_get_len(&p_curr, &data_len);
-
-        while(p_tlv->m_data_len < data_len)
-        {
-            p_nested_tlv = malloc(sizeof(s_asn_tlv_t));
-            if (!p_nested_tlv)
-                return ak_error_out_of_memory;
-            ak_asn_decode(p_curr, data_len, p_nested_tlv);
-
-            ak_asn_add_nested_elem(p_tlv, p_nested_tlv);
-            p_curr += 1 + p_nested_tlv->m_len_byte_cnt + p_nested_tlv->m_data_len;
-        }
-//        p_tlv->m_data.m_constructed_data->m_arr_of_data[0] = p_nested_tlv;
-//        p_tlv->m_data.m_constructed_data->m_curr_size++;
-    }
-    else
-    {
-        new_asn_get_len(&p_curr, &data_len);
-        if(p_curr + data_len > p_end)
-            return ak_error_message(ak_error_wrong_length, __func__, "wrong data length");
-
-        if((error = ak_asn_create_primitive_tlv(p_tlv, data_tag, data_len, p_curr,ak_false)) != ak_error_ok)
-            return ak_error_message(error, __func__, "can not create primitive tlv");
-    }
-
-    return ak_error_ok;
-}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! На данный момент разбираюся только теги,

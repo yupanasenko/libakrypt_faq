@@ -143,10 +143,17 @@ typedef struct s_asn_tlv* ak_asn_tlv;
 int ak_asn_encode(ak_asn_tlv p_tlv, ak_byte** pp_asn_data, ak_uint32* p_size);
 /*! \brief Функция декодирования ASN.1 данных. */
 int ak_asn_decode(ak_pointer p_asn_data, size_t size, ak_asn_tlv p_tlv);
-/*! \brief Функция заполнения корневого элемента. */
-int ak_asn_fill_root_tlv(ak_asn_tlv p_tlv, tag data_tag, ak_pointer p_data);
-/*! \brief Функция добавление данных в составной элемент ASN.1. */
-int ak_asn_add(ak_asn_tlv p_tlv, tag data_tag, ak_pointer p_data, int (*encode)(ak_pointer, ak_pointer));
+/*! \brief Функция создания контекста составных данных. */
+int ak_asn_construct_data_ctx_create(ak_asn_tlv p_tlv, tag constructed_data_tag);
+/*! \brief Функция создания контекста примитивных данных. */
+
+// TODO: Добавить в функцию аргумент, который указывал бы, владеет ли контекст данными
+//       или просто указывает на них. bool_t *p_data_copied:
+//              1) Если значение *p_data_copied == ak_true, то данные копируются в объект s_asn_tlv;
+//              2) Если значение *p_data_copied == ak_false, то объект s_asn_tlv просто ссылается на данные;
+//              3) Если значение p_data_copied == NULL, то см. п. 1);
+
+int ak_asn_primitive_data_ctx_create(ak_asn_tlv p_tlv, tag data_tag, ak_uint32 data_len, ak_byte* p_data);
 /*! \brief Функция получения размера памяти, необходимого для кодирования ASN.1 данных. */
 int ak_asn_get_size(ak_asn_tlv p_tlv, ak_uint32* p_size);
 /*! \brief Функция пересчета длинны составных данных. (Используется для обновления информации о длинах после изменений.) */
@@ -157,14 +164,9 @@ void ak_asn_print_tree(ak_asn_tlv p_tree);
 /*! \brief Функция вывода шестнадцатеричных данных. */
 void ak_asn_print_hex_data(ak_byte* p_data, ak_uint32 size);
 
-int ak_asn_create_constructed_tlv(ak_asn_tlv p_tlv, tag data_tag, bool_t free_mem);
-int ak_asn_create_primitive_tlv(ak_asn_tlv p_tlv, tag data_tag, size_t data_len, ak_pointer p_data, bool_t free_mem);
-int ak_asn_add_nested_elem(ak_asn_tlv p_tlv_parent, ak_asn_tlv p_tlv_child);
-
-//int ak_asn_add_nested_elem(ak_asn_tlv p_tlv_parent, ak_asn_tlv p_tlv_child);
-
-//int ak_asn_create_primitive_tlv(ak_asn_tlv p_tlv, tag data_tag, size_t data_len, ak_pointer p_data);
-//int ak_asn_create_constructed_tlv(ak_asn_tlv p_tlv, tag data_tag);
+// TODO: Добавить функцию удаления дочернего элемента
+//       функция должна принимать либо адрес элемента, либо индекс элемента
+int ak_asn_add_nested_elems(ak_asn_tlv p_tlv_parent, ak_asn_tlv pp_tlv_children[], ak_uint8 count);
 
 
 /*! \brief Декодирование тега из ASN.1 последовательности. */
@@ -246,6 +248,8 @@ ak_uint8 new_asn_get_oid_byte_cnt(object_identifier oid);
 
 /*! \brief Метод для определения необходимого кол-ва памяти для хранения времени в общепринятом формате. */
 ak_uint8 new_asn_get_gentime_byte_cnt(generalized_time time);
+
+int ak_asn_realloc(ak_pointer* pp_mem, size_t old_size, size_t new_size);
 
 /*! \brief Освобождение памяти. */
 void asn_free_int(integer *p_val);
