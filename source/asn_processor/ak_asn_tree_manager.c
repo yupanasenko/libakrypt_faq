@@ -554,7 +554,7 @@ int ak_asn_decode(ak_pointer p_asn_data, size_t size, ak_asn_tlv p_tlv)
                 return ak_error_out_of_memory;
             ak_asn_decode(p_curr, data_len, p_nested_tlv);
 
-            ak_asn_add_nested_elems(p_tlv, p_nested_tlv);
+            ak_asn_add_nested_elems(p_tlv, &p_nested_tlv, 1);
             p_curr += 1 + p_nested_tlv->m_len_byte_cnt + p_nested_tlv->m_data_len;
         }
 //        p_tlv->m_data.m_constructed_data->m_arr_of_data[0] = p_nested_tlv;
