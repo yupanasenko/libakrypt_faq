@@ -156,7 +156,9 @@ extern "C" {
 /*! \brief Попытка доступа к неопределенной опции библиотеки. */
  #define ak_error_wrong_option                 (-8)
 /*! \brief Ошибка использования неправильного значения. */
-#define ak_error_invalid_value                 (-9)
+ #define ak_error_invalid_value                 (-9)
+/*! \brief Ошибка доступа за пределы массива. */
+ #define ak_error_wrong_index                  (-9)
 
 /*! \brief Ошибка создания файла. */
  #define ak_error_create_file                 (-10)
@@ -276,8 +278,6 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тип криптографического механизма. */
  typedef enum {
-   /*! \brief неопределенный механизм, может возвращаться как ошибка */
-     undefined_engine,
    /*! \brief идентификатор */
      identifier,
    /*! \brief симметричный шифр (блочный алгоритм)  */
@@ -303,14 +303,14 @@ extern "C" {
    /*! \brief генератор случайных и псевдо-случайных последовательностей */
      random_generator,
    /*! \brief механизм идентификаторов криптографических алгоритмов */
-     oid_engine
+     oid_engine,
+   /*! \brief неопределенный механизм, может возвращаться как ошибка */
+     undefined_engine
 } oid_engines_t;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Режим и параметры использования криптографического механизма. */
  typedef enum {
-   /*! \brief неопределенный режим, может возвращаться в как ошибка */
-     undefined_mode,
    /*! \brief собственно криптографический механизм (алгоритм) */
      algorithm,
    /*! \brief данные */
@@ -340,7 +340,9 @@ extern "C" {
    /*! \brief режим гаммирования поточного шифра (сложение по модулю 2) */
      xcrypt,
    /*! \brief гаммирование по модулю \f$ 2^8 \f$ поточного шифра */
-     a8
+     a8,
+   /*! \brief неопределенный режим, может возвращаться в как ошибка */
+     undefined_mode
 } oid_modes_t;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -359,21 +361,45 @@ extern "C" {
  dll_export bool_t ak_libakrypt_dynamic_control_test( void );
 
 /* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup hash_functions Функции внешнего интерфейса для работы с алгоритмами хэширования
- *  \details Функции из данной группы предназначены для ...
+/** \addtogroup mac_functions Функции итерационного сжатия (Внешний интрефейс)
  * @{*/
 /*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
- dll_export ak_handle ak_hash_new_streebog256( const char * );
-/*! \brief Создание дескриптора бесключевой функции хеширования Стрибог512. */
- dll_export ak_handle ak_hash_new_streebog512( const char * );
-/*! \brief Создание дескриптора бесключевой функции хеширования. */
- dll_export ak_handle ak_hash_new_oid_ni( const char *, const char * );
-/*! \brief Получение длины хэш-кода (в байтах). */
- dll_export size_t ak_hash_get_size( ak_handle );
-/*! \brief Вычисление хэш-кода для заданной области памяти. */
- dll_export ak_buffer ak_hash_ptr( ak_handle , const ak_pointer , const size_t , ak_pointer );
-/*! \brief Вычисление хэш-кода для заданного файла. */
- dll_export ak_buffer ak_hash_file( ak_handle , const char *, ak_pointer );
+ dll_export ak_handle ak_mac_new_streebog256( const char * );
+/*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
+ dll_export ak_handle ak_mac_new_streebog512( const char * );
+/*! \brief Создание дескриптора функции HMAC на основе алгоритма Стрибог256. */
+ dll_export ak_handle ak_mac_new_hmac_streebog256( const char * );
+/*! \brief Создание дескриптора функции HMAC на основе алгоритма Стрибог512. */
+ dll_export ak_handle ak_mac_new_hmac_streebog512( const char * );
+/*! \brief Создание дескриптора функции выработки имитовставки OMAC на основе алгоритма Магма. */
+ dll_export ak_handle ak_mac_new_omac_magma( const char * );
+/*! \brief Создание дескриптора функции выработки имитовставки OMAC на основе алгоритма Кузнечик. */
+ dll_export ak_handle ak_mac_new_omac_kuznechik( const char * );
+/*! \brief Создание дескриптора функции выработки имитовставки OMAC на основе алгоритма Магма. */
+ dll_export ak_handle ak_mac_new_mgm_magma( const char * );
+/*! \brief Создание дескриптора функции выработки имитовставки OMAC на основе алгоритма Kузнечик. */
+ dll_export ak_handle ak_mac_new_mgm_kuznechik( const char * );
+/*! \brief Создание дескриптора произвольного алгоритма итерационного сжатия. */
+ dll_export ak_handle ak_mac_new_oid( const char *, const char * );
+/*! \brief Проверка, допускает ли алгоритм использование секретного ключа. */
+ dll_export bool_t ak_mac_is_key_settable( ak_handle );
+/*! \brief Присвоение ключу случайного значения. */
+ dll_export int ak_mac_set_key_random( ak_handle );
+/*! \brief Присвоение значения, выработанного из пароля. */
+ dll_export int ak_mac_set_key_from_password( ak_handle, const ak_pointer , const size_t ,
+                                                                 const ak_pointer , const size_t );
+/*! \brief Проверка, допускает ли алгоритм использование синхропосылки. */
+ dll_export bool_t ak_mac_is_iv_settable( ak_handle );
+/*! \brief Присвоение значения используемой в алгоритме синхропосылки. */
+ dll_export int ak_mac_set_iv( ak_handle, ak_pointer , const size_t );
+/*! \brief Получение длины используемой синхропосылки (в байтах). */
+ dll_export size_t ak_mac_get_iv_size( ak_handle );
+/*! \brief Получение длины результата работы алгоритма итерационного сжатия (в байтах). */
+ dll_export size_t ak_mac_get_size( ak_handle );
+/*! \brief Вычисление результата работы алгоритма итерационного сжатия для заданной области памяти. */
+ dll_export ak_buffer ak_mac_ptr( ak_handle , ak_pointer , const size_t , ak_pointer );
+/*! \brief Вычисление результата работы алгоритма итерационного сжатия для заданного файла. */
+ dll_export ak_buffer ak_mac_file( ak_handle , const char *, ak_pointer );
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -419,6 +445,15 @@ extern "C" {
  dll_export const char *ak_libakrypt_get_mode_name( const oid_modes_t );
 /*! \brief Получение общего количества определенных OID библиотеки. */
  dll_export size_t ak_libakrypt_oids_count( void );
+/*! \brief Функция возвращает максимальную длину массива, необходимого для хранения имени или
+    идентификатора алгоритма. */
+ dll_export size_t ak_libakrypt_get_oid_max_length( void );
+/*! \brief Получение информации об oid с заданным индексом. */
+ dll_export int ak_libakrypt_get_oid_by_index( const size_t ,
+                  oid_engines_t * , oid_modes_t * , char * , const size_t, char * , const size_t );
+/*! \brief Получение информации об oid алгоритма по его handle. */
+ dll_export int ak_libakrypt_get_oid_by_handle( ak_handle ,
+                  oid_engines_t * , oid_modes_t * , char * , const size_t, char * , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание буффера заданного размера. */
@@ -458,6 +493,8 @@ extern "C" {
                                                                      const size_t , const bool_t );
 /*! \brief Конвертация строки шестнадцатеричных символов в массив данных. */
  dll_export int ak_hexstr_to_ptr( const char *, ak_pointer , const size_t , const bool_t );
+/*! \brief Функция высчитывает максимальную длину в байтах последовательности шестнадцатеричных символов. */
+ dll_export ssize_t ak_hexstr_size( const char * );
 /*! \brief Сравнение двух областей памяти. */
  dll_export bool_t ak_ptr_is_equal( ak_const_pointer, ak_const_pointer , const size_t );
 

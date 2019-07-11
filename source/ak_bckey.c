@@ -148,7 +148,7 @@
   if( oid->func.create == NULL )
     return ak_error_message( ak_error_undefined_function, __func__ ,
                                              "using block cipher oid with undefined constructor" );
- /* инициализируем контекст функции хеширования */
+ /* инициализируем контекст */
   if(( error = (( ak_function_bckey_create *)oid->func.create )( bkey )) != ak_error_ok )
     return ak_error_message_fmt( error, __func__,
                                         "invalid creation of %s block cipher context", oid->name );
@@ -180,17 +180,17 @@
     @return Функция возвращает код ошибки. В случае успеха возвращается \ref ak_error_ok (ноль).   */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_set_key( ak_bckey bkey,
-                                   const ak_pointer keyptr, const size_t size, const bool_t cflag )
+                                  const ak_pointer keyptr, const size_t size, const bool_t cflag )
 {
   int error = ak_error_ok;
 
  /* проверяем входные данные */
   if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                        "using null pointer to secret key context" );
+                                                      "using null pointer to secret key context" );
   if( keyptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                  "using null pointer to key data" );
+                                                                "using null pointer to key data" );
   if( size != bkey->key.key.size ) return ak_error_message( ak_error_wrong_length, __func__,
-                                         "using a constant value for secret key with wrong length" );
+                                       "using a constant value for secret key with wrong length" );
  /* присваиваем ключевой буффер */
   if(( error = ak_skey_context_set_key( &bkey->key, keyptr, size, cflag )) != ak_error_ok )
     return ak_error_message( error, __func__ , "incorrect assigning of fixed key data" );
@@ -200,6 +200,17 @@
   if( error != ak_error_ok )
     ak_error_message( error, __func__, "incorrect execution of key scheduling procedure" );
 
+ /* устанавливаем ресурс использования серетного ключа */
+  if( bkey->bsize == 8 ) {
+   if(( error = ak_skey_context_set_resource( &bkey->key,
+                      block_counter_resource, "magma_cipher_resource", 0, 0 )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect assigning \"magma_cipher_resource\" option" );
+  } else {
+      if(( error = ak_skey_context_set_resource( &bkey->key,
+                     block_counter_resource, "kuznechik_cipher_resource", 0, 0 )) != ak_error_ok )
+        ak_error_message( error, __func__,
+                                      "incorrect assigning \"kuznechik_cipher_resource\" option" );
+    }
  return error;
 }
 
@@ -234,6 +245,17 @@
   if( error != ak_error_ok )
     ak_error_message( error, __func__, "incorrect execution of key scheduling procedure" );
 
+ /* устанавливаем ресурс использования серетного ключа */
+  if( bkey->bsize == 8 ) {
+   if(( error = ak_skey_context_set_resource( &bkey->key,
+                      block_counter_resource, "magma_cipher_resource", 0, 0 )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect assigning \"magma_cipher_resource\" option" );
+  } else {
+      if(( error = ak_skey_context_set_resource( &bkey->key,
+                     block_counter_resource, "kuznechik_cipher_resource", 0, 0 )) != ak_error_ok )
+        ak_error_message( error, __func__,
+                                      "incorrect assigning \"kuznechik_cipher_resource\" option" );
+    }
  return error;
 }
 
@@ -275,6 +297,18 @@
   if( bkey->schedule_keys != NULL ) error = bkey->schedule_keys( &bkey->key );
   if( error != ak_error_ok )
     ak_error_message( error, __func__, "incorrect execution of key scheduling procedure" );
+
+ /* устанавливаем ресурс использования серетного ключа */
+  if( bkey->bsize == 8 ) {
+   if(( error = ak_skey_context_set_resource( &bkey->key,
+                      block_counter_resource, "magma_cipher_resource", 0, 0 )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect assigning \"magma_cipher_resource\" option" );
+  } else {
+      if(( error = ak_skey_context_set_resource( &bkey->key,
+                     block_counter_resource, "kuznechik_cipher_resource", 0, 0 )) != ak_error_ok )
+        ak_error_message( error, __func__,
+                                      "incorrect assigning \"kuznechik_cipher_resource\" option" );
+    }
 
  return error;
 }

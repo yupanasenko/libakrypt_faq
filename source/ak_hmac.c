@@ -65,10 +65,6 @@
  /* доопределяем oid ключа */
   hctx->key.oid = oid;
 
- /* устанавливаем ресурс ключа */
-  if(( error = ak_skey_context_set_resource( &hctx->key,
-                                key_using_resource, "hmac_key_count_resource" )) != ak_error_ok )
-    ak_error_message( error, __func__, "incorrect assigning \"hmac_key_count_resource\" option" );
  return error;
 }
 
@@ -163,7 +159,11 @@
         return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
   }
 
- return ak_error_ok;
+ /* устанавливаем ресурс ключа */
+  if(( error = ak_skey_context_set_resource( &hctx->key,
+                          key_using_resource, "hmac_key_count_resource", 0, 0 )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect assigning \"hmac_key_count_resource\" option" );
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -186,7 +186,12 @@
   if(( error = ak_skey_context_set_key_random( &hctx->key, generator )) != ak_error_ok )
     return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
 
- return ak_error_ok;
+ /* устанавливаем ресурс ключа */
+  if(( error = ak_skey_context_set_resource( &hctx->key,
+                          key_using_resource, "hmac_key_count_resource", 0, 0 )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect assigning \"hmac_key_count_resource\" option" );
+
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -218,7 +223,12 @@
                                           pass, pass_size, salt, salt_size )) != ak_error_ok )
     return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
 
- return ak_error_ok;
+ /* устанавливаем ресурс ключа */
+  if(( error = ak_skey_context_set_resource( &hctx->key,
+                          key_using_resource, "hmac_key_count_resource", 0, 0 )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect assigning \"hmac_key_count_resource\" option" );
+
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

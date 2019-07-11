@@ -52,14 +52,17 @@
     case hmac_function:
                   oid = (( ak_hmac ) ctx )->key.oid;
                   break;
-//    case omac_function:
-//                  oid = (( ak_omac ) ctx )->bkey.key.oid;
-//                  break;
-//    case block_cipher:
-//                  oid = (( ak_bckey ) ctx )->key.oid;
-//                  break;
+    case omac_function:
+                  oid = (( ak_omac ) ctx )->bkey.key.oid;
+                  break;
+    case block_cipher:
+                  oid = (( ak_bckey ) ctx )->key.oid;
+                  break;
     case sign_function:
                   oid = (( ak_signkey ) ctx )->key.oid;
+                  break;
+    case mac_function:
+                  oid = ak_mac_context_get_oid( (ak_mac) ctx );
                   break;
     default: oid = NULL;
   }

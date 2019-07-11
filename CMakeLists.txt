@@ -15,12 +15,12 @@
 # сборка при MinGW из консоли MSYS (WINDOWS)
 # cmake -G "MinGW Makefiles" -D CMAKE_C_COMPILER=gcc path && mingw32-make
 # -------------------------------------------------------------------------------------------------- #
-cmake_minimum_required( VERSION 3.2 )
+cmake_minimum_required( VERSION 2.7 )
 project( libakrypt C )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 7 )
-set( MINOR_VERSION 13 )
+set( MINOR_VERSION 14 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -129,16 +129,19 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_AKRYPT )
+  set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
   set( AKRYPT_SOURCES
                     akrypt/akrypt.c
                     akrypt/akrypt_show.c
-                    akrypt/akrypt_hash.c )
+                    akrypt/akrypt_icode.c )
   set( AKRYPT_FILES
                     akrypt/akrypt.h
                     akrypt/akrypt.po
                     akrypt/getopt.h
                     akrypt/getopt.c
-                    akrypt/Readme.md )
+                    akrypt/Readme.md
+                    akrypt/akrypt.1
+                    akrypt/akrypt.md )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -297,6 +300,11 @@ set( EXAMPLES_LIST hello
                    log
                    buffer
 )
+if( LIBAKRYPT_CRYPTO_FUNCTIONS )
+  set( EXAMPLES_LIST ${EXAMPLES_LIST}
+                   mac
+  )
+endif()
 
 # организуем сборку примеров со статической линковкой
 if( LIBAKRYPT_STATIC_LIB )

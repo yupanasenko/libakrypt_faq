@@ -58,3 +58,12 @@ if( LIBAKRYPT_PDF_DOC )
     message("-- Script for documentation in PDF format is done (now \"make pdf\" enabled)")
   endif()
 endif()
+
+# -------------------------------------------------------------------------------------------------- #
+# пробуем выработать свежую версию документации для утилиты akrypt
+find_program( PANDOC pandoc )
+if( PANDOC )
+  execute_process( COMMAND pandoc -s -t man
+               ${CMAKE_SOURCE_DIR}/akrypt/akrypt.md -o ${CMAKE_SOURCE_DIR}/akrypt/akrypt.1 )
+  message("-- Manual file akrypt.1 updated" )
+endif()

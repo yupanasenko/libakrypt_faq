@@ -74,7 +74,7 @@
   if(( error = ak_bckey_context_set_key( bkey, new_key, bkey->key.key.size, ak_true )) != ak_error_ok )
     ak_error_message( error, __func__ , "can't replace key by new using acpkm" );
    else {
-           bkey->key.resource.type = key_using_resource;
+           bkey->key.resource.value.type = key_using_resource;
            bkey->key.resource.value.counter = counter;
         }
   ak_ptr_wipe( new_key, sizeof( new_key ), &bkey->key.generator, ak_true );
@@ -200,8 +200,8 @@
   if( seclen > maxseclen ) return ak_error_message( ak_error_wrong_length, __func__,
                                                                  "section has very large length" );
  /* проверяем ресурс ключа перед использованием */
-  if( bkey->key.resource.type != key_using_resource ) { /* мы пришли сюда в первый раз */
-    bkey->key.resource.type = key_using_resource;
+  if( bkey->key.resource.value.type != key_using_resource ) { /* мы пришли сюда в первый раз */
+    bkey->key.resource.value.type = key_using_resource;
     bkey->key.resource.value.counter = mcount; /* здесь находится максимальное число сообщений,
                                                   которые могут быть зашифрованы на данном ключе */
   } else {

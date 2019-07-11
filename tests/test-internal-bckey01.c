@@ -4,6 +4,7 @@
 
    test-internal-bckey01.c
 */
+ #include <time.h>
  #include <stdio.h>
  #include <string.h>
  #include <ak_bckey.h>
@@ -11,6 +12,7 @@
  void print_key_info( ak_bckey skey )
 {
   size_t i = 0;
+  char *bc = "block counter", *rc = "key usage counter";
 
   printf("\n%s (%s)\nkey:\t", skey->key.oid->name, skey->key.oid->id );
   for( i = 0; i < skey->key.key.size; i++ ) printf("%02X", ((ak_uint8 *)skey->key.key.data)[i] );
@@ -20,6 +22,10 @@
   for( i = 0; i < skey->key.icode.size; i++ ) printf("%02X", ((ak_uint8 *)skey->key.icode.data)[i] );
   if( skey->key.check_icode( &skey->key ) == ak_true ) printf(" (Ok)\n");
    else printf(" (Wrong)\n");
+  printf("resource: [value = %u, type = %s]\n", (unsigned int)skey->key.resource.value.counter,
+                              skey->key.resource.value.type == block_counter_resource ? bc : rc );
+  printf("not before: %s", ctime( &skey->key.resource.time.not_before ));
+  printf("not after:  %s", ctime( &skey->key.resource.time.not_after ));
 
   skey->key.unmask( &skey->key ); /* снимаем маску */
   printf("\nreal:\t");

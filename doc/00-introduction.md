@@ -2,10 +2,11 @@
 
 Библиотека `libakrypt` представляет собой модуль, реализующий криптографические
 преобразования в пространстве пользователя. Цель разработки библиотеки заключается в создании СКЗИ
-с открытым исходным кодом, удовлетворяющего методическим рекомендациям Р 1323565.1.012-2017
+с открытым исходным кодом, удовлетворяющего рекомендациям по стандартизации
+[Р 1323565.1.012-2017](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-012-2017-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-printsipy-razrabotki-i-modernizatsii-shifrovalnykh-kriptograficheskikh-sredstv-zashchity-informatsii.html)
 «Информационная технология. Криптографическая защита информации.
 Принципы разработки и модернизации шифровальных (криптографических) средств защиты
-информации» по классу КС3 (подробности см. [здесь](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-012-2017-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-printsipy-razrabotki-i-modernizatsii-shifrovalnykh-kriptograficheskikh-sredstv-zashchity-informatsii.html)).
+информации» по классу КС3.
 
 ## Возможности
 
@@ -19,27 +20,27 @@
  2. Алгоритмы блочного шифрования данных «Магма» и «Кузнечик», регламентируемые
    стандартом [ГОСТ Р 34.12-2015](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-12-2015-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-blochnye-shifry.html).
 
- 3. Механизмы зашифрования/расшифрования данных c помощью алгоритмов блочного шифрования
+ 3. Процедуры зашифрования/расшифрования данных c помощью алгоритмов блочного шифрования
    в следующих режимах (согласно [ГОСТ Р 34.13-2015](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-13-2015-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-rezhimy-raboty-blochnykh-shifrov.html)):
-    * режим простой замены (ECB, electronic codebook mode);
-    * режим гаммирования (CTR, counter mode);
-    * режим гаммирования с обратной связью по выходу (OFB, output feedback mode);
-    * режим простой замены с зацеплением (CBC, cipher block chaining mode);
-    * режим гаммирования с обратной связью по шифртексту (CFB, cipher feedback mode).
+    * режим простой замены (`ECB`, `electronic codebook mode`);
+    * режим гаммирования (`CTR`, `counter mode`);
+    * режим гаммирования с обратной связью по выходу (`OFB`, `output feedback mode`);
+    * режим простой замены с зацеплением (`CBC`, `cipher block chaining mode`);
+    * режим гаммирования с обратной связью по шифртексту (`CFB`, `cipher feedback mode`).
 
- 4. Режим работы блочных шифров ACPKM, регламентируемый рекомендациями по стандартизации
-[Р 1323565.1.017-2018](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-017-2018-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-kriptograficheskie-algoritmy-soputstvuyushchie-primeneniyu-algoritmov-blochnogo-shifrovaniya.html)
+ 4. Режим работы блочных шифров `ACPKM`, регламентируемый рекомендациями по стандартизации
+[Р 1323565.1.017-2018](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-017-2018-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-kriptograficheskie-algoritmy-soputstvuyushchie-primeneniyu-algoritmov-blochnogo-shifrovaniya.html).
 
- 5. Режим работы блочных шифров, реализующий аутентифицированное шифрование (режим MGM).
+ 5. Режим работы блочных шифров, реализующий аутентифицированное шифрование (режим `MGM`).
 
  6. Алгоритмы выработки имитовставки (кода аутентичности сообщения):
-    * алгоритм выработки имитовставки HMAC, регламентированный рекомендациями по
+    * алгоритм выработки имитовставки `HMAC`, регламентированный рекомендациями по
     стандартизации [Р 50.1.113-2016](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-50-1-113-2016-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-kriptograficheskie-algoritmy-soputstvuyushchie-primeneniyu-algoritmov-elektronnoy-tsifrovoy-podpisi-i-funktsii-kheshirovaniya.html) и
     основанный на применении функций хеширования «Стрибог-256» и «Стрибог-512»;
-    * алгоритм выработки имитовставки OMAC1 (CMAC), регламентированный стандартом [ГОСТ Р 34.13-2015](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-13-2015-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-rezhimy-raboty-blochnykh-shifrov.html) и
+    * алгоритм выработки имитовставки `OMAC1` (`CMAC`), регламентированный стандартом [ГОСТ Р 34.13-2015](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-13-2015-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-rezhimy-raboty-blochnykh-shifrov.html) и
     использующий алгоритмы блочного шифрования «Магма» или «Кузнечик».
 
- 7. Алгоритм развертки ключа из пароля PBKDF2, регламентированный рекомендациями по стандартизации
+ 7. Алгоритм развертки ключа из пароля `PBKDF2`, регламентированный рекомендациями по стандартизации
    [Р 50.1.111-2016](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-50-1-111-2016-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-parolnaya-zashchita-klyuchevoy-informatsii.html)
    и использующий функции хеширования «Стрибог-256» и «Стрибог-512».
 
@@ -49,7 +50,7 @@
       с умножением в кольце вычетов в качестве нелинейной функции выхода (используется для маскирования ключевой информации),
     * генератор-интерфейс, использующий чтение из произвольных файлов, в частности,
        файловых устройств `/dev/random` и `/dev/urandom`;
-    * генератор-интерфейс к системному генератору псевдо-случайных значений, реализованному в ОС Windows.
+    * генератор-интерфейс к системному генератору псевдо-случайных значений, реализованному в ОС `Windows`.
     * семейство генераторов, построенных с использованием функций хеширования
       согласно рекомендациям по стандартизации
       [Р 1323565.1.006-2017](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-006-2017-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-mekhanizmy-vyrabotki-psevdosluchaynykh-posledovatelnostey.html).
@@ -57,13 +58,14 @@
  9. Алгоритмы, реализующие арифметику Монтгомери для эффективных вычислений в конечных простых полях
    фиксированной размерности 256 и 512 бит.
 
-10. Алгоритмы, реализующие операции в группах точек эллиптических кривых,
-   удовлетворяющих требованиям стандарта [ГОСТ Р 34.10-2012](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-10-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-protsessy-formirovaniya-i-proverki-elektronnoy-tsifrovoy-podpisi.html).
+ 10. Алгоритмы, реализующие операции в группах точек эллиптических кривых,
+   удовлетворяющих требованиям
+   стандарта [ГОСТ Р 34.10-2012](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-10-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-protsessy-formirovaniya-i-proverki-elektronnoy-tsifrovoy-podpisi.html).
    Поддерживаются все отечественные
    эллиптические кривые, регламентированные рекомендациями по стандартизации
    [Р 50.1.114-2016](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-50-1-114-2016-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-parametry-ellipticheskikh-krivykh-dlya-kriptograficheskikh-algoritmov-i-protokolov.html).
 
-11. Процедуры выработки и проверки электронной подписи, регламентированные стандартом
+ 11. Процедуры выработки и проверки электронной подписи, регламентированные стандартом
  [ГОСТ Р 34.10-2012](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-10-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-protsessy-formirovaniya-i-proverki-elektronnoy-tsifrovoy-podpisi.html).
 
 ## Платформы и компиляторы
@@ -79,7 +81,7 @@
 
    * `FreeBSD`,
 
-   * семейство Windows (от Windows XP и старше)
+   * семейство `Windows` (от `Windows XP` и старше)
 
    * `MacOS`.
 
@@ -95,11 +97,11 @@
 
    * `clang`,
 
-   * Microsoft Visual Studio (начиная с версии `MSVC10`),
+   * `Microsoft Visual Studio` (начиная с версии `MSVC10`),
 
-   * TinyCC,
+   * `TinyCC`,
 
-   * Intel C Compiler.
+   * `Intel C Compiler`.
 
 ## Внимание
 
