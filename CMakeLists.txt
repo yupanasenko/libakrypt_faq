@@ -178,7 +178,8 @@ set( CMAKES         cmake/DetectFlags.cmake
 )
 set( DOCS           doc/00-introduction.md
                     doc/01-install-guide.md
-                    doc/02-primciples.md
+                    doc/02-principles.md
+                    doc/asn1.md
                     doc/Doxyfile.in
                     doc/refman_footer.in
                     doc/refman_header.in
@@ -311,6 +312,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  internal-hash01
                  internal-hash02
                  internal-hash03
+                 internal-hash04
                  internal-oid03
                  internal-random02
                  internal-sign01
