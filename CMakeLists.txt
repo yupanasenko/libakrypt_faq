@@ -236,15 +236,29 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 # сборка консольной утилиты для работы с функциями библиотеки
 if( LIBAKRYPT_AKRYPT )
+
   if( LIBAKRYPT_HAVE_GETOPT )
   else()
     set( AKRYPT_SOURCES ${AKRYPT_SOURCES} akrypt/getopt.c )
   endif()
+
+  find_path( LIBINTL_H_PATH NAMES libintl.h )
+  if( LIBINTL_H_PATH )
+    include_directories( ${LIBINTL_H_PATH} )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_LIBINTL_H" )
+  endif()
+
   if( LIBAKRYPT_STATIC_LIB )
+
+    find_library( LIBINTL_LIB intl )
+    if( LIBINTL_LIB )
+      message("-- Additional library for akrypt is ${LIBINTL_LIB}")
+    endif()
     add_executable( akrypt${LIBAKRYPT_EXT} ${AKRYPT_SOURCES} )
     target_include_directories( akrypt${LIBAKRYPT_EXT} PUBLIC "akrypt" )
-    target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+    target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} ${LIBINTL_LIB} )
   endif()
+
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
