@@ -242,10 +242,14 @@ if( LIBAKRYPT_AKRYPT )
     set( AKRYPT_SOURCES ${AKRYPT_SOURCES} akrypt/getopt.c )
   endif()
 
-  find_path( LIBINTL_H_PATH NAMES libintl.h )
-  if( LIBINTL_H_PATH )
-    include_directories( ${LIBINTL_H_PATH} )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_LIBINTL_H" )
+  if( MINGW )
+    # в консоли MINGW libintl.h пока не ищем
+  elseif()
+    find_path( LIBINTL_H_PATH NAMES libintl.h )
+    if( LIBINTL_H_PATH )
+      include_directories( ${LIBINTL_H_PATH} )
+      set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_LIBINTL_H" )
+    endif()
   endif()
 
   if( LIBAKRYPT_STATIC_LIB )
