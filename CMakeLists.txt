@@ -179,7 +179,8 @@ set( CMAKES         cmake/DetectFlags.cmake
 )
 set( DOCS           doc/00-introduction.md
                     doc/01-install-guide.md
-                    doc/02-primciples.md
+                    doc/02-principles.md
+                    doc/asn1.md
                     doc/Doxyfile.in
                     doc/refman_footer.in
                     doc/refman_header.in
@@ -236,15 +237,31 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 # сборка консольной утилиты для работы с функциями библиотеки
 if( LIBAKRYPT_AKRYPT )
+
   if( LIBAKRYPT_HAVE_GETOPT )
   else()
     set( AKRYPT_SOURCES ${AKRYPT_SOURCES} akrypt/getopt.c )
   endif()
+
+  find_path( LIBINTL_H_PATH NAMES libintl.h )
+  if( LIBINTL_H_PATH )
+    include_directories( ${LIBINTL_H_PATH} )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_LIBINTL_H" )
+  endif()
+
   if( LIBAKRYPT_STATIC_LIB )
     add_executable( akrypt${LIBAKRYPT_EXT} ${AKRYPT_SOURCES} )
     target_include_directories( akrypt${LIBAKRYPT_EXT} PUBLIC "akrypt" )
-    target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+
+    find_library( LIBINTL_LIB intl )
+    if( LIBINTL_LIB )
+      message("-- Additional library for akrypt is ${LIBINTL_LIB}")
+      target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} ${LIBINTL_LIB} )
+    else()
+      target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+    endif()
   endif()
+
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -312,6 +329,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  internal-hash01
                  internal-hash02
                  internal-hash03
+                 internal-hash04
                  internal-oid03
                  internal-random02
                  internal-sign01
