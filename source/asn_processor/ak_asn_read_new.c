@@ -128,7 +128,6 @@ int new_asn_get_int(ak_byte *p_buff, ak_uint32 len, integer* p_val)
         *p_val += (*p_buff);
     }
 
-//    // TODO: Переделать представление отрицательного числа
 //    val_len = len;
 //
 //    p_val->mp_value = malloc((size_t) len);

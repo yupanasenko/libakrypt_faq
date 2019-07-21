@@ -50,6 +50,13 @@
 #define TCHARACTER_STRING   0x1Du
 #define TBMP_STRING         0x1Eu
 
+/*! \brief Биты, определяющие класс данных */
+#define DATA_CLASS(x)     (x & 0xC0)
+/*! \brief Биты, определяющие структуру данных */
+#define DATA_STRUCTURE(x) (x & 0x20)
+/*! \brief Биты, определяющие номер тега */
+#define TAG_NUMBER(x)     (x & 0x1F)
+
 /*! \brief Длина тега (текущая реализация поддерживает кодирование
  *         и декодирование тегов, представленных одним байтом) */
 #define TAG_LEN 1
@@ -133,8 +140,8 @@ struct s_asn_tlv
   ak_uint8 m_len_byte_cnt;
   /*! \brief флаг, определяющий, должен ли объект освобождать память. */
   bool_t m_free_mem;
-
-  // TODO: Добавить поле human_name, для хранения краткого описания данных, содержащихся в структуре
+  /*! \brief название данных. */
+  char* p_name;
 };
 
 typedef struct s_asn_tlv* ak_asn_tlv;
@@ -142,9 +149,9 @@ typedef struct s_asn_tlv* ak_asn_tlv;
 /*! \brief Функция кодирования ASN.1 данных. */
 int ak_asn_encode(ak_asn_tlv p_tlv, ak_byte** pp_asn_data, ak_uint32* p_size);
 /*! \brief Функция декодирования ASN.1 данных. */
-int ak_asn_decode(ak_pointer p_asn_data, size_t size, ak_asn_tlv p_tlv);
+int ak_asn_decode(ak_pointer p_asn_data, size_t size, ak_asn_tlv* pp_tlv);
 /*! \brief Функция создания контекста составных данных. */
-int ak_asn_construct_data_ctx_create(ak_asn_tlv p_tlv, tag constructed_data_tag);
+int ak_asn_construct_data_ctx_create(ak_asn_tlv p_tlv, tag constructed_data_tag, char* p_data_name);
 /*! \brief Функция создания контекста примитивных данных. */
 
 // TODO: Добавить в функцию аргумент, который указывал бы, владеет ли контекст данными
@@ -153,21 +160,26 @@ int ak_asn_construct_data_ctx_create(ak_asn_tlv p_tlv, tag constructed_data_tag)
 //              2) Если значение *p_data_copied == ak_false, то объект s_asn_tlv просто ссылается на данные;
 //              3) Если значение p_data_copied == NULL, то см. п. 1);
 
-int ak_asn_primitive_data_ctx_create(ak_asn_tlv p_tlv, tag data_tag, ak_uint32 data_len, ak_byte* p_data);
+int ak_asn_primitive_data_ctx_create(ak_asn_tlv p_tlv, tag data_tag, ak_uint32 data_len, ak_pointer p_data, char* p_data_name);
 /*! \brief Функция получения размера памяти, необходимого для кодирования ASN.1 данных. */
 int ak_asn_get_size(ak_asn_tlv p_tlv, ak_uint32* p_size);
 /*! \brief Функция пересчета длинны составных данных. (Используется для обновления информации о длинах после изменений.) */
 int ak_asn_update_size(ak_asn_tlv p_root_tlv);
 /*! \brief Функция отображения структуры ASN.1 данных в виде дерева. */
 void ak_asn_print_tree(ak_asn_tlv p_tree);
+void new_ak_asn_print_tree(ak_asn_tlv p_tree);
 
 /*! \brief Функция вывода шестнадцатеричных данных. */
 void ak_asn_print_hex_data(ak_byte* p_data, ak_uint32 size);
 
-// TODO: Добавить функцию удаления дочернего элемента
-//       функция должна принимать либо адрес элемента, либо индекс элемента
+/*! \brief Функция добавления вложенных элементов в составной объект s_asn_tlv. */
 int ak_asn_add_nested_elems(ak_asn_tlv p_tlv_parent, ak_asn_tlv pp_tlv_children[], ak_uint8 count);
 
+/*! \brief Функция удаления вложенного элемента из составного объекта s_asn_tlv. */
+int ak_asn_delete_nested_elem(ak_asn_tlv p_tlv_parent, ak_uint32 index);
+
+/*! \brief Функция очистки памяти, выделенной под хранения структуры дерева и внутренних данных. */
+void ak_asn_free_tree(ak_asn_tlv p_tlv_root);
 
 /*! \brief Декодирование тега из ASN.1 последовательности. */
 int new_asn_get_tag(ak_byte** pp_data, tag *p_tag);

@@ -58,9 +58,14 @@ static char tag_description[20] = "\0";
 /*! \brief Массив, содержащий префикс в выводимой строке с типом данных. */
 static char prefix[1000] = "\0";
 
+/* TODO: Удалить после реализации всех стандартных типов */
+#define RED_STR(x) "\x1b[31m" x "\x1b[0m"
+//#define ANSI_COLOR_RED     "\x1b[31m"
+//#define ANSI_COLOR_RESET   "\x1b[0m"
+
 static int ak_asn_create_constructed_tlv(ak_asn_tlv p_tlv, tag data_tag)
 {
-    if(!(data_tag & CONSTRUCTED))
+    if(DATA_STRUCTURE(data_tag) != CONSTRUCTED)
         return ak_error_message(ak_error_invalid_value, __func__, "data must be constructed");;
 
     /* Добавляем тег */
@@ -74,24 +79,27 @@ static int ak_asn_create_constructed_tlv(ak_asn_tlv p_tlv, tag data_tag)
     if(!p_tlv->m_data.m_constructed_data)
         return ak_error_out_of_memory;
 
-    p_tlv->m_data.m_constructed_data->m_arr_of_data = malloc(sizeof(s_asn_tlv_t) * 10);
+    p_tlv->m_data.m_constructed_data->m_arr_of_data = malloc(sizeof(ak_asn_tlv) * 10);
     if(!p_tlv->m_data.m_constructed_data->m_arr_of_data)
     {
         free(p_tlv->m_data.m_constructed_data);
         return ak_error_out_of_memory;
     }
 
+    memset(p_tlv->m_data.m_constructed_data->m_arr_of_data, 0, sizeof(ak_asn_tlv) * 10);
     p_tlv->m_data.m_constructed_data->m_alloc_size = 10;
     p_tlv->m_data.m_constructed_data->m_curr_size = 0;
 
     p_tlv->m_free_mem = ak_false;
+
+    p_tlv->p_name = NULL;
 
     return ak_error_ok;
 }
 
 static int ak_asn_create_primitive_tlv(ak_asn_tlv p_tlv, tag data_tag, size_t data_len, ak_pointer p_data, bool_t free_mem)
 {
-    if((data_tag & PRIMITIVE) != 0)
+    if(DATA_STRUCTURE(data_tag) != PRIMITIVE)
         return ak_error_message(ak_error_invalid_value, __func__, "data must be primitive");
 
     /* Добавляем тег */
@@ -115,17 +123,19 @@ static int ak_asn_create_primitive_tlv(ak_asn_tlv p_tlv, tag data_tag, size_t da
 
     p_tlv->m_free_mem = free_mem;
 
+    p_tlv->p_name = NULL;
+
     return ak_error_ok;
 }
 
-int ak_asn_construct_data_ctx_create(ak_asn_tlv p_tlv, tag constructed_data_tag)
+int ak_asn_construct_data_ctx_create(ak_asn_tlv p_tlv, tag constructed_data_tag, char* p_data_name)
 {
     int error; /* Код ошибки */
 
     if(!p_tlv)
         return ak_error_null_pointer;
 
-    if(constructed_data_tag & CONSTRUCTED)
+    if(DATA_STRUCTURE(constructed_data_tag) == CONSTRUCTED)
     {
         if((error = ak_asn_create_constructed_tlv(p_tlv, constructed_data_tag)) != ak_error_ok)
             return ak_error_message(error, __func__, "failure to create constructed tlv");
@@ -137,17 +147,24 @@ int ak_asn_construct_data_ctx_create(ak_asn_tlv p_tlv, tag constructed_data_tag)
 }
 
 
-int ak_asn_primitive_data_ctx_create(ak_asn_tlv p_tlv, tag data_tag, ak_uint32 data_len, ak_byte* p_data)
+int ak_asn_primitive_data_ctx_create(ak_asn_tlv p_tlv, tag data_tag, ak_uint32 data_len, ak_pointer p_data, char* p_data_name)
 {
     int error; /* Код ошибки */
 
     if(!p_tlv || !p_data)
         return ak_error_null_pointer;
 
-    if((data_tag & PRIMITIVE) == 0)
+    if(DATA_STRUCTURE(data_tag) == PRIMITIVE)
     {
         if((error = ak_asn_create_primitive_tlv(p_tlv, data_tag, data_len, p_data, ak_true)) != ak_error_ok)
             return ak_error_message(error, __func__, "failure to create primitive tlv");
+
+        if(p_data_name)
+        {
+            size_t len = strlen(p_data_name) + 1;
+            p_tlv->p_name = malloc(len);
+            memcpy(p_tlv->p_name, p_data_name, len);
+        }
     }
     else
         return ak_error_message(ak_error_invalid_value, __func__, "tag must specify primitive data");
@@ -165,7 +182,7 @@ int ak_asn_add_nested_elems(ak_asn_tlv p_tlv_parent, ak_asn_tlv pp_tlv_children[
     if(!p_tlv_parent || !pp_tlv_children)
         return ak_error_null_pointer;
 
-    if(!(p_tlv_parent->m_tag & CONSTRUCTED))
+    if(DATA_STRUCTURE(p_tlv_parent->m_tag) != CONSTRUCTED)
         return ak_error_message(ak_error_invalid_value, __func__, "parent element must be constructed");
 
     if(!count)
@@ -177,10 +194,10 @@ int ak_asn_add_nested_elems(ak_asn_tlv p_tlv_parent, ak_asn_tlv pp_tlv_children[
         ak_uint32  new_size;
 
         new_size = curr_size + 10;
-        if(new_size > 255)
+        if(new_size > 255) /* Проверка, чтобы не переполнить тип ak_uint8 */
             return ak_error_message(ak_error_out_of_memory, __func__, "change type for storing number of nested elements");
 
-        ak_asn_realloc((ak_pointer*)&p_tlv_parent->m_data.m_constructed_data->m_arr_of_data, curr_size, new_size);
+        ak_asn_realloc((ak_pointer*)&p_tlv_parent->m_data.m_constructed_data->m_arr_of_data, curr_size * sizeof(ak_asn_tlv), new_size * sizeof(ak_asn_tlv));
 
 //        pp_new_mem = malloc(new_size * sizeof(ak_asn_tlv));
 //        if(!pp_new_mem)
@@ -208,6 +225,75 @@ int ak_asn_add_nested_elems(ak_asn_tlv p_tlv_parent, ak_asn_tlv pp_tlv_children[
     return ak_error_ok;
 }
 
+int ak_asn_delete_nested_elem(ak_asn_tlv p_tlv_parent, ak_uint32 index)
+{
+    ak_uint32 child_size; /* Рамзер дочернего элемента */
+
+    if(!p_tlv_parent)
+        return ak_error_null_pointer;
+
+    if(DATA_STRUCTURE(p_tlv_parent->m_tag) != CONSTRUCTED)
+        return ak_error_message(ak_error_invalid_value, __func__, "parent element must be constructed");
+
+    if(index + 1 > p_tlv_parent->m_data.m_constructed_data->m_curr_size)
+        return ak_error_message(ak_error_invalid_value, __func__, "bad index");
+
+    /* Вычисляем размер дочернего элемента */
+    ak_asn_get_size(p_tlv_parent->m_data.m_constructed_data->m_arr_of_data[index], &child_size);
+
+    /* Уменьшаем размер родительского элемента */
+    p_tlv_parent->m_data_len -= child_size;
+    p_tlv_parent->m_len_byte_cnt = new_asn_get_len_byte_cnt(p_tlv_parent->m_data_len);
+
+    /* Удаляем дочерний элемент */
+    ak_asn_free_tree(p_tlv_parent->m_data.m_constructed_data->m_arr_of_data[index]);
+    p_tlv_parent->m_data.m_constructed_data->m_arr_of_data[index] = NULL;
+
+    /* Сдвигаем все элементы в массиве, которы находятся за удаляемым */
+    if((index + 1) < p_tlv_parent->m_data.m_constructed_data->m_curr_size)
+    {
+        ak_uint32 j;
+        for (j = index + 1; j < p_tlv_parent->m_data.m_constructed_data->m_curr_size; j++)
+            p_tlv_parent->m_data.m_constructed_data->m_arr_of_data[j - 1] = p_tlv_parent->m_data.m_constructed_data->m_arr_of_data[j];
+
+        /* Зануляем копию адреса последнего элемента, которая образовалась в процессе смещения объектов */
+        p_tlv_parent->m_data.m_constructed_data->m_arr_of_data[j - 1] = NULL;
+        p_tlv_parent->m_data.m_constructed_data->m_curr_size--;
+    }
+
+    return ak_error_ok;
+}
+
+void ak_asn_free_tree(ak_asn_tlv p_tlv_root)
+{
+    if(p_tlv_root)
+    {
+        if(DATA_STRUCTURE(p_tlv_root->m_tag) == CONSTRUCTED)
+        {
+            ak_uint32 index;
+            for(index = 0; index < p_tlv_root->m_data.m_constructed_data->m_curr_size; index++)
+            {
+                ak_asn_free_tree(p_tlv_root->m_data.m_constructed_data->m_arr_of_data[index]);
+            }
+
+            free(p_tlv_root->m_data.m_constructed_data->m_arr_of_data);
+        }
+        else
+        {
+            /* Очищаем данные, если объект ими владеет */
+            if(p_tlv_root->m_free_mem && p_tlv_root->m_data.m_primitive_data)
+                free(p_tlv_root->m_data.m_primitive_data);
+        }
+
+        /* Очищаем название данных, если оно указано */
+        if(p_tlv_root->p_name)
+            free(p_tlv_root->p_name);
+
+        /* Очищаем структуру для хранения данных */
+        free(p_tlv_root);
+    }
+}
+
 int ak_asn_get_size(ak_asn_tlv p_tlv, ak_uint32* p_size)
 {
     if (!p_tlv || !p_size)
@@ -226,12 +312,12 @@ int ak_asn_update_size(ak_asn_tlv p_root_tlv)
     if (!p_root_tlv)
         return ak_error_null_pointer;
 
-    if(p_root_tlv->m_tag & CONSTRUCTED)
+    if(DATA_STRUCTURE(p_root_tlv->m_tag) == CONSTRUCTED)
     {
         p_root_tlv->m_data_len = 0;
         for(ak_uint8 i = 0; i < p_root_tlv->m_data.m_constructed_data->m_curr_size; i++)
         {
-            if(p_root_tlv->m_data.m_constructed_data->m_arr_of_data[i]->m_tag & CONSTRUCTED)
+            if(DATA_STRUCTURE(p_root_tlv->m_data.m_constructed_data->m_arr_of_data[i]->m_tag) == CONSTRUCTED)
                 ak_asn_update_size(p_root_tlv->m_data.m_constructed_data->m_arr_of_data[i]);
 
             ak_asn_get_size(p_root_tlv->m_data.m_constructed_data->m_arr_of_data[i], &size);
@@ -290,9 +376,9 @@ static char* get_tag_description(tag data_tag)
 {
     /* tag_description - статическая переменная */
 
-    if((data_tag & 0xC0) == UNIVERSAL)
+    if(DATA_CLASS(data_tag) == UNIVERSAL)
         return get_universal_tag_description(data_tag);
-    else if(data_tag & CONTEXT_SPECIFIC)
+    else if(DATA_CLASS(data_tag) == CONTEXT_SPECIFIC)
     {
         /* Добавляем номер тега (младшие 5 бит) */
         sprintf(tag_description, "[%u]", data_tag & 0x1F);
@@ -308,9 +394,9 @@ static void asn_print_universal_data(tag data_tag, ak_uint32 data_len, ak_byte* 
     char* str;
     ak_uint32 integer_val;
 
-    if ((data_tag & UNIVERSAL) == 0)
+    if (DATA_CLASS(data_tag) == UNIVERSAL)
     {
-        switch (data_tag & 0x1F)
+        switch (TAG_NUMBER(data_tag))
         {
         case TBOOLEAN:
             if(*p_data == 0x00)
@@ -319,9 +405,6 @@ static void asn_print_universal_data(tag data_tag, ak_uint32 data_len, ak_byte* 
                 printf("True\n");
             break;
         case TINTEGER:
-            //FIXME: переделать под вовод нормельного значения
-//            ak_asn_print_hex_data(p_data, data_len);
-//            putchar('\n');
             new_asn_get_int(p_data, data_len, &integer_val);
             printf("%u\n", integer_val);
             break;
@@ -354,10 +437,9 @@ static void asn_print_universal_data(tag data_tag, ak_uint32 data_len, ak_byte* 
             break;
         case TUTF8_STRING:
             // FIXME: Подправить, чтобы выводились произвольные символы, а не только символы ASCII
-            new_asn_get_vsblstr(p_data, data_len, &str);
+            new_asn_get_utf8string(p_data, data_len, (unsigned char**)&str);
             printf("%s\n", str);
             free(str);
-            break;
             break;
         case TGENERALIZED_TIME:
             new_asn_get_generalized_time(p_data, data_len, &str);
@@ -369,7 +451,8 @@ static void asn_print_universal_data(tag data_tag, ak_uint32 data_len, ak_byte* 
             printf("%s\n", str);
             free(str);
             break;
-        default: printf("bad data");
+        default:
+            puts(RED_STR("Unknown data!"));
         }
     }
 
@@ -377,7 +460,7 @@ static void asn_print_universal_data(tag data_tag, ak_uint32 data_len, ak_byte* 
 
 static void asn_print_last_elem(ak_asn_tlv p_last_elem, ak_uint32 level)
 {
-    if(p_last_elem->m_tag & CONSTRUCTED)
+    if(DATA_STRUCTURE(p_last_elem->m_tag) == CONSTRUCTED)
     {
         char* p_tag_desc;
         int tag_desc_len;
@@ -413,16 +496,16 @@ static void asn_print_last_elem(ak_asn_tlv p_last_elem, ak_uint32 level)
         /* Выводим префикс, горизонтальную черту и тега */
         printf("%s%s%s ", prefix, HOR_LINE, get_tag_description(p_last_elem->m_tag));
         /* Выводим данные */
-        if((p_last_elem->m_tag & 0xC0) == UNIVERSAL)
+        if(DATA_CLASS(p_last_elem->m_tag) == UNIVERSAL)
             asn_print_universal_data(p_last_elem->m_tag, p_last_elem->m_data_len, p_last_elem->m_data.m_primitive_data);
-        else if((p_last_elem->m_tag & 0xC0) == CONTEXT_SPECIFIC)
+        else if(DATA_CLASS(p_last_elem->m_tag) == CONTEXT_SPECIFIC)
         {
             /* Выводим данные */
             ak_asn_print_hex_data(p_last_elem->m_data.m_primitive_data, p_last_elem->m_data_len);
             putchar('\n');
         }
         else
-            printf("Unknown data\n");
+            puts(RED_STR("Unknown data!"));
     }
 }
 
@@ -430,7 +513,7 @@ void ak_asn_print_tree(ak_asn_tlv p_tree)
 {
     static ak_uint32 uiLevel = 0; /* Уровень вложенности элемента */
 
-    if(p_tree->m_tag & CONSTRUCTED)
+    if(DATA_STRUCTURE(p_tree->m_tag) == CONSTRUCTED)
     {
         char* p_tag_desc;
         int tag_desc_len;
@@ -490,9 +573,9 @@ void ak_asn_print_tree(ak_asn_tlv p_tree)
         /* Выводим префикс, горизонтальную линию, тег */
         printf("%s%s%s ", prefix, HOR_LINE, get_tag_description(p_tree->m_tag));
 
-        if((p_tree->m_tag & 0xC0) == UNIVERSAL)
+        if(DATA_CLASS(p_tree->m_tag) == UNIVERSAL)
             asn_print_universal_data(p_tree->m_tag, p_tree->m_data_len, p_tree->m_data.m_primitive_data);
-        else if((p_tree->m_tag & 0xC0) == CONTEXT_SPECIFIC)
+        else if(DATA_CLASS(p_tree->m_tag) == CONTEXT_SPECIFIC)
         {
             /* Выводим данные */
             ak_asn_print_hex_data(p_tree->m_data.m_primitive_data, p_tree->m_data_len);
@@ -514,6 +597,76 @@ void ak_asn_print_tree(ak_asn_tlv p_tree)
     }
 }
 
+static void new_ak_asn_print_tlv(ak_asn_tlv p_tree, bool_t is_last)
+{
+    char* p_curr_pos;
+    char* p_tag_desc;
+    int tag_desc_len;
+    p_tag_desc = get_tag_description(p_tree->m_tag);
+    tag_desc_len = (int)strlen(p_tag_desc);
+
+    if(is_last)
+        sprintf(prefix + strlen(prefix) - 3, "%s", LB_CORNER);
+    else
+        sprintf(prefix + strlen(prefix) - 3, "%s", LTB_CORNERS);
+
+
+    if(DATA_STRUCTURE(p_tree->m_tag) == CONSTRUCTED)
+    {
+        /* Выводим префик, тег, символ уголка '┐' */
+        printf("%s%s%s\n", prefix,get_tag_description(p_tree->m_tag), RT_CORNER);
+
+        p_curr_pos = prefix + strlen(prefix);
+
+        if(is_last == ak_true)
+        {
+            prefix[strlen(prefix) - 3] = ' ';
+            prefix[strlen(prefix) - 2] = '\0';
+        }
+        else
+            sprintf(prefix + strlen(prefix) - 3, "%s", VER_LINE);
+
+        /* Добавляем к префику вертикальную черту, сдвинутую на длину тега */
+        sprintf(prefix + strlen(prefix), "%*s", tag_desc_len + 3, VER_LINE);
+
+
+        /* Выводим вложенные данные */
+        for(ak_uint8 i = 0; i < p_tree->m_data.m_constructed_data->m_curr_size; i++)
+        {
+            if(i == p_tree->m_data.m_constructed_data->m_curr_size - 1)
+                new_ak_asn_print_tlv(p_tree->m_data.m_constructed_data->m_arr_of_data[i], ak_true);
+            else
+                new_ak_asn_print_tlv(p_tree->m_data.m_constructed_data->m_arr_of_data[i], ak_false);
+        }
+
+        /* Отрезаем от префикса лишнее (поднимаемся на уровень выше) */
+        *p_curr_pos = 0;
+    }
+    else
+    {
+        /* Выводим префикс, горизонтальную линию, тег */
+        printf("%s %s ", prefix, get_tag_description(p_tree->m_tag));
+
+        sprintf(prefix + strlen(prefix) - 3, "%s", VER_LINE);
+
+        if(DATA_CLASS(p_tree->m_tag) == UNIVERSAL)
+            asn_print_universal_data(p_tree->m_tag, p_tree->m_data_len, p_tree->m_data.m_primitive_data);
+        else if(DATA_CLASS(p_tree->m_tag) == CONTEXT_SPECIFIC)
+        {
+            /* Выводим данные */
+            ak_asn_print_hex_data(p_tree->m_data.m_primitive_data, p_tree->m_data_len);
+            putchar('\n');
+        }
+        else
+            printf("Unknown data\n");
+    }
+}
+
+void new_ak_asn_print_tree(ak_asn_tlv p_tree)
+{
+    new_ak_asn_print_tlv(p_tree, ak_false);
+}
+
 void ak_asn_print_hex_data(ak_byte* p_data, ak_uint32 size)
 {
     ak_uint32 i; /* индекс */
@@ -523,7 +676,7 @@ void ak_asn_print_hex_data(ak_byte* p_data, ak_uint32 size)
     }
 }
 
-int ak_asn_decode(ak_pointer p_asn_data, size_t size, ak_asn_tlv p_tlv)
+int ak_asn_decode(ak_pointer p_asn_data, size_t size, ak_asn_tlv* pp_tlv)
 {
     ak_byte* p_begin;  /* Указатель на начало tlv */ //FIXME можно обойтись без него
     ak_byte* p_curr;   /* Указатель на текущую позицию */
@@ -532,33 +685,39 @@ int ak_asn_decode(ak_pointer p_asn_data, size_t size, ak_asn_tlv p_tlv)
     size_t   data_len; /* Длина данных */
     int error;         /* Код ошибки */
 
-    if(!p_asn_data || !size || !p_tlv)
+    if(!p_asn_data || !size || !pp_tlv)
         return ak_error_null_pointer;
+
+    *pp_tlv = malloc(sizeof(s_asn_tlv_t));
+    if (!(*pp_tlv))
+        return ak_error_out_of_memory;
 
     p_begin = p_curr = p_asn_data;
     p_end = p_begin + size;
 
     new_asn_get_tag(&p_curr, &data_tag);
-    if(data_tag & CONSTRUCTED)
+    if(DATA_STRUCTURE(data_tag) == CONSTRUCTED)
     {
-        ak_asn_tlv p_nested_tlv;
-        if (ak_asn_create_constructed_tlv(p_tlv, data_tag) != ak_error_ok)
-            return -1;
+        ak_uint32  index;        /* Индекс дочернего элемента */
+        ak_asn_tlv p_nested_tlv; /* Дочерний элемент */
+        ak_uint32  child_size;   /* Размер дочернего элемента */
+
+        if ((error = ak_asn_create_constructed_tlv(*pp_tlv, data_tag)) != ak_error_ok)
+            return ak_error_message(error, __func__, "failure to create constructed context");
 
         new_asn_get_len(&p_curr, &data_len);
 
-        while(p_tlv->m_data_len < data_len)
+        index = 0;
+        while((*pp_tlv)->m_data_len < data_len)
         {
-            p_nested_tlv = malloc(sizeof(s_asn_tlv_t));
-            if (!p_nested_tlv)
-                return ak_error_out_of_memory;
-            ak_asn_decode(p_curr, data_len, p_nested_tlv);
-
-            ak_asn_add_nested_elems(p_tlv, &p_nested_tlv, 1);
-            p_curr += 1 + p_nested_tlv->m_len_byte_cnt + p_nested_tlv->m_data_len;
+            ak_asn_decode(p_curr, data_len, &p_nested_tlv);
+            ak_asn_add_nested_elems(*pp_tlv, &p_nested_tlv, 1);
+            ak_asn_get_size(p_nested_tlv, &child_size);
+            p_curr += child_size;
+            index++;
         }
-//        p_tlv->m_data.m_constructed_data->m_arr_of_data[0] = p_nested_tlv;
-//        p_tlv->m_data.m_constructed_data->m_curr_size++;
+//        pp_tlv->m_data.m_constructed_data->m_arr_of_data[0] = p_nested_tlv;
+//        pp_tlv->m_data.m_constructed_data->m_curr_size++;
     }
     else
     {
@@ -566,7 +725,7 @@ int ak_asn_decode(ak_pointer p_asn_data, size_t size, ak_asn_tlv p_tlv)
         if(p_curr + data_len > p_end)
             return ak_error_message(ak_error_wrong_length, __func__, "wrong data length");
 
-        if((error = ak_asn_create_primitive_tlv(p_tlv, data_tag, data_len, p_curr, ak_false)) != ak_error_ok)
+        if((error = ak_asn_create_primitive_tlv(*pp_tlv, data_tag, data_len, p_curr, ak_false)) != ak_error_ok)
             return ak_error_message(error, __func__, "can not create primitive tlv");
     }
 
@@ -587,7 +746,7 @@ static int ak_asn_encode_tlv(ak_asn_tlv p_tlv, ak_byte** pp_pos, ak_byte* p_end)
     if((*pp_pos + size) > p_end)
         return ak_error_message(ak_error_out_of_memory, __func__, "need more memory for encoding");
 
-    if(p_tlv->m_tag & CONSTRUCTED) /* Кодирование составных данных */
+    if(DATA_STRUCTURE(p_tlv->m_tag) == CONSTRUCTED) /* Кодирование составных данных */
     {
         ak_uint8 index; /* Индекс элемента в массиве элементов составного объекта */
 
