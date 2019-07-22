@@ -253,6 +253,11 @@ extern "C" {
 /*! \brief Ошибка, возникающая при декодировании ASN1 структуры (перевод из DER-кодировки в ASN1 структуру). */
  #define ak_error_wrong_asn1_decode           (-91)
 
+
+ #define ak_error_key_engine (-100)
+ #define ak_error_key_format (-101)
+ #define ak_error_key_number (-102)
+
 /* ----------------------------------------------------------------------------------------------- */
  #define ak_null_string                  ("(null)")
 

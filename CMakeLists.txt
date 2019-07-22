@@ -98,6 +98,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_bckey.h
                     source/ak_omac.h
                     source/ak_mgm.h
+                    source/ak_key_manager.h
   )
   set( SOURCES      ${SOURCES}
                     source/ak_hash.c
