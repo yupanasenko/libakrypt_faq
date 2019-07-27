@@ -15,8 +15,8 @@
 # сборка при MinGW из консоли MSYS (WINDOWS)
 # cmake -G "MinGW Makefiles" -D CMAKE_C_COMPILER=gcc path && mingw32-make
 # -------------------------------------------------------------------------------------------------- #
-cmake_minimum_required( VERSION 2.7 )
 project( libakrypt C )
+cmake_minimum_required( VERSION 2.7 FATAL_ERROR )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 7 )
@@ -363,13 +363,8 @@ if( LIBAKRYPT_FIOT )
                  internal-fiot-algconst
                  internal-fiot-context
                  internal-fiot-echo-client
-  )
-  if( UNIX )
-    set( INTERNAL_FIOT_TEST_LIST
-                 ${INTERNAL_FIOT_TEST_LIST}
                  internal-fiot-echo-server
-    )
-  endif()
+  )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #

@@ -51,7 +51,7 @@
      return ak_libakrypt_destroy();
    }
 
-   if(( error = ak_network_connect( sock, &socket_address )) != ak_error_ok ) {
+   if(( error = ak_network_connect( sock, &socket_address, sizeof( socket_address ))) != ak_error_ok ) {
      ak_network_close( sock );
      ak_error_message_fmt( error, __func__, "wrong server connect" );
      return ak_libakrypt_destroy();

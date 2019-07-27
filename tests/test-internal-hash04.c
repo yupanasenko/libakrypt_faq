@@ -6,7 +6,9 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
+#ifndef _WIN32
  #include <unistd.h>
+#endif
  #include <time.h>
  #include <ak_hash.h>
  #include <ak_parameters.h>
@@ -21,9 +23,11 @@
   struct hash ctx;
   ak_uint8 *data, out[64];
   size_t size = 0;
-  ak_int64 msec;
   double iter = 0, avg = 0;
+#ifdef __linux__
+  ak_int64 msec;
   struct rusage rg1, rg2;
+#endif
 
  /* инициализируем библиотеку */
   if( !ak_libakrypt_create( ak_function_log_stderr )) return ak_libakrypt_destroy();
@@ -40,11 +44,15 @@
 
    /* теперь собственно хеширование памяти */
     timea = clock();
+#ifdef __linux__
     getrusage( RUSAGE_SELF, &rg1 );
+#endif
     ak_hash_context_ptr( &ctx, data, size, out );
+#ifdef __linux__
     getrusage( RUSAGE_SELF, &rg2 );
+#endif
     timea = clock() - timea;
-    printf(" %3luMB: hash time: %fs, per 1MB = %fs, speed = %f MBs (clock)\n", (size_t)i,
+    printf(" %3uMB: hash time: %fs, per 1MB = %fs, speed = %f MBs (clock)\n", (unsigned int)i,
                (double) timea / (double) CLOCKS_PER_SEC,
                (double) timea / ( (double) CLOCKS_PER_SEC*i ),
                (double) CLOCKS_PER_SEC*i / (double) timea );
@@ -60,7 +68,7 @@
           msec *= 1000000;
           msec -= (rg1.ru_utime.tv_usec - rg2.ru_utime.tv_usec);
     }
-    printf(" %3luMB: hash time: %fs, per 1MB = %fs, speed = %f MBs (getrusage)\n\n", (size_t)i,
+    printf(" %3uMB: hash time: %fs, per 1MB = %fs, speed = %f MBs (getrusage)\n\n", (unsigned int)i,
                msec / (double) 1000000,
                (double) timea / ( (double) 1000000*i ),
                (double) 1000000*i / (double) timea );

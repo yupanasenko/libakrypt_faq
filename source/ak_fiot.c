@@ -155,6 +155,13 @@
    if( fctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                            "using null pointer to fiot context" );
 #if 0
+
+  ak_error_message_fmt(0, "", "iface_enc: %d", fctx->iface_enc );
+  ak_error_message_fmt(0, "", "iface_plain: %d", fctx->iface_plain );
+  ak_error_message_fmt(0, "", "undefined_interface: %d", undefined_interface );
+  ak_error_message_fmt(0, "", "ak_network_undefined_socket: %d", ak_network_undefined_socket );
+
+
   /* закрываем связанные сокеты */
    if( fctx->iface_enc != undefined_interface ) {
 #ifdef LIBAKRYPT_HAVE_SYSSOCKET_H
@@ -294,7 +301,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_fiot_context_destroy( ak_fiot fctx )
 {
-  int error = ak_error_ok;
+  int error = ak_error_ok, pface = undefined_interface, eface = undefined_interface;
 
  /* уничтожение буфферов с идентификаторами */
   if(( error = ak_buffer_destroy( &fctx->client_id )) != ak_error_ok )
@@ -328,8 +335,14 @@
   if(( error = ak_fiot_context_destroy_common( fctx )) != ak_error_ok )
     ak_error_message( error, __func__ , "incorrect common part destroying of fiot context" );
 
- /* обнуляем значения и освобождаем память */
+ /* обнуляем значения
+    если мы хотим потом закрывать интерфейсы самостоятельно, то надо сохранить их значения */
+  pface = fctx->iface_plain;
+  eface = fctx->iface_enc;
   memset( fctx, 0, sizeof( struct fiot ));
+  fctx->iface_enc = eface;
+  fctx->iface_plain = pface;
+
  return error;
 }
 
