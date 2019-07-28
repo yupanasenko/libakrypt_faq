@@ -1,7 +1,5 @@
 #include "ak_asn_codec_new.h"
 
-// TODO: проверить необходимость в подключении файлов
-
 #ifdef LIBAKRYPT_HAVE_STDLIB_H
 #include <stdlib.h>
 #else
@@ -14,7 +12,6 @@
 #endif
 #ifdef LIBAKRYPT_HAVE_CTYPE_H
 #include <ctype.h>
-#include <stdio.h>
 #else
 #error Library cannot be compiled without ctype.h header
 #endif
@@ -57,7 +54,7 @@ int new_asn_put_len(size_t len, ak_uint32 len_byte_cnt, ak_byte** pp_buff)
     }
     else
     {
-        (**pp_buff) = (ak_byte) (0x80u ^ (uint8_t) (--len_byte_cnt));
+        (**pp_buff) = (ak_byte) (0x80u ^ (ak_uint8) (--len_byte_cnt));
         (*pp_buff)++;
 
         do
@@ -266,7 +263,7 @@ int new_asn_put_objid(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_
             i = 3;
             while (i > 0)
             {
-                seven_bits = (ak_byte) ((num >> ((uint8_t) i * 7u)) & 0x7Fu);
+                seven_bits = (ak_byte) ((num >> ((ak_uint8) i * 7u)) & 0x7Fu);
                 if (seven_bits)
                     *((*pp_buff)++) = (ak_byte) (0x80u ^ seven_bits);
                 i--;
@@ -345,6 +342,8 @@ int new_asn_put_bool(boolean val, ak_byte** pp_buff, ak_uint32* p_size)
 /* ----------------------------------------------------------------------------------------------- */
 int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_uint32* p_size)
 {
+    ak_uint8 i; /* индекс */
+
     if (!time || !pp_buff)
         return ak_error_null_pointer;
 
@@ -360,7 +359,7 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
     }
 
     /* YYYY */
-    for (uint8_t i = 0; i < 4; i++)
+    for (ak_uint8 i = 0; i < 4; i++)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of year value");
@@ -369,7 +368,7 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
     time++;
 
     /* MM */
-    for (uint8_t i = 0; i < 2; i++)
+    for (i = 0; i < 2; i++)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of month value");
@@ -378,7 +377,7 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
     time++;
 
     /* DD */
-    for (uint8_t i = 0; i < 2; i++)
+    for (i = 0; i < 2; i++)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of day value");
@@ -387,7 +386,7 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
     time++;
 
     /* HH */
-    for (uint8_t i = 0; i < 2; i++)
+    for (i = 0; i < 2; i++)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of hour value");
@@ -396,7 +395,7 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
     time++;
 
     /* MM */
-    for (uint8_t i = 0; i < 2; i++)
+    for (i = 0; i < 2; i++)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of minute value");
@@ -405,7 +404,7 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
     time++;
 
     /* SS */
-    for (uint8_t i = 0; i < 2; i++)
+    for (i = 0; i < 2; i++)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of second value");
@@ -425,7 +424,7 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
                                     "wrong format of quota of second value (it can't end by 0 symbol)");
 
         *((*pp_buff)++) = (ak_byte) *(time++); // помещаем символ точки
-        for (uint8_t i = 0; i < ms_cnt; i++)
+        for (i = 0; i < ms_cnt; i++)
         {
             if (!isdigit(*time))
                 return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of quota of second value");
@@ -510,6 +509,8 @@ int new_asn_put_numeric_string(numeric_string str, ak_byte** pp_buff, ak_uint32*
 
 int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
 {
+    ak_uint8 i; /* Индекс */
+
     if (!time || !pp_buff)
         return ak_error_null_pointer;
 
@@ -525,7 +526,7 @@ int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
     }
 
     /* YY */
-    for (uint8_t i = 0; i < 2; i++)
+    for (i = 0; i < 2; i++)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of year value");
@@ -534,7 +535,7 @@ int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
     time++;
 
     /* MM */
-    for (uint8_t i = 0; i < 2; i++)
+    for (i = 0; i < 2; i++)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of month value");
@@ -543,7 +544,7 @@ int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
     time++;
 
     /* DD */
-    for (uint8_t i = 0; i < 2; i++)
+    for (i = 0; i < 2; i++)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of day value");
@@ -552,7 +553,7 @@ int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
     time++;
 
     /* HH */
-    for (uint8_t i = 0; i < 2; i++)
+    for (i = 0; i < 2; i++)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of hour value");
@@ -561,7 +562,7 @@ int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
     time++;
 
     /* MM */
-    for (uint8_t i = 0; i < 2; i++)
+    for (i = 0; i < 2; i++)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of minute value");
@@ -570,7 +571,7 @@ int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
     time++;
 
     /* SS */
-    for (uint8_t i = 0; i < 2; i++)
+    for (i = 0; i < 2; i++)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of second value");
@@ -590,7 +591,7 @@ int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
                     "wrong format of quota of second value (it can't end by 0 symbol)");
 
         *((*pp_buff)++) = (ak_byte) *(time++); // помещаем символ точки
-        for (uint8_t i = 0; i < ms_cnt; i++)
+        for (i = 0; i < ms_cnt; i++)
         {
             if (!isdigit(*time))
                 return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of quota of second value");

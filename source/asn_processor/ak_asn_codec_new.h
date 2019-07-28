@@ -8,8 +8,6 @@
 #define __AK_ASN_H__
 
 #include <libakrypt.h>
-#include <pkcs_15_cryptographic_token/ak_pointer_server.h>
-
 
 /*! \brief флаги, определяющие класс данных ASN.1. */
 #define UNIVERSAL           0x00u
@@ -246,14 +244,6 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
 
 
 /* Tools */
-/*! \brief Метод для добавления стандартных типов данных в DER последовательность. */
-int new_asn_put_universal_tlv(ak_uint8 tag_number, void *p_data, size_t seq_or_set_len, s_ptr_server *p_main_ps, s_ptr_server *p_result);
-
-/*! \brief Метод для декодированния типов данных из DER последовательности. */
-int new_asn_get_expected_tlv(tag expected_tag, s_ptr_server *p_curr_ps, void *p_result);
-
-/*! \brief Метод для определения кол-ва элементов в блоке данных DER последовательности. */
-int new_asn_get_num_of_elems_in_constructed_obj(s_ptr_server *p_data, ak_uint8 *p_num_of_elems);
 
 /*! \brief Метод для определения необходимого кол-ва памяти для хранения длины данных. */
 ak_uint8 new_asn_get_len_byte_cnt(size_t len);

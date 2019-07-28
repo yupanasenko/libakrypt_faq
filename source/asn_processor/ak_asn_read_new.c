@@ -1,7 +1,5 @@
 #include "ak_asn_codec_new.h"
 
-// TODO: проверить необходимость в подключении файлов
-
 #ifdef LIBAKRYPT_HAVE_STDLIB_H
 #include <stdlib.h>
 #else
@@ -61,6 +59,8 @@ int new_asn_get_tag(ak_byte** pp_data, tag *p_tag)
 int new_asn_get_len(ak_byte** pp_data, size_t *p_len)
 {
     ak_uint8 len_byte_cnt; /* Кол-во байтов, которыми представлена длина */
+    ak_uint8 i; /* Индекс */
+
     if (!pp_data || !p_len)
         return ak_error_null_pointer;
 
@@ -68,13 +68,13 @@ int new_asn_get_len(ak_byte** pp_data, size_t *p_len)
 
     if (**pp_data & 0x80u)
     {
-        len_byte_cnt = (uint8_t) ((**pp_data) & 0x7Fu);
+        len_byte_cnt = (ak_uint8) ((**pp_data) & 0x7Fu);
         (*pp_data)++;
 
         if (len_byte_cnt > 4)
             return ak_error_wrong_length;
 
-        for (uint8_t i = 0; i < len_byte_cnt; i++)
+        for (i = 0; i < len_byte_cnt; i++)
         {
             *p_len = (*p_len << 8u) | (**pp_data);
             (*pp_data)++;
@@ -249,7 +249,7 @@ int new_asn_get_vsblstr(ak_byte *p_buff, size_t len, visible_string *p_str) {
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
 int new_asn_get_objid(ak_byte *p_buff, size_t len, object_identifier *p_objid) {
-    uint32_t value;
+    ak_uint32 value;
     size_t curr_size;
     object_identifier obj_id;
 
@@ -429,9 +429,6 @@ int new_asn_get_ia5string(ak_byte* p_buff, ak_uint32 size, ia5_string* p_str)
 
 int new_asn_get_printable_string(ak_byte* p_buff, ak_uint32 size, printable_string* p_str)
 {
-    ak_uint32 i;
-    char c;
-
     *p_str = NULL;
 
     if(check_prntbl_str((char *)p_buff, size) == ak_false)

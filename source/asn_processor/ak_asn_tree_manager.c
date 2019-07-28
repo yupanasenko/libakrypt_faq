@@ -6,8 +6,6 @@
 
 #include "ak_oid.h"
 
-// TODO: проверить необходимость в подключении файлов
-
 #ifdef LIBAKRYPT_HAVE_STDLIB_H
 #include <stdlib.h>
 #else
@@ -18,12 +16,6 @@
 #else
 #error Library cannot be compiled without string.h header
 #endif
-#ifdef LIBAKRYPT_HAVE_CTYPE_H
-#include <ctype.h>
-#else
-#error Library cannot be compiled without ctype.h header
-#endif
-
 #ifdef LIBAKRYPT_HAVE_STDIO_H
 #include <stdio.h>
 #else
@@ -63,14 +55,9 @@ static char tag_description[20] = "\0";
 /*! \brief Массив, содержащий префикс в выводимой строке с типом данных. */
 static char prefix[1000] = "\0";
 
-/* TODO: Удалить после реализации всех стандартных типов */
-#define RED_STR(x) "\x1b[31m" x "\x1b[0m"
 #define SET_TEXT_COLOR_DEFAULT  printf("\x1b[0m")
 #define SET_TEXT_COLOR_RED      printf("\x1b[31m")
 #define SET_TEXT_COLOR_BLUE     printf("\x1b[34m")
-
-//#define ANSI_COLOR_RED     "\x1b[31m"
-//#define ANSI_COLOR_RESET   "\x1b[0m"
 
 static int ak_asn_create_constructed_tlv(ak_asn_tlv p_tlv, tag data_tag)
 {
@@ -181,8 +168,6 @@ int ak_asn_primitive_data_ctx_create(ak_asn_tlv p_tlv, tag data_tag, ak_uint32 d
     return ak_error_ok;
 }
 
-
-// TODO: Проверить правильность работы функции
 int ak_asn_add_nested_elems(ak_asn_tlv p_tlv_parent, ak_asn_tlv pp_tlv_children[], ak_uint8 count)
 {
     ak_uint8 index; /* Индекс элемента */
@@ -208,22 +193,11 @@ int ak_asn_add_nested_elems(ak_asn_tlv p_tlv_parent, ak_asn_tlv pp_tlv_children[
 
         ak_asn_realloc((ak_pointer*)&p_tlv_parent->m_data.m_constructed_data->m_arr_of_data, curr_size * sizeof(ak_asn_tlv), new_size * sizeof(ak_asn_tlv));
 
-//        pp_new_mem = malloc(new_size * sizeof(ak_asn_tlv));
-//        if(!pp_new_mem)
-//            return ak_error_out_of_memory;
-//
-//        memcpy(pp_new_mem, p_tlv_parent->m_data.m_constructed_data->m_arr_of_data, p_tlv_parent->m_data.m_constructed_data->m_curr_size);
-
         p_tlv_parent->m_data.m_constructed_data->m_alloc_size = (ak_uint8)new_size;
-//
-//        free(p_tlv_parent->m_data.m_constructed_data->m_arr_of_data);
-//
-//        p_tlv_parent->m_data.m_constructed_data->m_arr_of_data = pp_new_mem;
     }
 
     for(index = 0; index < count; index++)
     {
-        //index = p_tlv_parent->m_data.m_constructed_data->m_curr_size;
         p_tlv_parent->m_data.m_constructed_data->m_arr_of_data[curr_size + index] = pp_tlv_children[index];
         p_tlv_parent->m_data_len += TAG_LEN + pp_tlv_children[index]->m_len_byte_cnt + pp_tlv_children[index]->m_data_len;
     }
@@ -455,7 +429,6 @@ static void asn_print_universal_data(tag data_tag, ak_uint32 data_len, ak_byte* 
             free(oid);
             break;
         case TUTF8_STRING:
-            // FIXME: Подправить, чтобы выводились произвольные символы, а не только символы ASCII
             new_asn_get_utf8string(p_data, data_len, (unsigned char**)&str);
             printf("%s\n", str);
             free(str);
@@ -611,7 +584,6 @@ void ak_asn_print_hex_data(ak_byte* p_data, ak_uint32 size)
 
 int ak_asn_decode(ak_pointer p_asn_data, size_t size, ak_asn_tlv* pp_tlv)
 {
-    ak_byte* p_begin;  /* Указатель на начало tlv */ //FIXME можно обойтись без него
     ak_byte* p_curr;   /* Указатель на текущую позицию */
     ak_byte* p_end;    /* Указатель на конец tlv */
     tag      data_tag; /* Тег данных */
@@ -625,8 +597,8 @@ int ak_asn_decode(ak_pointer p_asn_data, size_t size, ak_asn_tlv* pp_tlv)
     if (!(*pp_tlv))
         return ak_error_out_of_memory;
 
-    p_begin = p_curr = p_asn_data;
-    p_end = p_begin + size;
+    p_curr = p_asn_data;
+    p_end = (ak_byte*)p_asn_data + size;
 
     new_asn_get_tag(&p_curr, &data_tag);
     if(DATA_STRUCTURE(data_tag) == CONSTRUCTED)
