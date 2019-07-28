@@ -465,14 +465,36 @@ static void asn_print_universal_data(tag data_tag, ak_uint32 data_len, ak_byte* 
             printf("%s\n", str);
             free(str);
             break;
+        case TUTCTIME:
+            new_asn_get_utc_time(p_data, data_len, &str);
+            printf("%s\n", str);
+            free(str);
+            break;
         case TVISIBLE_STRING:
             new_asn_get_vsblstr(p_data, data_len, &str);
             printf("%s\n", str);
             free(str);
             break;
+        case TIA5_STRING:
+            new_asn_get_ia5string(p_data, data_len, &str);
+            printf("%s\n", str);
+            free(str);
+            break;
+        case TPRINTABLE_STRING:
+            new_asn_get_printable_string(p_data, data_len, &str);
+            printf("%s\n", str);
+            free(str);
+            break;
+        case TNUMERIC_STRING:
+            new_asn_get_numeric_string(p_data, data_len, &str);
+            printf("%s\n", str);
+            free(str);
+            break;
         default:
             SET_TEXT_COLOR_RED;
-            puts("Unknown data!");
+            printf("Unknown data! ");
+            ak_asn_print_hex_data(p_data, data_len);
+            putchar('\n');
             SET_TEXT_COLOR_DEFAULT;
         }
     }

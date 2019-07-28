@@ -338,7 +338,7 @@ int new_asn_put_bool(boolean val, ak_byte** pp_buff, ak_uint32* p_size)
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param time строка в формате "YYYY-MM-DD HH:MM:SS.[ms] UTC"
+/*! @param time строка в формате "YYYY-MM-DD HH:MM:SS[.ms] UTC"
     @param pp_buff указатель на область памяти, в которую записывается результат кодирования
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
@@ -436,6 +436,200 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
     **pp_buff = 'Z';
 
     return ak_error_ok;
+}
+
+int new_asn_put_ia5string(ia5_string str, ak_byte** pp_buff, ak_uint32* p_size)
+{
+    ak_uint32 str_len;
+    ak_uint32 i;
+
+    str_len = (ak_uint32)strlen(str);
+
+    for(i = 0; i < str_len; i++)
+    {
+        if((unsigned char)str[i] > 127)
+            return ak_error_message(ak_error_wrong_asn1_encode, __func__, "unallowable symbol");
+    }
+
+    *pp_buff = malloc(str_len);
+    if(!(*pp_buff))
+        return ak_error_out_of_memory;
+
+    memcpy(*pp_buff, str, str_len);
+
+    *p_size = str_len;
+
+    return ak_error_ok;
+}
+
+int new_asn_put_printable_string(printable_string str, ak_byte** pp_buff, ak_uint32* p_size)
+{
+    ak_uint32 str_len;
+
+    if(check_prntbl_str(str, (ak_uint32)strlen(str)) == ak_false)
+        return ak_error_message(ak_error_wrong_asn1_encode, __func__, "unallowable symbol");
+
+    str_len = (ak_uint32)strlen(str);
+
+    *pp_buff = malloc(str_len);
+    if(!(*pp_buff))
+        return ak_error_out_of_memory;
+
+    memcpy(*pp_buff, str, str_len);
+
+    *p_size = str_len;
+
+    return ak_error_ok;
+}
+
+int new_asn_put_numeric_string(numeric_string str, ak_byte** pp_buff, ak_uint32* p_size)
+{
+    ak_uint32 str_len;
+    ak_uint32 i;
+    char c;
+
+    str_len = (ak_uint32)strlen(str);
+
+    for(i = 0; i < str_len; i++)
+    {
+        c = str[i];
+        if(!((c >= '0' && c <= '9') || c == ' '))
+            return ak_error_message(ak_error_wrong_asn1_encode, __func__, "unallowable symbol");
+    }
+
+    *pp_buff = malloc(str_len);
+    if(!(*pp_buff))
+        return ak_error_out_of_memory;
+
+    memcpy(*pp_buff, str, str_len);
+
+    *p_size = str_len;
+
+    return ak_error_ok;
+}
+
+int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
+{
+    if (!time || !pp_buff)
+        return ak_error_null_pointer;
+
+    *p_size = new_asn_get_gentime_byte_cnt(time);
+    if (*p_size < 13)
+        return ak_error_message(ak_error_invalid_value, __func__, "wrong length of time string");
+
+    *pp_buff = malloc(*p_size);
+    if(!(*pp_buff))
+    {
+        *p_size = 0;
+        return ak_error_out_of_memory;
+    }
+
+    /* YY */
+    for (uint8_t i = 0; i < 2; i++)
+    {
+        if (!isdigit(*time))
+            return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of year value");
+        *((*pp_buff)++) = (ak_byte) *(time++);
+    }
+    time++;
+
+    /* MM */
+    for (uint8_t i = 0; i < 2; i++)
+    {
+        if (!isdigit(*time))
+            return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of month value");
+        *((*pp_buff)++) = (ak_byte) *(time++);
+    }
+    time++;
+
+    /* DD */
+    for (uint8_t i = 0; i < 2; i++)
+    {
+        if (!isdigit(*time))
+            return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of day value");
+        *((*pp_buff)++) = (ak_byte) *(time++);
+    }
+    time++;
+
+    /* HH */
+    for (uint8_t i = 0; i < 2; i++)
+    {
+        if (!isdigit(*time))
+            return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of hour value");
+        *((*pp_buff)++) = (ak_byte) *(time++);
+    }
+    time++;
+
+    /* MM */
+    for (uint8_t i = 0; i < 2; i++)
+    {
+        if (!isdigit(*time))
+            return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of minute value");
+        *((*pp_buff)++) = (ak_byte) *(time++);
+    }
+    time++;
+
+    /* SS */
+    for (uint8_t i = 0; i < 2; i++)
+    {
+        if (!isdigit(*time))
+            return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of second value");
+        *((*pp_buff)++) = (ak_byte) *(time++);
+    }
+
+    /* .mmm */
+    if (*time == '.')
+    {
+        int8_t ms_cnt = (int8_t) ((strchr(time, ' ') - time) - 1);
+        if (ms_cnt == 0)
+            return ak_error_message(ak_error_wrong_asn1_encode, __func__, "quota of second absent");
+
+        if (time[ms_cnt] == '0')
+            return ak_error_message(ak_error_wrong_asn1_encode,
+                    __func__,
+                    "wrong format of quota of second value (it can't end by 0 symbol)");
+
+        *((*pp_buff)++) = (ak_byte) *(time++); // помещаем символ точки
+        for (uint8_t i = 0; i < ms_cnt; i++)
+        {
+            if (!isdigit(*time))
+                return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of quota of second value");
+            *((*pp_buff)++) = (ak_byte) *(time++);
+        }
+    }
+
+    **pp_buff = 'Z';
+
+    return ak_error_ok;
+}
+
+bool_t check_prntbl_str(printable_string str, ak_uint32 len)
+{
+    ak_uint32 i;
+    char c;
+
+    for(i = 0; i < len; i++)
+    {
+        c = str[i];
+        if (!(
+                (c >= 'A' && c <= 'Z') ||
+                (c >= 'a' && c <= 'z') ||
+                (c == ' ')             ||
+                (c == '\'')            ||
+                (c == '(')             ||
+                (c == ')')             ||
+                (c == '+')             ||
+                (c == ',')             ||
+                (c == '-')             ||
+                (c == '.')             ||
+                (c == '/')             ||
+                (c == ':')             ||
+                (c == '=')             ||
+                (c == '?')                  ))
+            return ak_false;
+    }
+
+    return ak_true;
 }
 
 ///* ----------------------------------------------------------------------------------------------- */

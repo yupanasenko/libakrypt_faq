@@ -98,16 +98,13 @@ typedef ak_uint32 integer;
 typedef ak_byte *utf8_string;
 typedef char *visible_string;
 typedef char *generalized_time;
+typedef char *ia5_string;
+typedef char *printable_string;
+typedef char *numeric_string;
+typedef char *utc_time;
 typedef char *object_identifier;
 typedef struct s_asn_bit_str_type bit_string;
 typedef struct s_asn_oct_str_type octet_string;
-
-/*
-IA5 STRING
-PRINTABLE STRING
-NUMERIC STRING
-UTC TIME
-*/
 
 /* Создаем псевданимы типов, чтобы можно было сослаться друг на друга при описании стурктур */
 typedef struct s_constructed_data s_constructed_data_t;
@@ -287,13 +284,18 @@ void asn_free_bitstr(bit_string *p_val);
 void asn_free_generalized_time(generalized_time *p_val);
 
 
-//int new_asn_get_ia5string(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_size);
-//int new_asn_put_ia5string(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_size);
-//int new_asn_get_printable_string(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_size);
-//int new_asn_put_printable_string(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_size);
-//int new_asn_get_numeric_string(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_size);
-//int new_asn_put_numeric_string(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_size);
-//int new_asn_get_utc_time(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_size);
-//int new_asn_put_utc_time(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_size);
+int new_asn_get_ia5string(ak_byte* p_buff, ak_uint32 size, ia5_string* p_str);
+int new_asn_put_ia5string(ia5_string str, ak_byte** pp_buff, ak_uint32* p_size);
+
+int new_asn_get_printable_string(ak_byte* p_buff, ak_uint32 size, printable_string* p_str);
+int new_asn_put_printable_string(printable_string str, ak_byte** pp_buff, ak_uint32* p_size);
+
+int new_asn_get_numeric_string(ak_byte* p_buff, ak_uint32 size, numeric_string* p_str);
+int new_asn_put_numeric_string(numeric_string str, ak_byte** pp_buff, ak_uint32* p_size);
+
+int new_asn_get_utc_time(ak_byte* p_buff, ak_uint32 len, utc_time* p_time);
+int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size);
+
+bool_t check_prntbl_str(printable_string str, ak_uint32 len);
 
 #endif /* __AK_ASN_H__ */

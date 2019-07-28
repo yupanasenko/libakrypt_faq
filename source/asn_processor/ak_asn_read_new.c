@@ -331,7 +331,8 @@ int new_asn_get_bitstr(ak_byte *p_buff, size_t len, bit_string *p_dst) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int new_asn_get_bool(ak_byte *p_buff, size_t len, boolean *p_value) {
+int new_asn_get_bool(ak_byte *p_buff, size_t len, boolean *p_value)
+{
     if (!p_buff || !p_value)
         return ak_error_null_pointer;
 
@@ -350,7 +351,8 @@ int new_asn_get_bool(ak_byte *p_buff, size_t len, boolean *p_value) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int new_asn_get_generalized_time(ak_byte *p_buff, size_t len, generalized_time *p_time) {
+int new_asn_get_generalized_time(ak_byte *p_buff, size_t len, generalized_time *p_time)
+{
     generalized_time date_time;
 
     if (!p_buff || !p_time)
@@ -398,6 +400,130 @@ int new_asn_get_generalized_time(ak_byte *p_buff, size_t len, generalized_time *
     *p_time = date_time;
     return ak_error_ok;
 }
+
+int new_asn_get_ia5string(ak_byte* p_buff, ak_uint32 size, ia5_string* p_str)
+{
+    ak_uint32 i;
+    char c;
+
+    *p_str = NULL;
+
+    for(i = 0; i < size; i++)
+    {
+        c = p_buff[i];
+        if((unsigned char)p_buff[i] > 127)
+            return ak_error_message(ak_error_wrong_asn1_decode, __func__, "unallowable symbol");
+
+    }
+
+    *p_str = malloc(size + 1);
+    if(!(*p_str))
+        return ak_error_out_of_memory;
+
+    memcpy(*p_str, p_buff, size);
+
+    *(*p_str + size) = '\0';
+
+    return ak_error_ok;
+}
+
+int new_asn_get_printable_string(ak_byte* p_buff, ak_uint32 size, printable_string* p_str)
+{
+    ak_uint32 i;
+    char c;
+
+    *p_str = NULL;
+
+    if(check_prntbl_str((char *)p_buff, size) == ak_false)
+        return ak_error_message(ak_error_wrong_asn1_decode, __func__, "unallowable symbol");
+
+    *p_str = malloc(size + 1);
+    if(!(*p_str))
+        return ak_error_out_of_memory;
+
+    memcpy(*p_str, p_buff, size);
+
+    *(*p_str + size) = '\0';
+
+    return ak_error_ok;
+}
+
+int new_asn_get_numeric_string(ak_byte* p_buff, ak_uint32 size, numeric_string* p_str)
+{
+    ak_uint32 i;
+    char c;
+
+    *p_str = NULL;
+
+    for(i = 0; i < size; i++)
+    {
+        c = p_buff[i];
+        if(!((c >= '0' && c <= '9') || c == ' '))
+            return ak_error_message(ak_error_wrong_asn1_decode, __func__, "unallowable symbol");
+
+    }
+
+    *p_str = malloc(size + 1);
+    if(!(*p_str))
+        return ak_error_out_of_memory;
+
+    memcpy(*p_str, p_buff, size);
+
+    *(*p_str + size) = '\0';
+
+    return ak_error_ok;
+}
+
+int new_asn_get_utc_time(ak_byte* p_buff, ak_uint32 len, utc_time* p_time)
+{
+    generalized_time date_time;
+
+    if (!p_buff || !p_time)
+        return ak_error_null_pointer;
+
+    if (len < 13 || toupper(p_buff[len - 1]) != 'Z')
+    {
+        *p_time = NULL;
+        return ak_error_wrong_asn1_decode;
+    }
+
+    /* Дополнительные 9 байтов для символов пробела, тире и т.д. */
+    date_time = (generalized_time) malloc(len + 9);
+    date_time[0] = '\0';
+
+    /* YY */
+    strncat(date_time, (char *) p_buff, 2);
+    strcat(date_time, "-");
+    p_buff += 2;
+
+    /* MM */
+    strncat(date_time, (char *) p_buff, 2);
+    strcat(date_time, "-");
+    p_buff += 2;
+
+    /* DD */
+    strncat(date_time, (char *) p_buff, 2);
+    strcat(date_time, " ");
+    p_buff += 2;
+
+    /* HH */
+    strncat(date_time, (char *) p_buff, 2);
+    strcat(date_time, ":");
+    p_buff += 2;
+
+    /* MM */
+    strncat(date_time, (char *) p_buff, 2);
+    strcat(date_time, ":");
+    p_buff += 2;
+
+    /* SS.mmm */
+    strncat(date_time, (char *) p_buff, len - 11); /* 11 = YY + MM + DD + HH + MM + 'Z' */
+    strcat(date_time, " UTC");
+
+    *p_time = date_time;
+    return ak_error_ok;
+}
+
 
 ///* ----------------------------------------------------------------------------------------------- */
 ///*! Функция декодирует тег из последовательнсти и сравнивает его с ожидаемым тегом.
