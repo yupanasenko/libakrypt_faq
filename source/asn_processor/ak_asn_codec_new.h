@@ -52,7 +52,7 @@
 
 /*! \brief Биты, определяющие класс данных */
 #define DATA_CLASS(x)     (x & 0xC0)
-/*! \brief Биты, определяющие структуру данных */
+/*! \brief Бит, определяющий структуру данных */
 #define DATA_STRUCTURE(x) (x & 0x20)
 /*! \brief Биты, определяющие номер тега */
 #define TAG_NUMBER(x)     (x & 0x1F)
@@ -101,6 +101,13 @@ typedef char *generalized_time;
 typedef char *object_identifier;
 typedef struct s_asn_bit_str_type bit_string;
 typedef struct s_asn_oct_str_type octet_string;
+
+/*
+IA5 STRING
+PRINTABLE STRING
+NUMERIC STRING
+UTC TIME
+*/
 
 /* Создаем псевданимы типов, чтобы можно было сослаться друг на друга при описании стурктур */
 typedef struct s_constructed_data s_constructed_data_t;
@@ -166,7 +173,6 @@ int ak_asn_get_size(ak_asn_tlv p_tlv, ak_uint32* p_size);
 /*! \brief Функция пересчета длинны составных данных. (Используется для обновления информации о длинах после изменений.) */
 int ak_asn_update_size(ak_asn_tlv p_root_tlv);
 /*! \brief Функция отображения структуры ASN.1 данных в виде дерева. */
-void ak_asn_print_tree(ak_asn_tlv p_tree);
 void new_ak_asn_print_tree(ak_asn_tlv p_tree);
 
 /*! \brief Функция вывода шестнадцатеричных данных. */
@@ -261,6 +267,8 @@ ak_uint8 new_asn_get_oid_byte_cnt(object_identifier oid);
 /*! \brief Метод для определения необходимого кол-ва памяти для хранения времени в общепринятом формате. */
 ak_uint8 new_asn_get_gentime_byte_cnt(generalized_time time);
 
+int ak_asn_get_oid_desc(object_identifier oid, char** pp_desc);
+
 int ak_asn_realloc(ak_pointer* pp_mem, size_t old_size, size_t new_size);
 
 /*! \brief Освобождение памяти. */
@@ -277,5 +285,15 @@ void asn_free_objid(object_identifier *p_val);
 void asn_free_bitstr(bit_string *p_val);
 
 void asn_free_generalized_time(generalized_time *p_val);
+
+
+//int new_asn_get_ia5string(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_size);
+//int new_asn_put_ia5string(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_size);
+//int new_asn_get_printable_string(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_size);
+//int new_asn_put_printable_string(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_size);
+//int new_asn_get_numeric_string(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_size);
+//int new_asn_put_numeric_string(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_size);
+//int new_asn_get_utc_time(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_size);
+//int new_asn_put_utc_time(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_size);
 
 #endif /* __AK_ASN_H__ */
