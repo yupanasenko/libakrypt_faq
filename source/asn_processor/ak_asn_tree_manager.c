@@ -4,6 +4,8 @@
 
 #include "ak_asn_codec_new.h"
 
+#include "ak_oid.h"
+
 // TODO: проверить необходимость в подключении файлов
 
 #ifdef LIBAKRYPT_HAVE_STDLIB_H
@@ -52,6 +54,9 @@
 /*! \brief Символ '┤' в кодировке юникод */
 #define RTB_CORNERS "\u2524"
 
+/*! \brief Макрос для подсчета кол-ва байтов, которыми кодируется символ юникода */
+#define UNICODE_SYMBOL_LEN(x) strlen(x)
+
 
 /*! \brief Массив, содержащий символьное представление тега. */
 static char tag_description[20] = "\0";
@@ -60,6 +65,10 @@ static char prefix[1000] = "\0";
 
 /* TODO: Удалить после реализации всех стандартных типов */
 #define RED_STR(x) "\x1b[31m" x "\x1b[0m"
+#define SET_TEXT_COLOR_DEFAULT  printf("\x1b[0m")
+#define SET_TEXT_COLOR_RED      printf("\x1b[31m")
+#define SET_TEXT_COLOR_BLUE     printf("\x1b[34m")
+
 //#define ANSI_COLOR_RED     "\x1b[31m"
 //#define ANSI_COLOR_RESET   "\x1b[0m"
 
@@ -391,7 +400,7 @@ static char* get_tag_description(tag data_tag)
 static void asn_print_universal_data(tag data_tag, ak_uint32 data_len, ak_byte* p_data)
 {
     bit_string bit_string_data;
-    char* str;
+    char *str, *oid;
     ak_uint32 integer_val;
 
     if (DATA_CLASS(data_tag) == UNIVERSAL)
@@ -431,9 +440,19 @@ static void asn_print_universal_data(tag data_tag, ak_uint32 data_len, ak_byte* 
             putchar('\n');
             break;
         case TOBJECT_IDENTIFIER:
-            new_asn_get_objid(p_data, data_len, &str);
-            printf("%s\n", str);
-            free(str);
+            new_asn_get_objid(p_data, data_len, &oid);
+            printf("%s", oid);
+
+            ak_asn_get_oid_desc(oid, &str);
+            if(str)
+            {
+                printf(" (%s)", str);
+                free(str);
+            }
+
+            putchar('\n');
+
+            free(oid);
             break;
         case TUTF8_STRING:
             // FIXME: Подправить, чтобы выводились произвольные символы, а не только символы ASCII
@@ -452,213 +471,105 @@ static void asn_print_universal_data(tag data_tag, ak_uint32 data_len, ak_byte* 
             free(str);
             break;
         default:
-            puts(RED_STR("Unknown data!"));
+            SET_TEXT_COLOR_RED;
+            puts("Unknown data!");
+            SET_TEXT_COLOR_DEFAULT;
         }
     }
 
 }
 
-static void asn_print_last_elem(ak_asn_tlv p_last_elem, ak_uint32 level)
+static void new_ak_asn_print_tlv(ak_asn_tlv p_tlv, bool_t is_last)
 {
-    if(DATA_STRUCTURE(p_last_elem->m_tag) == CONSTRUCTED)
-    {
-        char* p_tag_desc;
-        int tag_desc_len;
-        p_tag_desc = get_tag_description(p_last_elem->m_tag);
-        tag_desc_len = (int)strlen(p_tag_desc);
-
-        /* Заменяем символ вертикальной черты на символ уголка '└' */
-        sprintf(prefix + strlen(prefix) - 3, "%s", LB_CORNER);
-
-        printf("%s%s%s\n", prefix,get_tag_description(p_last_elem->m_tag), RT_CORNER);
-
-        /* Заменяем символ уголка '└' на пробел */
-        prefix[strlen(prefix) - 3] = ' ';
-        prefix[strlen(prefix) - 2] = '\0';
-
-        /* Добавляем к префику вертикальную черту, сдвинутую на длину тега */
-        sprintf(prefix + strlen(prefix), "%*s", tag_desc_len + 3, VER_LINE);
-
-        /* Выводим вложенные данные */
-        for(ak_uint8 i = 0; i < p_last_elem->m_data.m_constructed_data->m_curr_size; i++)
-        {
-            if(i == p_last_elem->m_data.m_constructed_data->m_curr_size - 1)
-                asn_print_last_elem(p_last_elem->m_data.m_constructed_data->m_arr_of_data[i], level);
-            else
-                ak_asn_print_tree(p_last_elem->m_data.m_constructed_data->m_arr_of_data[i]);
-        }
-    }
-    else
-    {
-        /* Заменяем символ вертикальной черты на символ уголка '└' */
-        sprintf(prefix + strlen(prefix) - 3, "%s", LB_CORNER);
-
-        /* Выводим префикс, горизонтальную черту и тега */
-        printf("%s%s%s ", prefix, HOR_LINE, get_tag_description(p_last_elem->m_tag));
-        /* Выводим данные */
-        if(DATA_CLASS(p_last_elem->m_tag) == UNIVERSAL)
-            asn_print_universal_data(p_last_elem->m_tag, p_last_elem->m_data_len, p_last_elem->m_data.m_primitive_data);
-        else if(DATA_CLASS(p_last_elem->m_tag) == CONTEXT_SPECIFIC)
-        {
-            /* Выводим данные */
-            ak_asn_print_hex_data(p_last_elem->m_data.m_primitive_data, p_last_elem->m_data_len);
-            putchar('\n');
-        }
-        else
-            puts(RED_STR("Unknown data!"));
-    }
-}
-
-void ak_asn_print_tree(ak_asn_tlv p_tree)
-{
-    static ak_uint32 uiLevel = 0; /* Уровень вложенности элемента */
-
-    if(DATA_STRUCTURE(p_tree->m_tag) == CONSTRUCTED)
-    {
-        char* p_tag_desc;
-        int tag_desc_len;
-        p_tag_desc = get_tag_description(p_tree->m_tag);
-        tag_desc_len = (int)strlen(p_tag_desc);
-
-        /* Заменяем символ вертикальной черты на символ Т - образного уголка '├' */
-        if(uiLevel != 0)
-            sprintf(prefix + strlen(prefix) - 3, "%s", LTB_CORNERS);
-
-        /* Выводим префик, тег, символ уголка '┐' */
-        printf("%s%s%s\n", prefix,get_tag_description(p_tree->m_tag), RT_CORNER);
-
-        /* Заменяем символ Т - образного уголка '├' на символ вертикальной черты */
-        if(uiLevel != 0)
-            sprintf(prefix + strlen(prefix) - 3, "%s", VER_LINE);
-
-        /* Добавляем к префику вертикальную черту, сдвинутую на длину тега */
-        sprintf(prefix + strlen(prefix), "%*s", tag_desc_len + 3, VER_LINE);
-
-        /* Выводим вложенные данные */
-        uiLevel++;
-        for(ak_uint8 i = 0; i < p_tree->m_data.m_constructed_data->m_curr_size; i++)
-        {
-            if(i == p_tree->m_data.m_constructed_data->m_curr_size - 1)
-                asn_print_last_elem(p_tree->m_data.m_constructed_data->m_arr_of_data[i], uiLevel);
-            else
-                ak_asn_print_tree(p_tree->m_data.m_constructed_data->m_arr_of_data[i]);
-        }
-
-        /* Отрезаем от префикса лишнее (поднимаемся на уровень выше) */
-        uiLevel--;
-        uint32_t curr_lvl = uiLevel;
-        char* tmp = prefix;
-        while(curr_lvl > 0)
-        {
-            tmp = strstr(tmp, VER_LINE);
-            tmp += 3;
-            curr_lvl--;
-        }
-        *(tmp) = 0;
-
-//        printf("%*c%s%s\n", uiLevel * 2, ' ', get_tag_description(p_tree->m_tag), RT_CORNER);
-//        printf("%*c\n", uiLevel * 2 + 1, '{');
-//        uiLevel++;
-//        for(ak_uint8 i = 0; i < p_tree->m_data.m_constructed_data->m_curr_size; i++)
-//            ak_asn_print_tree(p_tree->m_data.m_constructed_data->m_arr_of_data[i]);
-//        uiLevel--;
-//        printf("%*c\n", uiLevel * 2 + 1, '}');
-    }
-    else
-    {
-        /* Заменяем символ вертикальной черты на символ Т - образного уголка '├' */
-        if(uiLevel != 0)
-            sprintf(prefix + strlen(prefix) - 3, "%s", LTB_CORNERS);
-
-        /* Выводим префикс, горизонтальную линию, тег */
-        printf("%s%s%s ", prefix, HOR_LINE, get_tag_description(p_tree->m_tag));
-
-        if(DATA_CLASS(p_tree->m_tag) == UNIVERSAL)
-            asn_print_universal_data(p_tree->m_tag, p_tree->m_data_len, p_tree->m_data.m_primitive_data);
-        else if(DATA_CLASS(p_tree->m_tag) == CONTEXT_SPECIFIC)
-        {
-            /* Выводим данные */
-            ak_asn_print_hex_data(p_tree->m_data.m_primitive_data, p_tree->m_data_len);
-            putchar('\n');
-        }
-        else
-            printf("Unknown data\n");
-
-        /* Заменяем символ Т - образного уголка '├' на символ вертикальной черты */
-        if(uiLevel != 0)
-            sprintf(prefix + strlen(prefix) - 3, "%s", VER_LINE);
-
-//        printf("%*c%s : (hex) ", uiLevel * 2, ' ', get_tag_description(p_tree->m_tag));
-//        for(ak_uint32 i = 0; i < p_tree->m_data_len; i++)
-//        {
-//            printf("%02X", p_tree->m_data.m_primitive_data[i]);
-//        }
-//        putchar('\n');
-    }
-}
-
-static void new_ak_asn_print_tlv(ak_asn_tlv p_tree, bool_t is_last)
-{
-    char* p_curr_pos;
+    size_t p_curr_prefix_len;
     char* p_tag_desc;
     int tag_desc_len;
-    p_tag_desc = get_tag_description(p_tree->m_tag);
+    p_tag_desc = get_tag_description(p_tlv->m_tag);
     tag_desc_len = (int)strlen(p_tag_desc);
 
+    /* Если данный TLV является последним элементом, то заменяем вертикальную
+     * черту в префиксе на символ '└', а иначе на символ '├' */
     if(is_last)
-        sprintf(prefix + strlen(prefix) - 3, "%s", LB_CORNER);
+        sprintf(prefix + strlen(prefix) - UNICODE_SYMBOL_LEN(VER_LINE), "%s", LB_CORNER);
     else
-        sprintf(prefix + strlen(prefix) - 3, "%s", LTB_CORNERS);
+        sprintf(prefix + strlen(prefix) - UNICODE_SYMBOL_LEN(VER_LINE), "%s", LTB_CORNERS);
 
 
-    if(DATA_STRUCTURE(p_tree->m_tag) == CONSTRUCTED)
+    if(DATA_STRUCTURE(p_tlv->m_tag) == CONSTRUCTED)
     {
-        /* Выводим префик, тег, символ уголка '┐' */
-        printf("%s%s%s\n", prefix,get_tag_description(p_tree->m_tag), RT_CORNER);
+        size_t suffix_len = strlen(p_tag_desc) + UNICODE_SYMBOL_LEN(VER_LINE);
+        /* Выводим префик, тег */
+        printf("%s%s", prefix, p_tag_desc);
 
-        p_curr_pos = prefix + strlen(prefix);
+        if(p_tlv->p_name)
+        {
+            /* Выводим название TLV */
+            SET_TEXT_COLOR_BLUE;
+            printf(" (%s) ", p_tlv->p_name);
+            SET_TEXT_COLOR_DEFAULT;
+            suffix_len += strlen(p_tlv->p_name) + 4;
+        }
 
+        /* Выводим символ уголка '┐' */
+        printf("%s\n", RT_CORNER);
+
+        /* Запоминаем длину тега на данном уровне вложенности TLV */
+        p_curr_prefix_len = strlen(prefix);
+
+        /* Если данный TLV является последним элементом, то заменяем последний символ в префиксе
+         * на символ пробела, а иначе на символ вертикальной черты */
         if(is_last == ak_true)
         {
-            prefix[strlen(prefix) - 3] = ' ';
-            prefix[strlen(prefix) - 2] = '\0';
+            prefix[strlen(prefix) - UNICODE_SYMBOL_LEN(VER_LINE)] = ' ';
+            prefix[strlen(prefix) - UNICODE_SYMBOL_LEN(VER_LINE) + 1] = '\0';
         }
         else
-            sprintf(prefix + strlen(prefix) - 3, "%s", VER_LINE);
+            sprintf(prefix + strlen(prefix) - UNICODE_SYMBOL_LEN(VER_LINE), "%s", VER_LINE);
 
         /* Добавляем к префику вертикальную черту, сдвинутую на длину тега */
-        sprintf(prefix + strlen(prefix), "%*s", tag_desc_len + 3, VER_LINE);
-
+        sprintf(prefix + strlen(prefix), "%*s", (int)suffix_len, VER_LINE);
 
         /* Выводим вложенные данные */
-        for(ak_uint8 i = 0; i < p_tree->m_data.m_constructed_data->m_curr_size; i++)
+        for(ak_uint8 i = 0; i < p_tlv->m_data.m_constructed_data->m_curr_size; i++)
         {
-            if(i == p_tree->m_data.m_constructed_data->m_curr_size - 1)
-                new_ak_asn_print_tlv(p_tree->m_data.m_constructed_data->m_arr_of_data[i], ak_true);
+            if(i == p_tlv->m_data.m_constructed_data->m_curr_size - 1)
+                new_ak_asn_print_tlv(p_tlv->m_data.m_constructed_data->m_arr_of_data[i], ak_true);
             else
-                new_ak_asn_print_tlv(p_tree->m_data.m_constructed_data->m_arr_of_data[i], ak_false);
+                new_ak_asn_print_tlv(p_tlv->m_data.m_constructed_data->m_arr_of_data[i], ak_false);
         }
 
         /* Отрезаем от префикса лишнее (поднимаемся на уровень выше) */
-        *p_curr_pos = 0;
+        prefix[p_curr_prefix_len] = 0;
     }
     else
     {
-        /* Выводим префикс, горизонтальную линию, тег */
-        printf("%s %s ", prefix, get_tag_description(p_tree->m_tag));
+        /* Выводим префикс, тег */
+        printf("%s%s ", prefix, get_tag_description(p_tlv->m_tag));
 
-        sprintf(prefix + strlen(prefix) - 3, "%s", VER_LINE);
-
-        if(DATA_CLASS(p_tree->m_tag) == UNIVERSAL)
-            asn_print_universal_data(p_tree->m_tag, p_tree->m_data_len, p_tree->m_data.m_primitive_data);
-        else if(DATA_CLASS(p_tree->m_tag) == CONTEXT_SPECIFIC)
+        if(p_tlv->p_name)
         {
-            /* Выводим данные */
-            ak_asn_print_hex_data(p_tree->m_data.m_primitive_data, p_tree->m_data_len);
+            SET_TEXT_COLOR_BLUE;
+            printf("(%s) ", p_tlv->p_name);
+            SET_TEXT_COLOR_DEFAULT;
+        }
+
+        /* Заменям последний символ в префиксе на символ вертикальной черты */
+        sprintf(prefix + strlen(prefix) - UNICODE_SYMBOL_LEN(VER_LINE), "%s", VER_LINE);
+
+        /* Выводим значение данных */
+        if(DATA_CLASS(p_tlv->m_tag) == UNIVERSAL)
+            asn_print_universal_data(p_tlv->m_tag, p_tlv->m_data_len, p_tlv->m_data.m_primitive_data);
+        else if(DATA_CLASS(p_tlv->m_tag) == CONTEXT_SPECIFIC)
+        {
+            ak_asn_print_hex_data(p_tlv->m_data.m_primitive_data, p_tlv->m_data_len);
             putchar('\n');
         }
         else
-            printf("Unknown data\n");
+        {
+            SET_TEXT_COLOR_RED;
+            puts("Unknown data!");
+            SET_TEXT_COLOR_DEFAULT;
+        }
     }
 }
 
@@ -825,4 +736,25 @@ int ak_asn_realloc(ak_pointer* pp_mem, size_t old_size, size_t new_size)
     *pp_mem = p_new_mem;
 
     return ak_error_ok;
+}
+
+int ak_asn_get_oid_desc(object_identifier oid, char** pp_desc)
+{
+    char* p_desc = NULL;
+    ak_oid p_oid_obj;
+
+    p_oid_obj = ak_oid_context_find_by_id(oid);
+
+    if(p_oid_obj)
+    {
+        p_desc = calloc(strlen(p_oid_obj->name) + 1, 1);
+        if(!p_desc)
+            return ak_error_out_of_memory;
+
+        strcat(p_desc, p_oid_obj->name);
+    }
+
+    *pp_desc = p_desc;
+
+    return  ak_error_ok;
 }
