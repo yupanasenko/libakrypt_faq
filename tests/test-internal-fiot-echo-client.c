@@ -51,7 +51,7 @@
      return ak_libakrypt_destroy();
    }
 
-   if(( error = ak_network_connect( sock, &socket_address )) != ak_error_ok ) {
+   if(( error = ak_network_connect( sock, &socket_address, sizeof( socket_address ))) != ak_error_ok ) {
      ak_network_close( sock );
      ak_error_message_fmt( error, __func__, "wrong server connect" );
      return ak_libakrypt_destroy();
@@ -71,6 +71,9 @@
   /* устанавливаем идентификатор сервера */
    if(( error = ak_fiot_context_set_user_identifier( &ctx, server_role,
                                                  "serverID", 8 )) != ak_error_ok ) goto exit;
+   if(( error = ak_fiot_context_set_user_identifier( &ctx, client_role,
+                             "Client with long identifier", 27 )) != ak_error_ok ) goto exit;
+
   /* устанавливаем сокет для внешнего (шифрующего) интерфейса */
    if(( error = ak_fiot_context_set_interface_descriptor( &ctx,
                                     encryption_interface, sock )) != ak_error_ok ) goto exit;

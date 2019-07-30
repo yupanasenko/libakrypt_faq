@@ -178,78 +178,94 @@ extern "C" {
  #define ak_error_file_exists                 (-17)
 
 /*! \brief Ошибка открытия сокета. */
- #define ak_error_open_socket                 (-20)
-/*! \brief Ошибка конвертации сетевого адреса в двоичное представление. */
- #define ak_error_wrong_inet_pton             (-21)
+ #define ak_error_open_socket                 (-20) 
 /*! \brief Ошибка установления соединения с сокетом. */
- #define ak_error_connect_socket              (-22)
+ #define ak_error_connect_socket              (-21)
 /*! \brief Ошибка закрытия сокета. */
- #define ak_error_close_socket                (-23)
+ #define ak_error_close_socket                (-22)
+/*! \brief Ошибка связывания сокета. */
+ #define ak_error_bind_socket                 (-23)
+/*! \brief Ошибка прослушивания сокета. */
+ #define ak_error_listen_socket               (-24)
+/*! \brief Ошибка создания входящего сокета. */
+ #define ak_error_accept_socket               (-25)
+
+/*! \brief Ошибка установки опций сокета */
+ #define ak_error_wrong_setsockopt            (-26)
+/*! \brief Ошибка получения опций сокета */
+ #define ak_error_wrong_getsockopt            (-27)
+/*! \brief Ошибка конвертации сетевого адреса в двоичное представление. */
+ #define ak_error_wrong_inet_pton             (-28)
+/*! \brief Ошибка конвертации двоичного представления адреса в человекочитаемое. */
+ #define ak_error_wrong_inet_ntop             (-29)
+/*! \brief Ошибка получения информации о присоединенном сокете. */
+ #define ak_error_wrong_getpeername           (-30)
+
 /*! \brief Ошибка выбора семейства протоколов. */
- #define ak_error_wrong_protocol_family       (-24)
+ #define ak_error_wrong_protocol_family       (-34)
 
  /*! \brief Ошибка при сравнении двух массивов данных. */
- #define ak_error_not_equal_data              (-25)
+ #define ak_error_not_equal_data              (-35)
 /*! \brief Ошибка выполнения библиотеки на неверной архитектуре. */
- #define ak_error_wrong_endian                (-26)
+ #define ak_error_wrong_endian                (-36)
 /*! \brief Ошибка чтения из терминала. */
- #define ak_error_terminal                    (-27)
+ #define ak_error_terminal                    (-37)
 /*! \brief Использование неопределенного буффера. */
- #define ak_error_wrong_buffer                (-28)
+ #define ak_error_wrong_buffer                (-38)
 
 /*! \brief Неверное значение дескриптора объекта. */
- #define ak_error_wrong_handle                (-30)
+ #define ak_error_wrong_handle                (-40)
 /*! \brief Попытка создания и/или использования ранее созданного менеджера контектстов */
- #define ak_error_context_manager_usage       (-31)
+ #define ak_error_context_manager_usage       (-41)
 /*! \brief Ошибка, возникающая в случае неправильного значения размера структуры хранения контекстов. */
- #define ak_error_context_manager_size        (-32)
+ #define ak_error_context_manager_size        (-42)
 /*! \brief Ошибка, возникающая при превышении числа возможных элементов структуры хранения контекстов. */
- #define ak_error_context_manager_max_size    (-33)
+ #define ak_error_context_manager_max_size    (-43)
 
 /*! \brief Неверный тип криптографического механизма. */
- #define ak_error_oid_engine                  (-40)
+ #define ak_error_oid_engine                  (-50)
 /*! \brief Неверный режим использования криптографического механизма. */
- #define ak_error_oid_mode                    (-41)
+ #define ak_error_oid_mode                    (-51)
 /*! \brief Ошибочное или не определенное имя криптографического механизма. */
- #define ak_error_oid_name                    (-42)
+ #define ak_error_oid_name                    (-52)
 /*! \brief Ошибочный или неопределенный идентификатор криптографического механизма. */
- #define ak_error_oid_id                      (-43)
+ #define ak_error_oid_id                      (-53)
 /*! \brief Ошибочный индекс идентификатора криптографического механизма. */
- #define ak_error_oid_index                   (-44)
+ #define ak_error_oid_index                   (-54)
 /*! \brief Ошибка с обращением к oid. */
- #define ak_error_wrong_oid                   (-45)
+ #define ak_error_wrong_oid                   (-55)
 
 /*! \brief Ошибка, возникающая при использовании ключа, значение которого не определено. */
- #define ak_error_key_value                   (-51)
+ #define ak_error_key_value                   (-61)
 /*! \brief Ошибка, возникающая при использовании ключа для бесключевых функций. */
- #define ak_error_key_usage                   (-52)
+ #define ak_error_key_usage                   (-62)
 /*! \brief Ошибка, возникающая при неверном заполнении полей структуры bckey. */
- #define ak_error_wrong_block_cipher          (-53)
+ #define ak_error_wrong_block_cipher          (-63)
 /*! \brief Ошибка, возникающая при зашифровании/расшифровании данных, длина которых не кратна длине блока. */
- #define ak_error_wrong_block_cipher_length   (-54)
+ #define ak_error_wrong_block_cipher_length   (-64)
 /*! \brief Ошибка, возникающая при неверном значении кода целостности ключа. */
- #define ak_error_wrong_key_icode             (-55)
+ #define ak_error_wrong_key_icode             (-65)
 /*! \brief Ошибка, возникающая при неверном значении длины ключа. */
- #define ak_error_wrong_key_length            (-57)
+ #define ak_error_wrong_key_length            (-66)
 /*! \brief Ошибка, возникающая при недостаточном ресурсе ключа. */
- #define ak_error_low_key_resource            (-58)
+ #define ak_error_low_key_resource            (-67)
 /*! \brief Ошибка, возникающая при использовании синхропосылки (инициализационного вектора) неверной длины. */
- #define ak_error_wrong_iv_length             (-59)
+ #define ak_error_wrong_iv_length             (-68)
 /*! \brief Ошибка, возникающая при неправильном использовании функций зашифрования/расшифрования данных. */
- #define ak_error_wrong_block_cipher_function (-60)
+ #define ak_error_wrong_block_cipher_function (-69)
 
 /*! \brief Ошибка, возникающая когда параметры кривой не соответствуют алгоритму, в котором они используются. */
- #define ak_error_curve_not_supported         (-70)
+ #define ak_error_curve_not_supported         (-80)
 /*! \brief Ошибка, возникающая если точка не принадлежит заданной кривой. */
- #define ak_error_curve_point                 (-71)
+ #define ak_error_curve_point                 (-81)
 /*! \brief Ошибка, возникающая когда порядок точки неверен. */
- #define ak_error_curve_point_order           (-72)
+ #define ak_error_curve_point_order           (-82)
 /*! \brief Ошибка, возникающая если дискриминант кривой равен нулю (уравнение не задает кривую). */
- #define ak_error_curve_discriminant          (-73)
+ #define ak_error_curve_discriminant          (-83)
 /*! \brief Ошибка, возникающая когда неверно определены вспомогательные параметры эллиптической кривой. */
- #define ak_error_curve_order_parameters      (-74)
+ #define ak_error_curve_order_parameters      (-84)
 /*! \brief Ошибка, возникающая когда простой модуль кривой задан неверно. */
- #define ak_error_curve_prime_modulo          (-75)
+ #define ak_error_curve_prime_modulo          (-85)
 
 /*! \brief Ошибка, возникающая при кодировании ASN1 структуры (перевод в DER-кодировку). */
  #define ak_error_wrong_asn1_encode           (-90)
@@ -264,6 +280,11 @@ extern "C" {
 /*! \brief Ошибка, возникающая при попытке совершения запрещенного действия с сервером в текущем режиме. */
 #define ak_error_wrong_ps_mode                (-110)
 
+
+/*! \brief Ошибка сохранения/чтения ключа с неподдерживаемым типом криптографического преобразования. */
+ #define ak_error_key_engine                 (-100)
+/*! \brief Ошибка сохранения/чтения ключа в неподдерживаемом формате хранения. */
+ #define ak_error_key_format                 (-101)
 
 /* ----------------------------------------------------------------------------------------------- */
  #define ak_null_string                  ("(null)")

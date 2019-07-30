@@ -16,12 +16,12 @@ set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
 # сборка при MinGW из консоли MSYS (WINDOWS)
 # cmake -G "MinGW Makefiles" -D CMAKE_C_COMPILER=gcc path && mingw32-make
 # -------------------------------------------------------------------------------------------------- #
-cmake_minimum_required( VERSION 2.7 )
 project( libakrypt C )
+cmake_minimum_required( VERSION 2.7 FATAL_ERROR )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 7 )
-set( MINOR_VERSION 14 )
+set( MINOR_VERSION 15 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
@@ -100,6 +100,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_bckey.h
                     source/ak_omac.h
                     source/ak_mgm.h
+                    source/ak_key_manager.h
   )
   set( SOURCES      ${SOURCES}
                     source/ak_hash.c
@@ -207,7 +208,8 @@ set( CMAKES         cmake/DetectFlags.cmake
 )
 set( DOCS           doc/00-introduction.md
                     doc/01-install-guide.md
-                    doc/02-primciples.md
+                    doc/02-principles.md
+                    doc/asn1.md
                     doc/Doxyfile.in
                     doc/refman_footer.in
                     doc/refman_header.in
@@ -264,15 +266,32 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 # сборка консольной утилиты для работы с функциями библиотеки
 if( LIBAKRYPT_AKRYPT )
+
   if( LIBAKRYPT_HAVE_GETOPT )
   else()
     set( AKRYPT_SOURCES ${AKRYPT_SOURCES} akrypt/getopt.c )
   endif()
+
+  find_path( LIBINTL_H_PATH NAMES libintl.h )
+  if( LIBINTL_H_PATH )
+    include_directories( ${LIBINTL_H_PATH} )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_LIBINTL_H" )
+    message("-- Additional header for akrypt is libintl.h" )
+  endif()
+
   if( LIBAKRYPT_STATIC_LIB )
     add_executable( akrypt${LIBAKRYPT_EXT} ${AKRYPT_SOURCES} )
     target_include_directories( akrypt${LIBAKRYPT_EXT} PUBLIC "akrypt" )
-    target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+
+    find_library( LIBINTL_LIB intl )
+    if( LIBINTL_LIB )
+      message("-- Additional library for akrypt is ${LIBINTL_LIB}")
+      target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} ${LIBINTL_LIB} )
+    else()
+      target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+    endif()
   endif()
+
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -340,6 +359,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  internal-hash01
                  internal-hash02
                  internal-hash03
+                 internal-hash04
                  internal-oid03
                  internal-random02
                  internal-sign01
@@ -359,6 +379,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                                    # при запуске make test
                  internal-bckey04
                  internal-mgm04
+                 internal-mgm05
   )
   if( LIBAKRYPT_HAVE_SYSUN )
     set( INTERNAL_TEST_LIST_EXAMPLES
@@ -371,13 +392,8 @@ if( LIBAKRYPT_FIOT )
                  internal-fiot-algconst
                  internal-fiot-context
                  internal-fiot-echo-client
-  )
-  if( UNIX )
-    set( INTERNAL_FIOT_TEST_LIST
-                 ${INTERNAL_FIOT_TEST_LIST}
                  internal-fiot-echo-server
-    )
-  endif()
+  )
 endif()
 if( LIBAKRYPT_PKCS_15_CONTAINER )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}

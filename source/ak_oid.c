@@ -474,7 +474,7 @@
 /*! @param name строка, содержащая символьное (человекочитаемое) имя криптографического механизма
     или параметра.
     @return Функция возвращает указатель на область памяти, в которой находится структура
-    с найденным идентификатором. В случае ошибки, возвращается NULL.                               */
+    с найденным идентификатором. В случае ошибки, возвращается NULL и устанавливается код ошибки.  */
 /* ----------------------------------------------------------------------------------------------- */
  ak_oid ak_oid_context_find_by_name( const char *name )
 {
@@ -492,8 +492,9 @@
        return  &libakrypt_oids[idx];
 
   } while( ++idx < ak_libakrypt_oids_count( ));
-  ak_error_message_fmt( ak_error_oid_id, __func__, "searching oid with wrong name \"%s\"", name );
 
+  //ak_error_message_fmt( ak_error_oid_id, __func__, "searching oid with wrong name \"%s\"", name );
+  ak_error_set_value( ak_error_oid_id );
  return NULL;
 }
 
@@ -517,8 +518,11 @@
        return  &libakrypt_oids[idx];
 
   } while( ++idx < ak_libakrypt_oids_count( ));
-  ak_error_message_fmt( ak_error_oid_id, __func__,
-                                            "searching oid with wrong identifier \"%s\"", id );
+
+
+  // ak_error_message_fmt( ak_error_oid_id, __func__,
+  //                                          "searching oid with wrong identifier \"%s\"", id );
+  ak_error_set_value( ak_error_oid_id );
  return NULL;
 }
 
@@ -548,8 +552,10 @@
        return &libakrypt_oids[idx];
 
   } while( ++idx < ak_libakrypt_oids_count( ));
-  ak_error_message_fmt( ak_error_oid_id, __func__,
-                                        "searching oid with wrong name or identifier\"%s\"", ni );
+
+  // ak_error_message_fmt( ak_error_oid_id, __func__,
+  //                                      "searching oid with wrong name or identifier\"%s\"", ni );
+  ak_error_set_value( ak_error_oid_id );
  return NULL;
 }
 
