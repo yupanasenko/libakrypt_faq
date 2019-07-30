@@ -149,9 +149,9 @@ struct s_asn_tlv
 typedef struct s_asn_tlv* ak_asn_tlv;
 
 /*! \brief Функция кодирования ASN.1 данных. */
-int ak_asn_encode(ak_asn_tlv p_tlv, ak_byte** pp_asn_data, ak_uint32* p_size);
+int ak_asn_build_data(ak_asn_tlv p_tlv, ak_byte** pp_asn_data, ak_uint32* p_size);
 /*! \brief Функция декодирования ASN.1 данных. */
-int ak_asn_decode(ak_pointer p_asn_data, size_t size, ak_asn_tlv* pp_tlv);
+int ak_asn_parse_data(ak_pointer p_asn_data, size_t size, ak_asn_tlv* pp_tlv);
 /*! \brief Функция создания контекста составных данных. */
 int ak_asn_construct_data_ctx_create(ak_asn_tlv p_tlv, tag constructed_data_tag, char* p_data_name);
 /*! \brief Функция создания контекста примитивных данных. */
@@ -161,6 +161,9 @@ int ak_asn_construct_data_ctx_create(ak_asn_tlv p_tlv, tag constructed_data_tag,
 //              1) Если значение *p_data_copied == ak_true, то данные копируются в объект s_asn_tlv;
 //              2) Если значение *p_data_copied == ak_false, то объект s_asn_tlv просто ссылается на данные;
 //              3) Если значение p_data_copied == NULL, то см. п. 1);
+
+int ak_asn_encode_universal_data(ak_uint8 tag_number, ak_pointer p_data, ak_uint32 size, char* p_name, ak_asn_tlv* pp_tlv);
+int ak_asn_decode_universal_data(ak_asn_tlv p_tlv, ak_pointer* pp_data, ak_uint32* p_size);
 
 int ak_asn_primitive_data_ctx_create(ak_asn_tlv p_tlv, tag data_tag, ak_uint32 data_len, ak_pointer p_data, char* p_data_name);
 /*! \brief Функция получения размера памяти, необходимого для кодирования ASN.1 данных. */

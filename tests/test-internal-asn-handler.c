@@ -135,6 +135,7 @@ ak_byte test_data[] = {0x30, 0x82, 0x05, 0x14, 0x30, 0x82, 0x04, 0xc1, 0xa0, 0x0
 //}
 
 #include <stdio.h>
+#include <time.h>
 
 int ak_function_log_logfile( const char *message )
 {
@@ -171,8 +172,22 @@ int main(void)
         return ak_libakrypt_destroy();
     }
 
+    ak_asn_tlv p_test_tlv;
+    ak_asn_encode_universal_data(TOBJECT_IDENTIFIER, "1.2.643.234.5", 0, "test id", &p_test_tlv);
+
+    new_ak_asn_print_tree(p_test_tlv);
+    ak_asn_free_tree(p_test_tlv);
+
+    char time_fmt[100];
+    time_t t;
+    time(&t);
+
+    struct tm* p_tm = localtime(&t);
+    strftime(time_fmt, 100, "%F %X UTC", p_tm);
+    printf("Curr time : %s\n", time_fmt);
+
     /* Декодируем данные */
-    ak_asn_decode(test_data, sizeof(test_data), &p_root_tlv);
+    ak_asn_parse_data(test_data, sizeof(test_data), &p_root_tlv);
 
     char* p15Token = "PKCS 15 Token";
     char* tokenVer = "Token version";
@@ -192,7 +207,7 @@ int main(void)
     new_ak_asn_print_tree(p_root_tlv);
 
     /* Кодируем данные обратно */
-    ak_asn_encode(p_root_tlv, &p_encoded_data, &size);
+    ak_asn_build_data(p_root_tlv, &p_encoded_data, &size);
 
     /* Выводим исходную ASN.1 последовательность */
     printf("%-20s", "Original data : ");

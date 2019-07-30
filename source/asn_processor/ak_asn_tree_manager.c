@@ -102,11 +102,14 @@ static int ak_asn_create_primitive_tlv(ak_asn_tlv p_tlv, tag data_tag, size_t da
     p_tlv->m_tag = data_tag;
 
     /* Добавляем длину, и кол-во байт, необходиоме для кодирования длины */
-    p_tlv->m_data_len = (ak_uint32)data_len;
-    p_tlv->m_len_byte_cnt = new_asn_get_len_byte_cnt(data_len);
+    if(data_len)
+    {
+        p_tlv->m_data_len = (ak_uint32) data_len;
+        p_tlv->m_len_byte_cnt = new_asn_get_len_byte_cnt(data_len);
+    }
 
     /* Добавляем данные */
-    if(free_mem)
+    if(free_mem && p_data)
     {
         p_tlv->m_data.m_primitive_data = malloc(data_len * sizeof(ak_byte));
         if(!p_tlv->m_data.m_primitive_data)
@@ -135,6 +138,13 @@ int ak_asn_construct_data_ctx_create(ak_asn_tlv p_tlv, tag constructed_data_tag,
     {
         if((error = ak_asn_create_constructed_tlv(p_tlv, constructed_data_tag)) != ak_error_ok)
             return ak_error_message(error, __func__, "failure to create constructed tlv");
+
+        if(p_data_name)
+        {
+            size_t len = strlen(p_data_name) + 1;
+            p_tlv->p_name = malloc(len);
+            memcpy(p_tlv->p_name, p_data_name, len);
+        }
     }
     else
         return ak_error_message(ak_error_invalid_value, __func__, "tag must specify constructed data");
@@ -147,7 +157,8 @@ int ak_asn_primitive_data_ctx_create(ak_asn_tlv p_tlv, tag data_tag, ak_uint32 d
 {
     int error; /* Код ошибки */
 
-    if(!p_tlv || !p_data)
+    /* Передача p_data == NULL разрешена, чтобы можно было создать пустой контекст и заполнить его позже */
+    if(!p_tlv)
         return ak_error_null_pointer;
 
     if(DATA_STRUCTURE(data_tag) == PRIMITIVE)
@@ -582,7 +593,7 @@ void ak_asn_print_hex_data(ak_byte* p_data, ak_uint32 size)
     }
 }
 
-int ak_asn_decode(ak_pointer p_asn_data, size_t size, ak_asn_tlv* pp_tlv)
+int ak_asn_parse_data(ak_pointer p_asn_data, size_t size, ak_asn_tlv* pp_tlv)
 {
     ak_byte* p_curr;   /* Указатель на текущую позицию */
     ak_byte* p_end;    /* Указатель на конец tlv */
@@ -615,7 +626,7 @@ int ak_asn_decode(ak_pointer p_asn_data, size_t size, ak_asn_tlv* pp_tlv)
         index = 0;
         while((*pp_tlv)->m_data_len < data_len)
         {
-            ak_asn_decode(p_curr, data_len, &p_nested_tlv);
+            ak_asn_parse_data(p_curr, data_len, &p_nested_tlv);
             ak_asn_add_nested_elems(*pp_tlv, &p_nested_tlv, 1);
             ak_asn_get_size(p_nested_tlv, &child_size);
             p_curr += child_size;
@@ -678,7 +689,7 @@ static int ak_asn_encode_tlv(ak_asn_tlv p_tlv, ak_byte** pp_pos, ak_byte* p_end)
     return ak_error_ok;
 }
 
-int ak_asn_encode(ak_asn_tlv p_tlv, ak_byte** pp_asn_data, ak_uint32* p_size)
+int ak_asn_build_data(ak_asn_tlv p_tlv, ak_byte** pp_asn_data, ak_uint32* p_size)
 {
     int error; /* Код ошибки */
     ak_byte* p_curr_pos; /* Указатель на текущую позицию в буфере с ASN.1 данными */

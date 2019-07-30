@@ -16,6 +16,76 @@
 #error Library cannot be compiled without ctype.h header
 #endif
 
+int ak_asn_encode_universal_data(ak_uint8 tag_number, ak_pointer p_data, ak_uint32 size, char* p_name, ak_asn_tlv* pp_tlv)
+{
+    int error; /* код ошибки */
+
+    if(!p_data || !pp_tlv)
+        return ak_error_null_pointer;
+
+    if(tag_number > 0x1E)
+        return ak_error_invalid_value;
+
+    *pp_tlv = (ak_asn_tlv)malloc(sizeof(s_asn_tlv_t));
+    if(!(*pp_tlv))
+        return ak_error_out_of_memory;
+
+    /* Создаем пустой контекст */
+    error = ak_asn_primitive_data_ctx_create(*pp_tlv, (tag)(UNIVERSAL | PRIMITIVE | tag_number), 0, NULL, p_name);
+    if(error != ak_error_ok)
+        return ak_error_message(error, __func__, "failure in creating context");
+
+    /* Заполняем контекст закодированным значением */
+    switch (tag_number)
+    {
+    case TBOOLEAN:
+        error = new_asn_put_bool(*(boolean*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        break;
+    case TINTEGER:
+        error = new_asn_put_int(*(integer*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        break;
+    case TBIT_STRING:
+        error = new_asn_put_bitstr(*(bit_string*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        break;
+    case TOCTET_STRING:
+        error = new_asn_put_octetstr(*(octet_string*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        break;
+    case TOBJECT_IDENTIFIER:
+        error = new_asn_put_objid((object_identifier)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        break;
+    case TUTF8_STRING:
+        error = new_asn_put_utf8string(*(utf8_string*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        break;
+    case TGENERALIZED_TIME:
+        error = new_asn_put_generalized_time(*(generalized_time*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        break;
+    case TUTCTIME:
+        error = new_asn_put_utc_time(*(utc_time*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        break;
+    case TVISIBLE_STRING:
+        error = new_asn_put_vsblstr(*(visible_string*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        break;
+    case TIA5_STRING:
+        error = new_asn_put_ia5string(*(ia5_string*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        break;
+    case TPRINTABLE_STRING:
+        error = new_asn_put_printable_string(*(printable_string*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        break;
+    case TNUMERIC_STRING:
+        error = new_asn_put_numeric_string(*(numeric_string*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        break;
+    default:
+        return ak_error_message(ak_error_invalid_value, __func__, "unsupported data type");
+    }
+
+    if(error != ak_error_ok)
+        return ak_error_message(error, __func__, "failure in encoding");
+
+    (*pp_tlv)->m_len_byte_cnt = new_asn_get_len_byte_cnt((*pp_tlv)->m_data_len);
+
+    return ak_error_ok;
+}
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param tag тег
     @param pp_buff указатель на область памяти, в которую записывается результат кодирования
@@ -233,14 +303,15 @@ int new_asn_put_objid(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_
     // FIXME: Реализовать кодирования произовльного идентификатора
     ak_uint64 num;
     object_identifier p_objid_end;
+    ak_byte* p_enc_oid;
 
     if (!obj_id || !pp_buff)
         return ak_error_null_pointer;
 
     *p_size = new_asn_get_oid_byte_cnt(obj_id);
 
-    *pp_buff = malloc(*p_size);
-    if(!(*pp_buff))
+    *pp_buff = p_enc_oid = malloc(*p_size);
+    if(!(p_enc_oid))
     {
         *p_size = 0;
         return ak_error_out_of_memory;
@@ -249,7 +320,7 @@ int new_asn_put_objid(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_
     num = strtoul((char *) obj_id, &p_objid_end, 10);
     obj_id = ++p_objid_end;
     num = num * 40 + strtol((char *) obj_id, &p_objid_end, 10);
-    *((*pp_buff)++) = (ak_byte) num;
+    *(p_enc_oid++) = (ak_byte) num;
 
     while (*p_objid_end != '\0')
     {
@@ -265,12 +336,12 @@ int new_asn_put_objid(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_
             {
                 seven_bits = (ak_byte) ((num >> ((ak_uint8) i * 7u)) & 0x7Fu);
                 if (seven_bits)
-                    *((*pp_buff)++) = (ak_byte) (0x80u ^ seven_bits);
+                    *(p_enc_oid++) = (ak_byte) (0x80u ^ seven_bits);
                 i--;
             }
         }
 
-        *((*pp_buff)++) = (ak_byte) (num & 0x7Fu);
+        *(p_enc_oid++) = (ak_byte) (num & 0x7Fu);
     }
 
     return ak_error_ok;
