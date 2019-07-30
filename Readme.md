@@ -26,11 +26,13 @@ We have implementation of:
 Library can be used successfully under Linux, Windows (since XP), FreeBSD and MacOs operation systems.
 Also we have positive runs on mobile devices under Sailfish OS.
 
+We support various architecture such as `x86`, `x64`, `arm32v7`, `arm32v7eb`, `mips32r2` & `mips64r2`.
+
 
 ## Compilation
 
 The library can be compiled with many compilers,
-such as gcc, clang, Microsoft Visual C, TinyCC and icc.
+such as `gcc`, `clang`, `Microsoft Visual C`, `TinyCC` and `icc`.
 You can get the last version of source codes from github.com
 
     git clone https://github.com/axelkenzo/libakrypt-0.x
@@ -51,7 +53,7 @@ If you want to compile and build a set of test programs you may run
     make test
 
 ### Windows
-On Windows you need to install [phtreads library](https://sourceware.org/pthreads-win32/).
+On Windows you may to install [phtreads library](https://sourceware.org/pthreads-win32/).
 After this you can run a Microsoft Visual 20XX Console and execute a following sequence
 
     mkdir build
