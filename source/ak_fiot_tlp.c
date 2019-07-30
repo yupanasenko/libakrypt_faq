@@ -789,11 +789,12 @@
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха.
     Иначе, возвращается код ошибки.                                                                */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_fiot_context_log_client_hello( ak_uint8 *mes, size_t meslen )
+ static int ak_fiot_context_log_client_hello( ak_uint8 *mes, size_t meslen )
 {
   size_t offset, esize;
-  ak_error_message_fmt( ak_error_ok, "", "body [%lu octets, clientHello]", meslen );
-  ak_error_message_fmt( ak_error_ok, "", "        %02X [clientHello]", mes[0] );
+  ak_error_message_fmt( ak_error_ok, "", "body [%lu octets]", meslen );
+  ak_error_message_fmt( ak_error_ok, "", "        %02X [%s]", mes[0],
+                                                               ak_fiot_get_message_name( mes[0] ));
   ak_error_message_fmt( ak_error_ok, "", "        %02X %02X [length: %u octets]",
                                                                mes[1], mes[2], mes[1]*256+mes[2] );
   ak_error_message_fmt( ak_error_ok, "", "    crypto mechanism [0x%x]", mes[3]*256+mes[4] );
@@ -840,11 +841,12 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_fiot_context_log_server_hello( ak_uint8 *mes, size_t meslen )
+ static int ak_fiot_context_log_server_hello( ak_uint8 *mes, size_t meslen )
 {
   size_t offset = 5, esize;
-  ak_error_message_fmt( ak_error_ok, "", "body [%lu octets, serverHello]", meslen );
-  ak_error_message_fmt( ak_error_ok, "", "        %02X [serverHello]", mes[0] );
+  ak_error_message_fmt( ak_error_ok, "", "body [%lu octets]", meslen );
+  ak_error_message_fmt( ak_error_ok, "", "        %02X [%s]", mes[0],
+                                                              ak_fiot_get_message_name( mes [0] ));
   ak_error_message_fmt( ak_error_ok, "", "        %02X %02X [length: %u octets]",
                                                                mes[1], mes[2], mes[1]*256+mes[2] );
   ak_error_message_fmt( ak_error_ok, "", "    crypto mechanism [0x%x]", mes[3]*256+mes[4] );
@@ -873,11 +875,12 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_fiot_context_log_alert( ak_uint8 *mes, size_t meslen )
+ static int ak_fiot_context_log_alert( ak_uint8 *mes, size_t meslen )
 {
   size_t offset = 0, len = 0;
-  ak_error_message_fmt( ak_error_ok, "", "body [%lu octets, alertMessage]", meslen );
-  ak_error_message_fmt( ak_error_ok, "", "        %02X [alertMessage]", mes[0] );
+  ak_error_message_fmt( ak_error_ok, "", "body [%lu octets]", meslen );
+  ak_error_message_fmt( ak_error_ok, "", "        %02X [%s]", mes[0],
+                                                               ak_fiot_get_message_name( mes[0] ));
   ak_error_message_fmt( ak_error_ok, "", "        %02X %02X [length: %u octets]",
                                                          mes[1], mes[2], len = mes[1]*256+mes[2] );
   ak_error_message( ak_error_ok, "", "    error code" );
@@ -901,6 +904,40 @@
     ak_fiot_context_log_ptr( mes+8, len-5, 1 );
     offset = 3+len;
   }
+  if( offset < meslen ) {
+    ak_error_message( ak_error_ok, "", "    padding" );
+    ak_fiot_context_log_ptr( mes+offset, meslen-offset, 1 );
+  }
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_fiot_context_log_request_identifier_extension( ak_uint8 *mes, size_t meslen )
+{
+  size_t offset = 0, len = 0;
+  ak_error_message_fmt( ak_error_ok, "", "body [%lu octets]", meslen );
+  ak_error_message_fmt( ak_error_ok, "", "        %02X [%s]", mes[0],
+                                                               ak_fiot_get_message_name( mes[0] ));
+  ak_error_message_fmt( ak_error_ok, "", "        %02X %02X [length: %u octets]",
+                                                         mes[1], mes[2], len = mes[1]*256+mes[2] );
+  ak_error_message( ak_error_ok, "", "    request" );
+  switch( mes[3] ) {
+    case is_requested:
+       ak_error_message_fmt( ak_error_ok, "", "        %02X [is requested]", mes[3] ); break;
+    case not_requested:
+       ak_error_message_fmt( ak_error_ok, "", "        %02X [not requested]", mes[3] ); break;
+    default:
+       ak_error_message_fmt( ak_error_ok, "", "        %02X [unexpected value]", mes[3] );
+       return ak_error_message( fiot_error_frame_format, __func__, "frame is broken (unexpected request)" );
+  }
+  if( len != 1 ) {
+    if( len-1 > meslen )
+      return ak_error_message( fiot_error_frame_format, __func__, "frame is broken (incorrect extension length)" );
+
+    ak_error_message( ak_error_ok, "", "    identifier" );
+    ak_fiot_context_log_ptr( mes+4, len-1, 1 );
+  }
+  offset = len+3;
   if( offset < meslen ) {
     ak_error_message( ak_error_ok, "", "    padding" );
     ak_fiot_context_log_ptr( mes+offset, meslen-offset, 1 );
@@ -990,12 +1027,19 @@
              case client_hello:
                 ak_fiot_context_log_client_hello( frame+offset, framelen-ilen-2-offset );
                break;
+
              case server_hello:
                 ak_fiot_context_log_server_hello( frame+offset, framelen-ilen-2-offset );
                break;
+
              case alert_message:
                 ak_fiot_context_log_alert( frame+offset, framelen-ilen-2-offset );
                break;
+
+             case extension_request_identifer:
+                ak_fiot_context_log_request_identifier_extension( frame+offset, framelen-ilen-2-offset );
+                break;
+
              default:
                 ak_error_message_fmt( ak_error_ok, "", "body [%lu octets, plain]",
                                                                             framelen-ilen-2-offset );

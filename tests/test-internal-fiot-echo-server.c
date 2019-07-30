@@ -17,7 +17,6 @@
 #ifdef LIBAKRYPT_HAVE_SYSSOCKET_H
  #include <sys/socket.h>
 #endif
-
  #include <ak_fiot.h>
 
 
@@ -28,7 +27,8 @@
   socklen_t opt = 0;
   struct sockaddr_in servaddr, cl_addr;
   socklen_t len = sizeof( struct sockaddr_in );
-  int error = ak_error_ok, listenfd = -1, fd = -1, reuse = 1, done = 0;
+  int error = ak_error_ok, fd = -1, reuse = 1, done = 0;
+  ak_socket listenfd = ak_network_undefined_socket;
 
  /* проверяем, что определен ip адрес сервера и порт */
   if( argc != 3 ) {
@@ -45,40 +45,41 @@
    ak_log_set_level( fiot_log_maximum );
 
   /* создаем сокет */
-   if(( listenfd = socket( AF_INET, SOCK_STREAM, 0 )) == -1 )
+   if(( listenfd = ak_network_socket( AF_INET, SOCK_STREAM, 0 )) == ak_network_undefined_socket )
      return ak_error_message_fmt( -1,  __func__,
                                           "wrong creation of listening socket (%s)", strerror(errno));
    memset( &servaddr, 0, sizeof( struct sockaddr_in ));
    servaddr.sin_family = AF_INET;
-   if( inet_pton( AF_INET, argv[1], &servaddr.sin_addr.s_addr ) == -1 )
+   if( ak_network_inet_pton( AF_INET, argv[1], &servaddr.sin_addr.s_addr ) != ak_error_ok )
      return ak_error_message_fmt( -1, __func__, "incorrect assigning server ip %s address (%s)",
                                                                           argv[1], strerror( errno ));
    servaddr.sin_port = htons( atoi( argv[2] ));
 
   /* разрешаем запускать bind() на используемом адресе */
-   setsockopt( listenfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof ( reuse ));
-   if( bind( listenfd, ( const struct sockaddr *) &servaddr, sizeof( servaddr )) != 0 )
+   ak_network_setsockopt( listenfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof ( reuse ));
+   if( ak_network_bind( listenfd,  &servaddr, sizeof( servaddr )) != ak_error_ok )
      return ak_error_message_fmt( -1, __func__,
                                           "wrong binding of listening socket (%s)", strerror(errno));
   /* начинаем процесс прослушивания сокета */
-   if( listen( listenfd, 5 ) != 0 )
-     return ak_error_message_fmt( -1, __func__,
-                                        "wrong listening of incomming socket (%s)", strerror(errno));
+   if( ak_network_listen( listenfd, 5 ) != ak_error_ok )
+     return ak_error_message_fmt( ak_error_get_value(), __func__,
+                                        "wrong listening of incomming socket" );
    printf("echo-server: listening socket is up on %s:%s\n", argv[1], argv[2] );
 
   /* принимаем соединения */
    opt = sizeof( cl_addr );
-   if(( fd = accept( listenfd,(struct sockaddr *)&cl_addr, &opt )) == -1 )
+   if(( fd = ak_network_accept( listenfd, &cl_addr, &opt )) == -1 )
      return ak_error_message_fmt( -1, __func__, "wrong accepting connection (%s)", strerror(errno));
 
   /* определяем координаты клиента */
-   if( getpeername( fd, (struct sockaddr *)&cl_addr, &len ))
+   len = sizeof( struct sockaddr_in );
+   if( ak_network_getpeername( fd, (struct sockaddr *)&cl_addr, &len ) != ak_error_ok )
      return ak_error_message_fmt( -1, __func__,
                                            "can't determine client's peer (%s)", strerror( errno ));
-   if( inet_ntop( AF_INET, &cl_addr.sin_addr, ip, (socklen_t) sizeof( ip )) == NULL )
+   if( ak_network_inet_ntop( AF_INET, &cl_addr.sin_addr, ip, (socklen_t) sizeof( ip )) == NULL )
      return ak_error_message_fmt( -1, __func__,
                                         "can't determine client's address (%s)", strerror( errno ));
-   printf( "echo-server: accepted client from %s\n", ip );
+   printf( "echo-server: accepted client from %s:%u\n", ip, cl_addr.sin_port );
 
 
   /* часть вторая: аутентификация клиента и выполнение протокола выработки общих ключей */
@@ -107,6 +108,7 @@
 
   /* часть третья: получение и возврат сообщений */
 
+
    done = 0;
    do {
         size_t length;
@@ -125,7 +127,7 @@
 
   exit:
    ak_fiot_context_destroy( &ctx );
-   close( listenfd );
+   ak_network_close( listenfd );
    ak_libakrypt_destroy();
 
  return EXIT_SUCCESS;

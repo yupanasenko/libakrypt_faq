@@ -56,7 +56,7 @@ if( CMAKE_HOST_UNIX )
   # собираем дистрибутив
   file( APPEND ${MYDFILE} "tar -cjvf libakrypt-${FULL_VERSION}.tar.bz2 libakrypt-${FULL_VERSION}\n")
   file( APPEND ${MYDFILE} "rm -R libakrypt-${FULL_VERSION}\n")
-  file( APPEND ${MYDFILE} "akrypt hash -r -o libakrypt-${FULL_VERSION}.streebog256 libakrypt-${FULL_VERSION}.tar.bz2\n")
+  file( APPEND ${MYDFILE} "akrypt i -r -o libakrypt-${FULL_VERSION}.streebog256 libakrypt-${FULL_VERSION}.tar.bz2\n")
 
   message("-- Creating a make-dist-${FULL_VERSION}.sh file - done ")
   execute_process( COMMAND chmod +x ${MYDFILE} )

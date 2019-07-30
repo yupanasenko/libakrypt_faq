@@ -15,16 +15,20 @@
  #include <ak_fiot.h>
 
 /* ----------------------------------------------------------------------------------------------- */
+ #define requestIdentifierExtensionFlag   ( 0x02uLL )
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция формирует сообщение clientHello и отправляет его в канал связи.
     \details Формирование сообщения происходит во внутреннем буффере контекста,
     предназначенном для отправки сообщений. Отправка сообщения происходит с помощью функции
     ak_fiot_context_write_frame().
 
     \param fctx Контекст защищенного соединения протокола sp fiot.
+    \param extcount Количество расширений, который должны быть посланы после сообщения ClientHello
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха.
     Иначе, возвращается код ошибки.                                                                */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_fiot_context_write_client_hello( ak_fiot fctx )
+ static int ak_fiot_context_write_client_hello( ak_fiot fctx, size_t *extcount )
 {
   struct wpoint wp;
   int error = ak_error_ok;
@@ -83,7 +87,11 @@
    meslen += csize;
 
   /* 5. указываем количество расширений */
-   message[meslen++] = 0;
+   *extcount = 0;
+  /* 1. в режиме использования PSK всегда запрашиваем чужой идентификатор и,
+         по возможности, высылаем собственный идентификатор */
+   if( ak_buffer_is_assigned( &fctx->epsk_id )) (*extcount)++;
+   message[meslen++] = ( ak_uint8 ) *extcount;
 
   /* подхеширование собранных данных */
    if(( error = ak_mac_context_update( &fctx->comp, message, meslen )) != ak_error_ok )
@@ -178,8 +186,8 @@
       offset++;
    }
 
-  /* теперь мы можем проверить целостность полученного фрейма
-     примением к контексту сервера полученные из канала связи механизмы */
+  /* теперь мы можем проверить целостность полученного фрейма,
+     применяя к контексту сервера полученные из канала связи механизмы */
    if(( error = ak_fiot_context_set_initial_crypto_mechanism( fctx, mechanism )) != ak_error_ok ) {
      ak_fiot_context_write_alert_message( fctx, unsupportedCryptoMechanism, NULL, 0 );
      return ak_error_message( fiot_error_wrong_cipher_type, __func__,
@@ -254,7 +262,7 @@
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха.
     Иначе, возвращается код ошибки.                                                                */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_fiot_context_write_server_hello( ak_fiot fctx )
+ static int ak_fiot_context_write_server_hello( ak_fiot fctx, size_t *extcount )
 {
   struct wpoint wp;
   int error = ak_error_ok;
@@ -301,7 +309,10 @@
    meslen += csize;
 
   /* 4. указываем количество расширений */
-   message[meslen++] = 0;
+   *extcount = 0;
+   /* если был запрос на идентификатор, мы должны ответить */
+    if( fctx->extensionFlags&requestIdentifierExtensionFlag ) (*extcount)++;
+   message[meslen++] = ( ak_uint8 )*extcount;
 
   /* подхеширование собранных данных */
    if(( error = ak_mac_context_update( &fctx->comp, message, meslen )) != ak_error_ok )
@@ -639,6 +650,136 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция создает расширение RequestIdentifierExtension и отправляет его в канал связи.
+    \details
+
+    \param fctx Контекст защищенного соединения протокола sp fiot.
+    \param rq Значение поля `request`.
+    \param is_identifier_send Флаг, при истинном значении которого, в расширение помещается
+    идентификатор абонента. При ложном значении, поле `identifier` остается неопределенным.
+    \param ftype Тип фрейма, содержащего расширение (зашифрованный или открытый).
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха.
+    В случае возникновения ошибки возвращается ее код.                                             */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_fiot_context_write_request_identifier_extension( ak_fiot fctx,
+                                       request_t rq, bool_t is_identifier_send, frame_type_t ftype )
+{
+  size_t meslen = 0;
+  int error = ak_error_ok;
+  ak_uint8 *message =  (( ak_uint8 * )fctx->oframe.data ) + fctx->header_offset + 3;
+
+ /* формируем сериализованное представление сообщения RequestIdentifierExtension */
+  message[meslen++] = ( ak_uint8 )rq;
+  if( is_identifier_send ) {
+    /* получено указание на отправку идентифкатора абонета */
+     size_t userlen = 0;
+     ak_pointer userbuf = NULL;
+     switch( fctx->role ) {
+      case client_role:  userbuf = fctx->client_id.data; userlen = fctx->client_id.size; break;
+      case server_role:  userbuf = fctx->server_id.data; userlen = fctx->server_id.size; break;
+      default : return ak_error_message( fiot_error_wrong_role, __func__,
+                                                        "using fiot context with undefined role" );
+     }
+    /* проверяем что данные доступны */
+     if( userbuf == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                         "using null pointer to user identifier" );
+     if( fctx->oframe.size < userlen + fctx->header_offset + 70 )
+                                                     /* константа 70 сформирована следующим образом:
+                                                        3 байта  - заголовок сообщения
+                                                        1 байт   - значение поля request
+                                                        64 байта - максимально допустимый размер контрольной суммы
+                                                        2 байта  - боезапас на черный день */
+       return ak_error_message( ak_error_wrong_length, __func__,
+                                                         "using identifier with very large size" );
+     memcpy( message + meslen, userbuf, userlen );
+     meslen += userlen;
+  }
+
+ /* подхеширование собранных данных */
+  if(( error = ak_mac_context_update( &fctx->comp, message, meslen )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect updating of hash function context" );
+
+ /* отправляем собранное сообщение в канал связи */
+  if(( error = ak_fiot_context_write_frame( fctx, message, meslen,
+                                            ftype, extension_request_identifer )) != ak_error_ok )
+    return ak_error_message( error, __func__,
+                                       "incorrect writing a requestIdentfierMechanism extension" );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_fiot_context_read_extension( ak_fiot fctx )
+{
+  message_t mtype;
+  size_t length = 0;
+  ak_uint8 *data = NULL;
+  int error = ak_error_ok;
+
+  if(( data = ak_fiot_context_read_frame( fctx, &length, &mtype )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__, "incorrect reading an extension" );
+
+ /* проверяем то, что получили */
+  switch( mtype ) {
+    case alert_message:
+      return ak_fiot_context_translate_alert( data, length, __func__ );
+
+    case extension_request_identifer:
+       if( !length ) return ak_error_message( ak_error_zero_length, __func__,
+                                        "recieving requestIdentifier extension with zero length" );
+     /* проверяем, требуется ли ответное расширение с идентификатором */
+       if( data[0] == is_requested )
+         fctx->extensionFlags = ( fctx->extensionFlags & (~requestIdentifierExtensionFlag )) |
+                                                                    requestIdentifierExtensionFlag;
+        else if( data[0] != not_requested )
+               return ak_error_message( fiot_error_wrong_request_value, __func__,
+                            "recieving requestIdentifier extension with incorrect request value" );
+      /* проверяем, получили ли мы значение идентификатора */
+       if( length > 1 ) {
+         ak_buffer id = NULL;
+         switch( fctx->role ) {
+           case server_role: id = &fctx->client_id; break;
+           case client_role: id = &fctx->server_id; break;
+           default: return ak_error_message( fiot_error_wrong_role, __func__,
+                                                            "using fiot context with wrong role" );
+         }
+         if( !ak_buffer_is_assigned( id )) { /* идентификатор ранее не определялся */
+           if(( error = ak_buffer_set_ptr( id, //&fctx->client_id,
+                                                     data+1, length-1, ak_true )) != ak_error_ok )
+             return ak_error_message( error, __func__, "incorrect assigning a buffer value" );
+         } else /* нам уже задано какое-то значение */
+            if(( id->size != length-1 ) ||
+               ( ak_ptr_is_equal( id->data, data+1,
+                                           ak_min( id->size, length-1 )) != ak_true ))
+                 return ak_error_message( fiot_error_wrong_identifier, __func__,
+                                                   "recieving an unexpected value of identifier" );
+       }
+      break;
+
+    case extension_request_certificate:
+    case extension_certificate:
+    case extension_set_certificate:
+    case extension_inform_certificate:
+    case extension_key_mechanism:
+      return ak_error_message_fmt( fiot_error_frame_format, __func__,
+                                    "recieving an unexpected extension (%s)",
+                                                                 ak_fiot_get_message_name( mtype));
+
+    default: return ak_error_message_fmt( fiot_error_frame_format, __func__,
+                                    "recieving frame with unexpected message type (%s)",
+                                                                 ak_fiot_get_message_name( mtype));
+  }
+
+  /* подхеширование полученных данных */
+   if(( error = ak_mac_context_update( &fctx->comp, data, length )) != ak_error_ok )
+     return ak_error_message( error, __func__, "incorrect updating of hash function context" );
+
+  /* сообщение аудита */
+   if( ak_log_get_level() >= fiot_log_standard )
+     ak_error_message_fmt( ak_error_ok, __func__, "%s accepted", ak_fiot_get_message_name( mtype ));
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция создает сообщение verifyMessage и отправляет его в канал связи.
     \details Может вызываться как на стороне клиента, так и на стороне сервера.
 
@@ -713,7 +854,8 @@
     case verify_message:
       break;
     default: return ak_error_message_fmt( fiot_error_frame_format, __func__,
-                                    "recieving frame with unexpected message type (0x%x)", mtype );
+                                      "recieving frame with unexpected message type (%s)",
+                                                                ak_fiot_get_message_name( mtype ));
   }
 
  /* проверяем контрольную сумму */
@@ -828,11 +970,15 @@
   ak_error_message( 0, __func__, "");
   ak_ptr_to_hexstr_static( fctx->point.x, fctx->curve->size*sizeof( ak_uint64 ),
                                                                 str, sizeof( str ), ak_false );
-  ak_error_message_fmt( 0, "", "Q.x: %s", str );
+  ak_error_message_fmt( 0, "", "Q.x:  %s", str );
   ak_ptr_to_hexstr_static( fctx->point.y, fctx->curve->size*sizeof( ak_uint64 ),
                                                                 str, sizeof( str ), ak_false );
-  ak_error_message_fmt( 0, "", "Q.y: %s", str );
+  ak_error_message_fmt( 0, "", "Q.y:  %s", str );
 
+  ak_ptr_to_hexstr_static( fctx->client_id.data, fctx->client_id.size, str, sizeof( str ), ak_false );
+  ak_error_message_fmt( 0, "", "clientID: %s", str );
+  ak_ptr_to_hexstr_static( fctx->server_id.data, fctx->server_id.size, str, sizeof( str ), ak_false );
+  ak_error_message_fmt( 0, "", "serverID: %s", str );
 
  /* вычисляем значение долговременного ключа T = HMAC_{512}( x(Q), R2 =  )формируем сообщение R2 */
   if(( error = ak_mac_context_create_oid( &ctx,
@@ -953,14 +1099,31 @@
       switch( fctx->state ) {
        /* реализуем возможные состояния клиента */
         case rts_client_hello:
-           if(( error = ak_fiot_context_write_client_hello( fctx )) != ak_error_ok )
+           if(( error = ak_fiot_context_write_client_hello( fctx, &extcount )) != ak_error_ok )
              return ak_error_message( error, __func__, "incorrect sending clientHello message" );
            fctx->state = rts_client_extension;
           break;
 
+
+       /* клиент отправляет расширения
+        * выбор того, что отправляем аналогичен процедуре из clientHello */
         case rts_client_extension:
-           fctx->state = wait_server_hello;
+          /* 1. в режиме использования PSK всегда запрашиваем чужой идентификатор и,
+                по возможности, высылаем собственный идентификатор */
+          if( ak_buffer_is_assigned( &fctx->epsk_id )) {
+            if(( error = ak_fiot_context_write_request_identifier_extension( fctx, is_requested,
+                        ak_buffer_is_assigned( &fctx->client_id ), plain_frame )) != ak_error_ok )
+                                  /* поскольку мы запрашиваем идентификатор сервера,
+                                     то при приеме расширений от сервера мы обязаны его получить */
+              return ak_error_message( error, __func__,
+                                                 "incorrect sending requestIdentifier extension" );
+            extcount--;
+          }
+          if( extcount == 0 ) fctx->state = wait_server_hello;
+            else return ak_error_message( ak_error_undefined_value, __func__,
+              "count of sended extensions not equal to value, containing in clientHello message" );
           break;
+
 
         case wait_server_hello:
            if(( error = ak_fiot_context_read_server_hello( fctx, &extcount )) != ak_error_ok )
@@ -972,12 +1135,15 @@
            fctx->state = wait_server_extension;
           break;
 
+
         case wait_server_extension:
            for( i = 0; i < extcount; i++ ) {
-
+             if(( error = ak_fiot_context_read_extension( fctx )) != ak_error_ok )
+               return ak_error_message( error, __func__, "incorrect reading an extension" );
            }
            fctx->state = wait_server_verify;
           break;
+
 
         case wait_server_verify:
            if(( error = ak_fiot_context_read_verify( fctx )) != ak_error_ok )
@@ -989,15 +1155,29 @@
            fctx->state = rts_client_extension2;
           break;
 
+
         case rts_client_extension2:
-           fctx->state = rts_client_verify;
+         /* отвечаем на запрос сервера об отправке идентификатора клиента */
+          if( fctx->extensionFlags&requestIdentifierExtensionFlag ) {
+            if( !ak_buffer_is_assigned( &fctx->client_id ))
+              return ak_error_message( fiot_error_wrong_identifier, __func__,
+                                                             "running client without identifier" );
+            if(( error = ak_fiot_context_write_request_identifier_extension( fctx, not_requested,
+                                                      ak_true, encrypted_frame )) != ak_error_ok )
+              return ak_error_message( error, __func__,
+                                                 "incorrect sending requestIdentifier extension" );
+            fctx->extensionFlags = fctx->extensionFlags&( ~requestIdentifierExtensionFlag );
+          }
+          fctx->state = rts_client_verify;
           break;
+
 
         case rts_client_verify:
            if(( error = ak_fiot_context_write_verify( fctx )) != ak_error_ok )
              return ak_error_message( error, __func__, "incorrect sending serverVerify message" );
            fctx->state = wait_server_application_data;
           break;
+
 
        /* реализуем возможные состояния сервера */
         case wait_client_hello:
@@ -1006,16 +1186,19 @@
            fctx->state = wait_client_extension;
           break;
 
+
         case wait_client_extension:
            for( i = 0; i < extcount; i++ ) {
-
+             if(( error = ak_fiot_context_read_extension( fctx )) != ak_error_ok )
+               return ak_error_message( error, __func__, "incorrect reading an extension" );
            }
            fctx->state = rts_server_hello;
           break;
 
+
         case rts_server_hello:
           /* отправляем сообщение */
-           if(( error = ak_fiot_context_write_server_hello( fctx )) != ak_error_ok )
+           if(( error = ak_fiot_context_write_server_hello( fctx, &extcount )) != ak_error_ok )
              return ak_error_message( error, __func__, "incorrect sending serverHello message" );
            if(( error = ak_fiot_context_set_secondary_crypto_mechanism( fctx,
                                                       fctx->policy.mechanism )) != ak_error_ok )
@@ -1027,9 +1210,30 @@
            fctx->state = rts_server_extension;
           break;
 
+
         case rts_server_extension:
-           fctx->state = rts_server_verify;
+         /* отвечаем на запрос клиента об отправке идентификатора сервера */
+          if( fctx->extensionFlags&requestIdentifierExtensionFlag ) {
+            request_t request = is_requested;
+            if( !ak_buffer_is_assigned( &fctx->server_id ))
+              return ak_error_message( fiot_error_wrong_identifier, __func__,
+                                                             "running server without identifier" );
+            if( ak_buffer_is_assigned( &fctx->client_id )) {
+              request = not_requested;
+              fctx->extensionFlags = fctx->extensionFlags&( ~requestIdentifierExtensionFlag );
+            }
+            if(( error = ak_fiot_context_write_request_identifier_extension( fctx, request,
+                                                      ak_true, encrypted_frame )) != ak_error_ok )
+              return ak_error_message( error, __func__,
+                                                 "incorrect sending requestIdentifier extension" );
+            extcount--;
+          }
+
+          if( extcount == 0 ) fctx->state = rts_server_verify;
+            else return ak_error_message( ak_error_undefined_value, __func__,
+              "count of sended extensions not equal to value, containing in serverHello message" );
           break;
+
 
         case rts_server_verify:
            if(( error = ak_fiot_context_write_verify( fctx )) != ak_error_ok )
@@ -1041,15 +1245,23 @@
            fctx->state = wait_client_extension2;
           break;
 
+
         case wait_client_extension2:
+           if( fctx->extensionFlags&requestIdentifierExtensionFlag ) {
+             if(( error = ak_fiot_context_read_extension( fctx )) != ak_error_ok )
+               return ak_error_message( error, __func__, "incorrect reading an extension" );
+             fctx->extensionFlags = fctx->extensionFlags&( ~requestIdentifierExtensionFlag );
+           }
            fctx->state = wait_client_verify;
           break;
+
 
         case wait_client_verify:
            if(( error = ak_fiot_context_read_verify( fctx )) != ak_error_ok )
              return ak_error_message( error, __func__, "incorrect reading verify message" );
            fctx->state = wait_client_application_data;
           break;
+
 
         default: /* нежданное состояние абонента */
           return ak_error_message( error, __func__, "unsupported internal state of fiot context" );

@@ -342,11 +342,10 @@
 {
  int error;
 
- /* в случае, когда компилируются сетевые функции, инициализируем работу с сокетами */
 #ifdef LIBAKRYPT_HAVE_WINDOWS_H
-  #if defined( LIBAKRYPT_FIOT ) || defined( LIBAKRYPT_TLS_13 )
-    WSADATA wj;
-    WSAStartup( MAKEWORD(2,2), &wj );
+  #ifdef LIBAKRYPT_NETWORK
+      WORD wVersionRequested;
+      WSADATA wsaData;
   #endif
 #endif
 
@@ -391,6 +390,25 @@
   }
 #endif
 
+ /* в случае, когда компилируются сетевые функции, инициализируем работу с сокетами */
+#ifdef LIBAKRYPT_HAVE_WINDOWS_H
+  #ifdef LIBAKRYPT_NETWORK
+      wVersionRequested = MAKEWORD(2, 0);  // Запрос WinSock v2.0
+      if( WSAStartup(wVersionRequested, &wsaData) != 0 ) {  // Загрузка WinSock DLL
+
+      #ifdef _MSC_VER
+        char str[128];
+        strerror_s( str, sizeof( str ), WSAGetLastError( ));
+        ak_error_message_fmt( ak_error_open_file, __func__, "unable to load WinSock DLL [%s]", str );
+      #else
+        ak_error_message_fmt( ak_error_wrong_setsockopt, __func__,
+                                             "unable to load WinSock DLL [%s]", strerror( errno ));
+      #endif
+        return ak_false;
+      }
+  #endif
+#endif
+
  /* процедура полного тестирования всех криптографических алгоритмов
     занимает крайне много времени, особенно на встраиваемых платформах,
     поэтому ее запуск должен производиться в соответствии с неким (внешним) регламентом ....
@@ -400,8 +418,8 @@
       return ak_false;
     }
 
-    заметим, что функция динамического контроля экспортируется,
-    так что она может быть запущена пользователем самостоятельно. */
+    поскольку функция динамического контроля экспортируется,
+    то она может быть запущена пользователем самостоятельно. */
 
  if( ak_log_get_level() != ak_log_none )
    ak_error_message( ak_error_ok, __func__ , "creation of libakrypt is Ok" );
@@ -415,6 +433,13 @@
   int error = ak_error_get_value();
   if( error != ak_error_ok )
     ak_error_message( error, __func__ , "before destroing library holds an error" );
+
+#ifdef LIBAKRYPT_HAVE_WINDOWS_H
+  #ifdef LIBAKRYPT_NETWORK
+    if( WSACleanup() != 0 )
+      ak_error_message( ak_error_close_file, __func__, "WSACleanup() failed" );
+  #endif
+#endif
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  /* уничтожаем структуру управления контекстами */

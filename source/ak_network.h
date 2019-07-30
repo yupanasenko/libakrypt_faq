@@ -52,10 +52,23 @@
  ak_socket ak_network_socket( int , int , int );
 /*! \brief Функция закрытия сокета. */
  int ak_network_close( ak_socket );
+/*! \brief Функция устанавливает соединение с сокетом. */
+ int ak_network_connect( ak_socket , ak_const_pointer , socklen_t );
+/*! \brief Функция связывает сокет с сетевым адресом. */
+ int ak_network_bind( ak_socket , ak_const_pointer , socklen_t );
+/*! \brief Функция выполняет прослушивание сокета. */
+ int ak_network_listen( ak_socket , int );
+/*! \brief Функция принимает входящее сообщение. */
+ int ak_network_accept( ak_socket , ak_pointer , socklen_t * );
+
 /*! \brief Функция преобразования IPv4 или IPv6 адреса в двоичную форму. */
  int ak_network_inet_pton( int , const char *, void * );
-/*! \brief Функция устанавливает соединение с сокетом. */
- int ak_network_connect( ak_socket , void * );
+/*! \brief Функция выполняет преобразование двоичного представления адреса в человекочитаемую форму. */
+ const char *ak_network_inet_ntop( int , ak_const_pointer , char *, socklen_t );
+/*! \brief Функция устанавливает опции для заданного сокета. */
+ int ak_network_setsockopt( ak_socket , int , int , ak_const_pointer , socklen_t );
+/*! \brief Функция получает информацию о присоединенном сокете. */
+ int ak_network_getpeername( ak_socket , ak_pointer , socklen_t * );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */
