@@ -13,6 +13,10 @@
 #ifdef LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64
  #include <wmmintrin.h>
 #endif
+#ifdef _MSC_VER
+ #include <stdlib.h>
+ /* требуется для определени функции rand() */
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_gf2n.h>
@@ -386,9 +390,13 @@
 /* ----------------------------------------------------------------------------------------------- */
  void ak_gf256_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
 {
-     //TODO не тестировалось
 #ifdef _MSC_VER
      __m128i a1a0, a3a2, b1b0, b3b2;
+     __m128i a0b0, a1b0, a2b0, a3b0;
+     __m128i a0b1, a1b1, a2b1, a3b1;
+     __m128i a0b2, a1b2, a2b2, a3b2;
+     __m128i a0b3, a1b3, a2b3, a3b3;
+     ak_uint64 r0, r1, r2, r3, r4, r5, r6, r7; //хранит ответ. r4-r7 при желании можно оптимизировать в 2 переменные.
 
      a1a0.m128i_u64[0] = ((ak_uint64 *)a)[0];   a1a0.m128i_u64[1] = ((ak_uint64 *)a)[1];
      a3a2.m128i_u64[0] = ((ak_uint64 *)a)[2];   a3a2.m128i_u64[1] = ((ak_uint64 *)a)[3];
@@ -396,41 +404,42 @@
      b1b0.m128i_u64[0] = ((ak_uint64 *)b)[0];   b1b0.m128i_u64[1] = ((ak_uint64 *)b)[1];
      b3b2.m128i_u64[0] = ((ak_uint64 *)b)[2];   b3b2.m128i_u64[1] = ((ak_uint64 *)b)[3];
 
-     /* умножение */
-     __m128i a0b0 = _mm_clmulepi64_si128(a1a0, b1b0, 0x00);
-     __m128i a1b0 = _mm_clmulepi64_si128(a1a0, b1b0, 0x01);
-     __m128i a2b0 = _mm_clmulepi64_si128(a3a2, b1b0, 0x00);
-     __m128i a3b0 = _mm_clmulepi64_si128(a3a2, b1b0, 0x01);
+    /* умножение */
+     a0b0 = _mm_clmulepi64_si128(a1a0, b1b0, 0x00);
+     a1b0 = _mm_clmulepi64_si128(a1a0, b1b0, 0x01);
+     a2b0 = _mm_clmulepi64_si128(a3a2, b1b0, 0x00);
+     a3b0 = _mm_clmulepi64_si128(a3a2, b1b0, 0x01);
 
-     __m128i a0b1 = _mm_clmulepi64_si128(a1a0, b1b0, 0x10);
-     __m128i a1b1 = _mm_clmulepi64_si128(a1a0, b1b0, 0x11);
-     __m128i a2b1 = _mm_clmulepi64_si128(a3a2, b1b0, 0x10);
-     __m128i a3b1 = _mm_clmulepi64_si128(a3a2, b1b0, 0x11);
+     a0b1 = _mm_clmulepi64_si128(a1a0, b1b0, 0x10);
+     a1b1 = _mm_clmulepi64_si128(a1a0, b1b0, 0x11);
+     a2b1 = _mm_clmulepi64_si128(a3a2, b1b0, 0x10);
+     a3b1 = _mm_clmulepi64_si128(a3a2, b1b0, 0x11);
 
-     __m128i a0b2 = _mm_clmulepi64_si128(a1a0, b3b2, 0x00);
-     __m128i a1b2 = _mm_clmulepi64_si128(a1a0, b3b2, 0x01);
-     __m128i a2b2 = _mm_clmulepi64_si128(a3a2, b3b2, 0x00);
-     __m128i a3b2 = _mm_clmulepi64_si128(a3a2, b3b2, 0x01);
+     a0b2 = _mm_clmulepi64_si128(a1a0, b3b2, 0x00);
+     a1b2 = _mm_clmulepi64_si128(a1a0, b3b2, 0x01);
+     a2b2 = _mm_clmulepi64_si128(a3a2, b3b2, 0x00);
+     a3b2 = _mm_clmulepi64_si128(a3a2, b3b2, 0x01);
 
-     __m128i a0b3 = _mm_clmulepi64_si128(a1a0, b3b2, 0x10);
-     __m128i a1b3 = _mm_clmulepi64_si128(a1a0, b3b2, 0x11);
-     __m128i a2b3 = _mm_clmulepi64_si128(a3a2, b3b2, 0x10);
-     __m128i a3b3 = _mm_clmulepi64_si128(a3a2, b3b2, 0x11);
+     a0b3 = _mm_clmulepi64_si128(a1a0, b3b2, 0x10);
+     a1b3 = _mm_clmulepi64_si128(a1a0, b3b2, 0x11);
+     a2b3 = _mm_clmulepi64_si128(a3a2, b3b2, 0x10);
+     a3b3 = _mm_clmulepi64_si128(a3a2, b3b2, 0x11);
 
-     /* суммирование, потом приведение */
-     ak_uint64 r0, r1, r2, r3, r4, r5, r6, r7; //хранит ответ. r4-r7 при желании можно оптимизировать в 2 переменные.
-     r7 = a3b3[1];                                                                          //sum
-     r6 = a3b3[0] ^ a2b3[1] ^ a3b2[1];                                                      //sum
-     r5 = a2b3[0] ^ a1b3[1] ^ a3b2[0] ^ a2b2[1] ^ a3b1[1];                                  //sum
-     r4 = a1b3[0] ^ a0b3[1] ^ a2b2[0] ^ a1b2[1] ^ a3b1[0] ^ a2b1[1] ^ a3b0[1];              //sum
+    /* суммирование, потом приведение */
+     r7 = a3b3.m128i_u64[1];                                                                          //sum
+     r6 = a3b3.m128i_u64[0] ^ a2b3.m128i_u64[1] ^ a3b2.m128i_u64[1];                                                      //sum
+     r5 = a2b3.m128i_u64[0] ^ a1b3.m128i_u64[1] ^ a3b2.m128i_u64[0] ^ a2b2.m128i_u64[1] ^ a3b1.m128i_u64[1];                                  //sum
+     r4 = a1b3.m128i_u64[0] ^ a0b3.m128i_u64[1] ^ a2b2.m128i_u64[0] ^ a1b2.m128i_u64[1] ^ a3b1.m128i_u64[0] ^ a2b1.m128i_u64[1] ^ a3b0.m128i_u64[1];              //sum
      r4^= (r7 >> 54) ^ (r7 >> 59) ^ (r7 >> 62);                                             //mod
-     r3 = a0b3[0] ^ a1b2[0] ^ a0b2[1] ^ a2b1[0] ^ a1b1[1] ^ a3b0[0] ^ a2b0[1];              //sum
+
+     r3 = a0b3.m128i_u64[0] ^ a1b2.m128i_u64[0] ^ a0b2.m128i_u64[1] ^ a2b1.m128i_u64[0] ^ a1b1.m128i_u64[1] ^ a3b0.m128i_u64[0] ^ a2b0.m128i_u64[1];              //sum
      r3^= (r7 << 10) ^ (r7 << 5) ^ (r7 << 2) ^ r7 ^ (r6 >> 54) ^ (r6 >> 59) ^ (r6 >> 62);   //mod
-     r2 = a0b2[0] ^ a1b1[0] ^ a0b1[1] ^ a2b0[0] ^ a1b0[1];                                  //sum
+
+     r2 = a0b2.m128i_u64[0] ^ a1b1.m128i_u64[0] ^ a0b1.m128i_u64[1] ^ a2b0.m128i_u64[0] ^ a1b0.m128i_u64[1];                                  //sum
      r2^= (r6 << 10) ^ (r6 << 5) ^ (r6 << 2) ^ r6 ^ (r5 >> 54) ^ (r5 >> 59) ^ (r5 >> 62);   //mod
-     r1 = a0b1[0] ^ a1b0[0] ^ a0b0[1];                                                      //sum
+     r1 = a0b1.m128i_u64[0] ^ a1b0.m128i_u64[0] ^ a0b0.m128i_u64[1];                                                      //sum
      r1^= (r5 << 10) ^ (r5 << 5) ^ (r5 << 2) ^ r5 ^ (r4 >> 54) ^ (r4 >> 59) ^ (r4 >> 62);   //mod
-     r0 = a0b0[0];                                                                          //sum
+     r0 = a0b0.m128i_u64[0];                                                                          //sum
      r0^= (r4 << 10) ^ (r4 << 5) ^ (r4 << 2) ^ r4;                                          //mod
 
      ((ak_uint64 *)z)[0] = r0;
@@ -501,6 +510,16 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
     //TODO не тестировалось
 #ifdef _MSC_VER
      __m128i a1a0, a3a2, a5a4, a7a6, b1b0, b3b2, b5b4, b7b6;
+     __m128i a0b0, a1b0, a2b0, a3b0, a4b0, a5b0, a6b0, a7b0;
+     __m128i a0b1, a1b1, a2b1, a3b1, a4b1, a5b1, a6b1, a7b1;
+     __m128i a0b2, a1b2, a2b2, a3b2, a4b2, a5b2, a6b2, a7b2;
+     __m128i a0b3, a1b3, a2b3, a3b3, a4b3, a5b3, a6b3, a7b3;
+     __m128i a0b4, a1b4, a2b4, a3b4, a4b4, a5b4, a6b4, a7b4;
+     __m128i a0b5, a1b5, a2b5, a3b5, a4b5, a5b5, a6b5, a7b5;
+     __m128i a0b6, a1b6, a2b6, a3b6, a4b6, a5b6, a6b6, a7b6;
+     __m128i a0b7, a1b7, a2b7, a3b7, a4b7, a5b7, a6b7, a7b7;
+     ak_uint64 r0, r1, r2, r3, r4, r5, r6, r7,
+             r8, r9, r10, r11, r12, r13, r14, r15;      //хранит ответ. r8-r15 при желании можно (?) оптимизировать в 2 переменные.
 
      a1a0.m128i_u64[0] = ((ak_uint64 *)a)[0];   a1a0.m128i_u64[1] = ((ak_uint64 *)a)[1];
      a3a2.m128i_u64[0] = ((ak_uint64 *)a)[2];   a3a2.m128i_u64[1] = ((ak_uint64 *)a)[3];
@@ -512,118 +531,124 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
      b5b4.m128i_u64[0] = ((ak_uint64 *)b)[4];   b5b4.m128i_u64[1] = ((ak_uint64 *)b)[5];
      b7b6.m128i_u64[0] = ((ak_uint64 *)b)[6];   b7b6.m128i_u64[1] = ((ak_uint64 *)b)[7];
 
-     /* умножение */
-     __m128i a0b0 = _mm_clmulepi64_si128(a1a0, b1b0, 0x00);
-     __m128i a1b0 = _mm_clmulepi64_si128(a1a0, b1b0, 0x01);
-     __m128i a2b0 = _mm_clmulepi64_si128(a3a2, b1b0, 0x00);
-     __m128i a3b0 = _mm_clmulepi64_si128(a3a2, b1b0, 0x01);
-     __m128i a4b0 = _mm_clmulepi64_si128(a5a4, b1b0, 0x00);
-     __m128i a5b0 = _mm_clmulepi64_si128(a5a4, b1b0, 0x01);
-     __m128i a6b0 = _mm_clmulepi64_si128(a7a6, b1b0, 0x00);
-     __m128i a7b0 = _mm_clmulepi64_si128(a7a6, b1b0, 0x01);
+    /* умножение */
+     a0b0 = _mm_clmulepi64_si128(a1a0, b1b0, 0x00);
+     a1b0 = _mm_clmulepi64_si128(a1a0, b1b0, 0x01);
+     a2b0 = _mm_clmulepi64_si128(a3a2, b1b0, 0x00);
+     a3b0 = _mm_clmulepi64_si128(a3a2, b1b0, 0x01);
+     a4b0 = _mm_clmulepi64_si128(a5a4, b1b0, 0x00);
+     a5b0 = _mm_clmulepi64_si128(a5a4, b1b0, 0x01);
+     a6b0 = _mm_clmulepi64_si128(a7a6, b1b0, 0x00);
+     a7b0 = _mm_clmulepi64_si128(a7a6, b1b0, 0x01);
 
-     __m128i a0b1 = _mm_clmulepi64_si128(a1a0, b1b0, 0x10);
-     __m128i a1b1 = _mm_clmulepi64_si128(a1a0, b1b0, 0x11);
-     __m128i a2b1 = _mm_clmulepi64_si128(a3a2, b1b0, 0x10);
-     __m128i a3b1 = _mm_clmulepi64_si128(a3a2, b1b0, 0x11);
-     __m128i a4b1 = _mm_clmulepi64_si128(a5a4, b1b0, 0x10);
-     __m128i a5b1 = _mm_clmulepi64_si128(a5a4, b1b0, 0x11);
-     __m128i a6b1 = _mm_clmulepi64_si128(a7a6, b1b0, 0x10);
-     __m128i a7b1 = _mm_clmulepi64_si128(a7a6, b1b0, 0x11);
-
-
-     __m128i a0b2 = _mm_clmulepi64_si128(a1a0, b3b2, 0x00);
-     __m128i a1b2 = _mm_clmulepi64_si128(a1a0, b3b2, 0x01);
-     __m128i a2b2 = _mm_clmulepi64_si128(a3a2, b3b2, 0x00);
-     __m128i a3b2 = _mm_clmulepi64_si128(a3a2, b3b2, 0x01);
-     __m128i a4b2 = _mm_clmulepi64_si128(a5a4, b3b2, 0x00);
-     __m128i a5b2 = _mm_clmulepi64_si128(a5a4, b3b2, 0x01);
-     __m128i a6b2 = _mm_clmulepi64_si128(a7a6, b3b2, 0x00);
-     __m128i a7b2 = _mm_clmulepi64_si128(a7a6, b3b2, 0x01);
-
-     __m128i a0b3 = _mm_clmulepi64_si128(a1a0, b3b2, 0x10);
-     __m128i a1b3 = _mm_clmulepi64_si128(a1a0, b3b2, 0x11);
-     __m128i a2b3 = _mm_clmulepi64_si128(a3a2, b3b2, 0x10);
-     __m128i a3b3 = _mm_clmulepi64_si128(a3a2, b3b2, 0x11);
-     __m128i a4b3 = _mm_clmulepi64_si128(a5a4, b3b2, 0x10);
-     __m128i a5b3 = _mm_clmulepi64_si128(a5a4, b3b2, 0x11);
-     __m128i a6b3 = _mm_clmulepi64_si128(a7a6, b3b2, 0x10);
-     __m128i a7b3 = _mm_clmulepi64_si128(a7a6, b3b2, 0x11);
+     a0b1 = _mm_clmulepi64_si128(a1a0, b1b0, 0x10);
+     a1b1 = _mm_clmulepi64_si128(a1a0, b1b0, 0x11);
+     a2b1 = _mm_clmulepi64_si128(a3a2, b1b0, 0x10);
+     a3b1 = _mm_clmulepi64_si128(a3a2, b1b0, 0x11);
+     a4b1 = _mm_clmulepi64_si128(a5a4, b1b0, 0x10);
+     a5b1 = _mm_clmulepi64_si128(a5a4, b1b0, 0x11);
+     a6b1 = _mm_clmulepi64_si128(a7a6, b1b0, 0x10);
+     a7b1 = _mm_clmulepi64_si128(a7a6, b1b0, 0x11);
 
 
-     __m128i a0b4 = _mm_clmulepi64_si128(a1a0, b5b4, 0x00);
-     __m128i a1b4 = _mm_clmulepi64_si128(a1a0, b5b4, 0x01);
-     __m128i a2b4 = _mm_clmulepi64_si128(a3a2, b5b4, 0x00);
-     __m128i a3b4 = _mm_clmulepi64_si128(a3a2, b5b4, 0x01);
-     __m128i a4b4 = _mm_clmulepi64_si128(a5a4, b5b4, 0x00);
-     __m128i a5b4 = _mm_clmulepi64_si128(a5a4, b5b4, 0x01);
-     __m128i a6b4 = _mm_clmulepi64_si128(a7a6, b5b4, 0x00);
-     __m128i a7b4 = _mm_clmulepi64_si128(a7a6, b5b4, 0x01);
+     a0b2 = _mm_clmulepi64_si128(a1a0, b3b2, 0x00);
+     a1b2 = _mm_clmulepi64_si128(a1a0, b3b2, 0x01);
+     a2b2 = _mm_clmulepi64_si128(a3a2, b3b2, 0x00);
+     a3b2 = _mm_clmulepi64_si128(a3a2, b3b2, 0x01);
+     a4b2 = _mm_clmulepi64_si128(a5a4, b3b2, 0x00);
+     a5b2 = _mm_clmulepi64_si128(a5a4, b3b2, 0x01);
+     a6b2 = _mm_clmulepi64_si128(a7a6, b3b2, 0x00);
+     a7b2 = _mm_clmulepi64_si128(a7a6, b3b2, 0x01);
 
-     __m128i a0b5 = _mm_clmulepi64_si128(a1a0, b5b4, 0x10);
-     __m128i a1b5 = _mm_clmulepi64_si128(a1a0, b5b4, 0x11);
-     __m128i a2b5 = _mm_clmulepi64_si128(a3a2, b5b4, 0x10);
-     __m128i a3b5 = _mm_clmulepi64_si128(a3a2, b5b4, 0x11);
-     __m128i a4b5 = _mm_clmulepi64_si128(a5a4, b5b4, 0x10);
-     __m128i a5b5 = _mm_clmulepi64_si128(a5a4, b5b4, 0x11);
-     __m128i a6b5 = _mm_clmulepi64_si128(a7a6, b5b4, 0x10);
-     __m128i a7b5 = _mm_clmulepi64_si128(a7a6, b5b4, 0x11);
+     a0b3 = _mm_clmulepi64_si128(a1a0, b3b2, 0x10);
+     a1b3 = _mm_clmulepi64_si128(a1a0, b3b2, 0x11);
+     a2b3 = _mm_clmulepi64_si128(a3a2, b3b2, 0x10);
+     a3b3 = _mm_clmulepi64_si128(a3a2, b3b2, 0x11);
+     a4b3 = _mm_clmulepi64_si128(a5a4, b3b2, 0x10);
+     a5b3 = _mm_clmulepi64_si128(a5a4, b3b2, 0x11);
+     a6b3 = _mm_clmulepi64_si128(a7a6, b3b2, 0x10);
+     a7b3 = _mm_clmulepi64_si128(a7a6, b3b2, 0x11);
 
 
-     __m128i a0b6 = _mm_clmulepi64_si128(a1a0, b7b6, 0x00);
-     __m128i a1b6 = _mm_clmulepi64_si128(a1a0, b7b6, 0x01);
-     __m128i a2b6 = _mm_clmulepi64_si128(a3a2, b7b6, 0x00);
-     __m128i a3b6 = _mm_clmulepi64_si128(a3a2, b7b6, 0x01);
-     __m128i a4b6 = _mm_clmulepi64_si128(a5a4, b7b6, 0x00);
-     __m128i a5b6 = _mm_clmulepi64_si128(a5a4, b7b6, 0x01);
-     __m128i a6b6 = _mm_clmulepi64_si128(a7a6, b7b6, 0x00);
-     __m128i a7b6 = _mm_clmulepi64_si128(a7a6, b7b6, 0x01);
+     a0b4 = _mm_clmulepi64_si128(a1a0, b5b4, 0x00);
+     a1b4 = _mm_clmulepi64_si128(a1a0, b5b4, 0x01);
+     a2b4 = _mm_clmulepi64_si128(a3a2, b5b4, 0x00);
+     a3b4 = _mm_clmulepi64_si128(a3a2, b5b4, 0x01);
+     a4b4 = _mm_clmulepi64_si128(a5a4, b5b4, 0x00);
+     a5b4 = _mm_clmulepi64_si128(a5a4, b5b4, 0x01);
+     a6b4 = _mm_clmulepi64_si128(a7a6, b5b4, 0x00);
+     a7b4 = _mm_clmulepi64_si128(a7a6, b5b4, 0x01);
 
-     __m128i a0b7 = _mm_clmulepi64_si128(a1a0, b7b6, 0x10);
-     __m128i a1b7 = _mm_clmulepi64_si128(a1a0, b7b6, 0x11);
-     __m128i a2b7 = _mm_clmulepi64_si128(a3a2, b7b6, 0x10);
-     __m128i a3b7 = _mm_clmulepi64_si128(a3a2, b7b6, 0x11);
-     __m128i a4b7 = _mm_clmulepi64_si128(a5a4, b7b6, 0x10);
-     __m128i a5b7 = _mm_clmulepi64_si128(a5a4, b7b6, 0x11);
-     __m128i a6b7 = _mm_clmulepi64_si128(a7a6, b7b6, 0x10);
-     __m128i a7b7 = _mm_clmulepi64_si128(a7a6, b7b6, 0x11);
+     a0b5 = _mm_clmulepi64_si128(a1a0, b5b4, 0x10);
+     a1b5 = _mm_clmulepi64_si128(a1a0, b5b4, 0x11);
+     a2b5 = _mm_clmulepi64_si128(a3a2, b5b4, 0x10);
+     a3b5 = _mm_clmulepi64_si128(a3a2, b5b4, 0x11);
+     a4b5 = _mm_clmulepi64_si128(a5a4, b5b4, 0x10);
+     a5b5 = _mm_clmulepi64_si128(a5a4, b5b4, 0x11);
+     a6b5 = _mm_clmulepi64_si128(a7a6, b5b4, 0x10);
+     a7b5 = _mm_clmulepi64_si128(a7a6, b5b4, 0x11);
 
-     /* суммирование, потом приведение */
-     ak_uint64 r0, r1, r2, r3, r4, r5, r6, r7,
-             r8, r9, r10, r11, r12, r13, r14, r15;      //хранит ответ. r8-r15 при желании можно (?) оптимизировать в 2 переменные.
 
-     r15 = a7b7[1];                                                                             //sum
-     r14 = a7b7[0] ^ a6b7[1] ^ a7b6[1];                                                         //sum
-     r13 = a6b7[0] ^ a5b7[1] ^ a7b6[0] ^ a6b6[1] ^ a7b5[1];                                     //sum
-     r12 = a5b7[0] ^ a4b7[1] ^ a6b6[0] ^ a5b6[1] ^ a7b5[0] ^ a6b5[1] ^ a7b4[1];                 //sum
-     r11 = a4b7[0] ^ a3b7[1] ^ a5b6[0] ^ a4b6[1] ^ a6b5[0] ^ a5b5[1] ^ a7b4[0]
-             ^ a6b4[1] ^ a7b3[1];                                                               //sum
-     r10 = a3b7[0] ^ a2b7[1] ^ a4b6[0] ^ a3b6[1] ^ a5b5[0] ^ a4b5[1] ^ a6b4[0]
-             ^ a5b4[1] ^ a7b3[0] ^ a6b3[1] ^ a7b2[1];                                           //sum
-     r9  = a2b7[0] ^ a1b7[1] ^ a3b6[0] ^ a2b6[1] ^ a4b5[0] ^ a3b5[1] ^ a5b4[0]
-             ^ a4b4[1] ^ a6b3[0] ^ a5b3[1] ^ a7b2[0] ^ a6b2[1] ^ a7b1[1];                       //sum
-     r8  = a1b7[0] ^ a0b7[1] ^ a2b6[0] ^ a1b6[1] ^ a3b5[0] ^ a2b5[1] ^ a4b4[0]
-             ^ a3b4[1] ^ a5b3[0] ^ a4b3[1] ^ a6b2[0] ^ a5b2[1] ^ a7b1[0] ^ a6b1[1] ^ a7b0[1];   //sum
+     a0b6 = _mm_clmulepi64_si128(a1a0, b7b6, 0x00);
+     a1b6 = _mm_clmulepi64_si128(a1a0, b7b6, 0x01);
+     a2b6 = _mm_clmulepi64_si128(a3a2, b7b6, 0x00);
+     a3b6 = _mm_clmulepi64_si128(a3a2, b7b6, 0x01);
+     a4b6 = _mm_clmulepi64_si128(a5a4, b7b6, 0x00);
+     a5b6 = _mm_clmulepi64_si128(a5a4, b7b6, 0x01);
+     a6b6 = _mm_clmulepi64_si128(a7a6, b7b6, 0x00);
+     a7b6 = _mm_clmulepi64_si128(a7a6, b7b6, 0x01);
+
+     a0b7 = _mm_clmulepi64_si128(a1a0, b7b6, 0x10);
+     a1b7 = _mm_clmulepi64_si128(a1a0, b7b6, 0x11);
+     a2b7 = _mm_clmulepi64_si128(a3a2, b7b6, 0x10);
+     a3b7 = _mm_clmulepi64_si128(a3a2, b7b6, 0x11);
+     a4b7 = _mm_clmulepi64_si128(a5a4, b7b6, 0x10);
+     a5b7 = _mm_clmulepi64_si128(a5a4, b7b6, 0x11);
+     a6b7 = _mm_clmulepi64_si128(a7a6, b7b6, 0x10);
+     a7b7 = _mm_clmulepi64_si128(a7a6, b7b6, 0x11);
+
+    /* суммирование, потом приведение */
+
+     r15 = a7b7.m128i_u64[1];                                                                             //sum
+     r14 = a7b7.m128i_u64[0] ^ a6b7.m128i_u64[1] ^ a7b6.m128i_u64[1];                                                         //sum
+     r13 = a6b7.m128i_u64[0] ^ a5b7.m128i_u64[1] ^ a7b6.m128i_u64[0] ^ a6b6.m128i_u64[1] ^ a7b5.m128i_u64[1];                                     //sum
+     r12 = a5b7.m128i_u64[0] ^ a4b7.m128i_u64[1] ^ a6b6.m128i_u64[0] ^ a5b6.m128i_u64[1] ^ a7b5.m128i_u64[0] ^ a6b5.m128i_u64[1] ^ a7b4.m128i_u64[1];                 //sum
+     r11 = a4b7.m128i_u64[0] ^ a3b7.m128i_u64[1] ^ a5b6.m128i_u64[0] ^ a4b6.m128i_u64[1] ^ a6b5.m128i_u64[0] ^ a5b5.m128i_u64[1] ^ a7b4.m128i_u64[0]
+             ^ a6b4.m128i_u64[1] ^ a7b3.m128i_u64[1];                                                               //sum
+     r10 = a3b7.m128i_u64[0] ^ a2b7.m128i_u64[1] ^ a4b6.m128i_u64[0] ^ a3b6.m128i_u64[1] ^ a5b5.m128i_u64[0] ^ a4b5.m128i_u64[1] ^ a6b4.m128i_u64[0]
+             ^ a5b4.m128i_u64[1] ^ a7b3.m128i_u64[0] ^ a6b3.m128i_u64[1] ^ a7b2.m128i_u64[1];                                           //sum
+     r9  = a2b7.m128i_u64[0] ^ a1b7.m128i_u64[1] ^ a3b6.m128i_u64[0] ^ a2b6.m128i_u64[1] ^ a4b5.m128i_u64[0] ^ a3b5.m128i_u64[1] ^ a5b4.m128i_u64[0]
+             ^ a4b4.m128i_u64[1] ^ a6b3.m128i_u64[0] ^ a5b3.m128i_u64[1] ^ a7b2.m128i_u64[0] ^ a6b2.m128i_u64[1] ^ a7b1.m128i_u64[1];                       //sum
+     r8  = a1b7.m128i_u64[0] ^ a0b7.m128i_u64[1] ^ a2b6.m128i_u64[0] ^ a1b6.m128i_u64[1] ^ a3b5.m128i_u64[0] ^ a2b5.m128i_u64[1] ^ a4b4.m128i_u64[0]
+             ^ a3b4.m128i_u64[1] ^ a5b3.m128i_u64[0] ^ a4b3.m128i_u64[1] ^ a6b2.m128i_u64[0] ^ a5b2.m128i_u64[1] ^ a7b1.m128i_u64[0] ^ a6b1.m128i_u64[1] ^ a7b0.m128i_u64[1];   //sum
      r8 ^= (r15 >> 56) ^ (r15 >> 59) ^ (r15 >> 62);                                             //mod
-     r7  = a0b7[0] ^ a1b6[0] ^ a0b6[1] ^ a2b5[0] ^ a1b5[1] ^ a3b4[0] ^ a2b4[1]
-             ^ a4b3[0] ^ a3b3[1] ^ a5b2[0] ^ a4b2[1] ^ a6b1[0] ^ a5b1[1] ^ a7b0[0] ^ a6b0[1];   //sum
+
+     r7  = a0b7.m128i_u64[0] ^ a1b6.m128i_u64[0] ^ a0b6.m128i_u64[1] ^ a2b5.m128i_u64[0] ^ a1b5.m128i_u64[1] ^ a3b4.m128i_u64[0] ^ a2b4.m128i_u64[1]
+             ^ a4b3.m128i_u64[0] ^ a3b3.m128i_u64[1] ^ a5b2.m128i_u64[0] ^ a4b2.m128i_u64[1] ^ a6b1.m128i_u64[0] ^ a5b1.m128i_u64[1] ^ a7b0.m128i_u64[0] ^ a6b0.m128i_u64[1];   //sum
      r7 ^= (r15 << 8) ^ (r15 << 5) ^ (r15 << 2) ^ r15 ^ (r14 >> 56) ^ (r14 >> 59) ^ (r14 >> 62);//mod
-     r6  = a0b6[0] ^ a1b5[0] ^ a0b5[1] ^ a2b4[0] ^ a1b4[1] ^ a3b3[0] ^ a2b3[1]
-             ^ a4b2[0] ^ a3b2[1] ^ a5b1[0] ^ a4b1[1] ^ a6b0[0] ^ a5b0[1];                       //sum
+
+     r6  = a0b6.m128i_u64[0] ^ a1b5.m128i_u64[0] ^ a0b5.m128i_u64[1] ^ a2b4.m128i_u64[0] ^ a1b4.m128i_u64[1] ^ a3b3.m128i_u64[0] ^ a2b3.m128i_u64[1]
+             ^ a4b2.m128i_u64[0] ^ a3b2.m128i_u64[1] ^ a5b1.m128i_u64[0] ^ a4b1.m128i_u64[1] ^ a6b0.m128i_u64[0] ^ a5b0.m128i_u64[1];                       //sum
      r6 ^= (r14 << 8) ^ (r14 << 5) ^ (r14 << 2) ^ r14 ^ (r13 >> 56) ^ (r13 >> 59) ^ (r13 >> 62);//mod
-     r5  = a0b5[0] ^ a1b4[0] ^ a0b4[1] ^ a2b3[0] ^ a1b3[1] ^ a3b2[0] ^ a2b2[1]
-             ^ a4b1[0] ^ a3b1[1] ^ a5b0[0] ^ a4b0[1];                                           //sum
+
+     r5  = a0b5.m128i_u64[0] ^ a1b4.m128i_u64[0] ^ a0b4.m128i_u64[1] ^ a2b3.m128i_u64[0] ^ a1b3.m128i_u64[1] ^ a3b2.m128i_u64[0] ^ a2b2.m128i_u64[1]
+             ^ a4b1.m128i_u64[0] ^ a3b1.m128i_u64[1] ^ a5b0.m128i_u64[0] ^ a4b0.m128i_u64[1];                                           //sum
      r5 ^= (r13 << 8) ^ (r13 << 5) ^ (r13 << 2) ^ r13 ^ (r12 >> 56) ^ (r12 >> 59) ^ (r12 >> 62);//mod
-     r4  = a0b4[0] ^ a1b3[0] ^ a0b3[1] ^ a2b2[0] ^ a1b2[1] ^ a3b1[0] ^ a2b1[1]
-             ^ a4b0[0] ^ a3b0[1];                                                               //sum
+
+     r4  = a0b4.m128i_u64[0] ^ a1b3.m128i_u64[0] ^ a0b3.m128i_u64[1] ^ a2b2.m128i_u64[0] ^ a1b2.m128i_u64[1] ^ a3b1.m128i_u64[0] ^ a2b1.m128i_u64[1]
+             ^ a4b0.m128i_u64[0] ^ a3b0.m128i_u64[1];                                                               //sum
      r4 ^= (r12 << 8) ^ (r12 << 5) ^ (r12 << 2) ^ r12 ^ (r11 >> 56) ^ (r11 >> 59) ^ (r11 >> 62);//mod
-     r3  = a0b3[0] ^ a1b2[0] ^ a0b2[1] ^ a2b1[0] ^ a1b1[1] ^ a3b0[0] ^ a2b0[1];                 //sum
+
+     r3  = a0b3.m128i_u64[0] ^ a1b2.m128i_u64[0] ^ a0b2.m128i_u64[1] ^ a2b1.m128i_u64[0] ^ a1b1.m128i_u64[1] ^ a3b0.m128i_u64[0] ^ a2b0.m128i_u64[1];                 //sum
      r3 ^= (r11 << 8) ^ (r11 << 5) ^ (r11 << 2) ^ r11 ^ (r10 >> 56) ^ (r10 >> 59) ^ (r10 >> 62);//mod
-     r2  = a0b2[0] ^ a1b1[0] ^ a0b1[1] ^ a2b0[0] ^ a1b0[1];                                     //sum
+
+     r2  = a0b2.m128i_u64[0] ^ a1b1.m128i_u64[0] ^ a0b1.m128i_u64[1] ^ a2b0.m128i_u64[0] ^ a1b0.m128i_u64[1];                                     //sum
      r2 ^= (r10 << 8) ^ (r10 << 5) ^ (r10 << 2) ^ r10 ^ (r9 >> 56) ^ (r9 >> 59) ^ (r9 >> 62);   //mod
-     r1  = a0b1[0] ^ a1b0[0] ^ a0b0[1];                                                         //sum
+
+     r1  = a0b1.m128i_u64[0] ^ a1b0.m128i_u64[0] ^ a0b0.m128i_u64[1];                                                         //sum
      r1 ^= (r9 << 8) ^ (r9 << 5) ^ (r9 << 2) ^ r9 ^ (r8 >> 56) ^ (r8 >> 59) ^ (r8 >> 62);       //mod
-     r0  = a0b0[0];                                                                             //sum
+
+     r0  = a0b0.m128i_u64[0];                                                                             //sum
      r0 ^= (r8 << 8) ^ (r8 << 5) ^ (r8 << 2) ^ r8;                                              //mod
 
      ((ak_uint64 *)z)[0] = r0;
@@ -967,7 +992,6 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
 
  return ak_true;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тестирование операции умножения в поле \f$ \mathbb F_{2^{256}}\f$. */

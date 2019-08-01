@@ -98,6 +98,7 @@
  int gf512test( void )
 {
   clock_t time;
+  char str[192];
   ak_uint32 i = 0;
   ak_uint64 alpha[8]  = { 0xffac13LL, 0x21ff670caLL, 0x1ac678901acLL, 0xffff5436271cLL,
                           0x11adc75875LL, 0x121111fffffLL, 0xFFFFFFFFFFFFFFFLL, 0xFFFFFFFFea12LL },
@@ -120,7 +121,13 @@
   printf(" GF(2^512): ak_gf512_mul_pcmulqdq time: %f sec\n", (double)time / (double)CLOCKS_PER_SEC );
 
   if( ak_ptr_is_equal( gamma, delta, sizeof( gamma )) != ak_true ) return EXIT_FAILURE;
+
+  ak_ptr_to_hexstr_static( delta, sizeof( delta ), str, sizeof( str ), ak_true );
+  printf("\ndelta: %s\n", str );
 #endif
+
+  ak_ptr_to_hexstr_static( gamma, sizeof( gamma ), str, sizeof( str ), ak_true );
+  printf("\ngamma: %s\n", str );
  return EXIT_SUCCESS;
 }
 
