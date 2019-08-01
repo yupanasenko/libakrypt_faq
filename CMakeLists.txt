@@ -324,6 +324,7 @@ set( INTERNAL_TEST_LIST
                  internal-oid01
                  internal-oid02
                  internal-mpzn01
+                 internal-gf2n
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}

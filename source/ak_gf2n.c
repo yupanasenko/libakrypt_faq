@@ -1,5 +1,6 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*  Copyright (c) 2014 - 2019 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2019 by Diffractee                                                               */
 /*                                                                                                 */
 /*  Файл ak_gf2n.c                                                                                 */
 /*  - содержит реализацию функций умножения элементов конечных полей характеристики 2.             */
@@ -102,6 +103,187 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция реализует операцию умножения двух элементов конечного поля \f$ \mathbb F_{2^{256}}\f$,
+    порожденного неприводимым многочленом
+    \f$ f(x) = x^{256} + x^10 + x^5 + x^2 + 1 \in \mathbb F_2[x]\f$. Для умножения используется
+    простейшая реализация, основанная на приведении по модулю после каждого шага алгоритма.
+    \todo по-хорошему нужно вынести умножение на примитивный элемент
+    в макрос (как для \f$ \mathbb F_{2^{128}} \f$).                                                */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_gf256_mul_uint64( ak_pointer z, ak_pointer x, ak_pointer y )
+{
+ int i = 0, g = 0;
+ ak_uint64 t, n,
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
+  s0 = ((ak_uint64 *)x)[0], s1 = ((ak_uint64 *)x)[1],
+  s2 = ((ak_uint64 *)x)[2], s3 = ((ak_uint64 *)x)[3];
+#else
+  s0 = bswap_64( ((ak_uint64 *)x)[0] ), s1 = bswap_64( ((ak_uint64 *)x)[1] ),
+  s2 = bswap_64( ((ak_uint64 *)x)[2] ), s3 = bswap_64( ((ak_uint64 *)x)[3] );
+#endif
+
+ /* обнуляем результирующее значение */
+ ((ak_uint64 *)z)[0] = 0; ((ak_uint64 *)z)[1] = 0;
+ ((ak_uint64 *)z)[2] = 0; ((ak_uint64 *)z)[3] = 0;
+
+ /* вычисляем  произведение для младших 3-х четвертей (t0 - t2) */
+ for( g = 0; g < 3; g++ ) { //вроде должно работать. Код полностью дублируется,
+                            //кроме части под макросами, которую и меняю.
+  #ifdef LIBAKRYPT_LITTLE_ENDIAN
+    t = ((ak_uint64 *)y)[g];
+  #else
+    t = bswap_64( ((ak_uint64 *)y)[g] );
+  #endif
+   for( i = 0; i < 64; i++ ) {
+     if( t&0x1 ) {
+       ((ak_uint64 *)z)[0] ^= s0; ((ak_uint64 *)z)[1] ^= s1;
+       ((ak_uint64 *)z)[2] ^= s2; ((ak_uint64 *)z)[3] ^= s3;
+     }
+     t >>= 1;
+     n = ( s3 >> 63 );
+     s3 <<= 1; s3 ^= ( s2 >> 63 );
+     s2 <<= 1; s2 ^= ( s1 >> 63 );
+     s1 <<= 1; s1 ^= ( s0 >> 63 );
+     s0 <<= 1;
+     if( n ) s0 ^= 0x425;
+   }
+ }
+
+ /* вычисляем  произведение для старшей четверти (t3) */
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
+  t = ((ak_uint64 *)y)[3];
+#else
+  t = bswap_64( ((ak_uint64 *)y)[3] );
+#endif
+ for( i = 0; i < 63; i++ ) {
+   if( t&0x1 ) {
+     ((ak_uint64 *)z)[0] ^= s0; ((ak_uint64 *)z)[1] ^= s1;
+     ((ak_uint64 *)z)[2] ^= s2; ((ak_uint64 *)z)[3] ^= s3;
+   }
+   t >>= 1;
+   n = ( s3 >> 63 );
+   s3 <<= 1; s3 ^= ( s2 >> 63 );
+   s2 <<= 1; s2 ^= ( s1 >> 63 );
+   s1 <<= 1; s1 ^= ( s0 >> 63 );
+   s0 <<= 1;
+   if( n ) s0 ^= 0x425;
+ }
+
+ if( t&0x1 ) {
+   ((ak_uint64 *)z)[0] ^= s0; ((ak_uint64 *)z)[1] ^= s1;
+   ((ak_uint64 *)z)[2] ^= s2; ((ak_uint64 *)z)[3] ^= s3;
+ }
+#ifdef LIBAKRYPT_BIG_ENDIAN
+   ((ak_uint64 *)z)[0] = bswap_64( ((ak_uint64 *)z)[0] );
+   ((ak_uint64 *)z)[1] = bswap_64( ((ak_uint64 *)z)[1] );
+   ((ak_uint64 *)z)[2] = bswap_64( ((ak_uint64 *)z)[2] );
+   ((ak_uint64 *)z)[3] = bswap_64( ((ak_uint64 *)z)[3] );
+#endif
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция реализует операцию умножения двух элементов конечного поля \f$ \mathbb F_{2^{512}}\f$,
+    порожденного неприводимым многочленом
+    \f$ f(x) = x^{512} + x^8 + x^5 + x^2 + 1 \in \mathbb F_2[x]\f$. Для умножения используется
+    простейшая реализация, основанная на приведении по модулю после каждого шага алгоритма.
+    \todo по-хорошему нужно вынести умножение на примитивный элемент в макрос.                     */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_gf512_mul_uint64( ak_pointer z, ak_pointer x, ak_pointer y )
+{
+ int i = 0, g = 0;
+ ak_uint64 t, n,
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
+  s0 = ((ak_uint64 *)x)[0], s1 = ((ak_uint64 *)x)[1],
+  s2 = ((ak_uint64 *)x)[2], s3 = ((ak_uint64 *)x)[3],
+  s4 = ((ak_uint64 *)x)[4], s5 = ((ak_uint64 *)x)[5],
+  s6 = ((ak_uint64 *)x)[6], s7 = ((ak_uint64 *)x)[7];
+#else
+  s0 = bswap_64( ((ak_uint64 *)x)[0] ), s1 = bswap_64( ((ak_uint64 *)x)[1] ),
+  s2 = bswap_64( ((ak_uint64 *)x)[2] ), s3 = bswap_64( ((ak_uint64 *)x)[3] ),
+  s4 = bswap_64( ((ak_uint64 *)x)[4] ), s5 = bswap_64( ((ak_uint64 *)x)[5] ),
+  s6 = bswap_64( ((ak_uint64 *)x)[6] ), s7 = bswap_64( ((ak_uint64 *)x)[7] );
+#endif
+
+ /* обнуляем результирующее значение */
+ ((ak_uint64 *)z)[0] = 0; ((ak_uint64 *)z)[1] = 0;
+ ((ak_uint64 *)z)[2] = 0; ((ak_uint64 *)z)[3] = 0;
+ ((ak_uint64 *)z)[4] = 0; ((ak_uint64 *)z)[5] = 0;
+ ((ak_uint64 *)z)[6] = 0; ((ak_uint64 *)z)[7] = 0;
+
+ /* вычисляем  произведение для младших 7-ми восьмых (t0 - t6) */
+ for( g = 0; g < 7; g++ ) { //вроде должно работать. Код полностью дуюлируется,
+                            //кроме части под макросами, которую и меняю.
+  #ifdef LIBAKRYPT_LITTLE_ENDIAN
+    t = ((ak_uint64 *)y)[g];
+  #else
+    t = bswap_64( ((ak_uint64 *)y)[g] );
+  #endif
+   for( i = 0; i < 64; i++ ) {
+     if( t&0x1 ) {
+       ((ak_uint64 *)z)[0] ^= s0; ((ak_uint64 *)z)[1] ^= s1;
+       ((ak_uint64 *)z)[2] ^= s2; ((ak_uint64 *)z)[3] ^= s3;
+       ((ak_uint64 *)z)[4] ^= s4; ((ak_uint64 *)z)[5] ^= s5;
+       ((ak_uint64 *)z)[6] ^= s6; ((ak_uint64 *)z)[7] ^= s7;
+     }
+     t >>= 1;
+     n = ( s7 >> 63 );
+     s7 <<= 1; s7 ^= ( s6 >> 63 );
+     s6 <<= 1; s6 ^= ( s5 >> 63 );
+     s5 <<= 1; s5 ^= ( s4 >> 63 );
+     s4 <<= 1; s4 ^= ( s3 >> 63 );
+     s3 <<= 1; s3 ^= ( s2 >> 63 );
+     s2 <<= 1; s2 ^= ( s1 >> 63 );
+     s1 <<= 1; s1 ^= ( s0 >> 63 );
+     s0 <<= 1;
+     if( n ) s0 ^= 0x125;
+   }
+ }
+
+ /* вычисляем  произведение для старшей одной восьмой (t7) */
+#ifdef LIBAKRYPT_LITTLE_ENDIAN
+  t = ((ak_uint64 *)y)[7];
+#else
+  t = bswap_64( ((ak_uint64 *)y)[7] );
+#endif
+ for( i = 0; i < 63; i++ ) {
+   if( t&0x1 ) {
+     ((ak_uint64 *)z)[0] ^= s0; ((ak_uint64 *)z)[1] ^= s1;
+     ((ak_uint64 *)z)[2] ^= s2; ((ak_uint64 *)z)[3] ^= s3;
+     ((ak_uint64 *)z)[4] ^= s4; ((ak_uint64 *)z)[5] ^= s5;
+     ((ak_uint64 *)z)[6] ^= s6; ((ak_uint64 *)z)[7] ^= s7;
+   }
+   t >>= 1;
+   n = ( s7 >> 63 );
+   s7 <<= 1; s7 ^= ( s6 >> 63 );
+   s6 <<= 1; s6 ^= ( s5 >> 63 );
+   s5 <<= 1; s5 ^= ( s4 >> 63 );
+   s4 <<= 1; s4 ^= ( s3 >> 63 );
+   s3 <<= 1; s3 ^= ( s2 >> 63 );
+   s2 <<= 1; s2 ^= ( s1 >> 63 );
+   s1 <<= 1; s1 ^= ( s0 >> 63 );
+   s0 <<= 1;
+   if( n ) s0 ^= 0x125;
+ }
+
+ if( t&0x1 ) {
+   ((ak_uint64 *)z)[0] ^= s0; ((ak_uint64 *)z)[1] ^= s1;
+   ((ak_uint64 *)z)[2] ^= s2; ((ak_uint64 *)z)[3] ^= s3;
+   ((ak_uint64 *)z)[4] ^= s4; ((ak_uint64 *)z)[5] ^= s5;
+   ((ak_uint64 *)z)[6] ^= s6; ((ak_uint64 *)z)[7] ^= s7;
+ }
+#ifdef LIBAKRYPT_BIG_ENDIAN
+   ((ak_uint64 *)z)[0] = bswap_64( ((ak_uint64 *)z)[0] );
+   ((ak_uint64 *)z)[1] = bswap_64( ((ak_uint64 *)z)[1] );
+   ((ak_uint64 *)z)[2] = bswap_64( ((ak_uint64 *)z)[2] );
+   ((ak_uint64 *)z)[3] = bswap_64( ((ak_uint64 *)z)[3] );
+   ((ak_uint64 *)z)[4] = bswap_64( ((ak_uint64 *)z)[4] );
+   ((ak_uint64 *)z)[5] = bswap_64( ((ak_uint64 *)z)[5] );
+   ((ak_uint64 *)z)[6] = bswap_64( ((ak_uint64 *)z)[6] );
+   ((ak_uint64 *)z)[7] = bswap_64( ((ak_uint64 *)z)[7] );
+#endif
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -195,6 +377,398 @@
 	 ((ak_uint64 *)z)[1] = cm[1];
 #endif
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция реализует операцию умножения двух элементов конечного поля \f$ \mathbb F_{2^{256}}\f$,
+    порожденного неприводимым многочленом
+    \f$ f(x) = x^{256} + x^10 + x^5 + x^2 + 1 \in \mathbb F_2[x]\f$. Для умножения используется
+    реализация с помощью команды PCLMULQDQ.                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_gf256_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
+{
+     //TODO не тестировалось
+#ifdef _MSC_VER
+     __m128i a1a0, a3a2, b1b0, b3b2;
+
+     a1a0.m128i_u64[0] = ((ak_uint64 *)a)[0];   a1a0.m128i_u64[1] = ((ak_uint64 *)a)[1];
+     a3a2.m128i_u64[0] = ((ak_uint64 *)a)[2];   a3a2.m128i_u64[1] = ((ak_uint64 *)a)[3];
+
+     b1b0.m128i_u64[0] = ((ak_uint64 *)b)[0];   b1b0.m128i_u64[1] = ((ak_uint64 *)b)[1];
+     b3b2.m128i_u64[0] = ((ak_uint64 *)b)[2];   b3b2.m128i_u64[1] = ((ak_uint64 *)b)[3];
+
+     /* умножение */
+     __m128i a0b0 = _mm_clmulepi64_si128(a1a0, b1b0, 0x00);
+     __m128i a1b0 = _mm_clmulepi64_si128(a1a0, b1b0, 0x01);
+     __m128i a2b0 = _mm_clmulepi64_si128(a3a2, b1b0, 0x00);
+     __m128i a3b0 = _mm_clmulepi64_si128(a3a2, b1b0, 0x01);
+
+     __m128i a0b1 = _mm_clmulepi64_si128(a1a0, b1b0, 0x10);
+     __m128i a1b1 = _mm_clmulepi64_si128(a1a0, b1b0, 0x11);
+     __m128i a2b1 = _mm_clmulepi64_si128(a3a2, b1b0, 0x10);
+     __m128i a3b1 = _mm_clmulepi64_si128(a3a2, b1b0, 0x11);
+
+     __m128i a0b2 = _mm_clmulepi64_si128(a1a0, b3b2, 0x00);
+     __m128i a1b2 = _mm_clmulepi64_si128(a1a0, b3b2, 0x01);
+     __m128i a2b2 = _mm_clmulepi64_si128(a3a2, b3b2, 0x00);
+     __m128i a3b2 = _mm_clmulepi64_si128(a3a2, b3b2, 0x01);
+
+     __m128i a0b3 = _mm_clmulepi64_si128(a1a0, b3b2, 0x10);
+     __m128i a1b3 = _mm_clmulepi64_si128(a1a0, b3b2, 0x11);
+     __m128i a2b3 = _mm_clmulepi64_si128(a3a2, b3b2, 0x10);
+     __m128i a3b3 = _mm_clmulepi64_si128(a3a2, b3b2, 0x11);
+
+     /* суммирование, потом приведение */
+     ak_uint64 r0, r1, r2, r3, r4, r5, r6, r7; //хранит ответ. r4-r7 при желании можно оптимизировать в 2 переменные.
+     r7 = a3b3[1];                                                                          //sum
+     r6 = a3b3[0] ^ a2b3[1] ^ a3b2[1];                                                      //sum
+     r5 = a2b3[0] ^ a1b3[1] ^ a3b2[0] ^ a2b2[1] ^ a3b1[1];                                  //sum
+     r4 = a1b3[0] ^ a0b3[1] ^ a2b2[0] ^ a1b2[1] ^ a3b1[0] ^ a2b1[1] ^ a3b0[1];              //sum
+     r4^= (r7 >> 54) ^ (r7 >> 59) ^ (r7 >> 62);                                             //mod
+     r3 = a0b3[0] ^ a1b2[0] ^ a0b2[1] ^ a2b1[0] ^ a1b1[1] ^ a3b0[0] ^ a2b0[1];              //sum
+     r3^= (r7 << 10) ^ (r7 << 5) ^ (r7 << 2) ^ r7 ^ (r6 >> 54) ^ (r6 >> 59) ^ (r6 >> 62);   //mod
+     r2 = a0b2[0] ^ a1b1[0] ^ a0b1[1] ^ a2b0[0] ^ a1b0[1];                                  //sum
+     r2^= (r6 << 10) ^ (r6 << 5) ^ (r6 << 2) ^ r6 ^ (r5 >> 54) ^ (r5 >> 59) ^ (r5 >> 62);   //mod
+     r1 = a0b1[0] ^ a1b0[0] ^ a0b0[1];                                                      //sum
+     r1^= (r5 << 10) ^ (r5 << 5) ^ (r5 << 2) ^ r5 ^ (r4 >> 54) ^ (r4 >> 59) ^ (r4 >> 62);   //mod
+     r0 = a0b0[0];                                                                          //sum
+     r0^= (r4 << 10) ^ (r4 << 5) ^ (r4 << 2) ^ r4;                                          //mod
+
+     ((ak_uint64 *)z)[0] = r0;
+     ((ak_uint64 *)z)[1] = r1;
+     ((ak_uint64 *)z)[2] = r2;
+     ((ak_uint64 *)z)[3] = r3;
+#else
+     __m128i a1a0 = _mm_set_epi64x(((ak_uint64 *)a)[1], ((ak_uint64 *)a)[0]);
+     __m128i a3a2 = _mm_set_epi64x(((ak_uint64 *)a)[3], ((ak_uint64 *)a)[2]);
+
+     __m128i b1b0 = _mm_set_epi64x(((ak_uint64 *)b)[1], ((ak_uint64 *)b)[0]);
+     __m128i b3b2 = _mm_set_epi64x(((ak_uint64 *)b)[3], ((ak_uint64 *)b)[2]);
+
+     /* умножение */
+     __m128i a0b0 = _mm_clmulepi64_si128(a1a0, b1b0, 0x00);
+     __m128i a1b0 = _mm_clmulepi64_si128(a1a0, b1b0, 0x01);
+     __m128i a2b0 = _mm_clmulepi64_si128(a3a2, b1b0, 0x00);
+     __m128i a3b0 = _mm_clmulepi64_si128(a3a2, b1b0, 0x01);
+
+     __m128i a0b1 = _mm_clmulepi64_si128(a1a0, b1b0, 0x10);
+     __m128i a1b1 = _mm_clmulepi64_si128(a1a0, b1b0, 0x11);
+     __m128i a2b1 = _mm_clmulepi64_si128(a3a2, b1b0, 0x10);
+     __m128i a3b1 = _mm_clmulepi64_si128(a3a2, b1b0, 0x11);
+
+     __m128i a0b2 = _mm_clmulepi64_si128(a1a0, b3b2, 0x00);
+     __m128i a1b2 = _mm_clmulepi64_si128(a1a0, b3b2, 0x01);
+     __m128i a2b2 = _mm_clmulepi64_si128(a3a2, b3b2, 0x00);
+     __m128i a3b2 = _mm_clmulepi64_si128(a3a2, b3b2, 0x01);
+
+     __m128i a0b3 = _mm_clmulepi64_si128(a1a0, b3b2, 0x10);
+     __m128i a1b3 = _mm_clmulepi64_si128(a1a0, b3b2, 0x11);
+     __m128i a2b3 = _mm_clmulepi64_si128(a3a2, b3b2, 0x10);
+     __m128i a3b3 = _mm_clmulepi64_si128(a3a2, b3b2, 0x11);
+
+     /* суммирование, потом приведение */
+     ak_uint64 r0, r1, r2, r3, r4, r5, r6, r7; //хранит ответ. r4-r7 при желании можно оптимизировать в 2 переменные.
+     r7 = a3b3[1];                                                                          //sum
+     r6 = a3b3[0] ^ a2b3[1] ^ a3b2[1];                                                      //sum
+     r5 = a2b3[0] ^ a1b3[1] ^ a3b2[0] ^ a2b2[1] ^ a3b1[1];                                  //sum
+     r4 = a1b3[0] ^ a0b3[1] ^ a2b2[0] ^ a1b2[1] ^ a3b1[0] ^ a2b1[1] ^ a3b0[1];              //sum
+     r4^= (r7 >> 54) ^ (r7 >> 59) ^ (r7 >> 62);                                             //mod
+     r3 = a0b3[0] ^ a1b2[0] ^ a0b2[1] ^ a2b1[0] ^ a1b1[1] ^ a3b0[0] ^ a2b0[1];              //sum
+     r3^= (r7 << 10) ^ (r7 << 5) ^ (r7 << 2) ^ r7 ^ (r6 >> 54) ^ (r6 >> 59) ^ (r6 >> 62);   //mod
+     r2 = a0b2[0] ^ a1b1[0] ^ a0b1[1] ^ a2b0[0] ^ a1b0[1];                                  //sum
+     r2^= (r6 << 10) ^ (r6 << 5) ^ (r6 << 2) ^ r6 ^ (r5 >> 54) ^ (r5 >> 59) ^ (r5 >> 62);   //mod
+     r1 = a0b1[0] ^ a1b0[0] ^ a0b0[1];                                                      //sum
+     r1^= (r5 << 10) ^ (r5 << 5) ^ (r5 << 2) ^ r5 ^ (r4 >> 54) ^ (r4 >> 59) ^ (r4 >> 62);   //mod
+     r0 = a0b0[0];                                                                          //sum
+     r0^= (r4 << 10) ^ (r4 << 5) ^ (r4 << 2) ^ r4;                                          //mod
+
+     ((ak_uint64 *)z)[0] = r0;
+     ((ak_uint64 *)z)[1] = r1;
+     ((ak_uint64 *)z)[2] = r2;
+     ((ak_uint64 *)z)[3] = r3;
+#endif
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция реализует операцию умножения двух элементов конечного поля \f$ \mathbb F_{2^{128}}\f$,
+    порожденного неприводимым многочленом
+    \f$ f(x) = x^{512} + x^8 + x^5 + x^2 + 1 \in \mathbb F_2[x]\f$. Для умножения используется
+    реализация с помощью команды PCLMULQDQ.
+    \todo может быть имеет смысл разбить на 2 ifdef, а середину сделать общей?                     */
+/* ----------------------------------------------------------------------------------------------- */
+void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
+{
+    //TODO не тестировалось
+#ifdef _MSC_VER
+     __m128i a1a0, a3a2, a5a4, a7a6, b1b0, b3b2, b5b4, b7b6;
+
+     a1a0.m128i_u64[0] = ((ak_uint64 *)a)[0];   a1a0.m128i_u64[1] = ((ak_uint64 *)a)[1];
+     a3a2.m128i_u64[0] = ((ak_uint64 *)a)[2];   a3a2.m128i_u64[1] = ((ak_uint64 *)a)[3];
+     a5a4.m128i_u64[0] = ((ak_uint64 *)a)[4];   a5a4.m128i_u64[1] = ((ak_uint64 *)a)[5];
+     a7a6.m128i_u64[0] = ((ak_uint64 *)a)[6];   a7a6.m128i_u64[1] = ((ak_uint64 *)a)[7];
+
+     b1b0.m128i_u64[0] = ((ak_uint64 *)b)[0];   b1b0.m128i_u64[1] = ((ak_uint64 *)b)[1];
+     b3b2.m128i_u64[0] = ((ak_uint64 *)b)[2];   b3b2.m128i_u64[1] = ((ak_uint64 *)b)[3];
+     b5b4.m128i_u64[0] = ((ak_uint64 *)b)[4];   b5b4.m128i_u64[1] = ((ak_uint64 *)b)[5];
+     b7b6.m128i_u64[0] = ((ak_uint64 *)b)[6];   b7b6.m128i_u64[1] = ((ak_uint64 *)b)[7];
+
+     /* умножение */
+     __m128i a0b0 = _mm_clmulepi64_si128(a1a0, b1b0, 0x00);
+     __m128i a1b0 = _mm_clmulepi64_si128(a1a0, b1b0, 0x01);
+     __m128i a2b0 = _mm_clmulepi64_si128(a3a2, b1b0, 0x00);
+     __m128i a3b0 = _mm_clmulepi64_si128(a3a2, b1b0, 0x01);
+     __m128i a4b0 = _mm_clmulepi64_si128(a5a4, b1b0, 0x00);
+     __m128i a5b0 = _mm_clmulepi64_si128(a5a4, b1b0, 0x01);
+     __m128i a6b0 = _mm_clmulepi64_si128(a7a6, b1b0, 0x00);
+     __m128i a7b0 = _mm_clmulepi64_si128(a7a6, b1b0, 0x01);
+
+     __m128i a0b1 = _mm_clmulepi64_si128(a1a0, b1b0, 0x10);
+     __m128i a1b1 = _mm_clmulepi64_si128(a1a0, b1b0, 0x11);
+     __m128i a2b1 = _mm_clmulepi64_si128(a3a2, b1b0, 0x10);
+     __m128i a3b1 = _mm_clmulepi64_si128(a3a2, b1b0, 0x11);
+     __m128i a4b1 = _mm_clmulepi64_si128(a5a4, b1b0, 0x10);
+     __m128i a5b1 = _mm_clmulepi64_si128(a5a4, b1b0, 0x11);
+     __m128i a6b1 = _mm_clmulepi64_si128(a7a6, b1b0, 0x10);
+     __m128i a7b1 = _mm_clmulepi64_si128(a7a6, b1b0, 0x11);
+
+
+     __m128i a0b2 = _mm_clmulepi64_si128(a1a0, b3b2, 0x00);
+     __m128i a1b2 = _mm_clmulepi64_si128(a1a0, b3b2, 0x01);
+     __m128i a2b2 = _mm_clmulepi64_si128(a3a2, b3b2, 0x00);
+     __m128i a3b2 = _mm_clmulepi64_si128(a3a2, b3b2, 0x01);
+     __m128i a4b2 = _mm_clmulepi64_si128(a5a4, b3b2, 0x00);
+     __m128i a5b2 = _mm_clmulepi64_si128(a5a4, b3b2, 0x01);
+     __m128i a6b2 = _mm_clmulepi64_si128(a7a6, b3b2, 0x00);
+     __m128i a7b2 = _mm_clmulepi64_si128(a7a6, b3b2, 0x01);
+
+     __m128i a0b3 = _mm_clmulepi64_si128(a1a0, b3b2, 0x10);
+     __m128i a1b3 = _mm_clmulepi64_si128(a1a0, b3b2, 0x11);
+     __m128i a2b3 = _mm_clmulepi64_si128(a3a2, b3b2, 0x10);
+     __m128i a3b3 = _mm_clmulepi64_si128(a3a2, b3b2, 0x11);
+     __m128i a4b3 = _mm_clmulepi64_si128(a5a4, b3b2, 0x10);
+     __m128i a5b3 = _mm_clmulepi64_si128(a5a4, b3b2, 0x11);
+     __m128i a6b3 = _mm_clmulepi64_si128(a7a6, b3b2, 0x10);
+     __m128i a7b3 = _mm_clmulepi64_si128(a7a6, b3b2, 0x11);
+
+
+     __m128i a0b4 = _mm_clmulepi64_si128(a1a0, b5b4, 0x00);
+     __m128i a1b4 = _mm_clmulepi64_si128(a1a0, b5b4, 0x01);
+     __m128i a2b4 = _mm_clmulepi64_si128(a3a2, b5b4, 0x00);
+     __m128i a3b4 = _mm_clmulepi64_si128(a3a2, b5b4, 0x01);
+     __m128i a4b4 = _mm_clmulepi64_si128(a5a4, b5b4, 0x00);
+     __m128i a5b4 = _mm_clmulepi64_si128(a5a4, b5b4, 0x01);
+     __m128i a6b4 = _mm_clmulepi64_si128(a7a6, b5b4, 0x00);
+     __m128i a7b4 = _mm_clmulepi64_si128(a7a6, b5b4, 0x01);
+
+     __m128i a0b5 = _mm_clmulepi64_si128(a1a0, b5b4, 0x10);
+     __m128i a1b5 = _mm_clmulepi64_si128(a1a0, b5b4, 0x11);
+     __m128i a2b5 = _mm_clmulepi64_si128(a3a2, b5b4, 0x10);
+     __m128i a3b5 = _mm_clmulepi64_si128(a3a2, b5b4, 0x11);
+     __m128i a4b5 = _mm_clmulepi64_si128(a5a4, b5b4, 0x10);
+     __m128i a5b5 = _mm_clmulepi64_si128(a5a4, b5b4, 0x11);
+     __m128i a6b5 = _mm_clmulepi64_si128(a7a6, b5b4, 0x10);
+     __m128i a7b5 = _mm_clmulepi64_si128(a7a6, b5b4, 0x11);
+
+
+     __m128i a0b6 = _mm_clmulepi64_si128(a1a0, b7b6, 0x00);
+     __m128i a1b6 = _mm_clmulepi64_si128(a1a0, b7b6, 0x01);
+     __m128i a2b6 = _mm_clmulepi64_si128(a3a2, b7b6, 0x00);
+     __m128i a3b6 = _mm_clmulepi64_si128(a3a2, b7b6, 0x01);
+     __m128i a4b6 = _mm_clmulepi64_si128(a5a4, b7b6, 0x00);
+     __m128i a5b6 = _mm_clmulepi64_si128(a5a4, b7b6, 0x01);
+     __m128i a6b6 = _mm_clmulepi64_si128(a7a6, b7b6, 0x00);
+     __m128i a7b6 = _mm_clmulepi64_si128(a7a6, b7b6, 0x01);
+
+     __m128i a0b7 = _mm_clmulepi64_si128(a1a0, b7b6, 0x10);
+     __m128i a1b7 = _mm_clmulepi64_si128(a1a0, b7b6, 0x11);
+     __m128i a2b7 = _mm_clmulepi64_si128(a3a2, b7b6, 0x10);
+     __m128i a3b7 = _mm_clmulepi64_si128(a3a2, b7b6, 0x11);
+     __m128i a4b7 = _mm_clmulepi64_si128(a5a4, b7b6, 0x10);
+     __m128i a5b7 = _mm_clmulepi64_si128(a5a4, b7b6, 0x11);
+     __m128i a6b7 = _mm_clmulepi64_si128(a7a6, b7b6, 0x10);
+     __m128i a7b7 = _mm_clmulepi64_si128(a7a6, b7b6, 0x11);
+
+     /* суммирование, потом приведение */
+     ak_uint64 r0, r1, r2, r3, r4, r5, r6, r7,
+             r8, r9, r10, r11, r12, r13, r14, r15;      //хранит ответ. r8-r15 при желании можно (?) оптимизировать в 2 переменные.
+
+     r15 = a7b7[1];                                                                             //sum
+     r14 = a7b7[0] ^ a6b7[1] ^ a7b6[1];                                                         //sum
+     r13 = a6b7[0] ^ a5b7[1] ^ a7b6[0] ^ a6b6[1] ^ a7b5[1];                                     //sum
+     r12 = a5b7[0] ^ a4b7[1] ^ a6b6[0] ^ a5b6[1] ^ a7b5[0] ^ a6b5[1] ^ a7b4[1];                 //sum
+     r11 = a4b7[0] ^ a3b7[1] ^ a5b6[0] ^ a4b6[1] ^ a6b5[0] ^ a5b5[1] ^ a7b4[0]
+             ^ a6b4[1] ^ a7b3[1];                                                               //sum
+     r10 = a3b7[0] ^ a2b7[1] ^ a4b6[0] ^ a3b6[1] ^ a5b5[0] ^ a4b5[1] ^ a6b4[0]
+             ^ a5b4[1] ^ a7b3[0] ^ a6b3[1] ^ a7b2[1];                                           //sum
+     r9  = a2b7[0] ^ a1b7[1] ^ a3b6[0] ^ a2b6[1] ^ a4b5[0] ^ a3b5[1] ^ a5b4[0]
+             ^ a4b4[1] ^ a6b3[0] ^ a5b3[1] ^ a7b2[0] ^ a6b2[1] ^ a7b1[1];                       //sum
+     r8  = a1b7[0] ^ a0b7[1] ^ a2b6[0] ^ a1b6[1] ^ a3b5[0] ^ a2b5[1] ^ a4b4[0]
+             ^ a3b4[1] ^ a5b3[0] ^ a4b3[1] ^ a6b2[0] ^ a5b2[1] ^ a7b1[0] ^ a6b1[1] ^ a7b0[1];   //sum
+     r8 ^= (r15 >> 56) ^ (r15 >> 59) ^ (r15 >> 62);                                             //mod
+     r7  = a0b7[0] ^ a1b6[0] ^ a0b6[1] ^ a2b5[0] ^ a1b5[1] ^ a3b4[0] ^ a2b4[1]
+             ^ a4b3[0] ^ a3b3[1] ^ a5b2[0] ^ a4b2[1] ^ a6b1[0] ^ a5b1[1] ^ a7b0[0] ^ a6b0[1];   //sum
+     r7 ^= (r15 << 8) ^ (r15 << 5) ^ (r15 << 2) ^ r15 ^ (r14 >> 56) ^ (r14 >> 59) ^ (r14 >> 62);//mod
+     r6  = a0b6[0] ^ a1b5[0] ^ a0b5[1] ^ a2b4[0] ^ a1b4[1] ^ a3b3[0] ^ a2b3[1]
+             ^ a4b2[0] ^ a3b2[1] ^ a5b1[0] ^ a4b1[1] ^ a6b0[0] ^ a5b0[1];                       //sum
+     r6 ^= (r14 << 8) ^ (r14 << 5) ^ (r14 << 2) ^ r14 ^ (r13 >> 56) ^ (r13 >> 59) ^ (r13 >> 62);//mod
+     r5  = a0b5[0] ^ a1b4[0] ^ a0b4[1] ^ a2b3[0] ^ a1b3[1] ^ a3b2[0] ^ a2b2[1]
+             ^ a4b1[0] ^ a3b1[1] ^ a5b0[0] ^ a4b0[1];                                           //sum
+     r5 ^= (r13 << 8) ^ (r13 << 5) ^ (r13 << 2) ^ r13 ^ (r12 >> 56) ^ (r12 >> 59) ^ (r12 >> 62);//mod
+     r4  = a0b4[0] ^ a1b3[0] ^ a0b3[1] ^ a2b2[0] ^ a1b2[1] ^ a3b1[0] ^ a2b1[1]
+             ^ a4b0[0] ^ a3b0[1];                                                               //sum
+     r4 ^= (r12 << 8) ^ (r12 << 5) ^ (r12 << 2) ^ r12 ^ (r11 >> 56) ^ (r11 >> 59) ^ (r11 >> 62);//mod
+     r3  = a0b3[0] ^ a1b2[0] ^ a0b2[1] ^ a2b1[0] ^ a1b1[1] ^ a3b0[0] ^ a2b0[1];                 //sum
+     r3 ^= (r11 << 8) ^ (r11 << 5) ^ (r11 << 2) ^ r11 ^ (r10 >> 56) ^ (r10 >> 59) ^ (r10 >> 62);//mod
+     r2  = a0b2[0] ^ a1b1[0] ^ a0b1[1] ^ a2b0[0] ^ a1b0[1];                                     //sum
+     r2 ^= (r10 << 8) ^ (r10 << 5) ^ (r10 << 2) ^ r10 ^ (r9 >> 56) ^ (r9 >> 59) ^ (r9 >> 62);   //mod
+     r1  = a0b1[0] ^ a1b0[0] ^ a0b0[1];                                                         //sum
+     r1 ^= (r9 << 8) ^ (r9 << 5) ^ (r9 << 2) ^ r9 ^ (r8 >> 56) ^ (r8 >> 59) ^ (r8 >> 62);       //mod
+     r0  = a0b0[0];                                                                             //sum
+     r0 ^= (r8 << 8) ^ (r8 << 5) ^ (r8 << 2) ^ r8;                                              //mod
+
+     ((ak_uint64 *)z)[0] = r0;
+     ((ak_uint64 *)z)[1] = r1;
+     ((ak_uint64 *)z)[2] = r2;
+     ((ak_uint64 *)z)[3] = r3;
+     ((ak_uint64 *)z)[4] = r4;
+     ((ak_uint64 *)z)[5] = r5;
+     ((ak_uint64 *)z)[6] = r6;
+     ((ak_uint64 *)z)[7] = r7;
+#else
+     __m128i a1a0 = _mm_set_epi64x(((ak_uint64 *)a)[1], ((ak_uint64 *)a)[0]);
+     __m128i a3a2 = _mm_set_epi64x(((ak_uint64 *)a)[3], ((ak_uint64 *)a)[2]);
+     __m128i a5a4 = _mm_set_epi64x(((ak_uint64 *)a)[5], ((ak_uint64 *)a)[4]);
+     __m128i a7a6 = _mm_set_epi64x(((ak_uint64 *)a)[7], ((ak_uint64 *)a)[6]);
+     __m128i b1b0 = _mm_set_epi64x(((ak_uint64 *)b)[1], ((ak_uint64 *)b)[0]);
+     __m128i b3b2 = _mm_set_epi64x(((ak_uint64 *)b)[3], ((ak_uint64 *)b)[2]);
+     __m128i b5b4 = _mm_set_epi64x(((ak_uint64 *)b)[5], ((ak_uint64 *)b)[4]);
+     __m128i b7b6 = _mm_set_epi64x(((ak_uint64 *)b)[7], ((ak_uint64 *)b)[6]);
+
+     /* умножение */
+     __m128i a0b0 = _mm_clmulepi64_si128(a1a0, b1b0, 0x00);
+     __m128i a1b0 = _mm_clmulepi64_si128(a1a0, b1b0, 0x01);
+     __m128i a2b0 = _mm_clmulepi64_si128(a3a2, b1b0, 0x00);
+     __m128i a3b0 = _mm_clmulepi64_si128(a3a2, b1b0, 0x01);
+     __m128i a4b0 = _mm_clmulepi64_si128(a5a4, b1b0, 0x00);
+     __m128i a5b0 = _mm_clmulepi64_si128(a5a4, b1b0, 0x01);
+     __m128i a6b0 = _mm_clmulepi64_si128(a7a6, b1b0, 0x00);
+     __m128i a7b0 = _mm_clmulepi64_si128(a7a6, b1b0, 0x01);
+
+     __m128i a0b1 = _mm_clmulepi64_si128(a1a0, b1b0, 0x10);
+     __m128i a1b1 = _mm_clmulepi64_si128(a1a0, b1b0, 0x11);
+     __m128i a2b1 = _mm_clmulepi64_si128(a3a2, b1b0, 0x10);
+     __m128i a3b1 = _mm_clmulepi64_si128(a3a2, b1b0, 0x11);
+     __m128i a4b1 = _mm_clmulepi64_si128(a5a4, b1b0, 0x10);
+     __m128i a5b1 = _mm_clmulepi64_si128(a5a4, b1b0, 0x11);
+     __m128i a6b1 = _mm_clmulepi64_si128(a7a6, b1b0, 0x10);
+     __m128i a7b1 = _mm_clmulepi64_si128(a7a6, b1b0, 0x11);
+
+
+     __m128i a0b2 = _mm_clmulepi64_si128(a1a0, b3b2, 0x00);
+     __m128i a1b2 = _mm_clmulepi64_si128(a1a0, b3b2, 0x01);
+     __m128i a2b2 = _mm_clmulepi64_si128(a3a2, b3b2, 0x00);
+     __m128i a3b2 = _mm_clmulepi64_si128(a3a2, b3b2, 0x01);
+     __m128i a4b2 = _mm_clmulepi64_si128(a5a4, b3b2, 0x00);
+     __m128i a5b2 = _mm_clmulepi64_si128(a5a4, b3b2, 0x01);
+     __m128i a6b2 = _mm_clmulepi64_si128(a7a6, b3b2, 0x00);
+     __m128i a7b2 = _mm_clmulepi64_si128(a7a6, b3b2, 0x01);
+
+     __m128i a0b3 = _mm_clmulepi64_si128(a1a0, b3b2, 0x10);
+     __m128i a1b3 = _mm_clmulepi64_si128(a1a0, b3b2, 0x11);
+     __m128i a2b3 = _mm_clmulepi64_si128(a3a2, b3b2, 0x10);
+     __m128i a3b3 = _mm_clmulepi64_si128(a3a2, b3b2, 0x11);
+     __m128i a4b3 = _mm_clmulepi64_si128(a5a4, b3b2, 0x10);
+     __m128i a5b3 = _mm_clmulepi64_si128(a5a4, b3b2, 0x11);
+     __m128i a6b3 = _mm_clmulepi64_si128(a7a6, b3b2, 0x10);
+     __m128i a7b3 = _mm_clmulepi64_si128(a7a6, b3b2, 0x11);
+
+
+     __m128i a0b4 = _mm_clmulepi64_si128(a1a0, b5b4, 0x00);
+     __m128i a1b4 = _mm_clmulepi64_si128(a1a0, b5b4, 0x01);
+     __m128i a2b4 = _mm_clmulepi64_si128(a3a2, b5b4, 0x00);
+     __m128i a3b4 = _mm_clmulepi64_si128(a3a2, b5b4, 0x01);
+     __m128i a4b4 = _mm_clmulepi64_si128(a5a4, b5b4, 0x00);
+     __m128i a5b4 = _mm_clmulepi64_si128(a5a4, b5b4, 0x01);
+     __m128i a6b4 = _mm_clmulepi64_si128(a7a6, b5b4, 0x00);
+     __m128i a7b4 = _mm_clmulepi64_si128(a7a6, b5b4, 0x01);
+
+     __m128i a0b5 = _mm_clmulepi64_si128(a1a0, b5b4, 0x10);
+     __m128i a1b5 = _mm_clmulepi64_si128(a1a0, b5b4, 0x11);
+     __m128i a2b5 = _mm_clmulepi64_si128(a3a2, b5b4, 0x10);
+     __m128i a3b5 = _mm_clmulepi64_si128(a3a2, b5b4, 0x11);
+     __m128i a4b5 = _mm_clmulepi64_si128(a5a4, b5b4, 0x10);
+     __m128i a5b5 = _mm_clmulepi64_si128(a5a4, b5b4, 0x11);
+     __m128i a6b5 = _mm_clmulepi64_si128(a7a6, b5b4, 0x10);
+     __m128i a7b5 = _mm_clmulepi64_si128(a7a6, b5b4, 0x11);
+
+
+     __m128i a0b6 = _mm_clmulepi64_si128(a1a0, b7b6, 0x00);
+     __m128i a1b6 = _mm_clmulepi64_si128(a1a0, b7b6, 0x01);
+     __m128i a2b6 = _mm_clmulepi64_si128(a3a2, b7b6, 0x00);
+     __m128i a3b6 = _mm_clmulepi64_si128(a3a2, b7b6, 0x01);
+     __m128i a4b6 = _mm_clmulepi64_si128(a5a4, b7b6, 0x00);
+     __m128i a5b6 = _mm_clmulepi64_si128(a5a4, b7b6, 0x01);
+     __m128i a6b6 = _mm_clmulepi64_si128(a7a6, b7b6, 0x00);
+     __m128i a7b6 = _mm_clmulepi64_si128(a7a6, b7b6, 0x01);
+
+     __m128i a0b7 = _mm_clmulepi64_si128(a1a0, b7b6, 0x10);
+     __m128i a1b7 = _mm_clmulepi64_si128(a1a0, b7b6, 0x11);
+     __m128i a2b7 = _mm_clmulepi64_si128(a3a2, b7b6, 0x10);
+     __m128i a3b7 = _mm_clmulepi64_si128(a3a2, b7b6, 0x11);
+     __m128i a4b7 = _mm_clmulepi64_si128(a5a4, b7b6, 0x10);
+     __m128i a5b7 = _mm_clmulepi64_si128(a5a4, b7b6, 0x11);
+     __m128i a6b7 = _mm_clmulepi64_si128(a7a6, b7b6, 0x10);
+     __m128i a7b7 = _mm_clmulepi64_si128(a7a6, b7b6, 0x11);
+
+     /* суммирование, потом приведение */
+     ak_uint64 r0, r1, r2, r3, r4, r5, r6, r7,
+             r8, r9, r10, r11, r12, r13, r14, r15;      //хранит ответ. r8-r15 при желании можно (?) оптимизировать в 2 переменные.
+
+     r15 = a7b7[1];                                                                             //sum
+     r14 = a7b7[0] ^ a6b7[1] ^ a7b6[1];                                                         //sum
+     r13 = a6b7[0] ^ a5b7[1] ^ a7b6[0] ^ a6b6[1] ^ a7b5[1];                                     //sum
+     r12 = a5b7[0] ^ a4b7[1] ^ a6b6[0] ^ a5b6[1] ^ a7b5[0] ^ a6b5[1] ^ a7b4[1];                 //sum
+     r11 = a4b7[0] ^ a3b7[1] ^ a5b6[0] ^ a4b6[1] ^ a6b5[0] ^ a5b5[1] ^ a7b4[0]
+             ^ a6b4[1] ^ a7b3[1];                                                               //sum
+     r10 = a3b7[0] ^ a2b7[1] ^ a4b6[0] ^ a3b6[1] ^ a5b5[0] ^ a4b5[1] ^ a6b4[0]
+             ^ a5b4[1] ^ a7b3[0] ^ a6b3[1] ^ a7b2[1];                                           //sum
+     r9  = a2b7[0] ^ a1b7[1] ^ a3b6[0] ^ a2b6[1] ^ a4b5[0] ^ a3b5[1] ^ a5b4[0]
+             ^ a4b4[1] ^ a6b3[0] ^ a5b3[1] ^ a7b2[0] ^ a6b2[1] ^ a7b1[1];                       //sum
+     r8  = a1b7[0] ^ a0b7[1] ^ a2b6[0] ^ a1b6[1] ^ a3b5[0] ^ a2b5[1] ^ a4b4[0]
+             ^ a3b4[1] ^ a5b3[0] ^ a4b3[1] ^ a6b2[0] ^ a5b2[1] ^ a7b1[0] ^ a6b1[1] ^ a7b0[1];   //sum
+     r8 ^= (r15 >> 56) ^ (r15 >> 59) ^ (r15 >> 62);                                             //mod
+     r7  = a0b7[0] ^ a1b6[0] ^ a0b6[1] ^ a2b5[0] ^ a1b5[1] ^ a3b4[0] ^ a2b4[1]
+             ^ a4b3[0] ^ a3b3[1] ^ a5b2[0] ^ a4b2[1] ^ a6b1[0] ^ a5b1[1] ^ a7b0[0] ^ a6b0[1];   //sum
+     r7 ^= (r15 << 8) ^ (r15 << 5) ^ (r15 << 2) ^ r15 ^ (r14 >> 56) ^ (r14 >> 59) ^ (r14 >> 62);//mod
+     r6  = a0b6[0] ^ a1b5[0] ^ a0b5[1] ^ a2b4[0] ^ a1b4[1] ^ a3b3[0] ^ a2b3[1]
+             ^ a4b2[0] ^ a3b2[1] ^ a5b1[0] ^ a4b1[1] ^ a6b0[0] ^ a5b0[1];                       //sum
+     r6 ^= (r14 << 8) ^ (r14 << 5) ^ (r14 << 2) ^ r14 ^ (r13 >> 56) ^ (r13 >> 59) ^ (r13 >> 62);//mod
+     r5  = a0b5[0] ^ a1b4[0] ^ a0b4[1] ^ a2b3[0] ^ a1b3[1] ^ a3b2[0] ^ a2b2[1]
+             ^ a4b1[0] ^ a3b1[1] ^ a5b0[0] ^ a4b0[1];                                           //sum
+     r5 ^= (r13 << 8) ^ (r13 << 5) ^ (r13 << 2) ^ r13 ^ (r12 >> 56) ^ (r12 >> 59) ^ (r12 >> 62);//mod
+     r4  = a0b4[0] ^ a1b3[0] ^ a0b3[1] ^ a2b2[0] ^ a1b2[1] ^ a3b1[0] ^ a2b1[1]
+             ^ a4b0[0] ^ a3b0[1];                                                               //sum
+     r4 ^= (r12 << 8) ^ (r12 << 5) ^ (r12 << 2) ^ r12 ^ (r11 >> 56) ^ (r11 >> 59) ^ (r11 >> 62);//mod
+     r3  = a0b3[0] ^ a1b2[0] ^ a0b2[1] ^ a2b1[0] ^ a1b1[1] ^ a3b0[0] ^ a2b0[1];                 //sum
+     r3 ^= (r11 << 8) ^ (r11 << 5) ^ (r11 << 2) ^ r11 ^ (r10 >> 56) ^ (r10 >> 59) ^ (r10 >> 62);//mod
+     r2  = a0b2[0] ^ a1b1[0] ^ a0b1[1] ^ a2b0[0] ^ a1b0[1];                                     //sum
+     r2 ^= (r10 << 8) ^ (r10 << 5) ^ (r10 << 2) ^ r10 ^ (r9 >> 56) ^ (r9 >> 59) ^ (r9 >> 62);   //mod
+     r1  = a0b1[0] ^ a1b0[0] ^ a0b0[1];                                                         //sum
+     r1 ^= (r9 << 8) ^ (r9 << 5) ^ (r9 << 2) ^ r9 ^ (r8 >> 56) ^ (r8 >> 59) ^ (r8 >> 62);       //mod
+     r0  = a0b0[0];                                                                             //sum
+     r0 ^= (r8 << 8) ^ (r8 << 5) ^ (r8 << 2) ^ r8;                                              //mod
+
+     ((ak_uint64 *)z)[0] = r0;
+     ((ak_uint64 *)z)[1] = r1;
+     ((ak_uint64 *)z)[2] = r2;
+     ((ak_uint64 *)z)[3] = r3;
+     ((ak_uint64 *)z)[4] = r4;
+     ((ak_uint64 *)z)[5] = r5;
+     ((ak_uint64 *)z)[6] = r6;
+     ((ak_uint64 *)z)[7] = r7;
+#endif
+}
+
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -390,6 +964,184 @@
  if( ak_log_get_level() >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__, "one thousand iterations for random values is Ok");
 #endif
+
+ return ak_true;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Тестирование операции умножения в поле \f$ \mathbb F_{2^{256}}\f$. */
+/* ----------------------------------------------------------------------------------------------- */
+ static bool_t ak_gf256_multiplication_test( void )
+{
+  int i = 0;
+  char str[128];
+  ak_uint64 theta[4] = { 0x2LL, 0x0LL, 0x0LL, 0x0LL },
+             unit[4] = { 0x2LL, 0x0LL, 0x0LL, 0x0LL }, temp[4];
+
+#ifdef LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64
+  ak_uint64 temp2[4], temp3[4];
+#endif
+
+ /* проверяем корректность возведения в степень примитивного элемента */
+  for( i = 254; i >= 0; i-- ) {
+     ak_gf256_mul_uint64( temp, unit, unit );
+     unit[0] = temp[0]^theta[0];
+     unit[1] = temp[1]^theta[1];
+     unit[2] = temp[2]^theta[2];
+     unit[3] = temp[3]^theta[3];
+     if( ak_ptr_is_equal( theta, unit, sizeof( theta ))) {
+       ak_error_message( ak_error_undefined_value, __func__, "the second circle detected" );
+       ak_error_message( ak_error_undefined_value, __func__,
+                                          "incorrect result of primitive element exponentiation" );
+       return ak_false;
+     }
+  }
+  if( ak_ptr_is_equal( theta, temp, sizeof( theta )) != ak_true ) {
+    ak_ptr_to_hexstr_static( theta, sizeof( theta ), str, sizeof( str ), ak_true );
+    ak_error_message_fmt( ak_error_ok, "", "theta: %s", str );
+    ak_ptr_to_hexstr_static( temp, sizeof( temp ), str, sizeof( str ), ak_true );
+    ak_error_message_fmt( ak_error_ok, "", "value: %s", str );
+    ak_error_message( ak_error_undefined_value, __func__,
+                                          "incorrect result of primitive element exponentiation" );
+    return ak_false;
+  }
+
+#ifdef LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64
+ if( ak_log_get_level() >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__, "comparison between two implementations included");
+
+ /* перемножаем произвольные константы */
+  theta[0] = 0x22LL; theta[1] = 0x33LL; theta[2] = 0x44LL; theta[3] = 0xae12a7LL;
+  unit[0] = 0x2110eLL; unit[1] = 0x13acd4LL; unit[2] = 0x00114aLL;
+  unit[3] = 0xaFFFFFFF00000000LL+ (ak_uint32)rand();
+
+  for( i = 0; i < 1000; i++ ) {
+     ak_gf256_mul_uint64( temp, theta, unit );
+     ak_gf256_mul_pcmulqdq( temp2, theta, unit );
+     if( ak_ptr_is_equal( temp, temp2, sizeof( theta )) != ak_true ) {
+       ak_ptr_to_hexstr_static( temp2, sizeof( temp2 ), str, sizeof( str ), ak_true );
+       ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                                "pcmulqdq calculated %s on iteration %d", str, i );
+       ak_ptr_to_hexstr_static( temp, sizeof( temp ), str, sizeof( str ), ak_true );
+       ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                                  "uint64 calculated %s on iteration %d", str, i );
+       return ak_false;
+     }
+     ak_gf256_mul_uint64( temp, unit, theta );
+     ak_gf256_mul_pcmulqdq( temp3, unit, theta );
+     if( ak_ptr_is_equal( temp, temp3, sizeof( theta )) != ak_true ) {
+       ak_ptr_to_hexstr_static( temp3, sizeof( temp3 ), str, sizeof( str ), ak_true );
+       ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                                "pcmulqdq calculated %s on iteration %d", str, i );
+       ak_ptr_to_hexstr_static( temp, sizeof( temp ), str, sizeof( str ), ak_true );
+       ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                                  "uint64 calculated %s on iteration %d", str, i );
+       return ak_false;
+     }
+     if( ak_ptr_is_equal( temp2, temp3, sizeof( temp2 )) != ak_true ) {
+       ak_error_message_fmt( ak_error_not_equal_data, __func__,
+                                               "non commutative operation released in GF(2^256)" );
+       return ak_false;
+     }
+     memcpy( theta, temp, sizeof( temp ));
+  }
+
+ if( ak_log_get_level() >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__, "one thousand iterations for random values is Ok");
+
+#endif
+ return ak_true;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Тестирование операции умножения в поле \f$ \mathbb F_{2^{512}}\f$. */
+/* ----------------------------------------------------------------------------------------------- */
+ static bool_t ak_gf512_multiplication_test( void )
+{
+  int i = 0;
+  char str[192];
+  ak_uint64 theta[8] = { 0x2LL, 0x0LL, 0x0LL, 0x0LL, 0x0LL, 0x0LL, 0x0LL, 0x0LL },
+             unit[8] = { 0x2LL, 0x0LL, 0x0LL, 0x0LL, 0x0LL, 0x0LL, 0x0LL, 0x0LL }, temp[8];
+
+#ifdef LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64
+  ak_uint64 temp2[8], temp3[8];
+#endif
+
+ /* проверяем корректность возведения в степень примитивного элемента */
+  for( i = 510; i >= 0; i-- ) {
+     ak_gf512_mul_uint64( temp, unit, unit );
+     unit[0] = temp[0]^theta[0];
+     unit[1] = temp[1]^theta[1];
+     unit[2] = temp[2]^theta[2];
+     unit[3] = temp[3]^theta[3];
+     unit[4] = temp[4]^theta[4];
+     unit[5] = temp[5]^theta[5];
+     unit[6] = temp[6]^theta[6];
+     unit[7] = temp[7]^theta[7];
+     if( ak_ptr_is_equal( theta, unit, sizeof( theta ))) {
+       ak_error_message( ak_error_undefined_value, __func__, "the second circle detected" );
+       ak_error_message( ak_error_undefined_value, __func__,
+                                          "incorrect result of primitive element exponentiation" );
+       return ak_false;
+     }
+  }
+  if( ak_ptr_is_equal( theta, temp, sizeof( theta )) != ak_true ) {
+    ak_ptr_to_hexstr_static( theta, sizeof( theta ), str, sizeof( str ), ak_true );
+    ak_error_message_fmt( ak_error_ok, "", "theta: %s", str );
+    ak_ptr_to_hexstr_static( temp, sizeof( temp ), str, sizeof( str ), ak_true );
+    ak_error_message_fmt( ak_error_ok, "", "value: %s", str );
+    ak_error_message( ak_error_undefined_value, __func__,
+                                          "incorrect result of primitive element exponentiation" );
+    return ak_false;
+  }
+
+#ifdef LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64
+ if( ak_log_get_level() >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__, "comparison between two implementations included");
+
+ /* перемножаем произвольные константы */
+  theta[0] = 0x22LL; theta[1] = 0x33LL; theta[2] = 0x44LL; theta[3] = 0xae12a7LL;
+  theta[4] = 0x01acee122LL; theta[5] = 0x12121aLL; theta[6] = 0x3LL; theta[7] = 0x7aac321432LL;
+  unit[0] = 0x2110eLL; unit[1] = 0x13acd4LL; unit[2] = 0x00114aLL; unit[3] = 0x11a2110eLL;
+  unit[4] = 0xa2a3a6c12LL; unit[5] = 0x01454ddff1LL; unit[6] = 0x121afffc03114aLL;
+  unit[3] = 0xaFFFFFFF00000000LL+ (ak_uint32)rand();
+
+  for( i = 0; i < 1000; i++ ) {
+     ak_gf512_mul_uint64( temp, theta, unit );
+     ak_gf512_mul_pcmulqdq( temp2, theta, unit );
+     if( ak_ptr_is_equal( temp, temp2, sizeof( theta )) != ak_true ) {
+       ak_ptr_to_hexstr_static( temp2, sizeof( temp2 ), str, sizeof( str ), ak_true );
+       ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                                "pcmulqdq calculated %s on iteration %d", str, i );
+       ak_ptr_to_hexstr_static( temp, sizeof( temp ), str, sizeof( str ), ak_true );
+       ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                                  "uint64 calculated %s on iteration %d", str, i );
+       return ak_false;
+     }
+     ak_gf512_mul_uint64( temp, unit, theta );
+     ak_gf512_mul_pcmulqdq( temp3, unit, theta );
+     if( ak_ptr_is_equal( temp, temp3, sizeof( theta )) != ak_true ) {
+       ak_ptr_to_hexstr_static( temp3, sizeof( temp3 ), str, sizeof( str ), ak_true );
+       ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                                "pcmulqdq calculated %s on iteration %d", str, i );
+       ak_ptr_to_hexstr_static( temp, sizeof( temp ), str, sizeof( str ), ak_true );
+       ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                                  "uint64 calculated %s on iteration %d", str, i );
+       return ak_false;
+     }
+     if( ak_ptr_is_equal( temp2, temp3, sizeof( temp2 )) != ak_true ) {
+       ak_error_message_fmt( ak_error_not_equal_data, __func__,
+                                               "non commutative operation released in GF(2^512)" );
+       return ak_false;
+     }
+     memcpy( theta, temp, sizeof( temp ));
+  }
+
+ if( ak_log_get_level() >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__, "one thousand iterations for random values is Ok");
+
+#endif
  return ak_true;
 }
 
@@ -404,7 +1156,7 @@
 #ifdef LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64
  if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ ,
-                                       "using pcmulqdq for multiplication in finite Galois fields");
+                                      "using pcmulqdq for multiplication in finite Galois fields");
 #endif
 
  if( ak_gf64_multiplication_test( ) != ak_true ) {
@@ -414,6 +1166,7 @@
     if( audit >= ak_log_maximum )
      ak_error_message( ak_error_get_value(), __func__ , "multiplication test in GF(2^64) is OK");
 
+
  if( ak_gf128_multiplication_test( ) != ak_true ) {
    ak_error_message( ak_error_get_value(), __func__ , "incorrect multiplication test in GF(2^128)");
    return ak_false;
@@ -421,12 +1174,31 @@
     if( audit >= ak_log_maximum )
       ak_error_message( ak_error_get_value(), __func__ , "multiplication test in GF(2^128) is OK");
 
+
+ if( ak_gf256_multiplication_test( ) != ak_true ) {
+   ak_error_message( ak_error_get_value(), __func__ , "incorrect multiplication test in GF(2^256)");
+   return ak_false;
+ } else
+    if( audit >= ak_log_maximum )
+      ak_error_message( ak_error_get_value(), __func__ , "multiplication test in GF(2^256) is OK");
+
+
+ if( ak_gf512_multiplication_test( ) != ak_true ) {
+   ak_error_message( ak_error_get_value(), __func__ , "incorrect multiplication test in GF(2^512)");
+   return ak_false;
+ } else
+    if( audit >= ak_log_maximum )
+      ak_error_message( ak_error_get_value(), __func__ , "multiplication test in GF(2^512) is OK");
+
+
  if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ ,
-                                         "testing the Galois fileds arithmetic ended successfully");
+                                        "testing the Galois fileds arithmetic ended successfully");
  return ak_true;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*!  \example test-internal-gf2n.c                                                                 */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_gf2n.c  */
 /* ----------------------------------------------------------------------------------------------- */
