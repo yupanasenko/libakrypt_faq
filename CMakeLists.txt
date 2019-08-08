@@ -188,6 +188,7 @@ if( LIBAKRYPT_PKCS_15_CONTAINER )
           source/asn_processor/ak_asn_tree_manager.c
           source/asn_processor/ak_asn_read_new.c
           source/asn_processor/ak_asn_write_new.c
+          source/asn_processor/ak_asn_tools.c
           source/pkcs_15_cryptographic_token/ak_pkcs_15_token_manager.c
           source/pkcs_15_cryptographic_token/ak_pkcs_15_common_types.c
           source/pkcs_15_cryptographic_token/ak_pkcs_15_token.c
@@ -399,6 +400,7 @@ if( LIBAKRYPT_PKCS_15_CONTAINER )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
           internal-pkcs-15-container
           internal-asn-handler
+          internal-asn-build-data
           )
 endif()
 
