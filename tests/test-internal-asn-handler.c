@@ -167,39 +167,13 @@ int main(void)
     bool_t test_result = ak_true;
 
     /* Инициализируем библиотеку */
-    if (ak_libakrypt_create(ak_function_log_logfile) != ak_true)
+    if (ak_libakrypt_create(ak_function_log_stderr) != ak_true)
     {
         return ak_libakrypt_destroy();
     }
 
-    ak_asn_tlv p_test_tlv;
-    ak_asn_encode_universal_data(TOBJECT_IDENTIFIER, "1.2.643.234.5", 0, "test id", &p_test_tlv);
-
-    new_ak_asn_print_tree(p_test_tlv);
-    ak_asn_free_tree(p_test_tlv);
-
-    char time_fmt[100];
-    time_t t;
-    time(&t);
-
-    struct tm* p_tm = localtime(&t);
-    strftime(time_fmt, 100, "%F %X UTC", p_tm);
-    printf("Curr time : %s\n", time_fmt);
-
     /* Декодируем данные */
     ak_asn_parse_data(test_data, sizeof(test_data), &p_root_tlv);
-
-    char* p15Token = "PKCS 15 Token";
-    char* tokenVer = "Token version";
-
-    p_root_tlv->p_name = calloc(strlen(p15Token) + 1, 1);
-    if(p_root_tlv->p_name)
-        strcat(p_root_tlv->p_name, p15Token);
-
-
-    p_root_tlv->m_data.m_constructed_data->m_arr_of_data[0]->p_name = calloc(strlen(tokenVer) + 1, 1);
-    if(p_root_tlv->m_data.m_constructed_data->m_arr_of_data[0]->p_name)
-        strcat(p_root_tlv->m_data.m_constructed_data->m_arr_of_data[0]->p_name, tokenVer);
 
     /* Выводим декодированые данные в виде дерева */
     printf("Decoded data:\n");
@@ -249,6 +223,6 @@ int main(void)
     ak_asn_free_tree(p_root_tlv);
     free(p_encoded_data);
 
-    /* Деинициализируем библиотеку */
-    return ak_libakrypt_destroy();
-}
+        /* Деинициализируем библиотеку */
+        return ak_libakrypt_destroy();
+    }

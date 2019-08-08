@@ -75,14 +75,14 @@ static int ak_asn_create_constructed_tlv(ak_asn_tlv p_tlv, tag data_tag)
     if(!p_tlv->m_data.m_constructed_data)
         return ak_error_out_of_memory;
 
-    p_tlv->m_data.m_constructed_data->m_arr_of_data = malloc(sizeof(ak_asn_tlv) * 10);
-    if(!p_tlv->m_data.m_constructed_data->m_arr_of_data)
+    p_tlv->m_data.m_constructed_data->mp_arr_of_data = malloc(sizeof(s_asn_tlv_t) * 10);
+    if(!p_tlv->m_data.m_constructed_data->mp_arr_of_data)
     {
         free(p_tlv->m_data.m_constructed_data);
         return ak_error_out_of_memory;
     }
 
-    memset(p_tlv->m_data.m_constructed_data->m_arr_of_data, 0, sizeof(ak_asn_tlv) * 10);
+    memset(p_tlv->m_data.m_constructed_data->mp_arr_of_data, 0, sizeof(s_asn_tlv_t) * 10);
     p_tlv->m_data.m_constructed_data->m_alloc_size = 10;
     p_tlv->m_data.m_constructed_data->m_curr_size = 0;
 
@@ -179,12 +179,13 @@ int ak_asn_primitive_data_ctx_create(ak_asn_tlv p_tlv, tag data_tag, ak_uint32 d
     return ak_error_ok;
 }
 
-int ak_asn_add_nested_elems(ak_asn_tlv p_tlv_parent, ak_asn_tlv pp_tlv_children[], ak_uint8 count)
+int ak_asn_add_nested_elems(ak_asn_tlv p_tlv_parent, s_asn_tlv_t p_tlv_children[], ak_uint8 count)
 {
     ak_uint8 index; /* Индекс элемента */
     ak_uint8 curr_size; /* Текущее кол-во элементов в массиве */
+    ak_uint32  new_size;
 
-    if(!p_tlv_parent || !pp_tlv_children)
+    if(!p_tlv_parent || !p_tlv_children)
         return ak_error_null_pointer;
 
     if(DATA_STRUCTURE(p_tlv_parent->m_tag) != CONSTRUCTED)
@@ -194,23 +195,27 @@ int ak_asn_add_nested_elems(ak_asn_tlv p_tlv_parent, ak_asn_tlv pp_tlv_children[
         return ak_error_message(ak_error_invalid_value, __func__, "children count equal to zero");
 
     curr_size = p_tlv_parent->m_data.m_constructed_data->m_curr_size;
+    new_size = curr_size;
     while(curr_size + count > p_tlv_parent->m_data.m_constructed_data->m_alloc_size)
     {
-        ak_uint32  new_size;
-
-        new_size = curr_size + 10;
+        new_size += count + 10;
         if(new_size > 255) /* Проверка, чтобы не переполнить тип ak_uint8 */
             return ak_error_message(ak_error_out_of_memory, __func__, "change type for storing number of nested elements");
 
-        ak_asn_realloc((ak_pointer*)&p_tlv_parent->m_data.m_constructed_data->m_arr_of_data, curr_size * sizeof(ak_asn_tlv), new_size * sizeof(ak_asn_tlv));
+
+        p_tlv_parent->m_data.m_constructed_data->mp_arr_of_data = realloc(p_tlv_parent->m_data.m_constructed_data->mp_arr_of_data, new_size * sizeof(s_asn_tlv_t));
+        if(!p_tlv_parent->m_data.m_constructed_data->mp_arr_of_data)
+            return ak_error_out_of_memory;
+
+        //ak_asn_realloc((ak_pointer*)&p_tlv_parent->m_data.m_constructed_data->mp_arr_of_data, curr_size * sizeof(s_asn_tlv_t), new_size * sizeof(s_asn_tlv_t));
 
         p_tlv_parent->m_data.m_constructed_data->m_alloc_size = (ak_uint8)new_size;
     }
 
     for(index = 0; index < count; index++)
     {
-        p_tlv_parent->m_data.m_constructed_data->m_arr_of_data[curr_size + index] = pp_tlv_children[index];
-        p_tlv_parent->m_data_len += TAG_LEN + pp_tlv_children[index]->m_len_byte_cnt + pp_tlv_children[index]->m_data_len;
+        p_tlv_parent->m_data.m_constructed_data->mp_arr_of_data[curr_size + index] = p_tlv_children[index];
+        p_tlv_parent->m_data_len += TAG_LEN + p_tlv_children[index].m_len_byte_cnt + p_tlv_children[index].m_data_len;
     }
 
     p_tlv_parent->m_data.m_constructed_data->m_curr_size += count;
@@ -233,25 +238,25 @@ int ak_asn_delete_nested_elem(ak_asn_tlv p_tlv_parent, ak_uint32 index)
         return ak_error_message(ak_error_invalid_value, __func__, "bad index");
 
     /* Вычисляем размер дочернего элемента */
-    ak_asn_get_size(p_tlv_parent->m_data.m_constructed_data->m_arr_of_data[index], &child_size);
+    ak_asn_get_size(&p_tlv_parent->m_data.m_constructed_data->mp_arr_of_data[index], &child_size);
 
     /* Уменьшаем размер родительского элемента */
     p_tlv_parent->m_data_len -= child_size;
     p_tlv_parent->m_len_byte_cnt = new_asn_get_len_byte_cnt(p_tlv_parent->m_data_len);
 
     /* Удаляем дочерний элемент */
-    ak_asn_free_tree(p_tlv_parent->m_data.m_constructed_data->m_arr_of_data[index]);
-    p_tlv_parent->m_data.m_constructed_data->m_arr_of_data[index] = NULL;
+    ak_asn_free_tree(&p_tlv_parent->m_data.m_constructed_data->mp_arr_of_data[index]);
+    //p_tlv_parent->m_data.m_constructed_data->mp_arr_of_data[index] = NULL;
 
     /* Сдвигаем все элементы в массиве, которы находятся за удаляемым */
     if((index + 1) < p_tlv_parent->m_data.m_constructed_data->m_curr_size)
     {
         ak_uint32 j;
         for (j = index + 1; j < p_tlv_parent->m_data.m_constructed_data->m_curr_size; j++)
-            p_tlv_parent->m_data.m_constructed_data->m_arr_of_data[j - 1] = p_tlv_parent->m_data.m_constructed_data->m_arr_of_data[j];
+            p_tlv_parent->m_data.m_constructed_data->mp_arr_of_data[j - 1] = p_tlv_parent->m_data.m_constructed_data->mp_arr_of_data[j];
 
         /* Зануляем копию адреса последнего элемента, которая образовалась в процессе смещения объектов */
-        p_tlv_parent->m_data.m_constructed_data->m_arr_of_data[j - 1] = NULL;
+        //p_tlv_parent->m_data.m_constructed_data->mp_arr_of_data[j - 1] = NULL;
         p_tlv_parent->m_data.m_constructed_data->m_curr_size--;
     }
 
@@ -267,10 +272,10 @@ void ak_asn_free_tree(ak_asn_tlv p_tlv_root)
             ak_uint32 index;
             for(index = 0; index < p_tlv_root->m_data.m_constructed_data->m_curr_size; index++)
             {
-                ak_asn_free_tree(p_tlv_root->m_data.m_constructed_data->m_arr_of_data[index]);
+                ak_asn_free_tree(&p_tlv_root->m_data.m_constructed_data->mp_arr_of_data[index]);
             }
 
-            free(p_tlv_root->m_data.m_constructed_data->m_arr_of_data);
+            free(p_tlv_root->m_data.m_constructed_data->mp_arr_of_data);
         }
         else
         {
@@ -284,7 +289,7 @@ void ak_asn_free_tree(ak_asn_tlv p_tlv_root)
             free(p_tlv_root->p_name);
 
         /* Очищаем структуру для хранения данных */
-        free(p_tlv_root);
+        //free(p_tlv_root);
     }
 }
 
@@ -311,10 +316,10 @@ int ak_asn_update_size(ak_asn_tlv p_root_tlv)
         p_root_tlv->m_data_len = 0;
         for(ak_uint8 i = 0; i < p_root_tlv->m_data.m_constructed_data->m_curr_size; i++)
         {
-            if(DATA_STRUCTURE(p_root_tlv->m_data.m_constructed_data->m_arr_of_data[i]->m_tag) == CONSTRUCTED)
-                ak_asn_update_size(p_root_tlv->m_data.m_constructed_data->m_arr_of_data[i]);
+            if(DATA_STRUCTURE(p_root_tlv->m_data.m_constructed_data->mp_arr_of_data[i].m_tag) == CONSTRUCTED)
+                ak_asn_update_size(&p_root_tlv->m_data.m_constructed_data->mp_arr_of_data[i]);
 
-            ak_asn_get_size(p_root_tlv->m_data.m_constructed_data->m_arr_of_data[i], &size);
+            ak_asn_get_size(&p_root_tlv->m_data.m_constructed_data->mp_arr_of_data[i], &size);
 
             p_root_tlv->m_data_len += size;
         }
@@ -539,9 +544,9 @@ static void new_ak_asn_print_tlv(ak_asn_tlv p_tlv, bool_t is_last)
         for(ak_uint8 i = 0; i < p_tlv->m_data.m_constructed_data->m_curr_size; i++)
         {
             if(i == p_tlv->m_data.m_constructed_data->m_curr_size - 1)
-                new_ak_asn_print_tlv(p_tlv->m_data.m_constructed_data->m_arr_of_data[i], ak_true);
+                new_ak_asn_print_tlv(&p_tlv->m_data.m_constructed_data->mp_arr_of_data[i], ak_true);
             else
-                new_ak_asn_print_tlv(p_tlv->m_data.m_constructed_data->m_arr_of_data[i], ak_false);
+                new_ak_asn_print_tlv(&p_tlv->m_data.m_constructed_data->mp_arr_of_data[i], ak_false);
         }
 
         /* Отрезаем от префикса лишнее (поднимаемся на уровень выше) */
@@ -627,12 +632,12 @@ int ak_asn_parse_data(ak_pointer p_asn_data, size_t size, ak_asn_tlv* pp_tlv)
         while((*pp_tlv)->m_data_len < data_len)
         {
             ak_asn_parse_data(p_curr, data_len, &p_nested_tlv);
-            ak_asn_add_nested_elems(*pp_tlv, &p_nested_tlv, 1);
+            ak_asn_add_nested_elems(*pp_tlv, p_nested_tlv, 1);
             ak_asn_get_size(p_nested_tlv, &child_size);
             p_curr += child_size;
             index++;
         }
-//        pp_tlv->m_data.m_constructed_data->m_arr_of_data[0] = p_nested_tlv;
+//        pp_tlv->m_data.m_constructed_data->mp_arr_of_data[0] = p_nested_tlv;
 //        pp_tlv->m_data.m_constructed_data->m_curr_size++;
     }
     else
@@ -674,7 +679,7 @@ static int ak_asn_encode_tlv(ak_asn_tlv p_tlv, ak_byte** pp_pos, ak_byte* p_end)
 
         for(index = 0; index < p_tlv->m_data.m_constructed_data->m_curr_size; index++)
         {
-            if((error = ak_asn_encode_tlv(p_tlv->m_data.m_constructed_data->m_arr_of_data[index], pp_pos, p_end)) != ak_error_ok)
+            if((error = ak_asn_encode_tlv(&p_tlv->m_data.m_constructed_data->mp_arr_of_data[index], pp_pos, p_end)) != ak_error_ok)
                 return error; /* Никакого сообщения не выводится, иначе выведется много одинаковых строчек (из-за рекурсии) */
         }
     }
@@ -743,23 +748,3 @@ int ak_asn_realloc(ak_pointer* pp_mem, size_t old_size, size_t new_size)
     return ak_error_ok;
 }
 
-int ak_asn_get_oid_desc(object_identifier oid, char** pp_desc)
-{
-    char* p_desc = NULL;
-    ak_oid p_oid_obj;
-
-    p_oid_obj = ak_oid_context_find_by_id(oid);
-
-    if(p_oid_obj)
-    {
-        p_desc = calloc(strlen(p_oid_obj->name) + 1, 1);
-        if(!p_desc)
-            return ak_error_out_of_memory;
-
-        strcat(p_desc, p_oid_obj->name);
-    }
-
-    *pp_desc = p_desc;
-
-    return  ak_error_ok;
-}

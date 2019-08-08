@@ -12,26 +12,23 @@
 #endif
 #ifdef LIBAKRYPT_HAVE_CTYPE_H
 #include <ctype.h>
+#include <printf.h>
 #else
 #error Library cannot be compiled without ctype.h header
 #endif
 
-int ak_asn_encode_universal_data(ak_uint8 tag_number, ak_pointer p_data, ak_uint32 size, char* p_name, ak_asn_tlv* pp_tlv)
+int ak_asn_encode_universal_data(ak_uint8 tag_number, ak_pointer p_data, char* p_name, ak_asn_tlv p_tlv)
 {
     int error; /* код ошибки */
 
-    if(!p_data || !pp_tlv)
+    if(!p_data || !p_tlv)
         return ak_error_null_pointer;
 
     if(tag_number > 0x1E)
         return ak_error_invalid_value;
 
-    *pp_tlv = (ak_asn_tlv)malloc(sizeof(s_asn_tlv_t));
-    if(!(*pp_tlv))
-        return ak_error_out_of_memory;
-
     /* Создаем пустой контекст */
-    error = ak_asn_primitive_data_ctx_create(*pp_tlv, (tag)(UNIVERSAL | PRIMITIVE | tag_number), 0, NULL, p_name);
+    error = ak_asn_primitive_data_ctx_create(p_tlv, (tag)(UNIVERSAL | PRIMITIVE | tag_number), 0, NULL, p_name);
     if(error != ak_error_ok)
         return ak_error_message(error, __func__, "failure in creating context");
 
@@ -39,40 +36,40 @@ int ak_asn_encode_universal_data(ak_uint8 tag_number, ak_pointer p_data, ak_uint
     switch (tag_number)
     {
     case TBOOLEAN:
-        error = new_asn_put_bool(*(boolean*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        error = new_asn_put_bool(*(boolean*)p_data, &p_tlv->m_data.m_primitive_data, &p_tlv->m_data_len);
         break;
     case TINTEGER:
-        error = new_asn_put_int(*(integer*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        error = new_asn_put_int(*(integer*)p_data, &p_tlv->m_data.m_primitive_data, &p_tlv->m_data_len);
         break;
     case TBIT_STRING:
-        error = new_asn_put_bitstr(*(bit_string*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        error = new_asn_put_bitstr(*(bit_string*)p_data, &p_tlv->m_data.m_primitive_data, &p_tlv->m_data_len);
         break;
     case TOCTET_STRING:
-        error = new_asn_put_octetstr(*(octet_string*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        error = new_asn_put_octetstr(*(octet_string*)p_data, &p_tlv->m_data.m_primitive_data, &p_tlv->m_data_len);
         break;
     case TOBJECT_IDENTIFIER:
-        error = new_asn_put_objid((object_identifier)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        error = new_asn_put_objid((object_identifier)p_data, &p_tlv->m_data.m_primitive_data, &p_tlv->m_data_len);
         break;
     case TUTF8_STRING:
-        error = new_asn_put_utf8string(*(utf8_string*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        error = new_asn_put_utf8string((utf8_string)p_data, &p_tlv->m_data.m_primitive_data, &p_tlv->m_data_len);
         break;
     case TGENERALIZED_TIME:
-        error = new_asn_put_generalized_time(*(generalized_time*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        error = new_asn_put_generalized_time((generalized_time)p_data, &p_tlv->m_data.m_primitive_data, &p_tlv->m_data_len);
         break;
     case TUTCTIME:
-        error = new_asn_put_utc_time(*(utc_time*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        error = new_asn_put_utc_time((utc_time)p_data, &p_tlv->m_data.m_primitive_data, &p_tlv->m_data_len);
         break;
     case TVISIBLE_STRING:
-        error = new_asn_put_vsblstr(*(visible_string*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        error = new_asn_put_vsblstr((visible_string)p_data, &p_tlv->m_data.m_primitive_data, &p_tlv->m_data_len);
         break;
     case TIA5_STRING:
-        error = new_asn_put_ia5string(*(ia5_string*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        error = new_asn_put_ia5string((ia5_string)p_data, &p_tlv->m_data.m_primitive_data, &p_tlv->m_data_len);
         break;
     case TPRINTABLE_STRING:
-        error = new_asn_put_printable_string(*(printable_string*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        error = new_asn_put_printable_string((printable_string)p_data, &p_tlv->m_data.m_primitive_data, &p_tlv->m_data_len);
         break;
     case TNUMERIC_STRING:
-        error = new_asn_put_numeric_string(*(numeric_string*)p_data, &(*pp_tlv)->m_data.m_primitive_data, &(*pp_tlv)->m_data_len);
+        error = new_asn_put_numeric_string((numeric_string)p_data, &p_tlv->m_data.m_primitive_data, &p_tlv->m_data_len);
         break;
     default:
         return ak_error_message(ak_error_invalid_value, __func__, "unsupported data type");
@@ -81,7 +78,7 @@ int ak_asn_encode_universal_data(ak_uint8 tag_number, ak_pointer p_data, ak_uint
     if(error != ak_error_ok)
         return ak_error_message(error, __func__, "failure in encoding");
 
-    (*pp_tlv)->m_len_byte_cnt = new_asn_get_len_byte_cnt((*pp_tlv)->m_data_len);
+    p_tlv->m_len_byte_cnt = new_asn_get_len_byte_cnt(p_tlv->m_data_len);
 
     return ak_error_ok;
 }
@@ -147,6 +144,7 @@ int new_asn_put_int(integer val, ak_byte** pp_buff, ak_uint32* p_size)
 {
     bool_t high_bit;
     ak_uint8 val_len_byte_cnt;
+    ak_byte* p_val;
     if (!pp_buff)
         return ak_error_null_pointer;
 
@@ -177,8 +175,8 @@ int new_asn_put_int(integer val, ak_byte** pp_buff, ak_uint32* p_size)
         *p_size = val_len_byte_cnt;
     }
 
-    *pp_buff = malloc(*p_size);
-    if(!(*pp_buff))
+    *pp_buff = p_val = malloc(*p_size);
+    if(!p_val)
     {
         *p_size = 0;
         return ak_error_out_of_memory;
@@ -186,15 +184,15 @@ int new_asn_put_int(integer val, ak_byte** pp_buff, ak_uint32* p_size)
 
     if(high_bit)
     {
-        *((*pp_buff)++) = 0x00;
+        *(p_val++) = 0x00;
     }
 
     while(--val_len_byte_cnt > 0)
     {
-        *((*pp_buff)++) = (ak_byte)((val >> (val_len_byte_cnt * 8)) & 0xFF);
+        *(p_val ++) = (ak_byte)((val >> (val_len_byte_cnt * 8)) & 0xFF);
     }
 
-    **pp_buff = (ak_byte)(val & 0xFF);
+    *p_val = (ak_byte)(val & 0xFF);
 
 //    if (!val.mp_value)
 //        return ak_error_message(ak_error_null_pointer, __func__, "null value");
@@ -261,6 +259,8 @@ int new_asn_put_octetstr(octet_string src, ak_byte** pp_buff, ak_uint32* p_size)
         return ak_error_out_of_memory;
 
     memcpy(*pp_buff, src.mp_value, src.m_val_len);
+
+    *p_size = src.m_val_len;
 
     return ak_error_ok;
 }
@@ -355,6 +355,8 @@ int new_asn_put_objid(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_
 /* ----------------------------------------------------------------------------------------------- */
 int new_asn_put_bitstr(bit_string src, ak_byte** pp_buff, ak_uint32* p_size)
 {
+    ak_byte* p_res;
+
     if (!src.mp_value || !pp_buff)
         return ak_error_null_pointer;
 
@@ -364,15 +366,15 @@ int new_asn_put_bitstr(bit_string src, ak_byte** pp_buff, ak_uint32* p_size)
     /* 1 дополнительный байт для хранения кол-ва неиспользуемых бит в послднем байте данных */
     *p_size = 1 + src.m_val_len;
 
-    *pp_buff = malloc(*p_size);
-    if(!(*pp_buff))
+    *pp_buff = p_res =  malloc(*p_size);
+    if(!p_res)
     {
         *p_size = 0;
         return ak_error_out_of_memory;
     }
 
-    *((*pp_buff)++) = src.m_unused;
-    memcpy(*pp_buff, src.mp_value, src.m_val_len);
+    *(p_res++) = src.m_unused;
+    memcpy(p_res, src.mp_value, src.m_val_len);
 
     return ak_error_ok;
 }
@@ -414,7 +416,7 @@ int new_asn_put_bool(boolean val, ak_byte** pp_buff, ak_uint32* p_size)
 int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_uint32* p_size)
 {
     ak_uint8 i; /* индекс */
-
+    ak_byte* p_val;
     if (!time || !pp_buff)
         return ak_error_null_pointer;
 
@@ -422,8 +424,8 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
     if (*p_size < 15)
         return ak_error_message(ak_error_invalid_value, __func__, "wrong length of time string");
 
-    *pp_buff = malloc(*p_size);
-    if(!(*pp_buff))
+    *pp_buff = p_val = malloc(*p_size);
+    if(!p_val)
     {
         *p_size = 0;
         return ak_error_out_of_memory;
@@ -434,7 +436,7 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of year value");
-        *((*pp_buff)++) = (ak_byte) *(time++);
+        *(p_val++) = (ak_byte) *(time++);
     }
     time++;
 
@@ -443,7 +445,7 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of month value");
-        *((*pp_buff)++) = (ak_byte) *(time++);
+        *(p_val++) = (ak_byte) *(time++);
     }
     time++;
 
@@ -452,7 +454,7 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of day value");
-        *((*pp_buff)++) = (ak_byte) *(time++);
+        *(p_val++) = (ak_byte) *(time++);
     }
     time++;
 
@@ -461,7 +463,7 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of hour value");
-        *((*pp_buff)++) = (ak_byte) *(time++);
+        *(p_val++) = (ak_byte) *(time++);
     }
     time++;
 
@@ -470,7 +472,7 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of minute value");
-        *((*pp_buff)++) = (ak_byte) *(time++);
+        *(p_val++) = (ak_byte) *(time++);
     }
     time++;
 
@@ -479,7 +481,7 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of second value");
-        *((*pp_buff)++) = (ak_byte) *(time++);
+        *(p_val++) = (ak_byte) *(time++);
     }
 
     /* .mmm */
@@ -494,16 +496,16 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
                                     __func__,
                                     "wrong format of quota of second value (it can't end by 0 symbol)");
 
-        *((*pp_buff)++) = (ak_byte) *(time++); // помещаем символ точки
+        *(p_val++) = (ak_byte) *(time++); // помещаем символ точки
         for (i = 0; i < ms_cnt; i++)
         {
             if (!isdigit(*time))
                 return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of quota of second value");
-            *((*pp_buff)++) = (ak_byte) *(time++);
+            *(p_val++) = (ak_byte) *(time++);
         }
     }
 
-    **pp_buff = 'Z';
+    *p_val = 'Z';
 
     return ak_error_ok;
 }
@@ -581,6 +583,7 @@ int new_asn_put_numeric_string(numeric_string str, ak_byte** pp_buff, ak_uint32*
 int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
 {
     ak_uint8 i; /* Индекс */
+    ak_byte* p_val;
 
     if (!time || !pp_buff)
         return ak_error_null_pointer;
@@ -589,8 +592,8 @@ int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
     if (*p_size < 13)
         return ak_error_message(ak_error_invalid_value, __func__, "wrong length of time string");
 
-    *pp_buff = malloc(*p_size);
-    if(!(*pp_buff))
+    *pp_buff = p_val = malloc(*p_size);
+    if(!p_val)
     {
         *p_size = 0;
         return ak_error_out_of_memory;
@@ -601,7 +604,7 @@ int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of year value");
-        *((*pp_buff)++) = (ak_byte) *(time++);
+        *(p_val++) = (ak_byte) *(time++);
     }
     time++;
 
@@ -610,7 +613,7 @@ int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of month value");
-        *((*pp_buff)++) = (ak_byte) *(time++);
+        *(p_val++) = (ak_byte) *(time++);
     }
     time++;
 
@@ -619,7 +622,7 @@ int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of day value");
-        *((*pp_buff)++) = (ak_byte) *(time++);
+        *(p_val++) = (ak_byte) *(time++);
     }
     time++;
 
@@ -628,7 +631,7 @@ int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of hour value");
-        *((*pp_buff)++) = (ak_byte) *(time++);
+        *(p_val++) = (ak_byte) *(time++);
     }
     time++;
 
@@ -637,7 +640,7 @@ int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of minute value");
-        *((*pp_buff)++) = (ak_byte) *(time++);
+        *(p_val++) = (ak_byte) *(time++);
     }
     time++;
 
@@ -646,7 +649,7 @@ int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of second value");
-        *((*pp_buff)++) = (ak_byte) *(time++);
+        *(p_val++) = (ak_byte) *(time++);
     }
 
     /* .mmm */
@@ -661,16 +664,16 @@ int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
                     __func__,
                     "wrong format of quota of second value (it can't end by 0 symbol)");
 
-        *((*pp_buff)++) = (ak_byte) *(time++); // помещаем символ точки
+        *(p_val++) = (ak_byte) *(time++); // помещаем символ точки
         for (i = 0; i < ms_cnt; i++)
         {
             if (!isdigit(*time))
                 return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of quota of second value");
-            *((*pp_buff)++) = (ak_byte) *(time++);
+            *(p_val++) = (ak_byte) *(time++);
         }
     }
 
-    **pp_buff = 'Z';
+    *p_val = 'Z';
 
     return ak_error_ok;
 }
@@ -899,76 +902,3 @@ bool_t check_prntbl_str(printable_string str, ak_uint32 len)
 //    return error;
 //}
 //
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param len длина данных
-    @return Кол-во байтов, необходимое для хранения закодированной длины.                          */
-/* ----------------------------------------------------------------------------------------------- */
-ak_uint8 new_asn_get_len_byte_cnt(size_t len)
-{
-    if (len < 0x80u && len >= 0)
-        return 1;
-    if (len <= 0xFFu)
-        return 2;
-    if (len <= 0xFFFFu)
-        return 3;
-    if (len <= 0xFFFFFFu)
-        return 4;
-    if (len <= 0xFFFFFFFFu)
-        return 5;
-    else
-        return 0;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param oid строка, содержая идентификатор в виде чисел, разделенных точками
-    @return Кол-во байтов, необходимое для хранения закодированного идентификатора.                */
-/* ----------------------------------------------------------------------------------------------- */
-ak_uint8 new_asn_get_oid_byte_cnt(object_identifier oid) {
-    ak_uint8 byte_cnt;
-    object_identifier p_end;
-    size_t num;
-
-    if (!oid)
-        return 0;
-
-    byte_cnt = 1;
-
-    /* Пропускаем 2 первых идентификатора */
-    strtoul((char *) oid, &p_end, 10);
-    oid = ++p_end;
-    strtol((char *) oid, &p_end, 10);
-
-    while (*p_end != '\0')
-    {
-        oid = ++p_end;
-        num = (size_t) strtol((char *) oid, &p_end, 10);
-        if (num <= 0x7Fu)             /*                               0111 1111 -  7 бит */
-            byte_cnt += 1;
-        else if (num <= 0x3FFFu)      /*                     0011 1111 1111 1111 - 14 бит */
-            byte_cnt += 2;
-        else if (num <= 0x1FFFFFu)    /*           0001 1111 1111 1111 1111 1111 - 21 бит */
-            byte_cnt += 3;
-        else if (num <= 0x0FFFFFFFu)  /* 0000 1111 1111 1111 1111 1111 1111 1111 - 28 бит */
-            byte_cnt += 4;
-        else
-            return 0;
-    }
-    return byte_cnt;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param time строка, содержая время в формате "YYYY-MM-DD HH:MM:SS.[ms] UTC"
-    @return Кол-во байтов, необходимое для хранения закодированного времени.                       */
-/* ----------------------------------------------------------------------------------------------- */
-ak_uint8 new_asn_get_gentime_byte_cnt(generalized_time time) {
-    if (!time)
-        return 0;
-    /*
-     * 8 имеет след. смысл:
-     * - из строки "YYYY-MM-DD HH:MM:SS.[ms] UTC" удалить символы "-- :: UTC"
-     * - добавить символ "Z"
-     * Примечание: эл-ов ms может быть неограниченное кол-во.
-    */
-    return (ak_uint8) (strlen(time) - 8);
-}

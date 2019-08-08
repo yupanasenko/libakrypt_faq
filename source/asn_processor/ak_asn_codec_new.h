@@ -108,11 +108,11 @@ typedef struct s_asn_oct_str_type octet_string;
 typedef struct s_constructed_data s_constructed_data_t;
 typedef struct s_asn_tlv s_asn_tlv_t;
 
-/*! \brief Струкртура, хранящая массив указателей на данные, из которых состоит составной TLV. */
+/*! \brief Струкртура, хранящая данные, из которых состоит составной TLV. */
 struct s_constructed_data
 {
-  /*! \brief массив указателей на данные. */
-  s_asn_tlv_t** m_arr_of_data;
+  /*! \brief массив данных. */
+  s_asn_tlv_t* mp_arr_of_data;
   /*! \brief количество объектов в массиве. */
   ak_uint8 m_curr_size;
   /*! \brief размер массива. */
@@ -162,7 +162,7 @@ int ak_asn_construct_data_ctx_create(ak_asn_tlv p_tlv, tag constructed_data_tag,
 //              2) Если значение *p_data_copied == ak_false, то объект s_asn_tlv просто ссылается на данные;
 //              3) Если значение p_data_copied == NULL, то см. п. 1);
 
-int ak_asn_encode_universal_data(ak_uint8 tag_number, ak_pointer p_data, ak_uint32 size, char* p_name, ak_asn_tlv* pp_tlv);
+int ak_asn_encode_universal_data(ak_uint8 tag_number, ak_pointer p_data, char* p_name, ak_asn_tlv p_tlv);
 int ak_asn_decode_universal_data(ak_asn_tlv p_tlv, ak_pointer* pp_data, ak_uint32* p_size);
 
 int ak_asn_primitive_data_ctx_create(ak_asn_tlv p_tlv, tag data_tag, ak_uint32 data_len, ak_pointer p_data, char* p_data_name);
@@ -177,7 +177,7 @@ void new_ak_asn_print_tree(ak_asn_tlv p_tree);
 void ak_asn_print_hex_data(ak_byte* p_data, ak_uint32 size);
 
 /*! \brief Функция добавления вложенных элементов в составной объект s_asn_tlv. */
-int ak_asn_add_nested_elems(ak_asn_tlv p_tlv_parent, ak_asn_tlv pp_tlv_children[], ak_uint8 count);
+int ak_asn_add_nested_elems(ak_asn_tlv p_tlv_parent, s_asn_tlv_t p_tlv_children[], ak_uint8 count);
 
 /*! \brief Функция удаления вложенного элемента из составного объекта s_asn_tlv. */
 int ak_asn_delete_nested_elem(ak_asn_tlv p_tlv_parent, ak_uint32 index);
@@ -215,6 +215,18 @@ int new_asn_get_bool(ak_byte *p_buff, size_t len, boolean *p_value);
 /*! \brief Декодирование времени, представленном в общепринятом формате, из DER последовательности. */
 int new_asn_get_generalized_time(ak_byte *p_buff, size_t len, generalized_time *p_time);
 
+/*! \brief Декодирует Printable string из ASN.1 последовательности. */
+int new_asn_get_printable_string(ak_byte* p_buff, ak_uint32 size, printable_string* p_str);
+
+/*! \brief Декодирует IA5 string из ASN.1 последовательности. */
+int new_asn_get_ia5string(ak_byte* p_buff, ak_uint32 size, ia5_string* p_str);
+
+/*! \brief Декодирует Numeric string из ASN.1 последовательности. */
+int new_asn_get_numeric_string(ak_byte* p_buff, ak_uint32 size, numeric_string* p_str);
+
+/*! \brief Декодирует UTC time из ASN.1 последовательности. */
+int new_asn_get_utc_time(ak_byte* p_buff, ak_uint32 len, utc_time* p_time);
+
 /*! \brief Добавление тега в DER последовательность. */
 int new_asn_put_tag(tag tag, ak_byte **pp_buff);
 
@@ -245,6 +257,17 @@ int new_asn_put_bool(boolean val, ak_byte** pp_buff, ak_uint32* p_size);
 /*! \brief Добавление времени, представленном в общепринятом формате, в DER последовательность. */
 int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_uint32* p_size);
 
+/*! \brief Кодирует IA5 string в ASN.1 последовательность. */
+int new_asn_put_ia5string(ia5_string str, ak_byte** pp_buff, ak_uint32* p_size);
+
+/*! \brief Кодирует Printable string в ASN.1 последовательность. */
+int new_asn_put_printable_string(printable_string str, ak_byte** pp_buff, ak_uint32* p_size);
+
+/*! \brief Кодирует Numeric string в ASN.1 последовательность. */
+int new_asn_put_numeric_string(numeric_string str, ak_byte** pp_buff, ak_uint32* p_size);
+
+/*! \brief Кодирует UTC time в ASN.1 последовательность. */
+int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size);
 
 /* Tools */
 
@@ -259,36 +282,30 @@ ak_uint8 new_asn_get_gentime_byte_cnt(generalized_time time);
 
 int ak_asn_get_oid_desc(object_identifier oid, char** pp_desc);
 
+int ak_bitstr_set_str(bit_string* p_bit_str, char* str);
+int ak_bitstr_set_ui(bit_string* p_bit_str, ak_uint64 val64, ak_uint8 used_bits);
+int ak_bitstr_set_arr(bit_string* p_bit_str, ak_byte* p_data, ak_uint32 size, ak_uint8 unused_bits);
+
+int ak_bitstr_get_str(bit_string* p_bit_str, char** pp_str);
+int ak_bitstr_get_ui(bit_string* p_bit_str, ak_uint64* p_val64, ak_uint8* p_used_bits);
+int ak_bitstr_get_arr(bit_string* p_bit_str, ak_byte** pp_data, ak_uint32* p_size, ak_uint8* p_unused_bits);
+bool_t check_prntbl_str(printable_string str, ak_uint32 len);
+
 int ak_asn_realloc(ak_pointer* pp_mem, size_t old_size, size_t new_size);
 
 /*! \brief Освобождение памяти. */
-void asn_free_int(integer *p_val);
-
-void asn_free_utf8string(utf8_string *p_val);
-
-void asn_free_octetstr(octet_string *p_val);
-
-void asn_free_vsblstr(visible_string *p_val);
-
-void asn_free_objid(object_identifier *p_val);
-
-void asn_free_bitstr(bit_string *p_val);
-
-void asn_free_generalized_time(generalized_time *p_val);
-
-
-int new_asn_get_ia5string(ak_byte* p_buff, ak_uint32 size, ia5_string* p_str);
-int new_asn_put_ia5string(ia5_string str, ak_byte** pp_buff, ak_uint32* p_size);
-
-int new_asn_get_printable_string(ak_byte* p_buff, ak_uint32 size, printable_string* p_str);
-int new_asn_put_printable_string(printable_string str, ak_byte** pp_buff, ak_uint32* p_size);
-
-int new_asn_get_numeric_string(ak_byte* p_buff, ak_uint32 size, numeric_string* p_str);
-int new_asn_put_numeric_string(numeric_string str, ak_byte** pp_buff, ak_uint32* p_size);
-
-int new_asn_get_utc_time(ak_byte* p_buff, ak_uint32 len, utc_time* p_time);
-int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size);
-
-bool_t check_prntbl_str(printable_string str, ak_uint32 len);
+//void asn_free_int(integer *p_val);
+//
+//void asn_free_utf8string(utf8_string *p_val);
+//
+//void asn_free_octetstr(octet_string *p_val);
+//
+//void asn_free_vsblstr(visible_string *p_val);
+//
+//void asn_free_objid(object_identifier *p_val);
+//
+//void asn_free_bitstr(bit_string *p_val);
+//
+//void asn_free_generalized_time(generalized_time *p_val);
 
 #endif /* __AK_ASN_H__ */
