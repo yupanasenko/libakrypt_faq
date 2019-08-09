@@ -243,17 +243,17 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция создает имя файла в котором содержатся настройки библиотеки.
-
+/*!
    @param filename Массив, куда помещается имя файла. Память под массив
           должна быть быделена заранее.
    @param size Размер выделенной памяти.
+   @param lastname Собственно короткое имя файла, заданное в виде null-строки.
    @param where Указатель на то, в каком каталоге будет расположен файл с настройками.
           Значение 0 - домашний каталог, значение 1 - общесистемный каталог
    @return Функция возвращает код ошибки.                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_libakrypt_create_filename_for_options( char *filename,
-                                                             const size_t size, const int where  )
+ int ak_libakrypt_create_filename( char *filename,
+                                              const size_t size, char *lastname, const int where  )
 {
  int error = ak_error_ok;
  char hpath[FILENAME_MAX];
@@ -265,11 +265,11 @@
  {
    case 0  : /* имя файла помещается в домашний каталог пользователя */
              if(( error = ak_libakrypt_get_home_path( hpath, FILENAME_MAX )) != ak_error_ok )
-                 return ak_error_message( error, __func__, "wrong libakrypt.conf name creation" );
+               return ak_error_message_fmt( error, __func__, "wrong %s name creation", lastname );
              #ifdef _WIN32
-              ak_snprintf( filename, size, "%s\\.config\\libakrypt\\libakrypt.conf", hpath );
+              ak_snprintf( filename, size, "%s\\.config\\libakrypt\\%s", hpath, lastname );
              #else
-              ak_snprintf( filename, size, "%s/.config/libakrypt/libakrypt.conf", hpath );
+              ak_snprintf( filename, size, "%s/.config/libakrypt/%s", hpath, lastname );
              #endif
              break;
 
@@ -282,9 +282,9 @@
                memcpy( hpath, LIBAKRYPT_OPTIONS_PATH, len );
              }
              #ifdef _WIN32
-              ak_snprintf( filename, size, "%s\\libakrypt.conf", hpath );
+              ak_snprintf( filename, size, "%s\\%s", hpath, lastname );
              #else
-              ak_snprintf( filename, size, "%s/libakrypt.conf", hpath );
+              ak_snprintf( filename, size, "%s/%s", hpath, lastname );
              #endif
              break;
    default : return ak_error_message( ak_error_undefined_value, __func__,
@@ -522,8 +522,8 @@
  char name[FILENAME_MAX];
 
 /* создаем имя файла, расположенного в домашнем каталоге */
- if(( error =
-       ak_libakrypt_create_filename_for_options( name, FILENAME_MAX, 0 )) != ak_error_ok ) {
+ if(( error = ak_libakrypt_create_filename( name, FILENAME_MAX,
+                                                          "libakrypt.conf", 0 )) != ak_error_ok ) {
    ak_error_message( error, __func__, "incorrect name generation for options file");
    return ak_false;
  }
@@ -542,8 +542,8 @@
  }
 
 /* создаем имя файла, расположенного в системном каталоге */
- if(( error =
-       ak_libakrypt_create_filename_for_options( name, FILENAME_MAX, 1 )) != ak_error_ok ) {
+ if(( error = ak_libakrypt_create_filename( name, FILENAME_MAX,
+                                                          "libakrypt.conf", 1 )) != ak_error_ok ) {
    ak_error_message( error, __func__, "incorrect name generation for options file");
    return ak_false;
  }

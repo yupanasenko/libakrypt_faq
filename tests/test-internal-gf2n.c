@@ -123,11 +123,12 @@
   if( ak_ptr_is_equal( gamma, delta, sizeof( gamma )) != ak_true ) return EXIT_FAILURE;
 
   ak_ptr_to_hexstr_static( delta, sizeof( delta ), str, sizeof( str ), ak_true );
-  printf("\ndelta: %s\n", str );
+  printf("delta: %s\n", str );
 #endif
 
   ak_ptr_to_hexstr_static( gamma, sizeof( gamma ), str, sizeof( str ), ak_true );
-  printf("\ngamma: %s\n", str );
+  printf("gamma: %s\n", str );
+  printf("await: A17BF23374AE689F236A76A9D191F5BE8664EC06787934D25ABD11C7313837C7997FB50D4D297F94C080CF625905A1C2369A3CC06C38B74ED440104AFC493A86\n");
  return EXIT_SUCCESS;
 }
 
