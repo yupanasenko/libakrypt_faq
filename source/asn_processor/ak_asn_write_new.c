@@ -329,8 +329,7 @@ int new_asn_put_objid(object_identifier obj_id, ak_byte** pp_buff, ak_uint32* p_
         if (num > 0x7Fu)
         {
             ak_byte seven_bits;
-            int8_t i;
-            i = 3;
+            ak_int8 i = 3;
             while (i > 0)
             {
                 seven_bits = (ak_byte) ((num >> ((ak_uint8) i * 7u)) & 0x7Fu);
@@ -431,7 +430,7 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
     }
 
     /* YYYY */
-    for (ak_uint8 i = 0; i < 4; i++)
+    for ( i = 0; i < 4; i++)
     {
         if (!isdigit(*time))
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "wrong format of year value");
@@ -486,7 +485,7 @@ int new_asn_put_generalized_time(generalized_time time, ak_byte** pp_buff, ak_ui
     /* .mmm */
     if (*time == '.')
     {
-        int8_t ms_cnt = (int8_t) ((strchr(time, ' ') - time) - 1);
+        ak_int8 ms_cnt = (ak_int8) ((strchr(time, ' ') - time) - 1);
         if (ms_cnt == 0)
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "quota of second absent");
 
@@ -654,7 +653,7 @@ int new_asn_put_utc_time(utc_time time, ak_byte** pp_buff, ak_uint32* p_size)
     /* .mmm */
     if (*time == '.')
     {
-        int8_t ms_cnt = (int8_t) ((strchr(time, ' ') - time) - 1);
+        ak_int8 ms_cnt = (ak_int8) ((strchr(time, ' ') - time) - 1);
         if (ms_cnt == 0)
             return ak_error_message(ak_error_wrong_asn1_encode, __func__, "quota of second absent");
 

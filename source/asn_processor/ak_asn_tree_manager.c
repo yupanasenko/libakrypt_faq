@@ -306,7 +306,8 @@ int ak_asn_get_size(ak_asn_tlv p_tlv, ak_uint32* p_size)
 
 int ak_asn_update_size(ak_asn_tlv p_root_tlv)
 {
-    ak_uint32 size; /* Размер блока данных в TLV */
+    ak_uint8 i = 0;
+    ak_uint32 size = 0; /* Размер блока данных в TLV */
 
     if (!p_root_tlv)
         return ak_error_null_pointer;
@@ -314,7 +315,7 @@ int ak_asn_update_size(ak_asn_tlv p_root_tlv)
     if(DATA_STRUCTURE(p_root_tlv->m_tag) == CONSTRUCTED)
     {
         p_root_tlv->m_data_len = 0;
-        for(ak_uint8 i = 0; i < p_root_tlv->m_data.m_constructed_data->m_curr_size; i++)
+        for( i = 0; i < p_root_tlv->m_data.m_constructed_data->m_curr_size; i++)
         {
             if(DATA_STRUCTURE(p_root_tlv->m_data.m_constructed_data->mp_arr_of_data[i].m_tag) == CONSTRUCTED)
                 ak_asn_update_size(&p_root_tlv->m_data.m_constructed_data->mp_arr_of_data[i]);
@@ -389,6 +390,7 @@ static char* get_tag_description(tag data_tag)
 
 static void asn_print_universal_data(tag data_tag, ak_uint32 data_len, ak_byte* p_data)
 {
+    size_t i = 0;
     bit_string bit_string_data;
     char *str, *oid;
     ak_uint32 integer_val;
@@ -410,13 +412,14 @@ static void asn_print_universal_data(tag data_tag, ak_uint32 data_len, ak_byte* 
         case TBIT_STRING:
             new_asn_get_bitstr(p_data, data_len, &bit_string_data);
 
-            for(size_t i = 0; i < bit_string_data.m_val_len; i++)
+            for( i = 0; i < bit_string_data.m_val_len; i++)
             {
+                ak_int8 j = 0;
                 ak_uint8 unused_bits = 0;
                 if (i == bit_string_data.m_val_len - 1)
                     unused_bits = bit_string_data.m_unused;
 
-                for(ak_int8 j = 7; j >= (ak_int8)unused_bits; j--)
+                for( j = 7; j >= (ak_int8)unused_bits; j--)
                 {
                     ak_uint8 bit = (bit_string_data.mp_value[i] >> j) & (ak_uint8)0x01;
                     printf("%u", bit);
@@ -508,6 +511,7 @@ static void new_ak_asn_print_tlv(ak_asn_tlv p_tlv, bool_t is_last)
 
     if(DATA_STRUCTURE(p_tlv->m_tag) == CONSTRUCTED)
     {
+        ak_uint8 i = 0;
         size_t suffix_len = strlen(p_tag_desc) + UNICODE_SYMBOL_LEN(VER_LINE);
         /* Выводим префик, тег */
         printf("%s%s", prefix, p_tag_desc);
@@ -541,7 +545,7 @@ static void new_ak_asn_print_tlv(ak_asn_tlv p_tlv, bool_t is_last)
         sprintf(prefix + strlen(prefix), "%*s", (int)suffix_len, VER_LINE);
 
         /* Выводим вложенные данные */
-        for(ak_uint8 i = 0; i < p_tlv->m_data.m_constructed_data->m_curr_size; i++)
+        for( i = 0; i < p_tlv->m_data.m_constructed_data->m_curr_size; i++)
         {
             if(i == p_tlv->m_data.m_constructed_data->m_curr_size - 1)
                 new_ak_asn_print_tlv(&p_tlv->m_data.m_constructed_data->mp_arr_of_data[i], ak_true);

@@ -154,6 +154,7 @@ int ak_function_log_logfile( const char *message )
 
  int main( int argc, char *argv[] )
 {
+    ak_uint32 i = 0;
     int error = ak_error_ok;
 
     /* Структура, хранящая результат декодирования данных */
@@ -235,7 +236,7 @@ int ak_function_log_logfile( const char *message )
     }
 
     /* Сравниваем исходные данные с закодированными */
-    for (ak_uint32 i = 0; i < ak_min( size, data_length ); i++) {
+    for ( i = 0; i < ak_min( size, data_length ); i++) {
       if( p_plain_data[i] != p_encoded_data[i]) {
 
         printf("Data differ at %u byte\n", i + 1);
@@ -244,12 +245,13 @@ int ak_function_log_logfile( const char *message )
       }
     }
 
-    if(test_result)
+    if(test_result) {
       if( argc>1 ) printf("Test for file %s passed!\n", argv[1] );
           else printf("Test passed!\n");
-    else
+    } else {
       if( argc>1 ) printf("Test for file %s failed!\n", argv[1] );
-        printf("Test failed!\n");
+        else printf("Test failed!\n");
+    }
 
     /* Освобождаем память */
     ak_asn_free_tree(p_root_tlv);

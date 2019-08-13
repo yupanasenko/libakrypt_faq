@@ -251,7 +251,9 @@ int new_asn_get_vsblstr(ak_byte *p_buff, size_t len, visible_string *p_str) {
     @return В случае успеха функция возввращает ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
-int new_asn_get_objid(ak_byte *p_buff, size_t len, object_identifier *p_objid) {
+ int new_asn_get_objid(ak_byte *p_buff, size_t len, object_identifier *p_objid)
+{
+    size_t i = 0;
     ak_uint32 value;
     size_t curr_size;
     object_identifier obj_id;
@@ -268,7 +270,7 @@ int new_asn_get_objid(ak_byte *p_buff, size_t len, object_identifier *p_objid) {
 
     sprintf(obj_id, "%d.%d", p_buff[0] / 40, p_buff[0] % 40);
 
-    for (int i = 1; i < len; i++)
+    for ( i = 1; i < len; i++)
     {
         value = 0u;
         while (p_buff[i] & 0x80u)

@@ -239,6 +239,7 @@ int ak_bitstr_get_str(bit_string* p_bit_str, char** pp_str)
 
 int ak_bitstr_get_ui(bit_string* p_bit_str, ak_uint64* p_val64, ak_uint8* p_used_bits)
 {
+    ak_int8 i = 0;
     if(!p_bit_str || !p_val64 || !p_used_bits)
         return ak_error_null_pointer;
 
@@ -246,7 +247,7 @@ int ak_bitstr_get_ui(bit_string* p_bit_str, ak_uint64* p_val64, ak_uint8* p_used
         return ak_error_invalid_value;
 
     *p_val64 = 0;
-    for(ak_int8 i = 0; i < p_bit_str->m_val_len; i++)
+    for( i = 0; i < p_bit_str->m_val_len; i++)
     {
         *p_val64 += p_bit_str->mp_value[i];
         if(i != p_bit_str->m_val_len - 1)
