@@ -592,10 +592,7 @@ void new_ak_asn_print_tree(ak_asn_tlv p_tree)
 void ak_asn_print_hex_data(ak_byte* p_data, ak_uint32 size)
 {
     ak_uint32 i; /* индекс */
-    for (i = 0; i < size; i++)
-    {
-        printf("%02X ", p_data[i]);
-    }
+    for (i = 0; i < size; i++) printf("%02X", p_data[i]);
 }
 
 int ak_asn_parse_data(ak_pointer p_asn_data, size_t size, ak_asn_tlv* pp_tlv)

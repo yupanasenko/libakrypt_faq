@@ -1,4 +1,3 @@
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
 # -------------------------------------------------------------------------------------------------- #
 # сборка по умолчанию
 # cmake path && make
@@ -34,12 +33,12 @@ option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
 option( LIBAKRYPT_HTML_DOC "Build documentation in HTML format" OFF )
 option( LIBAKRYPT_PDF_DOC "Build documentation in PDF format" OFF )
 option( LIBAKRYPT_CRYPTO_FUNCTIONS "Build library with crypto functions" ON )
+option( LIBAKRYPT_ASN1 "Build library with ASN.1 parser support" ON )
 option( LIBAKRYPT_CONST_CRYPTO_PARAMS "Build library with const values of crypto parameters" OFF )
 option( LIBAKRYPT_NETWORK "Build library with network communications support" OFF )
 option( LIBAKRYPT_FIOT "Build library with FIOT protocol support" OFF )
 option( LIBAKRYPT_TLS_13 "Build library with TLS 1.3 protocol support" OFF )
 option( LIBAKRYPT_AKRYPT "Build console akrypt application" OFF )
-option( LIBAKRYPT_PKCS_15_CONTAINER "Build library with PKCS#15 container generating and parsing functions" ON )
 
 # -------------------------------------------------------------------------------------------------- #
 set( CMAKE_BUILD_TYPE Release )
@@ -56,6 +55,7 @@ if( LIBAKRYPT_TLS_13 )
 endif()
 if( LIBAKRYPT_AKRYPT )
   set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
+  set( LIBAKRYPT_ASN1 ON )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -174,31 +174,17 @@ if( LIBAKRYPT_FIOT )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
-if( LIBAKRYPT_PKCS_15_CONTAINER )
+if( LIBAKRYPT_ASN1 )
   set( HEADERS      ${HEADERS}
-          source/pkcs_15_cryptographic_token/ak_asn_codec.h
           source/asn_processor/ak_asn_codec_new.h
-          source/pkcs_15_cryptographic_token/ak_pkcs_15_token_manager.h
-          source/pkcs_15_cryptographic_token/ak_pkcs_15_algs_prms.h
-          source/pkcs_15_cryptographic_token/ak_pkcs_15_common_types.h
-          source/pkcs_15_cryptographic_token/ak_pkcs_15_token.h
-          source/pkcs_15_cryptographic_token/ak_pkcs_15_gost_secret_key.h
-          source/pkcs_15_cryptographic_token/ak_pointer_server.h
-          )
+  )
   set( SOURCES      ${SOURCES}
-          source/pkcs_15_cryptographic_token/ak_asn_read.c
-          source/pkcs_15_cryptographic_token/ak_asn_write.c
           source/asn_processor/ak_asn_tree_manager.c
           source/asn_processor/ak_asn_read_new.c
           source/asn_processor/ak_asn_write_new.c
           source/asn_processor/ak_asn_tools.c
-          source/pkcs_15_cryptographic_token/ak_pkcs_15_token_manager.c
-          source/pkcs_15_cryptographic_token/ak_pkcs_15_common_types.c
-          source/pkcs_15_cryptographic_token/ak_pkcs_15_token.c
-          source/pkcs_15_cryptographic_token/ak_pkcs_15_gost_secret_key.c
-          source/pkcs_15_cryptographic_token/ak_pointer_server.c
-          )
-  add_compile_options( -DLIBAKRYPT_PKCS_15_CONTAINER=ON )
+  )
+  add_compile_options( -DLIBAKRYPT_ASN1=ON )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -275,6 +261,7 @@ if( LIBAKRYPT_AKRYPT )
   else()
     set( AKRYPT_SOURCES ${AKRYPT_SOURCES} akrypt/getopt.c )
   endif()
+  message("-- Sources for akrypt${LIBAKRYPT_EXT}: ${AKRYPT_SOURCES}" )
 
   find_path( LIBINTL_H_PATH NAMES libintl.h )
   if( LIBINTL_H_PATH )
@@ -364,7 +351,6 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  internal-hash01
                  internal-hash02
                  internal-hash03
-                 internal-hash04
                  internal-oid03
                  internal-random02
                  internal-sign01
@@ -382,6 +368,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
                                    # при запуске make test
+                 internal-hash04
                  internal-bckey04
                  internal-mgm04
                  internal-mgm05
@@ -400,12 +387,11 @@ if( LIBAKRYPT_FIOT )
                  internal-fiot-echo-server
   )
 endif()
-if( LIBAKRYPT_PKCS_15_CONTAINER )
+if( LIBAKRYPT_ASN1 )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
-          internal-pkcs-15-container
-          internal-asn-handler
-          internal-asn-build-data
-          )
+                 internal-asn-handler
+                 internal-asn-build-data
+  )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #

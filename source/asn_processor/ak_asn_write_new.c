@@ -12,7 +12,6 @@
 #endif
 #ifdef LIBAKRYPT_HAVE_CTYPE_H
 #include <ctype.h>
-#include <printf.h>
 #else
 #error Library cannot be compiled without ctype.h header
 #endif

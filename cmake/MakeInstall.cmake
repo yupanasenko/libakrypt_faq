@@ -63,7 +63,7 @@ if( CMAKE_HOST_UNIX )
   add_custom_target( uninstall ${CMAKE_BINARY_DIR}/make-uninstall-${FULL_VERSION}.sh )
 
   message("-- Install script is done (now \"make install\" & \"make uninstall\" enabled)" )
-  message("-- Install path ${CMAKE_INSTALL_PREFIX}" )
+  message("-- Install prefix is ${CMAKE_INSTALL_PREFIX}" )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
