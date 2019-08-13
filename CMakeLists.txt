@@ -1,3 +1,4 @@
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
 # -------------------------------------------------------------------------------------------------- #
 # сборка по умолчанию
 # cmake path && make
@@ -38,6 +39,7 @@ option( LIBAKRYPT_NETWORK "Build library with network communications support" OF
 option( LIBAKRYPT_FIOT "Build library with FIOT protocol support" OFF )
 option( LIBAKRYPT_TLS_13 "Build library with TLS 1.3 protocol support" OFF )
 option( LIBAKRYPT_AKRYPT "Build console akrypt application" OFF )
+option( LIBAKRYPT_PKCS_15_CONTAINER "Build library with PKCS#15 container generating and parsing functions" ON )
 
 # -------------------------------------------------------------------------------------------------- #
 set( CMAKE_BUILD_TYPE Release )
@@ -169,6 +171,34 @@ if( LIBAKRYPT_FIOT )
                     source/ak_fiot_kgp.c
   )
   add_compile_options( -DLIBAKRYPT_FIOT=ON )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+if( LIBAKRYPT_PKCS_15_CONTAINER )
+  set( HEADERS      ${HEADERS}
+          source/pkcs_15_cryptographic_token/ak_asn_codec.h
+          source/asn_processor/ak_asn_codec_new.h
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_token_manager.h
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_algs_prms.h
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_common_types.h
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_token.h
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_gost_secret_key.h
+          source/pkcs_15_cryptographic_token/ak_pointer_server.h
+          )
+  set( SOURCES      ${SOURCES}
+          source/pkcs_15_cryptographic_token/ak_asn_read.c
+          source/pkcs_15_cryptographic_token/ak_asn_write.c
+          source/asn_processor/ak_asn_tree_manager.c
+          source/asn_processor/ak_asn_read_new.c
+          source/asn_processor/ak_asn_write_new.c
+          source/asn_processor/ak_asn_tools.c
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_token_manager.c
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_common_types.c
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_token.c
+          source/pkcs_15_cryptographic_token/ak_pkcs_15_gost_secret_key.c
+          source/pkcs_15_cryptographic_token/ak_pointer_server.c
+          )
+  add_compile_options( -DLIBAKRYPT_PKCS_15_CONTAINER=ON )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -369,6 +399,13 @@ if( LIBAKRYPT_FIOT )
                  internal-fiot-echo-client
                  internal-fiot-echo-server
   )
+endif()
+if( LIBAKRYPT_PKCS_15_CONTAINER )
+  set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
+          internal-pkcs-15-container
+          internal-asn-handler
+          internal-asn-build-data
+          )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
