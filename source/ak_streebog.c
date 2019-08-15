@@ -44,11 +44,7 @@
     for( idx2 = 0; idx2 < 8; idx2++, sidx += 8 ) {
       c ^= streebog_Areverse_expand[idx2][gost_pi[a[sidx]]];
     }
-   #ifdef LIBAKRYPT_LITTLE_ENDIAN
     result[idx] = c;
-   #else
-    result[idx] = bswap_64(c);
-   #endif
   }
 }
 
@@ -66,7 +62,6 @@
 {
    int idx = 0;
    ak_uint64 K[8], T[8], B[8];
-
        if( n != NULL ) {
          streebog_x( B, ctx->H, n );
          streebog_lps( K, B );
@@ -162,15 +157,13 @@
 {
   ak_uint64 quot = 0, *dt = NULL;
   struct streebog *sx = NULL;
-
   if( ctx == NULL ) return  ak_error_message( ak_error_null_pointer,
                                                  __func__ , "using null pointer to a context" );
   if( !size ) return ak_error_message( ak_error_zero_length,
                                                  __func__ , "using zero length for hash data" );
   quot = size/(( ak_hash ) ctx )->bsize;
   if( size - quot*(( ak_hash ) ctx )->bsize ) /* длина данных должна быть кратна ctx->bsize */
-    return ak_error_message( ak_error_wrong_length, __func__ , "using data with wrong length" );
-
+    return ak_error_message( ak_error_wrong_length, __func__ , "using data with wrong length" ); 
   dt = ( ak_uint64 *) in;
   sx = ( struct streebog * ) (( ak_hash ) ctx )->data;
   do{
@@ -202,14 +195,13 @@
     return NULL;
   }
 
-  /* формируем временный текст */
+ /* формируем временный текст */
   memset( m, 0, 64 );
   if( in != NULL )
     memcpy( m, in, ( ak_uint32 )size ); // здесь приведение типов корректно, поскольку 0 <= size < 64
   mhide = ( unsigned char * )m;
   mhide[size] = 1; /* дополнение */
-
-  /* при финализации мы изменяем копию существующей структуры */
+ /* при финализации мы изменяем копию существующей структуры */
   memcpy( &sx, ( struct streebog * ) (( ak_hash ) ctx )->data, sizeof( struct streebog ));
   streebog_g( &sx, sx.N, m );
   streebog_add( &sx, size << 3 );
@@ -486,7 +478,7 @@
     }
 
  /* уничтожаем контекст */
-  lab_exit: ak_hash_context_destroy( &ctx );
+ lab_exit: ak_hash_context_destroy( &ctx );
  return result;
 }
 
