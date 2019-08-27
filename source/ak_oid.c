@@ -10,15 +10,15 @@
 #else
  #error Library cannot be compiled without string.h header
 #endif
+
+/* ----------------------------------------------------------------------------------------------- */
+ #include <ak_parameters.h>
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  #include <ak_mac.h>
  #include <ak_mgm.h>
  #include <ak_sign.h>
-#endif
-
-/* ----------------------------------------------------------------------------------------------- */
- #include <ak_parameters.h>
  #include <ak_context_manager.h>
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения OID библиотеки */

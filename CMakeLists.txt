@@ -19,43 +19,34 @@ project( libakrypt C )
 cmake_minimum_required( VERSION 2.7 FATAL_ERROR )
 
 set( HEAD_VERSION 0 )
-set( MAIN_VERSION 7 )
-set( MINOR_VERSION 15 )
+set( MAIN_VERSION 8 )
+set( MINOR_VERSION 1 )
 
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 
-# для включения опции: cmake -D LIBAKRYPT_GMP_TESTS=ON path
-option( LIBAKRYPT_STATIC_LIB "Build the static library" ON )
+# -------------------------------------------------------------------------------------------------- #
+# Перечень доступных опций для сборки библиотеки
+# - для включения опции: cmake -D LIBAKRYPT_GMP_TESTS=ON path
+# -------------------------------------------------------------------------------------------------- #
+option( LIBAKRYPT_STATIC_LIB "Build the static library" OFF )
 option( LIBAKRYPT_SHARED_LIB "Build the shared library" OFF )
 option( LIBAKRYPT_INTERNAL_TESTS "Build collection of internal tests using non-export functions" OFF )
 option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
 option( LIBAKRYPT_HTML_DOC "Build documentation in HTML format" OFF )
 option( LIBAKRYPT_PDF_DOC "Build documentation in PDF format" OFF )
-option( LIBAKRYPT_CRYPTO_FUNCTIONS "Build library with crypto functions" ON )
-option( LIBAKRYPT_ASN1 "Build library with ASN.1 parser support" ON )
+option( LIBAKRYPT_CRYPTO_FUNCTIONS "Build library with crypto functions" OFF )
 option( LIBAKRYPT_CONST_CRYPTO_PARAMS "Build library with const values of crypto parameters" OFF )
-option( LIBAKRYPT_NETWORK "Build library with network communications support" OFF )
-option( LIBAKRYPT_FIOT "Build library with FIOT protocol support" OFF )
-option( LIBAKRYPT_TLS_13 "Build library with TLS 1.3 protocol support" OFF )
-option( LIBAKRYPT_AKRYPT "Build console akrypt application" OFF )
 
 # -------------------------------------------------------------------------------------------------- #
-set( CMAKE_BUILD_TYPE Release )
-
+# Уточнение зависимостей между опциями
+# - допускается одновременная сборка либо статической, либо разделяемой библиотеки
+# - (по умолчанию собирается статическая версия библиотеки)
 # -------------------------------------------------------------------------------------------------- #
-if( LIBAKRYPT_FIOT )
-  set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
-  set( LIBAKRYPT_NETWORK ON )
-endif()
-if( LIBAKRYPT_TLS_13 )
- # в настоящее время реализация протокола отсутствует
- # set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
- # set( LIBAKRYPT_NETWORK ON )
-endif()
-if( LIBAKRYPT_AKRYPT )
-  set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
-  set( LIBAKRYPT_ASN1 ON )
+if( LIBAKRYPT_SHARED_LIB )
+  set( LIBAKRYPT_STATIC_LIB OFF )
+else()
+  set( LIBAKRYPT_STATIC_LIB ON )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -67,7 +58,8 @@ include( DetectLibraries )
 include( DetectIntrinsics )
 
 # -------------------------------------------------------------------------------------------------- #
-# множество исходных текстов библиотеки и вспомогательных файлов
+# Определяем базовое множество исходных текстов библиотеки
+# -------------------------------------------------------------------------------------------------- #
 set( MAIN_HEADER    source/libakrypt.h )
 
 set( HEADERS        source/ak_tools.h
@@ -78,7 +70,6 @@ set( HEADERS        source/ak_tools.h
                     source/ak_curves.h
                     source/ak_parameters.h
                     source/ak_gf2n.h
-                    source/ak_network.h
 )
 
 set( SOURCES        source/ak_tools.c
@@ -91,102 +82,13 @@ set( SOURCES        source/ak_tools.c
                     source/ak_libakrypt.c
 )
 
-# -------------------------------------------------------------------------------------------------- #
-if( LIBAKRYPT_CRYPTO_FUNCTIONS )
-  set( HEADERS      ${HEADERS}
-                    source/ak_hash.h
-                    source/ak_skey.h
-                    source/ak_hmac.h
-                    source/ak_mac.h
-                    source/ak_context_manager.h
-                    source/ak_sign.h
-                    source/ak_bckey.h
-                    source/ak_omac.h
-                    source/ak_mgm.h
-                    source/ak_key_manager.h
-  )
-  set( SOURCES      ${SOURCES}
-                    source/ak_hash.c
-                    source/ak_streebog.c
-                    source/ak_hashrnd.c
-                    source/ak_skey.c
-                    source/ak_hmac.c
-                    source/ak_mac.c
-                    source/ak_context_manager.c
-                    source/ak_sign.c
-                    source/ak_bckey.c
-                    source/ak_kuznechik.c
-                    source/ak_magma.c
-                    source/ak_omac.c
-                    source/ak_mgm.c
-                    source/ak_acpkm.c
-  )
-  add_compile_options( -DLIBAKRYPT_CRYPTO_FUNCTIONS=ON )  
-  if( LIBAKRYPT_HAVE_SYSUN )
-    set( SOURCES    ${SOURCES}
-                    source/ak_udsrnd.c )
-  endif()
-  if( LIBAKRYPT_HAVE_WINDOWS )
-    set( SOURCES    ${SOURCES}
-                    source/ak_winrnd.c )
-  endif()
+# добавляем исходные тексты, специфичные для Windows
+if( WIN32 )
+  set( SOURCES      ${SOURCES}  source/ak_winrtl.c )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
-if( LIBAKRYPT_AKRYPT )
-  set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
-  set( AKRYPT_SOURCES
-                    akrypt/akrypt.c
-                    akrypt/akrypt_show.c
-                    akrypt/akrypt_icode.c )
-  set( AKRYPT_FILES
-                    akrypt/akrypt.h
-                    akrypt/akrypt.po
-                    akrypt/getopt.h
-                    akrypt/getopt.c
-                    akrypt/Readme.md
-                    akrypt/akrypt.1
-                    akrypt/akrypt.md )
-endif()
-
-# -------------------------------------------------------------------------------------------------- #
-if( LIBAKRYPT_NETWORK )
-  set( HEADERS      ${HEADERS}
-                    source/ak_network.h
-  )
-  set( SOURCES      ${SOURCES}
-                    source/ak_network.c
-                    )
-  add_compile_options( -DLIBAKRYPT_NETWORK=ON )
-endif()
-
-# -------------------------------------------------------------------------------------------------- #
-if( LIBAKRYPT_FIOT )
-  set( HEADERS      ${HEADERS}
-                    source/ak_fiot.h
-  )
-  set( SOURCES      ${SOURCES}
-                    source/ak_fiot.c
-                    source/ak_fiot_tlp.c
-                    source/ak_fiot_kgp.c
-  )
-  add_compile_options( -DLIBAKRYPT_FIOT=ON )
-endif()
-
-# -------------------------------------------------------------------------------------------------- #
-if( LIBAKRYPT_ASN1 )
-  set( HEADERS      ${HEADERS}
-          source/asn_processor/ak_asn_codec_new.h
-  )
-  set( SOURCES      ${SOURCES}
-          source/asn_processor/ak_asn_tree_manager.c
-          source/asn_processor/ak_asn_read_new.c
-          source/asn_processor/ak_asn_write_new.c
-          source/asn_processor/ak_asn_tools.c
-  )
-  add_compile_options( -DLIBAKRYPT_ASN1=ON )
-endif()
-
+# Определяем базовое множество вспомогательных и служебных файлов
 # -------------------------------------------------------------------------------------------------- #
 set( CMAKES         cmake/DetectFlags.cmake
                     cmake/DetectHeaders.cmake
@@ -196,14 +98,15 @@ set( CMAKES         cmake/DetectFlags.cmake
                     cmake/MakeDoc.cmake
                     cmake/MakeInstall.cmake
 )
+
 set( DOCS           doc/00-introduction.md
                     doc/01-install-guide.md
                     doc/02-principles.md
-                    doc/asn1.md
                     doc/Doxyfile.in
                     doc/refman_footer.in
                     doc/refman_header.in
 )
+
 set( OTHERS         CMakeLists.txt
                     Readme.md
                     Changelog.md
@@ -213,7 +116,8 @@ set( OTHERS         CMakeLists.txt
 )
 
 # -------------------------------------------------------------------------------------------------- #
-# определяемся с местом хранения файла с конфигурацией библиотеки
+# Определяем место хранения файла с  настройками библиотеки
+# -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_CONF )
 else()
   if( CMAKE_HOST_UNIX )
@@ -223,30 +127,37 @@ else()
     set( LIBAKRYPT_CONF "C:\\\\Program Files\\\\Akrypt" )
   endif()
 endif()
+message("-- Path for libakrypt.conf is ${LIBAKRYPT_CONF}")
 
 # -------------------------------------------------------------------------------------------------- #
+# Добавляем флаг сборки библиотеки без поддержки функций чтения настроек
+# -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_CONST_CRYPTO_PARAMS )
-  add_compile_options( -DLIBAKRYPT_CONST_CRYPTO_PARAMS=ON )
+  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_CONST_CRYPTO_PARAMS=ON" )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
-# сборка библиотек - статической и, если нужно, динамической
+# Определем процедуры сборки библиотек - статической или динамической
+# -------------------------------------------------------------------------------------------------- #
 include_directories( "source" )
-message("-- Path for libakrypt.conf is ${LIBAKRYPT_CONF}")
 add_compile_options( -DLIBAKRYPT_OPTIONS_PATH="${LIBAKRYPT_CONF}" )
 add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
-#
+
 if( LIBAKRYPT_SHARED_LIB )
-  add_library( akrypt-shared SHARED ${MAIN_HEADER} ${SOURCES} ${ASN1_SOURCES} )
-  set_target_properties( akrypt-shared PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
-  target_link_libraries( akrypt-shared ${LIBAKRYPT_LIBS} )
+  add_library( akrypt SHARED ${MAIN_HEADER} ${SOURCES} ${ASN1_SOURCES} )
+  set_target_properties( akrypt PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
+  target_link_libraries( akrypt ${LIBAKRYPT_LIBS} )
+  message( "-- Building a shared library" )
 endif()
 #
 if( LIBAKRYPT_STATIC_LIB )
-  add_library( akrypt-static STATIC ${MAIN_HEADER} ${SOURCES} ${ASN1_SOURCES} )
-  set_target_properties( akrypt-static PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
+  add_library( akrypt STATIC ${MAIN_HEADER} ${SOURCES} ${ASN1_SOURCES} )
+  set_target_properties( akrypt PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
+  message( "-- Building a static library" )
 endif()
 
+# -------------------------------------------------------------------------------------------------- #
+# Информация о флагах компиляции и дополнительных библиотеках
 # -------------------------------------------------------------------------------------------------- #
 message("-- Compiler options is ${CMAKE_C_FLAGS}" )
 if( LIBAKRYPT_LIBS )
@@ -254,63 +165,8 @@ if( LIBAKRYPT_LIBS )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
-# сборка консольной утилиты для работы с функциями библиотеки
-if( LIBAKRYPT_AKRYPT )
-
-  if( LIBAKRYPT_HAVE_GETOPT )
-  else()
-    set( AKRYPT_SOURCES ${AKRYPT_SOURCES} akrypt/getopt.c )
-  endif()
-  message("-- Sources for akrypt${LIBAKRYPT_EXT}: ${AKRYPT_SOURCES}" )
-
-  find_path( LIBINTL_H_PATH NAMES libintl.h )
-  if( LIBINTL_H_PATH )
-    include_directories( ${LIBINTL_H_PATH} )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_LIBINTL_H" )
-    message("-- Additional header for akrypt is libintl.h" )
-  endif()
-
-  if( LIBAKRYPT_STATIC_LIB )
-    add_executable( akrypt${LIBAKRYPT_EXT} ${AKRYPT_SOURCES} )
-    target_include_directories( akrypt${LIBAKRYPT_EXT} PUBLIC "akrypt" )
-
-    find_library( LIBINTL_LIB intl )
-    if( LIBINTL_LIB )
-      message("-- Additional library for akrypt is ${LIBINTL_LIB}")
-      target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} ${LIBINTL_LIB} )
-    else()
-      target_link_libraries( akrypt${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
-    endif()
-  endif()
-
-endif()
-
+# Сборка примеров, иллюстрирующих работу с внешним интерфейсом библиотеки
 # -------------------------------------------------------------------------------------------------- #
-# тестовые примеры для арифметических операций
-set( ARITHMETIC_TESTS_LIST
-                 mpzn-convert
-                 mpzn-arithmetic
-                 mpzn-montgomery
-                 mpzn-rem
-)
-
-if( LIBAKRYPT_GMP_TESTS )
-  set( ARITHMETIC_TESTS_LIST ${ARITHMETIC_TESTS_LIST}
-                 mpzn-password
-  )
-  enable_testing()
-  if( LIBAKRYPT_STATIC_LIB )
-    foreach( programm ${ARITHMETIC_TESTS_LIST} )
-       add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
-       target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static gmp )
-       add_test( NAME test-${programm} COMMAND test-${programm}${LIBAKRYPT_EXT} )
-    endforeach()
-  endif()
-  message("-- Added tests for integer arithmetic and comparizon with libgmp (now \"make test\" enabled)")
-endif()
-
-# -------------------------------------------------------------------------------------------------- #
-# сборка примеров, иллюстрирующих работу с внешним интерфейсом библиотеки
 set( EXAMPLES_LIST hello
                    log
                    buffer
@@ -321,111 +177,94 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   )
 endif()
 
-# организуем сборку примеров со статической линковкой
-if( LIBAKRYPT_STATIC_LIB )
-  foreach( programm ${EXAMPLES_LIST} )
-     add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
-     target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
-  endforeach()
-endif()
-
-# организуем сборку примеров с динамической линковкой
-if( LIBAKRYPT_SHARED_LIB )
-  foreach( programm ${EXAMPLES_LIST} )
-     add_executable( example-dynamic-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
-     target_link_libraries( example-dynamic-${programm}${LIBAKRYPT_EXT} akrypt-shared ${LIBAKRYPT_LIBS} )
-  endforeach()
-endif()
+foreach( programm ${EXAMPLES_LIST} )
+  add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
+  target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt ${LIBAKRYPT_LIBS} )
+endforeach()
 
 # -------------------------------------------------------------------------------------------------- #
-# теперь примеры, использующие неэкспортируемые функции
+# Добавляем исходные тексты примеров, иллюстрирующих работу с внутренним интерфейсом библиотеки
+# -------------------------------------------------------------------------------------------------- #
 set( INTERNAL_TEST_LIST
-                 internal-random01
-                 internal-oid01
-                 internal-oid02
-                 internal-mpzn01
-                 internal-gf2n
+                 gf2n
+                 mpzn01
+                 oid01
+                 oid02
+                 random01
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
-                 internal-hash01
-                 internal-hash02
-                 internal-hash03
-                 internal-oid03
-                 internal-random02
-                 internal-sign01
-                 internal-sign02
-                 internal-bckey01
-                 internal-bckey01a
-                 internal-bckey02
-                 internal-bckey02-magma
-                 internal-bckey03
-                 internal-bckey05
-                 internal-mac01
-                 internal-mgm01
-                 internal-mgm02
-                 internal-mgm03
+                 hash01
+                 hash02
+                 hash03
+                 oid03
+                 random02
   )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
                                    # при запуске make test
-                 internal-hash04
-                 internal-bckey04
-                 internal-mgm04
-                 internal-mgm05
+                 hash04
   )
   if( LIBAKRYPT_HAVE_SYSUN )
     set( INTERNAL_TEST_LIST_EXAMPLES
                  ${INTERNAL_TEST_LIST_EXAMPLES}
-                 internal-random03 )
+                 random03 )
   endif()
-endif()
-if( LIBAKRYPT_FIOT )
-  set( INTERNAL_FIOT_TEST_LIST
-                 internal-fiot-algconst
-                 internal-fiot-context
-                 internal-fiot-echo-client
-                 internal-fiot-echo-server
-  )
-endif()
-if( LIBAKRYPT_ASN1 )
-  set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
-                 internal-asn-handler
-                 internal-asn-build-data
-  )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
+# Сборка примеров, иллюстрирующих работу с внутренним интерфейсом библиотеки
+# -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_INTERNAL_TESTS )
-  enable_testing()
 
-  # добавляем примеры в случае сборки статической библиотеки
+  # добавляем примеры только в случае сборки статической библиотеки
   if( LIBAKRYPT_STATIC_LIB )
+    enable_testing()
     foreach( programm ${INTERNAL_TEST_LIST} )
        add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
-       target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+       target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt ${LIBAKRYPT_LIBS} )
        add_test( NAME test-${programm}${LIBAKRYPT_EXT} COMMAND test-${programm}${LIBAKRYPT_EXT} )
     endforeach()
     # компилируемые тесты, не попадающие в вызов команды make test
     foreach( programm ${INTERNAL_TEST_LIST_EXAMPLES} )
        add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
-       target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+       target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt ${LIBAKRYPT_LIBS} )
     endforeach()
+    message("-- Added tests for internal functions (now \"make test\" enabled): ")
+    message("   - ${INTERNAL_TEST_LIST}" )
+    if( ${INTERNAL_TEST_LIST_EXAMPLES} )
+      message("   - ${INTERNAL_TEST_LIST_EXAMPLES}" )
+    endif()
   endif()
-  message("-- Added tests for internal functions (now \"make test\" enabled)")
-
-  # добавляем примеры для тестирования протокольной части (командой make test не затрагиваются)
-  if( LIBAKRYPT_STATIC_LIB )
-    foreach( programm ${INTERNAL_FIOT_TEST_LIST} )
-       add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
-       target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
-    endforeach()
-  endif()
-
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
-if( CMAKE_HOST_UNIX )
-  include( MakeDoc )
-  include( MakeInstall )
-  include( MakeDist )
+# Добавляем исходные тексты примеров, тестирующих арифметические операции
+# -------------------------------------------------------------------------------------------------- #
+set( ARITHMETIC_TESTS_LIST
+                 mpzn-convert
+                 mpzn-arithmetic
+                 mpzn-montgomery
+                 mpzn-rem
+)
+
+# -------------------------------------------------------------------------------------------------- #
+# Сборка арифметических тестов
+# -------------------------------------------------------------------------------------------------- #
+if( LIBAKRYPT_GMP_TESTS )
+  if( LIBAKRYPT_CRYPTO_FUNCTIONS )
+    set( ARITHMETIC_TESTS_LIST ${ARITHMETIC_TESTS_LIST} mpzn-password )
+  endif()
+
+  # добавляем примеры только в случае сборки статической библиотеки
+  if( LIBAKRYPT_STATIC_LIB )
+    enable_testing()
+    foreach( programm ${ARITHMETIC_TESTS_LIST} )
+      add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
+      target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt gmp )
+      add_test( NAME test-${programm} COMMAND test-${programm}${LIBAKRYPT_EXT} )
+    endforeach()
+    message("-- Added tests for integer arithmetic and comparizon with libgmp (now \"make test\" enabled):")
+    message("   - ${ARITHMETIC_TESTS_LIST}" )
+  endif()
 endif()
+

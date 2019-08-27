@@ -67,7 +67,6 @@
  return EXIT_SUCCESS;
 }
 
-
  int gf256test( void )
 {
   clock_t time;
@@ -83,7 +82,6 @@
   for( i = 0; i < iteration_count; i++ ) ak_gf256_mul_uint64( gamma, alpha, beta );
   time = clock() - time;
   printf(" GF(2^256): ak_gf256_mul_uint64 time:   %f sec\n", (double)time / (double)CLOCKS_PER_SEC );
-
 #ifdef LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64
   time = clock();
   for( i = 0; i < iteration_count; i++ ) ak_gf256_mul_pcmulqdq( delta, alpha, beta );
