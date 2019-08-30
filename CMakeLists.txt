@@ -30,32 +30,26 @@ set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 # - для включения опции: cmake -D LIBAKRYPT_GMP_TESTS=ON path
 # -------------------------------------------------------------------------------------------------- #
 option( LIBAKRYPT_STATIC_LIB "Build the static library" OFF )
-option( LIBAKRYPT_SHARED_LIB "Build the shared library" OFF )
+option( LIBAKRYPT_SHARED_LIB "Build the shared library" ON )
+option( LIBAKRYPT_CRYPTO_FUNCTIONS "Build library with crypto functions" OFF )
+option( LIBAKRYPT_CONST_CRYPTO_PARAMS "Build library with const values of crypto parameters" OFF )
 option( LIBAKRYPT_INTERNAL_TESTS "Build collection of internal tests using non-export functions" OFF )
 option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
 option( LIBAKRYPT_HTML_DOC "Build documentation in HTML format" OFF )
 option( LIBAKRYPT_PDF_DOC "Build documentation in PDF format" OFF )
-option( LIBAKRYPT_CRYPTO_FUNCTIONS "Build library with crypto functions" OFF )
-option( LIBAKRYPT_CONST_CRYPTO_PARAMS "Build library with const values of crypto parameters" OFF )
 
 # -------------------------------------------------------------------------------------------------- #
 # Уточнение зависимостей между опциями
 # - допускается одновременная сборка либо статической, либо разделяемой библиотеки
 # - (по умолчанию собирается статическая версия библиотеки)
 # -------------------------------------------------------------------------------------------------- #
-if( LIBAKRYPT_SHARED_LIB )
-  set( LIBAKRYPT_STATIC_LIB OFF )
-else()
+if( LIBAKRYPT_INTERNAL_TESTS OR LIBAKRYPT_GMP_TESTS )
   set( LIBAKRYPT_STATIC_LIB ON )
+  set( LIBAKRYPT_SHARED_LIB OFF )
 endif()
-
-# -------------------------------------------------------------------------------------------------- #
-# подключаем модули CMake для тонкой настройки параметров сборки
-set( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
-include( DetectFlags )
-include( DetectHeaders )
-include( DetectLibraries )
-include( DetectIntrinsics )
+if( LIBAKRYPT_STATIC_LIB )
+  set( LIBAKRYPT_SHARED_LIB OFF )
+endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # Определяем базовое множество исходных текстов библиотеки
@@ -116,6 +110,15 @@ set( OTHERS         CMakeLists.txt
 )
 
 # -------------------------------------------------------------------------------------------------- #
+# подключаем модули CMake для тонкой настройки параметров сборки
+# -------------------------------------------------------------------------------------------------- #
+set( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
+include( DetectFlags )
+include( DetectHeaders )
+include( DetectLibraries )
+include( DetectIntrinsics )
+
+# -------------------------------------------------------------------------------------------------- #
 # Определяем место хранения файла с  настройками библиотеки
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_CONF )
@@ -133,8 +136,16 @@ message("-- Path for libakrypt.conf is ${LIBAKRYPT_CONF}")
 # Добавляем флаг сборки библиотеки без поддержки функций чтения настроек
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_CONST_CRYPTO_PARAMS )
-  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_CONST_CRYPTO_PARAMS=ON" )
+  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_CONST_CRYPTO_PARAMS" )
 endif()
+
+# -------------------------------------------------------------------------------------------------- #
+# Добавляем поддержку криптографических функций
+# -------------------------------------------------------------------------------------------------- #
+if( LIBAKRYPT_CRYPTO_FUNCTIONS )
+  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_CRYPTO_FUNCTIONS" )
+endif()
+
 
 # -------------------------------------------------------------------------------------------------- #
 # Определем процедуры сборки библиотек - статической или динамической
@@ -173,7 +184,7 @@ set( EXAMPLES_LIST hello
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( EXAMPLES_LIST ${EXAMPLES_LIST}
-                   mac
+
   )
 endif()
 
@@ -194,20 +205,20 @@ set( INTERNAL_TEST_LIST
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
-                 hash01
-                 hash02
-                 hash03
-                 oid03
-                 random02
+#                 hash01
+#                 hash02
+#                 hash03
+#                 oid03
+#                 random02
   )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
                                    # при запуске make test
-                 hash04
+#                 hash04
   )
   if( LIBAKRYPT_HAVE_SYSUN )
     set( INTERNAL_TEST_LIST_EXAMPLES
                  ${INTERNAL_TEST_LIST_EXAMPLES}
-                 random03 )
+    )
   endif()
 endif()
 

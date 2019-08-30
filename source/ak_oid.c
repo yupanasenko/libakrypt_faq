@@ -13,11 +13,8 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_parameters.h>
+
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
- #include <ak_mac.h>
- #include <ak_mgm.h>
- #include <ak_sign.h>
- #include <ak_context_manager.h>
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -54,160 +51,6 @@
                                       ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
 
   #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
-   { random_generator, algorithm, "hashrnd-streebog256", "1.2.643.2.52.1.1.6.1", NULL, NULL,
-                       { ( ak_function_void *) ak_random_context_create_hashrnd_streebog256,
-                                      ( ak_function_void *) ak_random_context_destroy,
-                                      ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
-
-   { random_generator, algorithm, "hashrnd-streebog512", "1.2.643.2.52.1.1.6.2", NULL, NULL,
-                       { ( ak_function_void *) ak_random_context_create_hashrnd_streebog512,
-                                      ( ak_function_void *) ak_random_context_destroy,
-                                      ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
-
-  /* 2. идентификаторы алгоритмов бесключевого хеширования,
-        значения OID взяты из перечней КриптоПро и ТК26 (http://tk26.ru/methods/OID_TK_26/index.php)
-        в дереве библиотеки: 1.2.643.2.52.1.2 - функции бесключевого хеширования */
-   { hash_function, algorithm, "streebog256", "1.2.643.7.1.1.2.2", NULL, NULL,
-                           { ( ak_function_void *) ak_hash_context_create_streebog256,
-                                        ( ak_function_void *) ak_hash_context_destroy,
-                                        ( ak_function_void *) ak_hash_context_delete, NULL, NULL }},
-
-   { hash_function, algorithm, "streebog512", "1.2.643.7.1.1.2.3", NULL, NULL,
-                           { ( ak_function_void *) ak_hash_context_create_streebog512,
-                                        ( ak_function_void *) ak_hash_context_destroy,
-                                        ( ak_function_void *) ak_hash_context_delete, NULL, NULL }},
-
-  /* 3. идентификаторы параметров алгоритма бесключевого хеширования ГОСТ Р 34.11-94.
-        значения OID взяты из перечней КриптоПро
-
-        в текущей версии библиотеки данные идентификаторы отсутствуют */
-
-  /* 4. идентификаторы алгоритмов HMAC согласно Р 50.1.113-2016
-        в дереве библиотеки: 1.2.643.2.52.1.4 - функции ключевого хеширования (имитозащиты) */
-   { hmac_function, algorithm, "hmac-streebog256", "1.2.643.7.1.1.4.1", NULL, NULL,
-                           { ( ak_function_void *) ak_hmac_context_create_streebog256,
-                                        ( ak_function_void *) ak_hmac_context_destroy,
-                                        ( ak_function_void *) ak_hmac_context_delete, NULL, NULL }},
-
-   { hmac_function, algorithm, "hmac-streebog512", "1.2.643.7.1.1.4.2", NULL, NULL,
-                            { ( ak_function_void *)ak_hmac_context_create_streebog512,
-                                        ( ak_function_void *) ak_hmac_context_destroy,
-                                        ( ak_function_void *) ak_hmac_context_delete, NULL, NULL }},
-
-   { omac_function, algorithm, "omac-magma", "1.2.643.2.52.1.4.1", NULL, NULL,
-                                { ( ak_function_void *) ak_omac_context_create_magma,
-                                        ( ak_function_void *) ak_omac_context_destroy,
-                                        ( ak_function_void *) ak_omac_context_delete, NULL, NULL }},
-
-   { omac_function, algorithm, "omac-kuznechik", "1.2.643.2.52.1.4.2", NULL, NULL,
-                             { ( ak_function_void *) ak_omac_context_create_kuznechik,
-                                        ( ak_function_void *) ak_omac_context_destroy,
-                                        ( ak_function_void *) ak_omac_context_delete, NULL, NULL }},
-
-   { mgm_function, algorithm, "mgm-magma", "1.2.643.2.52.1.4.3", NULL, NULL,
-                                  { ( ak_function_void *) ak_mgm_context_create_magma,
-                                         ( ak_function_void *) ak_mgm_context_destroy,
-                                         ( ak_function_void *) ak_mgm_context_delete, NULL, NULL }},
-
-   { mgm_function, algorithm, "mgm-kuznechik", "1.2.643.2.52.1.4.4", NULL, NULL,
-                              { ( ak_function_void *) ak_mgm_context_create_kuznechik,
-                                         ( ak_function_void *) ak_mgm_context_destroy,
-                                         ( ak_function_void *) ak_mgm_context_delete, NULL, NULL }},
-
-  /*    в дереве библиотеки: 1.2.643.2.52.1.5 - параметры итерационных сжимающих отображений */
-   { mac_function, algorithm, "mac-streebog256", "1.2.643.2.52.1.5.1", NULL, NULL,
-                                        { (ak_function_void *) ak_mac_new_streebog256,
-                                         ( ak_function_void *) ak_mac_context_destroy,
-                                         ( ak_function_void *) ak_mac_context_delete, NULL, NULL }},
-
-   { mac_function, algorithm, "mac-streebog512", "1.2.643.2.52.1.5.2", NULL, NULL,
-                                       { (ak_function_void *) ak_mac_new_streebog512,
-                                         ( ak_function_void *) ak_mac_context_destroy,
-                                         ( ak_function_void *) ak_mac_context_delete, NULL, NULL }},
-
-   { mac_function, algorithm, "mac-hmac-streebog256", "1.2.643.2.52.1.5.3", NULL, NULL,
-                                   { (ak_function_void *) ak_mac_new_hmac_streebog256,
-                                         ( ak_function_void *) ak_mac_context_destroy,
-                                         ( ak_function_void *) ak_mac_context_delete, NULL, NULL }},
-
-   { mac_function, algorithm, "mac-hmac-streebog512", "1.2.643.2.52.1.5.4", NULL, NULL,
-                                   { (ak_function_void *) ak_mac_new_hmac_streebog512,
-                                         ( ak_function_void *) ak_mac_context_destroy,
-                                         ( ak_function_void *) ak_mac_context_delete, NULL, NULL }},
-
-   { mac_function, algorithm, "mac-omac-magma", "1.2.643.2.52.1.5.5", NULL, NULL,
-                                         { (ak_function_void *) ak_mac_new_omac_magma,
-                                         ( ak_function_void *) ak_mac_context_destroy,
-                                         ( ak_function_void *) ak_mac_context_delete, NULL, NULL }},
-
-   { mac_function, algorithm, "mac-omac-kuznechik", "1.2.643.2.52.1.5.6", NULL, NULL,
-                                     { (ak_function_void *) ak_mac_new_omac_kuznechik,
-                                         ( ak_function_void *) ak_mac_context_destroy,
-                                         ( ak_function_void *) ak_mac_context_delete, NULL, NULL }},
-
-   { mac_function, algorithm, "mac-mgm-magma", "1.2.643.2.52.1.5.7", NULL, NULL,
-                                          { (ak_function_void *) ak_mac_new_mgm_magma,
-                                         ( ak_function_void *) ak_mac_context_destroy,
-                                         ( ak_function_void *) ak_mac_context_delete, NULL, NULL }},
-
-   { mac_function, algorithm, "mac-mgm-kuznechik", "1.2.643.2.52.1.5.8", NULL, NULL,
-                                      { (ak_function_void *) ak_mac_new_mgm_kuznechik,
-                                         ( ak_function_void *) ak_mac_context_destroy,
-                                         ( ak_function_void *) ak_mac_context_delete, NULL, NULL }},
-
-
-  /* 6. идентификаторы алгоритмов блочного шифрования
-        в дереве библиотеки: 1.2.643.2.52.1.6 - алгоритмы блочного шифрования
-        в дереве библиотеки: 1.2.643.2.52.1.7 - параметры алгоритмов блочного шифрования */
-
-   { block_cipher, algorithm, "magma", "1.2.643.7.1.1.5.1", NULL, NULL,
-                               { ( ak_function_void *) ak_bckey_context_create_magma,
-                                      ( ak_function_void *) ak_bckey_context_destroy,
-                                       ( ak_function_void *) ak_bckey_context_delete, NULL, NULL }},
-
-   { block_cipher, algorithm, "kuznechik", "1.2.643.7.1.1.5.2", NULL, NULL,
-                           { ( ak_function_void *) ak_bckey_context_create_kuznechik,
-                                      ( ak_function_void *) ak_bckey_context_destroy,
-                                       ( ak_function_void *) ak_bckey_context_delete, NULL, NULL }},
-
-  /*  8.  идентификаторы режимов шифрования
-          взяты из рекомендаций по CMS, рекомендаций по сопутствующим алгоритмам
-          в дереве библиотеки: 1.2.643.2.52.1.8 - режимы блочного шифрования */
-
-
-  /*  1.2.643.2.52.1.8.0 - ecb
-      1.2.643.2.52.1.8.1 - ctr
-
-      id-gostr3412-2015-magma-ctracpkm OBJECT IDENTIFIER ::= { 1.2.643.7.1.1.5.1.1 }
-      id-gostr3412-2015-kuznechik-ctracpkm OBJECT IDENTIFIER ::= { 1.2.643.7.1.1.5.2.1 } */
-
-  /* 10. идентификаторы алгоритмов выработки электронной подписи
-        в дереве библиотеки: 1.2.643.2.52.1.10 - алгоритмы выработки электронной подписи */
-   { sign_function, algorithm, "sign256", "1.2.643.7.1.1.1.1", NULL, NULL,
-                       { ( ak_function_void *) ak_signkey_context_create_streebog256,
-                                    ( ak_function_void *) ak_signkey_context_destroy,
-                                     ( ak_function_void *) ak_signkey_context_delete, NULL, NULL }},
-
-   { sign_function, algorithm, "sign512", "1.2.643.7.1.1.1.2", NULL, NULL,
-                       { ( ak_function_void *) ak_signkey_context_create_streebog512,
-                                    ( ak_function_void *) ak_signkey_context_destroy,
-                                     ( ak_function_void *) ak_signkey_context_delete, NULL, NULL }},
-
- /* 11. идентификаторы алгоритмов проверки электронной подписи
-        в дереве библиотеки: 1.2.643.2.52.1.11 - алгоритмы проверки электронной подписи
-
-        поскольку дерево OID-ов ТК26 не делает различия, между алгоритмами выработки и алгоритмами
-        проверки электронной подписи, мы используем свой корень для указания алгоритмов проверки. */
-
-   { verify_function, algorithm, "verify256", "1.2.643.2.52.1.11.2", NULL, NULL,
-                     { (ak_function_void *) ak_verifykey_context_create_from_signkey,
-                                   (ak_function_void *) ak_verifykey_context_destroy,
-                                    (ak_function_void *) ak_verifykey_context_delete, NULL, NULL }},
-
-   { verify_function, algorithm, "verify512", "1.2.643.2.52.1.11.3", NULL, NULL,
-                     { (ak_function_void *) ak_verifykey_context_create_from_signkey,
-                                   (ak_function_void *) ak_verifykey_context_destroy,
-                                    (ak_function_void *) ak_verifykey_context_delete, NULL, NULL }},
 
   #endif
 
@@ -380,80 +223,6 @@
  return ak_error_ok;
 }
 
-/* ----------------------------------------------------------------------------------------------- */
-/*! \note Память, для хранения имени и идентификатора алгоритма должна быть выделена заранее.
-    Необходимый объем памяти должен быть не менее, чем значение, возвращаемое функцией
-    ak_libakrypt_get_oid_max_length().
-
-    @param handle Дескриптор алгоритма, для которого получается информация.
-    @param engine Указатель на переменную, куда будет помещено значение engine
-    @param mode Указатель на переменную, куда будет помещено значение mode
-    @param name Указатель на строку, в которую будет скопировано имя алгоритма
-    @param name_size Размер буффера, в который будет скопировано имя алгоритма.
-    @param oid Указатель на строку, в которую будет скопирован OID -  последовательность чисел,
-    разделенных точками.
-    @param oid_size Размер буффера, в который будет скопирован идентификатор алгоритма.
-    @return Функция возвращает \ref ak_error_ok (ноль) в случае успеха. В противном случае,
-    возвращается код ошибки.                                                                       */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_get_oid_by_handle( ak_handle handle, oid_engines_t *engine, oid_modes_t *mode,
-                              char *name, const size_t name_size, char *oid, const size_t oid_size )
-{
-#ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
-  size_t len = 0;
-  ak_pointer ctx = NULL;
-  ak_oid handleOID = NULL;
-
-  if(( ctx = ak_handle_get_context( handle, engine )) == NULL )
-     return ak_error_message( ak_error_get_value(), __func__ , "wrong handle" );
-
-  switch( *engine ) {
-    case hash_function:
-      handleOID = (( ak_hash )ctx )->oid;
-      break;
-
-    case hmac_function:
-      handleOID = (( ak_hmac )ctx )->key.oid;
-      break;
-
-    case omac_function:
-      handleOID = (( ak_omac )ctx )->bkey.key.oid;
-      break;
-
-    case mgm_function:
-      handleOID = (( ak_mgm )ctx )->bkey.key.oid;
-      break;
-
-    case mac_function:
-      handleOID = (( ak_mac )ctx )->oid;
-      break;
-
-    default: return ak_error_message( ak_error_wrong_handle, __func__,
-                                                        "unsupported or incorrect engine of handle" );
-  }
-  if( handleOID == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                      "incorrect pointer to internal oid structure" );
-  if( handleOID->engine != *engine ) return ak_error_message( ak_error_not_equal_data, __func__,
-                                                      "internal error with different engine values" );
-  *mode = handleOID->mode;
-
- /* проверяем размер выделенной области памяти и копируем значения */
-  if( name_size < 1 + (len = strlen( handleOID->name )))
-    return ak_error_message( ak_error_overflow, __func__, "isufficient memory for name value" );
-  memcpy( name, handleOID->name, len );
-  name[len] = 0;
-
-  if( oid_size < 1 + (len = strlen( handleOID->id )))
-    return ak_error_message( ak_error_overflow, __func__, "isufficient memory for oid value" );
-  memcpy( oid, handleOID->id, len );
-  oid[len] = 0;
-
- return ak_error_ok;
-#else
- return ak_error_message( ak_error_undefined_function, __func__,
-  "this function not work properly while LIBAKRYPT_CRYPTO_FUNCTIONS is undefined" );
-#endif
-}
 
 /* ----------------------------------------------------------------------------------------------- */
  size_t ak_libakrypt_get_oid_max_length( void )
@@ -617,9 +386,9 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*!  \example test-internal-oid01.c                                                                */
-/*!  \example test-internal-oid02.c                                                                */
-/*!  \example test-internal-oid03.c                                                                */
+/*!  \example test-oid01.c                                                                         */
+/*!  \example test-oid02.c                                                                         */
+/*!  \example test-oid03.c                                                                         */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                       ak_oid.c  */
 /* ----------------------------------------------------------------------------------------------- */
