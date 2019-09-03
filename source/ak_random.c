@@ -16,8 +16,6 @@
 #endif
 #ifdef LIBAKRYPT_HAVE_TIME_H
  #include <time.h>
-#else
- #error Library cannot be compiled without time.h header
 #endif
 #ifdef LIBAKRYPT_HAVE_UNISTD_H
  #include <unistd.h>
