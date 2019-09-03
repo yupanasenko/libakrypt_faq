@@ -57,7 +57,6 @@ endif()
 set( MAIN_HEADER    source/libakrypt.h )
 
 set( HEADERS        source/ak_tools.h
-                    source/ak_buffer.h
                     source/ak_oid.h
                     source/ak_random.h
                     source/ak_mpzn.h
@@ -67,7 +66,6 @@ set( HEADERS        source/ak_tools.h
 )
 
 set( SOURCES        source/ak_tools.c
-                    source/ak_buffer.c
                     source/ak_oid.c
                     source/ak_mpzn.c
                     source/ak_curves.c
@@ -75,11 +73,6 @@ set( SOURCES        source/ak_tools.c
                     source/ak_gf2n.c
                     source/ak_libakrypt.c
 )
-
-# добавляем исходные тексты, специфичные для Windows
-if( WIN32 )
-  set( SOURCES      ${SOURCES}  source/ak_winrtl.c )
-endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # Определяем базовое множество вспомогательных и служебных файлов
@@ -180,7 +173,6 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 set( EXAMPLES_LIST hello
                    log
-                   buffer
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( EXAMPLES_LIST ${EXAMPLES_LIST}
@@ -205,15 +197,9 @@ set( INTERNAL_TEST_LIST
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
-#                 hash01
-#                 hash02
-#                 hash03
-#                 oid03
-#                 random02
   )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
                                    # при запуске make test
-#                 hash04
   )
   if( LIBAKRYPT_HAVE_SYSUN )
     set( INTERNAL_TEST_LIST_EXAMPLES
@@ -279,3 +265,7 @@ if( LIBAKRYPT_GMP_TESTS )
   endif()
 endif()
 
+# -------------------------------------------------------------------------------------------------- #
+# Сборка документации и завершающие настройки
+# -------------------------------------------------------------------------------------------------- #
+include( MakeDoc )
