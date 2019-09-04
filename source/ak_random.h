@@ -54,6 +54,8 @@
      /*! \brief Дескриптор крипто-провайдера */
       HCRYPTPROV handle;
     #endif
+     /*! \brief Указатель на произвольную структуру данных. */
+       ak_pointer ctx;
    } data;
  };
 
@@ -83,10 +85,8 @@
  int ak_random_context_create_winrtl( ak_random );
 #endif
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
-/*! \brief Инициализация контекста генератора, основанного на применении функции хеширования Стрибог-256. */
- int ak_random_context_create_hashrnd_streebog256( ak_random );
-/*! \brief Инициализация контекста генератора, основанного на применении функции хеширования Стрибог-512. */
- int ak_random_context_create_hashrnd_streebog512( ak_random );
+/*! \brief Инициализация контекста генератора, основанного на применении функции хеширования Стрибог512. */
+ int ak_random_context_create_hashrnd( ak_random );
 /*! \brief Инициализация контекста генератора, основанного на применении функции хеширования, определяемой по ее идентификатору. */
  int ak_random_context_create_hashrnd_oid( ak_random , ak_oid );
 #endif

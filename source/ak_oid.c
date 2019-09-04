@@ -53,6 +53,11 @@
 
   #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
 
+   { random_generator, algorithm, "hashrnd", "1.2.643.2.52.1.1.6.1", NULL, NULL,
+                             { ( ak_function_void *) ak_random_context_create_hashrnd,
+                                      ( ak_function_void *) ak_random_context_destroy,
+                                      ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
+
   /* 2. идентификаторы алгоритмов бесключевого хеширования,
         значения OID взяты из перечней КриптоПро и ТК26 (http://tk26.ru/methods/OID_TK_26/index.php)
         в дереве библиотеки: 1.2.643.2.52.1.2 - функции бесключевого хеширования */
@@ -65,7 +70,6 @@
                            { ( ak_function_void *) ak_hash_context_create_streebog512,
                                         ( ak_function_void *) ak_hash_context_destroy,
                                         ( ak_function_void *) ak_hash_context_delete, NULL, NULL }},
-
 
   #endif
 

@@ -215,6 +215,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  hash01
                  hash01a
                  hash02
+                 oid03
   )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
                                    # при запуске make test
