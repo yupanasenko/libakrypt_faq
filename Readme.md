@@ -1,6 +1,6 @@
 # Libakrypt
 
-Libakrypt is a free and open source library (crypto module) distributed under
+Libakrypt is a free and open source library (software crypto module) distributed under
 the MIT License. This library written in C99 and provides some interfaces for
 key management, data encryption, integrity checking, signing messages and verifying
 of digital signatures. The main goal of Libakrypt is implementation a lot of Russian
@@ -20,8 +20,7 @@ We have implementation of:
  8. GOST R 34.10-2012 digital signature algorithms for elliptic curves described by R 50.1.114-2016;
  9. R 50.1.113-2016 crypto algorithms such as HMAC;
 10. National variant of password-based key derivation function (PBKDF2) described by R 50.1.111-2016;
-11. A some set of pseudo random generators for various operation systems including
-    R 1323565.1.006-2017 mechanism.
+11. A some set of pseudo random generators for various operation systems including R 1323565.1.006-2017 mechanism.
 
 Library can be used successfully under Linux, Windows (since XP), FreeBSD and MacOs operation systems.
 Also we have positive runs on mobile devices under Sailfish OS.

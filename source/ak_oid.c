@@ -15,6 +15,7 @@
  #include <ak_parameters.h>
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
+ #include <ak_hash.h>
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -51,6 +52,20 @@
                                       ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
 
   #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
+
+  /* 2. идентификаторы алгоритмов бесключевого хеширования,
+        значения OID взяты из перечней КриптоПро и ТК26 (http://tk26.ru/methods/OID_TK_26/index.php)
+        в дереве библиотеки: 1.2.643.2.52.1.2 - функции бесключевого хеширования */
+   { hash_function, algorithm, "streebog256", "1.2.643.7.1.1.2.2", NULL, NULL,
+                           { ( ak_function_void *) ak_hash_context_create_streebog256,
+                                        ( ak_function_void *) ak_hash_context_destroy,
+                                        ( ak_function_void *) ak_hash_context_delete, NULL, NULL }},
+
+   { hash_function, algorithm, "streebog512", "1.2.643.7.1.1.2.3", NULL, NULL,
+                           { ( ak_function_void *) ak_hash_context_create_streebog512,
+                                        ( ak_function_void *) ak_hash_context_destroy,
+                                        ( ak_function_void *) ak_hash_context_delete, NULL, NULL }},
+
 
   #endif
 

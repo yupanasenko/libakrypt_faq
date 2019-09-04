@@ -31,7 +31,7 @@ set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 # -------------------------------------------------------------------------------------------------- #
 option( LIBAKRYPT_STATIC_LIB "Build the static library" OFF )
 option( LIBAKRYPT_SHARED_LIB "Build the shared library" ON )
-option( LIBAKRYPT_CRYPTO_FUNCTIONS "Build library with crypto functions" OFF )
+option( LIBAKRYPT_CRYPTO_FUNCTIONS "Build library with crypto functions" ON )
 option( LIBAKRYPT_CONST_CRYPTO_PARAMS "Build library with const values of crypto parameters" OFF )
 option( LIBAKRYPT_INTERNAL_TESTS "Build collection of internal tests using non-export functions" OFF )
 option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
@@ -73,6 +73,21 @@ set( SOURCES        source/ak_tools.c
                     source/ak_gf2n.c
                     source/ak_libakrypt.c
 )
+
+# -------------------------------------------------------------------------------------------------- #
+# Добавляем исходные тексты базовых криптографических примитивов
+# -------------------------------------------------------------------------------------------------- #
+if( LIBAKRYPT_CRYPTO_FUNCTIONS )
+  set( HEADERS      ${HEADERS}
+                    source/ak_mac.h
+                    source/ak_hash.h
+     )
+
+  set( SOURCES      ${SOURCES}
+                    source/ak_mac.c
+                    source/ak_hash.c
+     )
+endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # Определяем базовое множество вспомогательных и служебных файлов
@@ -134,7 +149,7 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # Добавляем поддержку криптографических функций
-# -------------------------------------------------------------------------------------------------- #
+# ------------------------------------------------------------------------- ------------------------- #
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_CRYPTO_FUNCTIONS" )
 endif()
@@ -197,6 +212,7 @@ set( INTERNAL_TEST_LIST
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
+                 hash01a
   )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
                                    # при запуске make test
