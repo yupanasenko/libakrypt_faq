@@ -67,16 +67,18 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает размер вырабатываемого хеш-кода (в октетах). */
  size_t ak_hash_context_get_tag_size( ak_hash );
+/*! \brief Функция возвращает размер блока входных данных, обрабатываемого функцией хеширования (в октетах). */
+ size_t ak_hash_context_get_block_size( ak_hash );
 /*! \brief Очистка контекста алгоритма хеширования. */
  int ak_hash_context_clean( ak_hash );
 /*! \brief Обновление состояния контекста хеширования. */
  int ak_hash_context_update( ak_hash , const ak_pointer , const size_t );
 /*! \brief Обновление состояния и вычисление результата применения алгоритма хеширования. */
- int ak_hash_context_finalize( ak_hash , const ak_pointer , const size_t , ak_pointer );
+ int ak_hash_context_finalize( ak_hash , const ak_pointer , const size_t , ak_pointer , const size_t );
 /*! \brief Хеширование заданной области памяти. */
- int ak_hash_context_ptr( ak_hash , const ak_pointer , const size_t , ak_pointer );
+ int ak_hash_context_ptr( ak_hash , const ak_pointer , const size_t , ak_pointer , const size_t );
 /*! \brief Хеширование заданного файла. */
- int ak_hash_context_file( ak_hash , const char*, ak_pointer );
+ int ak_hash_context_file( ak_hash , const char*, ak_pointer , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Проверка корректной работы функции хеширования Стрибог-256 */

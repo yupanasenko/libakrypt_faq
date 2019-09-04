@@ -65,8 +65,8 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 # вырабатываем и подключаем файл с ресурсами библиотеки
 if( WIN32 )
-  configure_file( ${CMAKE_SOURCE_DIR}/libakrypt.rc.in ${CMAKE_SOURCE_DIR}/libakrypt.rc @ONLY )
-  set( SOURCES ${SOURCES} libakrypt.rc )
+  configure_file( ${CMAKE_SOURCE_DIR}/libakrypt.rc.in ${CMAKE_BINARY_DIR}/libakrypt.rc @ONLY )
+  set( SOURCES ${SOURCES} ${CMAKE_BINARY_DIR}/libakrypt.rc )
   set( CMAKE_BUILD_TYPE "Release" )
 endif()
 

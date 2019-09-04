@@ -212,10 +212,13 @@ set( INTERNAL_TEST_LIST
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
+                 hash01
                  hash01a
+                 hash02
   )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
                                    # при запуске make test
+                 hash04
   )
   if( LIBAKRYPT_HAVE_SYSUN )
     set( INTERNAL_TEST_LIST_EXAMPLES

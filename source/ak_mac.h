@@ -56,7 +56,7 @@
 /*! \brief Обновление состояния контекста сжимающего отображения. */
  int ak_mac_context_update( ak_mac , const ak_pointer , const size_t );
 /*! \brief Обновление состояния и вычисление результата применения сжимающего отображения. */
- int ak_mac_context_finalize( ak_mac , const ak_pointer , const size_t , ak_pointer );
+ int ak_mac_context_finalize( ak_mac , const ak_pointer , const size_t , ak_pointer , const size_t );
 /*! \brief Применение сжимающего отображения к заданной области памяти. */
  int ak_mac_context_ptr( ak_mac , ak_pointer , const size_t , ak_pointer );
 /*! \brief Применение сжимающего отображения к заданному файлу. */
