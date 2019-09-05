@@ -210,8 +210,6 @@ extern "C" {
  #define ak_error_wrong_endian                (-36)
 /*! \brief Ошибка чтения из терминала. */
  #define ak_error_terminal                    (-37)
-/*! \brief Использование неопределенного буффера. */
- #define ak_error_wrong_buffer                (-38)
 
 /*! \brief Неверное значение дескриптора объекта. */
  #define ak_error_wrong_handle                (-40)
@@ -369,11 +367,6 @@ extern "C" {
 } oid_modes_t;
 
 /* ----------------------------------------------------------------------------------------------- */
- struct buffer;
-/*! \brief Контекст буффера. */
- typedef struct buffer *ak_buffer;
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает константный указатель NULL-строку с текущей версией библиотеки. */
  dll_export const char *ak_libakrypt_version( void );
 /*! \brief Функция инициализации и тестирования криптографических механизмов библиотеки. */
@@ -382,48 +375,6 @@ extern "C" {
  dll_export int ak_libakrypt_destroy( void );
 /*! \brief Запуск динамического тестирования криптографических механизмов. */
  dll_export bool_t ak_libakrypt_dynamic_control_test( void );
-
-/* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup mac_functions Функции итерационного сжатия (Внешний интрефейс)
- * @{*/
-/*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
- dll_export ak_handle ak_mac_new_streebog256( const char * );
-/*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
- dll_export ak_handle ak_mac_new_streebog512( const char * );
-/*! \brief Создание дескриптора функции HMAC на основе алгоритма Стрибог256. */
- dll_export ak_handle ak_mac_new_hmac_streebog256( const char * );
-/*! \brief Создание дескриптора функции HMAC на основе алгоритма Стрибог512. */
- dll_export ak_handle ak_mac_new_hmac_streebog512( const char * );
-/*! \brief Создание дескриптора функции выработки имитовставки OMAC на основе алгоритма Магма. */
- dll_export ak_handle ak_mac_new_omac_magma( const char * );
-/*! \brief Создание дескриптора функции выработки имитовставки OMAC на основе алгоритма Кузнечик. */
- dll_export ak_handle ak_mac_new_omac_kuznechik( const char * );
-/*! \brief Создание дескриптора функции выработки имитовставки OMAC на основе алгоритма Магма. */
- dll_export ak_handle ak_mac_new_mgm_magma( const char * );
-/*! \brief Создание дескриптора функции выработки имитовставки OMAC на основе алгоритма Kузнечик. */
- dll_export ak_handle ak_mac_new_mgm_kuznechik( const char * );
-/*! \brief Создание дескриптора произвольного алгоритма итерационного сжатия. */
- dll_export ak_handle ak_mac_new_oid( const char *, const char * );
-/*! \brief Проверка, допускает ли алгоритм использование секретного ключа. */
- dll_export bool_t ak_mac_is_key_settable( ak_handle );
-/*! \brief Присвоение ключу случайного значения. */
- dll_export int ak_mac_set_key_random( ak_handle );
-/*! \brief Присвоение значения, выработанного из пароля. */
- dll_export int ak_mac_set_key_from_password( ak_handle, const ak_pointer , const size_t ,
-                                                                 const ak_pointer , const size_t );
-/*! \brief Проверка, допускает ли алгоритм использование синхропосылки. */
- dll_export bool_t ak_mac_is_iv_settable( ak_handle );
-/*! \brief Присвоение значения используемой в алгоритме синхропосылки. */
- dll_export int ak_mac_set_iv( ak_handle, ak_pointer , const size_t );
-/*! \brief Получение длины используемой синхропосылки (в байтах). */
- dll_export size_t ak_mac_get_iv_size( ak_handle );
-/*! \brief Получение длины результата работы алгоритма итерационного сжатия (в байтах). */
- dll_export size_t ak_mac_get_size( ak_handle );
-/*! \brief Вычисление результата работы алгоритма итерационного сжатия для заданной области памяти. */
- dll_export ak_buffer ak_mac_ptr( ak_handle , ak_pointer , const size_t , ak_pointer );
-/*! \brief Вычисление результата работы алгоритма итерационного сжатия для заданного файла. */
- dll_export ak_buffer ak_mac_file( ak_handle , const char *, ak_pointer );
-/** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Удаление объекта, связанного с заданным дескриптором. */
@@ -477,36 +428,6 @@ extern "C" {
 /*! \brief Получение информации об oid алгоритма по его handle. */
  dll_export int ak_libakrypt_get_oid_by_handle( ak_handle ,
                   oid_engines_t * , oid_modes_t * , char * , const size_t, char * , const size_t );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание буффера заданного размера. */
- dll_export ak_buffer ak_buffer_new_size( const size_t );
-/*! \brief Создание буффера с данными. */
- dll_export ak_buffer ak_buffer_new_ptr( const ak_pointer , const size_t , const bool_t );
-/*! \brief Создание буффера с данными, записанными в шестнадцатеричном виде. */
- dll_export ak_buffer ak_buffer_new_hexstr( const char * );
-/*! \brief Создание буффера заданной длины с данными, записанными в шестнадцатеричном виде. */
- dll_export ak_buffer ak_buffer_new_hexstr_size( const char * , const size_t , const bool_t );
-/*! \brief Создание буффера, содержащего строку символов, оканчивающуюся нулем. */
- dll_export ak_buffer ak_buffer_new_str( const char * );
-/*! \brief Уничтожение буффера. */
- dll_export ak_pointer ak_buffer_delete( ak_pointer );
-/*! \brief Помещение двоичных данных в буффер. */
- dll_export int ak_buffer_set_ptr( ak_buffer , const ak_pointer , const size_t , const bool_t );
-/*! \brief Помещение в буффер данных, заданных строкой в  шестнадцатеричном представлении. */
- dll_export int ak_buffer_set_hexstr( ak_buffer, const char * );
-/*! \brief Помещение в буффер строки, оканчивающейся нулем. */
- dll_export int ak_buffer_set_str( ak_buffer, const char * );
-/*! \brief Получение указателя на данные (как на строку символов). */
- dll_export const char *ak_buffer_get_str( ak_buffer );
-/*! \brief Получение указателя на данные. */
- dll_export ak_pointer ak_buffer_get_ptr( ak_buffer );
-/*! \brief Получение размера буффера. */
- dll_export size_t ak_buffer_get_size( ak_buffer );
-/*! \brief Получение строки символов с шестнадцатеричным значением буффера. */
- dll_export char *ak_buffer_to_hexstr( const ak_buffer , const bool_t );
-/*! \brief Сравнение двух буфферов. */
- dll_export bool_t ak_buffer_is_equal( const ak_buffer, const ak_buffer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей значение заданной области памяти. */
