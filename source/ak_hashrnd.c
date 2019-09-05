@@ -50,9 +50,10 @@
  /* получаем указатель и вырабатываем новый вектор значений */
   hrnd = ( ak_hashrnd ) rnd->data.ctx;
   if( hrnd->len != 0 ) return ak_error_message( ak_error_wrong_length, __func__,
-                                                             "unexpected use of next function" );
+                                            "unexpected value of internal variable \"length\"" );
  /* увеличиваем счетчик */
-  ak_mpzn_add( hrnd->counter, hrnd->counter, one, ak_mpzn512_size );
+  ak_mpzn_add( (ak_uint64 *)hrnd->counter, (ak_uint64 *)hrnd->counter, one, ak_mpzn512_size );
+  hrnd->counter[63] = 0;
  /* вычисляем новое хеш-значение */
   ak_hash_context_ptr( &hrnd->hctx, hrnd->counter, 64, hrnd->buffer, 64 );
  /* определяем доступный объем данных для считывания */
@@ -71,7 +72,75 @@
  static int ak_random_context_randomize_hashrnd( ak_random rnd,
                                                        const ak_pointer ptr, const ssize_t size )
 {
+  ak_hashrnd hrnd = NULL;
+  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                             "use a null pointer to a random generator context" );
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                                   "use a null pointer to data" );
+  if( size <= 0 ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                                 "use a data with wrong length" );
+ /* восстанавливаем начальное значение */
+  hrnd = rnd->data.ctx;
+  hrnd->len = 0;
+  memset( hrnd->counter, 0, 64 );
+  memset( hrnd->buffer, 0, 64 );
 
+ /* теперь вырабатываем начальное заполнение */
+  ak_hash_context_ptr( &hrnd->hctx, ptr, (size_t)size, hrnd->counter, 64 );
+  hrnd->counter[63] = 0;
+
+ /* вычисляем псевдо-случайные данные */
+  return rnd->next( rnd );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param rnd Контекст генератора.
+    \param ptr Указатель на область памяти, в которую помещаются вырабатываемые значения
+    \param size Размер области в байтах
+    \return В случае успеха, функция возвращает \ref ak_error_ok. В противном случае
+            возвращается код ошибки.                                                               */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_random_context_random_hashrnd( ak_random rnd,
+                                                          const ak_pointer ptr, const ssize_t size )
+{
+  ak_uint8 *inptr = ptr;
+  ak_hashrnd hrnd = NULL;
+  ssize_t realsize = size;
+
+  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                     "use a null pointer to a random generator" );
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                                   "use a null pointer to data" );
+  if( size <= 0 ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                                 "use a data with wrong length" );
+  hrnd = ( ak_hashrnd )rnd->data.ctx;
+  while( realsize > 0 ) {
+    size_t offset = ak_min( (size_t)realsize, hrnd->len );
+    if( offset > 64 ) return ak_error_message( ak_error_undefined_value , __func__ ,
+                                                    "incorrect value of internal buffer offset" );
+    memcpy( inptr, hrnd->buffer + (64 - hrnd->len), offset );
+    inptr += offset;
+    realsize -= offset;
+   /* вычисляем следующий массив данных */
+    if(( hrnd->len -= offset ) <= 0 ) rnd->next( rnd );
+  }
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param ptr Указатель на область внутренних данных генератора.                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_random_context_free_hashrnd( ak_random rnd )
+{
+  int error = ak_error_ok;
+  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                            "freeing a null pointer to random generator context" );
+
+ /* уничтожаем контекст функции хеширования */
+  if(( error = ak_hash_context_destroy(  ( ak_hash )rnd->data.ctx)) != ak_error_ok )
+     ak_error_message( error, __func__ , "wrong destroying internal hash function context" );
+ /* теперь уничтожаем собственно структуру hashrnd */
+  free( rnd->data.ctx );
  return ak_error_ok;
 }
 
@@ -82,18 +151,18 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_random_context_create_hashrnd( ak_random rnd )
 {
-  ak_hashrnd hrnd = NULL;
   int error = ak_error_ok;
-   ak_uint64 qword = ak_random_value(); /* вырабатываем случайное число */
+  ak_uint64 qword = ak_random_value(); /* вырабатываем случайное число */
 
-  if(( error = ak_random_context_create( rnd )) != ak_error_ok )
+ if(( error = ak_random_context_create( rnd )) != ak_error_ok )
     return ak_error_message( error, __func__ , "wrong initialization of random generator" );
 
-  if(( hrnd = rnd->data.ctx = malloc( sizeof( struct hashrnd ))) == NULL )
+  if(( rnd->data.ctx = malloc( sizeof( struct hashrnd ))) == NULL )
     return ak_error_message( ak_error_out_of_memory, __func__ ,
                         "incorrect memory allocation for internal variables of random generator" );
 
-  if(( error = ak_hash_context_create_streebog512( hrnd->hctx )) != ak_error_ok  ) {
+  if(( error = ak_hash_context_create_streebog512( &((ak_hashrnd)rnd->data.ctx)->hctx ))
+                                                                                != ak_error_ok  ) {
     ak_random_context_destroy( rnd );
     return ak_error_message( error, __func__ , "incorrect creation of streebog512 context" );
   }
@@ -110,8 +179,7 @@
   rnd->free = ak_random_context_free_hashrnd;
 
  /* для корректной работы присваиваем какое-то случайное начальное значение */
-  ak_random_context_randomize_hashrnd( rnd, &qword, sizeof( ak_uint64 ));
- return error;
+  return ak_random_context_randomize_hashrnd( rnd, &qword, sizeof( ak_uint64 ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */
