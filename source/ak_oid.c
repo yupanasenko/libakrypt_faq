@@ -45,12 +45,6 @@
                                       ( ak_function_void *) ak_random_context_destroy,
                                       ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
   #endif
-
-   { random_generator, algorithm, "xorshift32", "1.2.643.2.52.1.1.5", NULL, NULL,
-                                    { ( ak_function_void *) ak_random_context_create_xorshift32,
-                                      ( ak_function_void *) ak_random_context_destroy,
-                                      ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
-
   #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
 
    { random_generator, algorithm, "hashrnd", "1.2.643.2.52.1.1.6", NULL, NULL,

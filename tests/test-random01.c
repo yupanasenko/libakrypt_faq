@@ -55,16 +55,6 @@
 
  /* последовательно запускаем генераторы на тестирование */
  #ifdef LIBAKRYPT_LITTLE_ENDIAN
-   if( test_function( ak_random_context_create_xorshift32,
-      "9D7130C59C3775ABBF9A50BD3C9AE26E2E990589FEC3287E752AB1ACCA1F06B6" ) != ak_true )
-     error =  EXIT_FAILURE;
- #else
-   if( test_function( ak_random_context_create_xorshift32,
-      "A389BD971359E6CADF96904ABE650625CA9487D517AF56A252166BFF72514D2B" ) != ak_true )
-     error =  EXIT_FAILURE;
- #endif
-
- #ifdef LIBAKRYPT_LITTLE_ENDIAN
    if( test_function( ak_random_context_create_lcg,
       "206C732798220B2D1CF944974ED9698C1299E40346C0FB7F8A4093D5F83CEFE3" ) != ak_true )
      error = EXIT_FAILURE;
@@ -82,15 +72,15 @@
 #endif
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
-// #ifdef LIBAKRYPT_LITTLE_ENDIAN
-//   if( test_function( ak_random_context_create_hashrnd_streebog512,
-//      "5ED8CE19B9F99E0E4837EAF2140A5E8FE3217BC9F1940CBEA34975FA8968E293" ) != ak_true )
-//     error = EXIT_FAILURE;
-// #else
-//   if( test_function( ak_random_context_create_hashrnd_streebog512,
-//      "1005517034F6C6EB6DEDD3F7259BFB71AF06BC1F2AA2EFD554B090E2A4CB096D" ) != ak_true )
-//     error = EXIT_FAILURE;
-// #endif
+ #ifdef LIBAKRYPT_LITTLE_ENDIAN
+   if( test_function( ak_random_context_create_hashrnd,
+      "F6333BC3B0192EAE9F99165F1B166C60790CC877DCCE37B25485C223E9928143" ) != ak_true )
+     error = EXIT_FAILURE;
+ #else
+   if( test_function( ak_random_context_create_hashrnd,
+      "1005517034F6C6EB6DEDD3F7259BFB71AF06BC1F2AA2EFD554B090E2A4CB096D" ) != ak_true )
+     error = EXIT_FAILURE;
+ #endif
 #endif
 
  ak_libakrypt_destroy();

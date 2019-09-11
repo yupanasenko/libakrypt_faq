@@ -768,7 +768,7 @@
     }
 
  /* тестирование алгоритма хеширования фрагментами произвольной длины */
-  ak_random_context_create_xorshift32( &rnd );
+  ak_random_context_create_lcg( &rnd );
   ak_random_context_random( &rnd, buffer, sizeof( buffer ));
   if(( error = ak_hash_context_ptr( &ctx, buffer, sizeof( buffer ),
                                                             out, sizeof( out ))) != ak_error_ok ) {

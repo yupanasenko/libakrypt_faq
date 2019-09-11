@@ -210,6 +210,56 @@
   else return options[index].value;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! Если это возможно, то функция возвращает память, выравненную по границе 16 байт.
+    @param size Размер выделяемой памяти в байтах.
+    @return Указатель на выделенную память.                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_libakrypt_aligned_malloc( size_t size )
+{
+ return
+#ifdef LIBAKRYPT_HAVE_STDALIGN
+  aligned_alloc( 16,
+#else
+  malloc(
+#endif
+  size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция заполняет заданную область памяти случайными данными, выработанными заданным
+    генератором псевдослучайных чисел. Генератор должен быть предварительно корректно
+    инициализирован с помощью функции вида `ak_random_context_create_...()`.
+
+    @param ptr Область данных, которая заполняется случайным мусором.
+    @param size Размер заполняемой области в байтах.
+    @param generator Генератор псевдо-случайных чисел, используемый для генерации случайного мусора.
+    @param readflag Булева переменная, отвечающая за обязательное чтение сгенерированных данных.
+    В большинстве случаев должна принимать истинное значение.
+    @return Функция возвращает ak_error_ok в случае успешного уничтожения данных. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_ptr_context_wipe( ak_pointer ptr, size_t size, ak_random rnd )
+{
+  size_t idx = 0;
+  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                "using null pointer to random generator context" );
+  if( rnd->random == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                  "using uninitialized random generator context" );
+  if( size > (((size_t)-1) >> 1 )) return ak_error_message( ak_error_wrong_length, __func__,
+                                                                   "using very large size value" );
+  if(( ptr == NULL ) || ( size == 0 )) return ak_error_ok;
+
+  if( ak_random_context_random( rnd, ptr, (ssize_t) size ) != ak_error_ok ) {
+    memset( ptr, 0, size );
+    return ak_error_message( ak_error_write_data, __func__, "incorrect memory wiping" );
+  }
+ /* запись в память при чтении => необходим вызов функции чтения данных из ptr */
+  for( idx = 0; idx < size; idx++ ) ((ak_uint8 *)ptr)[idx] += ((ak_uint8 *)ptr)[size - 1 - idx];
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 #ifndef LIBAKRYPT_CONST_CRYPTO_PARAMS
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param hpath Буффер в который будет помещено имя домашнего каталога пользователя.

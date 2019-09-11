@@ -81,12 +81,14 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( HEADERS      ${HEADERS}
                     source/ak_mac.h
                     source/ak_hash.h
+                    source/ak_skey.h
      )
 
   set( SOURCES      ${SOURCES}
                     source/ak_mac.c
                     source/ak_hash.c
                     source/ak_hashrnd.c
+                    source/ak_skey.c
      )
 endif()
 
@@ -218,6 +220,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  hash02
                  oid03
                  random02
+                 skey01
   )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
                                    # при запуске make test
