@@ -70,6 +70,10 @@
  /* выводим информацию о полях структуры */
   print_skey_info( &key );
 
+ /* ус танавливаем случайное значение */
+  ak_skey_context_set_key_random( &key,  &key.generator );
+  print_skey_info( &key );
+
  /* освобождаем память и выходим */
   ak_skey_context_destroy( &key );
   ak_libakrypt_destroy();
