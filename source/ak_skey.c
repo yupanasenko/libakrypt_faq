@@ -193,9 +193,9 @@
     return error;
   }
 
+  skey->icode = 0; /* контрольная сумма ключа не задана */
   skey->data = NULL; /* внутренние данные ключа не определены */
   memset( &(skey->resource), 0, sizeof( struct resource )); /* ресурс ключа не определен */
-  memset( skey->icode, 0, sizeof( skey->icode )); /* контрольная сумма ключа не задана */
 
  /* инициализируем генератор масок */
   if(( error = ak_random_context_create_lcg( &skey->generator )) != ak_error_ok ) {
@@ -365,46 +365,6 @@
  return ak_error_ok;
 }
 
-
-/* ----------------------------------------------------------------------------------------------- */
- static inline void ak_skey_context_fletcher_sum( ak_uint32 *key, ak_uint32 *mask,
-                                                        size_t count, ak_uint32 *sA, ak_uint32 *sB )
-{
-  size_t idx = 0;
-  ak_uint32 a = 0, b = 0;
-
-  printf("key:  ");
-  for( idx = 0; idx < count; idx++ ) printf( "%08x ", key[idx] );
-  printf("\n");
-  idx =0;
-  printf("mask: ");
-  for( idx = 0; idx < count; idx++ ) printf( "%08x ", mask[idx] );
-  printf("\n");
-  idx =0;
-
-
-  *sA = *sB = 0;
-  while( idx++ < count ) {
-
-    printf("[%02u]: %08x:%08x  ->  ", idx, *sA, *sB );
-    *sA ^= *key++;
-    if( (*sB ^= *sA)&0x80000000 ) *sB = ( *sB << 1 )^0x04C11DB7;
-      else *sB = ( *sB << 1 );
-    printf("%08x:%08x\n", *sA, *sB );
-  }
-
-  a = b = 0; idx = 0;
-  while( idx++ < count ) {
-
-    printf("[%02u]: %08x:%08x  ->  ", idx, a, b );
-    a ^= *mask++;
-    if( (b ^= a)&0x80000000 ) b = ( b << 1 )^0x04C11DB7;
-      else b = ( b << 1 );
-    printf("%08x:%08x\n", b, b );
-  }
-
-}
-
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param skey Контекст секретного ключа.
     @return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
@@ -412,10 +372,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_skey_context_set_icode_xor( ak_skey skey )
 {
-  union {
-    ak_uint8 u8[8];
-    ak_uint32 u32[2];
-  } sum = { .u32[0] = 0, .u32[1] = 0 };
+  ak_uint32 x = 0;
 
  /* "стандартные" проверки указателей и выделения памяти */
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer,
@@ -424,15 +381,14 @@
                                                  __func__ , "using a null pointer to key buffer" );
   if( skey->key_size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
                                                            "using a key buffer with zero length" );
+ /* в силу аддитивности контрольной суммы,
+    мы вычисляем результат последоватлеьно для ключа, а потом для его маски */
+  ak_ptr_fletcher32_xor( skey->key, skey->key_size, &x );
+  ak_ptr_fletcher32_xor( skey->key+skey->key_size, skey->key_size, &skey->icode );
+  skey->icode ^=x;
 
-  size_t blocks = skey->key_size >> 2, /* работаем с блоком длины 4 байта */
-           tail = skey->key_size - ( blocks << 2 );
-
-  ak_skey_context_fletcher_sum( (ak_uint32 *)skey->key, (ak_uint32 *)skey->key+blocks,
-                                                               blocks, &sum.u32[0], &sum.u32[1] );
-  char str[512];
-  ak_ptr_to_hexstr_static( sum.u8, 8, str, 512, ak_false );
-  printf("code: %s\n", str );
+ /* устанавливаем флаг */
+  skey->flags |= skey_flag_set_icode;
 
  return ak_error_ok;
 }
@@ -445,9 +401,160 @@
 /* ----------------------------------------------------------------------------------------------- */
  bool_t ak_skey_context_check_icode_xor( ak_skey skey )
 {
+  ak_uint32 x = 0, y = 0;
+
+ /* "стандартные" проверки указателей и выделения памяти */
+  if( skey == NULL ) { ak_error_message( ak_error_null_pointer,
+                                         __func__ , "using a null pointer to secret key context" );
+    return ak_false;
+  }
+  if( skey->key == NULL ) { ak_error_message( ak_error_null_pointer,
+                                                 __func__ , "using a null pointer to key buffer" );
+    return ak_false;
+  }
+  if( skey->key_size == 0 ) { ak_error_message( ak_error_zero_length, __func__ ,
+                                                           "using a key buffer with zero length" );
+    return ak_false;
+  }
+
+ /* в силу аддитивности контрольной суммы,
+    мы вычисляем результат последоватлеьно для ключа, а потом для его маски */
+  ak_ptr_fletcher32_xor( skey->key, skey->key_size, &x );
+  ak_ptr_fletcher32_xor( skey->key+skey->key_size, skey->key_size, &y );
+
+  if( skey->icode == ( x^y )) return ak_true;
+    else return ak_false;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Присвоение времени происходит следующим образом. Если `not_before` равно нулю, то
+    устанавливается текущее время. Если `not_after` равно нулю или меньше, чем `not_before`,
+    то временной интервал действия ключа устанавливается равным 365 дней.
+
+    \param skey Контекст секретного ключа.
+    \param not_before Время, начиная с которого ключ действителен. Значение, равное нулю,
+    означает, что будет установлено текущее время.
+    \param not_after Время, начиная с которого ключ недействителен.
+    \return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_context_set_resource_time( ak_skey skey, time_t not_before, time_t not_after )
+{
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using a null pointer to secret key" );
+ /* устанавливаем временной интервал */
+  if( not_before == 0 )
+ #ifdef LIBAKRYPT_HAVE_TIME_H
+  skey->resource.time.not_before = time( NULL );
+ #else
+  skey->resource.time.not_before = 0;
+ #endif
+    else skey->resource.time.not_before = not_before;
+  if( not_after == 0 ) skey->resource.time.not_after = skey->resource.time.not_before + 31536000;
+    else {
+      if( not_after > skey->resource.time.not_before ) skey->resource.time.not_after = not_after;
+        else skey->resource.time.not_after = skey->resource.time.not_before + 31536000;
+    }
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Счетчику ресурса присваивается значение, определенное заданной опцией библиотеки.
+
+    Присвоение времени происходит следующим образом. Если `not_before` равно нулю, то
+    устанавливается текущее время. Если `not_after` равно нулю или меньше, чем `not_before`,
+    то временной интервал действия ключа устанавливается равным 365 дней.
+
+    \param skey Контекст секретного ключа.
+    \param type Тип присваиваемого ресурса.
+    \param option Строка с именем опции, значение которой присваивается.
+    \param not_before Время, начиная с которого ключ действителен. Значение, равное нулю,
+    означает, что будет установлено текущее время.
+    \param not_after Время, начиная с которого ключ недействителен.
+    \return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_context_set_resource( ak_skey skey, counter_resource_t type, const char *option,
+                                                               time_t not_before, time_t not_after )
+{
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using a null pointer to secret key" );
+  if( option == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                           "using a null pointer to option name" );
+  ak_skey_context_set_resource_time( skey, not_before, not_after );
+  switch( skey->resource.value.type = type ) {
+    case block_counter_resource:
+    case key_using_resource:
+      if(( skey->resource.value.counter =
+                  ak_libakrypt_get_option( option )) != ak_error_wrong_option ) return ak_error_ok;
+        else return ak_error_wrong_option;
+  }
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                             функции установки ключевой информации                               */
+/* ----------------------------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает ключу заданное пользователем значение.
+    Данное зачение копируется во внутреннюю память контекста секретного ключа, тем самым,
+    происходит размножение ключевой информации.
+
+    Основная область применения функции заключается в реализации тестовых примеров, для которых
+    значение ключа является заранее известной константой. Другим вариантом использования данной функции
+    явлются ситуации, в которых ключевое значения является результатом некоторого
+    криптографического преобразования.
+
+    \param skey Контекст секретного ключа. К моменту вызова функции контекст должен быть
+    инициализирован.
+    \param ptr Указатель на данные, которые будут интерпретироваться в качестве значения ключа.
+    \param size Размер данных, на которые указывает `ptr` (размер в байтах).
+    Если величина `size` меньше, чем размер выделенной памяти под секретный ключ, то копируется
+    только `size` байт (остальные заполняются нулями). Если `size` больше, чем количество выделенной памяти
+    под ключ, то копируются только младшие байты, в количестве `key.size` байт.
+
+    \return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_context_set_key( ak_skey skey, const ak_pointer ptr, const size_t size )
+{
+  int error = ak_error_ok;
+
+ /* "стандартные" проверки указателей и выделения памяти */
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer,
+                                         __func__ , "using a null pointer to secret key context" );
+  if( skey->key == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                 __func__ , "using a null pointer to key buffer" );
+  if( skey->key_size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                           "using a key buffer with zero length" );
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                        "using a null pointer to secret key data" );
+ /* присваиваем ключ */
+  if( size != skey->key_size )
+    if(( error = ak_skey_context_alloc_memory( skey, size, skey->policy )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect allocation new secret key buffer" );
+
+  memcpy( skey->key, ptr, size );            /* копируем данные */
+  memset( skey->key+size, 0, size ); /* обнуляем массив масок */
+
+ /* очищаем флаг начальной инициализации */
+  skey->flags &= (0xFFFFFFFFFFFFFFFFLL ^ skey_flag_set_mask );
+
+ /* маскируем ключ и вычисляем контрольную сумму */
+  if(( error = skey->set_mask( skey )) != ak_error_ok ) return  ak_error_message( error,
+                                                           __func__ , "wrong secret key masking" );
+
+  if(( error = skey->set_icode( skey )) != ak_error_ok ) return ak_error_message( error,
+                                                __func__ , "wrong calculation of integrity code" );
+
+ /* устанавливаем флаг того, что ключевое значение определено.
+    теперь ключ можно использовать в криптографических алгоритмах */
+  skey->flags |= skey_flag_set_key;
 
  return ak_error_ok;
 }
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_skey.c  */

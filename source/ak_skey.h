@@ -102,12 +102,12 @@
    ak_oid oid;
   /*! \brief ключ */
    ak_uint8 *key;
-  /*! \brief контрольная сумма ключа */
-   ak_uint8 icode[8];
-  /*! \brief уникальный номер ключа */
-   ak_uint8 number[32];
   /*! \brief размер ключа (в октетах) */
    size_t key_size;
+  /*! \brief уникальный номер ключа */
+   ak_uint8 number[32];
+  /*! \brief контрольная сумма ключа */
+   ak_uint32 icode;
   /*! \brief генератор случайных масок ключа */
    struct random generator;
   /*! \brief ресурс использования ключа */
@@ -140,7 +140,7 @@
 /*! \brief Присвоение секретному ключу уникального номера. */
  int ak_skey_context_set_unique_number( ak_skey );
 /*! \brief Присвоение секретному ключу константного значения. */
- int ak_skey_context_set_key( ak_skey , const ak_pointer , const size_t , const bool_t );
+ int ak_skey_context_set_key( ak_skey , const ak_pointer , const size_t );
 /*! \brief Присвоение секретному ключу случайного значения. */
  int ak_skey_context_set_key_random( ak_skey , ak_random );
 /*! \brief Присвоение секретному ключу значения, выработанного из пароля */
@@ -150,8 +150,6 @@
  int ak_skey_context_create_and_set_skey( ak_skey , ak_skey );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Проверка параметров контекста секретного ключа. */
- int ak_skey_context_check( ak_skey );
 /*! \brief Наложение или смена маски путем сложения по модулю 2 случайной последовательности с ключом. */
  int ak_skey_context_set_mask_xor( ak_skey );
 /*! \brief Снятие маски с ключа. */

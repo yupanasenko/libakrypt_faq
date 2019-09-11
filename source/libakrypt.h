@@ -441,6 +441,8 @@ extern "C" {
  dll_export ssize_t ak_hexstr_size( const char * );
 /*! \brief Сравнение двух областей памяти. */
  dll_export bool_t ak_ptr_is_equal( ak_const_pointer, ak_const_pointer , const size_t );
+/*! \brief Вычисление 4-х байтной контрольной суммы Флетчера. */
+ dll_export int ak_ptr_fletcher32_xor( ak_const_pointer , const size_t , ak_uint32 * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция устанавливает домашний каталог пользователя. */
