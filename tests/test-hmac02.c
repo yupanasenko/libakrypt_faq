@@ -13,8 +13,6 @@
  #include <ak_hmac.h>
  #include <ak_tools.h>
 
- void print_skey_info( ak_skey key );
-
  int main( int argc, char *argv[] )
 {
   size_t i;
@@ -37,7 +35,7 @@
  /* создаем и инициализируем контекст алгоритма hmac случайным ключом */
   ak_hmac_context_create_streebog256( &hctx );
   ak_hmac_context_set_key_random( &hctx, &hctx.key.generator );
-  print_skey_info( &hctx.key );
+  ak_skey_context_print_to_file( &hctx.key, stdout );
 
  /* вычисляем имитовставку от заданного файла */
   ak_hmac_context_file( &hctx, filename, out, sizeof( out ));
@@ -67,43 +65,4 @@
     ak_hmac_context_destroy( &hctx );
     ak_libakrypt_destroy();
  return exitcode;
-}
-
- void print_skey_info( ak_skey key )
-{
-  size_t i = 0;
-  char *bc = "block counter", *rc = "key usage counter";
-
- /* информация о ключе */
- /* информация о ключе */
-  printf("struct skey size: %u byte(s)\n", (unsigned int)sizeof( struct skey ));
-  if( key->oid != NULL )
-    printf("key info: %s (OID: %s, engine: %s, mode: %s)\n",  key->oid->name, key->oid->id,
-    ak_libakrypt_get_engine_name( key->oid->engine ), ak_libakrypt_get_mode_name( key->oid->mode ));
-   else printf("key info: unidentified\n");
-
-  printf("unique number:\n\t");
-  for( i = 0; i < sizeof( key->number ); i++ ) printf("%02X", key->number[i] );
-  printf("\n");
-
-  if( key->key != NULL ) {
-    printf("fields:\n key:\t");
-    for( i = 0; i < key->key_size; i++ ) printf("%02X", key->key[i] );
-    printf("\n mask:\t");
-    for( i = 0; i < key->key_size; i++ ) printf("%02X", key->key[i+key->key_size] );
-  } else printf("secret key buffer is undefined\n");
-  printf("\n icode:\t%08X", key->icode );
-  if( key->check_icode( key ) == ak_true ) printf(" (Ok)\n");
-   else printf(" (Wrong)\n");
-
-  key->unmask( key ); /* снимаем маску */
-  printf(" real:\t");
-  for( i = 0; i < key->key_size; i++ ) printf("%02X", key->key[i] );
-  printf("\n");
-  key->set_mask( key );
-
-  printf("resource:\n value:\t %u (%s)\n", (unsigned int)key->resource.value.counter,
-                              key->resource.value.type == block_counter_resource ? bc : rc );
-  printf(" not before: %s", ctime( &key->resource.time.not_before ));
-  printf(" not after:  %s\n", ctime( &key->resource.time.not_after ));
 }

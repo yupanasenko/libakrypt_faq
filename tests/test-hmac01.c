@@ -13,9 +13,6 @@
  #include <string.h>
  #include <ak_hmac.h>
 
-/* функия вывода информации о секретном ключе */
- void print_skey_info( ak_skey );
-
  int main( void )
 {
   size_t i, j;
@@ -37,7 +34,7 @@
   ak_hmac_context_create_streebog512( &hctx );
  /* присваиваем ключ */
   ak_hmac_context_set_key( &hctx, testkey, sizeof( testkey ));
-  print_skey_info( &hctx.key );
+  ak_skey_context_print_to_file( &hctx.key, stdout );
 
  /* теперь запускаем цикл тестирования */
   for( j = 3; j < sizeof( testkey ); j++ ) {
@@ -66,43 +63,4 @@
    ak_libakrypt_destroy();
 
  return exitcode;
-}
-
- void print_skey_info( ak_skey key )
-{
-  size_t i = 0;
-  char *bc = "block counter", *rc = "key usage counter";
-
- /* информация о ключе */
- /* информация о ключе */
-  printf("struct skey size: %u byte(s)\n", (unsigned int)sizeof( struct skey ));
-  if( key->oid != NULL )
-    printf("key info: %s (OID: %s, engine: %s, mode: %s)\n",  key->oid->name, key->oid->id,
-    ak_libakrypt_get_engine_name( key->oid->engine ), ak_libakrypt_get_mode_name( key->oid->mode ));
-   else printf("key info: unidentified\n");
-
-  printf("unique number:\n\t");
-  for( i = 0; i < sizeof( key->number ); i++ ) printf("%02X", key->number[i] );
-  printf("\n");
-
-  if( key->key != NULL ) {
-    printf("fields:\n key:\t");
-    for( i = 0; i < key->key_size; i++ ) printf("%02X", key->key[i] );
-    printf("\n mask:\t");
-    for( i = 0; i < key->key_size; i++ ) printf("%02X", key->key[i+key->key_size] );
-  } else printf("secret key buffer is undefined\n");
-  printf("\n icode:\t%08X", key->icode );
-  if( key->check_icode( key ) == ak_true ) printf(" (Ok)\n");
-   else printf(" (Wrong)\n");
-
-  key->unmask( key ); /* снимаем маску */
-  printf(" real:\t");
-  for( i = 0; i < key->key_size; i++ ) printf("%02X", key->key[i] );
-  printf("\n");
-  key->set_mask( key );
-
-  printf("resource:\n value:\t %u (%s)\n", (unsigned int)key->resource.value.counter,
-                              key->resource.value.type == block_counter_resource ? bc : rc );
-  printf(" not before: %s", ctime( &key->resource.time.not_before ));
-  printf(" not after:  %s\n", ctime( &key->resource.time.not_after ));
 }

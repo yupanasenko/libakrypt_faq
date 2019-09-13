@@ -596,6 +596,62 @@
  return error;
 }
 
+#ifdef LIBAKRYPT_HAVE_DEBUG_FUNCTIONS
+/* ----------------------------------------------------------------------------------------------- */
+/*! Данная функция используется для отладки работы механизмов доступа и обработки ключевой
+    информации. Функция включается в состав библиотеки только в случае сборки тестовых примеров.
+
+    @param skey Контекст секретного ключа. К моменту вызова функции контекст должен быть
+    инициализирован.
+    @param fp Файл, в который выводится информация.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_context_print_to_file( ak_skey skey, FILE *fp )
+{
+  size_t i = 0;
+  char *bc = "block counter", *rc = "key usage counter";
+
+ /* информация о ключе */
+  fprintf( fp, "key buffer size: %u bytes\nkey context size: %u bytes\n",
+                                (unsigned int)skey->key_size, (unsigned int)sizeof( struct skey ));
+  if( skey->oid != NULL )
+    fprintf( fp, "key info: %s (OID: %s, engine: %s, mode: %s)\n",
+        skey->oid->name, skey->oid->id, ak_libakrypt_get_engine_name( skey->oid->engine ),
+                                                    ak_libakrypt_get_mode_name( skey->oid->mode ));
+   else fprintf( fp, "key info: unidentified\n");
+
+  fprintf( fp, "unique number:\n\t");
+  for( i = 0; i < sizeof( skey->number ); i++ ) fprintf( fp, "%02X", skey->number[i] );
+  fprintf( fp, "\n");
+
+  if( skey->key != NULL ) {
+    fprintf( fp, "fields:\n key:\t");
+    for( i = 0; i < skey->key_size; i++ ) fprintf( fp, "%02X", skey->key[i] );
+    fprintf( fp, "\n mask:\t");
+    for( i = 0; i < skey->key_size; i++ ) fprintf( fp, "%02X", skey->key[i+skey->key_size] );
+  } else fprintf( fp, "secret key buffer is undefined\n");
+  fprintf( fp, "\n icode:\t%08X", skey->icode );
+  if( skey->check_icode( skey ) == ak_true ) printf(" (Ok)\n");
+   else printf(" (Wrong)\n");
+
+  skey->unmask( skey ); /* снимаем маску */
+  fprintf( fp, " real:\t");
+  for( i = 0; i < skey->key_size; i++ ) fprintf( fp, "%02X", skey->key[i] );
+  fprintf( fp, "\n");
+  skey->set_mask( skey );
+
+  fprintf( fp, "resource:\n value:\t%u (%s)\n", (unsigned int)skey->resource.value.counter,
+                              skey->resource.value.type == block_counter_resource ? bc : rc );
+  fprintf( fp, " not before: %s", ctime( &skey->resource.time.not_before ));
+  fprintf( fp, " not after:  %s\n", ctime( &skey->resource.time.not_after ));
+ return  ak_error_ok;
+}
+
+#endif
+/* ----------------------------------------------------------------------------------------------- */
+/*! \example test-skey01.c                                                                         */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_skey.c  */
 /* ----------------------------------------------------------------------------------------------- */

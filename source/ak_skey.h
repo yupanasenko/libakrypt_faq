@@ -7,6 +7,10 @@
 #ifndef __AK_SKEY_H__
 #define __AK_SKEY_H__
 
+#ifdef LIBAKRYPT_HAVE_DEBUG_FUNCTIONS
+ #include <stdio.h>
+#endif
+
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_random.h>
 
@@ -162,6 +166,12 @@
  int ak_skey_context_set_resource( ak_skey , counter_resource_t , const char * , time_t , time_t );
 /*! \brief Функция устанавливает временной интервал действия ключа. */
  int ak_skey_context_set_resource_time( ak_skey skey, time_t not_before, time_t not_after );
+
+/* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_DEBUG_FUNCTIONS
+/*! \brief Функция выводит информацию о контексте секретного ключа в заданный файл. */
+ int ak_skey_context_print_to_file( ak_skey , FILE *fp );
+#endif
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */
