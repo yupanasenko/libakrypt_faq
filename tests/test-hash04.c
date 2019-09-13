@@ -47,7 +47,7 @@
 #ifdef __linux__
     getrusage( RUSAGE_SELF, &rg1 );
 #endif
-    ak_hash_context_ptr( &ctx, data, size, out, sizeof( out ));
+    ak_mac_context_ptr( &ctx.mctx, data, size, out, sizeof( out ));
 #ifdef __linux__
     getrusage( RUSAGE_SELF, &rg2 );
 #endif

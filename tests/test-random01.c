@@ -78,7 +78,7 @@
      error = EXIT_FAILURE;
  #else
    if( test_function( ak_random_context_create_hashrnd,
-      "1005517034F6C6EB6DEDD3F7259BFB71AF06BC1F2AA2EFD554B090E2A4CB096D" ) != ak_true )
+      "01331181BAA4C25065DA063463D9B593C0D85B8A1FCC9B27D6BFAE2B00662A1D" ) != ak_true )
      error = EXIT_FAILURE;
  #endif
 #endif

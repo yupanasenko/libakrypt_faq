@@ -203,10 +203,10 @@
     ak_error_message( ak_error_get_value(), __func__, "incorrect testing of hmac functions" );
     return ak_false;
   }
-//  if( ak_hmac_test_pbkdf2() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__, "incorrect testing of pbkdf2 function" );
-//    return ak_false;
-//  }
+  if( ak_hmac_test_pbkdf2() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect testing of pbkdf2 function" );
+    return ak_false;
+  }
 
 //  /* тестируем механизм итерационного сжатия для ключевых и бесключевых функций хеширования */
 //  if( ak_mac_test_hash_functions() != ak_true ) {
