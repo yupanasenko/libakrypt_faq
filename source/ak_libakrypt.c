@@ -20,7 +20,7 @@
  #include <ak_curves.h>
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
- #include <ak_hash.h>
+ #include <ak_hmac.h>
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -186,23 +186,23 @@
 // return ak_true;
 //}
 
-///* ----------------------------------------------------------------------------------------------- */
-///*! \brief Функция проверяет корректность реализации алгоритмов итерационного сжатия
-//    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
-//    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
-//    вызова ak_error_get_value()                                                                    */
-///* ----------------------------------------------------------------------------------------------- */
-// static bool_t ak_libakrypt_test_mac_functions( void )
-//{
-//  int audit = ak_log_get_level();
-//  if( audit >= ak_log_maximum )
-//    ak_error_message( ak_error_ok, __func__ , "testing mac algorithms started" );
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция проверяет корректность реализации алгоритмов итерационного сжатия
+    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
+    вызова ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ static bool_t ak_libakrypt_test_mac_functions( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing mac algorithms started" );
 
-// /* тестирование механизмов hmac и pbkdf2 */
-//  if( ak_hmac_test_streebog() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__, "incorrect testing of hmac functions" );
-//    return ak_false;
-//  }
+ /* тестирование механизмов hmac и pbkdf2 */
+  if( ak_hmac_test_streebog() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect testing of hmac functions" );
+    return ak_false;
+  }
 //  if( ak_hmac_test_pbkdf2() != ak_true ) {
 //    ak_error_message( ak_error_get_value(), __func__, "incorrect testing of pbkdf2 function" );
 //    return ak_false;
@@ -222,14 +222,14 @@
 //  if( ak_mac_test_omac_functions() != ak_true ) {
 //    ak_error_message( ak_error_get_value(), __func__,
 //                                   "incorrect testing mac algorithms based on block ciphers" );
-//    return ak_false;
+//    return ak_false
 //  }
 
-//  if( audit >= ak_log_maximum )
-//   ak_error_message( ak_error_ok, __func__ , "testing mac algorithms ended successfully" );
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing mac algorithms ended successfully" );
 
-// return ak_true;
-//}
+ return ak_true;
+}
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -294,11 +294,11 @@
 //    return ak_false;
 //  }
 
-// /* проверяем корректность реализации алгоритмов итерационного сжатия */
-//   if( ak_libakrypt_test_mac_functions( ) != ak_true ) {
-//     ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of mac algorithms" );
-//     return ak_false;
-//   }
+ /* проверяем корректность реализации алгоритмов итерационного сжатия */
+   if( ak_libakrypt_test_mac_functions( ) != ak_true ) {
+     ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of mac algorithms" );
+     return ak_false;
+   }
 #endif
 
  /* тестируем работу алгоритмов выработки и проверки электронной подписи */

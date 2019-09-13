@@ -23,7 +23,7 @@
 /*                            Реализация функции хеширования Стрибог                               */
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Преобразование LPS.
- *  \details \note Мы предполагаем, что данные содержат 64 байта.                                  */
+    \note Мы предполагаем, что данные содержат 64 байта.                                           */
 /* ----------------------------------------------------------------------------------------------- */
  static inline void ak_hash_context_streebog_lps( ak_uint64 *result, const ak_uint64 *data )
 {
@@ -43,7 +43,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Преобразование X.
- *  \details \note Мы предполагаем, что данные содержат 64 байта.                                  */
+    \note Мы предполагаем, что данные содержат 64 байта.                                           */
 /* ----------------------------------------------------------------------------------------------- */
  static inline void ak_hash_context_streebog_x( ak_uint64 *r, const ak_uint64 *k, const ak_uint64 *a )
 {
@@ -54,7 +54,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Преобразование G
- *  \details\note Мы предполагаем, что массивы n и m содержат по 64 байта.                         */
+    \note Мы предполагаем, что массивы n и m содержат по 64 байта.                                 */
 /* ----------------------------------------------------------------------------------------------- */
  static inline void ak_hash_context_streebog_g( ak_streebog ctx, ak_uint64 *n, const ak_uint64 *m )
 {
@@ -184,8 +184,6 @@
                                                    "using null pointer to externl result buffer" );
   if( size >= 64 ) return ak_error_message( ak_error_wrong_length, __func__,
                                                                       "input length is too huge" );
-  if( out_size > cx->hsize ) return ak_error_message( ak_error_wrong_length, __func__,
-                                                                 "requesting length is too huge" );
   /* формируем временный текст */
   memset( m, 0, 64 );
   if( in != NULL )
@@ -380,18 +378,29 @@
  int ak_hash_context_ptr( ak_hash hctx, const ak_pointer in,
                                          const size_t size, ak_pointer out, const size_t out_size )
 {
-  int error = ak_error_ok;
   if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                       "destroying null pointer to hash context" );
-  if(( error = ak_mac_context_clean( &hctx->mctx )) != ak_error_ok )
-    ak_error_message( error, __func__, "incorrect cleaning of hash context" );
+                                                            "using null pointer to hash context" );
+ return ak_mac_context_ptr( &hctx->mctx, in, size, out, out_size );
+}
 
-  if(( error = ak_mac_context_finalize( &hctx->mctx, in, size, out, out_size )) != ak_error_ok )
-    return ak_error_message( error, __func__, "incorrect updating hash context" );
-  if( ak_mac_context_clean( &hctx->mctx ) != ak_error_ok )
-    ak_error_message( ak_error_get_value(), __func__, "incorrect cleaning of hash context" );
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param hctx Контекст функции хеширования
+    @param filename Имя файла, для котрого вычисляется хеш-код.
+    @param size Размер входных данных в байтах.
+    @param out Область памяти, куда будет помещен результат. Память должна быть заранее выделена.
+    Размер выделяемой памяти должен быть не менее значения поля hsize и может
+    быть определен с помощью вызова функции ak_hash_context_get_tag_size().
+    @param out_size Размер области памяти (в октетах), в которую будет помещен результат.
 
- return error;
+    @return В случае успеха функция возвращает ноль (\ref ak_error_ok). В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_hash_context_file( ak_hash hctx, const char * filename,
+                                                           ak_pointer out, const size_t out_size )
+{
+  if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to hash context" );
+ return ak_mac_context_file( &hctx->mctx, filename, out, out_size );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -402,7 +411,7 @@
  int ak_hash_context_clean( ak_hash hctx )
 {
   if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                       "destroying null pointer to hash context" );
+                                                         "cleaning null pointer to hash context" );
  return ak_mac_context_clean( &hctx->mctx );
 }
 
@@ -418,7 +427,7 @@
  int ak_hash_context_update( ak_hash hctx, const ak_pointer in, const size_t size )
 {
   if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                       "destroying null pointer to hash context" );
+                                                         "updating null pointer to hash context" );
  return ak_mac_context_update( &hctx->mctx, in, size );
 }
 
@@ -438,7 +447,7 @@
                                                            ak_pointer out, const size_t out_size )
 {
   if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                       "destroying null pointer to hash context" );
+                                                       "finalizing null pointer to hash context" );
  return ak_mac_context_finalize( &hctx->mctx, in, size, out, out_size );
 }
 

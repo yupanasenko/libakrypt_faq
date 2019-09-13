@@ -82,6 +82,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_mac.h
                     source/ak_hash.h
                     source/ak_skey.h
+                    source/ak_hmac.h
      )
 
   set( SOURCES      ${SOURCES}
@@ -89,6 +90,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_hash.c
                     source/ak_hashrnd.c
                     source/ak_skey.c
+                    source/ak_hmac.c
      )
 endif()
 
@@ -218,6 +220,9 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  hash01
                  hash01a
                  hash02
+                 hash03
+                 hmac01
+                 hmac02
                  oid03
                  random02
                  skey01
@@ -253,7 +258,7 @@ if( LIBAKRYPT_INTERNAL_TESTS )
     endforeach()
     message("-- Added tests for internal functions (now \"make test\" enabled): ")
     message("   - ${INTERNAL_TEST_LIST}" )
-    if( ${INTERNAL_TEST_LIST_EXAMPLES} )
+    if( INTERNAL_TEST_LIST_EXAMPLES )
       message("   - ${INTERNAL_TEST_LIST_EXAMPLES}" )
     endif()
   endif()
