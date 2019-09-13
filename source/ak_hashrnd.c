@@ -17,7 +17,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_hash.h>
- #include <ak_mpzn.h>
+ #include <ak_random.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Класс для хранения внутренних состояний генератора hashrnd. */
@@ -42,8 +42,9 @@
 /* ----------------------------------------------------------------------------------------------- */
  static int ak_random_context_next_hashrnd( ak_random rnd )
 {
+  size_t idx = 0;
+  ak_uint8 carry = 0;
   ak_hashrnd hrnd = NULL;
-  ak_mpzn512 one = ak_mpzn512_one;
 
   if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                     "use a null pointer to a random generator" );
@@ -52,13 +53,17 @@
   if( hrnd->len != 0 ) return ak_error_message( ak_error_wrong_length, __func__,
                                             "unexpected value of internal variable \"length\"" );
  /* увеличиваем счетчик */
-  ak_mpzn_add( (ak_uint64 *)hrnd->counter, (ak_uint64 *)hrnd->counter, one, ak_mpzn512_size );
+  hrnd->counter[0]++;
+  do {
+       carry = hrnd->counter[idx++] > 0 ? 0 : 1;
+       hrnd->counter[idx] += carry;
+  } while( carry );
   hrnd->counter[63] = 0;
+
  /* вычисляем новое хеш-значение */
   ak_hash_context_ptr( &hrnd->hctx, hrnd->counter, 64, hrnd->buffer, 64 );
  /* определяем доступный объем данных для считывания */
   hrnd->len = 64;
-
  return ak_error_ok;
 }
 
@@ -154,7 +159,7 @@
   int error = ak_error_ok;
   ak_uint64 qword = ak_random_value(); /* вырабатываем случайное число */
 
- if(( error = ak_random_context_create( rnd )) != ak_error_ok )
+  if(( error = ak_random_context_create( rnd )) != ak_error_ok )
     return ak_error_message( error, __func__ , "wrong initialization of random generator" );
 
   if(( rnd->data.ctx = malloc( sizeof( struct hashrnd ))) == NULL )
@@ -178,7 +183,7 @@
   rnd->random = ak_random_context_random_hashrnd;
   rnd->free = ak_random_context_free_hashrnd;
 
- /* для корректной работы присваиваем какое-то случайное начальное значение */
+ /* для корректной работы присваиваем какое-то случайное начальное значение */ 
   return ak_random_context_randomize_hashrnd( rnd, &qword, sizeof( ak_uint64 ));
 }
 

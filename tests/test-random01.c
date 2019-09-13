@@ -16,7 +16,7 @@
 { 
  clock_t time;
  struct random generator;
- ak_uint32 seed = 0x13AE4F0E; /* константа */
+ ak_uint8 seed[4] = { 0x13, 0xAE, 0x4F, 0x0E }; /* константа */
  int i = 0, retval = ak_true;
  ak_uint8 buffer[1024], string[2050];
 
@@ -54,15 +54,9 @@
  if( !ak_libakrypt_create( NULL )) return ak_libakrypt_destroy();
 
  /* последовательно запускаем генераторы на тестирование */
- #ifdef LIBAKRYPT_LITTLE_ENDIAN
-   if( test_function( ak_random_context_create_lcg,
-      "206C732798220B2D1CF944974ED9698C1299E40346C0FB7F8A4093D5F83CEFE3" ) != ak_true )
-     error = EXIT_FAILURE;
- #else
    if( test_function( ak_random_context_create_lcg,
       "47B7EF2B729133A3E9853E0F4FFE040154A7622B7827E71BC6E48DFF98C27F61" ) != ak_true )
      error = EXIT_FAILURE;
- #endif
 
 #ifdef _WIN32
  if( test_function( ak_random_context_create_winrtl, NULL ) != ak_true ) error = EXIT_FAILURE;
@@ -72,15 +66,9 @@
 #endif
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
- #ifdef LIBAKRYPT_LITTLE_ENDIAN
-   if( test_function( ak_random_context_create_hashrnd,
-      "F6333BC3B0192EAE9F99165F1B166C60790CC877DCCE37B25485C223E9928143" ) != ak_true )
+ if( test_function( ak_random_context_create_hashrnd,
+      "1C48E724F9A72C5889D5B98F2EFD54FB7272CA77A056FE1D015A6D7A2EC90CB3" ) != ak_true )
      error = EXIT_FAILURE;
- #else
-   if( test_function( ak_random_context_create_hashrnd,
-      "01331181BAA4C25065DA063463D9B593C0D85B8A1FCC9B27D6BFAE2B00662A1D" ) != ak_true )
-     error = EXIT_FAILURE;
- #endif
 #endif
 
  ak_libakrypt_destroy();
