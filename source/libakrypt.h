@@ -419,12 +419,12 @@ extern "C" {
  dll_export const char *ak_libakrypt_get_mode_name( const oid_modes_t );
 /*! \brief Получение общего количества определенных OID библиотеки. */
  dll_export size_t ak_libakrypt_oids_count( void );
-/*! \brief Функция возвращает максимальную длину массива, необходимого для хранения имени или
-    идентификатора алгоритма. */
- dll_export size_t ak_libakrypt_get_oid_max_length( void );
+///*! \brief Функция возвращает максимальную длину массива, необходимого для хранения имени или
+//    идентификатора алгоритма. */
+// dll_export size_t ak_libakrypt_get_oid_max_length( void );
 /*! \brief Получение информации об oid с заданным индексом. */
  dll_export int ak_libakrypt_get_oid_by_index( const size_t ,
-                  oid_engines_t * , oid_modes_t * , char * , const size_t, char * , const size_t );
+                                 oid_engines_t * , oid_modes_t * , const char **, const char *** );
 /*! \brief Получение информации об oid алгоритма по его handle. */
  dll_export int ak_libakrypt_get_oid_by_handle( ak_handle ,
                   oid_engines_t * , oid_modes_t * , char * , const size_t, char * , const size_t );

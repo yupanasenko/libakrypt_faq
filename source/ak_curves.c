@@ -216,7 +216,7 @@
       ak_wcurve wc = NULL;
       if(( wc = ( ak_wcurve ) oid->data ) == NULL )  {
         ak_error_message( ak_error_null_pointer, __func__,
-                                      "internal error with null pointer to wcurve paramset" );
+                                           "internal error with null pointer to wcurve paramset" );
         result = ak_false;
         goto lab_exit;
       }
@@ -228,18 +228,19 @@
           case ak_error_curve_point_order      : p = "base point order"; break;
           case ak_error_curve_prime_modulo     : p = "prime modulo p"; break;
           case ak_error_curve_order_parameters : p = "prime order parameters"; break;
-          case ak_error_wrong_endian           : p = "incorrect representation of prime modulo"; break;
+          case ak_error_wrong_endian           : p = "incorrect representation of prime modulo";
+                                                 break;
           default : p = "unexpected parameter";
         }
         ak_wcurve_to_log( wc, reason );
         ak_error_message_fmt( reason, __func__ , "curve %s (OID: %s) has wrong %s",
-                                                             oid->name, oid->id, p );
+                                                                       oid->names[0], oid->id, p );
         result = ak_false;
         goto lab_exit;
       } else
           if( audit > ak_log_standard ) {
             ak_error_message_fmt( ak_error_ok, __func__ , "curve %s (OID: %s) is Ok",
-                                                                oid->name, oid->id );
+                                                                          oid->names[0], oid->id );
           }
     }
     oid = ak_oid_context_findnext_by_engine( oid, identifier );
@@ -247,9 +248,9 @@
 
  lab_exit:
   if( !result ) ak_error_message( ak_error_get_value(), __func__ ,
-                                                         "incorrect testing Weierstrass curves" );
+                                                          "incorrect testing Weierstrass curves" );
    else if( audit >= ak_log_maximum ) ak_error_message( ak_error_get_value(), __func__ ,
-                                                "testing Weierstrass curves ended successfully" );
+                                                 "testing Weierstrass curves ended successfully" );
  return result;
 }
 

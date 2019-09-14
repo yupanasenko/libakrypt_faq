@@ -199,6 +199,7 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 set( EXAMPLES_LIST hello
                    log
+                   oid
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( EXAMPLES_LIST ${EXAMPLES_LIST}
@@ -218,7 +219,6 @@ set( INTERNAL_TEST_LIST
                  gf2n
                  mpzn01
                  oid01
-                 oid02
                  random01
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )

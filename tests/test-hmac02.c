@@ -41,7 +41,7 @@
   ak_hmac_context_file( &hctx, filename, out, sizeof( out ));
 
  /* выводим результаты */
-  printf("%s: ", hctx.key.oid->name );
+  printf("%s: ", hctx.key.oid->names[0] );
   for( i = 0; i < ak_hmac_context_get_tag_size( &hctx); i++ ) printf("%02x", out[i] );
   printf(" (%s)\n", filename );
 
@@ -54,7 +54,7 @@
   ak_hmac_context_finalize( &hctx, NULL, 0, out2, sizeof( out2 ));
   ak_file_close( &fp );
 
-  printf("%s: ", hctx.key.oid->name );
+  printf("%s: ", hctx.key.oid->names[0] );
   for( i = 0; i < ak_hmac_context_get_tag_size( &hctx ); i++ ) printf("%02x", out2[i] );
   printf(" (block by block)\n" );
 

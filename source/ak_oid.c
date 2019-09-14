@@ -19,35 +19,68 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Константные значения имен идентификаторов */
+ static const char *on_lcg[] =              { "lcg", NULL };
+ static const char *on_dev_random[] =       { "/dev/random", "dev-random", NULL };
+ static const char *on_dev_urandom[] =      { "/dev/urandom", "dev-urandom", NULL };
+#ifdef _WIN32
+ static const char *on_winrtl[] =           { "winrtl", NULL };
+#endif
+#ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
+ static const char *on_hashrnd[] =          { "hashrnd", NULL };
+ static const char *on_streebog256[] =      { "streebog256", "md_gost12_256", NULL };
+ static const char *on_streebog512[] =      { "streebog512", "md_gost12_512", NULL };
+ static const char *on_hmac_streebog256[] = { "hmac-streebog256", NULL };
+ static const char *on_hmac_streebog512[] = { "hmac-streebog512", NULL };
+#endif
+ static const char *on_w256_pst[] =         { "id-tc26-gost-3410-2012-256-paramSetTest", NULL };
+ static const char *on_w256_psa[] =         { "id-tc26-gost-3410-2012-256-paramSetA", NULL };
+ static const char *on_w256_psb[] =         { "id-tc26-gost-3410-2012-256-paramSetB", NULL };
+ static const char *on_w256_ps4357a[] =     { "cspa",
+                                              "id-rfc4357-gost-3410-2001-paramSetA", NULL };
+ static const char *on_w256_psc[] =         { "id-tc26-gost-3410-2012-256-paramSetC", NULL };
+ static const char *on_w256_ps4357b[] =     { "cspb",
+                                              "id-rfc4357-gost-3410-2001-paramSetB", NULL };
+ static const char *on_w256_psd[] =         { "id-tc26-gost-3410-2012-256-paramSetD", NULL };
+ static const char *on_w256_ps4357c[] =     { "cspc",
+                                              "id-rfc4357-gost-3410-2001-paramSetC", NULL };
+ static const char *on_w256_ps4357d[] =     { "cspdh",
+                                              "id-rfc4357-2001dh-paramSet", NULL };
+ static const char *on_w512_pst[] =         { "id-tc26-gost-3410-2012-512-paramSetTest", NULL };
+ static const char *on_w512_psa[] =         { "id-tc26-gost-3410-2012-512-paramSetA", NULL };
+ static const char *on_w512_psb[] =         { "id-tc26-gost-3410-2012-512-paramSetB", NULL };
+ static const char *on_w512_psc[] =         { "id-tc26-gost-3410-2012-512-paramSetC", NULL };
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения OID библиотеки */
  static struct oid libakrypt_oids[] = {
   /* 1. идентификаторы алгоритмов выработки псевдо-случайных последовательностей,
         значения OID находятся в дереве библиотеки: 1.2.643.2.52.1.1 - генераторы ПСЧ  */
-   { random_generator, algorithm, "lcg", "1.2.643.2.52.1.1.1", NULL, NULL,
+   { random_generator, algorithm, on_lcg, "1.2.643.2.52.1.1.1", NULL, NULL,
                                     { ( ak_function_void *) ak_random_context_create_lcg,
                                       ( ak_function_void *) ak_random_context_destroy,
                                       ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
 
   #if defined(__unix__) || defined(__APPLE__)
-   { random_generator, algorithm, "dev-random", "1.2.643.2.52.1.1.2", NULL, NULL,
+   { random_generator, algorithm, on_dev_random, "1.2.643.2.52.1.1.2", NULL, NULL,
                                     { ( ak_function_void *) ak_random_context_create_random,
                                       ( ak_function_void *) ak_random_context_destroy,
                                       ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
 
-   { random_generator, algorithm, "dev-urandom", "1.2.643.2.52.1.1.3", NULL, NULL,
+   { random_generator, algorithm, on_dev_urandom, "1.2.643.2.52.1.1.3", NULL, NULL,
                                     { ( ak_function_void *) ak_random_context_create_urandom,
                                       ( ak_function_void *) ak_random_context_destroy,
                                       ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
   #endif
   #ifdef _WIN32
-   { random_generator, algorithm, "winrtl", "1.2.643.2.52.1.1.4", NULL, NULL,
+   { random_generator, algorithm, on_winrtl, "1.2.643.2.52.1.1.4", NULL, NULL,
                                     { ( ak_function_void *) ak_random_context_create_winrtl,
                                       ( ak_function_void *) ak_random_context_destroy,
                                       ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
   #endif
   #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
 
-   { random_generator, algorithm, "hashrnd", "1.2.643.2.52.1.1.6", NULL, NULL,
+   { random_generator, algorithm, on_hashrnd, "1.2.643.2.52.1.1.6", NULL, NULL,
                              { ( ak_function_void *) ak_random_context_create_hashrnd,
                                       ( ak_function_void *) ak_random_context_destroy,
                                       ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
@@ -55,12 +88,12 @@
   /* 2. идентификаторы алгоритмов бесключевого хеширования,
         значения OID взяты из перечней КриптоПро и ТК26 (http://tk26.ru/methods/OID_TK_26/index.php)
         в дереве библиотеки: 1.2.643.2.52.1.2 - функции бесключевого хеширования */
-   { hash_function, algorithm, "streebog256", "1.2.643.7.1.1.2.2", NULL, NULL,
+   { hash_function, algorithm, on_streebog256, "1.2.643.7.1.1.2.2", NULL, NULL,
                            { ( ak_function_void *) ak_hash_context_create_streebog256,
                                         ( ak_function_void *) ak_hash_context_destroy,
                                         ( ak_function_void *) ak_hash_context_delete, NULL, NULL }},
 
-   { hash_function, algorithm, "streebog512", "1.2.643.7.1.1.2.3", NULL, NULL,
+   { hash_function, algorithm, on_streebog512, "1.2.643.7.1.1.2.3", NULL, NULL,
                            { ( ak_function_void *) ak_hash_context_create_streebog512,
                                         ( ak_function_void *) ak_hash_context_destroy,
                                         ( ak_function_void *) ak_hash_context_delete, NULL, NULL }},
@@ -72,12 +105,12 @@
 
   /* 4. идентификаторы алгоритмов HMAC согласно Р 50.1.113-2016
         в дереве библиотеки: 1.2.643.2.52.1.4 - функции ключевого хеширования (имитозащиты) */
-   { hmac_function, algorithm, "hmac-streebog256", "1.2.643.7.1.1.4.1", NULL, NULL,
+   { hmac_function, algorithm, on_hmac_streebog256, "1.2.643.7.1.1.4.1", NULL, NULL,
                            { ( ak_function_void *) ak_hmac_context_create_streebog256,
                                         ( ak_function_void *) ak_hmac_context_destroy,
                                         ( ak_function_void *) ak_hmac_context_delete, NULL, NULL }},
 
-   { hmac_function, algorithm, "hmac-streebog512", "1.2.643.7.1.1.4.2", NULL, NULL,
+   { hmac_function, algorithm, on_hmac_streebog512, "1.2.643.7.1.1.4.2", NULL, NULL,
                             { ( ak_function_void *)ak_hmac_context_create_streebog512,
                                         ( ak_function_void *) ak_hmac_context_destroy,
                                         ( ak_function_void *) ak_hmac_context_delete, NULL, NULL }},
@@ -88,49 +121,50 @@
          в дереве библиотеки: 1.2.643.2.52.1.12 - параметры эллиптических кривых в форме Вейерштрасса
          в дереве библиотеки: 1.2.643.2.52.1.12.1 - параметры 256 битных кривых
          в дереве библиотеки: 1.2.643.2.52.1.12.2 - параметры 512 битных кривых */
-   { identifier, wcurve_params, "id-tc26-gost-3410-2012-256-paramSetTest", "1.2.643.7.1.2.1.1.0",
+   { identifier, wcurve_params, on_w256_pst, "1.2.643.7.1.2.1.1.0",
                                      NULL, (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetTest,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
 
-   { identifier, wcurve_params, "id-tc26-gost-3410-2012-256-paramSetA", "1.2.643.7.1.2.1.1.1",
+   { identifier, wcurve_params, on_w256_psa, "1.2.643.7.1.2.1.1.1",
                                      NULL, (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetA,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
-
-   { identifier, wcurve_params, "id-tc26-gost-3410-2012-256-paramSetB", "1.2.643.7.1.2.1.1.2",
+  /* кривая A из 4357 три раза */
+   { identifier, wcurve_params, on_w256_psb, "1.2.643.7.1.2.1.1.2",
                                       NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA,
-                                                                  { NULL, NULL, NULL, NULL, NULL }},
-   { identifier, wcurve_params, "id-rfc4357-gost-3410-2001-paramSetA", "1.2.643.2.2.35.1",
+                                                                  { NULL, NULL, NULL, NULL, NULL }},                                                                  
+   { identifier, wcurve_params, on_w256_ps4357a, "1.2.643.2.2.35.1",
                                   NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
-
-   { identifier, wcurve_params, "id-tc26-gost-3410-2012-256-paramSetC", "1.2.643.7.1.2.1.1.3",
+   { identifier, wcurve_params, on_w256_ps4357d, "1.2.643.2.2.36.0",
+                                  NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA,
+                                                                  { NULL, NULL, NULL, NULL, NULL }},
+  /* кривая В из 4357 два раза */
+   { identifier, wcurve_params, on_w256_psc, "1.2.643.7.1.2.1.1.3",
                                       NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
-   { identifier, wcurve_params, "id-rfc4357-gost-3410-2001-paramSetB", "1.2.643.2.2.35.2",
+   { identifier, wcurve_params, on_w256_ps4357b, "1.2.643.2.2.35.2",
                                   NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
-
-   { identifier, wcurve_params, "id-tc26-gost-3410-2012-256-paramSetD", "1.2.643.7.1.2.1.1.4",
+  /* кривая С из 4357 два раза */
+   { identifier, wcurve_params, on_w256_psd, "1.2.643.7.1.2.1.1.4",
                                       NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
-   { identifier, wcurve_params, "id-rfc4357-gost-3410-2001-paramSetC", "1.2.643.2.2.35.3",
+   { identifier, wcurve_params, on_w256_ps4357c, "1.2.643.2.2.35.3",
                                   NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
-   { identifier, wcurve_params, "id-rfc4357-2001dh-paramset", "1.2.643.2.2.36.0",
-                                  NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA,
-                                                                  { NULL, NULL, NULL, NULL, NULL }},
 
-   { identifier, wcurve_params, "id-tc26-gost-3410-2012-512-paramSetTest", "1.2.643.7.1.2.1.2.0",
+  /* теперь кривые длиной 512 бит */
+   { identifier, wcurve_params, on_w512_pst, "1.2.643.7.1.2.1.2.0",
                                      NULL, (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetTest,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
 
-   { identifier, wcurve_params, "id-tc26-gost-3410-2012-512-paramSetA", "1.2.643.7.1.2.1.2.1",
+   { identifier, wcurve_params, on_w512_psa, "1.2.643.7.1.2.1.2.1",
                                      NULL, (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetA,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
-   { identifier, wcurve_params, "id-tc26-gost-3410-2012-512-paramSetB", "1.2.643.7.1.2.1.2.2",
+   { identifier, wcurve_params, on_w512_psb, "1.2.643.7.1.2.1.2.2",
                                      NULL, (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetB,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
-   { identifier, wcurve_params, "id-tc26-gost-3410-2012-512-paramSetC", "1.2.643.7.1.2.1.2.3",
+   { identifier, wcurve_params, on_w512_psc, "1.2.643.7.1.2.1.2.3",
                                      NULL, (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetC,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
 
@@ -221,8 +255,8 @@
     @param index Индекс статической структуры oid
     @param engine Указатель на переменную, куда будет помещено значение engine
     @param mode Указатель на переменную, куда будет помещено значение mode
-    @param name Указатель на строку, в которую будет скопировано имя алгоритма
-    @param name_size Размер буффера, в который будет скопировано имя алгоритма.
+    @param names Указатель на массив строк, заканчивающийся NULL, в котором будет находиться
+    множество доступных имен для данного OID
     @param oid Указатель на строку, в которую будет скопирован OID -  последовательность чисел,
     разделенных точками.
     @param oid_size Размер буффера, в который будет скопирован идентификатор алгоритма.
@@ -230,41 +264,17 @@
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_libakrypt_get_oid_by_index( const size_t index, oid_engines_t *engine, oid_modes_t *mode,
-                              char *name, const size_t name_size, char *oid, const size_t oid_size )
+                                                             const char **oid, const char ***names )
 {
-  size_t len = 0;
   if( index >= ak_libakrypt_oids_count())
     return ak_error_message( ak_error_wrong_index, __func__, "incorrect index value" );
 
   *engine = libakrypt_oids[index].engine;
   *mode = libakrypt_oids[index].mode;
-
- /* проверяем размер выделенной области памяти и копируем значения */
-  if( name_size < 1 + (len = strlen( libakrypt_oids[index].name )))
-    return ak_error_message( ak_error_overflow, __func__, "isufficient memory for name value" );
-  memcpy( name, libakrypt_oids[index].name, len );
-  name[len] = 0;
-
-  if( oid_size < 1 + (len = strlen( libakrypt_oids[index].id )))
-    return ak_error_message( ak_error_overflow, __func__, "isufficient memory for oid value" );
-  memcpy( oid, libakrypt_oids[index].id, len );
-  oid[len] = 0;
+  *oid =  libakrypt_oids[index].id;
+  *names = libakrypt_oids[index].names;
 
  return ak_error_ok;
-}
-
-
-/* ----------------------------------------------------------------------------------------------- */
- size_t ak_libakrypt_get_oid_max_length( void )
-{
-  size_t len = 0;
-  ssize_t index = ( ssize_t )ak_libakrypt_oids_count();
-
-  while( --index >= 0 ) {
-    if( strlen(libakrypt_oids[index].name) > len ) len = strlen(libakrypt_oids[index].name );
-    if( strlen(libakrypt_oids[index].id) > len ) len = strlen(libakrypt_oids[index].id );
-  }
- return 1 + len;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -277,7 +287,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_oid ak_oid_context_find_by_name( const char *name )
 {
-  size_t len = 0, idx = 0;
+  size_t idx = 0;
 
  /* надо ли стартовать */
   if( name == NULL ) {
@@ -286,13 +296,16 @@
   }
  /* перебор по всем возможным значениям */
   do{
-     if(( strlen( name ) == ( len = strlen( libakrypt_oids[idx].name ))) &&
-                 ak_ptr_is_equal( name, libakrypt_oids[idx].name, len ))
-       return  &libakrypt_oids[idx];
-
+     const char *str = NULL;
+     size_t len = 0, jdx = 0;
+     while(( str = libakrypt_oids[idx].names[jdx] ) != NULL ) {
+        len = strlen( str );
+        if(( strlen( name ) == len ) && ak_ptr_is_equal( name, str, len ))
+          return  &libakrypt_oids[idx];
+        jdx++;
+     }
   } while( ++idx < ak_libakrypt_oids_count( ));
 
-  //ak_error_message_fmt( ak_error_oid_id, __func__, "searching oid with wrong name \"%s\"", name );
   ak_error_set_value( ak_error_oid_id );
  return NULL;
 }
@@ -318,9 +331,6 @@
 
   } while( ++idx < ak_libakrypt_oids_count( ));
 
-
-  // ak_error_message_fmt( ak_error_oid_id, __func__,
-  //                                          "searching oid with wrong identifier \"%s\"", id );
   ak_error_set_value( ak_error_oid_id );
  return NULL;
 }
@@ -333,27 +343,31 @@
 /* ----------------------------------------------------------------------------------------------- */
  ak_oid ak_oid_context_find_by_ni( const char *ni )
 {
-  size_t len = 0, idx = 0;
+  size_t idx = 0;
   if( ni == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__,
                                                   "using null pointer to oid name or identifier" );
     return NULL;
   }
 
+ /* основной перебор */
   do{
-    /* проверка имени */
-     if(( strlen( ni ) == ( len = strlen( libakrypt_oids[idx].name ))) &&
-            ak_ptr_is_equal( ni, libakrypt_oids[idx].name, len ))
-       return &libakrypt_oids[idx];
+     const char *str = NULL;
+     size_t jdx = 0, len = strlen( libakrypt_oids[idx].id );
+
     /* проверка идентификатора */
-     if(( strlen( ni ) == ( len = strlen( libakrypt_oids[idx].id ))) &&
-            ak_ptr_is_equal( ni, libakrypt_oids[idx].id, len ))
+     if(( strlen( ni ) == len) && ak_ptr_is_equal( ni, libakrypt_oids[idx].id, len ))
        return &libakrypt_oids[idx];
 
+    /* проверка имени */
+     while(( str = libakrypt_oids[idx].names[jdx] ) != NULL ) {
+        len = strlen( str );
+        if(( strlen( ni ) == len ) && ak_ptr_is_equal( ni, str, len ))
+          return  &libakrypt_oids[idx];
+        jdx++;
+     }
   } while( ++idx < ak_libakrypt_oids_count( ));
 
-  // ak_error_message_fmt( ak_error_oid_id, __func__,
-  //                                      "searching oid with wrong name or identifier\"%s\"", ni );
   ak_error_set_value( ak_error_oid_id );
  return NULL;
 }
@@ -419,6 +433,7 @@
 /*!  \example test-oid01.c                                                                         */
 /*!  \example test-oid02.c                                                                         */
 /*!  \example test-oid03.c                                                                         */
+/*!  \example example-oid.c                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                       ak_oid.c  */
 /* ----------------------------------------------------------------------------------------------- */

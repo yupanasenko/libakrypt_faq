@@ -616,9 +616,9 @@
  /* информация о ключе */
   fprintf( fp, "key buffer size: %u bytes\nkey context size: %u bytes\n",
                                 (unsigned int)skey->key_size, (unsigned int)sizeof( struct skey ));
-  if( skey->oid != NULL )
+  if(( skey->oid != NULL ) && ( skey->oid->names[0] != NULL ))
     fprintf( fp, "key info: %s (OID: %s, engine: %s, mode: %s)\n",
-        skey->oid->name, skey->oid->id, ak_libakrypt_get_engine_name( skey->oid->engine ),
+        skey->oid->names[0], skey->oid->id, ak_libakrypt_get_engine_name( skey->oid->engine ),
                                                     ak_libakrypt_get_mode_name( skey->oid->mode ));
    else fprintf( fp, "key info: unidentified\n");
 

@@ -12,6 +12,12 @@
  #include <ak_oid.h>
  #include <ak_random.h>
 
+ typedef struct test
+{
+  oid_modes_t mode;
+  char **names;
+} *ak_test;
+
  int main( void )
 {
  ak_oid oid;
@@ -37,7 +43,7 @@
    /* выводим сгенерированные данные и информацию о генераторе,
                                 используя oid созданного генератора */
     printf("%02d: %s [%s, %s]", ++count, string,
-                             generator.oid->name, generator.oid->id );
+                             generator.oid->names[0], generator.oid->id );
    /* проверка совпадения oid */
     if( generator.oid != oid ) printf(" wrong oid pointer\n");
      else printf("\n");

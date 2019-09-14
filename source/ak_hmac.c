@@ -190,7 +190,7 @@
     return ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
 
  /* получаем oid бесключевой функции хеширования */
-  if(( hashoid = ak_oid_context_find_by_name( oid->name+5 )) == NULL )
+  if(( hashoid = ak_oid_context_find_by_name( oid->names[0]+5 )) == NULL )
     return ak_error_message( ak_error_get_value(), __func__ ,
                                                        "incorrect searching of hash fuction oid" );
  /* проверяем, что производящая функция определена */
@@ -201,7 +201,7 @@
   if(( error = (( ak_function_hash_context_create *)hashoid->func.create )
                                                                   ( &hctx->ctx )) != ak_error_ok )
     return ak_error_message_fmt( error, __func__,
-                                   "invalid creation of %s hash function context", hashoid->name );
+                               "invalid creation of %s hash function context", hashoid->names[0] );
  /* инициализируем контекст сжимающего отображения */
   if(( error = ak_mac_context_create(
                  &hctx->mctx, /* контекст */
@@ -650,10 +650,10 @@
   if( ak_ptr_is_equal( out, out2, ak_hmac_context_get_tag_size( &hkey ))) {
     if( audit >= ak_log_maximum )
       ak_error_message_fmt( ak_error_ok, __func__ ,
-                    "the random walk test for %s with %u steps is Ok", hkey.key.oid->name, steps );
+                "the random walk test for %s with %u steps is Ok", hkey.key.oid->names[0], steps );
   } else {
       ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                 "the random walk test for %s with %u steps is wrong", hkey.key.oid->name, steps );
+             "the random walk test for %s with %u steps is wrong", hkey.key.oid->names[0], steps );
       ak_log_set_message(( str = ak_ptr_to_hexstr( out,
                                   ak_hmac_context_get_tag_size( &hkey ), ak_false ))); free( str );
       ak_log_set_message(( str = ak_ptr_to_hexstr( out2,
@@ -724,10 +724,10 @@
   if( ak_ptr_is_equal( out, out2, ak_hmac_context_get_tag_size( &hkey ))) {
     if( audit >= ak_log_maximum )
       ak_error_message_fmt( ak_error_ok, __func__ ,
-                    "the random walk test for %s with %u steps is Ok", hkey.key.oid->name, steps );
+                "the random walk test for %s with %u steps is Ok", hkey.key.oid->names[0], steps );
   } else {
       ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                 "the random walk test for %s with %u steps is wrong", hkey.key.oid->name, steps );
+             "the random walk test for %s with %u steps is wrong", hkey.key.oid->names[0], steps );
       ak_log_set_message(( str = ak_ptr_to_hexstr( out,
                                   ak_hmac_context_get_tag_size( &hkey ), ak_false ))); free( str );
       ak_log_set_message(( str = ak_ptr_to_hexstr( out2,

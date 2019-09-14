@@ -22,7 +22,7 @@
 
  /* создаем генератор */
   create( &generator );
-  printf( "%s: ", generator.oid->name ); fflush( stdout );
+  printf( "%s: ", generator.oid->names[0] ); fflush( stdout );
 
  /* инициализируем константным значением */
   if( generator.randomize_ptr != NULL )
