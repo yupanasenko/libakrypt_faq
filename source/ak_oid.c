@@ -21,8 +21,8 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения имен идентификаторов */
  static const char *on_lcg[] =              { "lcg", NULL };
- static const char *on_dev_random[] =       { "/dev/random", "dev-random", NULL };
- static const char *on_dev_urandom[] =      { "/dev/urandom", "dev-urandom", NULL };
+ static const char *on_dev_random[] =       { "dev-random", "/dev/random", NULL };
+ static const char *on_dev_urandom[] =      { "dev-urandom", "/dev/urandom", NULL };
 #ifdef _WIN32
  static const char *on_winrtl[] =           { "winrtl", NULL };
 #endif
@@ -36,16 +36,16 @@
  static const char *on_w256_pst[] =         { "id-tc26-gost-3410-2012-256-paramSetTest", NULL };
  static const char *on_w256_psa[] =         { "id-tc26-gost-3410-2012-256-paramSetA", NULL };
  static const char *on_w256_psb[] =         { "id-tc26-gost-3410-2012-256-paramSetB", NULL };
- static const char *on_w256_ps4357a[] =     { "cspa",
-                                              "id-rfc4357-gost-3410-2001-paramSetA", NULL };
+ static const char *on_w256_ps4357a[] =     { "id-rfc4357-gost-3410-2001-paramSetA",
+                                              "cspa", NULL };
  static const char *on_w256_psc[] =         { "id-tc26-gost-3410-2012-256-paramSetC", NULL };
- static const char *on_w256_ps4357b[] =     { "cspb",
-                                              "id-rfc4357-gost-3410-2001-paramSetB", NULL };
+ static const char *on_w256_ps4357b[] =     { "id-rfc4357-gost-3410-2001-paramSetB",
+                                              "cspb", NULL };
  static const char *on_w256_psd[] =         { "id-tc26-gost-3410-2012-256-paramSetD", NULL };
- static const char *on_w256_ps4357c[] =     { "cspc",
-                                              "id-rfc4357-gost-3410-2001-paramSetC", NULL };
- static const char *on_w256_ps4357d[] =     { "cspdh",
-                                              "id-rfc4357-2001dh-paramSet", NULL };
+ static const char *on_w256_ps4357c[] =     { "id-rfc4357-gost-3410-2001-paramSetC",
+                                              "cspc", NULL };
+ static const char *on_w256_ps4357d[] =     { "id-rfc4357-2001dh-paramSet",
+                                              "cspdh", NULL };
  static const char *on_w512_pst[] =         { "id-tc26-gost-3410-2012-512-paramSetTest", NULL };
  static const char *on_w512_psa[] =         { "id-tc26-gost-3410-2012-512-paramSetA", NULL };
  static const char *on_w512_psb[] =         { "id-tc26-gost-3410-2012-512-paramSetB", NULL };

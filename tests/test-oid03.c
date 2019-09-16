@@ -19,7 +19,7 @@
  ak_uint8 test[12] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb };
  const char *names[7] = {
   "md_gost12_512", "cspa", "rsa", "dev-random",
-  "id-tc26", "espinosa", "id-tc26-gost-3410-2012-512-paramSetC" };
+  "id-tc26", "gost-mac", "1.2.643.7.1.2.1.2.2" };
 
  /* инициализируем библиотеку */
   if( !ak_libakrypt_create( NULL )) return ak_libakrypt_destroy();
@@ -58,7 +58,7 @@
  /* поиск по имени */
   printf("\nsearching test:\n");
   for( count = 0; count < 7; count++ )
-     if(( oid = ak_oid_context_find_by_name( names[count] )) != NULL )
+     if(( oid = ak_oid_context_find_by_ni( names[count] )) != NULL )
        printf(" + oid %s found (aka %s)\n", names[count], oid->names[0] );
       else printf(" - oid %s not found\n", names[count] );
 

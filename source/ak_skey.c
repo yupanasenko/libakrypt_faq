@@ -22,7 +22,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_skey.h>
- #include <ak_hash.h>
+ #include <ak_hmac.h>
  #include <ak_tools.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -595,6 +595,65 @@
 
  return error;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает ключу значение, выработанное из заданного пароля при помощи
+    алгоритма PBKDF2, описанного  в рекомендациях по стандартизации Р 50.1.111-2016.
+    Пароль должен быть непустой строкой символов в формате utf8.
+
+    Количество итераций алгоритма PBKDF2 определяется опцией библиотеки `pbkdf2_iteration_count`,
+    значение которой может быть опредедено с помощью вызова функции ak_libakrypt_get_option().
+
+    @param skey Контекст секретного ключа. К моменту вызова функции контекст должен быть
+    инициализирован.
+    @param pass Пароль, представленный в виде строки символов.
+    @param pass_size Длина пароля в октетах
+    @param salt Случайный вектор, представленный в виде строки символов.
+    @param salt_size Длина случайного вектора в байтах
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_context_set_key_from_password( ak_skey skey,
+                                                const ak_pointer pass, const size_t pass_size,
+                                                     const ak_pointer salt, const size_t salt_size )
+{
+  int error = ak_error_ok;
+
+ /* выполняем необходимые проверки */
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using a null pointer to secret key" );
+  if( skey->key == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                 __func__ , "using a null pointer to key buffer" );
+  if( skey->key_size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                           "using a key buffer with zero length" );
+  if( pass == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                              "using a null pointer to password" );
+  if( !pass_size ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                             "using a password with zero length" );
+ /* присваиваем буффер и маскируем его */
+  if(( error = ak_hmac_context_pbkdf2_streebog512( pass, pass_size, salt, salt_size,
+                   (const size_t) ak_libakrypt_get_option("pbkdf2_iteration_count"),
+                                                     skey->key_size, skey->key )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "wrong generation a secret key data" );
+  memset( skey->key+skey->key_size, 0, skey->key_size ); /* обнуляем массив масок */
+
+ /* очищаем флаг начальной инициализации */
+  skey->flags &= (0xFFFFFFFFFFFFFFFFLL ^ skey_flag_set_mask );
+
+ /* маскируем ключ и вычисляем контрольную сумму */
+  if(( error = skey->set_mask( skey )) != ak_error_ok ) return  ak_error_message( error,
+                                                           __func__ , "wrong secret key masking" );
+
+  if(( error = skey->set_icode( skey )) != ak_error_ok ) return ak_error_message( error,
+                                                __func__ , "wrong calculation of integrity code" );
+
+ /* устанавливаем флаг того, что ключевое значение определено.
+    теперь ключ можно использовать в криптографических алгоритмах */
+  skey->flags |= skey_flag_set_key;
+ return error;
+}
+
 
 #ifdef LIBAKRYPT_HAVE_DEBUG_FUNCTIONS
 /* ----------------------------------------------------------------------------------------------- */

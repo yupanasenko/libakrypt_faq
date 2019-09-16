@@ -352,6 +352,43 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция присваивает ключу значение, выработанное из заданного пароля при помощи
+    алгоритма PBKDF2, описанного  в рекомендациях по стандартизации Р 50.1.111-2016.
+    Пароль должен быть непустой строкой символов в формате utf8.
+
+    Количество итераций алгоритма PBKDF2 определяется опцией библиотеки `pbkdf2_iteration_count`,
+    значение которой может быть опредедено с помощью вызова функции ak_libakrypt_get_option().
+
+    @param hctx Контекст алгоритма HMAC выработки имитовставки. К моменту вызова функции контекст
+    должен быть инициализирован.
+    @param pass Пароль, представленный в виде строки символов.
+    @param pass_size Длина пароля в байтах.
+    @param salt Случайная последовательность, представленная в виде строки символов.
+    @param salt_size Длина случайной последовательности в байтах.
+
+    @return В случае успеха возвращается значение \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_hmac_context_set_key_from_password( ak_hmac hctx,
+                                                const ak_pointer pass, const size_t pass_size,
+                                                     const ak_pointer salt, const size_t salt_size )
+{
+  int error = ak_error_ok;
+  if( hctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                        "using null pointer to hmac context" );
+  if(( error = ak_skey_context_set_key_from_password( &hctx->key,
+                                          pass, pass_size, salt, salt_size )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "incorrect assigning a secret key value" );
+
+ /* устанавливаем ресурс ключа */
+  if(( error = ak_skey_context_set_resource( &hctx->key,
+                          key_using_resource, "hmac_key_count_resource", 0, 0 )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect assigning \"hmac_key_count_resource\" option" );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \param hctx Контекст алгоритма HMAC выработки имитовставки.
     \return В случае успеха функция возвращает ноль (\ref ak_error_ok). В противном случае
     возвращается код ошибки.                                                                       */

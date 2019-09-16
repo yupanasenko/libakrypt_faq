@@ -83,6 +83,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_hash.h
                     source/ak_skey.h
                     source/ak_hmac.h
+                    source/ak_bckey.h
      )
 
   set( SOURCES      ${SOURCES}
@@ -91,6 +92,8 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_hashrnd.c
                     source/ak_skey.c
                     source/ak_hmac.c
+                    source/ak_bckey.c
+                    source/ak_kuznechik.c
      )
 endif()
 
@@ -223,6 +226,7 @@ set( INTERNAL_TEST_LIST
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
+                 bckey01
                  hash01
                  hash01a
                  hash02
