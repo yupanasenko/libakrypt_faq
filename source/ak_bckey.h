@@ -64,7 +64,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Присвоение контексту ключа алгоритма блочного шифрования константного значения. */
- int ak_bckey_context_set_key( ak_bckey, const ak_pointer , const size_t , const bool_t );
+ int ak_bckey_context_set_key( ak_bckey, const ak_pointer , const size_t );
 /*! \brief Присвоение контексту ключа алгоритма блочного шифрования случайного значения. */
  int ak_bckey_context_set_key_random( ak_bckey , ak_random );
 /*! \brief Присвоение контексту ключа алгоритма блочного шифрования значения, выработанного из пароля. */

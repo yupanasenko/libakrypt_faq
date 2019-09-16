@@ -103,7 +103,6 @@
      { "log_level", ak_log_standard },
      { "context_manager_size", 32 },
      { "context_manager_max_size", 4096 },
-     { "key_number_length", 16 },
      { "pbkdf2_iteration_count", 2000 },
      { "hmac_key_count_resource", 65536 },
 
@@ -117,6 +116,9 @@
      { "acpkm_message_count", 4096 },
      { "acpkm_section_magma_block_count", 128 },
      { "acpkm_section_kuznechik_block_count", 512 },
+
+  /* при значении равным единицы, формат шифрования данных соответствует варианту OpenSSL */
+     { "openssl_compability", 0 },
 
      { NULL, 0 } /* завершающая константа, должна всегда принимать нулевые значения */
  };
@@ -421,13 +423,6 @@
           ak_libakrypt_set_option( "context_manager_max_size", value );
         }
 
-       /* устанавливаем длину номера ключа */
-        if( ak_libakrypt_load_one_option( localbuffer, "key_number_length = ", &value )) {
-          if( value < 16 ) value = 16;
-          if( value > 32 ) value = 32;
-          ak_libakrypt_set_option( "key_number_length", value );
-        }
-
        /* устанавливаем количество циклов в алгоритме pbkdf2 */
         if( ak_libakrypt_load_one_option( localbuffer, "pbkdf2_iteration_count = ", &value )) {
           if( value < 1000 ) value = 1000;
@@ -448,11 +443,16 @@
           if( value > 2147483647 ) value = 2147483647;
           ak_libakrypt_set_option( "magma_cipher_resource", value );
         }
-       /* устанавливаем ресурс ключа алгоритма блочного шифрования Магма */
+       /* устанавливаем ресурс ключа алгоритма блочного шифрования Кузнечик */
         if( ak_libakrypt_load_one_option( localbuffer, "kuznechik_cipher_resource = ", &value )) {
           if( value < 1024 ) value = 1024;
           if( value > 2147483647 ) value = 2147483647;
           ak_libakrypt_set_option( "kuznechik_cipher_resource", value );
+        }
+       /* учет совместимости с другими библиотеками */
+        if( ak_libakrypt_load_one_option( localbuffer, "openssl_compability = ", &value )) {
+          if(( value < 0 ) || ( value > 1 )) value = 0;
+          ak_libakrypt_set_option( "openssl_compability", value );
         }
 
       } /* далее мы очищаем строку независимо от ее содержимого */
@@ -977,7 +977,7 @@
     else br = br1;
 
 #ifdef LIBAKRYPT_HAVE_UNISTD_H
-  if( code < 0 ) ak_snprintf( error_event_string, 1023, "[%d] %s%s %s (code: %d)",
+  if( code < 0 ) ak_snprintf( error_event_string, 1023, "[%d] %s%s %s (\x1b[31mcode: %d\x1b[0m)",
                                                          getpid(), function, br, message, code );
    else ak_snprintf( error_event_string, 1023, "[%d] %s%s %s", getpid(), function, br, message );
 #else

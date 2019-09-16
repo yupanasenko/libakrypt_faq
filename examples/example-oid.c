@@ -11,7 +11,7 @@
   oid_engines_t engine;
 
  /* инициализируем библиотеку. в случае возникновения ошибки завершаем работу */
-  if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true ) {
+  if( ak_libakrypt_create( NULL ) != ak_true ) {
     return ak_libakrypt_destroy();
   }
 

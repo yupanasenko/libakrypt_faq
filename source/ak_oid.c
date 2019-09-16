@@ -16,6 +16,7 @@
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  #include <ak_hmac.h>
+ #include <ak_bckey.h>
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -32,6 +33,8 @@
  static const char *on_streebog512[] =      { "streebog512", "md_gost12_512", NULL };
  static const char *on_hmac_streebog256[] = { "hmac-streebog256", NULL };
  static const char *on_hmac_streebog512[] = { "hmac-streebog512", NULL };
+
+ static const char *on_kuznechik[] =        { "kuznechik", "kuznyechik", "grasshopper", NULL };
 #endif
  static const char *on_w256_pst[] =         { "id-tc26-gost-3410-2012-256-paramSetTest", NULL };
  static const char *on_w256_psa[] =         { "id-tc26-gost-3410-2012-256-paramSetA", NULL };
@@ -115,6 +118,14 @@
                                         ( ak_function_void *) ak_hmac_context_destroy,
                                         ( ak_function_void *) ak_hmac_context_delete, NULL, NULL }},
 
+  /* 6. идентификаторы алгоритмов блочного шифрования
+        в дереве библиотеки: 1.2.643.2.52.1.6 - алгоритмы блочного шифрования
+        в дереве библиотеки: 1.2.643.2.52.1.7 - параметры алгоритмов блочного шифрования */
+
+   { block_cipher, algorithm, on_kuznechik, "1.2.643.7.1.1.5.2", NULL, NULL,
+                           { ( ak_function_void *) ak_bckey_context_create_kuznechik,
+                                      ( ak_function_void *) ak_bckey_context_destroy,
+                                       ( ak_function_void *) ak_bckey_context_delete, NULL, NULL }},
   #endif
 
   /* 12. идентификаторы параметров эллиптических кривых, в частности, из Р 50.1.114-2016
