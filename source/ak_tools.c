@@ -89,6 +89,16 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Cтатическая переменная для вывода сообщений. */
+ static char ak_ptr_to_hexstr_static_buffer[1024];
+
+/*! \brief Cтатическая переменные для окрашивания кодов и выводимых сообщений. */
+ static char *ak_error_code_start_string = "";
+ static char *ak_error_code_end_string = "";
+ static char *ak_error_code_start_red_string = "\x1b[31m";
+ static char *ak_error_code_end_red_string = "\x1b[0m";
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тип данных для хранения одной опции библиотеки */
  typedef struct option {
   /*! \brief Человекочитаемое имя опции, используется для поиска и установки значения */
@@ -882,7 +892,13 @@
 #ifdef LIBAKRYPT_HAVE_PTHREAD
   pthread_mutex_lock( &ak_function_log_default_mutex );
 #endif
-  if( function != NULL ) ak_function_log_default = function;
+  if( function != NULL ) {
+    ak_function_log_default = function;
+    if( function == ak_function_log_stderr ) { /* раскрашиваем вывод кодов ошибок */
+      ak_error_code_start_string = ak_error_code_start_red_string;
+      ak_error_code_end_string = ak_error_code_end_red_string;
+    }
+  }
    else {
     #ifdef LIBAKRYPT_HAVE_SYSLOG_H
       ak_function_log_default = ak_function_log_syslog;
@@ -977,8 +993,9 @@
     else br = br1;
 
 #ifdef LIBAKRYPT_HAVE_UNISTD_H
-  if( code < 0 ) ak_snprintf( error_event_string, 1023, "[%d] %s%s %s (\x1b[31mcode: %d\x1b[0m)",
-                                                         getpid(), function, br, message, code );
+  if( code < 0 ) ak_snprintf( error_event_string, 1023, "[%d] %s%s %s (%scode: %d%s)",
+                              getpid(), function, br, message,
+                                    ak_error_code_start_string, code, ak_error_code_end_string );
    else ak_snprintf( error_event_string, 1023, "[%d] %s%s %s", getpid(), function, br, message );
 #else
  #ifdef _MSC_VER
@@ -1025,16 +1042,15 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция рассматривает область памяти, на которую указывает указатель ptr, как массив
-    последовательно записанных байт фиксированной длины, создает в оперативной памяти строку и
-    последовательно выводит в нее значения, хранящиеся в заданной области памяти.
+    последовательно записанных байт фиксированной длины, и
+    последовательно выводит в статический буффер значения, хранящиеся в заданной области памяти.
     Значения выводятся в шестнадцатеричной системе счисления.
 
     Пример использования.
   \code
     ak_uint8 data[5] = { 1, 2, 3, 4, 5 };
     ak_uint8 *str = ak_ptr_to_hexstr( data, 5, ak_false );
-    printf("%s\n", str );
-    free(str);
+    if( str != NULL ) printf("%s\n", str );
   \endcode
 
     @param ptr Указатель на область памяти
@@ -1044,14 +1060,15 @@
     выводятся начиная от старшего к младшему (такой способ вывода принят при стандартном выводе
     чисел: сначала старшие разряды, потом младшие).
 
-    @return Функция возвращает указатель на созданную строку, которая должна быть позднее удалена
-    пользователем с помощью вызова функции free(). В случае ошибки конвертации возвращается NULL.
-    Код ошибки может быть получен с помощью вызова функции ak_error_get_code()                     */
+    @return Функция возвращает указатель на статическую строку. В случае ошибки конвертации,
+    либо в случае нехватки статической памяти, возвращается NULL.
+    Код ошибки может быть получен с помощью вызова функции ak_error_get_value().                   */
 /* ----------------------------------------------------------------------------------------------- */
  char *ak_ptr_to_hexstr( ak_const_pointer ptr, const size_t ptr_size, const bool_t reverse )
 {
-  char *nullstr = NULL;
   size_t len = 1 + (ptr_size << 1);
+  ak_uint8 *data = ( ak_uint8 * ) ptr;
+  size_t idx = 0, js = 0, start = 0, offset = 2;
 
   if( ptr == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to data" );
@@ -1062,79 +1079,17 @@
     return NULL;
   }
 
-  if(( nullstr = (char *) malloc( len )) == NULL ) {
-    ak_error_message( ak_error_out_of_memory, __func__ , "incorrect memory allocation" );
-  }
-    else {
-      size_t idx = 0, js = 0, start = 0, offset = 2;
-      ak_uint8 *data = ( ak_uint8 * ) ptr;
-
-      memset( nullstr, 0, len );
-      if( reverse ) { // движение в обратную сторону - от старшего байта к младшему
-        start = len-3; offset = -2;
-      }
-      for( idx = 0, js = start; idx < ptr_size; idx++, js += offset ) {
-        char str[4];
-        ak_snprintf( str, 3, "%02X", data[idx] );
-        memcpy( nullstr+js, str, 2 );
-      }
-    }
- return nullstr;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция рассматривает область памяти, на которую указывает указатель ptr, как массив
-    последовательно записанных байт фиксированной длины.
-    Символьная (шестнадцатеричная) форма записи массива ptr помещается в заранее выделенный массив out.
-    Если длины недостаточно, то возбуждается ошибка.
-
-    Пример использования.
-  \code
-    ak_uint8 data[5] = { 1, 2, 3, 4, 5 };
-    ak_uint8 data_out[12];
-
-    if( ak_ptr_to_hexstr_static( data, 5, data_out, 12, ak_false ) == ak_error_ok )
-      printf("%s\n", data_out );
-  \endcode
-
-    @param ptr Указатель на область памяти
-    @param ptr_size Размер области памяти (в байтах)
-    @param out Указатель на область памяти, в которую записывается символьное представление данных
-    @param out_size Размер области памяти (в байтах); должен быть не менее, чем
-    величина 1 + 2*`ptr_size`.
-
-    @param reverse Последовательность вывода байт в строку. Если reverse равно \ref ak_false,
-    то байты выводятся начиная с младшего к старшему.  Если reverse равно \ref ak_true, то байты
-    выводятся начиная от старшего к младшему (такой способ вывода принят при стандартном выводе
-    чисел: сначала старшие разряды, потом младшие).
-
-    @return Если преобразование прошло успешно, возвращается \ref ak_error_ok. В противном случае
-    возвращается код ошибки.                                                                       */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_ptr_to_hexstr_static( ak_const_pointer ptr, const size_t ptr_size,
-                                     ak_pointer out, const size_t out_size, const bool_t reverse )
-{
-  ak_uint8 *data = ( ak_uint8 * ) ptr;
-  size_t len = 1 + (ptr_size << 1);
-  size_t idx = 0, js = 0, start = 0, offset = 2;
-
-  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                                     "using null pointer to data" );
-  if( ptr_size <= 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
-                                                        "using data with zero or negative length" );
-  if( out_size < len ) return ak_error_message( ak_error_wrong_length, __func__ ,
-                                                                 "using small size output buffer" );
-  memset( out, 0, len );
+  memset( ak_ptr_to_hexstr_static_buffer, 0, sizeof( ak_ptr_to_hexstr_static_buffer ));
   if( reverse ) { // движение в обратную сторону - от старшего байта к младшему
     start = len-3; offset = -2;
   }
   for( idx = 0, js = start; idx < ptr_size; idx++, js += offset ) {
      char str[4];
-     ak_snprintf( str, 3, "%02X", data[idx] );
-     memcpy( (ak_uint8 *)out+js, str, 2 );
+     ak_snprintf( str, 3, "%02x", data[idx] );
+     memcpy( ak_ptr_to_hexstr_static_buffer+js, str, 2 );
   }
 
- return ak_error_ok;
+ return ak_ptr_to_hexstr_static_buffer;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1261,7 +1216,7 @@
     @param size Размер области, для которой производяится сравнение.
     @return Если данные идентичны, то возвращается \ref ak_true.
     В противном случае, а также в случае возникновения ошибки, возвращается \ref ak_false.
-    Код шибки может быть получен с помощью выщова функции ak_error_get_value().                    */
+    Код ошибки может быть получен с помощью выщова функции ak_error_get_value().                   */
 /* ----------------------------------------------------------------------------------------------- */
  bool_t ak_ptr_is_equal( ak_const_pointer left, ak_const_pointer right, const size_t size )
 {
@@ -1278,6 +1233,52 @@
      if( lp[i] != rp[i] ) result = ak_false;
 
   return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция сравнивает две области памяти одного размера, на которые указывают аргументы функции.
+ *
+    @param left Указатель на область памяти, участвующей в сравнении слева.
+    Это данные, как правило, которые вычислены в ходе выполнения программы.
+    @param right Указатель на область пямяти, участвующей в сравнении справа.
+    Это константные данные, с котороыми производится сравнение.
+    @param size Размер области, для которой производяится сравнение.
+    @return Если данные идентичны, то возвращается \ref ak_true.
+    В противном случае, а также в случае возникновения ошибки, возвращается \ref ak_false.
+    Код ошибки может быть получен с помощью выщова функции ak_error_get_value().                   */
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_ptr_is_equal_with_log( ak_const_pointer left, ak_const_pointer right, const size_t size )
+{
+  size_t i = 0;
+  bool_t result = ak_true;
+  const ak_uint8 *lp = left, *rp = right;
+  char buffer[1024];
+
+  if(( left == NULL ) || ( right == NULL )) {
+    ak_error_message( ak_error_null_pointer, __func__, "using a null pointer" );
+    return ak_false;
+  }
+
+  for( i = 0; i < size; i++ ) {
+     if( lp[i] != rp[i] ) {
+       result = ak_false;
+       if( i < ( sizeof( buffer ) >> 1 )) { buffer[2*i] = buffer[2*i+1] = '^'; }
+      } else {
+         if( i < ( sizeof( buffer ) >> 1 )) { buffer[2*i] = buffer[2*i+1] = ' '; }
+        }
+  }
+  buffer[ ak_min( size << 1, 1022 ) ] = 0;
+
+  if( result == ak_false ) {
+    ak_error_message( ak_error_ok, "", "" ); /* пустая строка */
+    ak_error_message_fmt( ak_error_ok, "", "%s (calculated data)",
+                                                         ak_ptr_to_hexstr( left, size, ak_false ));
+    ak_error_message_fmt( ak_error_ok, "", "%s (const value)",
+                                                        ak_ptr_to_hexstr( right, size, ak_false ));
+    ak_error_message_fmt( ak_error_ok, "", "%s", buffer );
+  }
+
+ return result;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -179,15 +179,15 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция создает строку, в которую помещается шестнадцатеричное значение вычета. В последствии,
-    созданная строка должна быть удалена пользователем самостоятельно с помощью вызова функции free().
+/*! Функция возвращает указатель на статическую строку, в которую помещается
+    шестнадцатеричное значение вычета.
 
     @param x Указатель на массив, в который помещается значение вычета
     @param size Размер массива в словах типа `ak_uint64`. Данная переменная может
     принимать значения \ref ak_mpzn256_size, \ref ak_mpzn512_size и т.п.
 
     @return В случае успеха, функция указатель на созданную строку. В противном случае возвращается
-    NULL. Код ошибки модет быть получен с помощью вызова функции ak_error_get_value().             */
+    NULL. Код ошибки может быть получен с помощью вызова функции ak_error_get_value().             */
 /* ----------------------------------------------------------------------------------------------- */
  char *ak_mpzn_to_hexstr( ak_uint64 *x, const size_t size )
 {
@@ -208,30 +208,6 @@
   return ak_ptr_to_hexstr( temp, size*sizeof( ak_uint64 ), ak_true );
 #else
   return ak_ptr_to_hexstr( x, size*sizeof( ak_uint64 ), ak_true );
-#endif
-}
-
-/* ----------------------------------------------------------------------------------------------- */
- int ak_mpzn_to_hexstr_static( ak_uint64* x, const size_t size,
-                                                             ak_pointer out, const size_t outsize )
-{
-#ifdef LIBAKRYPT_BIG_ENDIAN
-  size_t i = 0;
-  ak_mpznmax temp;
-#endif
-  if( x == NULL ) return ak_error_message( ak_error_null_pointer,
-                                                        __func__ , "using a null pointer to mpzn" );
-  if( !size ) return ak_error_message( ak_error_zero_length, __func__ ,
-                                                               "using a zero legth of input data" );
-  if( out == NULL ) return ak_error_message( ak_error_null_pointer,
-                                        __func__ , "using a null pointer to output string buffer" );
-  if( !outsize ) return ak_error_message( ak_error_zero_length, __func__ ,
-                                                     "using a zero legth of output string buffer" );
-#ifdef LIBAKRYPT_BIG_ENDIAN
-  for( i = 0; i < size; i++ ) temp[i] = bswap_64( x[i] );
-  return ak_ptr_to_hexstr_static( temp, size*sizeof( ak_uint64 ), out, outsize, ak_true );
-#else
-  return ak_ptr_to_hexstr_static( x, size*sizeof( ak_uint64 ), out, outsize, ak_true );
 #endif
 }
 

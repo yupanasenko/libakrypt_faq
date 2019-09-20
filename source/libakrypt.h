@@ -432,9 +432,6 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей значение заданной области памяти. */
  dll_export char *ak_ptr_to_hexstr( ak_const_pointer , const size_t , const bool_t );
-/*! \brief Преобразование области памяти в символьное представление. */
- dll_export int ak_ptr_to_hexstr_static( ak_const_pointer , const size_t , ak_pointer ,
-                                                                     const size_t , const bool_t );
 /*! \brief Конвертация строки шестнадцатеричных символов в массив данных. */
  dll_export int ak_hexstr_to_ptr( const char *, ak_pointer , const size_t , const bool_t );
 /*! \brief Функция высчитывает максимальную длину в байтах последовательности шестнадцатеричных символов. */

@@ -9,6 +9,9 @@
 #else
  #error Library cannot be compiled without string.h header
 #endif
+#ifdef LIBAKRYPT_HAVE_STRINGS_H
+ #include <strings.h>
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_parameters.h>
@@ -121,9 +124,9 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_wcurve_is_ok( ak_wcurve ec )
 {
-  char str[512];
   ak_mpzn512 temp;
   struct wpoint wp;
+  char *str = NULL;
   int error = ak_error_ok;
 
  /* создали кривую и проверяем веоичину старшего коэффициента ее молуля */
@@ -132,9 +135,13 @@
                                            "using elliptic curve parameters with wrong module" );
 
  /* проверяем соответствие данных в памяти их символьному представлению */
-  if(( error = ak_mpzn_to_hexstr_static( ec->p, ec->size, str, sizeof( str ))) != ak_error_ok )
+  if(( str = ak_mpzn_to_hexstr( ec->p, ec->size )) == NULL )
     return ak_error_message( error, __func__ , "incorrect convertation mpzn integer to string" );
-  if( strncmp( str, ec->pchar, strlen( ec->pchar )) != 0 )
+#ifdef LIBAKRYPT_HAVE_STRINGS_H
+  if( strncasecmp( str, ec->pchar, strlen( ec->pchar )) != 0 )
+#else
+  if( strcmp( str, ec->pchar, strlen( ec->pchar )) != 0 )
+#endif
     return ak_error_message( ak_error_wrong_endian, __func__,
                                                "incorrect convertation mpzn integer to string" );
  /* теперь обратный тест */
@@ -166,30 +173,15 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция выводит в файл аудита значения параметров эллиптической кривой                  */
 /* ----------------------------------------------------------------------------------------------- */
- static void ak_wcurve_to_log( ak_wcurve ec, int error )
+ static void inline ak_wcurve_to_log( ak_wcurve ec, int error )
 {
-  char message[160];
-
-  ak_mpzn_to_hexstr_static( ec->a, ec->size, message, sizeof( message ));
-  ak_error_message_fmt( error, __func__, " a = %s", message );
-
-  ak_mpzn_to_hexstr_static( ec->b, ec->size, message, sizeof( message ));
-  ak_error_message_fmt( error, __func__, " b = %s", message );
-
-  ak_mpzn_to_hexstr_static( ec->p, ec->size, message, sizeof( message ));
-  ak_error_message_fmt( error, __func__, " p = %s", message );
-
-  ak_mpzn_to_hexstr_static( ec->q, ec->size, message, sizeof( message ));
-  ak_error_message_fmt( error, __func__, " q = %s", message );
-
-  ak_mpzn_to_hexstr_static( ec->point.x, ec->size, message, sizeof( message ));
-  ak_error_message_fmt( error, __func__, "px = %s", message );
-
-  ak_mpzn_to_hexstr_static( ec->point.y, ec->size, message, sizeof( message ));
-  ak_error_message_fmt( error, __func__, "py = %s", message );
-
-  ak_mpzn_to_hexstr_static( ec->point.z, ec->size, message, sizeof( message ));
-  ak_error_message_fmt( error, __func__, "pz = %s", message );
+  ak_error_message_fmt( error, __func__, " a = %s", ak_mpzn_to_hexstr( ec->a, ec->size ));
+  ak_error_message_fmt( error, __func__, " b = %s", ak_mpzn_to_hexstr( ec->b, ec->size ));
+  ak_error_message_fmt( error, __func__, " p = %s", ak_mpzn_to_hexstr( ec->p, ec->size ));
+  ak_error_message_fmt( error, __func__, " q = %s", ak_mpzn_to_hexstr( ec->q, ec->size ));
+  ak_error_message_fmt( error, __func__, "px = %s", ak_mpzn_to_hexstr( ec->point.x, ec->size ));
+  ak_error_message_fmt( error, __func__, "py = %s", ak_mpzn_to_hexstr( ec->point.y, ec->size ));
+  ak_error_message_fmt( error, __func__, "pz = %s", ak_mpzn_to_hexstr( ec->point.z, ec->size ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */

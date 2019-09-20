@@ -17,6 +17,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_hash.h>
+ #include <ak_tools.h>
  #include <ak_parameters.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -527,7 +528,6 @@
 {
   ak_uint32 steps;
   struct hash ctx; /* контекст функции хеширования */
-  char *str = NULL;
   struct random rnd;
   int error = ak_error_ok;
   bool_t result = ak_true;
@@ -551,17 +551,14 @@
     goto lab_exit;
   }
 
-  if( ak_ptr_is_equal( streebog256_testM1, out, 32 )) {
-    if( audit >= ak_log_maximum )
-      ak_error_message( ak_error_ok, __func__ , "the 1st test from GOST R 34.11-2012 is Ok" );
-  } else {
-      ak_error_message( ak_error_not_equal_data, __func__ ,
+  if(( result = ak_ptr_is_equal_with_log( out, streebog256_testM1, 32 )) != ak_true ) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
                                              "the 1st test from GOST R 34.11-2012 is wrong" );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( out, 32, ak_false ))); free( str );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( streebog256_testM1, 32, ak_false ))); free( str );
-      result = ak_false;
-      goto lab_exit;
-    }
+    goto lab_exit;
+  }
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "the 1st test from GOST R 34.11-2012 is Ok" );
+
 
  /* второй пример из приложения А (ГОСТ Р 34.11-2012) */
   ak_hash_context_ptr( &ctx, streebog_M2_message, 72, out, sizeof( out ));
@@ -571,17 +568,13 @@
     goto lab_exit;
   }
 
-  if( ak_ptr_is_equal( streebog256_testM2, out, 32 )) {
-    if( audit >= ak_log_maximum )
-      ak_error_message( ak_error_ok, __func__ , "the 2nd test from GOST R 34.11-2012 is Ok" );
-  } else {
+  if(( result = ak_ptr_is_equal_with_log( out, streebog256_testM2, 32 )) != ak_true ) {
       ak_error_message( ak_error_not_equal_data, __func__ ,
                                              "the 2nd test from GOST R 34.11-2012 is wrong" );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( out, 32, ak_false ))); free( str );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( streebog256_testM2, 32, ak_false ))); free( str );
-      result = ak_false;
       goto lab_exit;
-    }
+  }
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "the 2nd test from GOST R 34.11-2012 is Ok" );
 
  /* первый пример из Википедии */
   ak_hash_context_ptr( &ctx, "The quick brown fox jumps over the lazy dog", 43, out, sizeof( out ));
@@ -591,17 +584,13 @@
     goto lab_exit;
   }
 
-  if( ak_ptr_is_equal( streebog256_testM3, out, 32 )) {
-    if( audit >= ak_log_maximum )
-      ak_error_message( ak_error_ok, __func__ , "the \"lazy dog\" test from Wikipedia is Ok" );
-  } else {
-      ak_error_message( ak_error_not_equal_data, __func__ ,
+  if(( result = ak_ptr_is_equal_with_log( out, streebog256_testM3, 32 )) != ak_true ) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
                                              "the \"lazy dog\" test from Wikipedia is wrong" );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( out, 32, ak_false ))); free( str );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( streebog256_testM3, 32, ak_false ))); free( str );
-      result = ak_false;
-      goto lab_exit;
-    }
+    goto lab_exit;
+  }
+  if( audit >= ak_log_maximum )
+      ak_error_message( ak_error_ok, __func__ , "the \"lazy dog\" test from Wikipedia is Ok" );
 
  /* второй пример из Википедии */
   ak_hash_context_ptr( &ctx, "The quick brown fox jumps over the lazy dog.", 44, out, sizeof( out ));
@@ -611,18 +600,14 @@
     goto lab_exit;
   }
 
-  if( ak_ptr_is_equal( streebog256_testM4, out, 32 )) {
-    if( audit >= ak_log_maximum )
+  if(( result = ak_ptr_is_equal_with_log( out, streebog256_testM4, 32 )) != ak_true ) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                        "the \"lazy dog with point\" test from Wikipedia is wrong" );
+    goto lab_exit;
+  }
+  if( audit >= ak_log_maximum )
       ak_error_message( ak_error_ok, __func__ ,
                                            "the \"lazy dog with point\" test from Wikipedia is Ok" );
-  } else {
-      ak_error_message( ak_error_not_equal_data, __func__ ,
-                                        "the \"lazy dog with point\" test from Wikipedia is wrong" );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( out, 32, ak_false ))); free( str );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( streebog256_testM4, 32, ak_false ))); free( str );
-      result = ak_false;
-      goto lab_exit;
-    }
 
  /* хеширование пустого вектора */
   ak_hash_context_ptr( &ctx, "", 0, out, sizeof( out ));
@@ -632,16 +617,12 @@
     goto lab_exit;
   }
 
-  if( ak_ptr_is_equal( streebog256_testM5, out, 32 )) {
-    if( audit >= ak_log_maximum )
-      ak_error_message( ak_error_ok, __func__ , "the zero length vector test is Ok" );
-  } else {
-      ak_error_message( ak_error_not_equal_data, __func__ , "the zero length vector test is wrong" );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( out, 32, ak_false ))); free( str );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( streebog256_testM5, 32, ak_false ))); free( str );
-      result = ak_false;
-      goto lab_exit;
-    }
+  if(( result = ak_ptr_is_equal( out, streebog256_testM5, 32 )) != ak_true ) {
+    ak_error_message( ak_error_not_equal_data, __func__ , "the zero length vector test is wrong" );
+    goto lab_exit;
+  }
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "the zero length vector test is Ok" );
 
  /* тестирование алгоритма хеширования фрагментами произвольной длины */
   ak_random_context_create_lcg( &rnd );
@@ -673,19 +654,14 @@
   memset( out2, 0, sizeof( out2 ));
   ak_hash_context_finalize( &ctx, NULL, 0, out2, sizeof( out2 ));
 
-  if( ak_ptr_is_equal( out, out2, 32 )) {
-    if( audit >= ak_log_maximum )
+  if(( result = ak_ptr_is_equal_with_log( out, out2, 32 )) != ak_true ) {
+    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+                                            "the random walk test with %u steps is wrong", steps );
+    goto lab_exit;
+  }
+  if( audit >= ak_log_maximum )
       ak_error_message_fmt( ak_error_ok, __func__ ,
                                                "the random walk test with %u steps is Ok", steps );
-  } else {
-      ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                            "the random walk test with %u steps is wrong", steps );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( out, 32, ak_false ))); free( str );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( out2, 32, ak_false ))); free( str );
-      result = ak_false;
-      goto lab_exit;
-    }
-
  /* уничтожаем контекст */
  lab_exit:
    ak_random_context_destroy( &rnd );
@@ -701,7 +677,6 @@
 {
   ak_uint32 steps;
   struct hash ctx; /* контекст функции хеширования */
-  char *str = NULL;
   struct random rnd;
   size_t len, offset;
   int error = ak_error_ok;
@@ -725,17 +700,13 @@
     goto lab_exit;
   }
 
-  if( ak_ptr_is_equal( streebog512_testM1, out, 64 )) {
-    if( audit >= ak_log_maximum )
-      ak_error_message( ak_error_ok, __func__ , "the 1st test from GOST R 34.11-2012 is Ok" );
-  } else {
-      ak_error_message( ak_error_not_equal_data, __func__ ,
+  if(( result = ak_ptr_is_equal_with_log( out, streebog512_testM1, 64 )) != ak_true ) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
                                              "the 1st test from GOST R 34.11-2012 is wrong" );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( out, 64, ak_false ))); free( str );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( streebog512_testM1, 64, ak_false ))); free( str );
-      result = ak_false;
-      goto lab_exit;
-    }
+    goto lab_exit;
+  }
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "the 1st test from GOST R 34.11-2012 is Ok" );
 
  /* второй пример из приложения А (ГОСТ Р 34.11-2012) */
   ak_hash_context_ptr( &ctx, streebog_M2_message, 72, out, sizeof( out ));
@@ -745,17 +716,13 @@
     goto lab_exit;
   }
 
-  if( ak_ptr_is_equal( streebog512_testM2, out, 64 )) {
-    if( audit >= ak_log_maximum )
-      ak_error_message( ak_error_ok, __func__ , "the 2nd test from GOST R 34.11-2012 is Ok" );
-  } else {
-      ak_error_message( ak_error_not_equal_data, __func__ ,
+  if(( result = ak_ptr_is_equal_with_log( out, streebog512_testM2, 64 )) != ak_true ) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
                                              "the 2nd test from GOST R 34.11-2012 is wrong" );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( out, 64, ak_false ))); free( str );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( streebog512_testM2, 64, ak_false ))); free( str );
-      result = ak_false;
-      goto lab_exit;
-    }
+    goto lab_exit;
+  }
+  if( audit >= ak_log_maximum )
+      ak_error_message( ak_error_ok, __func__ , "the 2nd test from GOST R 34.11-2012 is Ok" );
 
  /* хеширование пустого вектора */
   ak_hash_context_ptr( &ctx, "", 0, out, sizeof( out ));
@@ -765,16 +732,12 @@
     goto lab_exit;
   }
 
-  if( ak_ptr_is_equal( streebog512_testM3, out, 64 )) {
-    if( audit >= ak_log_maximum )
+  if(( result = ak_ptr_is_equal_with_log( out, streebog512_testM3, 64 )) != ak_true ) {
+    ak_error_message( ak_error_not_equal_data, __func__ , "the zero length vector test is wrong" );
+    goto lab_exit;
+  }
+  if( audit >= ak_log_maximum )
       ak_error_message( ak_error_ok, __func__ , "the zero length vector test is Ok" );
-  } else {
-      ak_error_message( ak_error_not_equal_data, __func__ , "the zero length vector test is wrong" );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( out, 64, ak_false ))); free( str );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( streebog512_testM3, 64, ak_false ))); free( str );
-      result = ak_false;
-      goto lab_exit;
-    }
 
  /* тестирование алгоритма хеширования фрагментами произвольной длины */
   ak_random_context_create_lcg( &rnd );
@@ -784,7 +747,7 @@
     ak_error_message_fmt( error, __func__,
                                         "incorrect hashing of random %u octets", sizeof( buffer ));
     result = ak_false;
-    goto lab_exit;
+    goto lab_ex;
   }
 
   steps = 0;
@@ -796,7 +759,7 @@
         if(( error = ak_hash_context_update( &ctx, ptr, len )) != ak_error_ok ) {
            ak_error_message( error, __func__, "incorrect updating of hash context" );
            result = ak_false;
-           goto lab_exit;
+           goto lab_ex;
         }
         ptr += len;
         offset -= len;
@@ -806,22 +769,18 @@
   memset( out2, 0, sizeof( out2 ));
   ak_hash_context_finalize( &ctx, NULL, 0, out2, sizeof( out2 ));
 
-  if( ak_ptr_is_equal( out, out2, 64 )) {
-    if( audit >= ak_log_maximum )
-      ak_error_message_fmt( ak_error_ok, __func__ ,
-                                               "the random walk test with %u steps is Ok", steps );
-  } else {
-      ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
+  if(( result = ak_ptr_is_equal_with_log( out, out2, 64 )) != ak_true ) {
+    ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
                                             "the random walk test with %u steps is wrong", steps );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( out, 64, ak_false ))); free( str );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( out2, 64, ak_false ))); free( str );
-      result = ak_false;
-      goto lab_exit;
-    }
-
+    goto lab_ex;
+  }
+  if( audit >= ak_log_maximum )
+    ak_error_message_fmt( ak_error_ok, __func__ ,
+                                               "the random walk test with %u steps is Ok", steps );
  /* уничтожаем контекст */
- lab_exit:
+ lab_ex:
    ak_random_context_destroy( &rnd );
+ lab_exit:
    ak_hash_context_destroy( &ctx );
  return result;
 }

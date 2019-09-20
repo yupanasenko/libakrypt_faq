@@ -19,6 +19,7 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
+ #include <ak_tools.h>
  #include <ak_gf2n.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -801,7 +802,6 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
  static bool_t ak_gf64_multiplication_test( void )
 {
  int i = 0;
- char out[128];
  ak_uint8 values8[64] = { /* последовательный набор байт в памяти */
     0x61, 0x30, 0xD1, 0xDE, 0x01, 0x73, 0x01, 0x30, 0x11, 0x0E, 0x1F, 0xE9, 0xA3, 0x06, 0x1C, 0x6B,
     0x14, 0x1A, 0xD5, 0x69, 0xFE, 0xF4, 0xA8, 0x26, 0x03, 0xCA, 0x3F, 0x74, 0x0C, 0x2F, 0x3A, 0x97,
@@ -823,7 +823,7 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
   for( i = 0; i < 8; i++ ) {
     if( !ak_ptr_is_equal( values8+i*8, &values[i], 8 )) {
       ak_error_message_fmt( ak_error_not_equal_data, __func__,
-                                        "wrong constant V[%d] in memory representation", i );
+                                              "wrong constant V[%d] in memory representation", i );
       return ak_false;
     }
   }
@@ -839,12 +839,12 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
  for( i = 0; i < 8; i++ ) {
     ak_gf64_mul_uint64( &z, &x, &y );
     if( z != values[i] ) {
-      ak_ptr_to_hexstr_static( &z, 8, out, 128, ak_true );
       ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                            "uint64 calculated %s on iteration %d", out, i );
-      ak_ptr_to_hexstr_static( &values[i], 8, out, 128, ak_true );
+                                         "uint64 calculated %s on iteration %d",
+                                                           ak_ptr_to_hexstr( &z, 8, ak_true ), i );
       ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                            "uint64 expected   %s on iteration %d", out, i );
+                                         "uint64 expected   %s on iteration %d",
+                                                   ak_ptr_to_hexstr( &values[i], 8, ak_true ), i );
       return ak_false;
     }
     x = y; y = z;
@@ -859,12 +859,12 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
  for( i = 0; i < 8; i++ ) {
     ak_gf64_mul_pcmulqdq( &z, &x, &y );
     if( z != values[i] ) {
-      ak_ptr_to_hexstr_static( &z, 8, out, 128, ak_true );
       ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                           "pcmulqdq calculated %s on iteration %d", out, i );
-      ak_ptr_to_hexstr_static( &values[i], 8, out, 128, ak_true );
+                                           "pcmulqdq calculated %s on iteration %d",
+                                                           ak_ptr_to_hexstr( &z, 8, ak_true ), i );
       ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                           "pcmulqdq expected   %s on iteration %d", out, i );
+                                           "pcmulqdq expected   %s on iteration %d",
+                                                   ak_ptr_to_hexstr( &values[i], 8, ak_true ), i );
       return ak_false;
     }
     x = y; y = z;
@@ -876,10 +876,10 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
     ak_gf64_mul_uint64( &z, &x, &y );
     ak_gf64_mul_pcmulqdq( &z1, &x, &y );
     if( z != z1 ) {
-      ak_ptr_to_hexstr_static( &z, 8, out, 128, ak_true );
-      ak_error_message_fmt( ak_error_not_equal_data, __func__ , "uint64 calculated   %s", out );
-      ak_ptr_to_hexstr_static( &z1, 8, out, 128, ak_true );
-      ak_error_message_fmt( ak_error_not_equal_data, __func__ , "pcmulqdq calculated %s", out );
+      ak_error_message_fmt( ak_error_not_equal_data, __func__ , "uint64 calculated   %s",
+                                                               ak_ptr_to_hexstr( &z, 8, ak_true ));
+      ak_error_message_fmt( ak_error_not_equal_data, __func__ , "pcmulqdq calculated %s",
+                                                              ak_ptr_to_hexstr( &z1, 8, ak_true ));
       return ak_false;
     }
     x = y; y = z;
@@ -895,8 +895,6 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
  static bool_t ak_gf128_multiplication_test( void )
 {
  int i = 0;
- char out[128];
-
  ak_uint8 a8[16] = {
       0x5d, 0x47, 0x53, 0x5d, 0x72, 0x6f, 0x74, 0x63, 0x65, 0x56, 0x74, 0x73, 0x65, 0x54, 0x5b, 0x7b };
  ak_uint8 b8[16] = {
@@ -939,13 +937,7 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
     GFMUL128 (a, b) = 0x40229a09a5ed12e7e4e10da323506d2 */
 
  ak_gf128_mul_uint64( result, &a, &b );
- if( !ak_ptr_is_equal( result, m8, 16 )) {
-   ak_ptr_to_hexstr_static( result, 16, out, 128, ak_true );
-   ak_error_message_fmt( ak_error_not_equal_data, __func__ , "calculated %s", out );
-   ak_ptr_to_hexstr_static( m8, 16, out, 128, ak_true );
-   ak_error_message_fmt( ak_error_not_equal_data, __func__ , "expected   %s", out );
-   return ak_false;
- }
+ if( !ak_ptr_is_equal_with_log( result, m8, 16 )) goto lexit;
 
 #ifdef LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64
  if( ak_log_get_level() >= ak_log_maximum )
@@ -953,20 +945,16 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
 
  ak_gf128_mul_pcmulqdq( result2, &a, &b );
  /* сравнение с константой */
- if( !ak_ptr_is_equal( result2, m8, 16 )) {
-   ak_ptr_to_hexstr_static( result2, 16, out, 128, ak_true );
-   ak_error_message_fmt( ak_error_not_equal_data, __func__ , "pcmulqdq calculated %s", out );
-   ak_ptr_to_hexstr_static( m8, 16, out, 128, ak_true );
-   ak_error_message_fmt( ak_error_not_equal_data, __func__ , "pcmulqdq expected   %s", out );
-   return ak_false;
+ if( !ak_ptr_is_equal_with_log( result2, m8, 16 )) {
+   ak_error_message( ak_error_ok, __func__,
+                                      "result with pcmulqdq differs from predefined const value" );
+   goto lexit;
  }
  /* сравнение с другим способом вычисления */
- if( !ak_ptr_is_equal( result2, result, 16 )) {
-   ak_ptr_to_hexstr_static( result2, 16, out, 128, ak_true );
-   ak_error_message_fmt( ak_error_not_equal_data, __func__ , "pcmulqdq calculated %s", out );
-   ak_ptr_to_hexstr_static( result, 16, out, 128, ak_true );
-   ak_error_message_fmt( ak_error_not_equal_data, __func__ , "uint64 calculated   %s", out );
-   return ak_false;
+ if( !ak_ptr_is_equal_with_log( result2, result, 16 )) {
+   ak_error_message( ak_error_ok, __func__,
+                               "result with pcmulqdq differs from standard method of evaluation" );
+   goto lexit;
  }
 
  /* сравнение для двух способов на нескольких значениях */
@@ -976,14 +964,10 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
 
    ak_gf128_mul_uint64( result, &a, &b );
    ak_gf128_mul_pcmulqdq( result2, &a, &b );
-   if( !ak_ptr_is_equal( result, result2, 16 )) {
-     ak_ptr_to_hexstr_static( result2, 16, out, 128, ak_true );
-     ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                          "pcmulqdq calculated %s on iteration %d", out, i );
-     ak_ptr_to_hexstr_static( result, 16, out, 128, ak_true );
-     ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                            "uint64 calculated %s on iteration %d", out, i );
-     return ak_false;
+   if( !ak_ptr_is_equal_with_log( result, result2, 16 )) {
+     ak_error_message_fmt( ak_error_ok, __func__,
+            "result with pcmulqdq differs from standard method of evaluation on iteration %d", i );
+     goto lexit;
    }
  }
  if( ak_log_get_level() >= ak_log_maximum )
@@ -991,6 +975,9 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
 #endif
 
  return ak_true;
+
+  lexit: ak_error_set_value( ak_error_not_equal_data );
+ return ak_false;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -999,7 +986,6 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
  static bool_t ak_gf256_multiplication_test( void )
 {
   int i = 0;
-  char str[128];
   ak_uint64 theta[4] = { 0x2LL, 0x0LL, 0x0LL, 0x0LL },
              unit[4] = { 0x2LL, 0x0LL, 0x0LL, 0x0LL }, temp[4];
 
@@ -1021,11 +1007,7 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
        return ak_false;
      }
   }
-  if( ak_ptr_is_equal( theta, temp, sizeof( theta )) != ak_true ) {
-    ak_ptr_to_hexstr_static( theta, sizeof( theta ), str, sizeof( str ), ak_true );
-    ak_error_message_fmt( ak_error_ok, "", "theta: %s", str );
-    ak_ptr_to_hexstr_static( temp, sizeof( temp ), str, sizeof( str ), ak_true );
-    ak_error_message_fmt( ak_error_ok, "", "value: %s", str );
+  if( ak_ptr_is_equal_with_log( theta, temp, sizeof( theta )) != ak_true ) {
     ak_error_message( ak_error_undefined_value, __func__,
                                           "incorrect result of primitive element exponentiation" );
     return ak_false;
@@ -1043,24 +1025,24 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
   for( i = 0; i < 1000; i++ ) {
      ak_gf256_mul_uint64( temp, theta, unit );
      ak_gf256_mul_pcmulqdq( temp2, theta, unit );
-     if( ak_ptr_is_equal( temp, temp2, sizeof( theta )) != ak_true ) {
-       ak_ptr_to_hexstr_static( temp2, sizeof( temp2 ), str, sizeof( str ), ak_true );
+     if( ak_ptr_is_equal_with_log( temp, temp2, sizeof( theta )) != ak_true ) {
        ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                                "pcmulqdq calculated %s on iteration %d", str, i );
-       ak_ptr_to_hexstr_static( temp, sizeof( temp ), str, sizeof( str ), ak_true );
+                                  "pcmulqdq calculated %s on iteration %d",
+                                          ak_ptr_to_hexstr( temp2, sizeof( temp2 ), ak_true ), i );
        ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                                  "uint64 calculated %s on iteration %d", str, i );
+                                  "uint64 calculated %s on iteration %d",
+                                            ak_ptr_to_hexstr( temp, sizeof( temp ), ak_true ), i );
        return ak_false;
      }
      ak_gf256_mul_uint64( temp, unit, theta );
      ak_gf256_mul_pcmulqdq( temp3, unit, theta );
      if( ak_ptr_is_equal( temp, temp3, sizeof( theta )) != ak_true ) {
-       ak_ptr_to_hexstr_static( temp3, sizeof( temp3 ), str, sizeof( str ), ak_true );
        ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                                "pcmulqdq calculated %s on iteration %d", str, i );
-       ak_ptr_to_hexstr_static( temp, sizeof( temp ), str, sizeof( str ), ak_true );
+                                       "pcmulqdq calculated %s on iteration %d",
+                                          ak_ptr_to_hexstr( temp3, sizeof( temp3 ), ak_true ), i );
        ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                                  "uint64 calculated %s on iteration %d", str, i );
+                                       "uint64 calculated %s on iteration %d",
+                                            ak_ptr_to_hexstr( temp, sizeof( temp ), ak_true ), i );
        return ak_false;
      }
      if( ak_ptr_is_equal( temp2, temp3, sizeof( temp2 )) != ak_true ) {
@@ -1084,7 +1066,6 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
  static bool_t ak_gf512_multiplication_test( void )
 {
   int i = 0;
-  char str[192];
   ak_uint64 theta[8] = { 0x2LL, 0x0LL, 0x0LL, 0x0LL, 0x0LL, 0x0LL, 0x0LL, 0x0LL },
              unit[8] = { 0x2LL, 0x0LL, 0x0LL, 0x0LL, 0x0LL, 0x0LL, 0x0LL, 0x0LL }, temp[8];
 
@@ -1110,11 +1091,7 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
        return ak_false;
      }
   }
-  if( ak_ptr_is_equal( theta, temp, sizeof( theta )) != ak_true ) {
-    ak_ptr_to_hexstr_static( theta, sizeof( theta ), str, sizeof( str ), ak_true );
-    ak_error_message_fmt( ak_error_ok, "", "theta: %s", str );
-    ak_ptr_to_hexstr_static( temp, sizeof( temp ), str, sizeof( str ), ak_true );
-    ak_error_message_fmt( ak_error_ok, "", "value: %s", str );
+  if( ak_ptr_is_equal_with_log( theta, temp, sizeof( theta )) != ak_true ) {
     ak_error_message( ak_error_undefined_value, __func__,
                                           "incorrect result of primitive element exponentiation" );
     return ak_false;
@@ -1135,23 +1112,23 @@ void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
      ak_gf512_mul_uint64( temp, theta, unit );
      ak_gf512_mul_pcmulqdq( temp2, theta, unit );
      if( ak_ptr_is_equal( temp, temp2, sizeof( theta )) != ak_true ) {
-       ak_ptr_to_hexstr_static( temp2, sizeof( temp2 ), str, sizeof( str ), ak_true );
        ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                                "pcmulqdq calculated %s on iteration %d", str, i );
-       ak_ptr_to_hexstr_static( temp, sizeof( temp ), str, sizeof( str ), ak_true );
+                                      "pcmulqdq calculated %s on iteration %d",
+                                          ak_ptr_to_hexstr( temp2, sizeof( temp2 ), ak_true ), i );
        ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                                  "uint64 calculated %s on iteration %d", str, i );
+                                      "uint64 calculated %s on iteration %d",
+                                            ak_ptr_to_hexstr( temp, sizeof( temp ), ak_true ), i );
        return ak_false;
      }
      ak_gf512_mul_uint64( temp, unit, theta );
      ak_gf512_mul_pcmulqdq( temp3, unit, theta );
      if( ak_ptr_is_equal( temp, temp3, sizeof( theta )) != ak_true ) {
-       ak_ptr_to_hexstr_static( temp3, sizeof( temp3 ), str, sizeof( str ), ak_true );
        ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                                "pcmulqdq calculated %s on iteration %d", str, i );
-       ak_ptr_to_hexstr_static( temp, sizeof( temp ), str, sizeof( str ), ak_true );
+                                   "pcmulqdq calculated %s on iteration %d",
+                                         ak_ptr_to_hexstr( temp3, sizeof( temp3 ), ak_true ), i );
        ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
-                                                  "uint64 calculated %s on iteration %d", str, i );
+                                   "uint64 calculated %s on iteration %d",
+                                           ak_ptr_to_hexstr( temp, sizeof( temp ), ak_true ), i );
        return ak_false;
      }
      if( ak_ptr_is_equal( temp2, temp3, sizeof( temp2 )) != ak_true ) {

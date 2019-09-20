@@ -22,7 +22,7 @@
 {
  ak_oid oid;
  int count = 0;
- ak_uint8 data[32], string[128];
+ ak_uint8 data[32];
 
  /* инициализируем библиотеку */
   if( !ak_libakrypt_create( ak_function_log_stderr ))
@@ -39,11 +39,10 @@
    /* используя oid, создаем объект и вырабатываем случайные данные */
     ak_random_context_create_oid( &generator, oid );
     ak_random_context_random( &generator, data, 32 );
-    ak_ptr_to_hexstr_static( data, 32, string, 128, ak_false );
    /* выводим сгенерированные данные и информацию о генераторе,
                                 используя oid созданного генератора */
-    printf("%02d: %s [%s, %s]", ++count, string,
-                             generator.oid->names[0], generator.oid->id );
+    printf("%02d: %s [%s, %s]", ++count, ak_ptr_to_hexstr( data, 32, ak_false ),
+                                        generator.oid->names[0], generator.oid->id );
    /* проверка совпадения oid */
     if( generator.oid != oid ) printf(" wrong oid pointer\n");
      else printf("\n");

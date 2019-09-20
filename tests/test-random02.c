@@ -18,7 +18,7 @@
   int result = EXIT_FAILURE;
   struct hash hctx;
   struct random rnd;
-  ak_uint8 cnt[128], buffer[526], out[32], out2[32], string[1064];
+  ak_uint8 cnt[128], buffer[526], out[32], out2[32];
 
   if( !ak_libakrypt_create( ak_function_log_stderr )) return ak_libakrypt_destroy();
 
@@ -31,10 +31,9 @@
   ak_hash_context_create_streebog256( &hctx ); /* вычисляем контрольную сумму */
   ak_hash_context_ptr( &hctx, buffer, sizeof( buffer ), out, sizeof( out ));
 
-  ak_ptr_to_hexstr_static( buffer, sizeof( buffer ), string, sizeof( string ), ak_false );
-  printf("random data: %s (hash: ", string );
-  ak_ptr_to_hexstr_static( out, sizeof( out ), string, sizeof( string ), ak_false );
-  printf("%s)\n\n", string );
+
+  printf("random data: %s (hash: ", ak_ptr_to_hexstr( buffer, sizeof( buffer ), ak_false ));
+  printf("%s)\n\n", ak_ptr_to_hexstr( out, sizeof( out ), ak_false ));
   ak_random_context_destroy( &rnd );
   memset( buffer, 0, sizeof( buffer ));
 
@@ -52,11 +51,9 @@
     }
   }
 
-  ak_ptr_to_hexstr_static( buffer, sizeof( buffer ), string, sizeof( string ), ak_false );
-  printf("\nrandom data: %s (hash: ", string );
+  printf("\nrandom data: %s (hash: ", ak_ptr_to_hexstr( buffer, sizeof( buffer ), ak_false ));
   ak_hash_context_ptr( &hctx, buffer, sizeof( buffer ), out2, sizeof( out2 ));
-  ak_ptr_to_hexstr_static( out2, sizeof( out2 ), string, sizeof( string ), ak_false );
-  printf("%s)\n\ntest is ", string );
+  printf("%s)\n\ntest is ", ak_ptr_to_hexstr( out2, sizeof( out2 ), ak_false ));
   ak_random_context_destroy( &rnd );
 
  /* проверяем, что данные одинаковы */

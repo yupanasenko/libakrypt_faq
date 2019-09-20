@@ -614,7 +614,6 @@
 
   ak_uint32 steps;
   struct hmac hkey;
-  char *str = NULL;
   struct random rnd;
   int error = ak_error_ok;
   bool_t result = ak_true;
@@ -643,15 +642,11 @@
     result = ak_false;
     goto lab_exit;
   }
-  if( !ak_ptr_is_equal( out, R256, 32 )) {
+  if(( result = ak_ptr_is_equal_with_log( out, R256, 32 )) != ak_true ) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
                                      "wrong test for hmac-streebog256 from R 50.1.113-2016" );
-    ak_log_set_message( str = ak_ptr_to_hexstr( out, 32, ak_false )); free( str );
-    ak_log_set_message( str = ak_ptr_to_hexstr( R256, 32, ak_false )); free( str );
-    result = ak_false;
     goto lab_exit;
   }
-
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                                       "the test for hmac-streebog256 from R 50.1.113-2016 is Ok" );
 
@@ -691,10 +686,10 @@
   } else {
       ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
              "the random walk test for %s with %u steps is wrong", hkey.key.oid->names[0], steps );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( out,
-                                  ak_hmac_context_get_tag_size( &hkey ), ak_false ))); free( str );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( out2,
-                                  ak_hmac_context_get_tag_size( &hkey ), ak_false ))); free( str );
+      ak_log_set_message(( ak_ptr_to_hexstr( out,
+                                               ak_hmac_context_get_tag_size( &hkey ), ak_false )));
+      ak_log_set_message(( ak_ptr_to_hexstr( out2,
+                                               ak_hmac_context_get_tag_size( &hkey ), ak_false )));
       result = ak_false;
       goto lab_exit;
     }
@@ -717,15 +712,11 @@
     result = ak_false;
     goto lab_exit;
   }
-  if( !ak_ptr_is_equal( out, R512, 64 )) {
+  if(( result = ak_ptr_is_equal_with_log( out, R512, 64 )) != ak_true ) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
                                           "wrong test for hmac-streebog512 from R 50.1.113-2016" );
-    ak_log_set_message( str = ak_ptr_to_hexstr( out, 64, ak_false )); free( str );
-    ak_log_set_message( str = ak_ptr_to_hexstr( R512, 64, ak_false )); free( str );
-    result = ak_false;
     goto lab_exit;
   }
-
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                                       "the test for hmac-streebog512 from R 50.1.113-2016 is Ok" );
 
@@ -765,10 +756,10 @@
   } else {
       ak_error_message_fmt( ak_error_not_equal_data, __func__ ,
              "the random walk test for %s with %u steps is wrong", hkey.key.oid->names[0], steps );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( out,
-                                  ak_hmac_context_get_tag_size( &hkey ), ak_false ))); free( str );
-      ak_log_set_message(( str = ak_ptr_to_hexstr( out2,
-                                  ak_hmac_context_get_tag_size( &hkey ), ak_false ))); free( str );
+      ak_log_set_message(( ak_ptr_to_hexstr( out,
+                                               ak_hmac_context_get_tag_size( &hkey ), ak_false )));
+      ak_log_set_message(( ak_ptr_to_hexstr( out2,
+                                               ak_hmac_context_get_tag_size( &hkey ), ak_false )));
       result = ak_false;
       goto lab_exit;
     }
@@ -815,7 +806,6 @@
            salt_two[5]     = { 's', 'a', 0, 'l', 't' };
 
   ak_uint8 out[64];
-  char *str = NULL;
   int error = ak_error_ok;
   int audit = ak_log_get_level();
 
@@ -825,11 +815,9 @@
     ak_error_message( error,__func__, "incorrect transformation password to key");
     return ak_false;
   }
-  if( !ak_ptr_is_equal( out, R1, 64 )) {
+  if( !ak_ptr_is_equal_with_log( out, R1, 64 )) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
                                                  "wrong 1st test for pbkdf2 from R 50.1.111-2016" );
-    ak_log_set_message( str = ak_ptr_to_hexstr( out, 64, ak_false )); free( str );
-    ak_log_set_message( str = ak_ptr_to_hexstr( R1, 64, ak_false )); free( str );
     return ak_false;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
@@ -841,11 +829,9 @@
     ak_error_message( error,__func__, "incorrect transformation password to key");
     return ak_false;
   }
-  if( !ak_ptr_is_equal( out, R2, 64 )) {
+  if( !ak_ptr_is_equal_with_log( out, R2, 64 )) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
                                                  "wrong 2nd test for pbkdf2 from R 50.1.111-2016" );
-    ak_log_set_message( str = ak_ptr_to_hexstr( out, 64, ak_false )); free( str );
-    ak_log_set_message( str = ak_ptr_to_hexstr( R2, 64, ak_false )); free( str );
     return ak_false;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
@@ -857,11 +843,9 @@
     ak_error_message( error,__func__, "incorrect transformation password to key");
     return ak_false;
   }
-  if( !ak_ptr_is_equal( out, R3, 64 )) {
+  if( !ak_ptr_is_equal_with_log( out, R3, 64 )) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
                                                  "wrong 3rd test for pbkdf2 from R 50.1.111-2016" );
-    ak_log_set_message( str = ak_ptr_to_hexstr( out, 64, ak_false )); free( str );
-    ak_log_set_message( str = ak_ptr_to_hexstr( R3, 64, ak_false )); free( str );
     return ak_false;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
@@ -873,16 +857,13 @@
     ak_error_message( error,__func__, "incorrect transformation password to key");
     return ak_false;
   }
-  if( !ak_ptr_is_equal( out, R4, 64 )) {
+  if( !ak_ptr_is_equal_with_log( out, R4, 64 )) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
                                                  "wrong 4th test for pbkdf2 from R 50.1.111-2016" );
-    ak_log_set_message( str = ak_ptr_to_hexstr( out, 64, ak_false )); free( str );
-    ak_log_set_message( str = ak_ptr_to_hexstr( R4, 64, ak_false )); free( str );
     return ak_false;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                                              "the 4th test for pbkdf2 from R 50.1.111-2016 is Ok" );
-
  return ak_true;
 }
 

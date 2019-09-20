@@ -17,7 +17,7 @@
  struct random generator;
  size_t i = 0, bsize = 0;
  int result = EXIT_SUCCESS;
- ak_uint8 data[512], out[8][32], res[32], message[128];
+ ak_uint8 data[512], out[8][32], res[32];
 
  /* 1. инициализируем библиотеку с выводом сообщений в стандартный поток вывода ошибок */
   if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true )
@@ -54,8 +54,8 @@
        ak_hash_context_finalize( &ctx, NULL, 0, out[i], 32 );
 
      /* выводим результат */
-      ak_ptr_to_hexstr_static( out[i], 32, message, 128, ak_false );
-      printf("hash[%u]: %s\n", (unsigned int)i, message );
+      printf("hash[%u]: %s\n", (unsigned int)i,
+                                         ak_ptr_to_hexstr( out[i], 32, ak_false ));
    }
    ak_hash_context_destroy( &ctx );
 
@@ -69,8 +69,8 @@
       ak_hash_context_ptr( &ctx, data, bsize*(i+1), res, 32 );
 
      /* выводим результат */
-      ak_ptr_to_hexstr_static( res, 32, message, 128, ak_false );
-      printf("hash[%u]: %s", (unsigned int)i, message );
+      printf("hash[%u]: %s", (unsigned int)i,
+                                        ak_ptr_to_hexstr( res, 32, ak_false ));
 
      /* сравниваем новое значение с вычисленным ранее
         при различных результатах меняем возвращаемый результат */

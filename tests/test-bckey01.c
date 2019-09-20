@@ -47,6 +47,10 @@
  /* инициализируем библиотеку */
   if( !ak_libakrypt_create( ak_function_log_stderr )) return ak_libakrypt_destroy();
 
+ /* устанавливаем нужный вариант совместимости и пересчитываем внутренние таблицы */
+  ak_libakrypt_set_option( "openssl_compability", 1 );
+  ak_bckey_context_kuznechik_init_gost_tables();
+
  /* создаем секретный ключ алгоритма Кузнечик */
   if( ak_bckey_context_create_kuznechik( &bkey ) != ak_error_ok )
     return ak_libakrypt_destroy();

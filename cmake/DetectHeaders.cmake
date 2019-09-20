@@ -36,6 +36,17 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
+  #include <strings.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_STRINGS )
+
+if( LIBAKRYPT_HAVE_STRINGS )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_STRINGS_H" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
   #include <ctype.h>
   int main( void ) {
      return 0;

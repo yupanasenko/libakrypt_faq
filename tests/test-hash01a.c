@@ -8,6 +8,7 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
+ #include <strings.h>
  #include <ak_hash.h>
 
 /* тестовая функция */
@@ -17,7 +18,7 @@
 /* основная программа */
  int main( void )
 {
-  char str[256];
+  char *str = NULL;
   struct hash ctx_one;    /* объект, размещаемый в статической памяти (стеке) */
   int error = ak_error_ok, exitcode = EXIT_FAILURE;
   ak_uint8 out[32],
@@ -35,11 +36,11 @@
  /* вычисляем хеш-код от заданной области памяти (используя статический объект) */
   error = test_hash_ptr( &ctx_one,
                           some_pointer, sizeof( some_pointer ), out, sizeof( out ));
-  ak_ptr_to_hexstr_static( out, sizeof( out ), str, sizeof( str ), ak_false );
-  printf("hash [1]: %s (exit code: %d) ", str, error );
+  printf("hash [1]: %s (exit code: %d) ",
+                    str = ak_ptr_to_hexstr( out, sizeof( out ), ak_false ), error );
 
  /* сравниваем полученный результат с ожидаемым */
-  if( !strncmp( str,
+  if( !strncasecmp( str,
        "C087BAD4C0FDC5622873294B5D9C3B790A9DC55FB29B1758D5154ADC2310F189", 32 )) {
     printf("Ok\n");
     exitcode = EXIT_SUCCESS;

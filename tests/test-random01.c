@@ -8,6 +8,7 @@
  #include <time.h>
  #include <stdio.h>
  #include <string.h>
+ #include <strings.h>
  #include <stdlib.h>
  #include <ak_random.h>
 
@@ -18,7 +19,8 @@
  struct random generator;
  ak_uint8 seed[4] = { 0x13, 0xAE, 0x4F, 0x0E }; /* константа */
  int i = 0, retval = ak_true;
- ak_uint8 buffer[1024], string[2050];
+ ak_uint8 buffer[1024];
+ char *string = NULL;
 
  /* создаем генератор */
   create( &generator );
@@ -33,12 +35,12 @@
   for( i = 0; i < 1024*4; i++ ) ak_random_context_random( &generator, buffer, 1024 );
   time = clock() - time;
 
-  ak_ptr_to_hexstr_static( buffer, 32, string, 2050, ak_false );
-  printf("%s (%f sec) ", string, (double)time / (double)CLOCKS_PER_SEC );
+  printf("%s (%f sec) ", string = ak_ptr_to_hexstr( buffer, 32, ak_false ),
+                                             (double)time / (double)CLOCKS_PER_SEC );
 
  /* проверка только для тех, кому устанавливали начальное значение */
   if( result ) {
-    if( memcmp( result, string, 32 ) != 0 ) { printf("Wrong\n"); retval = ak_false; }
+    if( strncasecmp( result, string, 32 ) != 0 ) { printf("Wrong\n"); retval = ak_false; }
      else { printf("Ok\n"); retval = ak_true; }
   } else { printf("\n"); retval = ak_true; }
 

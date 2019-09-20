@@ -510,7 +510,6 @@
 {
   struct hash ctx;
   ak_uint8 out[16];
-  char *str = NULL;
   struct kuznechik_params parameters;
   int error = ak_error_ok, audit = ak_log_get_level();
 
@@ -523,7 +522,7 @@
   ak_bckey_context_kuznechik_init_tables( gost_lvec, gost_pi, &parameters );
 
  /* проверяем генерацию обратной перестановки */
-  if( !ak_ptr_is_equal( gost_pinv, parameters.pinv, sizeof( sbox ))) {
+  if( !ak_ptr_is_equal_with_log( parameters.pinv, gost_pinv, sizeof( sbox ))) {
     ak_error_message( ak_error_not_equal_data, __func__,
                                          "incorrect generation of nonlinear inverse permutation" );
     return ak_false;
@@ -532,7 +531,7 @@
                                                                      "inverse permutation is Ok" );
 
  /* проверяем генерацию сопровождающей матрицы линейного регистра сдвига и обратной к ней */
-  if( !ak_ptr_is_equal( gost_L, parameters.L, sizeof( linear_matrix ))) {
+  if( !ak_ptr_is_equal( parameters.L, gost_L, sizeof( linear_matrix ))) {
     size_t i = 0;
     ak_error_message( ak_error_not_equal_data, __func__,
                                               "incorrect generation of linear reccurence matrix" );
@@ -548,7 +547,7 @@
     return ak_false;
   }
 
-  if( !ak_ptr_is_equal( gost_Linv, parameters.Linv, sizeof( linear_matrix ))) {
+  if( !ak_ptr_is_equal( parameters.Linv, gost_Linv, sizeof( linear_matrix ))) {
     size_t i = 0;
     ak_error_message( ak_error_not_equal_data, __func__,
                                               "incorrect generation inverse of companion matrix" );
@@ -573,26 +572,18 @@
     return ak_false;
   }
   ak_hash_context_ptr( &ctx, parameters.enc, sizeof( expanded_table ), out, sizeof( out ));
-  if( !ak_ptr_is_equal( out, esum, sizeof( out ))) {
+  if( !ak_ptr_is_equal_with_log( out, esum, sizeof( out ))) {
     ak_hash_context_destroy( &ctx );
     ak_error_message( ak_error_not_equal_data, __func__,
                                                       "incorrect hash value of encryption table" );
-    ak_error_message_fmt( 0, "", "%s (calculated value)",
-                              str = ak_ptr_to_hexstr( out, sizeof( out ), ak_false )); free( str );
-    ak_error_message_fmt( 0, "", "%s (predefined const)",
-                            str = ak_ptr_to_hexstr( esum, sizeof( esum ), ak_false )); free( str );
     return ak_false;
   }
 
   ak_hash_context_ptr( &ctx, parameters.dec, sizeof( expanded_table ), out, sizeof( out ));
-  if( !ak_ptr_is_equal( out, dsum, sizeof( out ))) {
-    ak_hash_context_destroy( &ctx );
+  if( !ak_ptr_is_equal_with_log( out, dsum, sizeof( out ))) {
+    ak_hash_context_destroy( &ctx );    
     ak_error_message( ak_error_not_equal_data, __func__,
                                                       "incorrect hash value of encryption table" );
-    ak_error_message_fmt( 0, "", "%s (calculated value)",
-                              str = ak_ptr_to_hexstr( out, sizeof( out ), ak_false )); free( str );
-    ak_error_message_fmt( 0, "", "%s (predefined const)",
-                            str = ak_ptr_to_hexstr( dsum, sizeof( dsum ), ak_false )); free( str );
     return ak_false;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
