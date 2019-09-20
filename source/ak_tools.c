@@ -638,13 +638,12 @@
  /* выводим сообщение об установленных параметрах библиотеки */
   if( ak_libakrypt_get_option( "log_level" ) >= ak_log_maximum ) {
     size_t i = 0;
-    ak_error_message_fmt( ak_error_ok, __func__, "libakrypt version: %s",
-                                                                     ak_libakrypt_version( ));
+    ak_error_message_fmt( ak_error_ok, __func__, "libakrypt version: %s", ak_libakrypt_version( ));
    /* далее мы пропускаем вывод информации об архитектуре,
     поскольку она будет далее тестироваться отдельно     */
     for( i = 1; i < ak_libakrypt_options_count(); i++ )
        ak_error_message_fmt( ak_error_ok, __func__,
-                              "value of option %s is %d", options[i].name, options[i].value );
+                               "value of \"%s\" option is %d", options[i].name, options[i].value );
    }
 }
 
@@ -1078,6 +1077,8 @@
     ak_error_message( ak_error_zero_length, __func__ , "using data with zero or negative length" );
     return NULL;
   }
+ /* если возвращаемое значение функции обрабатывается, то вывод предупреждения об ошибке излишен */
+  if( sizeof( ak_ptr_to_hexstr_static_buffer ) < len ) return NULL;
 
   memset( ak_ptr_to_hexstr_static_buffer, 0, sizeof( ak_ptr_to_hexstr_static_buffer ));
   if( reverse ) { // движение в обратную сторону - от старшего байта к младшему
@@ -1090,6 +1091,66 @@
   }
 
  return ak_ptr_to_hexstr_static_buffer;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция рассматривает область памяти, на которую указывает указатель ptr, как массив
+    последовательно записанных байт фиксированной длины. Функция выделяет в оперативной памяти
+    массив необходимого размера и последовательно выводит в него значения,
+    хранящиеся в заданной области памяти. Значения выводятся в шестнадцатеричной системе счисления.
+
+    Выделенная область памяти должна быть позднее удалена с помощью вызова функции free().
+
+    Пример использования.
+  \code
+    ak_uint8 data[1000] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+    ak_uint8 *str = ak_ptr_to_hexstr_alloc( data, sizeof( data ), ak_false );
+    if( str != NULL ) printf("%s\n", str );
+    free( str );
+  \endcode
+
+    @param ptr Указатель на область памяти
+    @param ptr_size Размер области памяти (в байтах)
+    @param reverse Последовательность вывода байт в строку. Если reverse равно \ref ak_false,
+    то байты выводятся начиная с младшего к старшему.  Если reverse равно \ref ak_true, то байты
+    выводятся начиная от старшего к младшему (такой способ вывода принят при стандартном выводе
+    чисел: сначала старшие разряды, потом младшие).
+
+    @return Функция возвращает указатель на статическую строку. В случае ошибки конвертации,
+    либо в случае нехватки статической памяти, возвращается NULL.
+    Код ошибки может быть получен с помощью вызова функции ak_error_get_value().                   */
+/* ----------------------------------------------------------------------------------------------- */
+ char *ak_ptr_to_hexstr_alloc( ak_const_pointer ptr, const size_t ptr_size, const bool_t reverse )
+{
+  char *result = NULL;
+  size_t len = 1 + (ptr_size << 1);
+  ak_uint8 *data = ( ak_uint8 * ) ptr;
+  size_t idx = 0, js = 0, start = 0, offset = 2;
+
+  if( ptr == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to data" );
+    return NULL;
+  }
+  if( ptr_size <= 0 ) {
+    ak_error_message( ak_error_zero_length, __func__ , "using data with zero or negative length" );
+    return NULL;
+  }
+  if(( result = malloc( len )) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__ , "incorrect memory allocation" );
+    return NULL;
+  }
+
+  memset( result, 0, len );
+  if( reverse ) { // движение в обратную сторону - от старшего байта к младшему
+    start = len-3; offset = -2;
+  }
+  for( idx = 0, js = start; idx < ptr_size; idx++, js += offset ) {
+     char str[4];
+     ak_snprintf( str, 3, "%02x", data[idx] );
+     memcpy( result+js, str, 2 );
+  }
+
+ return result;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

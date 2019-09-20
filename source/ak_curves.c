@@ -140,7 +140,7 @@
 #ifdef LIBAKRYPT_HAVE_STRINGS_H
   if( strncasecmp( str, ec->pchar, strlen( ec->pchar )) != 0 )
 #else
-  if( strcmp( str, ec->pchar, strlen( ec->pchar )) != 0 )
+  if( strncmp( str, ec->pchar, strlen( ec->pchar )) != 0 )
 #endif
     return ak_error_message( ak_error_wrong_endian, __func__,
                                                "incorrect convertation mpzn integer to string" );

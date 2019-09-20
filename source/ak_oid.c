@@ -22,8 +22,10 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения имен идентификаторов */
  static const char *on_lcg[] =              { "lcg", NULL };
+#if defined(__unix__) || defined(__APPLE__)
  static const char *on_dev_random[] =       { "dev-random", "/dev/random", NULL };
  static const char *on_dev_urandom[] =      { "dev-urandom", "/dev/urandom", NULL };
+#endif
 #ifdef _WIN32
  static const char *on_winrtl[] =           { "winrtl", NULL };
 #endif

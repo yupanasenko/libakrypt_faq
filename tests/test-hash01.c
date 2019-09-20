@@ -8,7 +8,6 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
- #include <strings.h>
  #include <ak_hash.h>
 
 /* основная программа */
@@ -36,8 +35,8 @@
                     str = ak_ptr_to_hexstr( out, sizeof( out ), ak_false ), error );
 
  /* сравниваем полученный результат с ожидаемым */
-  if( !strncasecmp( str,
-       "C087BAD4C0FDC5622873294B5D9C3B790A9DC55FB29B1758D5154ADC2310F189", 32 )) {
+  if( !strncmp( str,
+       "c087bad4c0fdc5622873294b5d9c3b790a9dc55fb29b1758d5154adc2310f189", 32 )) {
     printf("Ok\n");
     exitcode = EXIT_SUCCESS;
   } else printf("Wrong\n");

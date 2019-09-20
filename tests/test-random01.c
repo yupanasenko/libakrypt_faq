@@ -8,7 +8,6 @@
  #include <time.h>
  #include <stdio.h>
  #include <string.h>
- #include <strings.h>
  #include <stdlib.h>
  #include <ak_random.h>
 
@@ -40,7 +39,7 @@
 
  /* проверка только для тех, кому устанавливали начальное значение */
   if( result ) {
-    if( strncasecmp( result, string, 32 ) != 0 ) { printf("Wrong\n"); retval = ak_false; }
+    if( strncmp( result, string, 32 ) != 0 ) { printf("Wrong\n"); retval = ak_false; }
      else { printf("Ok\n"); retval = ak_true; }
   } else { printf("\n"); retval = ak_true; }
 
@@ -57,7 +56,7 @@
 
  /* последовательно запускаем генераторы на тестирование */
    if( test_function( ak_random_context_create_lcg,
-      "47B7EF2B729133A3E9853E0F4FFE040154A7622B7827E71BC6E48DFF98C27F61" ) != ak_true )
+      "47b7ef2b729133a3e9853e0f4ffe040154a7622b7827e71bc6e48dff98c27f61" ) != ak_true )
      error = EXIT_FAILURE;
 
 #ifdef _WIN32
@@ -69,7 +68,7 @@
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  if( test_function( ak_random_context_create_hashrnd,
-      "1C48E724F9A72C5889D5B98F2EFD54FB7272CA77A056FE1D015A6D7A2EC90CB3" ) != ak_true )
+      "1c48e724f9a72c5889d5b98f2efd54fb7272ca77a056fe1d015a6d7a2ec90cb3" ) != ak_true )
      error = EXIT_FAILURE;
 #endif
 

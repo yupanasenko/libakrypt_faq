@@ -16,6 +16,7 @@
 {
   size_t off = 0;
   int result = EXIT_FAILURE;
+  char *str = NULL;
   struct hash hctx;
   struct random rnd;
   ak_uint8 cnt[128], buffer[526], out[32], out2[32];
@@ -31,9 +32,13 @@
   ak_hash_context_create_streebog256( &hctx ); /* вычисляем контрольную сумму */
   ak_hash_context_ptr( &hctx, buffer, sizeof( buffer ), out, sizeof( out ));
 
-
-  printf("random data: %s (hash: ", ak_ptr_to_hexstr( buffer, sizeof( buffer ), ak_false ));
-  printf("%s)\n\n", ak_ptr_to_hexstr( out, sizeof( out ), ak_false ));
+  if(( str = ak_ptr_to_hexstr( buffer, sizeof( buffer ), ak_false )) != NULL )
+    printf("random data: %s ", str );
+   else {
+    printf("random data: %s ", str = ak_ptr_to_hexstr_alloc( buffer, sizeof( buffer ), ak_false ));
+    free( str );
+   }
+  printf("(hash: %s)\n\n", ak_ptr_to_hexstr( out, sizeof( out ), ak_false ));
   ak_random_context_destroy( &rnd );
   memset( buffer, 0, sizeof( buffer ));
 
@@ -51,9 +56,14 @@
     }
   }
 
-  printf("\nrandom data: %s (hash: ", ak_ptr_to_hexstr( buffer, sizeof( buffer ), ak_false ));
+  if(( str = ak_ptr_to_hexstr( buffer, sizeof( buffer ), ak_false )) != NULL )
+    printf("random data: %s ", str );
+   else {
+    printf("random data: %s ", str = ak_ptr_to_hexstr_alloc( buffer, sizeof( buffer ), ak_false ));
+    free( str );
+   }
   ak_hash_context_ptr( &hctx, buffer, sizeof( buffer ), out2, sizeof( out2 ));
-  printf("%s)\n\ntest is ", ak_ptr_to_hexstr( out2, sizeof( out2 ), ak_false ));
+  printf("(hash: %s)\n\ntest is ", ak_ptr_to_hexstr( out2, sizeof( out2 ), ak_false ));
   ak_random_context_destroy( &rnd );
 
  /* проверяем, что данные одинаковы */

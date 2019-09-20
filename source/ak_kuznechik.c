@@ -67,18 +67,19 @@
 /* ---------------------------------------------------------------------------------------------- */
  static void ak_bckey_context_kuznechik_square_matrix( linear_matrix a )
 {
+  int i, j, k;
   linear_matrix c;
 
  /* умножаем */
-  for( int i = 0; i < 16; i++ )
-   for( int j = 0; j < 16; j++ ) {
+  for( i = 0; i < 16; i++ )
+   for( j = 0; j < 16; j++ ) {
       c[i][j] = 0;
-      for( int k = 0; k < 16; k++ )
+      for( k = 0; k < 16; k++ )
          c[i][j] ^= ak_bckey_context_kuznechik_mul_gf256( a[i][k], a[k][j] );
    }
  /* копируем */
-  for( int i = 0; i < 16; i++ )
-   for( int j = 0; j < 16; j++ ) a[i][j] = c[i][j];
+  for( i = 0; i < 16; i++ )
+   for( j = 0; j < 16; j++ ) a[i][j] = c[i][j];
 }
 
 /* ---------------------------------------------------------------------------------------------- */

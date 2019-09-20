@@ -419,9 +419,6 @@ extern "C" {
  dll_export const char *ak_libakrypt_get_mode_name( const oid_modes_t );
 /*! \brief Получение общего количества определенных OID библиотеки. */
  dll_export size_t ak_libakrypt_oids_count( void );
-///*! \brief Функция возвращает максимальную длину массива, необходимого для хранения имени или
-//    идентификатора алгоритма. */
-// dll_export size_t ak_libakrypt_get_oid_max_length( void );
 /*! \brief Получение информации об oid с заданным индексом. */
  dll_export int ak_libakrypt_get_oid_by_index( const size_t ,
                                  oid_engines_t * , oid_modes_t * , const char **, const char *** );
@@ -430,8 +427,10 @@ extern "C" {
                   oid_engines_t * , oid_modes_t * , char * , const size_t, char * , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание строки символов, содержащей значение заданной области памяти. */
+/*! \brief Создание строки символов, содержащей человекочитаемое значение заданной области памяти. */
  dll_export char *ak_ptr_to_hexstr( ak_const_pointer , const size_t , const bool_t );
+/*! \brief Создание строки символов, содержащей человекочитаемое значение заданной области памяти. */
+ dll_export char *ak_ptr_to_hexstr_alloc( ak_const_pointer , const size_t , const bool_t );
 /*! \brief Конвертация строки шестнадцатеричных символов в массив данных. */
  dll_export int ak_hexstr_to_ptr( const char *, ak_pointer , const size_t , const bool_t );
 /*! \brief Функция высчитывает максимальную длину в байтах последовательности шестнадцатеричных символов. */

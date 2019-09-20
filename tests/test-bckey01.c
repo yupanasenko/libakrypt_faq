@@ -64,28 +64,14 @@
   if( ak_libakrypt_get_option( "openssl_compability" )) {
       bkey.encrypt( &bkey.key, openssl_in, buf );
 
-      printf("encrypted: ");
-      for( int i = 0; i < 16; i++ ) printf("%02x ", buf[i]);
-      printf("\nexpected:  ");
-      for( int i = 0; i < 16; i++ ) printf("%02x ", openssl_out[i]);
-      printf("\n");
+      printf("encrypted: %s\n", ak_ptr_to_hexstr( buf, 16, ak_false ));
+      printf(" expected: %s\n", ak_ptr_to_hexstr( openssl_out, 16, ak_false ));
 
   } else {
       bkey.encrypt( &bkey.key, in, buf );
 
-      printf("encrypted: ");
-      for( int i = 0; i < 16; i++ ) printf("%02x ", buf[i]);
-      printf("\nexpected:  ");
-      for( int i = 0; i < 16; i++ ) printf("%02x ", out[i]);
-      printf("\n");
-
-      bkey.decrypt( &bkey.key, out, buf );
-
-      printf("decrypted: ");
-      for( int i = 0; i < 16; i++ ) printf("%02x ", buf[i]);
-      printf("\nexpected:  ");
-      for( int i = 0; i < 16; i++ ) printf("%02x ", in[i]);
-      printf("\n");
+      printf("encrypted: %s\n", ak_ptr_to_hexstr( buf, 16, ak_false ));
+      printf(" expected: %s\n", ak_ptr_to_hexstr( out, 16, ak_false ));
   }
 
   ak_bckey_context_destroy( &bkey );

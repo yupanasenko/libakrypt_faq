@@ -7,8 +7,6 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
- #include <strings.h>
-
  #include <ak_mpzn.h>
 
  int main( void )
@@ -86,7 +84,7 @@
   for( i = 0; i < 64; i++ ) printf("%02X ", buffer[i] );
   printf("(big endian)\n\n");
 
-  if( strncasecmp( s, "00000000000000000000D000000000A9000190000000013800024000000001AE0002E0000000020C000210000000016900015000000000DC0000A00000000064", 128 ) == 0 )
+  if( strncmp( s, "00000000000000000000d000000000a9000190000000013800024000000001ae0002e0000000020c000210000000016900015000000000dc0000a00000000064", 128 ) == 0 )
     printf("Ok\n");
    else { printf("Wrong\n"); return EXIT_FAILURE; }
 
