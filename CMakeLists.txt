@@ -37,6 +37,7 @@ option( LIBAKRYPT_INTERNAL_TESTS "Build collection of internal tests using non-e
 option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
 option( LIBAKRYPT_HTML_DOC "Build documentation in HTML format" OFF )
 option( LIBAKRYPT_PDF_DOC "Build documentation in PDF format" OFF )
+option( LIBAKRYPT_AKTOOL "Build console aktool application" ON )
 
 # -------------------------------------------------------------------------------------------------- #
 # Уточнение зависимостей между опциями
@@ -49,6 +50,9 @@ if( LIBAKRYPT_INTERNAL_TESTS OR LIBAKRYPT_GMP_TESTS )
 endif()
 if( LIBAKRYPT_STATIC_LIB )
   set( LIBAKRYPT_SHARED_LIB OFF )
+endif()
+if( LIBAKRYPT_AKTOOL )
+  set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -84,8 +88,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_skey.h
                     source/ak_hmac.h
                     source/ak_bckey.h
-     )
-
+  )
   set( SOURCES      ${SOURCES}
                     source/ak_mac.c
                     source/ak_hash.c
@@ -94,7 +97,23 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_hmac.c
                     source/ak_bckey.c
                     source/ak_kuznechik.c
-     )
+  )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+# Файлы для вормирования консольной утилиты
+# -------------------------------------------------------------------------------------------------- #
+if( LIBAKRYPT_AKTOOL )
+  set( AKTOOL_SOURCES
+                    aktool/aktool.c
+                    aktool/aktool_show.c
+                    aktool/aktool_icode.c
+  )
+  set( AKTOOLS_FILES
+                    aktool/aktool.h
+                    aktool/getopt.h
+                    aktool/getopt.c
+  )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -187,6 +206,36 @@ if( LIBAKRYPT_STATIC_LIB )
   add_library( akrypt STATIC ${MAIN_HEADER} ${SOURCES} ${ASN1_SOURCES} )
   set_target_properties( akrypt PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
   message( "-- Building a static library" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+# сборка консольной утилиты для работы с функциями библиотеки
+# -------------------------------------------------------------------------------------------------- #
+if( LIBAKRYPT_AKTOOL )
+
+  if( LIBAKRYPT_HAVE_GETOPT )
+  else()
+    set( AKTOOL_SOURCES ${AKTOOL_SOURCES} aktool/getopt.c )
+  endif()
+  message("-- Sources for aktool${LIBAKRYPT_EXT}: ${AKTOOL_SOURCES}" )
+
+  find_path( LIBINTL_H_PATH NAMES libintl.h )
+  if( LIBINTL_H_PATH )
+    include_directories( ${LIBINTL_H_PATH} )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_LIBINTL_H" )
+    message("-- Additional header for aktool is libintl.h" )
+  endif()
+
+  add_executable( aktool${LIBAKRYPT_EXT} ${AKTOOL_SOURCES} )
+  target_include_directories( aktool${LIBAKRYPT_EXT} PUBLIC "aktool" )
+
+  find_library( LIBINTL_LIB intl )
+  if( LIBINTL_LIB )
+    message("-- Additional library for aktool is ${LIBINTL_LIB}")
+    target_link_libraries( aktool${LIBAKRYPT_EXT} akrypt ${LIBAKRYPT_LIBS} ${LIBINTL_LIB} )
+  else()
+    target_link_libraries( aktool${LIBAKRYPT_EXT} akrypt ${LIBAKRYPT_LIBS} )
+  endif()
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
