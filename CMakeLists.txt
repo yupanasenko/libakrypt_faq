@@ -227,6 +227,7 @@ set( INTERNAL_TEST_LIST
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
                  bckey01
+                 bckey02
                  hash01
                  hash01a
                  hash02

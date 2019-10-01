@@ -376,7 +376,10 @@
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  /* инициализируем константные таблицы для алгоритма Кузнечик */
-  ak_bckey_context_kuznechik_init_gost_tables();
+  if(( error = ak_bckey_context_kuznechik_init_gost_tables()) != ak_error_ok ) {
+    ak_error_message( error, __func__, "initialization of context manager is wrong" );
+    return ak_false;
+  }
 
 // /* инициализируем структуру управления контекстами */
 //   if(( error = ak_libakrypt_create_context_manager()) != ak_error_ok ) {

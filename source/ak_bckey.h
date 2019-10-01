@@ -34,7 +34,7 @@
       \details Максимальное количество блоков, помещающихся в буффер,
       равно 8 для Магмы и 4 для Кузнечика. */
    ak_uint8 ivector[64];
-  /*! \brief Размер вектора сенхропосылки (в октетах) */
+  /*! \brief Текущий размер вектора синхропосылки (в октетах) */
    size_t ivector_size;
   /*! \brief Функция заширования одного блока информации. */
    ak_function_bckey *encrypt;
@@ -78,11 +78,11 @@
  int ak_bckey_context_next_acpkm_key( ak_bckey );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Зашифрование данных в режиме простой замены. */
+/*! \brief Зашифрование данных в режиме простой замены (electronic codebook, ecb). */
  int ak_bckey_context_encrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
-/*! \brief Расшифрование данных в режиме простой замены. */
+/*! \brief Расшифрование данных в режиме простой замены (electronic codebook, ecb). */
  int ak_bckey_context_decrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
-/*! \brief Шифрование данных в режиме гаммирования из ГОСТ Р 34.13-2015. */
+/*! \brief Шифрование данных в режиме гаммирования из ГОСТ Р 34.13-2015 (counter mode, ctr). */
  int ak_bckey_context_ctr( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
 /*! \brief Шифрование данных в режиме CTR-ACPKM из Р 1323565.1.017—2018. */
  int ak_bckey_context_ctr_acpkm( ak_bckey , ak_pointer , ak_pointer , size_t , size_t ,
@@ -100,9 +100,9 @@
  void ak_bckey_context_kuznechik_invert_permutation( const sbox , sbox );
 /*! \brief Инициализация внутренних структур данных, используемых при реализации алгоритма
     блочного шифрования Кузнечик (ГОСТ Р 34.12-2015). */
- void ak_bckey_context_kuznechik_init_tables( const linear_register , const sbox , ak_kuznechik_params );
+ int ak_bckey_context_kuznechik_init_tables( const linear_register , const sbox , ak_kuznechik_params );
 /*! \brief Инициализация внутренних переменных значениями, регламентируемыми ГОСТ Р 34.12-2015. */
- void ak_bckey_context_kuznechik_init_gost_tables( void );
+ int ak_bckey_context_kuznechik_init_gost_tables( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тестирование корректной работы алгоритма блочного шифрования Магма (ГОСТ Р 34.12-2015). */

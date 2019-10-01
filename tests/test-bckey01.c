@@ -1,14 +1,24 @@
+/* Тестовый пример иллюстрирует операции зашифрования/расшифрования одного блока
+   информации, а также программную возможность выбирать способ
+   соместимости с преобразованиями, реализуемыми библиотекой openssl.
+   Внимание! Используются не экспортируемые функции.
+
+   test-bckey01.c
+*/
  #include <stdio.h>
  #include <stdlib.h>
  #include <ak_bckey.h>
  #include <ak_tools.h>
 
 /*
+   инфверитрованные тестовые значения взяты из
    https://github.com/gost-engine/engine/blob/master/test_grasshopper.c
 */
 
- int main( void )
+ int main( int argc, char *argv[] )
 {
+ /* устанавливаем флаг совместимости с openssl: 0 - нет совместимости, 1 - есть */
+  int oc = 0;
   ak_uint8 buf[16];
   struct bckey bkey;
 
@@ -44,11 +54,15 @@
     0xd0,0xb0,0x9c,0xcd,0xe8,0x30,0xb9,0xeb,0x3a,0x02,0xc4,0xc5,0xaa,0x8a,0xda,0x98,
   };
 
+ /* передаем в программу значение флага совместимости */
+  if( argc > 1 ) oc = atoi( argv[1] );
+  if( oc != 1 ) oc = 0;
+
  /* инициализируем библиотеку */
   if( !ak_libakrypt_create( ak_function_log_stderr )) return ak_libakrypt_destroy();
 
  /* устанавливаем нужный вариант совместимости и пересчитываем внутренние таблицы */
-  ak_libakrypt_set_option( "openssl_compability", 1 );
+  ak_libakrypt_set_option( "openssl_compability", oc );
   ak_bckey_context_kuznechik_init_gost_tables();
 
  /* создаем секретный ключ алгоритма Кузнечик */
@@ -56,23 +70,16 @@
     return ak_libakrypt_destroy();
 
  /* устанавливаем секретный ключ */
-  if( ak_libakrypt_get_option( "openssl_compability" )) {
-    ak_bckey_context_set_key( &bkey, openssl_key, sizeof( key ));
-  }  else ak_bckey_context_set_key( &bkey, key, sizeof( key ));
+  ak_bckey_context_set_key( &bkey, oc ? openssl_key : key, sizeof( key ));
 
- /* зашифровываем всего блок данных в режиме простой замены */
-  if( ak_libakrypt_get_option( "openssl_compability" )) {
-      bkey.encrypt( &bkey.key, openssl_in, buf );
+ /* зашифровываем и расшифровываем всего блок данных в режиме простой замены */
+  bkey.encrypt( &bkey.key, oc ? openssl_in : in, buf );
+  printf("encrypted: %s\n", ak_ptr_to_hexstr( buf, 16, ak_false ));
+  printf(" expected: %s\n", ak_ptr_to_hexstr( oc ? openssl_out : out, 16, ak_false ));
 
-      printf("encrypted: %s\n", ak_ptr_to_hexstr( buf, 16, ak_false ));
-      printf(" expected: %s\n", ak_ptr_to_hexstr( openssl_out, 16, ak_false ));
-
-  } else {
-      bkey.encrypt( &bkey.key, in, buf );
-
-      printf("encrypted: %s\n", ak_ptr_to_hexstr( buf, 16, ak_false ));
-      printf(" expected: %s\n", ak_ptr_to_hexstr( out, 16, ak_false ));
-  }
+ bkey.decrypt( &bkey.key, buf, buf );
+  printf("decrypted: %s\n", ak_ptr_to_hexstr( buf, 16, ak_false ));
+  printf(" expected: %s\n", ak_ptr_to_hexstr( oc ? openssl_in : in, 16, ak_false ));
 
   ak_bckey_context_destroy( &bkey );
  return ak_libakrypt_destroy();

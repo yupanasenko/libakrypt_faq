@@ -635,15 +635,23 @@
 /* ----------------------------------------------------------------------------------------------- */
  void ak_libakrypt_log_options( void )
 {
+  const char *f = "(ak_false)", *t = "(ak_true)";
  /* выводим сообщение об установленных параметрах библиотеки */
   if( ak_libakrypt_get_option( "log_level" ) >= ak_log_maximum ) {
     size_t i = 0;
     ak_error_message_fmt( ak_error_ok, __func__, "libakrypt version: %s", ak_libakrypt_version( ));
    /* далее мы пропускаем вывод информации об архитектуре,
     поскольку она будет далее тестироваться отдельно     */
-    for( i = 1; i < ak_libakrypt_options_count(); i++ )
+    for( i = 1; i < ak_libakrypt_options_count(); i++ ) {
+       const char *n = "";
+       switch( options[i].value ) {
+         case 0: n = f; break;
+         case 1: n = t; break;
+         default: break;
+       }
        ak_error_message_fmt( ak_error_ok, __func__,
-                               "value of \"%s\" option is %d", options[i].name, options[i].value );
+                         "value of \"%s\" option is %d %s", options[i].name, options[i].value, n );
+    }
    }
 }
 

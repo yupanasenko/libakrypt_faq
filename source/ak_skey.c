@@ -213,7 +213,7 @@
   /* OID ключа устанавливается производящей функцией */
   skey->oid = NULL;
   /* После создания ключа все его флаги не определены */
-  skey->flags = skey_flag_undefined;
+  skey->flags = ak_key_flag_undefined;
  /* В заключение определяем указатели на методы.
     по умолчанию используются механизмы для работы с аддитивной по модулю 2 маской.
 
@@ -252,10 +252,10 @@
   ak_random_context_destroy( &skey->generator );
   if( skey->data != NULL ) {
    /* при установленном флаге память не очищаем */
-    if( !((skey->flags)&skey_flag_data_not_free )) free( skey->data );
+    if( !((skey->flags)&ak_key_flag_data_not_free )) free( skey->data );
   }
   skey->oid = NULL;
-  skey->flags = skey_flag_undefined;
+  skey->flags = ak_key_flag_undefined;
 
  /* замещаем ключевый данные произвольным мусором */
   memcpy( skey, data, sizeof( data ));
@@ -286,7 +286,7 @@
   if( skey->key_size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
                                                            "using a key buffer with zero length" );
  /* проверяем, установлена ли маска ранее */
-  if((( skey->flags)&skey_flag_set_mask ) == 0 ) {
+  if((( skey->flags)&ak_key_flag_set_mask ) == 0 ) {
     /* создаем маску*/
      if(( error = ak_random_context_random( &skey->generator,
                              skey->key+skey->key_size, (ssize_t)skey->key_size )) != ak_error_ok )
@@ -296,7 +296,7 @@
      jdx = skey->key_size;
      for( idx = 0; idx < skey->key_size; idx++, jdx++ ) skey->key[idx] ^= skey->key[jdx];
     /* меняем значение флага */
-     skey->flags |= skey_flag_set_mask;
+     skey->flags |= ak_key_flag_set_mask;
 
   } else { /* если маска уже установлена, то мы сменяем ее на новую */
           ak_uint8 newmask[64];
@@ -349,7 +349,7 @@
   if( skey->key_size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
                                                            "using a key buffer with zero length" );
  /* проверяем, установлена ли маска ранее */
-  if( (( skey->flags)&skey_flag_set_mask ) == 0 ) return ak_error_ok;
+  if( (( skey->flags)&ak_key_flag_set_mask ) == 0 ) return ak_error_ok;
 
  /* снимаем маску с ключа (побайтно) */
   jdx = skey->key_size;
@@ -359,7 +359,7 @@
   }
 
  /* меняем значение флага */
-  skey->flags ^= skey_flag_set_mask;
+  skey->flags ^= ak_key_flag_set_mask;
  return ak_error_ok;
 }
 
@@ -386,7 +386,7 @@
   skey->icode ^=x;
 
  /* устанавливаем флаг */
-  skey->flags |= skey_flag_set_icode;
+  skey->flags |= ak_key_flag_set_icode;
 
  return ak_error_ok;
 }
@@ -537,7 +537,7 @@
   memset( skey->key+size, 0, size ); /* обнуляем массив масок */
 
  /* очищаем флаг начальной инициализации */
-  skey->flags &= (0xFFFFFFFFFFFFFFFFLL ^ skey_flag_set_mask );
+  skey->flags &= (0xFFFFFFFFFFFFFFFFLL ^ ak_key_flag_set_mask );
 
  /* маскируем ключ и вычисляем контрольную сумму */
   if(( error = skey->set_mask( skey )) != ak_error_ok ) return  ak_error_message( error,
@@ -548,7 +548,7 @@
 
  /* устанавливаем флаг того, что ключевое значение определено.
     теперь ключ можно использовать в криптографических алгоритмах */
-  skey->flags |= skey_flag_set_key;
+  skey->flags |= ak_key_flag_set_key;
 
  return ak_error_ok;
 }
@@ -585,13 +585,13 @@
     return ak_error_message( error, __func__ , "wrong generation a secret key" );
 
  /* меняем значение флага маски на установленное */
-  skey->flags |= skey_flag_set_mask;
+  skey->flags |= ak_key_flag_set_mask;
   if(( error = skey->set_icode( skey )) != ak_error_ok ) return ak_error_message( error,
                                                  __func__ , "wrong calculation of integrity code" );
 
  /* устанавливаем флаг того, что ключевое значение определено.
     теперь ключ можно использовать в криптографических алгоритмах */
-  skey->flags |= skey_flag_set_key;
+  skey->flags |= ak_key_flag_set_key;
 
  return error;
 }
@@ -639,7 +639,7 @@
   memset( skey->key+skey->key_size, 0, skey->key_size ); /* обнуляем массив масок */
 
  /* очищаем флаг начальной инициализации */
-  skey->flags &= (0xFFFFFFFFFFFFFFFFLL ^ skey_flag_set_mask );
+  skey->flags &= (0xFFFFFFFFFFFFFFFFLL ^ ak_key_flag_set_mask );
 
  /* маскируем ключ и вычисляем контрольную сумму */
   if(( error = skey->set_mask( skey )) != ak_error_ok ) return  ak_error_message( error,
@@ -650,7 +650,7 @@
 
  /* устанавливаем флаг того, что ключевое значение определено.
     теперь ключ можно использовать в криптографических алгоритмах */
-  skey->flags |= skey_flag_set_key;
+  skey->flags |= ak_key_flag_set_key;
  return error;
 }
 
