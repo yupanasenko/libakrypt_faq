@@ -36,14 +36,14 @@
    ;
  #endif
  /* попытка русификации программы для unix-like операционных систем */
- #ifdef LIBaktool_HAVE_LIBINTL_H
+ #ifdef LIBAKRYPT_HAVE_LIBINTL_H
  /* обрабатываем настройки локали
-    при инсталляции файл akrypt.mo должен помещаться в /usr/share/locale/ru/LC_MESSAGES */
-  #ifdef LIBaktool_HAVE_LOCALE_H
+    при инсталляции файл aktool.mo должен помещаться в /usr/share/locale/ru/LC_MESSAGES */
+  #ifdef LIBAKRYPT_HAVE_LOCALE_H
    setlocale( LC_ALL, "" );
   #endif
-  bindtextdomain( "akrypt", "/usr/share/locale/" );
-  textdomain( "akrypt" );
+  bindtextdomain( "aktool", "/usr/share/locale/" );
+  textdomain( "aktool" );
  #endif
 
  /* проверяем, что пользователем должна быть задана команда */
@@ -56,7 +56,7 @@
 
  #ifdef _WIN32
   if( ak_libakrypt_get_home_path( homepath, FILENAME_MAX ) == ak_error_ok ) {
-    ak_snprintf( audit_filename, FILENAME_MAX, "%s\\.config\\libakrypt\\akrypt.log", homepath );
+    ak_snprintf( audit_filename, FILENAME_MAX, "%s\\.config\\libakrypt\\aktool.log", homepath );
     remove( audit_filename );
     ak_log_set_function( audit = aktool_audit_function );
 

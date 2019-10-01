@@ -88,6 +88,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_skey.h
                     source/ak_hmac.h
                     source/ak_bckey.h
+                    source/ak_context_manager.h
   )
   set( SOURCES      ${SOURCES}
                     source/ak_mac.c
@@ -97,6 +98,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_hmac.c
                     source/ak_bckey.c
                     source/ak_kuznechik.c
+                    source/ak_context_manager.c
   )
 endif()
 
@@ -113,6 +115,8 @@ if( LIBAKRYPT_AKTOOL )
                     aktool/aktool.h
                     aktool/getopt.h
                     aktool/getopt.c
+                    aktool/aktool.1
+                    aktool/aktool.md
   )
 endif()
 
@@ -277,6 +281,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
                  bckey01
                  bckey02
+                 context-node
                  hash01
                  hash01a
                  hash02

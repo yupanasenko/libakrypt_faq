@@ -19,8 +19,6 @@
   oid_engines_t engine = 0;
   const char *oid, **names;
 
-//  char algorithmName[128], algorithmOID[128];
-
   const struct option long_options[] = {
      { "oids",             0, NULL,  254 },
      { "oid",              1, NULL,  253 },
