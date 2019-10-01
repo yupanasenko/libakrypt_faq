@@ -635,7 +635,6 @@
 /* ----------------------------------------------------------------------------------------------- */
  void ak_libakrypt_log_options( void )
 {
-  const char *f = "(ak_false)", *t = "(ak_true)";
  /* выводим сообщение об установленных параметрах библиотеки */
   if( ak_libakrypt_get_option( "log_level" ) >= ak_log_maximum ) {
     size_t i = 0;
@@ -643,14 +642,8 @@
    /* далее мы пропускаем вывод информации об архитектуре,
     поскольку она будет далее тестироваться отдельно     */
     for( i = 1; i < ak_libakrypt_options_count(); i++ ) {
-       const char *n = "";
-       switch( options[i].value ) {
-         case 0: n = f; break;
-         case 1: n = t; break;
-         default: break;
-       }
        ak_error_message_fmt( ak_error_ok, __func__,
-                         "value of \"%s\" option is %d %s", options[i].name, options[i].value, n );
+                                            "option %s is %d", options[i].name, options[i].value );
     }
    }
 }
@@ -1467,6 +1460,52 @@
   *out ^= ( sB << 16 );
  return ak_error_ok;
 }
+
+#ifdef _WIN32
+ #ifndef _MSC_VER
+/* ----------------------------------------------------------------------------------------------- */
+/*! эта реализация востребована только при сборке mingw и gcc под Windows                          */
+/* ----------------------------------------------------------------------------------------------- */
+ unsigned long long __cdecl _byteswap_uint64( unsigned long long _Int64 )
+{
+#if defined(_AMD64_) || defined(__x86_64__)
+  unsigned long long retval;
+  __asm__ __volatile__ ("bswapq %[retval]" : [retval] "=rm" (retval) : "[retval]" (_Int64));
+  return retval;
+#elif defined(_X86_) || defined(__i386__)
+  union {
+    long long int64part;
+    struct {
+      unsigned long lowpart;
+      unsigned long hipart;
+    } parts;
+  } retval;
+  retval.int64part = _Int64;
+  __asm__ __volatile__ ("bswapl %[lowpart]\n"
+    "bswapl %[hipart]\n"
+    : [lowpart] "=rm" (retval.parts.hipart), [hipart] "=rm" (retval.parts.lowpart)  : "[lowpart]" (retval.parts.lowpart), "[hipart]" (retval.parts.hipart));
+  return retval.int64part;
+#else
+  unsigned char *b = (unsigned char *)&_Int64;
+  unsigned char tmp;
+  tmp = b[0];
+  b[0] = b[7];
+  b[7] = tmp;
+  tmp = b[1];
+  b[1] = b[6];
+  b[6] = tmp;
+  tmp = b[2];
+  b[2] = b[5];
+  b[5] = tmp;
+  tmp = b[3];
+  b[3] = b[4];
+  b[4] = tmp;
+  return _Int64;
+#endif
+}
+/* ----------------------------------------------------------------------------------------------- */
+ #endif
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \example example-hello.c                                                                       */

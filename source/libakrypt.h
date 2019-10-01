@@ -459,10 +459,17 @@ extern "C" {
  #define __func__  __FUNCTION__
  #define strtoll _strtoi64
 #endif
+
 #ifndef _WIN32
  #ifndef O_BINARY
    #define O_BINARY  ( 0x0 )
+ #endif 
+#else
+ #include <stdlib.h>
+ #ifndef _MSC_VER
+   unsigned __int64 __cdecl _byteswap_uint64(unsigned __int64 _Int64);
  #endif
+ #define bswap_64 _byteswap_uint64
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */

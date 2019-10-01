@@ -428,6 +428,8 @@
  return ak_error_ok;
 }
 
+#include <stdio.h>
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! В режиме гаммирования операцией шифрования является сложение открытого текста по модулю два
     с последовательностью, вырабатываемой блочным шифром, поэтому для зашифрования и расшифрования
@@ -522,11 +524,23 @@
 
     /* поднимаем значение флага: синхропосылка установлена */
      bkey->key.flags = ( bkey->key.flags&( ~ak_key_flag_not_ctr ))^ak_key_flag_not_ctr;
-     ak_error_message_fmt( 0, __func__, "bkey->key.flags: %llu", bkey->key.flags&ak_key_flag_not_ctr );
     }
 
+
+ /*
+  *
+  *
+  *
+
+    не работает 64х битный шифр, от слова совсем
+
+  *
+  *
+  *
+  */
+
+
  /* обработка основного массива данных (кратного длине блока) */
-  x = ((ak_uint64 *)bkey->ivector)[oc];
   switch( bkey->bsize ) {
     case  8: /* шифр с длиной блока 64 бита */
       while( blocks > 0 ) {
@@ -546,10 +560,13 @@
     break;
 
     case 16: /* шифр с длиной блока 128 бит */
+     #ifndef LIBAKRYPT_LITTLE_ENDIAN
+      x = bswap_64( ((ak_uint64 *)bkey->ivector)[oc] );
+     #else
+      x = ((ak_uint64 *)bkey->ivector)[oc];
+     #endif
+
       while( blocks > 0 ) {
-        #ifndef LIBAKRYPT_LITTLE_ENDIAN
-          ak_uint64 tmp = bswap_64( ((ak_uint64 *)bkey->ivector)[0] );
-        #endif
           bkey->encrypt( &bkey->key, bkey->ivector, yaout );
           *outptr = *inptr ^ yaout[0]; outptr++; inptr++;
           *outptr = *inptr ^ yaout[1]; outptr++; inptr++;
@@ -558,10 +575,10 @@
         #ifdef LIBAKRYPT_LITTLE_ENDIAN
          ((ak_uint64 *)bkey->ivector)[oc] = oc ? bswap_64(++x) : ++x;
         #else
-          ((ak_uint64 *)bkey->ivector)[0] = bswap_64( ++tmp );
-        #endif                                    /* здесь мы не учитываем знак переноса
-                                                     потому что объем данных на одном ключе не должен превышать
-                                                     2^64 блоков (контролируется через ресурс ключа) */
+          ((ak_uint64 *)bkey->ivector)[oc] = oc ? ++x : bswap_64( ++x );
+        #endif                    /* здесь мы не учитываем знак переноса
+                                     потому что объем данных на одном ключе не должен
+                                     превышать 2^64 блоков (контролируется через ресурс ключа) */
         --blocks;
       }
     break;
@@ -576,7 +593,8 @@
     bkey->encrypt( &bkey->key, bkey->ivector, yaout );
     for( i = 0; i < tail; i++ ) /* теперь мы гаммируем tail байт, используя для этого
                                    старшие байты (most significant bytes) зашифрованного счетчика */
-        ( (ak_uint8*)outptr )[i] =
+       if( oc ) ( (ak_uint8*)outptr )[i] = ( (ak_uint8*)inptr )[i]^( (ak_uint8 *)yaout)[i];
+        else ( (ak_uint8*)outptr )[i] =
            ( (ak_uint8*)inptr )[i]^( (ak_uint8 *)yaout)[bkey->bsize - (size_t)(tail+i)];
 
    /* запрещаем дальнейшее использование функции на данном значении синхропосылки,
