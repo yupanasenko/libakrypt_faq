@@ -282,6 +282,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  bckey01
                  bckey02
                  context-node
+                 context-manager
                  hash01
                  hash01a
                  hash02

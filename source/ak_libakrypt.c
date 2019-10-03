@@ -22,6 +22,7 @@
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  #include <ak_hmac.h>
  #include <ak_bckey.h>
+ #include <ak_context_manager.h>
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -268,7 +269,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция проверяет корректность работы всех криптографических механизмов библиотеки
     с использованием как значений, содержащихся в нормативных документах и стандартах,
-    так и с использованием случайных значений, вырабатываемых в хде тестирвоания.                  */
+    так и с использованием случайных значений, вырабатываемых в ходе тестирования.                 */
 /* ----------------------------------------------------------------------------------------------- */
  bool_t ak_libakrypt_dynamic_control_test( void )
 {
@@ -381,11 +382,11 @@
     return ak_false;
   }
 
-// /* инициализируем структуру управления контекстами */
-//   if(( error = ak_libakrypt_create_context_manager()) != ak_error_ok ) {
-//     ak_error_message( error, __func__, "initialization of context manager is wrong" );
-//     return ak_false;
-//   }
+ /* инициализируем структуру управления контекстами */
+   if(( error = ak_libakrypt_create_context_manager()) != ak_error_ok ) {
+     ak_error_message( error, __func__, "initialization of context manager is wrong" );
+     return ak_false;
+   }
 
 #endif
 
@@ -441,10 +442,10 @@
 #endif
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
-// /* уничтожаем структуру управления контекстами */
-//  if( ak_libakrypt_destroy_context_manager() != ak_error_ok ) {
-//    ak_error_message( ak_error_get_value(), __func__, "destroying of context manager is wrong" );
-//  }
+ /* уничтожаем структуру управления контекстами */
+  if( ak_libakrypt_destroy_context_manager() != ak_error_ok ) {
+    ak_error_message( ak_error_get_value(), __func__, "destroying of context manager is wrong" );
+  }
 #endif
 
   if( ak_log_get_level() != ak_log_none )
