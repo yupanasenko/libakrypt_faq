@@ -30,10 +30,43 @@ extern "C" {
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
+/* Устанавливаем множество доступных заголовочных файлов.
+   Данное множество зависит от используемой операционной системы, компилятора и
+   формируется при вызове программы cmake                                                          */
+/* ----------------------------------------------------------------------------------------------- */
+#cmakedefine LIBAKRYPT_HAVE_STDIO_H
+#cmakedefine LIBAKRYPT_HAVE_STDLIB_H
+#cmakedefine LIBAKRYPT_HAVE_STRING_H
+#cmakedefine LIBAKRYPT_HAVE_STRINGS_H
+#cmakedefine LIBAKRYPT_HAVE_CTYPE_H
+#cmakedefine LIBAKRYPT_HAVE_ENDIAN_H
+#cmakedefine LIBAKRYPT_HAVE_TIME_H
+#cmakedefine LIBAKRYPT_HAVE_SYSLOG_H
+#cmakedefine LIBAKRYPT_HAVE_UNISTD_H
+#cmakedefine LIBAKRYPT_HAVE_FCNTL_H
+#cmakedefine LIBAKRYPT_HAVE_LIMITS_H
+#cmakedefine LIBAKRYPT_HAVE_SYSMMAN_H
+#cmakedefine LIBAKRYPT_HAVE_SYSSTAT_H
+#cmakedefine LIBAKRYPT_HAVE_SYSTYPES_H
+#cmakedefine LIBAKRYPT_HAVE_SYSSOCKET_H
+#cmakedefine LIBAKRYPT_HAVE_SYSUN_H
+#cmakedefine LIBAKRYPT_HAVE_SYSSELECT_H
+#cmakedefine LIBAKRYPT_HAVE_ERRNO_H
+#cmakedefine LIBAKRYPT_HAVE_TERMIOS_H
+#cmakedefine LIBAKRYPT_HAVE_DIRENT_H
+#cmakedefine LIBAKRYPT_HAVE_FNMATCH_H
+#cmakedefine LIBAKRYPT_HAVE_STDALIGN_H
+#cmakedefine LIBAKRYPT_HAVE_STDARG_H
+#cmakedefine LIBAKRYPT_HAVE_WINDOWS_H
+#cmakedefine LIBAKRYPT_HAVE_GETOPT_H
+#cmakedefine LIBAKRYPT_HAVE_LOCALE_H
+#cmakedefine LIBAKRYPT_HAVE_SIGNAL_H
+
+/* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_SYSTYPES_H
  #include <sys/types.h>
 #else
- #error Library cannot be compiled without sys/types.h header
+ #error Library cannot be compiled without sys/types.h header 
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -6,176 +6,114 @@ check_c_source_compiles("
   #include <stdio.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_STDIO )
-
-if( LIBAKRYPT_HAVE_STDIO )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_STDIO_H" )
-endif()
+  }" LIBAKRYPT_HAVE_STDIO_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <stdlib.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_STDLIB )
-
-if( LIBAKRYPT_HAVE_STDLIB )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_STDLIB_H" )
-endif()
+  }" LIBAKRYPT_HAVE_STDLIB_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <string.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_STRING )
-
-if( LIBAKRYPT_HAVE_STRING )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_STRING_H" )
-endif()
+  }" LIBAKRYPT_HAVE_STRING_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <strings.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_STRINGS )
-
-if( LIBAKRYPT_HAVE_STRINGS )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_STRINGS_H" )
-endif()
+  }" LIBAKRYPT_HAVE_STRINGS_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <ctype.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_CTYPE )
-
-if( LIBAKRYPT_HAVE_CTYPE )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_CTYPE_H" )
-endif()
+  }" LIBAKRYPT_HAVE_CTYPE_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <endian.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_ENDIAN )
-
-if( LIBAKRYPT_HAVE_ENDIAN )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_ENDIAN_H" )
-endif()
-
+  }" LIBAKRYPT_HAVE_ENDIAN_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <time.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_TIME )
-
-if( LIBAKRYPT_HAVE_TIME )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_TIME_H" )
-endif()
+  }" LIBAKRYPT_HAVE_TIME_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <syslog.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_SYSLOG )
-
-if( LIBAKRYPT_HAVE_SYSLOG )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SYSLOG_H" )
-endif()
+  }" LIBAKRYPT_HAVE_SYSLOG_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <unistd.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_UNISTD )
-
-if( LIBAKRYPT_HAVE_UNISTD )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_UNISTD_H" )
-endif()
+  }" LIBAKRYPT_HAVE_UNISTD_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <fcntl.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_FCNTL )
-
-if( LIBAKRYPT_HAVE_FCNTL )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_FCNTL_H" )
-endif()
+  }" LIBAKRYPT_HAVE_FCNTL_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <limits.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_LIMITS )
-
-if( LIBAKRYPT_HAVE_LIMITS )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_LIMITS_H" )
-endif()
+  }" LIBAKRYPT_HAVE_LIMITS_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <sys/mman.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_SYSMMAN )
-
-if( LIBAKRYPT_HAVE_SYSMMAN )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SYSMMAN_H" )
-endif()
+  }" LIBAKRYPT_HAVE_SYSMMAN_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <sys/stat.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_SYSSTAT )
-
-if( LIBAKRYPT_HAVE_SYSSTAT )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SYSSTAT_H" )
-endif()
+  }" LIBAKRYPT_HAVE_SYSSTAT_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <sys/types.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_SYSTYPES )
-
-if( LIBAKRYPT_HAVE_SYSTYPES )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SYSTYPES_H" )
-endif()
+  }" LIBAKRYPT_HAVE_SYSTYPES_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <sys/socket.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_SYSSOCKET )
+  }" LIBAKRYPT_HAVE_SYSSOCKET_H )
 
-if( LIBAKRYPT_HAVE_SYSSOCKET )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SYSSOCKET_H" )
+if( LIBAKRYPT_HAVE_SYSSOCKET_H )
     check_c_source_compiles("
       #include <sys/un.h>
       #include <sys/socket.h>
       int main( void ) {
          struct sockaddr_un sock;
         return 0;
-      }" LIBAKRYPT_HAVE_SYSUN )
-
-    if( LIBAKRYPT_HAVE_SYSUN )
-      set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SYSUN_H" )
-    endif()
+      }" LIBAKRYPT_HAVE_SYSUN_H )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -183,33 +121,21 @@ check_c_source_compiles("
   #include <sys/select.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_SYSSELECT )
-
-if( LIBAKRYPT_HAVE_SYSSELECT )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SYSSELECT_H" )
-endif()
+  }" LIBAKRYPT_HAVE_SYSSELECT_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <errno.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_ERRNO )
-
-if( LIBAKRYPT_HAVE_ERRNO )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_ERRNO_H" )
-endif()
+  }" LIBAKRYPT_HAVE_ERRNO_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <termios.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_TERMIOS )
-
-if( LIBAKRYPT_HAVE_TERMIOS )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_TERMIOS_H" )
-endif()
+  }" LIBAKRYPT_HAVE_TERMIOS_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
@@ -218,62 +144,42 @@ check_c_source_compiles("
      struct dirent st;
      st.d_type = 4;
      return 0;
-  }" LIBAKRYPT_HAVE_DIRENT )
-
-if( LIBAKRYPT_HAVE_DIRENT )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_DIRENT_H" )
-endif()
+  }" LIBAKRYPT_HAVE_DIRENT_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <fnmatch.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_FNMATCH )
-
-if( LIBAKRYPT_HAVE_FNMATCH )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_FNMATCH_H" )
-endif()
+  }" LIBAKRYPT_HAVE_FNMATCH_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <stdalign.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_STDALIGN )
-
-if( LIBAKRYPT_HAVE_STDALIGN )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_STDALIGN_H" )
-endif()
+  }" LIBAKRYPT_HAVE_STDALIGN_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <stdarg.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_STDARG )
-
-if( LIBAKRYPT_HAVE_STDARG )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_STDARG_H" )
-endif()
+  }" LIBAKRYPT_HAVE_STDARG_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <windows.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_WINDOWS )
-
-if( LIBAKRYPT_HAVE_WINDOWS )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_WINDOWS_H" )
-endif()
+  }" LIBAKRYPT_HAVE_WINDOWS_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <getopt.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_GETOPT )
+  }" LIBAKRYPT_HAVE_GETOPT_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
@@ -281,21 +187,13 @@ check_c_source_compiles("
   int main( void ) {
      setlocale( LC_ALL, \"\" );
      return 0;
-  }" LIBAKRYPT_HAVE_LOCALE )
-
-if( LIBAKRYPT_HAVE_LOCALE )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_LOCALE_H" )
-endif()
+  }" LIBAKRYPT_HAVE_LOCALE_H )
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <signal.h>
   int main( void ) {
      return 0;
-  }" LIBAKRYPT_HAVE_SIGNAL )
-
-if( LIBAKRYPT_HAVE_SIGNAL )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_SIGNAL_H" )
-endif()
+  }" LIBAKRYPT_HAVE_SIGNAL_H )
 
 # -------------------------------------------------------------------------------------------------- #
