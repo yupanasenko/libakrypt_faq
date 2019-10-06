@@ -92,7 +92,7 @@
 /*! \brief Помещение созданного объекта в глобальную структуру управления контекстами. */
  ak_handle ak_libakrypt_add_context( ak_pointer , const oid_engines_t , const char * );
 /*! \brief Получение контекста по заданному дескриптору и типу контекста. */
- ak_pointer ak_handle_get_context( ak_handle , oid_engines_t * );
+ ak_pointer ak_handle_get_context( ak_handle , ak_oid * );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

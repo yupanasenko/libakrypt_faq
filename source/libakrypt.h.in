@@ -58,9 +58,10 @@ extern "C" {
 #cmakedefine LIBAKRYPT_HAVE_STDALIGN_H
 #cmakedefine LIBAKRYPT_HAVE_STDARG_H
 #cmakedefine LIBAKRYPT_HAVE_WINDOWS_H
-#cmakedefine LIBAKRYPT_HAVE_GETOPT_H
 #cmakedefine LIBAKRYPT_HAVE_LOCALE_H
 #cmakedefine LIBAKRYPT_HAVE_SIGNAL_H
+#cmakedefine LIBAKRYPT_HAVE_GETOPT_H
+#cmakedefine LIBAKRYPT_HAVE_LIBINTL_H
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_SYSTYPES_H
@@ -189,7 +190,7 @@ extern "C" {
 /*! \brief Попытка доступа к неопределенной опции библиотеки. */
  #define ak_error_wrong_option                 (-8)
 /*! \brief Ошибка использования неправильного значения. */
- #define ak_error_invalid_value                 (-9)
+ #define ak_error_invalid_value                (-9)
 /*! \brief Ошибка доступа за пределы массива. */
  #define ak_error_wrong_index                  (-9)
 
@@ -309,8 +310,7 @@ extern "C" {
 #define ak_error_invalid_token                (-100)
 
 /*! \brief Ошибка, возникающая при попытке совершения запрещенного действия с сервером в текущем режиме. */
-#define ak_error_wrong_ps_mode                (-110)
-
+ #define ak_error_wrong_ps_mode               (-110)
 
 /*! \brief Ошибка сохранения/чтения ключа с неподдерживаемым типом криптографического преобразования. */
  #define ak_error_key_engine                 (-100)
@@ -410,10 +410,6 @@ extern "C" {
  dll_export bool_t ak_libakrypt_dynamic_control_test( void );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Удаление объекта, связанного с заданным дескриптором. */
- dll_export int ak_handle_delete( ak_handle );
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает уровень аудита библиотеки. */
  dll_export int ak_log_get_level( void );
 /*! \brief Функция устанавливает уровень аудита библиотеки. */
@@ -455,9 +451,6 @@ extern "C" {
 /*! \brief Получение информации об oid с заданным индексом. */
  dll_export int ak_libakrypt_get_oid_by_index( const size_t ,
                                  oid_engines_t * , oid_modes_t * , const char **, const char *** );
-/*! \brief Получение информации об oid алгоритма по его handle. */
- dll_export int ak_libakrypt_get_oid_by_handle( ak_handle ,
-                  oid_engines_t * , oid_modes_t * , char * , const size_t, char * , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей человекочитаемое значение заданной области памяти. */
@@ -478,6 +471,39 @@ extern "C" {
  dll_export int ak_libakrypt_get_home_path( char *, const size_t );
 /*! \brief Чтение пароля из консоли. */
  dll_export int ak_password_read( char *, const size_t );
+
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup frontend_handle Функции для работы с дескрипторами
+ * @{*/
+/*! \brief Создание дескриптора произвольного криптографического преобразования. */
+ dll_export ak_handle ak_handle_new( const char *, const char * );
+/*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
+ dll_export ak_handle ak_handle_new_streebog256( void );
+/*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
+ dll_export ak_handle ak_handle_new_streebog512( void );
+/*! \brief Получение информации об параметрах алгоритма по его handle. */
+ dll_export int ak_handle_get_oid( ak_handle , oid_engines_t *, oid_modes_t *,
+                                                                   const char **, const char *** );
+/*! \brief Проверка, обладает ли криптографическое преобразование выходным блоком.  */
+ dll_export bool_t ak_handle_has_tag( ak_handle );
+/*! \brief Функция возвращает длину выходного блока криптографического преобразования. */
+ dll_export size_t ak_handle_get_tag_size( ak_handle );
+/*! \brief Проверка, допускает ли алгоритм использование секретного ключа. */
+ dll_export bool_t ak_handle_has_key( ak_handle );
+/*! \brief Присвоение константного ключевого значения. */
+ dll_export int ak_handle_set_key_hexstr( ak_handle );
+/*! \brief Присвоение случайного ключевого значения значения. */
+ dll_export int ak_handle_set_key_random( ak_handle );
+/*! \brief Присвоение ключевого значения, выработанного из пароля. */
+ dll_export int ak_handle_set_key_from_password( ak_handle, const ak_pointer , const size_t ,                                                                 const ak_pointer , const size_t );
+/*! \brief Удаление дескриптора криптографического преобразования. */
+ dll_export int ak_handle_delete( ak_handle );
+
+/*! \brief Вычисление результата работы алгоритма итерационного сжатия для заданной области памяти. */
+ dll_export int ak_handle_mac_ptr( ak_handle , ak_pointer , const size_t , ak_pointer , const size_t );
+/*! \brief Вычисление результата работы алгоритма итерационного сжатия для заданного файла. */
+ dll_export int ak_handle_mac_file( ak_handle , const char *, ak_pointer , const size_t );
+/** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Обобщенная реализация функции snprintf для различных компиляторов. */

@@ -4,6 +4,12 @@
 /*  Файл ak_context_manager.c                                                                      */
 /*  - содержит реализацию функций для управления контекстами.                                      */
 /* ----------------------------------------------------------------------------------------------- */
+ #include <ak_hmac.h>
+ #include <ak_bckey.h>
+ #include <ak_tools.h>
+ #include <ak_context_manager.h>
+
+/* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_STDLIB_H
  #include <stdlib.h>
 #else
@@ -17,12 +23,6 @@
 #ifdef LIBAKRYPT_HAVE_PTHREAD
  #include <pthread.h>
 #endif
-
-/* ----------------------------------------------------------------------------------------------- */
- #include <ak_hmac.h>
- #include <ak_bckey.h>
- #include <ak_tools.h>
- #include <ak_context_manager.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                   класс ak_context_node                                         */
@@ -605,6 +605,68 @@
  return handle;
 }
 
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                              Функции для работы с дескрипторами                                 */
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param ni Строка символов, которая определяет криптографическое преобразование.
+    Это может быть одно из допустимых имен или идентификатор преобразования.
+    \param description Произвольная строка символов, которой пользователь может описать
+    криптографичекое преобразование. Как правило, используется для хранения комментариев к
+    секретным или открытым ключам. Допускается использование значения NULL.
+    \return Дескриптор криптографического преобразования. В случае ошибки возвращается
+    значение \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_handle_new( const char *ni, const char *description )
+{
+  ak_pointer ctx = NULL;
+  int error = ak_error_ok;
+  ak_oid oid = ak_oid_context_find_by_ni( ni );
+
+ /* проверяем входные параметры */
+  if( oid == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                              "incorrect value of name/identifier (object identifier not found)" );
+    return ak_error_wrong_handle;
+  }
+
+ /* определяем тип, создаем и инициализируем контекст криптографического преобразования */
+  switch( oid->engine ) {
+
+    case hash_function:
+
+      if(( ctx = malloc( sizeof( struct hash ))) == NULL ) {
+        ak_error_message( ak_error_out_of_memory, __func__,
+                                         "incorrect allocation memory for hash function context" );
+        return ak_error_wrong_handle;
+      }
+      if(( error = ((ak_function_hash_context_create *)oid->func.create)( ctx )) != ak_error_ok ) {
+        free( ctx );
+        ak_error_message( error, __func__, "incorrect creation of hash function context" );
+        return ak_error_wrong_handle;
+      }
+      break;
+
+    case hmac_function:
+    case block_cipher:
+    case random_generator:
+
+    default: ak_error_message( ak_error_wrong_oid, __func__,
+                                                        "object identifier has incorrect engine" );
+      return ak_error_wrong_handle;
+  }
+
+ /* помещаем контекст в менеджер контекстов и возвращаем полученный дескриптор */
+  return ak_libakrypt_add_context( ctx, oid->engine, description );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_handle_new_streebog256( void ) { return ak_handle_new( "streebog256", NULL ); }
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_handle_new_streebog512( void ) { return ak_handle_new( "streebog512", NULL ); }
+
 /* ----------------------------------------------------------------------------------------------- */
  int ak_handle_delete( ak_handle handle )
 {
@@ -623,7 +685,101 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ak_pointer ak_handle_get_context( ak_handle handle, oid_engines_t *engine )
+ int ak_handle_get_oid( ak_handle handle, oid_engines_t *engine, oid_modes_t *mode,
+                                                           const char **oid, const char ***names )
+{
+  size_t idx = 0;
+  int error = ak_error_ok;
+  ak_context_manager manager = NULL;
+
+ /* получаем доступ к структуре управления контекстами */
+  if(( manager = ak_libakrypt_get_context_manager()) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__ ,
+                                                       "using a non initialized context manager" );
+
+  if(( error = ak_context_manager_handle_check( manager, handle, &idx )) != ak_error_ok )
+    return ak_error_message( error, __func__, "wrong handle" );
+
+  if( manager->array[idx]->oid == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__,
+                                                  "using null pointer in internal context node" );
+
+  *engine = manager->array[idx]->oid->engine;
+  *mode = manager->array[idx]->oid->mode;
+  *oid =  manager->array[idx]->oid->id;
+  *names = manager->array[idx]->oid->names;
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_handle_has_tag( ak_handle handle )
+{
+  size_t idx = 0;
+  int error = ak_error_ok;
+  ak_context_manager manager = NULL;
+
+ /* получаем доступ к структуре управления контекстами */
+  if(( manager = ak_libakrypt_get_context_manager()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "using a non initialized context manager" );
+    return ak_false;
+  }
+
+  if(( error = ak_context_manager_handle_check( manager, handle, &idx )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong handle" );
+    return ak_false;
+  }
+
+ /* возвращаем ответ */
+  switch( manager->array[idx]->oid->engine ) {
+    case hash_function:
+    case hmac_function:
+    case block_cipher:
+    case omac_function:
+    case mgm_function:
+    case sign_function:
+     return ak_true;
+    default: return ak_false;
+  }
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ size_t ak_handle_get_tag_size( ak_handle handle )
+{
+  size_t idx = 0;
+  int error = ak_error_ok;
+  ak_context_manager manager = NULL;
+
+ /* получаем доступ к структуре управления контекстами */
+  if(( manager = ak_libakrypt_get_context_manager()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "using a non initialized context manager" );
+    return 0;
+  }
+
+  if(( error = ak_context_manager_handle_check( manager, handle, &idx )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong handle" );
+    return 0;
+  }
+
+ /* возвращаем ответ */
+  switch( manager->array[idx]->oid->engine ) {
+    case hash_function:
+      return (( ak_hash )manager->array[idx]->ctx )->data.sctx.hsize;
+
+    case hmac_function:
+      return (( ak_hmac )manager->array[idx]->ctx )->ctx.data.sctx.hsize;
+
+    case block_cipher:
+      return (( ak_bckey )manager->array[idx]->ctx )->bsize;
+
+    default:
+      ak_error_message( ak_error_wrong_oid, __func__, "this handle has'nt tag" );
+      return 0;
+  }
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_handle_get_context( ak_handle handle, ak_oid *oid )
 {
   size_t idx = 0;
   int error = ak_error_ok;
@@ -640,12 +796,79 @@
     return NULL;
   }
 
-  *engine = manager->array[idx]->oid->engine;
+  *oid = manager->array[idx]->oid;
  return manager->array[idx]->ctx;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \param handle Дескриптор криптографического алгоритма.
+    \param filename Имя файла, для которого вычисляется хеш-код.
+    \param out Область памяти, куда будет помещен результат. Память должна быть заранее выделена.
+    Размер выделенной памяти должен быть не менее значения, возвращаемого
+    функцией ak_handle_get_tag_size().
+    \param out_size Размер области памяти (в октетах), в которую будет помещен результат.
+    Если данное значение меньше, чем необходимо, то будет возвращена ошибка.
+
+    \return В случае успеха функция возвращает ноль (\ref ak_error_ok). В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_handle_mac_file( ak_handle handle, const char *filename,
+                                                            ak_pointer out, const size_t out_size )
+{
+  ak_oid oid = NULL;
+  ak_hash ctx = NULL;
+
+  if(( ctx = ak_handle_get_context( handle, &oid )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__, "incorect handle value" );
+  if( oid->mode != algorithm )
+    return ak_error_message( ak_error_oid_mode, __func__, "using handle with wrong mode" );
+
+ /* для тех, кто умеет, возвращаем результат */
+  if( oid->engine == hash_function )
+    return ak_hash_context_file( ctx, filename, out, out_size );
+
+ /* для остальных возвращаем ошибку */
+ return ak_error_message( ak_error_oid_engine, __func__, "using handle with wrong engine" );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция позволяет вычислить значение хэш-кода (контрольную сумму) для бесключевых функций
+    хэширования или значение имитовставки - для ключевых функций хэширования.
+
+    \param handle Дескриптор криптографического алгоритма.
+    \param in Указатель на входные данные для которых вычисляется контрольная сумма.
+    \param size Размер входных данных в байтах.
+    \param out Область памяти, куда будет помещен результат. Память должна быть заранее выделена.
+    Размер выделенной памяти должен быть не менее значения, возвращаемого
+    функцией ak_handle_get_tag_size().
+    \param out_size Размер области памяти (в октетах), в которую будет помещен результат.
+    Если данное значение меньше, чем необходимо, то будет возвращена ошибка.
+
+    \return В случае успеха функция возвращает ноль (\ref ak_error_ok). В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_handle_mac_ptr( ak_handle handle, ak_pointer in, const size_t size,
+                                                             ak_pointer out, const size_t out_size )
+{
+  ak_oid oid = NULL;
+  ak_hash ctx = NULL;
+
+  if(( ctx = ak_handle_get_context( handle, &oid )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__, "incorect handle value" );
+  if( oid->mode != algorithm )
+    return ak_error_message( ak_error_oid_mode, __func__, "using handle with wrong mode" );
+
+ /* для тех, кто умеет, возвращаем результат */
+  if( oid->engine == hash_function )
+    return ak_hash_context_ptr( ctx, in, size, out, out_size );
+
+ /* для остальных возвращаем ошибку */
+ return ak_error_message( ak_error_oid_engine, __func__, "using handle with wrong engine" );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \example test-context-node.c                                                                   */
+/*! \example test-context-manager.c                                                                */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                           ak_context_manager.c  */
 /* ----------------------------------------------------------------------------------------------- */

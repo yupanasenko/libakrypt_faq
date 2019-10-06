@@ -14,6 +14,9 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
+ #include <ak_tools.h>
+
+/* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_STDIO_H
  #include <stdio.h>
 #else
@@ -75,9 +78,6 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_tools.h>
-
-/* ----------------------------------------------------------------------------------------------- */
 /*!  Переменная, содержащая в себе код последней ошибки                                            */
  static int ak_errno = ak_error_ok;
 
@@ -95,8 +95,10 @@
 /*! \brief Cтатическая переменные для окрашивания кодов и выводимых сообщений. */
  static char *ak_error_code_start_string = "";
  static char *ak_error_code_end_string = "";
+#ifndef _WIN32
  static char *ak_error_code_start_red_string = "\x1b[31m";
  static char *ak_error_code_end_red_string = "\x1b[0m";
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тип данных для хранения одной опции библиотеки */
@@ -895,8 +897,10 @@
   if( function != NULL ) {
     ak_function_log_default = function;
     if( function == ak_function_log_stderr ) { /* раскрашиваем вывод кодов ошибок */
-      ak_error_code_start_string = ak_error_code_start_red_string;
-      ak_error_code_end_string = ak_error_code_end_red_string;
+      #ifndef _WIN32
+        ak_error_code_start_string = ak_error_code_start_red_string;
+        ak_error_code_end_string = ak_error_code_end_red_string;
+      #endif
     }
   }
    else {

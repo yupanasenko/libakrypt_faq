@@ -97,8 +97,9 @@
 {
   if( manager == NULL ) printf("null\n");
    else {
-     printf("iter: %4u -> [manager size: %4u, current handle: %016llx\n",
-            (unsigned int)iter, (unsigned int)manager->size, (unsigned long long int)handle );
+     printf("iter: %4u -> [manager size: %4u, current handle: %08x:%08x\n",
+                                     (unsigned int)iter, (unsigned int)manager->size,
+                                            (unsigned int)(handle >> 32), (unsigned int ) handle );
    }
 }
 

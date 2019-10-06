@@ -18,6 +18,25 @@
  #endif
 
 /* ----------------------------------------------------------------------------------------------- */
+ #ifdef LIBAKRYPT_HAVE_STDIO_H
+  #include <stdio.h>
+ #else
+  #error Library cannot be compiled without stdlib.h header
+ #endif
+ #ifdef LIBAKRYPT_HAVE_STDLIB_H
+  #define __USE_MISC
+  #include <stdlib.h>
+  #undef __USE_MISC
+ #else
+  #error Library cannot be compiled without stdlib.h header
+ #endif
+ #ifdef LIBAKRYPT_HAVE_STRING_H
+  #include <string.h>
+ #else
+  #error Library cannot be compiled without string.h header
+ #endif
+
+/* ----------------------------------------------------------------------------------------------- */
  #ifdef LIBAKRYPT_HAVE_SYSSTAT_H
   #include <sys/stat.h>
  #endif

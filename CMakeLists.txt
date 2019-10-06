@@ -160,6 +160,7 @@ include( DetectIntrinsics )
 # -------------------------------------------------------------------------------------------------- #
 configure_file( ${CMAKE_SOURCE_DIR}/source/libakrypt.h.in
                                                ${CMAKE_SOURCE_DIR}/source/libakrypt.h @ONLY )
+message("-- Generation of libakrypt.h is done")
 
 # -------------------------------------------------------------------------------------------------- #
 # Определяем место хранения файла с  настройками библиотеки
@@ -221,16 +222,15 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_AKTOOL )
 
-  if( LIBAKRYPT_HAVE_GETOPT )
+  if( LIBAKRYPT_HAVE_GETOPT_H )
   else()
     set( AKTOOL_SOURCES ${AKTOOL_SOURCES} aktool/getopt.c )
   endif()
   message("-- Sources for aktool${LIBAKRYPT_EXT}: ${AKTOOL_SOURCES}" )
 
-  find_path( LIBINTL_H_PATH NAMES libintl.h )
-  if( LIBINTL_H_PATH )
-    include_directories( ${LIBINTL_H_PATH} )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_LIBINTL_H" )
+  find_path( LIBAKRYPT_HAVE_LIBINTL_H NAMES libintl.h )
+  if( LIBAKRYPT_HAVE_LIBINTL_H )
+    include_directories( ${LIBAKRYPT_HAVE_LIBINTL_H} )
     message("-- Additional header for aktool is libintl.h" )
   endif()
 
@@ -263,7 +263,7 @@ set( EXAMPLES_LIST hello
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( EXAMPLES_LIST ${EXAMPLES_LIST}
-
+                   icode
   )
 endif()
 
