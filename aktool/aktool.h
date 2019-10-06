@@ -31,6 +31,7 @@
   #error Library cannot be compiled without stdlib.h header
  #endif
  #ifdef LIBAKRYPT_HAVE_STRING_H
+  #define __USE_POSIX
   #include <string.h>
  #else
   #error Library cannot be compiled without string.h header

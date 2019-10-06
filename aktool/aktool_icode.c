@@ -7,10 +7,15 @@
   #include <limits.h>
  #endif
 
+ #define _POSIX_C_SOURCE
+ #include <string.h>
+
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_icode_help( void );
  int aktool_icode_function( const char * , ak_pointer );
  int aktool_icode_check_function( char * , ak_pointer );
+ bool_t aktool_create_handle( char * );
+
 
 #if defined(_WIN32) || defined(_WIN64)
  char* strtok_r( char *, const char *, char ** );
@@ -62,7 +67,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_icode( int argc, TCHAR *argv[] )
 {
-  int next_option = 0, idx = 0, exit_status = EXIT_FAILURE;
+  int next_option = 0, idx = 0, exit_status = EXIT_FAILURE, error = ak_error_ok;
   enum { do_nothing, do_hash, do_check } work = do_hash;
 
   const struct option long_options[] = {
@@ -215,17 +220,9 @@
    switch( work )
   {
     case do_hash: /* вычисляем контрольную сумму */
+      if( !aktool_create_handle( ic.algorithm_ni )) goto lab_exit;
 
-     /* создаем дескриптор алгоритма итерационного сжатия */
-      if(( ic.handle = ak_handle_new( ic.algorithm_ni, NULL )) == ak_error_wrong_handle ) {
-        printf(_("\"%s\" is incorrect name/identifier for icode function\n"), ic.algorithm_ni );
-        goto lab_exit;
-      }
-      if(( ak_handle_has_tag( ic.handle )) != ak_true ) {
-        printf(_("algorithm \"%s\" cannot be used for integrity code calculations\n"),
-                                                                              ic.algorithm_ni );
-        goto lab_exit;
-      }
+     /* перебираем все доступные параметры командной строки */
       for( idx = 2; idx < argc; idx++ ) {
          switch( aktool_file_or_directory( argv[idx] ))
         {
@@ -242,6 +239,18 @@
       break;
 
     case do_check: /* проверяем контрольную сумму */
+      if(( error = ak_file_read_by_lines( ic.checkfile, aktool_icode_check_function, NULL )) == ak_error_ok )
+        exit_status = EXIT_SUCCESS;
+      if( !ic.status ) {
+        if( !ic.dont_stat_show ) {
+          printf(_("\n%s [%lu lines, %lu files, where: correct %lu, wrong %lu]\n\n"),
+                  ic.checkfile, (unsigned long int)ic.stat_lines,
+                  (unsigned long int)ic.stat_total, (unsigned long int)ic.stat_successed,
+                                         (unsigned long int)( ic.stat_total - ic.stat_successed ));
+         }
+       }
+      if( ic.stat_total == ic.stat_successed ) exit_status = EXIT_SUCCESS;
+       else exit_status = EXIT_FAILURE;
       break;
 
     default:
@@ -249,12 +258,27 @@
    }
 
  /* корректно завершаем работу */
-  lab_prexit:
-   ak_handle_delete( ic.handle );
   lab_exit:
    if( ic.outfp != NULL ) fclose( ic.outfp );
    ak_libakrypt_destroy();
  return exit_status;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t aktool_create_handle( char *algorithm )
+{
+ /* создаем дескриптор алгоритма запрошенного пользователем алгоритма */
+  if(( ic.handle = ak_handle_new( algorithm, NULL )) == ak_error_wrong_handle ) {
+    printf(_("\"%s\" is incorrect name/identifier for icode function\n"), algorithm );
+    return ak_false;
+  }
+ /* проверяем, что этот алгоритм позволяет реализовывать сжатие (хеширование или имитозащиту) */
+  if(( ak_handle_has_tag( ic.handle )) != ak_true ) {
+    printf(_("algorithm \"%s\" cannot be used for integrity code calculations\n"), algorithm );
+    return ak_false;
+  }
+
+ return ak_true;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -319,6 +343,80 @@
         ak_ptr_to_hexstr( out, ak_handle_get_tag_size( ic.handle ), ic.reverse_order ), filename );
     }
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_icode_check_function( char *string, ak_pointer ptr )
+{
+  size_t len = 0;
+  ak_uint8 out[64], out2[64];
+  char *substr = NULL, *filename = NULL, *icode = NULL;
+  int error = ak_error_ok, reterrror = ak_error_undefined_value;
+
+ /* инициализируем значения локальных переменных */
+  (void)ptr;
+  ic.stat_lines++;
+  if( ic.ignore_errors ) reterrror = ak_error_ok;
+
+ /* получаем первый токен */
+  if(( icode = strtok_r( string, "(", &substr )) == NULL ) return reterrror;
+  if( strlen( substr ) == 0 ) { /* строка не содержит скобки => вариант строки в формате Linux */
+
+   /* получаем первый токен - это должно быть значение контрольной суммы */
+    if(( icode = strtok_r( string, " ", &substr )) == NULL ) return reterrror;
+    if(( error = ak_hexstr_to_ptr( icode, out2, sizeof( out2 ), ic.reverse_order )) != ak_error_ok ) {
+      return ak_error_message_fmt( ak_error_ok, __func__, "incorrect icode string %s\n", icode );
+    }
+   /* теперь второй токен - это имя файла */
+    if(( filename = strtok_r( substr, " ", &substr )) == NULL ) return reterrror;
+
+   /* если дескриптор не создан, то его нужно создать */
+    if( ic.handle == ak_error_wrong_handle )
+      if( !aktool_create_handle( ic.algorithm_ni )) return reterrror;
+
+  } else { /* обнаружилась скобка => вариант строки в формате BSD */
+
+   /* теперь надо проверить, что пролученное значение действительно является
+      допустимым криптографическим алгоритмом */
+
+   /* сперва уничтожаем пробелы в конце слова и получаем имя */
+    if( strlen( icode ) > 1024 ) return reterrror;
+    if(( len = strlen( icode ) - 1 ) == 0 ) return reterrror;
+    while(( icode[len] == ' ' ) && ( len )) icode[len--] = 0;
+
+   /* если дескриптор не создан, то его нужно создать */
+    if( ic.handle == ak_error_wrong_handle )
+      if( !aktool_create_handle( icode )) return reterrror;
+
+   /* теперь второй токен - это имя файла */
+    if(( filename = strtok_r( substr, ")", &substr )) == NULL ) return reterrror;
+
+   /* теперь, контрольная сумма */
+    while(( *substr == ' ' ) || ( *substr == '=' )) substr++;
+    if(( error = ak_hexstr_to_ptr( substr, out2, sizeof( out2 ), ic.reverse_order )) != ak_error_ok ) {
+      return ak_error_message_fmt( ak_error_ok, __func__, "incorrect icode string %s\n", icode );
+    }
+  }
+
+ /* приступаем к проверке*/
+  ic.stat_total++;
+
+ /* проверяем контрольную сумму */
+  if(( error = ak_handle_mac_file( ic.handle, filename, out, sizeof( out ))) != ak_error_ok ) {
+    if( !ic.status ) printf("%s Wrong\n", filename );
+    ak_error_message_fmt( reterrror, __func__,
+                               "incorrect evaluation integrity code for \"%s\" file", filename );
+  }
+  if( ak_ptr_is_equal( out, out2, ak_handle_get_tag_size( ic.handle )) == ak_true ) {
+    if( !ic.status ) {
+      if( ic.quiet ) printf("%s\n", filename );
+        else printf("%s Ok\n", filename );
+    }
+    ic.stat_successed++;
+  } else
+     if( !ic.status ) printf("%s Wrong\n", filename );
+
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
