@@ -8,6 +8,7 @@ if( CMAKE_HOST_UNIX )
   # создаем каталог и копируем файлы с исходными текстами
   file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/source\n")
   file( APPEND ${MYDFILE} "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/source/* libakrypt-${FULL_VERSION}/source\n")
+  file( APPEND ${MYDFILE} "rm libakrypt-${FULL_VERSION}/source/libakrypt.h\n")
 
   # создаем каталог examples и копируем файлы с примерами, неэкспортируемые тесты + арифметика)
   file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/examples\n")
@@ -38,16 +39,15 @@ if( CMAKE_HOST_UNIX )
      "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/${file} libakrypt-${FULL_VERSION}/cmake\n")
   endforeach()
 
-  # создаем каталог akrypt и копируем файлы с консольными утилитами
-  file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/akrypt\n" )
-  set( AKRYPT ${AKRYPT_SOURCES} ${AKRYPT_FILES} )
-  foreach( file ${AKRYPT} )
+  # создаем каталог aktool и копируем файлы с консольными утилитами
+  file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/aktool\n" )
+  set( AKTOOL ${AKTOOL_SOURCES} ${AKTOOL_FILES} )
+  foreach( file ${AKTOOL} )
     file( APPEND ${MYDFILE}
-     "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/${file} libakrypt-${FULL_VERSION}/akrypt\n")
+     "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/${file} libakrypt-${FULL_VERSION}/aktool\n")
   endforeach()
 
   # копируем оставшиеся файлы
-  file( APPEND ${MYDFILE} "mkdir -p libakrypt-${FULL_VERSION}/cmake\n" )
   foreach( file ${OTHERS} )
     file( APPEND ${MYDFILE}
                 "cp -fL --preserve=all ${CMAKE_SOURCE_DIR}/${file} libakrypt-${FULL_VERSION}\n")
@@ -56,7 +56,7 @@ if( CMAKE_HOST_UNIX )
   # собираем дистрибутив
   file( APPEND ${MYDFILE} "tar -cjvf libakrypt-${FULL_VERSION}.tar.bz2 libakrypt-${FULL_VERSION}\n")
   file( APPEND ${MYDFILE} "rm -R libakrypt-${FULL_VERSION}\n")
-  file( APPEND ${MYDFILE} "akrypt i -r -o libakrypt-${FULL_VERSION}.streebog256 libakrypt-${FULL_VERSION}.tar.bz2\n")
+  file( APPEND ${MYDFILE} "aktool i --tag -ro libakrypt-${FULL_VERSION}.streebog256 libakrypt-${FULL_VERSION}.tar.bz2\n")
 
   message("-- Creating a make-dist-${FULL_VERSION}.sh file - done ")
   execute_process( COMMAND chmod +x ${MYDFILE} )

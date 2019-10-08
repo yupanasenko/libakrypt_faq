@@ -61,7 +61,9 @@
    /*! \brief Указатель на строку с шестнадцатеричной записью ключа */
     char *hexstr;
    /*! \brief Инициализационный вектор для алгоритма выработки ключа из пароля (константа) */
-    ak_uint8 salt[12];
+    ak_uint8 salt[32];
+   /*! \brief Длина инициализационного вектора */
+    size_t salt_len;
    /*! \brief Флаг рекурсивной обработки каталогов */
     bool_t tree;
    /*! Флаг совместимости с библиотекой openssl */
@@ -90,6 +92,8 @@
      { "password",            1, NULL,  248 },
      { "openssl",             0, NULL,  247 },
      { "hexkey",              1, NULL,  246 },
+     { "salt",                1, NULL,  245 },
+     { "salt-len",            1, NULL,  244 },
 
     /* потом общие */
      { "audit",               1, NULL,   2  },
@@ -124,7 +128,9 @@
   memset( ic.outfile, 0, sizeof( ic.outfile ));
   memset( ic.password, 0, sizeof( ic.password ));
   ic.pass_flag = ak_false;
-  memcpy( ic.salt, "akrypt saltx", 12 );
+  memset( ic.salt, 0, sizeof( ic.salt ));
+  memcpy( ic.salt, "aKtool^_Qz;spe71oS--aG|q1#ck", 28 );
+  ic.salt_len = sizeof( ic.salt ) >> 1;
   ic.hexkey_flag = ak_false;
   ic.hexstr = NULL;
   ic.openssl = ak_false;
@@ -213,6 +219,20 @@
          case 246:  /* определение ключа в явном виде */
                      ic.hexstr = optarg;
                      ic.hexkey_flag = ak_true;
+                     break;
+
+         case 245: /* установка salt */
+                     memset( ic.salt, 0, sizeof( ic.salt ));
+                     if( ak_hexstr_to_ptr( optarg, ic.salt, sizeof( ic.salt ),
+                                                              ic.reverse_order ) != ak_error_ok ) {
+                       printf(_("salt consists of incorrect hexademal digits\n"));
+                       goto lab_exit;
+                     }
+                     break;
+
+         case 244: /* длина salt */
+                     ic.salt_len =
+                             ak_min( sizeof( ic.salt ), ak_max( 8, (unsigned int) atoi( optarg )));
                      break;
 
          default:   /* обрабатываем ошибочные параметры */
@@ -313,9 +333,12 @@
         if( error != ak_error_ok ) return ak_false;
       } else { /* пароль уже установлен */ }
 
+      printf("salt: %s [%u octets]\n", ak_ptr_to_hexstr( ic.salt, ic.salt_len, ak_false ),
+                                                                      (unsigned int) ic.salt_len );
+
      /* теперь устанавливаем ключ, вырабатывая его из пароля */
       if(( error = ak_handle_set_key_from_password( ic.handle, ic.password,
-                     strlen( ic.password ), ic.salt, sizeof( ic.salt ))) != ak_error_ok ) {
+                                  strlen( ic.password ), ic.salt, ic.salt_len )) != ak_error_ok ) {
         printf(_("incorrect generation a secret key from password\n"));
         return ak_false;
       }
@@ -480,7 +503,7 @@
   printf(_("                         default algorithm is \"streebog256\" defined by GOST R 34.10-2012\n" ));
   printf(_(" -c, --check <file>      check previously generated macs or integrity codes\n" ));
   printf(_("     --dont-show-stat    don't show a statistical results after checking\n"));
-  printf(_("     --hexkey <string>   set the secret key directly in command line as a string of hexademals\n"));
+  printf(_("     --hexkey <hex>      set the secret key directly in command line as a string of hexademal digits\n"));
   printf(_("     --ignore-errors     don't breake a check when file is missing or corrupted\n" ));
   printf(_("     --openssl-style     use key and data formats in openssl library style\n"));
   printf(_(" -o, --output <file>     set the output file for generated integrity codes\n" ));
@@ -489,6 +512,9 @@
   printf(_("     --quiet             don't print OK for each successfully verified file\n"));
   printf(_(" -r, --recursive         recursive search of files\n" ));
   printf(_("     --reverse-order     output of integrity code in reverse byte order\n" ));
+  printf(_("     --salt              set the initial value of PBKDF2 function for key generaton from password\n"));
+  printf(_("     --salt-len <int>    change the length of salt buffer, in octets; default value is %u\n"),
+                                                                           (unsigned int) sizeof( ic.salt ) >> 1 );
   printf(_("     --status            don't output anything, status code shows success\n" ));
   printf(_("     --tag               create a BSD-style checksum\n" ));
   printf(_(" -t, --template <str>    set the pattern which is used to find files\n"));

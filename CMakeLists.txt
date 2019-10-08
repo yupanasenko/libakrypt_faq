@@ -38,6 +38,7 @@ option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
 option( LIBAKRYPT_HTML_DOC "Build documentation in HTML format" OFF )
 option( LIBAKRYPT_PDF_DOC "Build documentation in PDF format" OFF )
 option( LIBAKRYPT_AKTOOL "Build console aktool application" ON )
+option( LIBAKRYPT_INSTALL_HEADERS "Install development headers with non-export functions" OFF )
 
 # -------------------------------------------------------------------------------------------------- #
 # Уточнение зависимостей между опциями
@@ -53,6 +54,10 @@ if( LIBAKRYPT_STATIC_LIB )
 endif()
 if( LIBAKRYPT_AKTOOL )
   set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
+endif()
+if( LIBAKRYPT_INSTALL_HEADERS )
+  set( LIBAKRYPT_STATIC_LIB ON )
+  set( LIBAKRYPT_SHARED_LIB OFF )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -111,12 +116,12 @@ if( LIBAKRYPT_AKTOOL )
                     aktool/aktool_show.c
                     aktool/aktool_icode.c
   )
-  set( AKTOOLS_FILES
+  set( AKTOOL_FILES
                     aktool/aktool.h
                     aktool/getopt.h
                     aktool/getopt.c
                     aktool/aktool.1
-                    aktool/aktool.md
+                    aktool/Readme.md
   )
 endif()
 
@@ -133,11 +138,12 @@ set( CMAKES         cmake/DetectFlags.cmake
 )
 
 set( DOCS           doc/00-introduction.md
-                    doc/01-install-guide.md
-                    doc/02-principles.md
+                    doc/01-install-guide.dox
+                    doc/02-principles.dox
                     doc/Doxyfile.in
                     doc/refman_footer.in
                     doc/refman_header.in
+                    doc/asn1.md
 )
 
 set( OTHERS         CMakeLists.txt
@@ -369,3 +375,5 @@ endif()
 # Сборка документации и завершающие настройки
 # -------------------------------------------------------------------------------------------------- #
 include( MakeDoc )
+include( MakeDist )
+include( MakeInstall )
