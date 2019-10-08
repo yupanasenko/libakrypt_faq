@@ -635,7 +635,6 @@
   switch( oid->engine ) {
 
     case hash_function:
-
       if(( ctx = malloc( sizeof( struct hash ))) == NULL ) {
         ak_error_message( ak_error_out_of_memory, __func__,
                                          "incorrect allocation memory for hash function context" );
@@ -649,6 +648,18 @@
       break;
 
     case hmac_function:
+      if(( ctx = malloc( sizeof( struct hmac ))) == NULL ) {
+        ak_error_message( ak_error_out_of_memory, __func__,
+                                         "incorrect allocation memory for hmac function context" );
+        return ak_error_wrong_handle;
+      }
+      if(( error = ((ak_function_hash_context_create *)oid->func.create)( ctx )) != ak_error_ok ) {
+        free( ctx );
+        ak_error_message( error, __func__, "incorrect creation of hmac function context" );
+        return ak_error_wrong_handle;
+      }
+      break;
+
     case block_cipher:
     case random_generator:
 
@@ -666,6 +677,18 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_handle_new_streebog512( void ) { return ak_handle_new( "streebog512", NULL ); }
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_handle_new_hmac_streebog256( void )
+{
+  return ak_handle_new( "hmac-streebog256", NULL );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_handle_new_hmac_streebog512( void )
+{
+  return ak_handle_new( "hmac-streebog512", NULL );
+}
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_handle_delete( ak_handle handle )
@@ -739,6 +762,7 @@
     case mgm_function:
     case sign_function:
      return ak_true;
+
     default: return ak_false;
   }
 }
@@ -801,6 +825,111 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_handle_has_key( ak_handle handle )
+{
+  ak_oid oid = NULL;
+  ak_pointer ctx = NULL;
+
+ /* получаем данные */
+  if(( ctx = ak_handle_get_context( handle, &oid )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorect handle value" );
+    return ak_false;
+  }
+
+ /* возвращаем ответ */
+  switch( oid->engine ) {
+    case block_cipher:
+    case stream_cipher:
+    case hybrid_cipher:
+    case hmac_function:
+    case omac_function:
+    case mgm_function:
+    case sign_function:
+     return ak_true;
+
+    default: return ak_false;
+  }
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param handle Дескриптор криптографического алгоритма.
+    \param hexstr Строка (null-строка), содержащая шестнадцетиричное представление области памяти,
+    содержащей ключевое значение
+    \param reverse Флаг, при истинном значении которого данные, после преобразования
+    из строки симовлов, будут побайтно развернуты.
+
+    \return В случае успеха функция возвращает ноль (\ref ak_error_ok). В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_handle_set_key_from_hexstr( ak_handle handle, const char *hexstr, const bool_t reverse )
+{
+  ak_oid oid = NULL;
+  ak_uint64 key[64];
+  struct random rnd;
+  ak_pointer ctx = NULL;
+  int error = ak_error_ok;
+
+  if(( ctx = ak_handle_get_context( handle, &oid )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__, "incorect handle value" );
+
+  if(( error = ak_hexstr_to_ptr( hexstr, key, sizeof( key ), reverse )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect hexademal string with secret key value" );
+
+ /* присваиваем ключ */
+  switch( oid->engine ) {
+    case hmac_function:
+      error = ak_hmac_context_set_key( ctx, key, 64 );
+      break;
+
+    case block_cipher:
+      error = ak_bckey_context_set_key( ctx, key, 32 );
+      break;
+
+    default: error = ak_error_message( ak_error_wrong_oid, __func__,
+                                                            "this handle not accept a key value" );
+  }
+
+ /* очищаем временную переменную */
+  if( ak_random_context_create_lcg( &rnd ) != ak_error_ok ) {
+    memset( key, 0, sizeof( key ));
+  } else {
+           ak_ptr_context_wipe( key, sizeof( key ), &rnd );
+           ak_random_context_destroy( &rnd );
+         }
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_handle_set_key_from_password( ak_handle handle,
+                                           const ak_pointer pass, const size_t pass_size,
+                                                     const ak_pointer salt, const size_t salt_size )
+{
+  ak_oid oid = NULL;
+  ak_pointer ctx = NULL;
+  int error = ak_error_ok;
+
+ /* получаем контекст */
+  if(( ctx = ak_handle_get_context( handle, &oid )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__, "incorect handle value" );
+
+ /* присваиваем ключ */
+  switch( oid->engine ) {
+    case hmac_function:
+      error = ak_hmac_context_set_key_from_password( ctx, pass, pass_size, salt, salt_size );
+      break;
+
+    case block_cipher:
+      error = ak_bckey_context_set_key_from_password( ctx, pass, pass_size, salt, salt_size );
+      break;
+
+    default: error = ak_error_message( ak_error_wrong_oid, __func__,
+                                                            "this handle not accept a key value" );
+  }
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \param handle Дескриптор криптографического алгоритма.
     \param filename Имя файла, для которого вычисляется хеш-код.
     \param out Область памяти, куда будет помещен результат. Память должна быть заранее выделена.
@@ -816,7 +945,7 @@
                                                             ak_pointer out, const size_t out_size )
 {
   ak_oid oid = NULL;
-  ak_hash ctx = NULL;
+  ak_pointer ctx = NULL;
 
   if(( ctx = ak_handle_get_context( handle, &oid )) == NULL )
     return ak_error_message( ak_error_get_value(), __func__, "incorect handle value" );
@@ -824,11 +953,15 @@
     return ak_error_message( ak_error_oid_mode, __func__, "using handle with wrong mode" );
 
  /* для тех, кто умеет, возвращаем результат */
-  if( oid->engine == hash_function )
-    return ak_hash_context_file( ctx, filename, out, out_size );
+   switch( oid->engine )
+  {
+    case hash_function: return ak_hash_context_file( ctx, filename, out, out_size );
+    case hmac_function: return ak_hmac_context_file( ctx, filename, out, out_size );
 
- /* для остальных возвращаем ошибку */
- return ak_error_message( ak_error_oid_engine, __func__, "using handle with wrong engine" );
+   /* для остальных возвращаем ошибку */
+    default:
+        return ak_error_message( ak_error_oid_engine, __func__, "using handle with wrong engine" );
+  }
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -851,7 +984,7 @@
                                                              ak_pointer out, const size_t out_size )
 {
   ak_oid oid = NULL;
-  ak_hash ctx = NULL;
+  ak_pointer ctx = NULL;
 
   if(( ctx = ak_handle_get_context( handle, &oid )) == NULL )
     return ak_error_message( ak_error_get_value(), __func__, "incorect handle value" );
@@ -859,11 +992,15 @@
     return ak_error_message( ak_error_oid_mode, __func__, "using handle with wrong mode" );
 
  /* для тех, кто умеет, возвращаем результат */
-  if( oid->engine == hash_function )
-    return ak_hash_context_ptr( ctx, in, size, out, out_size );
+   switch( oid->engine )
+  {
+    case hash_function: return ak_hash_context_ptr( ctx, in, size, out, out_size );
+    case hmac_function: return ak_hmac_context_ptr( ctx, in, size, out, out_size );
 
- /* для остальных возвращаем ошибку */
- return ak_error_message( ak_error_oid_engine, __func__, "using handle with wrong engine" );
+   /* для остальных возвращаем ошибку */
+    default:
+        return ak_error_message( ak_error_oid_engine, __func__, "using handle with wrong engine" );
+  }
 }
 
 /* ----------------------------------------------------------------------------------------------- */

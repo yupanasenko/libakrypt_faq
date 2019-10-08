@@ -33,8 +33,8 @@
  static const char *on_hashrnd[] =          { "hashrnd", NULL };
  static const char *on_streebog256[] =      { "streebog256", "md_gost12_256", NULL };
  static const char *on_streebog512[] =      { "streebog512", "md_gost12_512", NULL };
- static const char *on_hmac_streebog256[] = { "hmac-streebog256", NULL };
- static const char *on_hmac_streebog512[] = { "hmac-streebog512", NULL };
+ static const char *on_hmac_streebog256[] = { "hmac-streebog256", "HMAC-md_gost12_256", NULL };
+ static const char *on_hmac_streebog512[] = { "hmac-streebog512", "HMAC-md_gost12_512", NULL };
 
  static const char *on_kuznechik[] =        { "kuznechik", "kuznyechik", "grasshopper", NULL };
 #endif

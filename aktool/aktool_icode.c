@@ -56,6 +56,10 @@
     char password[256];
    /*! \brief Флаг выработки ключа из пароля */
     bool_t pass_flag;
+   /*! \brief Флаг определения ключа в явном виде */
+    bool_t hexkey_flag;
+   /*! \brief Указатель на строку с шестнадцатеричной записью ключа */
+    char *hexstr;
    /*! \brief Инициализационный вектор для алгоритма выработки ключа из пароля (константа) */
     ak_uint8 salt[12];
    /*! \brief Флаг рекурсивной обработки каталогов */
@@ -85,6 +89,7 @@
      { "status",              0, NULL,  249 },
      { "password",            1, NULL,  248 },
      { "openssl",             0, NULL,  247 },
+     { "hexkey",              1, NULL,  246 },
 
     /* потом общие */
      { "audit",               1, NULL,   2  },
@@ -120,6 +125,8 @@
   memset( ic.password, 0, sizeof( ic.password ));
   ic.pass_flag = ak_false;
   memcpy( ic.salt, "akrypt saltx", 12 );
+  ic.hexkey_flag = ak_false;
+  ic.hexstr = NULL;
   ic.openssl = ak_false;
 
  /* разбираем опции командной строки */
@@ -203,6 +210,11 @@
                      ic.openssl = ak_true;
                      break;
 
+         case 246:  /* определение ключа в явном виде */
+                     ic.hexstr = optarg;
+                     ic.hexkey_flag = ak_true;
+                     break;
+
          default:   /* обрабатываем ошибочные параметры */
                      if( next_option != -1 ) work = do_nothing;
                      break;
@@ -267,17 +279,57 @@
 /* ----------------------------------------------------------------------------------------------- */
  bool_t aktool_create_handle( char *algorithm )
 {
+  int error = ak_error_ok;
+
  /* создаем дескриптор алгоритма запрошенного пользователем алгоритма */
   if(( ic.handle = ak_handle_new( algorithm, NULL )) == ak_error_wrong_handle ) {
-    printf(_("\"%s\" is incorrect name/identifier for icode function\n"), algorithm );
+    printf(_("\"%s\" is incorrect name/identifier for hash or mac function\n"), algorithm );
     return ak_false;
   }
  /* проверяем, что этот алгоритм позволяет реализовывать сжатие (хеширование или имитозащиту) */
   if(( ak_handle_has_tag( ic.handle )) != ak_true ) {
-    printf(_("algorithm \"%s\" cannot be used for integrity code calculations\n"), algorithm );
+    printf(_("algorithm \"%s\" cannot be used for hash or mac calculations\n"), algorithm );
     return ak_false;
   }
 
+ /* проверяем, что алгоритм допускает использование ключа */
+  if( ak_handle_has_key( ic.handle )) {
+
+    if( ic.hexkey_flag ) {
+       if(( error =
+                ak_handle_set_key_from_hexstr( ic.handle, ic.hexstr, ak_false )) != ak_error_ok ) {
+         printf(_("incorrect key value %s\n"), ic.hexstr );
+         return ak_false;
+       }
+     goto lab_iv;
+    }
+
+    if( ic.pass_flag ) {
+     /* проверяем, установлен ли пароль */
+      if( strlen( ic.password ) == 0 ) {
+        printf(_("input password: "));
+        error = ak_password_read( ic.password, sizeof( ic.password ));
+        printf("\n");
+        if( error != ak_error_ok ) return ak_false;
+      } else { /* пароль уже установлен */ }
+
+     /* теперь устанавливаем ключ, вырабатывая его из пароля */
+      if(( error = ak_handle_set_key_from_password( ic.handle, ic.password,
+                     strlen( ic.password ), ic.salt, sizeof( ic.salt ))) != ak_error_ok ) {
+        printf(_("incorrect generation a secret key from password\n"));
+        return ak_false;
+      }
+      goto lab_iv;
+    }
+
+    printf(_("%s algorithm is used without the specified key value\n"), algorithm );
+    printf(_("use -p, --password or --hexkey options\n"));
+    return ak_false;
+
+  }
+
+ /* проверяем, что алгоритм допускает использование синхропосылки */
+  lab_iv:
  return ak_true;
 }
 
@@ -428,7 +480,7 @@
   printf(_("                         default algorithm is \"streebog256\" defined by GOST R 34.10-2012\n" ));
   printf(_(" -c, --check <file>      check previously generated macs or integrity codes\n" ));
   printf(_("     --dont-show-stat    don't show a statistical results after checking\n"));
-//  printf(_("     --hexkey <string>   set the key directly in command line as string of hexademals\n"));
+  printf(_("     --hexkey <string>   set the secret key directly in command line as a string of hexademals\n"));
   printf(_("     --ignore-errors     don't breake a check when file is missing or corrupted\n" ));
   printf(_("     --openssl-style     use key and data formats in openssl library style\n"));
   printf(_(" -o, --output <file>     set the output file for generated integrity codes\n" ));

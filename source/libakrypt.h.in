@@ -481,6 +481,10 @@ extern "C" {
  dll_export ak_handle ak_handle_new_streebog256( void );
 /*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
  dll_export ak_handle ak_handle_new_streebog512( void );
+/*! \brief Создание дескриптора функции выработки имитовставки (ключевой функции хеширования) HMAC-Стрибог256. */
+ dll_export ak_handle ak_handle_new_hmac_streebog256( void );
+/*! \brief Создание дескриптора функции выработки имитовставки (ключевой функции хеширования) HMAC-Стрибог512. */
+ dll_export ak_handle ak_handle_new_hmac_streebog512( void );
 /*! \brief Получение информации об параметрах алгоритма по его handle. */
  dll_export int ak_handle_get_oid( ak_handle , oid_engines_t *, oid_modes_t *,
                                                                    const char **, const char *** );
@@ -491,7 +495,7 @@ extern "C" {
 /*! \brief Проверка, допускает ли алгоритм использование секретного ключа. */
  dll_export bool_t ak_handle_has_key( ak_handle );
 /*! \brief Присвоение константного ключевого значения. */
- dll_export int ak_handle_set_key_hexstr( ak_handle );
+ dll_export int ak_handle_set_key_from_hexstr( ak_handle , const char * , const bool_t reverse );
 /*! \brief Присвоение случайного ключевого значения значения. */
  dll_export int ak_handle_set_key_random( ak_handle );
 /*! \brief Присвоение ключевого значения, выработанного из пароля. */
