@@ -37,6 +37,7 @@
  static const char *on_hmac_streebog512[] = { "hmac-streebog512", "HMAC-md_gost12_512", NULL };
 
  static const char *on_kuznechik[] =        { "kuznechik", "kuznyechik", "grasshopper", NULL };
+ static const char *on_magma[] =            { "magma", NULL };
 #endif
  static const char *on_w256_pst[] =         { "id-tc26-gost-3410-2012-256-paramSetTest", NULL };
  static const char *on_w256_psa[] =         { "id-tc26-gost-3410-2012-256-paramSetA", NULL };
@@ -123,6 +124,11 @@
   /* 6. идентификаторы алгоритмов блочного шифрования
         в дереве библиотеки: 1.2.643.2.52.1.6 - алгоритмы блочного шифрования
         в дереве библиотеки: 1.2.643.2.52.1.7 - параметры алгоритмов блочного шифрования */
+
+   { block_cipher, algorithm, on_magma, "1.2.643.7.1.1.5.1", NULL, NULL,
+                               { ( ak_function_void *) ak_bckey_context_create_magma,
+                                      ( ak_function_void *) ak_bckey_context_destroy,
+                                       ( ak_function_void *) ak_bckey_context_delete, NULL, NULL }},
 
    { block_cipher, algorithm, on_kuznechik, "1.2.643.7.1.1.5.2", NULL, NULL,
                            { ( ak_function_void *) ak_bckey_context_create_kuznechik,

@@ -103,6 +103,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_hmac.c
                     source/ak_bckey.c
                     source/ak_kuznechik.c
+                    source/ak_magma.c
                     source/ak_context_manager.c
   )
 endif()
@@ -291,6 +292,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
                  bckey01
                  bckey02
+                 bckey03
                  context-node
                  context-manager
                  hash01

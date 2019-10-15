@@ -103,7 +103,7 @@
 /*! Для заданного линейного регистра сдвига, задаваемого набором коэффициентов `reg`,
     функция вычисляет 16-ю степень сопровождающей матрицы.
 
-    \param reg Набор коэффициентов, определябщих линейный регистр сдвига
+    \param reg Набор коэффициентов, определяющих линейный регистр сдвига
     \param matrix Сопровождающая матрица
     \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
@@ -329,14 +329,6 @@
     }
     ak_ptr_context_wipe( reverse, sizeof( reverse ), &skey->generator );
   }
-
-//   printf("expanded keys (from minimal to maximal):\n");
-//   for( i = 0; i < 10; i++ ) {
-//      ak_uint64 k[2] = { ekey[2*i+0]^mkey[2*i+0], ekey[2*i+1]^mkey[2*i+1] };
-//      printf("%04x:", 16*i );
-//      for( j = 0; j < 16; j++ ) printf(" %02x", ((ak_uint8 *)k)[j] );
-//      printf(" (%s)\n", ak_ptr_to_hexstr( k, 16, ak_false ));
-//   }
 
  return ak_error_ok;
 }
