@@ -1493,33 +1493,24 @@
                                                                         "using zero length data" );
   if( out == NULL )  return ak_error_message( ak_error_null_pointer, __func__,
                                                            "using null pointer to output buffer" );
-// /* основной цикл обработки 32-х битных слов */
-//  for( i = 0; i < len; i++ ) {
-//    c0 += ptr[i];
-//    c1 += c0;
-//  }
-
-// /* обрабатываем хвост */
-//  if( tail ) {
-//    ak_uint32 idx = 0, c2 = 0;
-//    while( tail-- ) {
-//        c2 <<= 8;
-//        c2 += (( const ak_uint8 * )data)[(len << 2)+(idx++)];
-//    }
-//    c0 += c2;
-//    c1 += c0;
-//  }
-
-//  printf("c0: %x (%x), c1: %x (%x)\n", c0, c0%65535, c1, c1%65535 );
-
-//  *out = (( c1%65535 ) << 16 ) | c0%65535;
-
+ /* основной цикл обработки 32-х битных слов */
   for( i = 0; i < len; i++ ) {
     c0 += ptr[i];
     c1 += c0;
   }
 
- *out = ( c1&0xffff ) << 16 | c0&0xffff;
+ /* обрабатываем хвост */
+  if( tail ) {
+    ak_uint32 idx = 0, c2 = 0;
+    while( tail-- ) {
+        c2 <<= 8;
+        c2 += (( const ak_uint8 * )data)[(len << 2)+(idx++)];
+    }
+    c0 += c2;
+    c1 += c0;
+  }
+
+ *out = ( c1&0xffff ) << 16 | ( c0&0xffff );
  return ak_error_ok;
 }
 
