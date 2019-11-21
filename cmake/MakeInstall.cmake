@@ -9,7 +9,7 @@ if( CMAKE_HOST_UNIX )
   install( FILES ${MAIN_HEADER} DESTINATION include )
 
   # если нужны заголовки внутреннего инфтерфейса
-  if( AKRYPT_INSTALL_HEADERS )
+  if( LIBAKRYPT_INSTALL_HEADERS )
     install( FILES ${HEADERS} DESTINATION include )
   endif()
 
