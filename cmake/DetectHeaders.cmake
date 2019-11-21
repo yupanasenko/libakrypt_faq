@@ -43,6 +43,14 @@ check_c_source_compiles("
      return 0;
   }" LIBAKRYPT_HAVE_ENDIAN_H )
 
+if( NOT LIBAKRYPT_HAVE_ENDIAN_H )
+  check_c_source_compiles("
+     #include <sys/endian.h>
+     int main( void ) {
+        return 0;
+     }" LIBAKRYPT_HAVE_SYSENDIAN_H )
+endif()
+
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
   #include <time.h>
