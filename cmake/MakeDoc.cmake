@@ -1,4 +1,15 @@
 # -------------------------------------------------------------------------------------------------- #
+# пробуем выработать свежую версию документации для утилиты aktool
+# -------------------------------------------------------------------------------------------------- #
+find_program( PANDOC pandoc )
+find_program( SED sed )
+if( PANDOC )
+  execute_process( COMMAND pandoc -s -t man --ascii
+               ${CMAKE_SOURCE_DIR}/aktool/Readme.md -o ${CMAKE_SOURCE_DIR}/aktool/aktool.1 )
+  message("-- Manual file aktool.1 updated" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
 # генерация файла для сборки документации (только для UNIX)
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_HTML_DOC )
@@ -23,6 +34,14 @@ if( LIBAKRYPT_HTML_DOC )
      add_custom_target( html ${CMAKE_BINARY_DIR}/make-html-${FULL_VERSION}.sh )
      message("-- Script for documentation in HTML format is done (now \"make html\" enabled)")
 
+     if( PANDOC )
+       execute_process( COMMAND pandoc -f markdown -t latex --top-level-division=chapter -o ${CMAKE_BINARY_DIR}/readme.tex ${CMAKE_SOURCE_DIR}/Readme.md )
+       if( SED )
+         execute_process( COMMAND sed -i s/chapter/chapter*/g ${CMAKE_BINARY_DIR}/readme.tex )
+         execute_process( COMMAND sed -i s/section/section*/g ${CMAKE_BINARY_DIR}/readme.tex )
+       endif()
+       message("-- English documentation in latex format updated")
+     endif()
   else()
     message("-- doxygen not found")
     exit()
@@ -57,14 +76,4 @@ if( LIBAKRYPT_PDF_DOC )
     add_custom_target( pdf ${CMAKE_BINARY_DIR}/make-pdf-${FULL_VERSION}.sh )
     message("-- Script for documentation in PDF format is done (now \"make pdf\" enabled)")
   endif()
-endif()
-
-# -------------------------------------------------------------------------------------------------- #
-# пробуем выработать свежую версию документации для утилиты aktool
-# -------------------------------------------------------------------------------------------------- #
-find_program( PANDOC pandoc )
-if( PANDOC )
-  execute_process( COMMAND pandoc -s -t man --ascii
-               ${CMAKE_SOURCE_DIR}/aktool/Readme.md -o ${CMAKE_SOURCE_DIR}/aktool/aktool.1 )
-  message("-- Manual file aktool.1 updated" )
 endif()

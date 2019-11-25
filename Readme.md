@@ -1,4 +1,4 @@
-# Libakrypt
+# abstract: Libakrypt
 
 Libakrypt is a free and open source library (software crypto module) distributed under
 the MIT License. This library written in C99 and provides some interfaces for
