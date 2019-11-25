@@ -158,7 +158,9 @@
 \vfill
 
 \newpage
+\input{@CMAKE_BINARY_DIR@/readme.tex}
+%pandoc -f markdown -t latex Readme.me >> refman_header.in ))
+
+
 \tableofcontents
 
-% pandoc -f markdown -t latex Readme.me >> refman_header.in ))
-% \input{@CMAKE_BINARY_DIR@/readme.tex}
