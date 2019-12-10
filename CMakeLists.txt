@@ -15,15 +15,17 @@
 # сборка при MinGW из консоли MSYS (WINDOWS)
 # cmake -G "MinGW Makefiles" -D CMAKE_C_COMPILER=gcc path && mingw32-make
 # -------------------------------------------------------------------------------------------------- #
-project( libakrypt C )
 cmake_minimum_required( VERSION 2.7 FATAL_ERROR )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 8 )
 set( MINOR_VERSION 2 )
-
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
+
+# -------------------------------------------------------------------------------------------------- #
+# Формируем название проекта
+project( libakrypt-${FULL_VERSION} C )
 
 # -------------------------------------------------------------------------------------------------- #
 # Перечень доступных опций для сборки библиотеки

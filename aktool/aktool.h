@@ -24,14 +24,17 @@
   #error Library cannot be compiled without stdlib.h header
  #endif
  #ifdef LIBAKRYPT_HAVE_STDLIB_H
-  #define __USE_MISC
+  #ifndef __USE_MISC
+    #define __USE_MISC
+  #endif
   #include <stdlib.h>
-  #undef __USE_MISC
  #else
   #error Library cannot be compiled without stdlib.h header
  #endif
  #ifdef LIBAKRYPT_HAVE_STRING_H
-  #define __USE_POSIX
+  #ifndef __USE_POSIX
+    #define __USE_POSIX
+  #endif
   #include <string.h>
  #else
   #error Library cannot be compiled without string.h header

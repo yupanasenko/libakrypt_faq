@@ -9,7 +9,7 @@
  #include <ak_tools.h>
 
 /*
-   инверитрованные тестовые значения взяты из
+   инвертированные тестовые значения взяты из
    https://github.com/gost-engine/engine/blob/master/test_grasshopper.c
 */
 
@@ -102,7 +102,7 @@
  /* устанавливаем секретный ключ */
   ak_bckey_context_set_key( &bkey, oc ? openssl_key : key, sizeof( key ));
 
- /* зашифровываем и расшифровываем всего четыре блока данных */
+ /* зашифровываем и расшифровываем всего четыре блока данных в режиме гаммирования */
   ak_bckey_context_ctr( &bkey, oc ? openssl_in : in, buf, sizeof( in ),
                                                                    oc ? openssl_ivctr : ivctr, 8 );
   printf("encrypted:\n");

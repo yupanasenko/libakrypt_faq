@@ -3,11 +3,16 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  #ifdef LIBAKRYPT_HAVE_LIMITS_H
-  #define _DEFAULT_SOURCE
+  #ifndef _DEFAULT_SOURCE
+    #define _DEFAULT_SOURCE
+  #endif
   #include <limits.h>
  #endif
 
- #define _POSIX_C_SOURCE
+/* ----------------------------------------------------------------------------------------------- */
+ #ifndef _POSIX_C_SOURCE
+   #define _POSIX_C_SOURCE
+ #endif
  #include <string.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -345,10 +350,9 @@
       goto lab_iv;
     }
 
-    printf(_("%s algorithm is used without the specified key value\n"), algorithm );
-    printf(_("use -p, --password or --hexkey options\n"));
+    printf(_("using %s algorithm without the specified key value\n"), algorithm );
+    printf(_("define -p, --password or --hexkey command line option\n"));
     return ak_false;
-
   }
 
  /* проверяем, что алгоритм допускает использование синхропосылки */

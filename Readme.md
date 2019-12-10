@@ -26,10 +26,10 @@ We have implementation of:
 10. National variant of password-based key derivation function (PBKDF2) described by R 50.1.111-2016;
 11. A some set of pseudo random generators for various operation systems including R 1323565.1.006-2017 mechanism.
 
-Library can be used successfully under Linux, Windows (since XP), FreeBSD and MacOs operation systems.
-Also we have positive runs on mobile devices under Sailfish OS.
+Library can be used successfully under `Linux`, `Windows`, `FreeBSD` and `MacOS` operation systems.
+Also we have positive runs on mobile devices under [Sailfish OS](https://sailfishos.org/).
 
-We support various architecture such as `x86`, `x64`, `arm32v7`, `arm32v7eb`, `mips32r2` & `mips64r2`.
+We support various architecture such as `x86`, `x64`, `arm32v7`, `arm32v7eb`, `mips32r2` and `mips64r2`.
 
 
 ## Compilation
@@ -47,13 +47,13 @@ On Unix platforms you can compile & build library with following commands
 
     mkdir build
     cd build
-    cmake ../libakrypt-0.x
+    cmake -DCMAKE_C_FLAGS="-march=native" ../libakrypt-0.x
     make
 
 If you want to compile and build a set of test programs you may run
 
     cmake -DLIBAKRYPT_INTERNAL_TESTS=ON ../libakrypt-0.x
-    make test
+    make && make test
 
 ### Windows
 On Windows you may to install [phtreads library](https://sourceware.org/pthreads-win32/).
@@ -63,6 +63,19 @@ After this you can run a Microsoft Visual 20XX Console and execute a following s
     cd build
     cmake.exe -G "NMake Makefiles" ../libakrypt-0.x
     nmake.exe
+
+### Cross compiling
+
+You can build libakrypt library for execution under different architectures.
+As example, you can choose `mips32r2` and install GNU cross-compiler.
+After that it is necessary to execute
+
+    cmake -DCMAKE_C_COMPILER=mips-linux-gnu-gcc-9 -DCMAKE_C_FLAGS="-march=mips32r2" ../libakrypt-0.x
+    make
+
+Now you can run compiled examples in this manner
+
+    qemu-mips -L /usr/mips-linux-gnu ./example-hello
 
 
 ## Information
