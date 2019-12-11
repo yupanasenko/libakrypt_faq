@@ -1,17 +1,12 @@
 /* Тестовый пример иллюстрирует применение режима простой замены с зацеплением (Магма).
    Внимание! Используются не экспортируемые функции.
 
-   test-bckey02.c
+   test-bckey05.c
 */
  #include <stdio.h>
  #include <stdlib.h>
  #include <ak_bckey.h>
  #include <ak_tools.h>
-
-/*
-   инверитрованные тестовые значения взяты из
-   https://github.com/gost-engine/engine/blob/master/test_grasshopper.c
-*/
 
  int main()
 {
