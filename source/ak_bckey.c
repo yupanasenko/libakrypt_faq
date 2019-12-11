@@ -608,9 +608,239 @@
  return error;
 }
 
+ int ak_bckey_context_encrypt_cbc( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size,
+                                    ak_pointer iv, size_t iv_size )
+ {
+   ak_int64 blocks = 0;
+   ak_uint64 yaout[2], z = iv_size / bkey->bsize;
+   ak_uint64 *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
+   int error = ak_error_ok, oc = (int) ak_libakrypt_get_option( "openssl_compability" );
+
+   if(( oc < 0 ) || ( oc > 1 )) return ak_error_message( ak_error_wrong_option, __func__,
+                                                 "wrong value for \"openssl_compability\" option" );
+
+  /* выполняем проверку размера входных данных */
+   if( size%bkey->bsize != 0 )
+     return ak_error_message( ak_error_wrong_block_cipher_length,
+                             __func__ , "the length of input data is not divided by block length" );
+
+  /* проверяем целостность ключа */
+   if( bkey->key.check_icode( &bkey->key ) != ak_true )
+     return ak_error_message( ak_error_wrong_key_icode,
+                                         __func__, "incorrect integrity code of secret key value" );
+  /* уменьшаем значение ресурса ключа */
+   blocks = (ak_int64 ) (size/bkey->bsize);
+   if( bkey->key.resource.value.counter < blocks )
+     return ak_error_message( ak_error_low_key_resource,
+                                                    __func__ , "low resource of block cipher key" );
+    else bkey->key.resource.value.counter -= blocks;
+
+     /* проверяем длину синхропосылки (если меньше  блока, то плохо) */
+      if( iv_size < bkey->bsize || iv_size%bkey->bsize != 0 )
+        return ak_error_message( ak_error_wrong_iv_length, __func__,
+                                                               "incorrect length of initial value" );
+
+     memcpy(bkey->ivector, iv, iv_size);
+
+  /* теперь приступаем к зашифрованию данных */
+   switch( bkey->bsize ) {
+     case  8: /* шифр с длиной блока 64 бита */
+
+       if (oc) /* не тестировалось */
+       {
+           ak_uint64 *ivector = (ak_uint64 *)bkey->ivector;
+           while( blocks > 0 ) {
+               if (z == 0)
+                   ivector = (ak_uint64 *)out;
+               yaout[0] = *inptr ^ *ivector; inptr++; ivector++;
+               bkey->encrypt( &bkey->key, yaout, outptr );
+               outptr++;
+               --blocks;
+               z--;
+           }
+       } else
+       {
+           int endiv = -1;
+           ak_uint64 *ivector = (ak_uint64 *)bkey->ivector+z-1;
+           while( blocks > 0 ) {
+               if (z == 0)
+               {
+                   endiv = 1;
+                   ivector = (ak_uint64 *)out;
+               }
+               yaout[0] = *inptr ^ *ivector; inptr++; ivector += endiv;
+               bkey->encrypt( &bkey->key, yaout, outptr );
+               outptr++;
+               --blocks;
+               --z;
+           }
+       }
+     break;
+
+     case 16: /* шифр с длиной блока 128 бит */
+       if (oc)
+       {
+           ak_uint64 *ivector = (ak_uint64 *)bkey->ivector;
+           while( blocks > 0 ) {
+               if (z == 0)
+                   ivector = (ak_uint64 *)out;
+               yaout[0] = *inptr ^ *ivector; inptr++; ivector++;
+               yaout[1] = *inptr ^ *ivector; inptr++; ivector++;
+               bkey->encrypt( &bkey->key, yaout, outptr );
+               outptr+=2;
+               --blocks;
+               z--;
+           }
+       } else
+       {
+           int endiv = -3;
+           ak_uint64 *ivector = (ak_uint64 *)bkey->ivector+2*z-2;
+           while( blocks > 0 ) {
+               if (z == 0)
+               {
+                   endiv = 1;
+                   ivector = (ak_uint64 *)out;
+               }
+               yaout[0] = *inptr ^ *ivector; inptr++; ivector++;
+               yaout[1] = *inptr ^ *ivector; inptr++; ivector+=endiv;
+               bkey->encrypt( &bkey->key, yaout, outptr );
+               outptr+=2;
+               --blocks;
+               z--;
+           }
+       }
+     break;
+     default: return ak_error_message( ak_error_wrong_block_cipher,
+                                           __func__ , "incorrect block size of block cipher key" );
+   }
+  /* перемаскируем ключ */
+   if(( error = bkey->key.set_mask( &bkey->key )) != ak_error_ok )
+     ak_error_message( error, __func__ , "wrong remasking of secret key" );
+
+  return ak_error_ok;
+ }
+
+ int ak_bckey_context_decrypt_cbc( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size,
+                                   ak_pointer iv, size_t iv_size )
+ {
+  ak_int64 blocks = 0;
+  ak_uint64 yaout[2];
+  ak_uint64 *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out, *ivector = (ak_uint64 *)bkey->ivector;
+  int error = ak_error_ok, oc = (int) ak_libakrypt_get_option( "openssl_compability" );
+
+  if(( oc < 0 ) || ( oc > 1 )) return ak_error_message( ak_error_wrong_option, __func__,
+                                                "wrong value for \"openssl_compability\" option" );
+
+
+ /* выполняем проверку размера входных данных */
+  if( size%bkey->bsize != 0 )
+    return ak_error_message( ak_error_wrong_block_cipher_length,
+                            __func__ , "the length of input data is not divided by block length" );
+
+ /* проверяем целостность ключа */
+  if( bkey->key.check_icode( &bkey->key ) != ak_true )
+    return ak_error_message( ak_error_wrong_key_icode,
+                                        __func__, "incorrect integrity code of secret key value" );
+ /* уменьшаем значение ресурса ключа */
+  blocks = (ak_int64 ) (size/bkey->bsize);
+  if( bkey->key.resource.value.counter < blocks )
+    return ak_error_message( ak_error_low_key_resource,
+                                                   __func__ , "low resource of block cipher key" );
+   else bkey->key.resource.value.counter -= blocks;
+
+    /* проверяем длину синхропосылки (если меньше  блока, то плохо) */
+     if( iv_size < bkey->bsize || iv_size%bkey->bsize != 0 )
+       return ak_error_message( ak_error_wrong_iv_length, __func__,
+                                                              "incorrect length of initial value" );
+
+    memcpy(bkey->ivector, iv, iv_size);
+
+     ak_uint64 z = iv_size / bkey->bsize;
+ /* теперь приступаем к расшифрованию данных */
+  switch( bkey->bsize ) {
+    case  8: /* шифр с длиной блока 64 бита */
+
+          if (oc) /* не тестировалось */
+          {
+              while( blocks > 0 ) {
+                  bkey->decrypt( &bkey->key, inptr, yaout );
+                  if (z == 0)
+                      ivector = (ak_uint64 *)in;
+                  *outptr = yaout[0] ^ *ivector; outptr++; ivector++;
+                  inptr++;
+                  --blocks;
+                  z--;
+              }
+          } else
+          {
+              int endiv = -1;
+              ak_uint64 *ivector = (ak_uint64 *)bkey->ivector+z-1;
+              while( blocks > 0 ) {
+                  if (z == 0)
+                  {
+                      endiv = 1;
+                      ivector = (ak_uint64 *)in;
+                  }
+                  bkey->decrypt(&bkey->key, inptr, yaout);
+                  *outptr = yaout[0] ^ *ivector; outptr++; ivector+=endiv;
+                  inptr++;
+                  --blocks;
+                  z--;
+              }
+          }
+    break;
+
+    case 16: /* шифр с длиной блока 128 бит */
+      while( blocks > 0 ) {
+          if (oc)
+          {
+              bkey->decrypt( &bkey->key, inptr, yaout );
+              if (z == 0)
+              {
+                  ivector = (ak_uint64 *)in;
+              }
+              *outptr = yaout[0] ^ *ivector; outptr++; ivector++;
+              *outptr = yaout[1] ^ *ivector; outptr++; ivector++;
+              inptr+=2;
+              --blocks;
+              z--;
+          } else
+          {
+              int endiv = -3;
+              ak_uint64 *ivector = (ak_uint64 *)bkey->ivector+2*z-2;
+              while( blocks > 0 ) {
+                  if (z == 0)
+                  {
+                      endiv = 1;
+                      ivector = (ak_uint64 *)in;
+                  }
+                  bkey->decrypt(&bkey->key, inptr, yaout);
+                  *outptr = yaout[0] ^ *ivector; outptr++; ivector++;
+                  *outptr = yaout[1] ^ *ivector; outptr++; ivector+=endiv;
+                  inptr+=2;
+                  --blocks;
+                  z--;
+              }
+          }
+      }
+
+
+    break;
+    default: return ak_error_message( ak_error_wrong_block_cipher,
+                                          __func__ , "incorrect block size of block cipher key" );
+  }
+ /* перемаскируем ключ */
+  if(( error = bkey->key.set_mask( &bkey->key )) != ak_error_ok )
+    ak_error_message( error, __func__ , "wrong remasking of secret key" );
+
+ return ak_error_ok;
+ }
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \example test-bckey01.c                                                                        */
 /*! \example test-bckey02.c                                                                        */
+/*! \example test-bckey04.c                                                                        */
+/*! \example test-bckey05.c                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                     ak_bckey.c  */
 /* ----------------------------------------------------------------------------------------------- */
