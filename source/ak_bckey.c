@@ -613,7 +613,7 @@
  {
    ak_int64 blocks = 0;
    ak_uint64 yaout[2], z = iv_size / bkey->bsize;
-   ak_uint64 *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
+   ak_uint64 *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out, *ivector = (ak_uint64 *)bkey->ivector;
    int error = ak_error_ok, oc = (int) ak_libakrypt_get_option( "openssl_compability" );
 
    if(( oc < 0 ) || ( oc > 1 )) return ak_error_message( ak_error_wrong_option, __func__,
@@ -645,69 +645,27 @@
   /* теперь приступаем к зашифрованию данных */
    switch( bkey->bsize ) {
      case  8: /* шифр с длиной блока 64 бита */
-
-       if (oc) /* не тестировалось */
-       {
-           ak_uint64 *ivector = (ak_uint64 *)bkey->ivector;
-           while( blocks > 0 ) {
-               if (z == 0)
-                   ivector = (ak_uint64 *)out;
-               yaout[0] = *inptr ^ *ivector; inptr++; ivector++;
-               bkey->encrypt( &bkey->key, yaout, outptr );
-               outptr++;
-               --blocks;
-               z--;
-           }
-       } else
-       {
-           int endiv = -1;
-           ak_uint64 *ivector = (ak_uint64 *)bkey->ivector+z-1;
-           while( blocks > 0 ) {
-               if (z == 0)
-               {
-                   endiv = 1;
-                   ivector = (ak_uint64 *)out;
-               }
-               yaout[0] = *inptr ^ *ivector; inptr++; ivector += endiv;
-               bkey->encrypt( &bkey->key, yaout, outptr );
-               outptr++;
-               --blocks;
-               --z;
-           }
+       while( blocks > 0 ) {
+           if (z == 0)
+               ivector = (ak_uint64 *)out;
+           yaout[0] = *inptr ^ *ivector; inptr++; ivector++;
+           bkey->encrypt( &bkey->key, yaout, outptr );
+           outptr++;
+           --blocks;
+           --z;
        }
      break;
 
      case 16: /* шифр с длиной блока 128 бит */
-       if (oc)
-       {
-           ak_uint64 *ivector = (ak_uint64 *)bkey->ivector;
-           while( blocks > 0 ) {
-               if (z == 0)
-                   ivector = (ak_uint64 *)out;
-               yaout[0] = *inptr ^ *ivector; inptr++; ivector++;
-               yaout[1] = *inptr ^ *ivector; inptr++; ivector++;
-               bkey->encrypt( &bkey->key, yaout, outptr );
-               outptr+=2;
-               --blocks;
-               z--;
-           }
-       } else
-       {
-           int endiv = -3;
-           ak_uint64 *ivector = (ak_uint64 *)bkey->ivector+2*z-2;
-           while( blocks > 0 ) {
-               if (z == 0)
-               {
-                   endiv = 1;
-                   ivector = (ak_uint64 *)out;
-               }
-               yaout[0] = *inptr ^ *ivector; inptr++; ivector++;
-               yaout[1] = *inptr ^ *ivector; inptr++; ivector+=endiv;
-               bkey->encrypt( &bkey->key, yaout, outptr );
-               outptr+=2;
-               --blocks;
-               z--;
-           }
+       while( blocks > 0 ) {
+           if (z == 0)
+               ivector = (ak_uint64 *)out;
+           yaout[0] = *inptr ^ *ivector; inptr++; ivector++;
+           yaout[1] = *inptr ^ *ivector; inptr++; ivector++;
+           bkey->encrypt( &bkey->key, yaout, outptr );
+           outptr+=2;
+           --blocks;
+           --z;
        }
      break;
      default: return ak_error_message( ak_error_wrong_block_cipher,
@@ -759,69 +717,27 @@
  /* теперь приступаем к расшифрованию данных */
   switch( bkey->bsize ) {
     case  8: /* шифр с длиной блока 64 бита */
-
-          if (oc) /* не тестировалось */
-          {
-              while( blocks > 0 ) {
-                  bkey->decrypt( &bkey->key, inptr, yaout );
-                  if (z == 0)
-                      ivector = (ak_uint64 *)in;
-                  *outptr = yaout[0] ^ *ivector; outptr++; ivector++;
-                  inptr++;
-                  --blocks;
-                  z--;
-              }
-          } else
-          {
-              int endiv = -1;
-              ak_uint64 *ivector = (ak_uint64 *)bkey->ivector+z-1;
-              while( blocks > 0 ) {
-                  if (z == 0)
-                  {
-                      endiv = 1;
-                      ivector = (ak_uint64 *)in;
-                  }
-                  bkey->decrypt(&bkey->key, inptr, yaout);
-                  *outptr = yaout[0] ^ *ivector; outptr++; ivector+=endiv;
-                  inptr++;
-                  --blocks;
-                  z--;
-              }
-          }
+      while( blocks > 0 ) {
+          bkey->decrypt( &bkey->key, inptr, yaout );
+          if (z == 0)
+              ivector = (ak_uint64 *)in;
+          *outptr = yaout[0] ^ *ivector; outptr++; ivector++;
+          inptr++;
+          --blocks;
+          --z;
+      }
     break;
 
     case 16: /* шифр с длиной блока 128 бит */
       while( blocks > 0 ) {
-          if (oc)
-          {
-              bkey->decrypt( &bkey->key, inptr, yaout );
-              if (z == 0)
-              {
-                  ivector = (ak_uint64 *)in;
-              }
-              *outptr = yaout[0] ^ *ivector; outptr++; ivector++;
-              *outptr = yaout[1] ^ *ivector; outptr++; ivector++;
-              inptr+=2;
-              --blocks;
-              z--;
-          } else
-          {
-              int endiv = -3;
-              ak_uint64 *ivector = (ak_uint64 *)bkey->ivector+2*z-2;
-              while( blocks > 0 ) {
-                  if (z == 0)
-                  {
-                      endiv = 1;
-                      ivector = (ak_uint64 *)in;
-                  }
-                  bkey->decrypt(&bkey->key, inptr, yaout);
-                  *outptr = yaout[0] ^ *ivector; outptr++; ivector++;
-                  *outptr = yaout[1] ^ *ivector; outptr++; ivector+=endiv;
-                  inptr+=2;
-                  --blocks;
-                  z--;
-              }
-          }
+          bkey->decrypt( &bkey->key, inptr, yaout );
+          if (z == 0)
+              ivector = (ak_uint64 *)in;
+          *outptr = yaout[0] ^ *ivector; outptr++; ivector++;
+          *outptr = yaout[1] ^ *ivector; outptr++; ivector++;
+          inptr+=2;
+          --blocks;
+          --z;
       }
 
 
