@@ -11,7 +11,7 @@ in accordance with R 1323565.1.012-2017
 We have implementation of:
 
  1. GOST R 34.12-2015 block ciphers "Magma" & "Kuznechik" with 64 bit and 128 bit block sizes respectively;
- 2. GOST R 34.13-2015 `ecb`, `ctr` modes for block ciphers;
+ 2. GOST R 34.13-2015  modes for block ciphers;
 <!---
  3. ACPKM encryption mode described by R 1323565.1.017-2018;
  4. New russian AEAD mode (MGM, Multilinear Galois mode) for authenticated encryption;
