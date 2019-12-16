@@ -1,4 +1,4 @@
-# abstract: Libakrypt
+# Libakrypt: abstract
 
 Libakrypt is a free and open source library (software crypto module) distributed under
 the MIT License. This library written in C99 and provides some interfaces for
@@ -11,10 +11,10 @@ in accordance with R 1323565.1.012-2017
 We have implementation of:
 
  1. GOST R 34.12-2015 block ciphers "Magma" & "Kuznechik" with 64 bit and 128 bit block sizes respectively;
+ 2. GOST R 34.13-2015 `ecb`, `ctr` modes for block ciphers;
 <!---
- 2. GOST R 34.13-2015 modes for block ciphers;
- 3. New russian AEAD mode (MGM, Multilinear Galois mode) for authenticated encryption;
- 4. ACPKM encryption mode described by R 1323565.1.017-2018;
+ 3. ACPKM encryption mode described by R 1323565.1.017-2018;
+ 4. New russian AEAD mode (MGM, Multilinear Galois mode) for authenticated encryption;
 --->
  5. GOST R 34.11-2012 hash functions from Streebog family;
  6. Montgomery arithmetic for prime fileds;

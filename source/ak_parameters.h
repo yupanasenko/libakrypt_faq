@@ -1613,7 +1613,7 @@
   },
   0x46f3234475d5add9LL, /* n */
   0x035bdd1aeafdb0a9LL, /* nq */
-  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD97"
+  "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd97"
 };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1643,7 +1643,7 @@
   },
   0x46f3234475d5add9LL, /* n */
   0x9ee6ea0b57c7da65LL, /* nq */
-  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD97"
+  "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd97"
  };
  #define id_tc26_gost_3410_2012_256_paramSetB ( id_rfc4357_gost_3410_2001_paramSetA )
 
@@ -1674,7 +1674,7 @@
   },
   0xbd667ab8a3347857LL, /* n */
   0xca89614990611a91LL, /* nq */
-  "8000000000000000000000000000000000000000000000000000000000000C99"
+  "8000000000000000000000000000000000000000000000000000000000000c99"
  };
  #define id_tc26_gost_3410_2012_256_paramSetC ( id_rfc4357_gost_3410_2001_paramSetB )
 
@@ -1705,7 +1705,7 @@
   },
   0xdf6e6c2c727c176dLL, /* n */
   0xa1c6af0a552f7577LL, /* nq */
-  "9B9F605F5A858107AB1EC85E6B41C8AACF846E86789051D37998F7B9022D759B"
+  "9b9f605f5a858107ab1ec85e6b41c8aacf846e86789051d37998f7b9022d759b"
  };
  #define id_tc26_gost_3410_2012_256_paramSetD ( id_rfc4357_gost_3410_2001_paramSetC )
 
@@ -1736,7 +1736,7 @@
   },
   0xd6412ff7c29b8645LL, /* n */
   0x50bc7d084a21aae1LL, /* nq */
-  "4531ACD1FE0023C7550D267B6B2FEE80922B14B2FFB90F04D4EB7C09B5D2D15DF1D852741AF4704A0458047E80E4546D35B8336FAC224DD81664BBF528BE6373"
+  "4531acd1fe0023c7550d267b6b2fee80922b14b2ffb90f04d4eb7c09b5d2d15df1d852741af4704a0458047e80e4546d35b8336fac224dd81664bbf528be6373"
  };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1766,7 +1766,7 @@
   },
   0x58a1f7e6ce0f4c09LL, /* n */
   0x02ccc1665d51f223LL, /* nq */
-  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFDC7"
+  "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffdc7"
  };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1796,7 +1796,7 @@
   },
   0x4e6a171024e6a171LL, /* n */
   0xc07d62492cbac26bLL, /* nq */
-  "8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006F",
+  "8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f",
  };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1826,7 +1826,7 @@
   },
   0x58a1f7e6ce0f4c09LL, /* n */
   0x0ed9d8e0b6624e1bLL, /* nq */
-  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFDC7"
+  "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffdc7"
  };
 
 #endif

@@ -157,11 +157,11 @@
   if( audit >= ak_log_maximum )
     ak_error_message( ak_error_ok, __func__ , "testing block ciphers started" );
 
-// /* тестируем корректность реализации блочного шифра Магма */
-//  if( ak_bckey_test_magma()  != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of magma block cipher" );
-//    return ak_false;
-//  }
+ /* тестируем корректность реализации блочного шифра Магма */
+  if( ak_bckey_test_magma()  != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of magma block cipher" );
+    return ak_false;
+  }
 
  /* тестируем корректность реализации блочного шифра Кузнечик */
   if( ak_bckey_test_kuznechik()  != ak_true ) {

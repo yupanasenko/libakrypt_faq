@@ -179,9 +179,24 @@
                                                                 "using null pointer to key data" );
   if( size != bkey->key.key_size ) return ak_error_message( ak_error_wrong_length, __func__,
                                        "using a constant value for secret key with wrong length" );
- /* присваиваем ключевой буффер */
-  if(( error = ak_skey_context_set_key( &bkey->key, keyptr, size )) != ak_error_ok )
-    return ak_error_message( error, __func__ , "incorrect assigning of fixed key data" );
+
+ /* дополнительный переворот ключа для алгоритма Магма (в режиме совместимости с openssl) */
+  if(( ak_libakrypt_get_option( "openssl_compability" ) == 1 ) &&
+                                        ( strncmp( bkey->key.oid->names[0], "magma", 5 ) == 0 )) {
+    int i = 0;
+    ak_uint8 revkey[32];
+
+    for( i = 0; i < 32; i++ ) revkey[i] = ((ak_uint8 *)keyptr)[31-i];
+    error = ak_skey_context_set_key( &bkey->key, revkey, sizeof( revkey ));
+    ak_ptr_context_wipe( revkey, sizeof( revkey ), &bkey->key.generator );
+    if( error != ak_error_ok )
+      return ak_error_message( error, __func__ , "incorrect assigning of reversed key data" );
+
+  } else {
+      /* обычное присвоение ключевого буффера */
+       if(( error = ak_skey_context_set_key( &bkey->key, keyptr, size )) != ak_error_ok )
+       return ak_error_message( error, __func__ , "incorrect assigning of fixed key data" );
+   }
 
  /* выполняем развертку раундовых ключей */
   if( bkey->schedule_keys != NULL ) {
@@ -506,7 +521,7 @@
       return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                            "function call with undefined value of initial vector" );
   } else {
-    /* данное значение определяет в точности поовину блока */
+    /* данное значение определяет в точности половину блока */
      size_t halfsize = bkey->bsize >> 1 ;
 
     /* проверяем длину синхропосылки (если меньше половины блока, то плохо)
@@ -524,40 +539,29 @@
      bkey->key.flags = ( bkey->key.flags&( ~ak_key_flag_not_ctr ))^ak_key_flag_not_ctr;
     }
 
-
- /*
-  *
-  *
-  *
-
-    не работает 64х битный шифр, от слова совсем
-
-  *
-  *
-  *
-  */
-
-
  /* обработка основного массива данных (кратного длине блока) */
   switch( bkey->bsize ) {
-    case  8: /* шифр с длиной блока 64 бита */
+    case  8: /* шифр с длиной блока 64 бита (Магма) */
       while( blocks > 0 ) {
         #ifndef LIBAKRYPT_LITTLE_ENDIAN
-          ak_uint64 tmp = bswap_64( ((ak_uint64 *)bkey->ivector)[0] );
+          x = oc ? ((ak_uint64 *)bkey->ivector)[0] : bswap_64( ((ak_uint64 *)bkey->ivector)[0] );
+        #else
+          x = oc ? bswap_64( ((ak_uint64 *)bkey->ivector)[0] ) : ((ak_uint64 *)bkey->ivector)[0];
         #endif
           bkey->encrypt( &bkey->key, bkey->ivector, yaout );
           *outptr = *inptr ^ yaout[0];
           outptr++; inptr++;
-        #ifdef LIBAKRYPT_LITTLE_ENDIAN
-          ((ak_uint64 *)bkey->ivector)[0]++;
+
+        #ifndef LIBAKRYPT_LITTLE_ENDIAN
+          ((ak_uint64 *)bkey->ivector)[0] = oc ? ++x : bswap_64( ++x );
         #else
-          ((ak_uint64 *)bkey->ivector)[0] = bswap_64( ++tmp );
+          ((ak_uint64 *)bkey->ivector)[0] = oc ? bswap_64( ++x ) : ++x;
         #endif
         --blocks;
       }
     break;
 
-    case 16: /* шифр с длиной блока 128 бит */
+    case 16: /* шифр с длиной блока 128 бит (Кузнечик) */
      #ifndef LIBAKRYPT_LITTLE_ENDIAN
       x = bswap_64( ((ak_uint64 *)bkey->ivector)[oc] );
      #else
@@ -591,9 +595,15 @@
     bkey->encrypt( &bkey->key, bkey->ivector, yaout );
     for( i = 0; i < tail; i++ ) /* теперь мы гаммируем tail байт, используя для этого
                                    старшие байты (most significant bytes) зашифрованного счетчика */
-       if( oc ) ( (ak_uint8*)outptr )[i] = ( (ak_uint8*)inptr )[i]^( (ak_uint8 *)yaout)[i];
-        else ( (ak_uint8*)outptr )[i] =
-           ( (ak_uint8*)inptr )[i]^( (ak_uint8 *)yaout)[bkey->bsize - (size_t)(tail+i)];
+       if( oc ) {
+        /* для блочного шифра Магма этот код выдает результат отличный от того, что вырабатывает openssl
+           для блочного шифра Кузнечик результат совпадает
+
+           поиск того, почему происходит расхождение - задача за гранью добра и зла */
+         ( (ak_uint8*)outptr )[i] = ( (ak_uint8*)inptr )[i]^( (ak_uint8 *)yaout)[i];
+
+       } else ( (ak_uint8*)outptr )[i] =
+           ( (ak_uint8*)inptr )[i]^( (ak_uint8 *)yaout)[bkey->bsize - (size_t)(tail-i)];
 
    /* запрещаем дальнейшее использование функции на данном значении синхропосылки,
                                            поскольку обрабатываемые данные не кратны длине блока. */

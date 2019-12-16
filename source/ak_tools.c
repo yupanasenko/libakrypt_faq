@@ -1074,6 +1074,8 @@
   ak_uint8 *data = ( ak_uint8 * ) ptr;
   size_t idx = 0, js = 0, start = 0, offset = 2;
 
+  memset( ak_ptr_to_hexstr_static_buffer, 0, sizeof( ak_ptr_to_hexstr_static_buffer ));
+
   if( ptr == NULL ) {
     ak_error_message( ak_error_null_pointer, __func__ , "using null pointer to data" );
     return NULL;
@@ -1085,7 +1087,6 @@
  /* если возвращаемое значение функции обрабатывается, то вывод предупреждения об ошибке излишен */
   if( sizeof( ak_ptr_to_hexstr_static_buffer ) < len ) return NULL;
 
-  memset( ak_ptr_to_hexstr_static_buffer, 0, sizeof( ak_ptr_to_hexstr_static_buffer ));
   if( reverse ) { // движение в обратную сторону - от старшего байта к младшему
     start = len-3; offset = -2;
   }
@@ -1519,6 +1520,12 @@
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef _WIN32
  #ifndef _MSC_VER
+
+ #define _byteswap_ulong( x )  ((((x)&0xFF)<<24) \
+                               |(((x)>>24)&0xFF) \
+                               |(((x)&0x0000FF00)<<8)    \
+                               |(((x)&0x00FF0000)>>8)    )
+
  unsigned long long __cdecl _byteswap_uint64( unsigned long long _Int64 )
 {
 #if defined(_AMD64_) || defined(__x86_64__)

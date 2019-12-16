@@ -543,7 +543,13 @@ extern "C" {
  #include <stdlib.h>
  #ifndef _MSC_VER
    unsigned __int64 __cdecl _byteswap_uint64(unsigned __int64 _Int64);
+
+   #define _byteswap_ulong( x )  ((((x)&0xFF)<<24) \
+                                 |(((x)>>24)&0xFF) \
+                                 |(((x)&0x0000FF00)<<8)    \
+                                 |(((x)&0x00FF0000)>>8)    )
  #endif
+ #define bswap_32 _byteswap_ulong
  #define bswap_64 _byteswap_uint64
 #endif
 #ifdef LIBAKRYPT_HAVE_SYSENDIAN_H
