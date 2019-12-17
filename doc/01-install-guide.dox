@@ -207,6 +207,31 @@ Cтабильная версия библиотеки распространяе
     cmake -G "MinGW Makefiles" -D LIBAKRYPT_SHARED_LIB=ON ../libakrypt-0.x
     mingw32-make.exe
 
+\section Cross compiling
+
+You can build libakrypt library for execution under different architectures.
+As example, you can choose `mips32r2` and install GNU cross-compiler.
+After that it is necessary to execute
+
+    cmake -DCMAKE_C_COMPILER=mips-linux-gnu-gcc-9 -DCMAKE_C_FLAGS="-march=mips32r2" ../libakrypt-0.x
+    make
+
+Now you can run compiled examples in this manner
+
+    qemu-mips -L /usr/mips-linux-gnu ./example-hello
+
+
+Последняя рекомендация
+
+    apt install gcc-mips-linux-gnu gcc-mips64-linux-gnuabi64
+    apt install qemu-user-static
+
+    cmake -DCMAKE_C_COMPILER="mips-linux-gnu-gcc" -DCMAKE_C_FLAGS="-march=mips32r2" ../libakrypt-0.x/
+    qemu-mips-static -L /usr/mips-linux-gnu/ ./example-hello
+
+    cmake -DCMAKE_C_COMPILER=mips64-linux-gnuabi64-gcc -DCMAKE_C_FLAGS="-march=mips64r2" ../libakrypt-0.x/
+    qemu-mips64-static -L /usr/mips64-linux-gnuabi64/ ./test-bckey04
+
 \section install_others Сборка для исполнения под другими платформами
 
 Помимо традиционной сборки, когда библиотека компилируется и выполняется

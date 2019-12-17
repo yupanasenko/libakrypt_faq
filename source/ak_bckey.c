@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*  Copyright (c) 2014 - 2019 by Axel Kenzo, axelkenzo@mail.ru                                     */
-/*                                                                                                 */
+/*                            by kirlit26                                                          */
 /*  Файл ak_bckey.h                                                                                */
 /*  - содержит реализацию общих функций для алгоритмов блочного шифрования.                        */
 /* ----------------------------------------------------------------------------------------------- */
@@ -444,9 +444,9 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! В режиме гаммирования операцией шифрования является сложение открытого текста по модулю два
-    с последовательностью, вырабатываемой блочным шифром, поэтому для зашифрования и расшифрования
-    информациии используется одна и та же функция.
+/*! Поскольку в режиме гаммирования операцией шифрования является сложение открытого текста по
+    модулю два с последовательностью, вырабатываемой блочным шифром, то для зашифрования и
+    расшифрования информациии используется одна и та же функция.
 
     Значение синхропосылки `iv` копируется в контекст секретного ключа (область памяти, на которую
     указывает `iv` не изменяется) и, в ходе реализации режима гаммирования, преобразуется.
@@ -599,7 +599,7 @@
         /* для блочного шифра Магма этот код выдает результат отличный от того, что вырабатывает openssl
            для блочного шифра Кузнечик результат совпадает
 
-           поиск того, почему происходит расхождение - задача за гранью добра и зла */
+           поиск того, почему Магма реализована по другому - задача за гранью добра и зла */
          ( (ak_uint8*)outptr )[i] = ( (ak_uint8*)inptr )[i]^( (ak_uint8 *)yaout)[i];
 
        } else ( (ak_uint8*)outptr )[i] =
@@ -618,6 +618,7 @@
  return error;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_encrypt_cbc( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size,
                                     ak_pointer iv, size_t iv_size )
  {
@@ -645,19 +646,22 @@
                                                     __func__ , "low resource of block cipher key" );
     else bkey->key.resource.value.counter -= blocks;
 
-     /* проверяем длину синхропосылки (если меньше  блока, то плохо) */
-      if( iv_size < bkey->bsize || iv_size%bkey->bsize != 0 )
-        return ak_error_message( ak_error_wrong_iv_length, __func__,
-                                                               "incorrect length of initial value" );
-
-     memcpy(bkey->ivector, iv, iv_size);
+  /* проверяем длину синхропосылки */
+   if(( iv_size < bkey->bsize ) ||                              /* если меньше  блока */
+      ( iv_size%bkey->bsize != 0 ) ||             /* если длина не кратна длине блока */
+      ( iv_size > sizeof( bkey->ivector ))) /* если длина больше, чем выделено памяти */
+     return ak_error_message( ak_error_wrong_iv_length, __func__,
+                                                              "incorrect length of initial value" );
+   memcpy( bkey->ivector, iv, iv_size );
 
   /* теперь приступаем к зашифрованию данных */
    switch( bkey->bsize ) {
      case  8: /* шифр с длиной блока 64 бита */
        while( blocks > 0 ) {
-           if (z == 0)
-               ivector = (ak_uint64 *)out;
+           if( z == 0 ) {
+             ivector = (ak_uint64 *)out;
+             z = iv_size / bkey->bsize;
+           }
            yaout[0] = *inptr ^ *ivector; inptr++; ivector++;
            bkey->encrypt( &bkey->key, yaout, outptr );
            outptr++;
@@ -668,8 +672,10 @@
 
      case 16: /* шифр с длиной блока 128 бит */
        while( blocks > 0 ) {
-           if (z == 0)
+           if (z == 0) {
                ivector = (ak_uint64 *)out;
+               z = iv_size / bkey->bsize;
+           }
            yaout[0] = *inptr ^ *ivector; inptr++; ivector++;
            yaout[1] = *inptr ^ *ivector; inptr++; ivector++;
            bkey->encrypt( &bkey->key, yaout, outptr );
@@ -688,17 +694,17 @@
   return ak_error_ok;
  }
 
+/* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_context_decrypt_cbc( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size,
                                    ak_pointer iv, size_t iv_size )
  {
   ak_int64 blocks = 0;
-  ak_uint64 yaout[2];
+  ak_uint64 yaout[2], z = iv_size / bkey->bsize;
   ak_uint64 *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out, *ivector = (ak_uint64 *)bkey->ivector;
   int error = ak_error_ok, oc = (int) ak_libakrypt_get_option( "openssl_compability" );
 
   if(( oc < 0 ) || ( oc > 1 )) return ak_error_message( ak_error_wrong_option, __func__,
                                                 "wrong value for \"openssl_compability\" option" );
-
 
  /* выполняем проверку размера входных данных */
   if( size%bkey->bsize != 0 )
@@ -716,21 +722,23 @@
                                                    __func__ , "low resource of block cipher key" );
    else bkey->key.resource.value.counter -= blocks;
 
-    /* проверяем длину синхропосылки (если меньше  блока, то плохо) */
-     if( iv_size < bkey->bsize || iv_size%bkey->bsize != 0 )
-       return ak_error_message( ak_error_wrong_iv_length, __func__,
-                                                              "incorrect length of initial value" );
+ /* проверяем длину синхропосылки */
+  if(( iv_size < bkey->bsize ) ||                              /* если меньше  блока */
+     ( iv_size%bkey->bsize != 0 ) ||             /* если длина не кратна длине блока */
+     ( iv_size > sizeof( bkey->ivector ))) /* если длина больше, чем выделено памяти */
+    return ak_error_message( ak_error_wrong_iv_length, __func__,
+                                                             "incorrect length of initial value" );
+   memcpy(bkey->ivector, iv, iv_size);
 
-    memcpy(bkey->ivector, iv, iv_size);
-
-     ak_uint64 z = iv_size / bkey->bsize;
  /* теперь приступаем к расшифрованию данных */
   switch( bkey->bsize ) {
     case  8: /* шифр с длиной блока 64 бита */
       while( blocks > 0 ) {
           bkey->decrypt( &bkey->key, inptr, yaout );
-          if (z == 0)
+          if( z == 0 ) {
               ivector = (ak_uint64 *)in;
+              z = iv_size / bkey->bsize;
+          }
           *outptr = yaout[0] ^ *ivector; outptr++; ivector++;
           inptr++;
           --blocks;
@@ -741,15 +749,16 @@
     case 16: /* шифр с длиной блока 128 бит */
       while( blocks > 0 ) {
           bkey->decrypt( &bkey->key, inptr, yaout );
-          if (z == 0)
+          if( z == 0 ) {
               ivector = (ak_uint64 *)in;
+              z = iv_size / bkey->bsize;
+          }
           *outptr = yaout[0] ^ *ivector; outptr++; ivector++;
           *outptr = yaout[1] ^ *ivector; outptr++; ivector++;
           inptr+=2;
           --blocks;
           --z;
       }
-
 
     break;
     default: return ak_error_message( ak_error_wrong_block_cipher,
@@ -765,8 +774,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \example test-bckey01.c                                                                        */
 /*! \example test-bckey02.c                                                                        */
-/*! \example test-bckey04.c                                                                        */
-/*! \example test-bckey05.c                                                                        */
+/*! \example test-bckey03.c                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                     ak_bckey.c  */
 /* ----------------------------------------------------------------------------------------------- */

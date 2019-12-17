@@ -1520,12 +1520,6 @@
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef _WIN32
  #ifndef _MSC_VER
-
- #define _byteswap_ulong( x )  ((((x)&0xFF)<<24) \
-                               |(((x)>>24)&0xFF) \
-                               |(((x)&0x0000FF00)<<8)    \
-                               |(((x)&0x00FF0000)>>8)    )
-
  unsigned long long __cdecl _byteswap_uint64( unsigned long long _Int64 )
 {
 #if defined(_AMD64_) || defined(__x86_64__)

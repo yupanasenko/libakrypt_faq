@@ -516,7 +516,7 @@
  /* снимаем маску с ключа */
   for( idx = 0; idx < 8; idx++ ) {
      ((ak_uint32 *) skey->key)[idx] -= ((ak_uint32 *) skey->key)[idx + 8];
-     ((ak_uint32 *) skey->key)[idx] = 0;
+     ((ak_uint32 *) skey->key)[8+idx] = 0;
   }
 
  #ifndef LIBAKRYPT_LITTLE_ENDIAN
@@ -603,6 +603,7 @@
   ak_ptr_fletcher32( skey->key+32, 32, &y.x );
   x.v[0] -= y.v[0]; x.v[1] -= y.v[1];
 
+  if( y.x == 0 )return ak_true;
   if( skey->icode == x.x ) return ak_true;
     else return ak_false;
 }
@@ -723,6 +724,33 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
     0x56, 0x8e, 0xb6, 0x80, 0xab, 0x52, 0xa1, 0x2d,
   };
 
+ /* инициализационный вектор для режима гаммирования (счетчика) */
+  ak_uint8 magma_ivcbc[24] = {
+    0xef, 0xcd, 0xab, 0x90, 0x78, 0x56, 0x34, 0x12,
+    0xf1, 0xde, 0xbc, 0x0a, 0x89, 0x67, 0x45, 0x23,
+    0x12, 0xef, 0xcd, 0xab, 0x90, 0x78, 0x56, 0x34
+  };
+
+  ak_uint8 openssl_magma_ivcbc[24] = {
+    0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
+    0x23, 0x45, 0x67, 0x89, 0x0a, 0xbc, 0xde, 0xf1,
+    0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12
+  };
+
+ /* зашифрованный блок из ГОСТ Р 34.12-2015 */
+  ak_uint8 magma_out_cbc[32] = {
+    0x19, 0x39, 0x68, 0xea, 0x5e, 0xb0, 0xd1, 0x96,
+    0xb9, 0x37, 0xb9, 0xab, 0x29, 0x61, 0xf7, 0xaf,
+    0x19, 0x00, 0xbc, 0xc4, 0xa1, 0xb4, 0x58, 0x50,
+    0x67, 0xe6, 0xd7, 0x7c, 0x1a, 0x8b, 0xb7, 0x20
+  };
+  ak_uint8 openssl_magma_out_cbc[32] = {
+    0x96, 0xd1, 0xb0, 0x5e, 0xea, 0x68, 0x39, 0x19,
+    0xaf, 0xf7, 0x61, 0x29, 0xab, 0xb9, 0x37, 0xb9,
+    0x50, 0x58, 0xb4, 0xa1, 0xc4, 0xbc, 0x00, 0x19,
+    0x20, 0xb7, 0x8b, 0x1a, 0x7c, 0xd7, 0xe6, 0x67
+  };
+
   struct bckey mkey;
   size_t i = 0, j = 0;
   ak_uint8 myout[256];
@@ -830,6 +858,38 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                 "the counter mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
 
+
+ /* 4. Проверяем режим простой замены с зацеплением (cbc) */
+  if(( error = ak_bckey_context_encrypt_cbc( &mkey, oc ? openssl_magma_in : magma_in,
+                 myout, sizeof( magma_in ), oc ? openssl_magma_ivcbc : magma_ivcbc,
+                                                         sizeof( magma_ivcbc ))) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong cbc mode encryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal_with_log( myout, oc ? openssl_magma_out_cbc :
+                                                         magma_out_cbc, sizeof( magma_out_cbc ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                        "the cbc mode encryption test from GOST R 34.13-2015 is wrong");
+    result = ak_false;
+    goto exit;
+  }
+  if(( error = ak_bckey_context_decrypt_cbc( &mkey, oc ? openssl_magma_out_cbc : magma_out_cbc,
+                 myout, sizeof( magma_in ), oc ? openssl_magma_ivcbc : magma_ivcbc,
+                                                         sizeof( magma_ivcbc ))) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong cbc mode encryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal_with_log( myout, oc ? openssl_magma_in :
+                                                              magma_in, sizeof( magma_out_cbc ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                        "the cbc mode encryption test from GOST R 34.13-2015 is wrong");
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                "the cbc mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
 
  /* освобождаем ключ и выходим */
   exit:

@@ -19,7 +19,7 @@ cmake_minimum_required( VERSION 2.7 FATAL_ERROR )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 8 )
-set( MINOR_VERSION 2 )
+set( MINOR_VERSION 3 )
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 
@@ -294,6 +294,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
                  bckey01
                  bckey02
+                 bckey03
                  context-node
                  context-manager
                  hash01
