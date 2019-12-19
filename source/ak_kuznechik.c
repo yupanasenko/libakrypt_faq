@@ -843,6 +843,16 @@
     0x16, 0x76, 0x88, 0x06, 0x5a, 0x89, 0x5c, 0x63, 0x1a, 0x2d, 0x9a, 0x15, 0x60, 0xb6, 0x39, 0x70
   };
 
+ /* значение имитовставки согласно ГОСТ Р 34.13-2015 (раздел А.1.6) */
+  ak_uint8 imito[8] = {
+    /* 0x67, 0x9C, 0x74, 0x37, 0x5B, 0xB3, 0xDE, 0x4D - первая часть выработанного блока */
+    0xE3, 0xFB, 0x59, 0x60, 0x29, 0x4D, 0x6F, 0x33
+  };
+  ak_uint8 openssl_imito[8] = {
+    0x33, 0x6f, 0x4d, 0x29, 0x60, 0x59, 0xfb, 0xe3
+ /* 0x4d, 0xde, 0xb3, 0x5b, 0x37, 0x74, 0x9c, 0x67 - остальные вырабатываемые байты */
+  };
+
  /* Проверка используемого режима совместимости */
   if(( oc < 0 ) || ( oc > 1 )) {
     ak_error_message( ak_error_wrong_option, __func__,
@@ -956,8 +966,24 @@
     goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
-                "the cbc mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
+                         "the cbc mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
 
+
+ /* 10. Тестируем режим выработки имитовставки (плоская реализация). */
+  if(( error = ak_bckey_context_omac( &bkey, oc ? oc_in : in,
+                                                     sizeof( in ), myout, 8 )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong omac calculation" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal_with_log( myout, oc ? openssl_imito : imito, 8 )) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                        "the omac integrity test from GOST R 34.13-2015 is wrong");
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                          "the omac integrity test from GOST R 34.13-2015 is Ok" );
 
  /* освобождаем ключ и выходим */
   exit:
@@ -968,7 +994,6 @@
 
  return result;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
  bool_t ak_bckey_test_kuznechik( void )

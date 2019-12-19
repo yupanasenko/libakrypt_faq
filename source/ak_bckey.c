@@ -4,6 +4,7 @@
 /*  Файл ak_bckey.h                                                                                */
 /*  - содержит реализацию общих функций для алгоритмов блочного шифрования.                        */
 /* ----------------------------------------------------------------------------------------------- */
+ #include <ak_gf2n.h>
  #include <ak_tools.h>
  #include <ak_bckey.h>
 
@@ -770,6 +771,130 @@
 
  return ak_error_ok;
  }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция вычисляет имитовставку от заданной области памяти фиксированного размера.
+
+   @param bkey Ключ алгоритма блочного шифрования, используемый для выработки имитовставки.
+   Ключ должен быть создан и определен.
+   @param in Указатель на входные данные для которых вычисляется имитовставка.
+   @param size Размер входных данных в байтах.
+   @param out Область памяти, куда будет помещен результат. Память должна быть заранее выделена.
+   Размер выделяемой памяти должен совпадать с длиной блока используемого алгоритма
+   блочного шифрования. Указатель out может принимать значение NULL.
+   @param out_size Ожидаемый размер имитовставки.
+
+   @return В случае возникновения ошибки функция возвращает ее код, в противном случае
+   возвращается \ref ak_error_ok (ноль)                                                            */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_bckey_context_omac( ak_bckey bkey, ak_pointer in,
+                                          const size_t size, ak_pointer out, const size_t out_size )
+{
+  ak_int64 i = 0, oc = (int) ak_libakrypt_get_option( "openssl_compability" ),
+        #ifdef LIBAKRYPT_LITTLE_ENDIAN
+           one64[2] = { 0x02, 0x00 },
+        #else
+           one64[2] = { 0x0200000000000000LL, 0x00 },
+        #endif
+           blocks = (ak_int64)size/bkey->bsize,
+           tail = (ak_int64)size%bkey->bsize;
+ ak_uint64 yaout[2], akey[2], *inptr = (ak_uint64 *)in;
+
+ /* проверяем, что длина входных данных больше нуля */
+  if( !size ) return ak_error_message( ak_error_zero_length, __func__,
+                                                                 "using a data with zero length" );
+  if( out == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                           "using null pointer to result buffer" );
+  if( !out_size || out_size > bkey->bsize )
+    return ak_error_message( ak_error_wrong_length, __func__,
+                                                       "using incorrect length of result buffer" );
+ /* проверяем целостность ключа */
+  if( bkey->key.check_icode( &bkey->key ) != ak_true )
+    return ak_error_message( ak_error_wrong_key_icode, __func__,
+                                                  "incorrect integrity code of secret key value" );
+
+ /* уменьшаем значение ресурса ключа */
+  if( bkey->key.resource.value.counter < ( blocks + ( tail > 0 )))
+    return ak_error_message( ak_error_low_key_resource, __func__ ,
+                                                              "low resource of block cipher key" );
+   else bkey->key.resource.value.counter -= ( blocks + ( tail > 0 )); /* уменьшаем ресурс ключа */
+
+  memset( akey, 0, sizeof( akey ));
+  memset( yaout, 0, sizeof( yaout ));
+  if( !tail ) { tail = bkey->bsize; blocks--; } /* последний блок всегда существует */
+
+ /* основной цикл */
+  switch( bkey->bsize ) {
+   case  8 :
+          /* здесь длина блока равна 64 бита */
+            for( i = 0; i < blocks; i++, inptr++ ) {
+               yaout[0] ^= inptr[0];
+               bkey->encrypt( &bkey->key, yaout, yaout );
+            }
+
+          /* теперь ключи для завершения алгоритма */
+            bkey->encrypt( &bkey->key, akey, akey );
+            if( oc ) akey[0] = bswap_64( akey[0] );
+            ak_gf64_mul( akey, akey, one64 );
+
+            if( tail < bkey->bsize ) {
+              ak_gf64_mul( akey, akey, one64 );
+              ((ak_uint8 *)akey)[tail] ^= 0x80;
+            }
+
+          /* теперь шифруем последний блок */
+            if( oc ) {
+               yaout[0] ^= bswap_64( akey[0] );
+               for( i = 0; i < tail; i++ ) ((ak_uint8 *)yaout)[7-i] ^= ((ak_uint8 *)inptr)[7-i];
+            }
+              else {
+               yaout[0] ^= akey[0];
+               for( i = 0; i < tail; i++ ) ((ak_uint8 *)yaout)[i] ^= ((ak_uint8 *)inptr)[i];
+              }
+            bkey->encrypt( &bkey->key, yaout, akey );
+          break;
+
+   case 16 :
+          /* здесь длина блока равна 128 бит */
+            for( i = 0; i < blocks; i++, inptr += 2 ) {
+               yaout[0] ^= inptr[0];
+               yaout[1] ^= inptr[1];
+               bkey->encrypt( &bkey->key, yaout, yaout );
+            }
+
+          /* вырабатываем ключи для завершения алгортма */
+            bkey->encrypt( &bkey->key, akey, akey );
+            if( oc ) {
+              ak_uint64 tmp = bswap_64( akey[0] );
+              akey[0] = bswap_64( akey[1] );
+              akey[1] = tmp;
+            }
+            ak_gf128_mul( akey, akey, one64 );
+            if( tail < bkey->bsize ) {
+              ak_gf128_mul( akey, akey, one64 );
+              ((ak_uint8 *)akey)[tail] ^= 0x80;
+            }
+
+          /* теперь шифруем последний блок*/
+            if( oc ) {
+               yaout[0] ^= bswap_64( akey[1] );
+               yaout[1] ^= bswap_64( akey[0] );
+               for( i = 0; i < tail; i++ ) ((ak_uint8 *)yaout)[15-i] ^= ((ak_uint8 *)inptr)[15-i];
+            }
+             else {
+              yaout[0] ^= akey[0];
+              yaout[1] ^= akey[1];
+              for( i = 0; i < tail; i++ ) ((ak_uint8 *)yaout)[i] ^= ((ak_uint8 *)inptr)[i];
+             }
+            bkey->encrypt( &bkey->key, yaout, akey );
+          break;
+  }
+
+ /* копируем нужную часть результирующего массива и завершаем работу */
+ if( oc) memcpy( out, (ak_uint8 *)akey, out_size );
+  else memcpy( out, (ak_uint8 *)akey+( bkey->bsize-out_size ), out_size );
+ return ak_error_ok;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \example test-bckey01.c                                                                        */

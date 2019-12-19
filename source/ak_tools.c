@@ -644,8 +644,19 @@
    /* далее мы пропускаем вывод информации об архитектуре,
     поскольку она будет далее тестироваться отдельно     */
     for( i = 1; i < ak_libakrypt_options_count(); i++ ) {
-       ak_error_message_fmt( ak_error_ok, __func__,
-                                            "option %s is %d", options[i].name, options[i].value );
+       switch( options[i].value ) {
+
+         case  0:  ak_error_message_fmt( ak_error_ok, __func__,
+                                  "option %s is %ld (false)", options[i].name, options[i].value );
+                   break;
+
+         case  1:  ak_error_message_fmt( ak_error_ok, __func__,
+                                   "option %s is %ld (true)", options[i].name, options[i].value );
+                   break;
+
+         default:  ak_error_message_fmt( ak_error_ok, __func__,
+                                          "option %s is %ld", options[i].name, options[i].value );
+       }
     }
    }
 }

@@ -751,6 +751,15 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
     0x20, 0xb7, 0x8b, 0x1a, 0x7c, 0xd7, 0xe6, 0x67
   };
 
+ /* значение имитовставки согласно ГОСТ Р 34.13-2015 (раздел А.2.6) */
+  ak_uint8 imito[4] = {
+    /* 0xbb, 0xc5, 0x20, 0x30 - первая часть выработанного блока */
+    0x10, 0x72, 0x4e, 0x15
+  };
+  ak_uint8 openssl_imito[4] = {
+    0x15, 0x4e, 0x72, 0x10 /* 0x20, 0x30, 0xc5, 0xbb - остальные вырабатываемые байты */
+  };
+
   struct bckey mkey;
   size_t i = 0, j = 0;
   ak_uint8 myout[256];
@@ -890,6 +899,23 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                 "the cbc mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
+
+
+ /* 10. Тестируем режим выработки имитовставки (плоская реализация). */
+  if(( error = ak_bckey_context_omac( &mkey, oc ? openssl_magma_in : magma_in,
+                                                 sizeof( magma_in ), myout, 4 )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong omac calculation" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal_with_log( myout, oc ? openssl_imito : imito, 4 )) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                                        "the omac integrity test from GOST R 34.13-2015 is wrong");
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                          "the omac integrity test from GOST R 34.13-2015 is Ok" );
 
  /* освобождаем ключ и выходим */
   exit:
