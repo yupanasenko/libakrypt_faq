@@ -50,7 +50,7 @@
   while( off < sizeof( buffer )) {
     size_t len = ak_min( ak_random_value()%32, sizeof( buffer ) - off );
     if( len > 0 ) {
-      printf("%d ", (ak_uint32)len );
+      printf("%d ", (ak_int32)len );
       ak_random_context_random( &rnd, buffer+off, ( ssize_t )len );
       off += len;
     }
