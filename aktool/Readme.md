@@ -301,6 +301,13 @@ PBKDF2, используемого для развертки ключа из п�
 
 Аналогичная совместимость поддерживается при использовании функции HMAC-Стрибог512.
 
+<!---
+ это работает, совпадение на лицо!!
+
+ openssl dgst -mac magma-mac -macopt hexkey:ffeeddccbbaa99887766554433221100f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff mag.dat
+MAGMA-MAC-magma-mac(mag.dat)= 154e72102030c5bb
+
+--->
 
 <!--% такой вызов
 % openssl enc -e -grasshopper-cbc -in test.file -out test.file.enc -K acabdcab -iv 0123456789abcdfeffedcba987654321

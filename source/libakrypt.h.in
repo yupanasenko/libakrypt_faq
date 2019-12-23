@@ -199,8 +199,6 @@ extern "C" {
  #define ak_error_overflow                     (-7)
 /*! \brief Попытка доступа к неопределенной опции библиотеки. */
  #define ak_error_wrong_option                 (-8)
-/*! \brief Ошибка использования неправильного значения. */
- #define ak_error_invalid_value                (-9)
 /*! \brief Ошибка доступа за пределы массива. */
  #define ak_error_wrong_index                  (-9)
 
@@ -309,12 +307,22 @@ extern "C" {
 /*! \brief Ошибка, возникающая когда простой модуль кривой задан неверно. */
  #define ak_error_curve_prime_modulo          (-85)
 
+/*! \brief Использование неверного значения поля, определяющего тип данных */
+ #define ak_error_invalid_asn1_tag            (-90)
+/*! \brief Использование неверного значения длины данных, размещаемых в узле ASN1 дерева */
+ #define ak_error_invalid_asn1_length         (-91)
+/*! \brief Использование неверной функции для чтения отрицательных данных, размещаемых в узле ASN1 дерева */
+ #define ak_error_invalid_asn1_significance   (-92)
+
 /*! \brief Ошибка, возникающая при кодировании ASN1 структуры (перевод в DER-кодировку). */
  #define ak_error_wrong_asn1_encode           (-90)
 /*! \brief Ошибка, возникающая при декодировании ASN1 структуры (перевод из DER-кодировки в ASN1 структуру). */
  #define ak_error_wrong_asn1_decode           (-91)
 /*! \brief Ошибка, возникающая при сравнивании двух тегов */
 #define ak_error_diff_tags                    (-92)
+/*! \brief Ошибка использования неправильного значения. */
+#define ak_error_invalid_value                (-9)
+
 
 /*! \brief Ошибка, возникающая при декодировании PKCS 15 контейнера. */
 #define ak_error_invalid_token                (-100)

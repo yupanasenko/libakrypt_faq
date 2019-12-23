@@ -47,15 +47,19 @@ option( LIBAKRYPT_INSTALL_HEADERS "Install development headers with non-export f
 # - допускается одновременная сборка либо статической, либо разделяемой библиотеки
 # - (по умолчанию собирается статическая версия библиотеки)
 # -------------------------------------------------------------------------------------------------- #
+if( NOT LIBAKRYPT_CRYPTO_FUNCTIONS )
+  set( LIBAKRYPT_AKTOOL OFF )
+endif()
+if( LIBAKRYPT_AKTOOL )
+  set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
+endif()
+
 if( LIBAKRYPT_INTERNAL_TESTS OR LIBAKRYPT_GMP_TESTS )
   set( LIBAKRYPT_STATIC_LIB ON )
   set( LIBAKRYPT_SHARED_LIB OFF )
 endif()
 if( LIBAKRYPT_STATIC_LIB )
   set( LIBAKRYPT_SHARED_LIB OFF )
-endif()
-if( LIBAKRYPT_AKTOOL )
-  set( LIBAKRYPT_CRYPTO_FUNCTIONS ON )
 endif()
 if( LIBAKRYPT_INSTALL_HEADERS )
   set( LIBAKRYPT_STATIC_LIB ON )
@@ -95,6 +99,8 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_skey.h
                     source/ak_hmac.h
                     source/ak_bckey.h
+                    source/ak_sign.h
+                    source/ak_asn1.h
                     source/ak_context_manager.h
   )
   set( SOURCES      ${SOURCES}
@@ -106,6 +112,8 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_bckey.c
                     source/ak_kuznechik.c
                     source/ak_magma.c
+                    source/ak_sign.c
+                    source/ak_asn1.c
                     source/ak_context_manager.c
   )
 endif()
@@ -306,6 +314,8 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  oid03
                  random02
                  skey01
+                 asn1-build
+                 asn1-parse
   )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
                                    # при запуске make test
