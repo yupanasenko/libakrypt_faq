@@ -1,6 +1,34 @@
-//
-// Created by Anton Sakharov on 2019-08-03.
-//
+/* Created by Anton Sakharov on 2019-08-03.
+   test-asn1-build.c
+
+   Тестовый пример для иллюстрации процедур создания ASN.1 деревьев.
+   В результате должен быть получен следующий вывод.
+   Внимание! пример использует неэкспортируемые функции.
+
+
+┌SEQUENCE┐
+│        ├BOOLEAN TRUE
+│        ├BOOLEAN FALSE
+│        ├INTEGER 2415919098
+│        ├INTEGER 8388607
+│        ├INTEGER 254
+│        ├INTEGER 17
+│        ├OCTET STRING 0102030405060708090a0b0c0e
+│        ├SEQUENCE┐
+│        │        ├BOOLEAN FALSE
+│        │        ├OCTET STRING 01
+│        │        ├OCTET STRING 0102
+│        │        ├OCTET STRING 010203
+│        │        ├OCTET STRING 01020304
+│        │        ├OCTET STRING 0102030405
+│        │        ├OCTET STRING 010203040506
+│        │        ├OCTET STRING 01020304050607
+│        │        └OCTET STRING 0102030405060708
+│        ├OCTET STRING 0102030405060708090a0b0c0e
+│        └BOOLEAN TRUE
+└OCTET STRING 68656c6c6f2061736e6275696c6400
+
+*/
 
 #include <stdlib.h>
 #include <ak_asn1.h>
@@ -47,20 +75,33 @@
          ak_asn1_context_prev( asn1 );
       }
 
-  ak_asn1_context_add_octet_string( asn1, buf, sizeof( buf ));
-
- /* формируем вложенный уровень */
+ /* создаем указатель на новый уровень */
   ak_asn1_context_create( asn_down_level = malloc( sizeof( struct asn1 )));
-  ak_asn1_context_add_bool( asn_down_level, ak_false );
-  for( i = 1; i < 9; i++ ) ak_asn1_context_add_octet_string( asn_down_level, buf, i );
-  ak_asn1_context_add_asn1( asn1, TSEQUENCE, asn_down_level );
+   /* добавляем булево значение */
+    ak_asn1_context_add_bool( asn_down_level, ak_false );
+   /* добавляем произвольные данные, интерпретируемые как строки октетов */
+    for( i = 1; i < 6; i++ ) ak_asn1_context_add_octet_string( asn_down_level, buf, i );
+   /* вкладываем новый уровень  */
+    ak_asn1_context_add_asn1( asn1, TSEQUENCE, asn_down_level );
+
+ /* добавляем к верхнему уровню новые значения */
+  ak_asn1_context_add_utf8_string( asn1, NULL ); /* так создается элемент NULL */
   ak_asn1_context_add_octet_string( asn1, buf, sizeof( buf ));
-  ak_asn1_context_add_bool( asn1, ak_true );
 
  /* теперь мы формируем самый верхний уровень дерева */
   ak_asn1_context_create( &root );
+ /* вкладываем в него низлежащий уровень */
   ak_asn1_context_add_asn1( &root, TSEQUENCE, asn1 );
-  ak_asn1_context_add_octet_string( &root, "hello asnbuild", 15 );
+
+ /* создаем еще один вложенный уровень */
+  ak_asn1_context_create( asn_down_level = malloc( sizeof( struct asn1 )));
+   /* добавляем в него идентификатор */
+    ak_asn1_context_add_oid( asn_down_level, "1.2.3.4.5.6.7.891521.51.1" );
+  /* и произвольную строку символов */
+    ak_asn1_context_add_utf8_string( asn_down_level, "this is a description for identifier" );
+
+ /* вкладываем созданный уровень */
+  ak_asn1_context_add_asn1( &root, TSEQUENCE, asn_down_level );
 
  /* выводим сформированное дерево */
   fprintf( stdout, "\n" );

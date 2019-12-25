@@ -12,6 +12,9 @@
 #else
  #error Library cannot be compiled without string.h header
 #endif
+#ifdef LIBAKRYPT_HAVE_CTYPE_H
+ #include <ctype.h>
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Символ '─' в кодировке юникод */
@@ -37,14 +40,12 @@
  #define TEXT_COLOR_BLUE    ("\x1b[34m")
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Макрос для подсчета кол-ва байтов, которыми кодируется символ юникода */
- #define UNICODE_SYMBOL_LEN(x) strlen(x)
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Массив, содержащий символьное представление тега. */
  static char tag_description[32] = "\0";
 /*! \brief Массив, содержащий префикс в выводимой строке с типом данных. */
  static char prefix[1024] = "";
+/*! \brief Массив, содержащий информацию для вывода в консоль. */
+ static char output_buffer[1024] = "";
 
 /* ----------------------------------------------------------------------------------------------- */
                                       /*  служебные функции */
@@ -52,7 +53,7 @@
 /*! \param len длина данных
     \return Кол-во байтов, необходимое для хранения закодированной длины.                          */
 /* ----------------------------------------------------------------------------------------------- */
- ak_uint8 ak_asn1_get_length_size( const size_t len )
+ size_t ak_asn1_get_length_size( const size_t len )
 {
     if (len < 0x80u && len >= 0)
         return 1;
@@ -66,6 +67,40 @@
         return 5;
     else
         return 0;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param oid строка, содержая идентификатор объекта в виде чисел, разделенных точками
+    \return Количество байт, необходимое для хранения закодированного идентификатора.              */
+/* ----------------------------------------------------------------------------------------------- */
+ size_t ak_asn1_get_length_oid( const char *oid )
+{
+   char * p_end = NULL;
+   size_t num, byte_cnt = 0;
+
+   if( !oid ) return 0;
+   byte_cnt = 1;
+
+  /* Пропускаем 2 первых идентификатора */
+   strtoul( oid, &p_end, 10 );
+   oid = ++p_end;
+   strtol( oid, &p_end, 10);
+
+   while( *p_end != '\0' ) {
+        oid = ++p_end;
+        num = (size_t) strtol((char *) oid, &p_end, 10);
+        if (num <= 0x7Fu)             /*                               0111 1111 -  7 бит */
+            byte_cnt += 1;
+        else if (num <= 0x3FFFu)      /*                     0011 1111 1111 1111 - 14 бит */
+            byte_cnt += 2;
+        else if (num <= 0x1FFFFFu)    /*           0001 1111 1111 1111 1111 1111 - 21 бит */
+            byte_cnt += 3;
+        else if (num <= 0x0FFFFFFFu)  /* 0000 1111 1111 1111 1111 1111 1111 1111 - 28 бит */
+            byte_cnt += 4;
+        else
+            return 0;
+   }
+ return byte_cnt;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -184,6 +219,43 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция проверяет, что переданный ей массив октетов содержит только
+    символы английского алфавита, расположенные на печатной машинке.
+    \param str массив октетов
+    @param len длина массива
+    @return В случае успеха функция возввращает ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ static bool_t ak_asn1_check_prntbl_string( ak_uint8 *string, ak_uint32 len )
+{
+    char c;
+    ak_uint32 i;
+
+    for( i = 0; i < len; i++ )
+    {
+        c = (char) string[i];
+        if( !(
+                (c >= 'A' && c <= 'Z') ||
+                        (c >= 'a' && c <= 'z') ||
+                        (c == ' ')             ||
+                        (c == '\'')            ||
+                        (c == '(')             ||
+                        (c == ')')             ||
+                        (c == '+')             ||
+                        (c == ',')             ||
+                        (c == '-')             ||
+                        (c == '.')             ||
+                        (c == '/')             ||
+                        (c == ':')             ||
+                        (c == '=')             ||
+                        (c == '?')                  ))
+            return ak_false;
+    }
+
+    return ak_true;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
                        /*  функции для разбора/создания узлов ASN1 дерева */
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция заполняет поля структуры примитивного узла ASN1 дерева заданными значениями.
@@ -215,6 +287,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
       if(( tlv->data.primitive = malloc( len )) == NULL )
         return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
       if( data != NULL ) memcpy( tlv->data.primitive, data, len );
+        else memset( tlv->data.primitive, 0, len ); /* обнуляем выделенную память */
 
     } else tlv->data.primitive = data;
    }
@@ -338,12 +411,19 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 /* ----------------------------------------------------------------------------------------------- */
  int ak_tlv_context_print_primitive( ak_tlv tlv, FILE *fp )
 {
+  size_t len = 0;
   ak_uint32 u32 = 0;
+  ak_oid oid = NULL;
+  bool_t dp = ak_false;
   ak_pointer ptr = NULL;
   int error = ak_error_ok;
   if( tlv == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                              "using null pointer to tlv element" );
   switch( TAG_NUMBER( tlv->tag )) {
+
+    case TNULL:
+      fprintf( fp, "\n" );
+      break;
 
     case TBOOLEAN:
       if( *tlv->data.primitive == 0x00 ) fprintf( fp, "FALSE\n" );
@@ -357,26 +437,74 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
          switch( error ) {
 //           case ak_error_invalid_asn1_length:  /* здесь нужно чтение mpzn */ break;
 //           case ak_error_invalid_asn1_significance: /* здесь нужно чтение знаковых целых */ break;
-           default:
-            if( tlv->data.primitive != NULL )
-               fprintf( fp, " [len: %u, data: 0x%s]\n", tlv->len,
-                                      ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ));
-              else  fprintf( fp, " [len: %u, data: (null)]\n", tlv->len );
+           default: dp = ak_true;
          }
        }
       break;
 
     case TOCTET_STRING:
-      if(( error = ak_tlv_context_get_octet_string( tlv, &ptr, (size_t *)&u32 )) == ak_error_ok )
-        fprintf( fp, "%s\n", ak_ptr_to_hexstr( ptr, u32, ak_false ));
+      if(( error = ak_tlv_context_get_octet_string( tlv, &ptr, &len )) == ak_error_ok ) {
+        fprintf( fp, "%s\n", ak_ptr_to_hexstr( ptr, len, ak_false ));
+      }
+       else dp = ak_true;
       break;
 
-    default: if( tlv->data.primitive != NULL )
-               fprintf( fp, " [len: %u, data: 0x%s]\n", tlv->len,
-                                      ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ));
-              else fprintf( fp, " [len: %u, data: (null)]\n", tlv->len );
+    case TUTF8_STRING:
+      if(( error = ak_tlv_context_get_utf8_string( tlv, &ptr )) == ak_error_ok )
+        fprintf( fp, "%s\n", (char *)ptr );
+       else dp = ak_true;
+      break;
+
+    case TIA5_STRING:
+      if(( error = ak_tlv_context_get_ia5_string( tlv, &ptr )) == ak_error_ok )
+        fprintf( fp, "%s\n", (char *)ptr );
+       else dp = ak_true;
+      break;
+
+    case TPRINTABLE_STRING:
+      if(( error = ak_tlv_context_get_printable_string( tlv, &ptr )) == ak_error_ok )
+        fprintf( fp, "%s\n", (char *)ptr );
+       else dp = ak_true;
+      break;
+
+    case TNUMERIC_STRING:
+      if(( error = ak_tlv_context_get_numeric_string( tlv, &ptr )) == ak_error_ok )
+        fprintf( fp, "%s\n", (char *)ptr );
+       else dp = ak_true;
+      break;
+
+    case TUTCTIME:
+      if(( error = ak_tlv_context_get_utc_time_string( tlv, &ptr )) == ak_error_ok )
+        fprintf( fp, "%s\n", (char *)ptr );
+       else dp = ak_true;
+      break;
+
+    case TOBJECT_IDENTIFIER:
+      if(( error = ak_tlv_context_get_oid( tlv, &ptr )) == ak_error_ok ) {
+        fprintf( fp, "%s", (char *)ptr );
+
+       /* ищем значение в базе oid'ов */
+        if(( oid = ak_oid_context_find_by_ni( ptr )) != NULL )
+          fprintf( fp, " (%s)\n", oid->names[0] );
+         else {
+           fprintf( fp, "\n");
+           ak_error_set_value( ak_error_ok ); /* убираем ошибку поиска oid */
+         }
+      }
+       else dp = ak_true;
+      break;
+
+    default: dp = ak_true;
+      break;
   }
 
+ /* случай, когда предопределенное преобразование неизвестно или выполнено с ошибкой */
+  if( dp ) {
+    if( tlv->data.primitive != NULL ) fprintf( fp, " [len: %u, data: 0x%s]\n", tlv->len,
+                                      ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ));
+      else fprintf( fp, " [len: %u, data: %s(null)%s]\n", tlv->len,
+                                                              TEXT_COLOR_RED, TEXT_COLOR_DEFAULT );
+  }
  return ak_error_ok;
 }
 
@@ -404,7 +532,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 /*! \param tlv указатель на структуру узла ASN1 дерева.
     \param u32 Указатель на переменную, в которую будет помещено значение.
     \return Функция возвращает \ref ak_error_ok (ноль) в случае, когда узел действительно содержит
-    целое значение. В противном случае возвращается код ошибки.                                  */
+    целое значение. В противном случае возвращается код ошибки.                                    */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_tlv_context_get_uint32( ak_tlv tlv, ak_uint32 *u32 )
 {
@@ -433,10 +561,13 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \param tlv указатель на структуру узла ASN1 дерева.
-    \param ptr указатель на область памяти, в которой располагается последовательность октетов
-    \param len переменная, куда будет помещена длина данных
-    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в противном
+/*! \note Новая область данных не выделяется, владение выделенной областью
+    осуществляется узлом ASN1 дерева.
+
+   \param tlv указатель на структуру узла ASN1 дерева.
+   \param ptr указатель на область памяти, в которой располагается последовательность октетов.
+   \param len переменная, куда будет помещена длина данных
+   \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в противном
     случае возвращается код ошибки.                                                                */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_tlv_context_get_octet_string( ak_tlv tlv, ak_pointer *ptr, size_t *len )
@@ -447,6 +578,223 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   *ptr = tlv->data.primitive;
 
  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция принимает в качестве аргумента указатель `string` на область памяти,
+    в которую будет помещена utf8-строка.
+
+    \note Новая область памяти не выделяется, владение выделенной областью
+    осуществляется узлом ASN1 дерева.
+
+    \param tlv указатель на структуру узла ASN1 дерева.
+    \param string указатель на область памяти, куда будет помещена строка.
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_context_get_utf8_string( ak_tlv tlv, ak_pointer *string )
+{
+  if( tlv == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                             "using null pointer to tlv element" );
+  memcpy( output_buffer, tlv->data.primitive, ak_min( sizeof( output_buffer )-1, tlv->len ) );
+  output_buffer[ak_min( sizeof( output_buffer )-1, tlv->len )] = 0;
+
+  *string = output_buffer;
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция принимает в качестве аргумента указатель `string` на область памяти,
+    в которую будет помещена ia5-строка, то есть строка,
+    каждый символ которой имеет ASCII-код, не превосходящий 127
+
+    \note Новая область памяти не выделяется, владение выделенной областью
+    осуществляется узлом ASN1 дерева.
+
+    \param tlv указатель на структуру узла ASN1 дерева.
+    \param string указатель на область памяти, куда будет помещена строка.
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_context_get_ia5_string( ak_tlv tlv, ak_pointer *string )
+{
+  size_t i = 0;
+  if( tlv == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                             "using null pointer to tlv element" );
+  for( i = 0; i < tlv->len; i++ )
+     if( tlv->data.primitive[i] > 127 )
+       return ak_error_message( ak_error_wrong_asn1_decode, __func__,
+                                                              "tlv element has unexpected symbol");
+  memcpy( output_buffer, tlv->data.primitive, ak_min( sizeof( output_buffer )-1, tlv->len ) );
+  output_buffer[ak_min( sizeof( output_buffer )-1, tlv->len )] = 0;
+
+  *string = output_buffer;
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция принимает в качестве аргумента указатель `string` на область памяти,
+    в которую будет помещена строка.
+
+    \note Новая область памяти не выделяется, владение выделенной областью
+    осуществляется узлом ASN1 дерева.
+
+    \param tlv указатель на структуру узла ASN1 дерева.
+    \param string указатель на область памяти, куда будет помещена строка.
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_context_get_printable_string( ak_tlv tlv, ak_pointer *string )
+{
+  if( tlv == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                             "using null pointer to tlv element" );
+  if( !ak_asn1_check_prntbl_string( tlv->data.primitive, tlv->len ))
+    return ak_error_message( ak_error_wrong_asn1_decode, __func__,
+                                                              "tlv element has unexpected symbol");
+  memcpy( output_buffer, tlv->data.primitive, ak_min( sizeof( output_buffer )-1, tlv->len ) );
+  output_buffer[ak_min( sizeof( output_buffer )-1, tlv->len )] = 0;
+
+  *string = output_buffer;
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция принимает в качестве аргумента указатель `string` на область памяти,
+    в которую будет помещена numeric-строка, то есть строка,
+    состоящая только из арабских цифр и пробела.
+
+    \note Новая область памяти не выделяется, владение выделенной областью
+    осуществляется узлом ASN1 дерева.
+
+    \param tlv указатель на структуру узла ASN1 дерева.
+    \param string указатель на область памяти, куда будет помещена строка.
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_context_get_numeric_string( ak_tlv tlv, ak_pointer *string )
+{
+  size_t i = 0;
+  if( tlv == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                             "using null pointer to tlv element" );
+  for( i = 0; i < tlv->len; i++ ) {
+     char c = (char) tlv->data.primitive[i];
+     if( !((c >= '0' && c <= '9') || c == ' ' ))
+       return ak_error_message( ak_error_wrong_asn1_decode, __func__,
+                                                              "tlv element has unexpected symbol");
+  }
+  memcpy( output_buffer, tlv->data.primitive, ak_min( sizeof( output_buffer )-1, tlv->len ) );
+  output_buffer[ak_min( sizeof( output_buffer )-1, tlv->len )] = 0;
+
+  *string = output_buffer;
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! На данный момент разбираются только идентификаторы, у который первое число 1 или 2,
+    а второе не превосходит 32
+
+    \param tlv указатель на структуру узла ASN1 дерева.
+    \param string указатель на область памяти, куда будет помещена строка.
+    \return В случае успеха функция возввращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_context_get_oid( ak_tlv tlv, ak_pointer *string )
+{
+  ak_uint8 *p_buff = NULL;
+  size_t i = 0, curr_size = 0;
+
+  if( tlv == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                             "using null pointer to tlv element" );
+  p_buff = tlv->data.primitive;
+  if((( p_buff[0] / 40) > 2) || ((p_buff[0] % 40) > 32)) return ak_error_wrong_asn1_decode;
+
+  ak_snprintf( output_buffer, sizeof( output_buffer ), "%d.%d", p_buff[0] / 40, p_buff[0] % 40 );
+  for( i = 1; i < tlv->len; i++ ) {
+     ak_uint32 value = 0u;
+     while( p_buff[i] & 0x80u ) {
+          value ^= p_buff[i] & 0x7Fu;
+          value = value << 7u;
+          i++;
+     }
+
+     value += p_buff[i] & 0x7Fu;
+     if(( curr_size = strlen( output_buffer )) >= sizeof( output_buffer ) - 12 )
+       return ak_error_wrong_asn1_decode;
+
+     ak_snprintf( output_buffer + curr_size, sizeof(output_buffer) - curr_size, ".%u", value );
+  }
+
+  *string = output_buffer;
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param tlv указатель на структуру узла ASN1 дерева.
+    \param string указатель на область памяти, куда будет помещена строка c .
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_context_get_utc_time_string( ak_tlv tlv, ak_pointer *string )
+{
+  ak_uint8 *p_buff = NULL;
+  if( tlv == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                             "using null pointer to tlv element" );
+  p_buff = tlv->data.primitive;
+  if( tlv->len > sizeof( output_buffer ) - 50 )
+    return ak_error_message( ak_error_wrong_length, __func__, "tlv element has unexpected length");
+
+  if( tlv->len < 13 ||
+   #ifdef LIBAKRYPT_HAVE_CTYPE_H
+     toupper( p_buff[tlv->len - 1] )
+   #else
+     p_buff[tlv->len - 1]
+   #endif
+                  != 'Z' ) return ak_error_message( ak_error_wrong_asn1_decode, __func__,
+                                                              "tlv element has unexpected format");
+    output_buffer[0] = '\0';
+
+    /* YY */
+    strncat( output_buffer, (char *) p_buff, 2);
+    strcat( output_buffer, "-");
+    p_buff += 4;
+
+    /* MM */
+    strncat( output_buffer, (char *) p_buff, 2);
+    strcat( output_buffer, "-");
+    p_buff += 2;
+
+    /* DD */
+    strncat( output_buffer, (char *) p_buff, 2);
+    strcat( output_buffer, " ");
+    p_buff += 2;
+
+    /* HH */
+    strncat( output_buffer, (char *) p_buff, 2);
+    strcat( output_buffer, ":");
+    p_buff += 2;
+
+    /* MM */
+    strncat( output_buffer, (char *) p_buff, 2);
+    strcat( output_buffer, ":");
+    p_buff += 2;
+
+    /* SS.mmm */
+    strncat( output_buffer, (char *) p_buff, tlv->len - 13); /* 13 = YYYY + MM + DD + HH + MM + 'Z' */
+    strcat( output_buffer, " UTC");
+
+  *string = output_buffer;
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param tlv указатель на структуру узла ASN1 дерева.
+    \param string указатель на область памяти, куда будет помещена строка.
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_context_get_generalized_time_string( ak_tlv tlv, ak_pointer *string )
+{
+
 }
 
 
@@ -653,10 +1001,11 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция кодирует значение, которое содержится в переменной `u32`, и помещает его на
+/*! \brief Функция кодирует значение, которое содержится в переменной `ptr`, и помещает его на
     текущий уровень ASN1 дерева.
     \param asn1 указатель на текущий уровень ASN1 дерева.
-    \param u32 целочисленная беззнаковая переменная.
+    \param ptr указатель на произвольную область памяти, интерпретируемую как последовательность октетов
+    \param len размер последовательности октетов
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
@@ -665,10 +1014,211 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   ak_tlv tlv = NULL;
   int error = ak_error_ok;
 
- /* создаем элемент и выделяем память */
-  if(( error = ak_tlv_context_create_primitive(
+  if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                             "using null pointer to asn1 element" );
+  if(( ptr != NULL ) && ( len != 0 )) {
+   /* создаем элемент и выделяем память */
+    if(( error = ak_tlv_context_create_primitive(
           tlv = malloc( sizeof( struct tlv )), TOCTET_STRING, len, ptr, ak_true )) != ak_error_ok )
-    return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+  }
+   else
+    /* создаем NULL */
+    if(( error = ak_tlv_context_create_primitive(
+          tlv = malloc( sizeof( struct tlv )), TNULL, 0, NULL, ak_false )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+
+ return ak_asn1_context_add_tlv( asn1, tlv );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param asn1 указатель на текущий уровень ASN1 дерева.
+    \param string строка, содержащая последовательность символов, заканчивающуюся нулем (null-строка)
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_context_add_utf8_string( ak_asn1 asn1, const char *string )
+{
+  ak_tlv tlv = NULL;
+  int error = ak_error_ok;
+
+  if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                             "using null pointer to asn1 element" );
+  if( string != NULL ) {
+   /* создаем элемент и выделяем память */
+    if(( error = ak_tlv_context_create_primitive(
+          tlv = malloc( sizeof( struct tlv )), TUTF8_STRING,
+                                   strlen(string), (ak_pointer) string, ak_true )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+  }
+   else
+    /* создаем NULL */
+    if(( error = ak_tlv_context_create_primitive(
+          tlv = malloc( sizeof( struct tlv )), TNULL, 0, NULL, ak_false )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+
+ return ak_asn1_context_add_tlv( asn1, tlv );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param asn1 указатель на текущий уровень ASN1 дерева.
+    \param string строка, содержащая последовательность символов, заканчивающуюся нулем (null-строка)
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_context_add_ia5_string( ak_asn1 asn1, const char *string )
+{
+  ak_tlv tlv = NULL;
+  int error = ak_error_ok;
+
+  if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to asn1 element" );
+  if( string != NULL ) {
+    size_t i = 0;
+    for( i = 0; i < strlen( string ); i++ )
+       if( string[i] > 127 ) return ak_error_message( ak_error_wrong_asn1_encode, __func__,
+                                                                   "string has unexpected symbol");
+   /* создаем элемент и выделяем память */
+    if(( error = ak_tlv_context_create_primitive(
+          tlv = malloc( sizeof( struct tlv )), TIA5_STRING,
+                                  strlen(string), (ak_pointer) string, ak_true )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+  }
+   else
+    /* создаем NULL */
+    if(( error = ak_tlv_context_create_primitive(
+          tlv = malloc( sizeof( struct tlv )), TNULL, 0, NULL, ak_false )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+
+ return ak_asn1_context_add_tlv( asn1, tlv );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param asn1 указатель на текущий уровень ASN1 дерева.
+    \param string строка, содержащая последовательность символов (printable string)
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_context_add_printable_string( ak_asn1 asn1, const char *string )
+{
+  ak_tlv tlv = NULL;
+  int error = ak_error_ok;
+
+  if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to asn1 element" );
+  if( string != NULL ) {
+    if( !ak_asn1_check_prntbl_string(( ak_uint8 * )string, strlen( string )))
+      return ak_error_message( ak_error_wrong_asn1_encode, __func__,
+                                                                   "string has unexpected symbol");
+   /* создаем элемент и выделяем память */
+    if(( error = ak_tlv_context_create_primitive(
+          tlv = malloc( sizeof( struct tlv )), TPRINTABLE_STRING,
+                                  strlen(string), (ak_pointer) string, ak_true )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+  }
+   else
+    /* создаем NULL */
+    if(( error = ak_tlv_context_create_primitive(
+          tlv = malloc( sizeof( struct tlv )), TNULL, 0, NULL, ak_false )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+
+ return ak_asn1_context_add_tlv( asn1, tlv );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param asn1 указатель на текущий уровень ASN1 дерева.
+    \param string строка, содержащая последовательность символов, заканчивающуюся нулем (null-строка)
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_context_add_numeric_string( ak_asn1 asn1, const char *string )
+{
+  ak_tlv tlv = NULL;
+  int error = ak_error_ok;
+
+  if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to asn1 element" );
+  if( string != NULL ) {
+    size_t i = 0;
+    for( i = 0; i < strlen( string ); i++ ) {
+       char c = string[i];
+        if( !((c >= '0' && c <= '9') || c == ' ' ))
+          return ak_error_message( ak_error_wrong_asn1_encode, __func__,
+                                                                   "string has unexpected symbol");
+    }
+   /* создаем элемент и выделяем память */
+    if(( error = ak_tlv_context_create_primitive(
+          tlv = malloc( sizeof( struct tlv )), TNUMERIC_STRING,
+                                  strlen(string), (ak_pointer) string, ak_true )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+  }
+   else
+    /* создаем NULL */
+    if(( error = ak_tlv_context_create_primitive(
+          tlv = malloc( sizeof( struct tlv )), TNULL, 0, NULL, ak_false )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+
+ return ak_asn1_context_add_tlv( asn1, tlv );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! На данный момент кодируются только идентификаторы, у которых первое число равно 1 или 2,
+    а второе не превосходит 32
+
+    \param string входная строка, содержая идентификатор в виде чисел, разделенных точками
+    \param pp_buff указатель на область памяти, в которую записывается результат кодирования
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_context_add_oid( ak_asn1 asn1, const char *string )
+{
+  size_t p_size;
+  ak_tlv tlv = NULL;
+  ak_uint64 num = 0;
+  int error = ak_error_ok;
+  ak_uint8 *p_enc_oid = NULL;
+  char *obj_id = ( char * )string, *p_objid_end = NULL;
+
+  if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to asn1 element" );
+  if( string == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                          "using null pointer object identifier" );
+ /* в начале определяем длину и выделяем память */
+  if(( p_size = ak_asn1_get_length_oid( string )) == 0 )
+    return ak_error_message( ak_error_wrong_length, __func__,
+                                          "incorrect calculation of encoded identifier's length" );
+  if(( error = ak_tlv_context_create_primitive(
+    tlv = malloc( sizeof( struct tlv )), TOBJECT_IDENTIFIER,
+                                                         p_size, NULL, ak_true )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+
+ /* кодируем элемент */
+  p_enc_oid = tlv->data.primitive;
+
+  num = strtoul( obj_id, &p_objid_end, 10);
+  obj_id = ++p_objid_end;
+  num = num * 40 + strtol((char *) obj_id, &p_objid_end, 10);
+  *(p_enc_oid++) = (ak_uint8) num;
+
+  while( *p_objid_end != '\0' ) {
+        obj_id = ++p_objid_end;
+        num = strtoul((char *) obj_id, &p_objid_end, 10);
+
+        if (num > 0x7Fu)
+        {
+            ak_uint8 seven_bits;
+            ak_int8 i = 3;
+            while( i > 0 )
+            {
+                seven_bits = (ak_uint8) ((num >> ((ak_uint8) i * 7u)) & 0x7Fu);
+                if (seven_bits)
+                    *(p_enc_oid++) = (ak_uint8) (0x80u ^ seven_bits);
+                i--;
+            }
+        }
+
+        *(p_enc_oid++) = (ak_uint8) (num & 0x7Fu);
+    }
 
  return ak_asn1_context_add_tlv( asn1, tlv );
 }
@@ -692,6 +1242,12 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
  return ak_asn1_context_add_tlv( asn1, tlv );
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param asn1 указатель на текущий уровень ASN.1 дерева.
+    \param fp файловый дескриптор, в который выводится информация;
+    файл должен быть преварительно открыт на запись.
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_context_print( ak_asn1 asn1, FILE *fp )
 {
@@ -718,6 +1274,12 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
  return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param asn1 указатель на текущий уровень ASN.1 дерева
+    \param ptr указатель на область памяти, сожержащей фрагмент der-последовательности
+    \param size длина фрагмента (в октетах)
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_context_decode( ak_asn1 asn1, const ak_pointer ptr, const size_t size )
 {
@@ -747,15 +1309,27 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
       return ak_error_message( ak_error_wrong_length, __func__, "wrong der-sequence length");
 
     switch( DATA_STRUCTURE( tag )) {
+
+     /* добавляем в дерево примитивный элемент */
       case PRIMITIVE:
-        ak_tlv_context_create_primitive( tlv = malloc( sizeof( struct tlv )),  tag, len, pcurr, ak_false );
-        ak_asn1_context_add_tlv( asn1, tlv );
+        if(( error = ak_tlv_context_create_primitive(
+               tlv = malloc( sizeof( struct tlv )),  tag, len, pcurr, ak_false )) != ak_error_ok )
+          return ak_error_message( error, __func__, "incorrect creation of tlv context" );
+        if(( error = ak_asn1_context_add_tlv( asn1, tlv )) != ak_error_ok )
+          return ak_error_message( error, __func__,
+                                           "incorrect addition of tlv context into asn1 context" );
         break;
 
+     /* добавляем в дерево составной элемент */
       case CONSTRUCTED:
-        ak_asn1_context_create( asnew = malloc( sizeof( struct asn1 )));
-        ak_asn1_context_decode( asnew, pcurr, len );
-        ak_asn1_context_add_asn1( asn1, tag, asnew );
+        if(( error = ak_asn1_context_create(
+                                         asnew = malloc( sizeof( struct asn1 )))) != ak_error_ok )
+          return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
+        if(( error = ak_asn1_context_decode( asnew, pcurr, len )) != ak_error_ok )
+          return ak_error_message( error, __func__, "incorrect decoding of asn1 context" );
+        if(( error = ak_asn1_context_add_asn1( asn1, tag, asnew )) != ak_error_ok )
+          return ak_error_message( error, __func__,
+                                          "incorrect addition of asn1 context into asn1 context" );
         break;
 
       default: return ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
@@ -766,6 +1340,16 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
  return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+// int ak_asn1_context_encode( ak_asn1 asn1, ak_pointer *ptr, size_t *size )
+//{
+
+
+//}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \example test-asn1-build.c                                                                     */
+/*! \example test-asn1-parse.c                                                                     */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_asn1.c  */
 /* ----------------------------------------------------------------------------------------------- */
