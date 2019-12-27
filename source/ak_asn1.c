@@ -20,6 +20,17 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_WINDOWS_H
+ #define HOR_LINE    "\xC4"
+ #define VER_LINE    "\xB3"
+ #define LT_CORNER   "\xDA"
+ #define RT_CORNER   "\xBF"
+ #define LB_CORNER   "\xC0"
+ #define RB_CORNER   "\xD9"
+ #define LTB_CORNERS "\xC3"
+ #define RTB_CORNERS "\xB4"
+
+#else
 /*! \brief Символ '─' в кодировке юникод */
  #define HOR_LINE    "\u2500"
 /*! \brief Символ '│' в кодировке юникод */
@@ -36,6 +47,7 @@
  #define LTB_CORNERS "\u251C"
 /*! \brief Символ '┤' в кодировке юникод */
  #define RTB_CORNERS "\u2524"
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
  #define TEXT_COLOR_DEFAULT ("\x1b[0m")

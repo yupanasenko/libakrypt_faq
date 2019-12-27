@@ -39,7 +39,8 @@
   ak_uint32 u32 = 0;
   char *str = NULL;
   bool_t bool = ak_true;
-  int i = 0, result = EXIT_FAILURE;
+  ak_uint32 i = 0;
+  int result = EXIT_FAILURE;
   ak_uint8 buf[13] = { 0x01, 0x02, 0x03, 4, 5, 6, 7, 8, 9, 0xa, 0xb, 0xc, 0xe },
            array[1024], out[32], tmp[32] = {
    0x30, 0x44, 0x8a, 0x0a, 0x41, 0x3d, 0x43, 0x13, 0x73, 0x15, 0x0e, 0x90, 0xd3, 0xad, 0x4e, 0xcf,
@@ -117,7 +118,7 @@
   ak_asn1_context_encode( &root, array, &len );
 
   printf("\nencoded (size %u): ", (ak_uint32)len );
-  for( ak_uint32 i = 0; i < len; i++ ) printf("%02x", array[i] );
+  for( i = 0; i < len; i++ ) printf("%02x", array[i] );
   printf("\n");
 
  /* сохраняем сформированный буффер в файл,
