@@ -902,20 +902,20 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
 
 
  /* 10. Тестируем режим выработки имитовставки (плоская реализация). */
-  if(( error = ak_bckey_context_omac( &mkey, oc ? openssl_magma_in : magma_in,
+  if(( error = ak_bckey_context_cmac( &mkey, oc ? openssl_magma_in : magma_in,
                                                  sizeof( magma_in ), myout, 4 )) != ak_error_ok ) {
-    ak_error_message( error, __func__ , "wrong omac calculation" );
+    ak_error_message( error, __func__ , "wrong cmac calculation" );
     result = ak_false;
     goto exit;
   }
   if( !ak_ptr_is_equal_with_log( myout, oc ? openssl_imito : imito, 4 )) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
-                                        "the omac integrity test from GOST R 34.13-2015 is wrong");
+                                        "the cmac integrity test from GOST R 34.13-2015 is wrong");
     result = ak_false;
     goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
-                                          "the omac integrity test from GOST R 34.13-2015 is Ok" );
+                                          "the cmac integrity test from GOST R 34.13-2015 is Ok" );
 
  /* освобождаем ключ и выходим */
   exit:

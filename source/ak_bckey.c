@@ -661,7 +661,6 @@
        while( blocks > 0 ) {
            if( z == 0 ) {
              ivector = (ak_uint64 *)out;
-             z = iv_size / bkey->bsize;
            }
            yaout[0] = *inptr ^ *ivector; inptr++; ivector++;
            bkey->encrypt( &bkey->key, yaout, outptr );
@@ -673,9 +672,8 @@
 
      case 16: /* шифр с длиной блока 128 бит */
        while( blocks > 0 ) {
-           if (z == 0) {
+           if( z == 0 ) {
                ivector = (ak_uint64 *)out;
-               z = iv_size / bkey->bsize;
            }
            yaout[0] = *inptr ^ *ivector; inptr++; ivector++;
            yaout[1] = *inptr ^ *ivector; inptr++; ivector++;
@@ -738,7 +736,6 @@
           bkey->decrypt( &bkey->key, inptr, yaout );
           if( z == 0 ) {
               ivector = (ak_uint64 *)in;
-              z = iv_size / bkey->bsize;
           }
           *outptr = yaout[0] ^ *ivector; outptr++; ivector++;
           inptr++;
@@ -752,7 +749,6 @@
           bkey->decrypt( &bkey->key, inptr, yaout );
           if( z == 0 ) {
               ivector = (ak_uint64 *)in;
-              z = iv_size / bkey->bsize;
           }
           *outptr = yaout[0] ^ *ivector; outptr++; ivector++;
           *outptr = yaout[1] ^ *ivector; outptr++; ivector++;
@@ -774,6 +770,8 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция вычисляет имитовставку от заданной области памяти фиксированного размера.
+   Используется алгоритм, который также называют OMAC1
+   или [CMAC](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-38b.pdf).
 
    @param bkey Ключ алгоритма блочного шифрования, используемый для выработки имитовставки.
    Ключ должен быть создан и определен.
@@ -787,7 +785,7 @@
    @return В случае возникновения ошибки функция возвращает ее код, в противном случае
    возвращается \ref ak_error_ok (ноль)                                                            */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_bckey_context_omac( ak_bckey bkey, ak_pointer in,
+ int ak_bckey_context_cmac( ak_bckey bkey, ak_pointer in,
                                           const size_t size, ak_pointer out, const size_t out_size )
 {
   ak_int64 i = 0, oc = (int) ak_libakrypt_get_option( "openssl_compability" ),

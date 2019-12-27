@@ -11,7 +11,7 @@ in accordance with R 1323565.1.012-2017
 We have implementation of:
 
  1. GOST R 34.12-2015 block ciphers "Magma" & "Kuznechik" with 64 bit and 128 bit block sizes respectively;
- 2. GOST R 34.13-2015 modes for block ciphers;
+ 2. GOST R 34.13-2015 modes for block ciphers including CMAC algorithm;
 <!---
  3. ACPKM encryption mode described by R 1323565.1.017-2018;
  4. New russian AEAD mode (MGM, Multilinear Galois mode) for authenticated encryption;
@@ -57,11 +57,13 @@ If you want to compile and build a set of test programs you may run
 
 ### Windows
 On Windows you may to install [phtreads library](https://sourceware.org/pthreads-win32/).
-After this you can run a Microsoft Visual 20XX Console and execute a following sequence
+Installing of `pthreads` library is optional.
+
+After you can run a Microsoft Visual 20XX Console and execute a following sequence
 
     mkdir build
     cd build
-    cmake.exe -G "NMake Makefiles" ../libakrypt-0.x
+    cmake.exe -G "NMake Makefiles" -DCMAKE_C_FLAGS="-march=native" ../libakrypt-0.x
     nmake.exe
 
 ## Information

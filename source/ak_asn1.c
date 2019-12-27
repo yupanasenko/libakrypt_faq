@@ -15,6 +15,9 @@
 #ifdef LIBAKRYPT_HAVE_CTYPE_H
  #include <ctype.h>
 #endif
+#ifdef LIBAKRYPT_HAVE_TIME_H
+ #include <time.h>
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Символ '─' в кодировке юникод */
@@ -55,7 +58,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  size_t ak_asn1_get_length_size( const size_t len )
 {
-    if (len < 0x80u && len >= 0)
+    if (len < 0x80u)
         return 1;
     if (len <= 0xFFu)
         return 2;
@@ -368,7 +371,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
  /* выводим информацию об узле */
   dp = ak_asn1_get_tag_description( tlv->tag );
 
-  if( DATA_STRUCTURE( tlv->tag) == CONSTRUCTED) {
+  if( DATA_STRUCTURE( tlv->tag ) == CONSTRUCTED) {
     const char *corner = LTB_CORNERS;
 
    /* вычисляем уголочек */
@@ -475,6 +478,12 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
     case TUTCTIME:
       if(( error = ak_tlv_context_get_utc_time_string( tlv, &ptr )) == ak_error_ok )
+        fprintf( fp, "%s\n", (char *)ptr );
+       else dp = ak_true;
+      break;
+
+    case TGENERALIZED_TIME:
+      if(( error = ak_tlv_context_get_generalized_time_string( tlv, &ptr )) == ak_error_ok )
         fprintf( fp, "%s\n", (char *)ptr );
        else dp = ak_true;
       break;
@@ -730,12 +739,14 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param tlv указатель на структуру узла ASN1 дерева.
-    \param string указатель на область памяти, куда будет помещена строка c .
+    \param time указатель на область памяти, куда будет помещено значение времени.
     \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_tlv_context_get_utc_time_string( ak_tlv tlv, ak_pointer *string )
+ int ak_tlv_context_get_utc_time( ak_tlv tlv, time_t *time )
 {
+  struct tm st;
+
   ak_uint8 *p_buff = NULL;
   if( tlv == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                              "using null pointer to tlv element" );
@@ -751,38 +762,40 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
    #endif
                   != 'Z' ) return ak_error_message( ak_error_wrong_asn1_decode, __func__,
                                                               "tlv element has unexpected format");
-    output_buffer[0] = '\0';
+  /* заполняем поля */
+   memset( &st, 0, sizeof( struct tm ));
 
-    /* YY */
-    strncat( output_buffer, (char *) p_buff, 2);
-    strcat( output_buffer, "-");
-    p_buff += 4;
+  /* YY */
+   memcpy( output_buffer, p_buff, 2 ); output_buffer[2] = 0;
+   st.tm_year = 100 + atoi( output_buffer );
+   p_buff += 2;
 
-    /* MM */
-    strncat( output_buffer, (char *) p_buff, 2);
-    strcat( output_buffer, "-");
-    p_buff += 2;
+   /* MM */
+   memcpy( output_buffer, p_buff, 2 ); output_buffer[2] = 0;
+   st.tm_mon = atoi( output_buffer );
+   p_buff += 2;
 
-    /* DD */
-    strncat( output_buffer, (char *) p_buff, 2);
-    strcat( output_buffer, " ");
-    p_buff += 2;
+   /* DD */
+   memcpy( output_buffer, p_buff, 2 ); output_buffer[2] = 0;
+   st.tm_mday = atoi( output_buffer );
+   p_buff += 2;
 
-    /* HH */
-    strncat( output_buffer, (char *) p_buff, 2);
-    strcat( output_buffer, ":");
-    p_buff += 2;
+   /* HH */
+   memcpy( output_buffer, p_buff, 2 ); output_buffer[2] = 0;
+   st.tm_hour = atoi( output_buffer );
+   p_buff += 2;
 
-    /* MM */
-    strncat( output_buffer, (char *) p_buff, 2);
-    strcat( output_buffer, ":");
-    p_buff += 2;
+   /* MM */
+   memcpy( output_buffer, p_buff, 2 ); output_buffer[2] = 0;
+   st.tm_min = atoi( output_buffer );
+   p_buff += 2;
 
-    /* SS.mmm */
-    strncat( output_buffer, (char *) p_buff, tlv->len - 13); /* 13 = YYYY + MM + DD + HH + MM + 'Z' */
-    strcat( output_buffer, " UTC");
+   /* SS.mmm */
+   memcpy( output_buffer, p_buff, 2 ); output_buffer[2] = 0;
+   st.tm_sec = atoi( output_buffer );
+   p_buff += 2;
 
-  *string = output_buffer;
+   *time = mktime( &st );
  return ak_error_ok;
 }
 
@@ -792,11 +805,104 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_tlv_context_get_generalized_time_string( ak_tlv tlv, ak_pointer *string )
+ int ak_tlv_context_get_utc_time_string( ak_tlv tlv, ak_pointer *string )
 {
+  time_t time = 0;
+  int error = ak_error_ok;
 
+  if(( error = ak_tlv_context_get_utc_time( tlv, &time )) != ak_error_ok )
+   return ak_error_message( error, __func__, "incorrect decoding of tlv element" );
+
+  ak_snprintf( output_buffer, sizeof( output_buffer ), "%sUTC", ctime( &time ));
+  output_buffer[strlen(output_buffer)-4] = ' ';
+  *string = output_buffer;
+
+ return ak_error_ok;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param tlv указатель на структуру узла ASN1 дерева.
+    \param time указатель на область памяти, куда будет помещено значение времени.
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_context_get_generalized_time( ak_tlv tlv, time_t *time )
+{
+  struct tm st;
+
+  ak_uint8 *p_buff = NULL;
+  if( tlv == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                             "using null pointer to tlv element" );
+  p_buff = tlv->data.primitive;
+  if( tlv->len > sizeof( output_buffer ) - 50 )
+    return ak_error_message( ak_error_wrong_length, __func__, "tlv element has unexpected length");
+
+  if( tlv->len < 15 ||
+   #ifdef LIBAKRYPT_HAVE_CTYPE_H
+     toupper( p_buff[tlv->len - 1] )
+   #else
+     p_buff[tlv->len - 1]
+   #endif
+                  != 'Z' ) return ak_error_message( ak_error_wrong_asn1_decode, __func__,
+                                                              "tlv element has unexpected format");
+  /* заполняем поля */
+   memset( &st, 0, sizeof( struct tm ));
+
+  /* YYYY */
+   memcpy( output_buffer, p_buff, 4 ); output_buffer[4] = 0;
+   st.tm_year = 100 + atoi( output_buffer );
+   p_buff += 4;
+
+   /* MM */
+   memcpy( output_buffer, p_buff, 2 ); output_buffer[2] = 0;
+   st.tm_mon = atoi( output_buffer );
+   p_buff += 2;
+
+   /* DD */
+   memcpy( output_buffer, p_buff, 2 ); output_buffer[2] = 0;
+   st.tm_mday = atoi( output_buffer );
+   p_buff += 2;
+
+   /* HH */
+   memcpy( output_buffer, p_buff, 2 ); output_buffer[2] = 0;
+   st.tm_hour = atoi( output_buffer );
+   p_buff += 2;
+
+   /* MM */
+   memcpy( output_buffer, p_buff, 2 ); output_buffer[2] = 0;
+   st.tm_min = atoi( output_buffer );
+   p_buff += 2;
+
+   /* SS.mmm */
+   memcpy( output_buffer, p_buff, 2 ); output_buffer[2] = 0;
+   st.tm_sec = atoi( output_buffer );
+   p_buff += 2;
+
+   *time = mktime( &st );
+ return ak_error_ok;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param tlv указатель на структуру узла ASN1 дерева.
+    \param string указатель на область памяти, куда будет помещена строка.
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_context_get_generalized_time_string( ak_tlv tlv, ak_pointer *string )
+{
+  time_t time = 0;
+  int error = ak_error_ok;
+
+  if(( error = ak_tlv_context_get_generalized_time( tlv, &time )) != ak_error_ok )
+   return ak_error_message( error, __func__, "incorrect decoding of tlv element" );
+
+  ak_snprintf( output_buffer, sizeof( output_buffer ), "%s", ctime( &time ));
+  output_buffer[strlen(output_buffer)-1] = ' ';
+  *string = output_buffer;
+
+ return ak_error_ok;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
                        /*  функции для разбора/создания слоев ASN1 дерева */
@@ -1259,7 +1365,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
                                                             "using null pointer to file context" );
  /* перебираем все узлы текущего слоя, начиная с первого */
   x = asn1->current;
-  ak_asn1_context_first( asn1 );
+  ak_asn1_context_first( asn1 );  
   if( asn1->current == NULL ) /* это некорректная ситуация, поэтому сообщение выделяется красным */
     fprintf( fp, "%s%s (null)%s\n", TEXT_COLOR_RED, prefix, TEXT_COLOR_DEFAULT );
 
@@ -1341,11 +1447,192 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-// int ak_asn1_context_encode( ak_asn1 asn1, ak_pointer *ptr, size_t *size )
-//{
+ int ak_asn1_context_evaluate_length( ak_asn1 asn, ak_uint32 *total )
+{
+  int error = ak_error_ok;
+  ak_uint32 length = 0, subtotal = 0;
 
+  ak_asn1_context_first( asn );
+  if( asn->current == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                           "null pointer to current tlv element" );
+ /* перебор всех доступных узлов */
+  do{
+     ak_tlv tlv = asn->current;
+     switch( DATA_STRUCTURE( tlv->tag )) {
+       case PRIMITIVE:
+         length += 1 + ak_asn1_get_length_size( tlv->len ) + tlv->len;
+         break;
 
-//}
+       case CONSTRUCTED:
+         if(( error = ak_asn1_context_evaluate_length(
+                                              tlv->data.constructed, &subtotal )) != ak_error_ok )
+           return ak_error_message( error, __func__, "incorrect length evaluation of tlv element");
+          else length += 1 + ak_asn1_get_length_size(subtotal) + ( tlv->len = subtotal );
+         break;
+
+       default: return ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                                         "unexpected tag's value of tlv element" );
+     }
+  } while( ak_asn1_context_next( asn ));
+
+  *total = length;
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Кодирование тега элемента ASN.1 дерева
+    \param pp_buff указатель на область памяти, в которую записывается результат кодирования
+    \param tag тег
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_asn1_put_tag( ak_uint8** pp_buff, ak_uint8 tag )
+{
+    if( !pp_buff )
+      return ak_error_message( ak_error_null_pointer, __func__, "null pointer to buffer");
+
+    **pp_buff = tag;
+    (*pp_buff)++;
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Кодирование длины элемента ASN.1 дерева
+    \param pp_buff указатель на область памяти, в которую записывается результат кодирования
+    \param len длина
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_asn1_put_length( ak_uint8** pp_buff, ak_uint32 len )
+{
+ ak_uint32 len_byte_cnt = ak_asn1_get_length_size( len );
+
+    if( !pp_buff )
+      return ak_error_message( ak_error_null_pointer, __func__, "null pointer to buffer");
+
+    if( len_byte_cnt == 1 ) {
+        (**pp_buff) = ( ak_uint32 ) len;
+        (*pp_buff)++;
+    }
+    else
+    {
+        (**pp_buff) = ( ak_uint8 )( 0x80u ^ (ak_uint8) (--len_byte_cnt));
+        (*pp_buff)++;
+
+        do
+        {
+            (**pp_buff) = (ak_byte) ((len >> (8u * --len_byte_cnt)) & 0xFFu);
+            (*pp_buff)++;
+        }while( len_byte_cnt != 0 );
+    }
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_asn1_context_encode_asn1( ak_asn1 asn, ak_uint8 **buf )
+{
+  int error = ak_error_ok;
+
+  ak_asn1_context_first( asn );
+  if( asn->current == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                           "null pointer to current tlv element" );
+  do{
+     ak_tlv tlv = asn->current;
+
+    /* сохраняем общую часть */
+     if(( error = ak_asn1_put_tag( buf, tlv->tag )) != ak_error_ok )
+       return ak_error_message( error, __func__, "incorrect tag encoding of tlv element" );
+     if(( error = ak_asn1_put_length( buf, tlv->len )) != ak_error_ok )
+       return ak_error_message( error, __func__, "incorrect length encoding of tlv element" );
+
+     switch( DATA_STRUCTURE( tlv->tag )) {
+
+       case PRIMITIVE:
+         memcpy( *buf, tlv->data.primitive, tlv->len );
+         *buf += tlv->len;
+         break;
+
+       case CONSTRUCTED:
+         if(( error = ak_asn1_context_encode_asn1( tlv->data.constructed, buf )) != ak_error_ok )
+           return ak_error_message( error, __func__, "incorrect encoding of constructed element" );
+         break;
+
+       default: return ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                                         "unexpected tag's value of tlv element" );
+     }
+  } while( ak_asn1_context_next( asn ));
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Реализуется двупроходная процедура:
+    - в ходе первого прохода по ASN.1 дереву вычисляется размер, занимаемый низлежащими
+      уровнями дерева;
+    - в ходе второго прохода выполняется копирование данных.
+
+  \param asn1 указатель на текущий уровень ASN.1 дерева
+  \param ptr указатель на область памяти, куда будет помещен закодированная der-последовательность
+  \param size длина сформированного фрагмента (в октетах);
+
+  \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+  возвращается код ошибки.
+  \note Перед вызовом функции переменная `size` должна быть инициализирована значением,
+  указывающим максимальный объем выделенной области памяти. Если данное значение окажется меньше
+  необходимого, то будет возбуждена ошибка, а необходимое значение будеи помещено в `size`.        */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_context_encode( ak_asn1 asn1, ak_pointer ptr, size_t *size )
+{
+  ak_uint32 tlen = 0;
+  ak_uint8 *buf = ptr;
+  int error = ak_error_ok;
+
+  if(( error = ak_asn1_context_evaluate_length( asn1, &tlen )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect evsluation of asn1 context length" );
+  if( *size < tlen ) {
+    *size = tlen;
+    return ak_error_message( ak_error_wrong_length, __func__,
+                                                            "allocated memory insufficient size" );
+  }
+
+ /* теперь памяти достаточно */
+  *size = tlen;
+  if(( error = ak_asn1_context_encode_asn1( asn1, &buf )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorect encoding of asn1 context" );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+                              /* функции внешнего интерфейса */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_fprintf( FILE *fp, ak_uint8 *ptr, const size_t size )
+{
+  struct asn1 asn;
+  int error = ak_error_ok;
+
+ /* создаем контекст */
+  if(( error = ak_asn1_context_create( &asn )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
+
+ /* декодируем данные */
+  if(( error = ak_asn1_context_decode( &asn, ptr, size )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect decoding of der-sequence" );
+    goto exitlab;
+  }
+
+ /* выводим данные в консоль (файл) */
+  if(( error = ak_asn1_context_print( &asn, fp )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect printing of encoded asn1 context" );
+    goto exitlab;
+  }
+
+ /* освобождаем выделенную память */
+  exitlab: ak_asn1_context_destroy( &asn );
+ return error;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \example test-asn1-build.c                                                                     */

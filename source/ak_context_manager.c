@@ -758,10 +758,9 @@
     case hash_function:
     case hmac_function:
     case block_cipher:
-    case omac_function:
+    case cmac_function:
     case mgm_function:
-    case sign_function:
-     return ak_true;
+    case sign_function: return ak_true;
 
     default: return ak_false;
   }
@@ -842,10 +841,9 @@
     case stream_cipher:
     case hybrid_cipher:
     case hmac_function:
-    case omac_function:
+    case cmac_function:
     case mgm_function:
-    case sign_function:
-     return ak_true;
+    case sign_function: return ak_true;
 
     default: return ak_false;
   }

@@ -70,6 +70,9 @@ extern "C" {
 #else
  #error Library cannot be compiled without sys/types.h header 
 #endif
+#ifdef LIBAKRYPT_HAVE_STDIO_H
+ #include <stdio.h>
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_ENDIAN_H
@@ -363,7 +366,7 @@ extern "C" {
    /*! \brief семейство ключевых функций хеширования HMAC */
      hmac_function,
    /*! \brief семейство функций выработки имитовставки согласно ГОСТ Р 34.13-2015. */
-     omac_function,
+     cmac_function,
    /*! \brief семейство функций выработки имитовставки MGM. */
      mgm_function,
    /*! \brief класс всех ключевых функций хеширования (функций вычисления имитовставки) */
@@ -493,7 +496,14 @@ extern "C" {
  dll_export int ak_password_read( char *, const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup frontend_handle Функции для работы с дескрипторами
+/*! \brief Декодирование ASN.1 дерева, представленного в der-кодировке,
+    и вывод информации в заданный файл */
+#ifdef LIBAKRYPT_HAVE_STDIO_H
+ dll_export int ak_asn1_fprintf( FILE * , ak_uint8 *, const size_t );
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup frontend_handle Функции внешнего интерфейса
  * @{*/
 /*! \brief Создание дескриптора произвольного криптографического преобразования. */
  dll_export ak_handle ak_handle_new( const char *, const char * );

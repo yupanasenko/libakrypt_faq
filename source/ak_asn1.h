@@ -128,11 +128,11 @@
 };
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Определение количества байт, необходимых для кодирования длины элемента ASN1 дерева. */
+/*! \brief Определение количества байт, необходимых для кодирования длины элемента ASN1 дерева. */
  size_t ak_asn1_get_length_size( const size_t );
-/*! Определение количества байт, необходимых для кодирования идентификатора объекта. */
+/*! \brief Определение количества байт, необходимых для кодирования идентификатора объекта. */
  size_t ak_asn1_get_length_oid( const char * );
-/*! Получение символьного (человекочитаемого) описания типа примитивного элемента ASN1 дерева. */
+/*! \brief Получение символьного (человекочитаемого) описания типа примитивного элемента ASN1 дерева. */
  const char* ak_asn1_get_tag_description( ak_uint8 );
 /*! \brief Получение из DER-последовательности тега для текущего узла ASN1 дерева. */
  int ak_asn1_get_tag_from_der( ak_uint8** , ak_uint8 * );
@@ -171,12 +171,16 @@
 /*! \brief Получение указателя на символьную запись идентификатора объекта (OID),
     хранящуюся в заданном узле ASN1 дерева. */
  int ak_tlv_context_get_oid( ak_tlv , ak_pointer * );
+/*! \brief Получение универсального времни, хранящегося в заданном узле ASN1 дерева. */
+ int ak_tlv_context_get_utc_time( ak_tlv , time_t * );
 /*! \brief Получение указателя на строку, содержащую значение локального времени (UTC),
     хранящегося в заданном узле ASN1 дерева. */
  int ak_tlv_context_get_utc_time_string( ak_tlv , ak_pointer * );
+/*! \brief Получение времни, хранящегося в заданном узле ASN1 дерева. */
+ int ak_tlv_context_get_generalized_time( ak_tlv , time_t * );
 /*! \brief Получение указателя на строку, содержащую значение локального времени (GeneralizedTime),
     хранящегося в заданном узле ASN1 дерева. */
- int ak_tlv_context_get_generalized_time( ak_tlv , ak_pointer * );
+ int ak_tlv_context_get_generalized_time_string( ak_tlv , ak_pointer * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание одного уровня ASN1 дерева. */
@@ -227,10 +231,12 @@
  int ak_asn1_context_add_asn1( ak_asn1 , ak_uint8 , ak_asn1 );
 /*! \brief Вывод информации о текущем уровне ASN1 дерева. */
  int ak_asn1_context_print( ak_asn1 , FILE * );
+/*! \brief Функция вычисляет размер, занимаемый данным уровнем ASN.1 дерева */
+ int ak_asn1_context_evaluate_length( ak_asn1 , ak_uint32 * );
 /*! \brief Декодирование ASN1 дерева из заданной DER-последовательности октетов. */
  int ak_asn1_context_decode( ak_asn1 , const ak_pointer , const size_t );
 /*! \brief Кодирование ASN1 дерева в DER-последовательность октетов. */
- int ak_asn1_context_encode( ak_asn1 , ak_pointer *, size_t * );
+ int ak_asn1_context_encode( ak_asn1 , ak_pointer , size_t * );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

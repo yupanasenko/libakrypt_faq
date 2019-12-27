@@ -90,24 +90,6 @@
  };
 
 /* ----------------------------------------------------------------------------------------------- */
- void decode_cert( ak_uint8 *buffer, size_t size )
-{
-  struct asn1 asn;
-
- /* создаем пустое ASN1 дерево */
-  ak_asn1_context_create( &asn );
-
- /* декодируем DER-последовательность */
-  ak_asn1_context_decode( &asn, buffer, size );
-
- /* выводим декодированное дерево в консоль */
-  ak_asn1_context_print( &asn, stdout );
-
- /* освобождаем память */
-  ak_asn1_context_destroy( &asn );
-}
-
-/* ----------------------------------------------------------------------------------------------- */
  int main( int argc, char *argv[] )
 {
   size_t data_size = sizeof( test_data );
@@ -143,7 +125,8 @@
     ptr_data = local_buffer;
   }
 
-  decode_cert( ptr_data, data_size );
+ /* собственно вызов функции, выводящей ASN.1 дерево в консоль */
+  ak_asn1_fprintf( stdout, ptr_data, data_size );
   ak_libakrypt_destroy();
 
  return EXIT_SUCCESS;
