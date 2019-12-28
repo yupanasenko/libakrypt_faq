@@ -1,5 +1,6 @@
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_asn1.h>
+ #include <ak_tools.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_STDLIB_H
@@ -30,6 +31,10 @@
  #define LTB_CORNERS "\xC3"
  #define RTB_CORNERS "\xB4"
 
+ #define TEXT_COLOR_DEFAULT ("")
+ #define TEXT_COLOR_RED     ("")
+ #define TEXT_COLOR_BLUE    ("")
+
 #else
 /*! \brief Символ '─' в кодировке юникод */
  #define HOR_LINE    "\u2500"
@@ -47,12 +52,16 @@
  #define LTB_CORNERS "\u251C"
 /*! \brief Символ '┤' в кодировке юникод */
  #define RTB_CORNERS "\u2524"
+
+/*! \brief Изменение цвета выводимых в консоль символов на установленный по-умолчанию */
+ #define TEXT_COLOR_DEFAULT ("\x1b[0m")
+/*! \brief Изменение цвета выводимых в консоль символов на красный */
+ #define TEXT_COLOR_RED     ("\x1b[31m")
+/*! \brief Изменение цвета выводимых в консоль символов на голубой */
+ #define TEXT_COLOR_BLUE    ("\x1b[34m")
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
- #define TEXT_COLOR_DEFAULT ("\x1b[0m")
- #define TEXT_COLOR_RED     ("\x1b[31m")
- #define TEXT_COLOR_BLUE    ("\x1b[34m")
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Массив, содержащий символьное представление тега. */
@@ -408,7 +417,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
           else fprintf( fp, "%s%s%s ", prefix, LTB_CORNERS, dp );
 
         /* теперь собственно данные */
-         if( DATA_CLASS( tlv->tag) == UNIVERSAL )
+         if( DATA_CLASS( tlv->tag ) == UNIVERSAL )
            ak_tlv_context_print_primitive( tlv, fp );
           else {
             if( DATA_CLASS( tlv->tag ) == CONTEXT_SPECIFIC ) {
@@ -1379,7 +1388,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   x = asn1->current;
   ak_asn1_context_first( asn1 );  
   if( asn1->current == NULL ) /* это некорректная ситуация, поэтому сообщение выделяется красным */
-    fprintf( fp, "%s%s (null)%s\n", TEXT_COLOR_RED, prefix, TEXT_COLOR_DEFAULT );
+    fprintf( fp, "%s%s (null)%s\n", prefix, TEXT_COLOR_RED, TEXT_COLOR_DEFAULT );
 
    else { /* перебор всех доступных узлов */
     do{
@@ -1411,8 +1420,6 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
                                                              "using null pointer to asn1 element" );
   if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                              "using null pointer to der-sequence" );
-  if( !size ) return ak_error_message( ak_error_zero_length, __func__,
-                                                            "using der-sequence with zero length" );
  /* инициируем переменные */
   pcurr = (ak_uint8 *) ptr;
   pend = pcurr + size;
@@ -1465,8 +1472,11 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   ak_uint32 length = 0, subtotal = 0;
 
   ak_asn1_context_first( asn );
-  if( asn->current == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                           "null pointer to current tlv element" );
+  if( asn->current == NULL ) {
+   // ak_error_message( ak_error_null_pointer, __func__, "null pointer to current tlv element" );
+    return ak_error_ok;
+  }
+
  /* перебор всех доступных узлов */
   do{
      ak_tlv tlv = asn->current;
@@ -1543,13 +1553,22 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Однопроходная процедура кодирования одого ASN.1 уровня
+  \param asn1 указатель на текущий уровень ASN.1 дерева
+  \param buf указатель на область памяти, куда будет помещена закодированная der-последовательность
+  \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+  возвращается код ошибки.                                                                         */
+/* ----------------------------------------------------------------------------------------------- */
  static int ak_asn1_context_encode_asn1( ak_asn1 asn, ak_uint8 **buf )
 {
   int error = ak_error_ok;
 
   ak_asn1_context_first( asn );
-  if( asn->current == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                           "null pointer to current tlv element" );
+  if( asn->current == NULL ) {
+    // ak_error_message( ak_error_null_pointer, __func__, "null pointer to current tlv element" );
+    return ak_error_ok;
+  }
+
   do{
      ak_tlv tlv = asn->current;
 
@@ -1586,7 +1605,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     - в ходе второго прохода выполняется копирование данных.
 
   \param asn1 указатель на текущий уровень ASN.1 дерева
-  \param ptr указатель на область памяти, куда будет помещен закодированная der-последовательность
+  \param ptr указатель на область памяти, куда будет помещена закодированная der-последовательность
   \param size длина сформированного фрагмента (в октетах);
 
   \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
@@ -1602,11 +1621,10 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   int error = ak_error_ok;
 
   if(( error = ak_asn1_context_evaluate_length( asn1, &tlen )) != ak_error_ok )
-    return ak_error_message( error, __func__, "incorrect evsluation of asn1 context length" );
+    return ak_error_message( error, __func__, "incorrect evaluation of asn1 context length" );
   if( *size < tlen ) {
     *size = tlen;
-    return ak_error_message( ak_error_wrong_length, __func__,
-                                                            "allocated memory insufficient size" );
+    return ak_error_wrong_length;
   }
 
  /* теперь памяти достаточно */
@@ -1620,9 +1638,18 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 /* ----------------------------------------------------------------------------------------------- */
                               /* функции внешнего интерфейса */
 /* ----------------------------------------------------------------------------------------------- */
+/*! \param fp Дескриптор файла, в котрый выводится информация;
+    файл должен предварительно открыт на запись
+    \param ptr Указатель на область памяти, где содержится der-последовательность
+    \param size Размер der-последовательности в октетах
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_fprintf( FILE *fp, ak_uint8 *ptr, const size_t size )
 {
+  size_t len = 0;
   struct asn1 asn;
+  ak_uint8 array[2048];
   int error = ak_error_ok;
 
  /* создаем контекст */
@@ -1640,6 +1667,23 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     ak_error_message( error, __func__, "incorrect printing of encoded asn1 context" );
     goto exitlab;
   }
+
+ /* проверяем, что декодирование было произведено правильно */
+  len = sizeof( array );
+  if(( error = ak_asn1_context_encode( &asn, array, &len )) != ak_error_ok ) {
+    if( error != ak_error_wrong_length )
+      ak_error_message( error, __func__, "incorrect encoding og asn1 context" );
+    goto exitlab;
+  }
+
+// /*****!*******/
+
+//  printf("initial length: %u, encoded length: %u\n", (ak_uint32) size, (ak_uint32) len );
+
+//  if( !ak_ptr_is_equal_with_log( array, ptr, len )) {
+//    fprintf( fp, "incorrect decoding a der-sequence\n");
+//  }
+//   else fprintf( fp, "OK\n" );
 
  /* освобождаем выделенную память */
   exitlab: ak_asn1_context_destroy( &asn );

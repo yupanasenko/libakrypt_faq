@@ -57,36 +57,40 @@
  static const char *on_w512_psb[] =         { "id-tc26-gost-3410-2012-512-paramSetB", NULL };
  static const char *on_w512_psc[] =         { "id-tc26-gost-3410-2012-512-paramSetC", NULL };
 
+#ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
+ static const char *on_asn1_cn[] =          { "CommonName", "CN", NULL };
+#endif
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения OID библиотеки */
  static struct oid libakrypt_oids[] = {
   /* 1. идентификаторы алгоритмов выработки псевдо-случайных последовательностей,
         значения OID находятся в дереве библиотеки: 1.2.643.2.52.1.1 - генераторы ПСЧ  */
-   { random_generator, algorithm, on_lcg, "1.2.643.2.52.1.1.1", NULL, NULL,
+   { random_generator, algorithm, on_lcg, "1.2.643.2.52.1.1.1", NULL,
                                     { ( ak_function_void *) ak_random_context_create_lcg,
                                       ( ak_function_void *) ak_random_context_destroy,
                                       ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
 
   #if defined(__unix__) || defined(__APPLE__)
-   { random_generator, algorithm, on_dev_random, "1.2.643.2.52.1.1.2", NULL, NULL,
+   { random_generator, algorithm, on_dev_random, "1.2.643.2.52.1.1.2", NULL,
                                     { ( ak_function_void *) ak_random_context_create_random,
                                       ( ak_function_void *) ak_random_context_destroy,
                                       ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
 
-   { random_generator, algorithm, on_dev_urandom, "1.2.643.2.52.1.1.3", NULL, NULL,
+   { random_generator, algorithm, on_dev_urandom, "1.2.643.2.52.1.1.3", NULL,
                                     { ( ak_function_void *) ak_random_context_create_urandom,
                                       ( ak_function_void *) ak_random_context_destroy,
                                       ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
   #endif
   #ifdef _WIN32
-   { random_generator, algorithm, on_winrtl, "1.2.643.2.52.1.1.4", NULL, NULL,
+   { random_generator, algorithm, on_winrtl, "1.2.643.2.52.1.1.4", NULL,
                                     { ( ak_function_void *) ak_random_context_create_winrtl,
                                       ( ak_function_void *) ak_random_context_destroy,
                                       ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
   #endif
   #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
 
-   { random_generator, algorithm, on_hashrnd, "1.2.643.2.52.1.1.5", NULL, NULL,
+   { random_generator, algorithm, on_hashrnd, "1.2.643.2.52.1.1.5", NULL,
                              { ( ak_function_void *) ak_random_context_create_hashrnd,
                                       ( ak_function_void *) ak_random_context_destroy,
                                       ( ak_function_void *) ak_random_context_delete, NULL, NULL }},
@@ -94,12 +98,12 @@
   /* 2. идентификаторы алгоритмов бесключевого хеширования,
         значения OID взяты из перечней КриптоПро и ТК26 (http://tk26.ru/methods/OID_TK_26/index.php)
         в дереве библиотеки: 1.2.643.2.52.1.2 - функции бесключевого хеширования */
-   { hash_function, algorithm, on_streebog256, "1.2.643.7.1.1.2.2", NULL, NULL,
+   { hash_function, algorithm, on_streebog256, "1.2.643.7.1.1.2.2", NULL,
                            { ( ak_function_void *) ak_hash_context_create_streebog256,
                                         ( ak_function_void *) ak_hash_context_destroy,
                                         ( ak_function_void *) ak_hash_context_delete, NULL, NULL }},
 
-   { hash_function, algorithm, on_streebog512, "1.2.643.7.1.1.2.3", NULL, NULL,
+   { hash_function, algorithm, on_streebog512, "1.2.643.7.1.1.2.3", NULL,
                            { ( ak_function_void *) ak_hash_context_create_streebog512,
                                         ( ak_function_void *) ak_hash_context_destroy,
                                         ( ak_function_void *) ak_hash_context_delete, NULL, NULL }},
@@ -111,12 +115,12 @@
 
   /* 4. идентификаторы алгоритмов HMAC согласно Р 50.1.113-2016
         в дереве библиотеки: 1.2.643.2.52.1.4 - функции ключевого хеширования (имитозащиты) */
-   { hmac_function, algorithm, on_hmac_streebog256, "1.2.643.7.1.1.4.1", NULL, NULL,
+   { hmac_function, algorithm, on_hmac_streebog256, "1.2.643.7.1.1.4.1", NULL,
                            { ( ak_function_void *) ak_hmac_context_create_streebog256,
                                         ( ak_function_void *) ak_hmac_context_destroy,
                                         ( ak_function_void *) ak_hmac_context_delete, NULL, NULL }},
 
-   { hmac_function, algorithm, on_hmac_streebog512, "1.2.643.7.1.1.4.2", NULL, NULL,
+   { hmac_function, algorithm, on_hmac_streebog512, "1.2.643.7.1.1.4.2", NULL,
                             { ( ak_function_void *)ak_hmac_context_create_streebog512,
                                         ( ak_function_void *) ak_hmac_context_destroy,
                                         ( ak_function_void *) ak_hmac_context_delete, NULL, NULL }},
@@ -125,12 +129,12 @@
         в дереве библиотеки: 1.2.643.2.52.1.6 - алгоритмы блочного шифрования
         в дереве библиотеки: 1.2.643.2.52.1.7 - параметры алгоритмов блочного шифрования */
 
-   { block_cipher, algorithm, on_magma, "1.2.643.7.1.1.5.1", NULL, NULL,
+   { block_cipher, algorithm, on_magma, "1.2.643.7.1.1.5.1", NULL,
                                { ( ak_function_void *) ak_bckey_context_create_magma,
                                       ( ak_function_void *) ak_bckey_context_destroy,
                                        ( ak_function_void *) ak_bckey_context_delete, NULL, NULL }},
 
-   { block_cipher, algorithm, on_kuznechik, "1.2.643.7.1.1.5.2", NULL, NULL,
+   { block_cipher, algorithm, on_kuznechik, "1.2.643.7.1.1.5.2", NULL,
                            { ( ak_function_void *) ak_bckey_context_create_kuznechik,
                                       ( ak_function_void *) ak_bckey_context_destroy,
                                        ( ak_function_void *) ak_bckey_context_delete, NULL, NULL }},
@@ -141,54 +145,57 @@
          в дереве библиотеки: 1.2.643.2.52.1.12.1 - параметры 256 битных кривых
          в дереве библиотеки: 1.2.643.2.52.1.12.2 - параметры 512 битных кривых */
    { identifier, wcurve_params, on_w256_pst, "1.2.643.7.1.2.1.1.0",
-                                     NULL, (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetTest,
+                                          (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetTest,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
 
    { identifier, wcurve_params, on_w256_psa, "1.2.643.7.1.2.1.1.1",
-                                     NULL, (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetA,
+                                             (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetA,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
   /* кривая A из 4357 три раза */
    { identifier, wcurve_params, on_w256_psb, "1.2.643.7.1.2.1.1.2",
-                                      NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA,
+                                              (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA,
                                                                   { NULL, NULL, NULL, NULL, NULL }},                                                                  
    { identifier, wcurve_params, on_w256_ps4357a, "1.2.643.2.2.35.1",
-                                  NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA,
+                                         (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
    { identifier, wcurve_params, on_w256_ps4357d, "1.2.643.2.2.36.0",
-                                  NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA,
+                                         (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
   /* кривая В из 4357 два раза */
    { identifier, wcurve_params, on_w256_psc, "1.2.643.7.1.2.1.1.3",
-                                      NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB,
+                                         (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
    { identifier, wcurve_params, on_w256_ps4357b, "1.2.643.2.2.35.2",
-                                  NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB,
+                                         (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
   /* кривая С из 4357 два раза */
    { identifier, wcurve_params, on_w256_psd, "1.2.643.7.1.2.1.1.4",
-                                      NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC,
+                                         (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
    { identifier, wcurve_params, on_w256_ps4357c, "1.2.643.2.2.35.3",
-                                  NULL, (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC,
+                                         (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
 
   /* теперь кривые длиной 512 бит */
    { identifier, wcurve_params, on_w512_pst, "1.2.643.7.1.2.1.2.0",
-                                     NULL, (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetTest,
+                                           (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetTest,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
 
    { identifier, wcurve_params, on_w512_psa, "1.2.643.7.1.2.1.2.1",
-                                     NULL, (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetA,
+                                             (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetA,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
    { identifier, wcurve_params, on_w512_psb, "1.2.643.7.1.2.1.2.2",
-                                     NULL, (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetB,
+                                             (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetB,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
    { identifier, wcurve_params, on_w512_psc, "1.2.643.7.1.2.1.2.3",
-                                     NULL, (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetC,
+                                             (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetC,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
+  #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
+   { identifier, parameter, on_asn1_cn, "2.5.4.3", NULL, { NULL, NULL, NULL, NULL, NULL }},
+  #endif
 
  /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */
-  { undefined_engine, undefined_mode, NULL, NULL, NULL, NULL, { NULL, NULL, NULL, NULL, NULL }}
+  { undefined_engine, undefined_mode, NULL, NULL, NULL, { NULL, NULL, NULL, NULL, NULL }}
 
  /* при добавлении нового типа (engine)
     не забыть также добавить его обработку в функцию ak_context_node_get_context_oid() */
