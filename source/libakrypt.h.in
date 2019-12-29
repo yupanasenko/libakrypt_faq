@@ -496,10 +496,12 @@ extern "C" {
  dll_export int ak_password_read( char *, const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Декодирование ASN.1 дерева, представленного в der-кодировке,
-    и вывод информации в заданный файл */
 #ifdef LIBAKRYPT_HAVE_STDIO_H
- dll_export int ak_asn1_fprintf( FILE * , ak_uint8 *, const size_t );
+/*! \brief Декодирование ASN.1 дерева, представленного в der-кодировке,
+    и вывод информации в файловый дескриптор */
+ dll_export int ak_asn1_fprintf_ptr( FILE * , ak_uint8 *, const size_t , bool_t );
+/*! \brief Декодирование ASN.1 дерева, содержащегося в файле и вывод информации в файловый дескриптор */
+ dll_export int ak_asn1_fprintf( FILE * , const char * , bool_t );
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -118,6 +118,7 @@
 /* реализации пользовательских команд */
  int aktool_icode( int argc, TCHAR *argv[] );
  int aktool_show( int argc, TCHAR *argv[] );
+ int aktool_asn1( int argc, TCHAR *argv[] );
 
  #endif
 /* ----------------------------------------------------------------------------------------------- */

@@ -113,6 +113,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_kuznechik.c
                     source/ak_magma.c
                     source/ak_asn1.c
+                    source/ak_x509.c
                     source/ak_sign.c
                     source/ak_context_manager.c
   )
@@ -126,6 +127,7 @@ if( LIBAKRYPT_AKTOOL )
                     aktool/aktool.c
                     aktool/aktool_show.c
                     aktool/aktool_icode.c
+                    aktool/aktool_asn1.c
   )
   set( AKTOOL_FILES
                     aktool/aktool.h
@@ -314,6 +316,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  oid03
                  random02
                  skey01
+                 skey02
                  asn1-build
                  asn1-parse
   )

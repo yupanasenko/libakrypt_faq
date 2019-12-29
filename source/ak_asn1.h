@@ -227,6 +227,8 @@
  int ak_asn1_context_add_numeric_string( ak_asn1 , const char * );
 /*! \brief Добавление к текущему уровню ASN1 дерева узла, содержащего идентификатор объекта */
  int ak_asn1_context_add_oid( ak_asn1 , const char * );
+/*!  \brief Добавление универсального времени к текущему уровню ASN1 дерева узла*/
+ int ak_asn1_context_add_utc_time( ak_asn1 , time_t );
 /*! \brief Добавление к текущему уровню ASN1 дерева низлежащего уровня */
  int ak_asn1_context_add_asn1( ak_asn1 , ak_uint8 , ak_asn1 );
 /*! \brief Вывод информации о текущем уровне ASN1 дерева. */
@@ -237,6 +239,10 @@
  int ak_asn1_context_decode( ak_asn1 , const ak_pointer , const size_t );
 /*! \brief Кодирование ASN1 дерева в DER-последовательность октетов. */
  int ak_asn1_context_encode( ak_asn1 , ak_pointer , size_t * );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Добавление временного интервала, в ходе которого действительна ключевая информация. */
+ int ak_asn1_context_add_time_validity( ak_asn1 , time_t, time_t );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

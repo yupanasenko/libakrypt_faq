@@ -259,7 +259,8 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     {
         c = (char) string[i];
         if( !(
-                (c >= 'A' && c <= 'Z') ||
+                ( c >= 'A' && c <= 'Z' ) ||
+                ( c >= '0' && c <= '9' ) ||
                         (c >= 'a' && c <= 'z') ||
                         (c == ' ')             ||
                         (c == '\'')            ||
@@ -272,11 +273,13 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
                         (c == '/')             ||
                         (c == ':')             ||
                         (c == '=')             ||
-                        (c == '?')                  ))
-            return ak_false;
+                        (c == '?')                  )) {
+             if( ak_log_get_level() >= ak_log_maximum )
+               ak_error_message_fmt( 0, __func__, "unexpected symbol: %c (code: %d)", c, (int)c );
+             return ak_false;
+            }
     }
-
-    return ak_true;
+  return ak_true;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1104,8 +1107,8 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                              "using null pointer to asn1 element" );
  /* вычисляем количество значащих октетов */
-  if(( byte = (ak_uint8)( u32 >> 24 )) != 0 ) len = 4;
-   else if(( byte = (ak_uint8)( u32>>26 )) != 0 ) len = 3;
+  if(( byte = (ak_uint8)( u32>>24 )) != 0 ) len = 4;
+   else if(( byte = (ak_uint8)( u32>>16 )) != 0 ) len = 3;
          else if(( byte = (ak_uint8)( u32>>8 )) != 0 ) len = 2;
                 else { len = 1; byte = (ak_uint8) u32; }
 
@@ -1292,9 +1295,9 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 /*! На данный момент кодируются только идентификаторы, у которых первое число равно 1 или 2,
     а второе не превосходит 32
 
-    \param string входная строка, содержая идентификатор в виде чисел, разделенных точками
-    \param pp_buff указатель на область памяти, в которую записывается результат кодирования
-    \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+   \param asn1 указатель на текущий уровень ASN1 дерева.
+   \param string входная строка, содержая идентификатор в виде чисел, разделенных точками
+   \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_context_add_oid( ak_asn1 asn1, const char *string )
@@ -1346,6 +1349,37 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
         *(p_enc_oid++) = (ak_uint8) (num & 0x7Fu);
     }
+
+ return ak_asn1_context_add_tlv( asn1, tlv );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param asn1 указатель на текущий уровень ASN1 дерева.
+    \param time переменная, содержащая время
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_context_add_utc_time( ak_asn1 asn1, time_t time )
+{
+  ak_tlv tlv = NULL;
+  struct tm tm;
+  int error = ak_error_ok;
+
+  if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to asn1 element" );
+ /* в начале выделяем память (ее размер известен заранее) */
+  if(( error = ak_tlv_context_create_primitive(
+    tlv = malloc( sizeof( struct tlv )), TUTCTIME, 13, NULL, ak_true )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+
+ /* получаем детальное значение времени */
+  memset( &tm, 0, sizeof( struct tm ));
+  localtime_r( &time, &tm );
+
+ /* размещаем поля согласно купленным билетам */
+  ak_snprintf( (char *)tlv->data.primitive, 12, "%02u%02u%02u%02u%02u%02u",
+                        tm.tm_year%100, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec );
+  tlv->data.primitive[12] = 'Z';
 
  return ak_asn1_context_add_tlv( asn1, tlv );
 }
@@ -1473,7 +1507,8 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
   ak_asn1_context_first( asn );
   if( asn->current == NULL ) {
-   // ak_error_message( ak_error_null_pointer, __func__, "null pointer to current tlv element" );
+   /* это случай, когда asn1 уровень создан, но он ни чего не содержит */
+    *total = 0;
     return ak_error_ok;
   }
 
@@ -1564,10 +1599,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   int error = ak_error_ok;
 
   ak_asn1_context_first( asn );
-  if( asn->current == NULL ) {
-    // ak_error_message( ak_error_null_pointer, __func__, "null pointer to current tlv element" );
-    return ak_error_ok;
-  }
+  if( asn->current == NULL ) return ak_error_ok;
 
   do{
      ak_tlv tlv = asn->current;
@@ -1642,10 +1674,12 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     файл должен предварительно открыт на запись
     \param ptr Указатель на область памяти, где содержится der-последовательность
     \param size Размер der-последовательности в октетах
+    \param check Флаг, истинное значение которого инициирует проверку правильности декодирования
+    входной последовательности
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_asn1_fprintf( FILE *fp, ak_uint8 *ptr, const size_t size )
+ int ak_asn1_fprintf_ptr( FILE *fp, ak_uint8 *ptr, const size_t size , bool_t check )
 {
   size_t len = 0;
   struct asn1 asn;
@@ -1668,25 +1702,62 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     goto exitlab;
   }
 
- /* проверяем, что декодирование было произведено правильно */
-  len = sizeof( array );
-  if(( error = ak_asn1_context_encode( &asn, array, &len )) != ak_error_ok ) {
-    if( error != ak_error_wrong_length )
-      ak_error_message( error, __func__, "incorrect encoding og asn1 context" );
-    goto exitlab;
+  if( check ) {
+   /* проверяем, что декодирование было произведено правильно
+      для этого, снова кодируем последовательность и проверяем, что результат
+      кодирования совпадает с входными данными */
+    len = sizeof( array );
+    if(( error = ak_asn1_context_encode( &asn, array, &len )) != ak_error_ok ) {
+      if( error != ak_error_wrong_length )
+        ak_error_message( error, __func__, "incorrect encoding of asn1 context" );
+      goto exitlab;
+    }
+    if(( len != size ) || ( !ak_ptr_is_equal_with_log( array, ptr, len ))) {
+      fprintf( fp, "incorrect encoding an initial der-sequence\n");
+      error = ak_error_not_equal_data;
+    }
   }
-
-// /*****!*******/
-
-//  printf("initial length: %u, encoded length: %u\n", (ak_uint32) size, (ak_uint32) len );
-
-//  if( !ak_ptr_is_equal_with_log( array, ptr, len )) {
-//    fprintf( fp, "incorrect decoding a der-sequence\n");
-//  }
-//   else fprintf( fp, "OK\n" );
 
  /* освобождаем выделенную память */
   exitlab: ak_asn1_context_destroy( &asn );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ dll_export int ak_asn1_fprintf( FILE *fp, const char *filename, bool_t check )
+{
+  struct file sfp;
+  ak_uint8 *ptr = NULL;
+  int error = ak_error_ok;
+
+  if(( error = ak_file_open_to_read( &sfp, filename )) != ak_error_ok )
+    return ak_error_message_fmt( error, __func__, "wrong open the %s file", filename );
+
+ /* поскольку мы умеем обрабатывать der-последовательности только одним фрагментом,
+    то нам приходится загружать весь файл в память
+    сейчас же мы проверяем, что бы файл был не очень велик
+
+    FIXME: необходимо предусмотреть возможность использования mmap() */
+  if( (size_t)sfp.size > 65536 ) {
+    ak_error_message_fmt( ak_error_wrong_length, __func__,
+                      "using file with unsupported, huge length (%lu octets)", (size_t) sfp.size );
+    goto exitlab;
+  }
+  if(( ptr = malloc( (size_t) sfp.size )) == NULL ){
+    ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
+    goto exitlab;
+  }
+  if(( ak_file_read( &sfp, ptr, sfp.size )) != sfp.size ) {
+    ak_error_message( ak_error_access_file, __func__, "incorrect reading an ASN.1 data from file" );
+    goto exitlab;
+  }
+
+ /* только теперь декодируем данные */
+  error = ak_asn1_fprintf_ptr( fp, ptr, (size_t) sfp.size, check );
+
+  exitlab:
+   if( ptr != NULL ) free (ptr);
+   ak_file_close( &sfp );
  return error;
 }
 

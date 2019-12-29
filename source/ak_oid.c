@@ -59,6 +59,7 @@
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  static const char *on_asn1_cn[] =          { "CommonName", "CN", NULL };
+ static const char *on_asn1_on[] =          { "OrganizationName", "ON", NULL };
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -190,8 +191,11 @@
    { identifier, wcurve_params, on_w512_psc, "1.2.643.7.1.2.1.2.3",
                                              (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetC,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
+
+ /* идентификаторы объектов, используемых для создания сертификатов открытых ключей */
   #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
    { identifier, parameter, on_asn1_cn, "2.5.4.3", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_on, "2.5.4.10", NULL, { NULL, NULL, NULL, NULL, NULL }},
   #endif
 
  /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */

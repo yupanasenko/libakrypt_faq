@@ -79,6 +79,8 @@
   if( aktool_check_command( "show", argv[1] )) return aktool_show( argc, argv );
   if( aktool_check_command( "i", argv[1] )) return aktool_icode( argc, argv );
   if( aktool_check_command( "icode", argv[1] )) return aktool_icode( argc, argv );
+  if( aktool_check_command( "a", argv[1] )) return aktool_asn1( argc, argv );
+  if( aktool_check_command( "asn1", argv[1] )) return aktool_asn1( argc, argv );
 
  /* ничего не подошло, выводим сообщение об ошибке */
   ak_log_set_function( ak_function_log_stderr );
@@ -346,6 +348,7 @@
                                                                           ak_libakrypt_version( ));
   printf(_("usage \"aktool command [options] [files]\"\n\n"));
   printf(_("available commands (in short and long forms):\n"));
+  printf(_("  a  asn1   decode and print the ASN.1 data\n"));
   printf(_("  i  icode  calculate or check integrity codes\n"));
   printf(_("     show   show useful information\n\n"));
   printf(_("also try:\n"));

@@ -11,6 +11,108 @@
 
 
 
+## Модуль ASN.1 для инфрастукруры открытых ключей
+
+Следуя последней, датируемой декабрем 2019 года версии рекомендаций Р 1323565.1.023-2018 (приложение В),
+приведем ASN.1 синтаксис для отечественной инфраструктуры открытых ключей.
+
+
+    GostR3410-2012-PKISyntax
+       { iso(1) member-body(2) ru(643) rosstandart(7)
+         tc26(1) modules(0) gostR3411-2012-PKISyntax(2)
+       }
+
+    DEFINITIONS ::=
+    BEGIN
+    -- EXPORTS All --
+
+       -- ASN.1 TC 26 root
+       id-tc26 OBJECT IDENTIFIER ::=
+        { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) }
+
+       -- Signature algorithm
+       id-tc26-sign OBJECT IDENTIFIER ::=
+        { id-tc26 algorithms(1) sign(1) }
+
+       -- Signature algorithm parameters
+       id-tc26-sign-constants OBJECT IDENTIFIER ::=
+        { id-tc26 constants(2) sign(1) }
+
+       -- GOST R 34.10-2012/256bits signature algorithm parameters
+       id-tc26-gost-3410-2012-256-constants OBJECT IDENTIFIER ::=
+        { id-tc26-sign-constants gost-3410-2012-256(1) }
+
+       -- GOST R 34.10-2012/512bits signature algorithm parameters
+       id-tc26-gost-3410-2012-512-constants OBJECT IDENTIFIER ::=
+        { id-tc26-sign-constants gost-3410-2012-512(2) }
+
+       -- GOST R 34.10-2012/256bits signature algorithm
+       id-tc26-gost3410-2012-256 OBJECT IDENTIFIER ::=
+        { id-tc26-sign gost3410-2012-256(1) }
+
+       -- GOST R 34.10-2012/512bits signature algorithm
+       id-tc26-gost3410-2012-512 OBJECT IDENTIFIER ::=
+        { id-tc26-sign gost3410-2012-512(2) }
+
+       -- Signature & hash algorithm GOST R 34.10-2012/256bits with GOST R34.11-2012
+       id-tc26-signwithdigest-gost3410-2012-256 OBJECT IDENTIFIER ::=
+        { id-tc26-signwithdigest gost3410-2012-256(2) }
+
+       -- Signature & hash algorithm GOST R 34.10-2012/512bits with GOST R34.11-2012
+       id-tc26-signwithdigest-gost3410-2012-512 OBJECT IDENTIFIER ::=
+        { id-tc26-signwithdigest gost3410-2012-512(3) }
+
+       -- GOST R 34.10-2012/256bits Signature algorithm parameters ID: "Set A"
+       id-tc26-gost-3410-2012-256-paramSetA OBJECT IDENTIFIER ::=
+        { id-tc26-gost-3410-2012-256-constants paramSetA(1) }
+
+       -- GOST R 34.10-2012/256bits signature algorithm parameters ID: "Set B"
+       id-tc26-gost-3410-2012-256-paramSetB OBJECT IDENTIFIER ::=
+        { id-tc26-gost-3410-2012-256-constants paramSetB(2) }
+
+       -- GOST R 34.10-2012/256bits signature algorithm parameters ID: "Set C"
+       id-tc26-gost-3410-2012-256-paramSetC OBJECT IDENTIFIER ::=
+        { id-tc26-gost-3410-2012-256-constants paramSetC(3) }
+
+       -- GOST R 34.10-2012/256bits signature algorithm parameters ID: "Set D"
+       id-tc26-gost-3410-2012-256-paramSetD OBJECT IDENTIFIER ::=
+        { id-tc26-gost-3410-2012-256-constants paramSetD(4) }
+
+       -- GOST R 34.10-2012/512bits signature algorithm parameters ID: "Test set"
+       id-tc26-gost-3410-2012-512-paramSetTest OBJECT IDENTIFIER ::=
+        { id-tc26-gost-3410-2012-512-constants paramSetTest(0) }
+
+       -- GOST R 34.10-2012/512bits signature algorithm parameters ID: "Set A"
+       id-tc26-gost-3410-2012-512-paramSetA OBJECT IDENTIFIER ::=
+        { id-tc26-gost-3410-2012-512-constants paramSetA(1) }
+
+       -- GOST R 34.10-2012/512bits signature algorithm parameters ID: "Set B"
+       id-tc26-gost-3410-2012-512-paramSetB OBJECT IDENTIFIER ::=
+        { id-tc26-gost-3410-2012-512-constants paramSetB(2) }
+
+       -- GOST R 34.10-2012/512bits signature algorithm parameters ID: "Set C"
+       id-tc26-gost-3410-2012-512-paramSetC OBJECT IDENTIFIER ::=
+        { id-tc26-gost-3410-2012-512-constants paramSetC(3) }
+
+       -- Public key GOST R 34.10-2012/256bits
+       GostR3410-2012-256-PublicKey ::= OCTET STRING (SIZE (64))
+
+       -- Public key GOST R 34.10-2012/512bits
+       GostR3410-2012-512-PublicKey ::= OCTET STRING (SIZE (128))
+
+       -- Public key GOST R 34.10-2012
+       GostR3410-PublicKey ::= OCTET STRING (SIZE (64 | 128))
+
+       -- Public key parameters GOST R 34.10-2012
+       GostR3410-2012-PublicKeyParameters ::=
+           SEQUENCE {
+               publicKeyParamSet OBJECT IDENTIFIER,
+               digestParamSet OBJECT IDENTIFIER OPTIONAL
+           }
+
+    END -- GostR3410-2012-PKISyntax
+
+
 ## Форматы хранения контента
 
 

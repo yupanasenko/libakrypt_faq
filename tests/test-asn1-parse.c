@@ -92,6 +92,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int main( int argc, char *argv[] )
 {
+  int error = ak_error_ok;
   size_t data_size = sizeof( test_data );
   ak_uint8 *ptr_data = test_data, local_buffer[4096];
 
@@ -126,7 +127,9 @@
   }
 
  /* собственно вызов функции, выводящей ASN.1 дерево в консоль */
-  ak_asn1_fprintf( stdout, ptr_data, data_size );
+  if(( error = ak_asn1_fprintf_ptr( stdout, ptr_data, data_size, ak_true )) == ak_error_ok )
+   fprintf( stdout, "checking the der-sequence is Ok\n" );
+    else fprintf( stdout, "checking the der-sequence is Wrong\n" );
   ak_libakrypt_destroy();
 
  return EXIT_SUCCESS;
