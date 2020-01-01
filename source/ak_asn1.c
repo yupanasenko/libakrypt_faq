@@ -1,4 +1,11 @@
 /* ----------------------------------------------------------------------------------------------- */
+/*  Copyright (c) 2019 by Anton Sakharov                                                           */
+/*  Copyright (c) 2020 by Axel Kenzo, axelkenzo@mail.ru                                            */
+/*                                                                                                 */
+/*  Файл ak_asn1.c                                                                                 */
+/*  - содержит реализацию функций,                                                                 */
+/*    используемых для базового кодирования/декодированя ASN.1 структур                            */
+/* ----------------------------------------------------------------------------------------------- */
  #include <ak_asn1.h>
  #include <ak_tools.h>
 
@@ -62,7 +69,7 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
-
+                                /* глобальные переменные модуля */
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Массив, содержащий символьное представление тега. */
  static char tag_description[32] = "\0";
@@ -70,6 +77,9 @@
  static char prefix[1024] = "";
 /*! \brief Массив, содержащий информацию для вывода в консоль. */
  static char output_buffer[1024] = "";
+
+/* ----------------------------------------------------------------------------------------------- */
+ static char *oidptr = NULL;
 
 /* ----------------------------------------------------------------------------------------------- */
                                       /*  служебные функции */
@@ -471,7 +481,50 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
     case TOCTET_STRING:
       if(( error = ak_tlv_context_get_octet_string( tlv, &ptr, &len )) == ak_error_ok ) {
-        fprintf( fp, "%s\n", ak_ptr_to_hexstr( ptr, len, ak_false ));
+
+       /* определяем переменные, которые необходимы для декодирования и вывода  */
+        struct asn1 asn;
+        size_t i, j, row = len >> 4, /* количество строк, в строке по 16 символов */
+               tail = len%16; /* количество символов в последней строке */
+        char *fsym = VER_LINE;
+
+       /* проверяем, можно ли декодировать последовательность */
+        if( oidptr != NULL ) {
+          if( !strncmp( oidptr, "1.2.643.100.111", 15 ) ||
+              !strncmp( oidptr, "1.2.643.100.112", 15 ) ||
+              !strncmp( oidptr, "2.5.29.31", 9 ) ||
+              !strncmp( oidptr, "2.5.29.32", 9 ) ||
+              !strncmp( oidptr, "2.5.29.35", 9 )) {
+            ak_asn1_context_create( &asn );
+            if( ak_asn1_context_decode( &asn, ptr, len ) == ak_error_ok ) {
+              len = strlen( prefix );
+              strcat( prefix, "   " );
+              fprintf( fp, " (%u octets, encoded)\n", (ak_uint32)len );
+                ak_asn1_context_print( &asn, fp );
+                ak_asn1_context_destroy( &asn );
+               prefix[len] = 0;
+            }
+            ak_asn1_context_destroy( &asn );
+            oidptr = NULL;
+            break;
+          }
+          oidptr = NULL;
+        }
+
+       /* здесь обычный шестнадцатеричный вывод */
+        fprintf( fp, "\n" ); /* здесь надо выводить длину в случае, когда данные распарсиваются */
+        if( tlv->next == NULL ) fsym = " ";
+        for( i = 0; i < row; i++ ) {
+           fprintf( fp, "%s%s ", prefix, fsym );
+           for( j = 0; j < 16; j++ ) fprintf( fp, " %02X", ((ak_uint8 *)ptr)[16*i+j] );
+           fprintf( fp, "\n");
+        }
+        if( tail ) {
+           fprintf( fp, "%s%s ", prefix, fsym );
+           for( j = 0; j < tail; j++ ) fprintf( fp, " %02X", ((ak_uint8 *)ptr)[16*i+j] );
+           fprintf( fp, "\n");
+        }
+       /* это все вместо простого fprintf( fp, "%s\n", ak_ptr_to_hexstr( ptr, len, ak_false )); */
       }
        else dp = ak_true;
       break;
@@ -515,11 +568,14 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     case TOBJECT_IDENTIFIER:
       if(( error = ak_tlv_context_get_oid( tlv, &ptr )) == ak_error_ok ) {
         fprintf( fp, "%s", (char *)ptr );
+        oidptr = NULL;
 
        /* ищем значение в базе oid'ов */
-        if(( oid = ak_oid_context_find_by_ni( ptr )) != NULL )
+        if(( oid = ak_oid_context_find_by_ni( ptr )) != NULL ) {
           fprintf( fp, " (%s)\n", oid->names[0] );
-         else {
+          oidptr = oid->id;
+         }
+          else {
            fprintf( fp, "\n");
            ak_error_set_value( ak_error_ok ); /* убираем ошибку поиска oid */
          }
@@ -1361,8 +1417,17 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 /* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_context_add_utc_time( ak_asn1 asn1, time_t time )
 {
-  ak_tlv tlv = NULL;
+ #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+  #ifdef _MSC_VER
+   struct tm tm;
+   char str[12];
+  #else
+    struct tm *tmptr = NULL;
+  #endif
+ #else
   struct tm tm;
+ #endif
+  ak_tlv tlv = NULL;
   int error = ak_error_ok;
 
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -1373,14 +1438,36 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
       return ak_error_message( error, __func__, "incorrect creation of tlv element" );
 
  /* получаем детальное значение времени */
-  memset( &tm, 0, sizeof( struct tm ));
-  localtime_r( &time, &tm );
+  #ifdef LIBAKRYPT_HAVE_WINDOWS_H
 
- /* размещаем поля согласно купленным билетам */
-  ak_snprintf( (char *)tlv->data.primitive, 12, "%02u%02u%02u%02u%02u%02u",
-                        tm.tm_year%100, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec );
+   #ifdef _MSC_VER
+   /* есть много вещей, которые вызывают искреннее удивление при программировании под Windows,
+      этот код - один из таких примеров ...  */
+     localtime_s( &tm, &time );
+     ak_snprintf( str, sizeof( str ), "%02u", (ak_uint8 ) tm.tm_year%100 );
+      memcpy( tlv->data.primitive, str, sizeof( str ));
+     ak_snprintf( str, sizeof( str ), "%02u", (ak_uint8) tm.tm_mon );
+      memcpy( tlv->data.primitive+2, str, sizeof( str ));
+     ak_snprintf( str, sizeof( str ), "%02u", (ak_uint8) tm.tm_mday );
+      memcpy( tlv->data.primitive+4, str, sizeof( str ));
+    /*  почему данную последовательность нельзя продолжить дальше? */
+
+   #else
+    /* mingw не воспринимает localtime_r, почему? */
+     tmptr = localtime( &time );
+     ak_snprintf( (char *)tlv->data.primitive, 12, "%02u%02u%02u%02u%02u%02u",
+                                    tmptr->tm_year%100, tmptr->tm_mon, tmptr->tm_mday,
+                                                    tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec );
+   #endif
+
+  #else
+    localtime_r( &time, &tm );
+  /* размещаем поля согласно купленным билетам */
+    ak_snprintf( (char *)tlv->data.primitive, 12, "%02u%02u%02u%02u%02u%02u",
+                         tm.tm_year%100, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec );
+  #endif
+
   tlv->data.primitive[12] = 'Z';
-
  return ak_asn1_context_add_tlv( asn1, tlv );
 }
 
@@ -1747,7 +1834,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
     goto exitlab;
   }
-  if(( ak_file_read( &sfp, ptr, sfp.size )) != sfp.size ) {
+  if(( ak_file_read( &sfp, ptr, ( size_t )sfp.size )) != sfp.size ) {
     ak_error_message( ak_error_access_file, __func__, "incorrect reading an ASN.1 data from file" );
     goto exitlab;
   }

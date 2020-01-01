@@ -58,8 +58,24 @@
  static const char *on_w512_psc[] =         { "id-tc26-gost-3410-2012-512-paramSetC", NULL };
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
- static const char *on_asn1_cn[] =          { "CommonName", "CN", NULL };
- static const char *on_asn1_on[] =          { "OrganizationName", "ON", NULL };
+ static const char *on_asn1_ogrn[] =           { "OGRN", "ОГРН", NULL };
+ static const char *on_asn1_snils[] =          { "SNILS", "СНИЛС", NULL };
+ static const char *on_asn1_ogrnip[] =         { "OGRNIP", "ОГРНИП", NULL };
+ static const char *on_asn1_owners_module[] =  { "SubjectsCryptoModule",
+                                                 "Средство ЭП владельца сертификата", NULL };
+ static const char *on_asn1_issuers_module[] = { "IssuersCryptoModule",
+                                                 "Средство ЭП лица, выдавшего сертификат", NULL };
+ static const char *on_asn1_inn[] =            { "INN", "ИНН", NULL };
+ static const char *on_asn1_email[] =          { "emailAddress", "Адрес электронной почты", NULL };
+
+ static const char *on_asn1_cn[] =             { "CommonName", "CN", NULL };
+ static const char *on_asn1_s[] =              { "Surname", "S", NULL };
+ static const char *on_asn1_sn[] =             { "SerialNumber", "SN", NULL };
+ static const char *on_asn1_c[] =              { "CountryName", "C", NULL };
+ static const char *on_asn1_l[] =              { "LocalityName", "L", NULL };
+ static const char *on_asn1_st[] =             { "StateOrProvinceName", "ST", NULL };
+ static const char *on_asn1_sa[] =             { "StreetAddress", "SA", NULL };
+ static const char *on_asn1_on[] =             { "OrganizationName", "ON", NULL };
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -181,7 +197,6 @@
    { identifier, wcurve_params, on_w512_pst, "1.2.643.7.1.2.1.2.0",
                                            (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetTest,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
-
    { identifier, wcurve_params, on_w512_psa, "1.2.643.7.1.2.1.2.1",
                                              (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetA,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
@@ -192,9 +207,26 @@
                                              (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetC,
                                                                   { NULL, NULL, NULL, NULL, NULL }},
 
- /* идентификаторы объектов, используемых для создания сертификатов открытых ключей */
+ /* идентификаторы объектов, используемых для создания сертификатов открытых ключей
+    подробный перечень идентификаторов может быть найден по следующему адресу
+    http://www.2410000.ru/p_45_spravochnik_oid_oid__najti_oid_oid_perechen_oid_oid_obektnyj_identifikator_oid_oid_object_identifier.html */
+
   #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
+   { identifier, parameter, on_asn1_ogrn,   "1.2.643.100.1", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_snils,  "1.2.643.100.3", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_ogrnip, "1.2.643.100.5", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_owners_module,  "1.2.643.100.111", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_issuers_module, "1.2.643.100.112", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_inn,   "1.2.643.3.131.1.1", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_email, "1.2.840.113549.1.9.1", NULL, { NULL, NULL, NULL, NULL, NULL }},
+
    { identifier, parameter, on_asn1_cn, "2.5.4.3", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_s, "2.5.4.4", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_sn, "2.5.4.5", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_c, "2.5.4.6", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_l, "2.5.4.7", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_st, "2.5.4.8", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_sa, "2.5.4.9", NULL, { NULL, NULL, NULL, NULL, NULL }},
    { identifier, parameter, on_asn1_on, "2.5.4.10", NULL, { NULL, NULL, NULL, NULL, NULL }},
   #endif
 
