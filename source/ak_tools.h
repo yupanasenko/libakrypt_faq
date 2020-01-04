@@ -69,6 +69,11 @@
  bool_t ak_libakrypt_load_options( void );
 #endif
 
+/* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_WINDOWS_H
+ int ak_libakrypt_utf8_to_windows1251( const char* , char* , size_t );
+#endif
+
 #endif
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                 ak_libakrypt.h  */

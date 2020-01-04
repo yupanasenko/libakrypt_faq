@@ -190,13 +190,10 @@
 /*! \brief Присвоение секретному ключу значения, выработанного из пароля */
  int ak_skey_context_set_key_from_password( ak_skey , const ak_pointer , const size_t ,
                                                                  const ak_pointer , const size_t );
-/* ----------------------------------------------------------------------------------------------- */
-/*! Экспорт секретного ключа в ASN.1 формате. */
- int ak_skey_context_export_to_der_from_password( ak_skey , const char * , const size_t ,
-                                                                           ak_uint8 * , size_t * );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Наложение или смена маски путем сложения по модулю 2 случайной последовательности с ключом. */
+/*! \brief Наложение или смена маски путем сложения по модулю два
+    случайной последовательности с ключом. */
  int ak_skey_context_set_mask_xor( ak_skey );
 /*! \brief Снятие маски с ключа. */
  int ak_skey_context_unmask_xor( ak_skey );

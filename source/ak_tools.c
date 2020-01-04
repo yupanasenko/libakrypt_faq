@@ -785,10 +785,13 @@
   BOOL bErrorFlag = WriteFile( file->hFile, buffer, ( DWORD )size,  &dwBytesWritten, NULL );
   if( bErrorFlag == FALSE ) {
     ak_error_message( ak_error_write_data, __func__, "unable to write to file");
-    return 0;
+    return -1;
   } else return ( ssize_t ) dwBytesWritten;
  #else
-  return write( file->fd, buffer, size );
+   ssize_t wb = write( file->fd, buffer, size );
+   if( wb == -1 ) ak_error_message_fmt( ak_error_write_data, __func__,
+                                                "unable to write to file (%s)", strerror( errno ));
+  return wb;
  #endif
 }
 

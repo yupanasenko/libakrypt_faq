@@ -30,7 +30,7 @@
  #ifdef _WIN32
   time_t ptime;
   TCHAR homepath[FILENAME_MAX]
-   #ifdef MSC_VER
+   #ifdef _MSC_VER
      , buffer[64]
    #endif
    ;
@@ -60,7 +60,7 @@
     remove( audit_filename );
     ak_log_set_function( audit = aktool_audit_function );
 
-   #ifdef MSC_VER
+   #ifdef _MSC_VER
     _time64( &ptime );
     _tctime64_s( buffer, sizeof( buffer ), &ptime );
     ak_snprintf( homepath, FILENAME_MAX, "%s started at %s", argv[0], buffer );
@@ -328,6 +328,7 @@
   close( fd );
  return error;
 }
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                 реализация вывода справки                                       */

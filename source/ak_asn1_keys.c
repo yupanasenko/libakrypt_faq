@@ -7,7 +7,7 @@
 /*    используемых для базового кодирования/декодированя ASN.1 структур                            */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_asn1.h>
- #include <ak_skey.h>
+ #include <ak_hmac.h>
  #include <ak_tools.h>
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -21,9 +21,6 @@
 #else
  #error Library cannot be compiled without string.h header
 #endif
-
-/* ----------------------------------------------------------------------------------------------- */
- #include <ak_asn1.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция создает `SEQUENCE`, которая содержит два примитивных элемента -
@@ -119,49 +116,78 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция создает ключ шифрования контента из пароля и экспортирует параметры ключа,
-    необходимые для восстановления.
+/*! \brief Функция инициализирует ключи шифрования и имитозащиты контента из пароля и экспортирует
+    в ASN.1 дерево параметры ключа, необходимые для восстановления ключей.
 
     \param root уровень ASN.1 дерева
-    \param bkey контекст ключа шифрования контекста
+    \param ekey контекст ключа шифрования контекста
+    \param ekey контекст ключа имитозащиты
     \param password пароль, используемый для генерации ключа шифрования контента
     \param pass_size длина пароля (в октетах)
 
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_asn1_context_add_kek_from_password( ak_asn1 root, ak_bckey bkey,
-                                                    const char *password, const size_t pass_size )
+ static int ak_asn1_context_add_derived_keys_from_password( ak_asn1 root, ak_bckey ekey,
+                                       ak_bckey ikey, const char *password, const size_t pass_size )
 {
   ak_uint8 salt[32]; /* случайное значение для генерации ключа шифрования контента */
+  ak_uint8 derived_key[64]; /* вырабатываемый из пароля ключевой материал,
+                               из которого формируются производные ключи шифрования и имитозащиты */
   int error = ak_error_ok;
   ak_asn1 asn1 = NULL, asn2 = NULL;
 
- /* инициализируем контекст ключа шифрования контента */
-   if(( error = ak_bckey_context_create_kuznechik( bkey )) != ak_error_ok )
-     return ak_error_message( error, __func__, "incorrect creation of block cipher key" );
+ /* 1. вырабатываем случайное значение и производный ключевой материал */
+   if(( error = ak_bckey_context_create_kuznechik( ekey )) != ak_error_ok )
+     return ak_error_message( error, __func__, "incorrect creation of encryption cipher key" );
 
- /* вырабатываем случайное значение ключа шифрования контента */
-   ak_random_context_random( &bkey->key.generator, salt, sizeof( salt ));
-   ak_bckey_context_set_key_from_password( bkey, (ak_pointer) password, pass_size,
-                                                                             salt, sizeof( salt ));
- /* собираем ASN.1 дерево */
+   ak_random_context_random( &ekey->key.generator, salt, sizeof( salt ));
+   if(( error = ak_hmac_context_pbkdf2_streebog512( (ak_pointer) password, pass_size,
+                salt, sizeof( salt ), (size_t) ak_libakrypt_get_option( "pbkdf2_iteration_count" ),
+                                                               64, derived_key )) != ak_error_ok )
+     return ak_error_message( error, __func__, "incorrect creation of derived key" );
+
+ /* 2. инициализируем контексты ключа шифрования контента и ключа имитозащиты */
+   if(( error = ak_bckey_context_set_key( ekey, derived_key, 32 )) != ak_error_ok ) {
+     ak_bckey_context_destroy( ekey );
+     return ak_error_message( error, __func__, "incorrect assigning a value to encryption key" );
+   }
+   if(( error = ak_bckey_context_create_kuznechik( ikey )) != ak_error_ok ) {
+     ak_bckey_context_destroy( ekey );
+     return ak_error_message( error, __func__, "incorrect creation of integrity key" );
+   }
+   if(( error = ak_bckey_context_set_key( ikey, derived_key+32, 32 )) != ak_error_ok ) {
+     ak_bckey_context_destroy( ikey );
+     ak_bckey_context_destroy( ekey );
+     return ak_error_message( error, __func__, "incorrect assigning a value to integrity key" );
+   }
+  /* очищаем использованную память */
+   ak_ptr_context_wipe( derived_key, sizeof( derived_key ), &ikey->key.generator );
+
+ /* 3. собираем ASN.1 дерево */
    if(( ak_asn1_context_create( asn2 = malloc( sizeof( struct asn1 )))) != ak_error_ok ) {
+     ak_bckey_context_destroy( ikey );
+     ak_bckey_context_destroy( ekey );
      return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
    }
-   ak_asn1_context_add_oid( asn2, bkey->key.oid->id );
+   ak_asn1_context_add_oid( asn2, ekey->key.oid->id ); /* сохраняем oid базового алгоритма */
 
    if(( ak_asn1_context_create( asn1 = malloc( sizeof( struct asn1 )))) != ak_error_ok ) {
+     ak_bckey_context_destroy( ikey );
+     ak_bckey_context_destroy( ekey );
      ak_asn1_context_delete( asn2 );
      return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
    }
    ak_asn1_context_add_oid( asn1, ak_oid_context_find_by_name( "hmac-streebog512" )->id );
+   ak_asn1_context_add_uint32( asn1, sizeof( derived_key ));
    ak_asn1_context_add_octet_string( asn1, salt, sizeof( salt ));
    ak_asn1_context_add_uint32( asn1,
                                  ( ak_uint32 )ak_libakrypt_get_option( "pbkdf2_iteration_count" ));
    ak_asn1_context_add_asn1( asn2, TSEQUENCE, asn1 );
 
    if(( ak_asn1_context_create( asn1 = malloc( sizeof( struct asn1 )))) != ak_error_ok ) {
+     ak_bckey_context_destroy( ikey );
+     ak_bckey_context_destroy( ekey );
      ak_asn1_context_delete( asn2 );
      return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
    }
@@ -182,98 +208,75 @@
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_asn1_context_add_skey( ak_asn1 root, ak_bckey bkey, ak_skey skey )
+ static int ak_asn1_context_add_skey( ak_asn1 root, ak_skey skey, ak_bckey ekey, ak_bckey ikey )
 {
-  size_t len = 0;
-  ak_uint8 iv[16]; /* синхропосылка, используемая для шифрования контента */
+  size_t len = ( ekey->bsize >> 1 ) + 2*skey->key_size + ikey->bsize;
+             /* необходимый объем памяти:
+                синхропосылка (половина блока) + ( ключ+маска ) + имитовставка (блок) */
   ak_asn1 asn = NULL, asn1 = NULL;
   int error = ak_error_ok;
 
- /* проверяем длины */
-  if((( len = 2*skey->key_size )%bkey->bsize ) != 0 )
-    return ak_error_message( ak_error_wrong_length, __func__,
-                               "using cbc encryption mode with unsupported length of secret key" );
  /* указываем тип контента */
   if(( error = ak_asn1_context_create( asn = malloc( sizeof( struct asn1 )))) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
   ak_asn1_context_add_uint32( asn, secret_key_content );
 
- /* добавляем параметры шифрования */
-  ak_random_context_random( &bkey->key.generator, iv, sizeof( iv ));
-  if(( error = ak_asn1_context_create( asn1 = malloc( sizeof( struct asn1 )))) != ak_error_ok )
-    return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
-  ak_asn1_context_add_oid( asn1, "1.1.1.1.1.1.1.1.1.1.1.1" ); /* режим шифрования */
-  ak_asn1_context_add_octet_string( asn1, iv, sizeof( iv ));
-  ak_asn1_context_add_uint32( asn1, ( ak_uint32 )ak_libakrypt_get_option( "openssl_compability" ));
-  ak_asn1_context_add_asn1( asn, TSEQUENCE, asn1 );
-
  /* добавляем ключевые метаданные */
   ak_asn1_context_add_skey_metadata( asn, skey );
 
- /* зашифровываем данные */
-  if(( error = ak_asn1_context_create( asn1 = malloc( sizeof( struct asn1 )))) != ak_error_ok )
+ /* выделяем память для хранения  */
+  if(( error = ak_asn1_context_create( asn1 = malloc( sizeof( struct asn1 )))) != ak_error_ok ) {
+    ak_asn1_context_delete( asn );
     return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
-  ak_asn1_context_add_uint32( asn1, data_present_storage );
-  ak_asn1_context_add_octet_string( asn1, iv, len );
-  if(( error = ak_bckey_context_encrypt_cbc( bkey, skey->key, asn1->current->data.primitive,
-                                                         len, iv, sizeof( iv ))) != ak_error_ok ) {
-    ak_asn1_context_delete( asn1 );
-    return error;
   }
-  ak_asn1_context_add_asn1( asn, TSEQUENCE, asn1 );
+  ak_asn1_context_add_uint32( asn1, data_present_storage ); /* данные присутствуют и находятся ниже */
+  ak_asn1_context_add_uint32( asn1, ( ak_uint32 )ak_libakrypt_get_option( "openssl_compability" ));
 
+ /* добавляем ключ: реализуем КЕexp15 для ключа и маски */
+  if(( error = ak_asn1_context_add_octet_string( asn1, &len, len )) == ak_error_ok ) {
+    size_t shift = ekey->bsize >> 1;
+    ak_uint8 *ptr = asn1->current->data.primitive;
+
+   /* формируем iv */
+    memset( ptr, 0, len );
+    ak_random_context_random( &ekey->key.generator, ptr, shift );
+   /* меняем маску секретного ключа */
+    skey->set_mask( skey );
+   /* копируем данные:
+      сохраняем их как большое целое число в big-endian кодировке */
+    ak_mpzn_to_little_endian( ( ak_uint64 *)skey->key, (skey->key_size >> 2),
+                                                            ptr+shift, 2*skey->key_size, ak_true );
+    shift += 2*skey->key_size;
+   /* меняем маску секретного ключа */
+    skey->set_mask( skey );
+   /* вычисляем имитовставку */
+    if(( error = ak_bckey_context_cmac( ikey, ptr, shift,
+                                                       ptr+shift, ikey->bsize )) != ak_error_ok ) {
+      ak_error_message( error, __func__, "incorrect evaluation of cmac" );
+      ak_asn1_context_delete( asn1 );
+      return error;
+    }
+   /* шифруем данные */
+    if(( error = ak_bckey_context_ctr( ekey, ptr, ptr, shift+ikey->bsize,
+                                                        ptr, ekey->bsize >> 1 )) != ak_error_ok ) {
+      ak_error_message( error, __func__, "incorrect encryption of skey" );
+      ak_asn1_context_delete( asn1 );
+      return error;
+    }
+  } else return ak_error_message( error, __func__, "incorrect adding a secret key" );
+
+  ak_asn1_context_add_asn1( asn, TSEQUENCE, asn1 );
  return ak_asn1_context_add_asn1( root, TSEQUENCE, asn );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция вычисляет имитовставку для der-представления ASN.1 дерева `asn` и записывает
-    ее значение в корневое ASN.1 дерево.
-
-    \param root корневой уровень ASN.1 дерева
-    \param asn уровень ASN1.дерева, для которого вычисляется имитовставка
-    \param bkey ключ имитозащиты
-
-    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
-   возвращается код ошибки.                                                                        */
-/* ----------------------------------------------------------------------------------------------- */
- static int ak_asn1_context_add_asn1_cmac( ak_asn1 root, ak_asn1 asn, ak_bckey bkey )
-{
-  ak_asn1 asn_cmac = NULL;
-  int error = ak_error_ok;
-  ak_uint8 out[16], derbuf[1024]; /* буффера, куда будут помещены данные */
-  size_t len = sizeof( derbuf );
-
-  memset( derbuf, 0, sizeof( derbuf ));
-  if(( error = ak_asn1_context_encode( asn, derbuf, &len )) != ak_error_ok ) {
-    if( error == ak_error_wrong_length )
-      return ak_error_message_fmt( error, __func__,
-                          "not enough internal memory to accommodate %u octets", (ak_uint32) len );
-     else return ak_error_message( error, __func__, "incorrect encoding of asn1 structure" );
-  }
-
-  memset( out, 0, sizeof( out ));
-  if(( error = ak_bckey_context_cmac( bkey, derbuf, len, out, bkey->bsize )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "incorrect calculation of cmac" );
-  }
-   else {
-     if(( ak_asn1_context_create( asn_cmac = malloc( sizeof( struct asn1 )))) == ak_error_ok ) {
-       ak_asn1_context_add_oid( asn_cmac, "2.2.2.2.2.2.2.2.2.2" );
-       ak_asn1_context_add_octet_string( asn_cmac, out, bkey->bsize );
-       ak_asn1_context_add_asn1( root, TSEQUENCE, asn_cmac );
-     }
-   }
-
-  ak_ptr_context_wipe( derbuf, sizeof( derbuf ), &bkey->key.generator );
- return error;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! При экспорте секретного ключа выполняется следующая последовательность действий:
-     - из заданного пользователем пароля формируется секретный ключ шифрования контента
-     (kek, key encryption key);
-     - формируется ASN.1 структура, содержащая параметры восстановления ключа kek,
-     параметры экспортируемого ключа, а также сам экспортируемый ключ (включая маску ключа),
-     в зашифрованном виде;
+     - из заданного пользователем пароля формируются два ключа
+        -  секретный ключ шифрования контента (kek, key encryption key);
+        -  секретный ключ имитозащиты (kak, key authentication key )
+     - формируется ASN.1 структура, содержащая параметры восстановления секретных ключей kek и kak,
+       параметры экспортируемого ключа, а также сам экспортируемый ключ (включая маску ключа),
+       в зашифрованном виде;
      - вычисляется имитовставка от сформированных данных и добавляется к ASN.1 структуре;
      - полученная структура кодируется в der-последовательность и помещается в
      заданный пользователем буффер.
@@ -281,24 +284,21 @@
     \param skey контекст экспортируемого секретного ключа; контекст должен быть инициализирован
     ключевым значением, а поле oid должно содержать идентификатор алгоритма, для которого
     предназначен ключ.
+    \param root контекст ASN.1 дерева; должен быть создан заранее с помощью
+    вызова функции ak_asn1_context_create()
     \param password пароль, используемый для генерации ключа шифрования контента
     \param pass_size длина пароля (в октетах)
-    \param buffer буффер, куда будут помещен экспортируемый ключ; память под буффер должна быть
-    выработана заранее
-    \param buffer_size размер выделенной памяти; до начала выполнения функции переменная должна содержать
-    размер выделенной памяти; в процессе выполнения функции в данную переменную помещается
-    размер сформированной der-последовательности.
 
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_skey_context_export_to_der_from_password( ak_skey skey, const char *password,
-                                     const size_t pass_size, ak_uint8 *buffer, size_t *buffer_size )
+ int ak_skey_context_export_to_asn1_with_password( ak_skey skey, ak_asn1 root,
+                                                      const char *password, const size_t pass_size )
 {
-  struct asn1 root; /* вершина создаваемого ASN.1 дерева */
   ak_asn1 asn = NULL;
-  struct bckey bkey; /* ключ шифрования контента */
+  struct bckey ekey, ikey; /* производные ключи шаирования и имитозащиты */
   int error = ak_error_ok;
+
 
   if( skey == NULL )  return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using null pointer to secret key context" );
@@ -306,44 +306,130 @@
                                                             "using undefined secret key context" );
   if(( password == NULL ) || ( !pass_size ))
     return ak_error_message( ak_error_invalid_value, __func__, "incorrect password" );
-  if(( buffer == NULL ) || ( !buffer_size ))
-    return ak_error_message( ak_error_invalid_value, __func__, "incorrect output buffer" );
 
  /* 1. создаем основное дерево, в которое будет помещен секретный ключ */
    if(( error = ak_asn1_context_create( asn = malloc( sizeof( struct asn1 )))) != ak_error_ok )
      return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
    ak_asn1_context_add_oid( asn, "1.2.643.2.52.1.127.1.2" ); /* помечаем контейнер */
 
-  /* 2. вырабатываем ключ шифрования контента и помещаем информацию о нем в ASN.1 дерево */
-   if(( error = ak_asn1_context_add_kek_from_password( asn, &bkey,
+ /* 2. создаем ключи шифрования и имитозащиты контента и помещаем информацию о них в ASN.1 дерево */
+   if(( error = ak_asn1_context_add_derived_keys_from_password( asn, &ekey, &ikey,
                                                           password, pass_size )) != ak_error_ok ) {
-     ak_error_message( error, __func__, "incorrect creation of key encryption key" );
-     goto labexit;
+     ak_asn1_context_delete( asn );
+     return ak_error_message( error, __func__, "incorrect creation of derived keys" );
    }
 
-  /* зашифровываем секретный ключ и помещаем информацию об этом в ASN.1 дерево */
-   if(( error = ak_asn1_context_add_skey( asn, &bkey, skey )) != ak_error_ok ) {
-     ak_error_message( error, __func__, "incorrect creation of key encryption key" );
+ /* 3. зашифровываем секретный ключ и помещаем информацию об этом в ASN.1 дерево */
+   if(( error = ak_asn1_context_add_skey( asn, skey, &ekey, &ikey )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect addition of secret key" );
      goto labexit;
    }
   /* изменяем маску секретного ключа */
    if(( error = skey->set_mask( skey )) != ak_error_ok )
-     ak_error_message( error, __func__, "wrong changing a mask on secret key" );
+     ak_error_message( error, __func__, "wrong mask changing on secret key" );
 
-  /* содаем корень и помещаем в него: */
-   ak_asn1_context_create( &root );
-   ak_asn1_context_add_asn1( &root, TSEQUENCE, asn ); /* собранное ранее дерево */
+ /* 4.помещаем в корень созданное дерево */
+   ak_asn1_context_add_asn1( root, TSEQUENCE, asn ); /* собранное ранее дерево */
                                             /* и имитовставку собранного дерева */
-   if(( error = ak_asn1_context_add_asn1_cmac( &root, asn, &bkey )) != ak_error_ok )
-     ak_error_message( error, __func__, "export secret key without integrity code" );
-
-  /* кодируем полное дерево */
-   if(( error = ak_asn1_context_encode( &root, buffer, buffer_size )) != ak_error_ok )
-     ak_error_message( error, __func__, "wrong encoding of asn1 context" );
-
    labexit:
-     ak_asn1_context_destroy( &root );
-     ak_bckey_context_destroy( &bkey );
+     ak_bckey_context_destroy( &ekey );
+     ak_bckey_context_destroy( &ikey );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает ASN.1 дерево, содержащее экспортное представление секретного ключа,
+    после чего кодирует дерево в виде der-последовательности и сохряняет
+    данную последовательность в файл.
+
+    Примеры вызова функции
+    \code
+       char filemane[256];
+
+      // сохранение ключа в файле, имя которого возвращается в переменной filename
+       ak_skey_context_export_to_file_with_password( skey, filename, sizeof( filename ),
+                                                                                   "password", 8 );
+      // сохранение ключа в файле с заданным именем
+       ak_skey_context_export_to_file_with_password( skey, "key.file", 0, "password", 8 );
+    \endcode
+
+    \param skey контекст экспортируемого секретного ключа; контекст должен быть инициализирован
+    ключевым значением, а поле oid должно содержать идентификатор алгоритма, для которого
+    предназначен ключ.
+    \param filename указатель на строку, содержащую имя файла, в который будет экспортирован ключ.
+    Если параметр `size` отличен от нуля ,
+    то указатель должен указывать на область памяти, в которую будет помещено сформированное имя файла.
+    \param size размер области памяти, в которую будет помещено имя файла.
+    Если размер области недостаточен, то будеи возбуждена ошибка.
+    Данный параметр должен принимать значение 0 (ноль), если указатель `filename` указывает
+    на константную строку.
+    \param password пароль, используемый для генерации ключа шифрования контента
+    \param pass_size длина пароля (в октетах)
+
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_context_export_to_derfile_with_password( ak_skey skey, char *filename,
+                                  const size_t size, const char *password, const size_t pass_size )
+{
+  struct file fp;
+  struct asn1 root;
+  ssize_t wbb = 0;
+  size_t len = 0, wb = 0;
+  int error = ak_error_ok;
+  ak_uint8 *buffer = NULL;
+
+  /* формируем имя файла для хранения ключа
+     (данное имя в точности совпадает с номером ключа) */
+   if( size ) {
+     if( size < ( 5 + 2*sizeof( skey->number )) )
+       return ak_error_message( ak_error_out_of_memory, __func__,
+                                               "insufficent memory size for secret key filename" );
+     memset( filename, 0, size );
+     ak_snprintf( filename, size, "%s.key",
+                                 ak_ptr_to_hexstr( skey->number, sizeof(skey->number), ak_false ));
+   }
+
+  /* создаем ASN.1 дерево */
+   if(( error = ak_asn1_context_create( &root )) != ak_error_ok )
+     return ak_error_message( error, __func__, "incorrect creation of asn1 context");
+   if((error = ak_skey_context_export_to_asn1_with_password( skey, &root,
+                                                          password, pass_size )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "wrong export a secret key to asn1 context" );
+     goto lab1;
+   }
+   ak_asn1_context_evaluate_length( &root, &len );
+
+  /* кодируем */
+   if(( buffer = malloc( len )) == NULL )  {
+     ak_error_message( ak_error_out_of_memory, __func__,
+                                                  "incorrect memory allocation for der-sequence" );
+     goto lab1;
+   }
+   if(( error = ak_asn1_context_encode( &root, buffer, &len )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect encoding of asn1 context" );
+     goto lab2;
+   }
+
+  /* сохраняем */
+   if(( error = ak_file_create_to_write( &fp, filename )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect creation a file for secret key" );
+     goto lab2;
+   }
+   do{
+     wbb = ak_file_write( &fp, buffer, len );
+     if( wbb == -1 ) {
+       ak_error_message( error = ak_error_get_value(), __func__ ,
+                                                     "incorrect writing an encoded data to file" );
+       goto lab3;
+     }
+      else wb += (size_t) wbb;
+   } while( wb < len );
+
+   lab3: ak_file_close( &fp );
+   lab2: free( buffer );
+   lab1: ak_asn1_context_destroy( &root );
+
  return error;
 }
 

@@ -9,18 +9,15 @@
  #include <stdlib.h>
  #include <string.h>
  #include <ak_skey.h>
- #include <ak_asn1.h>
- #include <ak_tools.h>
+ #include <ak_asn1_keys.h>
 
  int main( void )
 {
-  size_t len = 0;
   struct skey key;
-  ak_uint8 derkey[1024];
+  char filename[256], exec[512];
   ak_uint8 testkey[32] = {
     0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x27, 0x01, 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe,
     0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00, 0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x28 };
-  struct file fp;
 
  /* инициализируем библиотеку */
   ak_log_set_level( ak_log_maximum );
@@ -35,18 +32,22 @@
      ak_skey_context_set_resource( &key, block_counter_resource, "magma_cipher_resource", 0, time(NULL)+2592000 );
      ak_skey_context_print_to_file( &key, stdout );
 
- /* экспортируем ключ в файловый контейнер,
-    зашифровывая его на заданном пользователем пароле */
-  len = sizeof( derkey );
-  if( ak_skey_context_export_to_der_from_password( &key, "password", 8, derkey, &len ) == ak_error_ok )
-    ak_asn1_fprintf_ptr( stdout, derkey, len, ak_true );
-
- /* сохраняем выработанное значение в файл */
-  ak_file_create_to_write( &fp, "testkey.key" );
-  ak_file_write( &fp, derkey, len );
-  ak_file_close( &fp );
-
+ /* экспортируем ключ в файловый контейнер */
+  ak_skey_context_export_to_derfile_with_password( &key, filename, sizeof( filename ), "password", 8 );
   ak_skey_context_destroy( &key );
+
+ /* пытаемся вывести зашифрованное содержимое */
+  printf("key encoded to %s file\n", filename );
+  #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+    ak_snprintf( exec, sizeof(exec), "aktool.exe a %s", filename );
+  #else
+    ak_snprintf( exec, sizeof(exec), "./aktool a %s", filename );
+  #endif
+    system(exec);
+
+
+
+
   ak_libakrypt_destroy();
  return EXIT_SUCCESS;
 }

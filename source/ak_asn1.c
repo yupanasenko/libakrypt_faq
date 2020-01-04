@@ -530,8 +530,9 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
       break;
 
     case TUTF8_STRING:
-      if(( error = ak_tlv_context_get_utf8_string( tlv, &ptr )) == ak_error_ok )
+      if(( error = ak_tlv_context_get_utf8_string( tlv, &ptr )) == ak_error_ok ) {
         fprintf( fp, "%s\n", (char *)ptr );
+      }
        else dp = ak_true;
       break;
 
@@ -1121,7 +1122,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция кодирует значение, которое содержится в переменной `bool`, и помещает его на
+/*! Функция кодирует значение, которое содержится в переменной `bool`, и помещает его на
     текущий уровень ASN1 дерева.
     \param asn1 указатель на текущий уровень ASN1 дерева.
     \param bool булева переменная.
@@ -1145,7 +1146,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция кодирует значение, которое содержится в переменной `u32`, и помещает его на
+/*! Функция кодирует значение, которое содержится в переменной `u32`, и помещает его на
     текущий уровень ASN1 дерева.
     \param asn1 указатель на текущий уровень ASN1 дерева.
     \param u32 целочисленная беззнаковая переменная.
@@ -1587,10 +1588,10 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_asn1_context_evaluate_length( ak_asn1 asn, ak_uint32 *total )
+ int ak_asn1_context_evaluate_length( ak_asn1 asn, size_t *total )
 {
   int error = ak_error_ok;
-  ak_uint32 length = 0, subtotal = 0;
+  size_t length = 0, subtotal = 0;
 
   ak_asn1_context_first( asn );
   if( asn->current == NULL ) {
@@ -1731,11 +1732,11 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   возвращается код ошибки.
   \note Перед вызовом функции переменная `size` должна быть инициализирована значением,
   указывающим максимальный объем выделенной области памяти. Если данное значение окажется меньше
-  необходимого, то будет возбуждена ошибка, а необходимое значение будеи помещено в `size`.        */
+  необходимого, то будет возбуждена ошибка, а необходимое значение будет помещено в `size`.        */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_context_encode( ak_asn1 asn1, ak_pointer ptr, size_t *size )
 {
-  ak_uint32 tlen = 0;
+  size_t tlen = 0;
   ak_uint8 *buf = ptr;
   int error = ak_error_ok;
 

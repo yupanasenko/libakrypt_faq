@@ -58,6 +58,7 @@
  static const char *on_w512_psc[] =         { "id-tc26-gost-3410-2012-512-paramSetC", NULL };
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
+ static const char *on_asn1_akcont[] =         { "libakryptContainer", NULL };
  static const char *on_asn1_ogrn[] =           { "OGRN", "ОГРН", NULL };
  static const char *on_asn1_snils[] =          { "SNILS", "СНИЛС", NULL };
  static const char *on_asn1_ogrnip[] =         { "OGRNIP", "ОГРНИП", NULL };
@@ -157,6 +158,22 @@
                                        ( ak_function_void *) ak_bckey_context_delete, NULL, NULL }},
   #endif
 
+// рекомендации по cms
+// id-gostr3412-2015-magma-ctracpkm OBJECT IDENTIFIER ::= { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) algorithms(1) cipher(5) gostr3412-2015-magma(1) mode- ctracpkm(1) }
+// id-gostr3412-2015-magma-ctracpkm-omac OBJECT IDENTIFIER ::= { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) algorithms(1) cipher(5) gostr3412-2015-magma(1) mode- ctracpkm-omac(2) }
+// id-gostr3412-2015-kuznyechik-ctracpkm OBJECT IDENTIFIER ::= { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) algorithms(1) cipher(5) gostr3412-2015-kuznyechik(2) mode-ctracpkm(1)
+// id-gostr3412-2015-kuznyechik-ctracpkm-omac OBJECT IDENTIFIER ::= { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) algorithms(1) cipher(5) gostr3412-2015-kuznyechik(2) mode-ctracpkm-omac(2) }
+// id-gostr3412-2015-magma-wrap-kexp15 OBJECT IDENTIFIER ::= { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) algorithms(1) wrap(7) gostr3412-2015-magma(1) kexp15(1) }
+// id-gostr3412-2015-kuznyechik-wrap-kexp15 OBJECT IDENTIFIER ::= { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) algorithms(1) wrap(7) gostr3412-2015-kuznyechik(2) kexp15(1) }
+// id-tc26-agreement-gost-3410-12-256 OBJECT IDENTIFIER ::= { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) algorithms (1) agreement(6) gost3410-2012-256(1) }
+// id-tc26-agreement-gost-3410-12-512 OBJECT IDENTIFIER ::= { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) algorithms (1) agreement(6) gost3410-2012-512(2) }
+
+// режимы MGM
+// 1.2.643.7.1.1.5.1.3 (id-tc26-cipher- gostr3412-2015-magma-mgm) и
+// 1.2.643.7.1.1.5.2.3 (id-tc26-cipher-gostr3412-2015- kuznyechik-mgm)
+
+
+
   /* 12. идентификаторы параметров эллиптических кривых, в частности, из Р 50.1.114-2016
          в дереве библиотеки: 1.2.643.2.52.1.12 - параметры эллиптических кривых в форме Вейерштрасса
          в дереве библиотеки: 1.2.643.2.52.1.12.1 - параметры 256 битных кривых
@@ -212,6 +229,8 @@
     http://www.2410000.ru/p_45_spravochnik_oid_oid__najti_oid_oid_perechen_oid_oid_obektnyj_identifikator_oid_oid_object_identifier.html */
 
   #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
+   { identifier, parameter, on_asn1_akcont, "1.2.643.2.52.1.127.1.2", NULL, { NULL, NULL, NULL, NULL, NULL }},
+
    { identifier, parameter, on_asn1_ogrn,   "1.2.643.100.1", NULL, { NULL, NULL, NULL, NULL, NULL }},
    { identifier, parameter, on_asn1_snils,  "1.2.643.100.3", NULL, { NULL, NULL, NULL, NULL, NULL }},
    { identifier, parameter, on_asn1_ogrnip, "1.2.643.100.5", NULL, { NULL, NULL, NULL, NULL, NULL }},
