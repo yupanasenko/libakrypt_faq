@@ -736,7 +736,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- bool_t ak_handle_has_tag( ak_handle handle )
+ bool_t ak_handle_check_tag( ak_handle handle )
 {
   size_t idx = 0;
   int error = ak_error_ok;
@@ -824,7 +824,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- bool_t ak_handle_has_key( ak_handle handle )
+ bool_t ak_handle_check_key( ak_handle handle )
 {
   ak_oid oid = NULL;
   ak_pointer ctx = NULL;

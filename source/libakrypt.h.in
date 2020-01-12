@@ -316,6 +316,8 @@ extern "C" {
  #define ak_error_invalid_asn1_length         (-91)
 /*! \brief Использование неверной функции для чтения отрицательных данных, размещаемых в узле ASN1 дерева */
  #define ak_error_invalid_asn1_significance   (-92)
+/*! \brief Полученные данные содержат неверный или неожидаемый контент */
+ #define ak_error_invalid_asn1_content        (-93)
 
 /*! \brief Ошибка, возникающая при кодировании ASN1 структуры (перевод в DER-кодировку). */
  #define ak_error_wrong_asn1_encode           (-90)
@@ -456,6 +458,11 @@ extern "C" {
  dll_export ak_int64 ak_libakrypt_get_option_value( const size_t index );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция устанавливает/снимает режим совместимости с форматами данных,
+    поддерживаемыми gostengine из библиотеки openssl. */
+ dll_export int ak_libakrypt_set_openssl_compability( bool_t );
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Получение человекочитаемого имени для заданного типа криптографического механизма. */
  dll_export const char *ak_libakrypt_get_engine_name( const oid_engines_t );
 /*! \brief Получение человекочитаемого имени режима или параметров криптографического механизма. */
@@ -485,14 +492,17 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция устанавливает домашний каталог пользователя. */
  dll_export int ak_libakrypt_get_home_path( char *, const size_t );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Тип функции, предназначенной для считывания пароля.  */
+ typedef int ( ak_function_password_read ) ( char *, const size_t );
+/*! \brief Функция устанавливает обработчик - функцию чтения пользовательского пароля. */
+ dll_export int ak_libakrypt_set_password_read_function( ak_function_password_read * );
 /*! \brief Чтение пароля из консоли. */
  dll_export int ak_password_read( char *, const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_STDIO_H
-/*! \brief Декодирование ASN.1 дерева, представленного в der-кодировке,
-    и вывод информации в файловый дескриптор */
- dll_export int ak_asn1_fprintf_ptr( FILE * , ak_uint8 *, const size_t , bool_t );
 /*! \brief Декодирование ASN.1 дерева, содержащегося в файле и вывод информации в файловый дескриптор */
  dll_export int ak_asn1_fprintf( FILE * , const char * , bool_t );
 #endif
@@ -514,11 +524,11 @@ extern "C" {
  dll_export int ak_handle_get_oid( ak_handle , oid_engines_t *, oid_modes_t *,
                                                                    const char **, const char *** );
 /*! \brief Проверка, обладает ли криптографическое преобразование выходным блоком.  */
- dll_export bool_t ak_handle_has_tag( ak_handle );
+ dll_export bool_t ak_handle_check_tag( ak_handle );
 /*! \brief Функция возвращает длину выходного блока криптографического преобразования. */
  dll_export size_t ak_handle_get_tag_size( ak_handle );
 /*! \brief Проверка, допускает ли алгоритм использование секретного ключа. */
- dll_export bool_t ak_handle_has_key( ak_handle );
+ dll_export bool_t ak_handle_check_key( ak_handle );
 /*! \brief Присвоение константного ключевого значения. */
  dll_export int ak_handle_set_key_from_hexstr( ak_handle , const char * , const bool_t reverse );
 /*! \brief Присвоение случайного ключевого значения значения. */

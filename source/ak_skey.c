@@ -708,7 +708,17 @@
   fprintf( fp, "resource:\n value:\t%u (%s)\n", (unsigned int)skey->resource.value.counter,
                               skey->resource.value.type == block_counter_resource ? bc : rc );
   fprintf( fp, " not before: %s", ctime( &skey->resource.time.not_before ));
-  fprintf( fp, " not after:  %s\n", ctime( &skey->resource.time.not_after ));
+  fprintf( fp, " not after:  %s", ctime( &skey->resource.time.not_after ));
+  fprintf( fp, "flags: [set_key = ");
+   if( skey->flags&ak_key_flag_set_key ) fprintf( fp, "SET"); else fprintf( fp, "NOT SET");
+  fprintf( fp, ", set_mask = ");
+   if( skey->flags&ak_key_flag_set_mask ) fprintf( fp, "SET"); else fprintf( fp, "NOT SET");
+  fprintf( fp, ", set_icode = ");
+   if( skey->flags&ak_key_flag_set_icode ) fprintf( fp, "SET"); else fprintf( fp, "NOT SET");
+  fprintf( fp, ", data_not_free = ");
+   if( skey->flags&ak_key_flag_data_not_free ) fprintf( fp, "SET"); else fprintf( fp, "NOT SET");
+  fprintf( fp, "]\n\n");
+
  return  ak_error_ok;
 }
 

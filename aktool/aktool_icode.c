@@ -312,13 +312,13 @@
     return ak_false;
   }
  /* проверяем, что этот алгоритм позволяет реализовывать сжатие (хеширование или имитозащиту) */
-  if(( ak_handle_has_tag( ic.handle )) != ak_true ) {
+  if(( ak_handle_check_tag( ic.handle )) != ak_true ) {
     printf(_("algorithm \"%s\" cannot be used for hash or mac calculations\n"), algorithm );
     return ak_false;
   }
 
  /* проверяем, что алгоритм допускает использование ключа */
-  if( ak_handle_has_key( ic.handle )) {
+  if( ak_handle_check_key( ic.handle )) {
 
     if( ic.hexkey_flag ) {
        if(( error =

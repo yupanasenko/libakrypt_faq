@@ -127,7 +127,7 @@
   }
 
  /* собственно вызов функции, выводящей ASN.1 дерево в консоль */
-  if(( error = ak_asn1_fprintf_ptr( stdout, ptr_data, data_size, ak_true )) == ak_error_ok )
+  if(( error = ak_asn1_context_fprintf_ptr( stdout, ptr_data, data_size, ak_true )) == ak_error_ok )
    fprintf( stdout, "checking the der-sequence is Ok\n" );
     else fprintf( stdout, "checking the der-sequence is Wrong\n" );
   ak_libakrypt_destroy();

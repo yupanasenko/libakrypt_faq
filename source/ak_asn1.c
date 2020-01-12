@@ -496,7 +496,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
               !strncmp( oidptr, "2.5.29.32", 9 ) ||
               !strncmp( oidptr, "2.5.29.35", 9 )) {
             ak_asn1_context_create( &asn );
-            if( ak_asn1_context_decode( &asn, ptr, len ) == ak_error_ok ) {
+            if( ak_asn1_context_decode( &asn, ptr, len, ak_false ) == ak_error_ok ) {
               len = strlen( prefix );
               strcat( prefix, "   " );
               fprintf( fp, " (%u octets, encoded)\n", (ak_uint32)len );
@@ -1525,12 +1525,17 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param asn1 указатель на текущий уровень ASN.1 дерева
-    \param ptr указатель на область памяти, сожержащей фрагмент der-последовательности
+    \param ptr указатель на область памяти, содержащей фрагмент der-последовательности
     \param size длина фрагмента (в октетах)
+    \param flag булева переменная, указывающая: надо ли выделять память под данные asn1 дерева,
+    или нет. Если флаг истиннен, то данные из области памяти, на которую указывает ptr
+    (примитивные узлы дерева), копируются в новую область памяти, которую контролирует asn1 контекст.
+    Если флаг ложен, то данные не копируются и в asn1 дерево помещаются только указатели на
+    соответствующие области в ptr.
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_asn1_context_decode( ak_asn1 asn1, const ak_pointer ptr, const size_t size )
+ int ak_asn1_context_decode( ak_asn1 asn1, const ak_pointer ptr, const size_t size, bool_t flag )
 {
   size_t len = 0;
   ak_tlv tlv = NULL;
@@ -1560,7 +1565,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
      /* добавляем в дерево примитивный элемент */
       case PRIMITIVE:
         if(( error = ak_tlv_context_create_primitive(
-               tlv = malloc( sizeof( struct tlv )),  tag, len, pcurr, ak_false )) != ak_error_ok )
+               tlv = malloc( sizeof( struct tlv )),  tag, len, pcurr, flag )) != ak_error_ok )
           return ak_error_message( error, __func__, "incorrect creation of tlv context" );
         if(( error = ak_asn1_context_add_tlv( asn1, tlv )) != ak_error_ok )
           return ak_error_message( error, __func__,
@@ -1572,7 +1577,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
         if(( error = ak_asn1_context_create(
                                          asnew = malloc( sizeof( struct asn1 )))) != ak_error_ok )
           return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
-        if(( error = ak_asn1_context_decode( asnew, pcurr, len )) != ak_error_ok )
+        if(( error = ak_asn1_context_decode( asnew, pcurr, len, flag )) != ak_error_ok )
           return ak_error_message( error, __func__, "incorrect decoding of asn1 context" );
         if(( error = ak_asn1_context_add_asn1( asn1, tag, asnew )) != ak_error_ok )
           return ak_error_message( error, __func__,
@@ -1756,8 +1761,6 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-                              /* функции внешнего интерфейса */
-/* ----------------------------------------------------------------------------------------------- */
 /*! \param fp Дескриптор файла, в котрый выводится информация;
     файл должен предварительно открыт на запись
     \param ptr Указатель на область памяти, где содержится der-последовательность
@@ -1767,7 +1770,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_asn1_fprintf_ptr( FILE *fp, ak_uint8 *ptr, const size_t size , bool_t check )
+ int ak_asn1_context_fprintf_ptr( FILE *fp, ak_uint8 *ptr, const size_t size , bool_t check )
 {
   size_t len = 0;
   struct asn1 asn;
@@ -1779,7 +1782,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
 
  /* декодируем данные */
-  if(( error = ak_asn1_context_decode( &asn, ptr, size )) != ak_error_ok ) {
+  if(( error = ak_asn1_context_decode( &asn, ptr, size, ak_false )) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect decoding of der-sequence" );
     goto exitlab;
   }
@@ -1812,40 +1815,21 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+                              /* функции внешнего интерфейса */
+/* ----------------------------------------------------------------------------------------------- */
  dll_export int ak_asn1_fprintf( FILE *fp, const char *filename, bool_t check )
 {
-  struct file sfp;
+  size_t len = 0;
   ak_uint8 *ptr = NULL;
   int error = ak_error_ok;
 
-  if(( error = ak_file_open_to_read( &sfp, filename )) != ak_error_ok )
-    return ak_error_message_fmt( error, __func__, "wrong open the %s file", filename );
+  if(( ptr = ak_ptr_load_from_file( ptr, &len, filename )) == NULL )
+    return ak_error_message_fmt( ak_error_get_value(), __func__,
+                                        "incorrect loading an ASN.1 data from file %s", filename );
+ /* теперь декодируем данные */
+  error = ak_asn1_context_fprintf_ptr( fp, ptr, len, check );
+  if( ptr != NULL ) free (ptr);
 
- /* поскольку мы умеем обрабатывать der-последовательности только одним фрагментом,
-    то нам приходится загружать весь файл в память
-    сейчас же мы проверяем, что бы файл был не очень велик
-
-    FIXME: необходимо предусмотреть возможность использования mmap() */
-  if( (size_t)sfp.size > 65536 ) {
-    ak_error_message_fmt( ak_error_wrong_length, __func__,
-                      "using file with unsupported, huge length (%lu octets)", (size_t) sfp.size );
-    goto exitlab;
-  }
-  if(( ptr = malloc( (size_t) sfp.size )) == NULL ){
-    ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
-    goto exitlab;
-  }
-  if(( ak_file_read( &sfp, ptr, ( size_t )sfp.size )) != sfp.size ) {
-    ak_error_message( ak_error_access_file, __func__, "incorrect reading an ASN.1 data from file" );
-    goto exitlab;
-  }
-
- /* только теперь декодируем данные */
-  error = ak_asn1_fprintf_ptr( fp, ptr, (size_t) sfp.size, check );
-
-  exitlab:
-   if( ptr != NULL ) free (ptr);
-   ak_file_close( &sfp );
  return error;
 }
 

@@ -38,8 +38,10 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция очистки памяти. */
  int ak_ptr_context_wipe( ak_pointer , size_t , ak_random );
-/*! \brier Функция сравнения двух массивов данных и вывода информации в систему аудита. */
+/*! \brief Функция сравнения двух массивов данных и вывода информации в систему аудита. */
  bool_t ak_ptr_is_equal_with_log( ak_const_pointer, ak_const_pointer , const size_t );
+/*! \brief Функция чтения заданного файла в буффер. */
+ ak_uint8 *ak_ptr_load_from_file( ak_pointer , size_t *, const char * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция открывает заданный файл на чтение. */
@@ -67,11 +69,6 @@
  int ak_libakrypt_create_filename( char * , const size_t , char * , const int );
 /*! \brief Функция считывает настройки (параметры) библиотеки из файла libakrypt.conf */
  bool_t ak_libakrypt_load_options( void );
-#endif
-
-/* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_HAVE_WINDOWS_H
- int ak_libakrypt_utf8_to_windows1251( const char* , char* , size_t );
 #endif
 
 #endif

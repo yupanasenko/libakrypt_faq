@@ -243,10 +243,16 @@
  int ak_asn1_context_print( ak_asn1 , FILE * );
 /*! \brief Функция вычисляет размер, занимаемый данным уровнем ASN.1 дерева */
  int ak_asn1_context_evaluate_length( ak_asn1 , size_t * );
-/*! \brief Декодирование ASN1 дерева из заданной DER-последовательности октетов. */
- int ak_asn1_context_decode( ak_asn1 , const ak_pointer , const size_t );
 /*! \brief Кодирование ASN1 дерева в DER-последовательность октетов. */
  int ak_asn1_context_encode( ak_asn1 , ak_pointer , size_t * );
+/*! \brief Декодирование ASN1 дерева из заданной DER-последовательности октетов. */
+ int ak_asn1_context_decode( ak_asn1 , const ak_pointer , const size_t , bool_t );
+/*! \brief Декодирование ASN.1 дерева, представленного в der-кодировке,
+    и вывод информации в файловый дескриптор. */
+ int ak_asn1_context_fprintf_ptr( FILE * , ak_uint8 * , const size_t , bool_t );
+
+///*! \brief Функция чтения ASN.1 дерева из заданного файла. */
+// int ak_asn1_context_load_form_file( ak_asn1 , const char * );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

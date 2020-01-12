@@ -835,7 +835,7 @@
             if( oc ) akey[0] = bswap_64( akey[0] );
             ak_gf64_mul( akey, akey, one64 );
 
-            if( tail < bkey->bsize ) {
+            if( tail < (ak_int64) bkey->bsize ) {
               ak_gf64_mul( akey, akey, one64 );
               ((ak_uint8 *)akey)[tail] ^= 0x80;
             }
@@ -843,7 +843,7 @@
           /* теперь шифруем последний блок */
             if( oc ) {
                yaout[0] ^= bswap_64( akey[0] );
-               for( i = 0; i < tail; i++ ) ((ak_uint8 *)yaout)[7-i] ^= ((ak_uint8 *)inptr)[7-i];
+               for( i = 0; i < tail; i++ ) ((ak_uint8 *)yaout)[7-i] ^= ((ak_uint8 *)inptr)[tail-1-i];
             }
               else {
                yaout[0] ^= akey[0];
@@ -868,7 +868,7 @@
               akey[1] = tmp;
             }
             ak_gf128_mul( akey, akey, one64 );
-            if( tail < bkey->bsize ) {
+            if( tail < (ak_int64) bkey->bsize ) {
               ak_gf128_mul( akey, akey, one64 );
               ((ak_uint8 *)akey)[tail] ^= 0x80;
             }
@@ -877,7 +877,7 @@
             if( oc ) {
                yaout[0] ^= bswap_64( akey[1] );
                yaout[1] ^= bswap_64( akey[0] );
-               for( i = 0; i < tail; i++ ) ((ak_uint8 *)yaout)[15-i] ^= ((ak_uint8 *)inptr)[15-i];
+               for( i = 0; i < tail; i++ ) ((ak_uint8 *)yaout)[15-i] ^= ((ak_uint8 *)inptr)[tail-1-i];
             }
              else {
               yaout[0] ^= akey[0];

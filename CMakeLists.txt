@@ -38,7 +38,6 @@ option( LIBAKRYPT_CONST_CRYPTO_PARAMS "Build library with const values of crypto
 option( LIBAKRYPT_INTERNAL_TESTS "Build collection of internal tests using non-export functions" OFF )
 option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
 option( LIBAKRYPT_HTML_DOC "Build documentation in HTML format" OFF )
-option( LIBAKRYPT_PDF_DOC "Build documentation in PDF format" OFF )
 option( LIBAKRYPT_AKTOOL "Build console aktool application" ON )
 option( LIBAKRYPT_INSTALL_HEADERS "Install development headers with non-export functions" OFF )
 
@@ -305,6 +304,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  bckey01
                  bckey02
                  bckey03
+                 bckey04
                  context-node
                  context-manager
                  hash01
@@ -316,7 +316,6 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  oid03
                  random02
                  skey01
-                 skey02
                  asn1-build
                  asn1-parse
   )
