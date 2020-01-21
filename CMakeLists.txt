@@ -15,7 +15,7 @@
 # сборка при MinGW из консоли MSYS (WINDOWS)
 # cmake -G "MinGW Makefiles" -D CMAKE_C_COMPILER=gcc path && mingw32-make
 # -------------------------------------------------------------------------------------------------- #
-cmake_minimum_required( VERSION 2.7 FATAL_ERROR )
+cmake_minimum_required( VERSION 2.8 FATAL_ERROR )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 8 )
@@ -31,7 +31,7 @@ project( libakrypt-${FULL_VERSION} C )
 # Перечень доступных опций для сборки библиотеки
 # - для включения опции: cmake -D LIBAKRYPT_GMP_TESTS=ON path
 # -------------------------------------------------------------------------------------------------- #
-option( LIBAKRYPT_STATIC_LIB "Build the static library" OFF )
+option( LIBAKRYPT_STATIC_LIB "Build the static library" ON )
 option( LIBAKRYPT_SHARED_LIB "Build the shared library" ON )
 option( LIBAKRYPT_CRYPTO_FUNCTIONS "Build library with crypto functions" ON )
 option( LIBAKRYPT_CONST_CRYPTO_PARAMS "Build library with const values of crypto parameters" OFF )
@@ -55,14 +55,6 @@ endif()
 
 if( LIBAKRYPT_INTERNAL_TESTS OR LIBAKRYPT_GMP_TESTS )
   set( LIBAKRYPT_STATIC_LIB ON )
-  set( LIBAKRYPT_SHARED_LIB OFF )
-endif()
-if( LIBAKRYPT_STATIC_LIB )
-  set( LIBAKRYPT_SHARED_LIB OFF )
-endif()
-if( LIBAKRYPT_INSTALL_HEADERS )
-  set( LIBAKRYPT_STATIC_LIB ON )
-  set( LIBAKRYPT_SHARED_LIB OFF )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -209,7 +201,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
-# Добавляем поддержку отладосных функций
+# Добавляем поддержку отладочных функций
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_INTERNAL_TESTS )
   set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_DEBUG_FUNCTIONS" )
@@ -221,17 +213,22 @@ endif()
 include_directories( "source" )
 add_compile_options( -DLIBAKRYPT_OPTIONS_PATH="${LIBAKRYPT_CONF}" )
 add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
+add_compile_options( -DLIBAKRYPT_COMPILER_NAME="${CMAKE_C_COMPILER}" )
+add_compile_options( -DLIBAKRYPT_COMPILER_VERSION="${CMAKE_C_COMPILER_VERSION}" )
 
+# -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_SHARED_LIB )
-  add_library( akrypt SHARED ${MAIN_HEADER} ${SOURCES} ${ASN1_SOURCES} )
-  set_target_properties( akrypt PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
-  target_link_libraries( akrypt ${LIBAKRYPT_LIBS} )
+  add_library( akrypt-shared SHARED ${MAIN_HEADER} ${SOURCES} ${ASN1_SOURCES} )
+  set_target_properties( akrypt-shared PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
+  set_target_properties( akrypt-shared PROPERTIES OUTPUT_NAME akrypt CLEAN_DIRECT_CUSTOM 1 )
+  target_link_libraries( akrypt-shared ${LIBAKRYPT_LIBS} )
   message( "-- Building a shared library" )
 endif()
 #
 if( LIBAKRYPT_STATIC_LIB )
-  add_library( akrypt STATIC ${MAIN_HEADER} ${SOURCES} ${ASN1_SOURCES} )
-  set_target_properties( akrypt PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
+  add_library( akrypt-static STATIC ${MAIN_HEADER} ${SOURCES} ${ASN1_SOURCES} )
+  set_target_properties( akrypt-static PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
+  set_target_properties( akrypt-static PROPERTIES OUTPUT_NAME akrypt CLEAN_DIRECT_CUSTOM 1 )
   message( "-- Building a static library" )
 endif()
 
@@ -258,9 +255,9 @@ if( LIBAKRYPT_AKTOOL )
   find_library( LIBINTL_LIB intl )
   if( LIBINTL_LIB )
     message("-- Additional library for aktool is ${LIBINTL_LIB}")
-    target_link_libraries( aktool${LIBAKRYPT_EXT} akrypt ${LIBAKRYPT_LIBS} ${LIBINTL_LIB} )
+    target_link_libraries( aktool${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} ${LIBINTL_LIB} )
   else()
-    target_link_libraries( aktool${LIBAKRYPT_EXT} akrypt ${LIBAKRYPT_LIBS} )
+    target_link_libraries( aktool${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
   endif()
 endif()
 
@@ -287,7 +284,7 @@ endif()
 
 foreach( programm ${EXAMPLES_LIST} )
   add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
-  target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt ${LIBAKRYPT_LIBS} )
+  target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-shared ${LIBAKRYPT_LIBS} )
 endforeach()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -340,13 +337,13 @@ if( LIBAKRYPT_INTERNAL_TESTS )
     enable_testing()
     foreach( programm ${INTERNAL_TEST_LIST} )
        add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
-       target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt ${LIBAKRYPT_LIBS} )
+       target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
        add_test( NAME test-${programm}${LIBAKRYPT_EXT} COMMAND test-${programm}${LIBAKRYPT_EXT} )
     endforeach()
     # компилируемые тесты, не попадающие в вызов команды make test
     foreach( programm ${INTERNAL_TEST_LIST_EXAMPLES} )
        add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
-       target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt ${LIBAKRYPT_LIBS} )
+       target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
     endforeach()
     message("-- Added tests for internal functions (now \"make test\" enabled): ")
     message("   - ${INTERNAL_TEST_LIST}" )
@@ -379,7 +376,7 @@ if( LIBAKRYPT_GMP_TESTS )
     enable_testing()
     foreach( programm ${ARITHMETIC_TESTS_LIST} )
       add_executable( test-${programm}${LIBAKRYPT_EXT} tests/test-${programm}.c )
-      target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt gmp )
+      target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static gmp )
       add_test( NAME test-${programm} COMMAND test-${programm}${LIBAKRYPT_EXT} )
     endforeach()
     message("-- Added tests for integer arithmetic and comparizon with libgmp (now \"make test\" enabled):")

@@ -354,8 +354,9 @@
   printf(_("     show   show useful information\n\n"));
   printf(_("also try:\n"));
   printf(_("  \"aktool command --help\" to get information about command options\n"));
-  printf(_("  \"man aktool\" to get more information about akrypt programm and some examples\n"));
-
+  printf(_("  \"man aktool\" to get more information about akrypt programm and some examples\n\n"));
+  printf(_("aktool compiled by %s, version: %s (%s at %s)\n"),
+                                         LIBAKRYPT_COMPILER_NAME, __VERSION__, __DATE__, __TIME__ );
  return EXIT_SUCCESS;
 }
 

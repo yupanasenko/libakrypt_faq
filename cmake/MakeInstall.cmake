@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------------------------------------- #
 # инсталляция библиотеки (только для UNIX)
 if( CMAKE_HOST_UNIX )
-  install( TARGETS akrypt
+  install( TARGETS akrypt-static akrypt-shared
            LIBRARY DESTINATION lib
            ARCHIVE DESTINATION lib
          )

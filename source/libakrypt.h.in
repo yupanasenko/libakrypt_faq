@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2019 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Файл libakrypt.h                                                                               */
 /*  - содержит перечень экспортируемых интерфейсов библиотеки libakrypt                            */
@@ -94,6 +94,11 @@ extern "C" {
  #else
   #define LIBAKRYPT_LITTLE_ENDIAN     (1234)
  #endif
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
+#ifndef __VERSION__
+ #define __VERSION__ LIBAKRYPT_COMPILER_VERSION
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -326,7 +331,7 @@ extern "C" {
 /*! \brief Ошибка, возникающая при сравнивании двух тегов */
 #define ak_error_diff_tags                    (-92)
 /*! \brief Ошибка использования неправильного (неожидаемого) значения. */
-#define ak_error_invalid_value                (-9)
+#define ak_error_invalid_value                (-99)
 
 /*! \brief Ошибка сохранения/чтения ключа с неподдерживаемым типом криптографического преобразования. */
  #define ak_error_key_engine                 (-100)
