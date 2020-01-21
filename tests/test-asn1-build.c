@@ -37,7 +37,7 @@
   struct hash ctx;
   struct file file;
   ak_uint32 u32 = 0;
-  char *str = NULL;
+  const char *str = NULL;
   bool_t bool = ak_true;
   ak_uint32 i = 0;
   int result = EXIT_FAILURE;

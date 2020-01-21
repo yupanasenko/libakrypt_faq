@@ -47,7 +47,7 @@
 /*! \brief Присвоение вычету значения, записанного строкой шестнадцатеричных символов. */
  int ak_mpzn_set_hexstr( ak_uint64 *, const size_t , const char * );
 /*! \brief Преобразование вычета в строку шестнадцатеричных символов. */
- char *ak_mpzn_to_hexstr( ak_uint64 *, const size_t );
+ const char *ak_mpzn_to_hexstr( ak_uint64 *, const size_t );
 /*! \brief Сериализация вычета в последовательность октетов. */
  int ak_mpzn_to_little_endian( ak_uint64 * , const size_t , ak_pointer , const size_t , bool_t );
 /*! \brief Присвоение вычету сериализованного значения. */

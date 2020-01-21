@@ -1082,7 +1082,7 @@
     либо в случае нехватки статической памяти, возвращается NULL.
     Код ошибки может быть получен с помощью вызова функции ak_error_get_value().                   */
 /* ----------------------------------------------------------------------------------------------- */
- char *ak_ptr_to_hexstr( ak_const_pointer ptr, const size_t ptr_size, const bool_t reverse )
+ const char *ak_ptr_to_hexstr( ak_const_pointer ptr, const size_t ptr_size, const bool_t reverse )
 {
   size_t len = 1 + (ptr_size << 1);
   ak_uint8 *data = ( ak_uint8 * ) ptr;

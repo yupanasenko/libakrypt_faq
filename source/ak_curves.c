@@ -126,7 +126,7 @@
 {
   ak_mpzn512 temp;
   struct wpoint wp;
-  char *str = NULL;
+  const char *str = NULL;
   int error = ak_error_ok;
 
  /* создали кривую и проверяем веоичину старшего коэффициента ее молуля */

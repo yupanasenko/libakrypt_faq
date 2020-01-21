@@ -480,7 +480,7 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей человекочитаемое значение заданной области памяти. */
- dll_export char *ak_ptr_to_hexstr( ak_const_pointer , const size_t , const bool_t );
+ dll_export const char *ak_ptr_to_hexstr( ak_const_pointer , const size_t , const bool_t );
 /*! \brief Создание строки символов, содержащей человекочитаемое значение заданной области памяти. */
  dll_export char *ak_ptr_to_hexstr_alloc( ak_const_pointer , const size_t , const bool_t );
 /*! \brief Конвертация строки шестнадцатеричных символов в массив данных. */

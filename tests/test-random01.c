@@ -19,7 +19,7 @@
  ak_uint8 seed[4] = { 0x13, 0xAE, 0x4F, 0x0E }; /* константа */
  int i = 0, retval = ak_true;
  ak_uint8 buffer[1024];
- char *string = NULL;
+ const char *string = NULL;
 
  /* создаем генератор */
   create( &generator );

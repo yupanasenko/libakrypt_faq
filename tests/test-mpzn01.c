@@ -12,7 +12,7 @@
  int main( void )
 {
   int i = 0;
-  char *s = NULL;
+  const char *s = NULL;
   ak_uint8 buffer[64];
   ak_mpzn256 x = { 0xaLL, 0xbLL, 0xcLL, 0xdLL };
   ak_mpzn256 y = { 0x10000000000aLL, 0x10000000000bLL, 0x10000000000cLL, 0x10000000000dLL };

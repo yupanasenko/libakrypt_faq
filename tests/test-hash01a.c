@@ -17,7 +17,7 @@
 /* основная программа */
  int main( void )
 {
-  char *str = NULL;
+  const char *str = NULL;
   struct hash ctx_one;    /* объект, размещаемый в статической памяти (стеке) */
   int error = ak_error_ok, exitcode = EXIT_FAILURE;
   ak_uint8 out[32],

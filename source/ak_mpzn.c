@@ -189,7 +189,7 @@
     @return В случае успеха, функция указатель на созданную строку. В противном случае возвращается
     NULL. Код ошибки может быть получен с помощью вызова функции ak_error_get_value().             */
 /* ----------------------------------------------------------------------------------------------- */
- char *ak_mpzn_to_hexstr( ak_uint64 *x, const size_t size )
+ const char *ak_mpzn_to_hexstr( ak_uint64 *x, const size_t size )
 {
 #ifdef LIBAKRYPT_BIG_ENDIAN
   size_t i = 0;

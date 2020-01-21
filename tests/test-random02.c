@@ -1,4 +1,4 @@
-/* Тестовый пример, иллюстрирующий создание серии генераторов
+/* Тестовый пример, иллюстрирующий создание серии генераторов hashrnd
    и проверку последовательной выработки псевдослучайных значений.
    Пример использует неэкспортируемые функции.
 
@@ -16,7 +16,7 @@
 {
   size_t off = 0;
   int result = EXIT_FAILURE;
-  char *str = NULL;
+  const char *str = NULL;
   struct hash hctx;
   struct random rnd;
   ak_uint8 cnt[128], buffer[526], out[32], out2[32];
@@ -25,7 +25,7 @@
 
  /* 1. создаем константное значение */
   memset( cnt, ak_random_value()&0xFF, sizeof( cnt )); /* константа */
-  ak_random_context_create_hashrnd( &rnd ); /* создаем контекст генератора */
+  if( ak_random_context_create_hashrnd( &rnd ) != ak_error_ok ) goto bad; /* создаем контекст генератора */
   ak_random_context_randomize( &rnd, cnt, sizeof( cnt )); /* инициализируем генератор константой */
   ak_random_context_random( &rnd, buffer, sizeof( buffer )); /* вырабатываем псевдослучайное значение */
 
@@ -35,8 +35,8 @@
   if(( str = ak_ptr_to_hexstr( buffer, sizeof( buffer ), ak_false )) != NULL )
     printf("random data: %s ", str );
    else {
-    printf("random data: %s ", str = ak_ptr_to_hexstr_alloc( buffer, sizeof( buffer ), ak_false ));
-    free( str );
+    printf("random data: %s ", str = (const char *)ak_ptr_to_hexstr_alloc( buffer, sizeof( buffer ), ak_false ));
+    free( (char *)str );
    }
   printf("(hash: %s)\n\n", ak_ptr_to_hexstr( out, sizeof( out ), ak_false ));
   ak_random_context_destroy( &rnd );
@@ -59,8 +59,8 @@
   if(( str = ak_ptr_to_hexstr( buffer, sizeof( buffer ), ak_false )) != NULL )
     printf("random data: %s ", str );
    else {
-    printf("random data: %s ", str = ak_ptr_to_hexstr_alloc( buffer, sizeof( buffer ), ak_false ));
-    free( str );
+    printf("random data: %s ", str = (const char *)ak_ptr_to_hexstr_alloc( buffer, sizeof( buffer ), ak_false ));
+    free( (char *)str );
    }
   ak_hash_context_ptr( &hctx, buffer, sizeof( buffer ), out2, sizeof( out2 ));
   printf("(hash: %s)\n\ntest is ", ak_ptr_to_hexstr( out2, sizeof( out2 ), ak_false ));
@@ -72,6 +72,7 @@
     printf("Ok\n");
   } else printf("Wrong\n");
 
+ bad:
   ak_libakrypt_destroy();
   return result;
 }
