@@ -78,6 +78,9 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_icode( int argc, TCHAR *argv[] )
 {
+#ifdef _WIN32
+  unsigned int cp = 0;
+#endif
   int next_option = 0, idx = 0, exit_status = EXIT_FAILURE, error = ak_error_ok;
   enum { do_nothing, do_hash, do_check } work = do_hash;
 
@@ -253,6 +256,12 @@
     return EXIT_FAILURE;
   }
 
+#ifdef _WIN32
+  cp = GetConsoleCP();
+  SetConsoleCP( 1251 );
+  SetConsoleOutputCP( 1251 );
+#endif
+
  /* теперь основная работа: выбираем заданное пользователем действие */
    switch( work )
   {
@@ -298,6 +307,11 @@
   lab_exit:
    if( ic.outfp != NULL ) fclose( ic.outfp );
    ak_libakrypt_destroy();
+
+#ifdef _WIN32
+  SetConsoleCP( cp );
+  SetConsoleOutputCP( cp );
+#endif
  return exit_status;
 }
 

@@ -70,9 +70,6 @@
    #endif
     ak_log_set_message( homepath );
   }
-
-  SetConsoleCP( 1251 );
-  SetConsoleOutputCP( 1251 );
  #endif
 
  /* выполняем команду пользователя */

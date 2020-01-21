@@ -9,6 +9,9 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_asn1( int argc, TCHAR *argv[] )
 {
+#ifdef _WIN32
+  unsigned int cp = 0;
+#endif
   int next_option = 0, idx = 0;
   bool_t check_flag = ak_false;
 
@@ -50,6 +53,12 @@
     return EXIT_FAILURE;
   }
 
+#ifdef _WIN32
+  cp = GetConsoleCP();
+  SetConsoleCP( 65001 );
+  SetConsoleOutputCP( 65001 );
+#endif
+
  /* перебираем все доступные параметры командной строки */
   for( idx = 2; idx < argc; idx++ ) {
      if( aktool_file_or_directory( argv[idx] ) == DT_REG ) {
@@ -63,6 +72,12 @@
      }
   }
   ak_libakrypt_destroy();
+
+#ifdef _WIN32
+  SetConsoleCP( cp );
+  SetConsoleOutputCP( cp );
+#endif
+
  return EXIT_SUCCESS;
 }
 
