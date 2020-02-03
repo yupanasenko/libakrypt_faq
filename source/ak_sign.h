@@ -89,9 +89,12 @@
 /*! \brief Инициализация контекста открытого ключа алгоритма ГОСТ Р 34.10-2012. */
  int ak_verifykey_context_create_from_signkey( ak_verifykey , ak_signkey );
 /*! \brief Инициализация контекста открытого ключа алгоритма ГОСТ Р 34.10-2012. */
- int ak_verifykey_context_create_from_ptr( ak_verifykey , ak_pointer , size_t , const ak_wcurve );
-/*! \brief Экспорт ключа в виде последовательности байт (формат raw key). */
- int ak_verify_context_export_ptr( ak_verifykey, ak_pointer , size_t );
+ int ak_verifykey_context_create_streebog256( ak_signkey , const ak_wcurve );
+/*! \brief Инициализация контекста открытого ключа алгоритма ГОСТ Р 34.10-2012. */
+ int ak_verifykey_context_create_streebog512( ak_signkey , const ak_wcurve );
+/*! \brief Инициализация контекста открытого ключа алгоритма выработки электронной подписи
+    по заданным идентификаторам алгоритма и эллиптической кривой. */
+ int ak_verifykey_context_create_oid( ak_signkey , ak_oid , ak_oid );
 /*! \brief Уничтожение контекста открытого ключа. */
  int ak_verifykey_context_destroy( ak_verifykey );
 /*! \brief Освобождение памяти из под контекста открытого ключа. */

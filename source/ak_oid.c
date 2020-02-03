@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2019 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Файл ak_oid.с                                                                                  */
 /*  - содержит реализации функций для работы с идентификаторами криптографических                  */
@@ -10,6 +10,7 @@
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  #include <ak_hmac.h>
  #include <ak_bckey.h>
+ #include <ak_sign.h>
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -29,6 +30,7 @@
 #ifdef _WIN32
  static const char *on_winrtl[] =           { "winrtl", NULL };
 #endif
+
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  static const char *on_hashrnd[] =          { "hashrnd", NULL };
  static const char *on_streebog256[] =      { "streebog256", "md_gost12_256", NULL };
@@ -38,7 +40,15 @@
 
  static const char *on_kuznechik[] =        { "kuznechik", "kuznyechik", "grasshopper", NULL };
  static const char *on_magma[] =            { "magma", NULL };
+
+ static const char *on_sign256[] =          { "id-tc26-signwithdigest-gost3410-12-256",
+                                              "sign256", NULL };
+ static const char *on_sign512[] =          { "id-tc26-signwithdigest-gost3410-12-512",
+                                              "sign512", NULL };
+ static const char *on_verify256[] =        { "id-tc26-gost3410-12-256", "verify256", NULL };
+ static const char *on_verify512[] =        { "id-tc26-gost3410-12-512", "verify512", NULL };
 #endif
+
  static const char *on_w256_pst[] =         { "id-tc26-gost-3410-2012-256-paramSetTest", NULL };
  static const char *on_w256_psa[] =         { "id-tc26-gost-3410-2012-256-paramSetA", NULL };
  static const char *on_w256_psb[] =         { "id-tc26-gost-3410-2012-256-paramSetB", NULL };
@@ -58,25 +68,27 @@
  static const char *on_w512_psc[] =         { "id-tc26-gost-3410-2012-512-paramSetC", NULL };
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
- static const char *on_asn1_akcont[] =         { "libakryptContainer", NULL };
- static const char *on_asn1_ogrn[] =           { "OGRN", "ОГРН", NULL };
- static const char *on_asn1_snils[] =          { "SNILS", "СНИЛС", NULL };
- static const char *on_asn1_ogrnip[] =         { "OGRNIP", "ОГРНИП", NULL };
- static const char *on_asn1_owners_module[] =  { "SubjectsCryptoModule",
-                                                 "Средство ЭП владельца сертификата", NULL };
- static const char *on_asn1_issuers_module[] = { "IssuersCryptoModule",
-                                                 "Средство ЭП лица, выдавшего сертификат", NULL };
- static const char *on_asn1_inn[] =            { "INN", "ИНН", NULL };
- static const char *on_asn1_email[] =          { "emailAddress", "Адрес электронной почты", NULL };
+ static const char *on_asn1_akcont[] =      { "libakryptContainer", NULL };
+ static const char *on_asn1_ogrn[] =        { "OGRN", "ОГРН", NULL };
+ static const char *on_asn1_snils[] =       { "SNILS", "СНИЛС", NULL };
+ static const char *on_asn1_ogrnip[] =      { "OGRNIP", "ОГРНИП", NULL };
+ static const char
+                *on_asn1_owners_module[] =  { "SubjectsCryptoModule",
+                                              "Средство ЭП владельца сертификата", NULL };
+ static const char
+                *on_asn1_issuers_module[] = { "IssuersCryptoModule",
+                                              "Средство ЭП лица, выдавшего сертификат", NULL };
+ static const char *on_asn1_inn[] =         { "INN", "ИНН", NULL };
+ static const char *on_asn1_email[] =       { "emailAddress", "Адрес электронной почты", NULL };
 
- static const char *on_asn1_cn[] =             { "CommonName", "CN", NULL };
- static const char *on_asn1_s[] =              { "Surname", "S", NULL };
- static const char *on_asn1_sn[] =             { "SerialNumber", "SN", NULL };
- static const char *on_asn1_c[] =              { "CountryName", "C", NULL };
- static const char *on_asn1_l[] =              { "LocalityName", "L", NULL };
- static const char *on_asn1_st[] =             { "StateOrProvinceName", "ST", NULL };
- static const char *on_asn1_sa[] =             { "StreetAddress", "SA", NULL };
- static const char *on_asn1_on[] =             { "OrganizationName", "ON", NULL };
+ static const char *on_asn1_cn[] =          { "CommonName", "CN", NULL };
+ static const char *on_asn1_s[] =           { "Surname", "S", NULL };
+ static const char *on_asn1_sn[] =          { "SerialNumber", "SN", NULL };
+ static const char *on_asn1_c[] =           { "CountryName", "C", NULL };
+ static const char *on_asn1_l[] =           { "LocalityName", "L", NULL };
+ static const char *on_asn1_st[] =          { "StateOrProvinceName", "ST", NULL };
+ static const char *on_asn1_sa[] =          { "StreetAddress", "SA", NULL };
+ static const char *on_asn1_on[] =          { "OrganizationName", "ON", NULL };
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -156,7 +168,6 @@
                            { ( ak_function_void *) ak_bckey_context_create_kuznechik,
                                       ( ak_function_void *) ak_bckey_context_destroy,
                                        ( ak_function_void *) ak_bckey_context_delete, NULL, NULL }},
-  #endif
 
 // рекомендации по cms
 // id-gostr3412-2015-magma-ctracpkm OBJECT IDENTIFIER ::= { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) algorithms(1) cipher(5) gostr3412-2015-magma(1) mode- ctracpkm(1) }
@@ -172,7 +183,25 @@
 // 1.2.643.7.1.1.5.1.3 (id-tc26-cipher- gostr3412-2015-magma-mgm) и
 // 1.2.643.7.1.1.5.2.3 (id-tc26-cipher-gostr3412-2015- kuznyechik-mgm)
 
+  /* 11. алгоритмы выработки и проверки электронной подписи */
 
+   { sign_function, algorithm, on_sign256, "1.2.643.7.1.1.3.2", NULL,
+                               { ( ak_function_void *) ak_signkey_context_create_streebog256,
+                                      ( ak_function_void *) ak_signkey_context_destroy,
+                                       ( ak_function_void *) ak_signkey_context_delete, NULL, NULL }},
+   { sign_function, algorithm, on_sign512, "1.2.643.7.1.1.3.3", NULL,
+                               { ( ak_function_void *) ak_signkey_context_create_streebog512,
+                                      ( ak_function_void *) ak_signkey_context_destroy,
+                                       ( ak_function_void *) ak_signkey_context_delete, NULL, NULL }},
+//   { verify_function, algorithm, on_verify256, "1.2.643.7.1.1.1.1", NULL,
+//                               { ( ak_function_void *) ak_verifykey_context_create_streebog256,
+//                                      ( ak_function_void *) ak_verifykey_context_destroy,
+//                                       ( ak_function_void *) ak_verifykey_context_delete, NULL, NULL }},
+//   { verify_function, algorithm, on_verify512, "1.2.643.7.1.1.1.2", NULL,
+//                               { ( ak_function_void *) ak_verifykey_context_create_streebog512,
+//                                      ( ak_function_void *) ak_verifykey_context_destroy,
+//                                       ( ak_function_void *) ak_verifykey_context_delete, NULL, NULL }},
+  #endif
 
   /* 12. идентификаторы параметров эллиптических кривых, в частности, из Р 50.1.114-2016
          в дереве библиотеки: 1.2.643.2.52.1.12 - параметры эллиптических кривых в форме Вейерштрасса
