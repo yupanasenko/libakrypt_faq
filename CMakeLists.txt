@@ -313,6 +313,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  skey01
                  asn1-build
                  asn1-parse
+                 sign01
   )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
                                    # при запуске make test

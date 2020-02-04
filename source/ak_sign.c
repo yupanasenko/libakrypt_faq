@@ -133,7 +133,39 @@
 /* ----------------------------------------------------------------------------------------------- */
  static int ak_signkey_context_unmask_multiplicative( ak_skey skey )
 {
- (void) skey;
+#ifndef LIBAKRYPT_LITTLE_ENDIAN
+  int i = 0;
+#endif
+  ak_mpznmax u = ak_mpznmax_one;
+  ak_wcurve wc = NULL;
+  ak_uint64 *key = NULL, *mask = NULL;
+
+ /* "стандартные" проверки указателей и выделения памяти */
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer,
+                                         __func__ , "using a null pointer to secret key context" );
+  if( skey->key == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                 __func__ , "using a null pointer to key buffer" );
+  if( skey->key_size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                           "using a key buffer with zero length" );
+  if(( wc = ( ak_wcurve ) skey->data ) == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                 "using internal null pointer to elliptic curve" );
+ /* проверяем, установлена ли маска ранее */
+  if( (( skey->flags)&ak_key_flag_set_mask ) == 0 ) return ak_error_ok;
+
+  key = ( ak_uint64 *)skey->key;
+  mask = ( ak_uint64 *)( skey->key + skey->key_size );
+
+ /* снимаем маску с ключа */
+  ak_mpzn_mul_montgomery( key, key, mask, wc->q, wc->nq, wc->size );
+ /* приводим ключ из представления Монтгомери в естественное состояние */
+  ak_mpzn_mul_montgomery( key, key, u, wc->q, wc->nq, wc->size );
+#ifndef LIBAKRYPT_LITTLE_ENDIAN
+  for( i = 0; i < wc->size; i++ ) key[i] = bswap_64( key[i] );
+#endif
+ /* меняем значение флага */
+  skey->flags ^= ak_key_flag_set_mask;
+
  return ak_error_ok;
 }
 
@@ -343,6 +375,62 @@
     return 0;
   }
   return 2*sctx->ctx.data.sctx.hsize;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param sctx контекст секретного ключа алгоритма электронной подписи.
+    @param ptr указатель на область памяти, содержащей значение секретного ключа.
+    Секретный ключ интерпретируется как последовательность байт.
+    @param size размер ключа в байтах.
+
+    @return В случае успеха возвращается ноль (\ref ak_error_ok). В противном случае возвращается
+    код ошибки.                                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_signkey_context_set_key( ak_signkey sctx, const ak_pointer ptr, const size_t size )
+{
+  int error = ak_error_ok;
+
+  if( sctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                    "using a null pointer to secret key context" );
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                    "using a null pointer to constant key value" );
+  if( size > sctx->key.key_size ) return ak_error_message( ak_error_wrong_length, __func__,
+                                                   "using constant buffer with unexpected length");
+ /* присваиваем ключевой буффер */
+  if(( error = ak_skey_context_set_key( &sctx->key, ptr, size )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "incorrect assigning of key data" );
+
+ /*
+    ... в процессе присвоения ключа, он приводится по модулю и маскируется
+        за это отвечает функция ak_signkey_context_set_mask_multiplicative() ...  */
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param sctx контекст секретного ключа алгоритма электронной подписи.
+    @param generator контекст генератора случайных чисел.
+    @return В случае успеха возвращается ноль (\ref ak_error_ok). В противном случае возвращается
+    код ошибки.                                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_signkey_context_set_key_random( ak_signkey sctx, ak_random generator )
+{
+  int error = ak_error_ok;
+
+ /* выполняем необходимые проверки */
+  if( sctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                     "using null pointer to secret key context" );
+  if( sctx->key.key_size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
+                                                     "using non initialized secret key context" );
+  if( generator == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                "using null pointer to random number generator" );
+ /* присваиваем секретный ключ */
+  if(( error = ak_skey_context_set_key_random( &sctx->key, generator )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "wrong generation a secret key context" );
+
+ /*
+    ... в процессе присвоения ключа, он приводится по модулю и маскируется
+        за это отвечает функция ak_signkey_context_set_mask_multiplicative() ...  */
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

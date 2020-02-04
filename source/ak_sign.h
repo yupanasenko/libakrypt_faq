@@ -49,7 +49,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Присвоение секретному ключу электронной подписи константного значения. */
- int ak_signkey_context_set_key( ak_signkey , const ak_pointer , const size_t , const bool_t );
+ int ak_signkey_context_set_key( ak_signkey , const ak_pointer , const size_t );
 /*! \brief Присвоение секретному ключу электронной подписи случайного значения. */
  int ak_signkey_context_set_key_random( ak_signkey , ak_random );
 
