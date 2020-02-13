@@ -1,6 +1,6 @@
 # Аннотация
 
-Библиотека `libakrypt` представляет собой модуль, реализующий криптографические
+Библиотека \texttt{libakrypt} представляет собой модуль, реализующий криптографические
 преобразования в пространстве пользователя. Цель разработки библиотеки заключается в создании СКЗИ
 с открытым исходным кодом, удовлетворяющего рекомендациям по стандартизации
 [Р 1323565.1.012-2017](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-012-2017-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-printsipy-razrabotki-i-modernizatsii-shifrovalnykh-kriptograficheskikh-sredstv-zashchity-informatsii.html)
@@ -10,7 +10,7 @@
 
 ## Возможности
 
-Библиотека `libakrypt` написана на языке C и реализует механизмы генерации, хранения, экспорта и импорта ключей, а также
+Библиотека \texttt{libakrypt} написана на языке C и реализует механизмы генерации, хранения, экспорта и импорта ключей, а также
 основные отечественные криптографические механизмы, регламентированные национальными стандартами
 и рекомендациями по стандартизации.
 
@@ -31,7 +31,8 @@
  4. Режим работы блочных шифров `ACPKM`, регламентируемый рекомендациями по стандартизации
 [Р 1323565.1.017-2018](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-017-2018-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-kriptograficheskie-algoritmy-soputstvuyushchie-primeneniyu-algoritmov-blochnogo-shifrovaniya.html).
 
- 5. Режим работы блочных шифров, реализующий аутентифицированное шифрование (режим `MGM`).
+ 5. Режим работы блочных шифров, реализующий аутентифицированное шифрование согласно рекомендациям по стандартизации
+[Р 1323565.1.026-2019](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-026-2019-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-rezhimy-raboty-blochnykh-shifrov-realizuyushchie-autentifitsirovannoe-shifrovanie.html)
 
  6. Алгоритмы выработки имитовставки (кода аутентичности сообщения):
     * алгоритм выработки имитовставки `HMAC`, регламентированный рекомендациями по
@@ -53,24 +54,28 @@
       согласно рекомендациям по стандартизации
       [Р 1323565.1.006-2017](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-006-2017-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-mekhanizmy-vyrabotki-psevdosluchaynykh-posledovatelnostey.html).
 
- 9. Алгоритмы, реализующие арифметику Монтгомери для эффективных вычислений в конечных простых полях
-   фиксированной размерности 256 и 512 бит.
+ 9. Алгоритмы, реализующие вычисления в конечных простых полях
+   фиксированной размерности 256 и 512 бит с помощью преобразования Монтгомери.
 
- 10. Алгоритмы, реализующие операции в группах точек эллиптических кривых,
+ 10. Алгоритмы, реализующие операцию сложения в группах точек эллиптических кривых,
    удовлетворяющих требованиям
    стандарта [ГОСТ Р 34.10-2012](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-10-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-protsessy-formirovaniya-i-proverki-elektronnoy-tsifrovoy-podpisi.html).
    Поддерживаются все отечественные
    эллиптические кривые, регламентированные рекомендациями по стандартизации
-   [Р 50.1.114-2016](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-50-1-114-2016-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-parametry-ellipticheskikh-krivykh-dlya-kriptograficheskikh-algoritmov-i-protokolov.html).
+   [Р 1323565.1.024–2019](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-132356-1-024-2019-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-parametry-ellipticheskikh-krivykh-dlya-kriptograficheskikh-algoritmov-i-protokolov19.html).
 
- 11. Процедуры выработки и проверки электронной подписи, регламентированные стандартом
+ 11. Процедуры выработки и проверки электронной подписи, регламентированные стандартом на электронную подпись
  [ГОСТ Р 34.10-2012](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-10-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-protsessy-formirovaniya-i-proverki-elektronnoy-tsifrovoy-podpisi.html).
 
 ## Платформы и компиляторы
 
 Поддерживается работа библиотеки на следующих аппаратных платформах:
 
-   * x86, x64, arm32v7, arm32v7eb, mips32 и mips64.
+   * `x86`, `x64`,
+
+   * `arm32v7`, `arm32v7eb`,
+
+   * `mips32` и `mips64`.
 
 
 Поддерживается работа библиотеки в следующих операционных системах:
@@ -79,7 +84,7 @@
 
    * `FreeBSD`,
 
-   * семейство `Windows` (от `Windows XP` и старше)
+   * семейство `Windows` (от `Windows 7` и старше)
 
    * `MacOS`.
 

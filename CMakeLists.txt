@@ -38,6 +38,7 @@ option( LIBAKRYPT_CONST_CRYPTO_PARAMS "Build library with const values of crypto
 option( LIBAKRYPT_INTERNAL_TESTS "Build collection of internal tests using non-export functions" OFF )
 option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
 option( LIBAKRYPT_HTML_DOC "Build documentation in HTML format" OFF )
+option( LIBAKRYPT_PDF_DOC "Build documentation in PDF format" OFF )
 option( LIBAKRYPT_AKTOOL "Build console aktool application" ON )
 option( LIBAKRYPT_INSTALL_HEADERS "Install development headers with non-export functions" OFF )
 
@@ -141,8 +142,11 @@ set( CMAKES         cmake/DetectFlags.cmake
                     cmake/MakeInstall.cmake
 )
 
-set( DOCS           doc/00-introduction.md
-                    doc/01-install-guide.dox
+set( DOC_SOURCES    axel.sty )
+
+set( DOCS           ${DOC_SOURCES}
+                    00-introduction.md
+                    01-install-guide.md
                     doc/02-principles.dox
                     doc/Doxyfile.in
                     doc/refman_footer.in

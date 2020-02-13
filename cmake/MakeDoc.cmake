@@ -23,7 +23,7 @@ if( LIBAKRYPT_HTML_DOC )
      find_file( QHELPGENERATOR_BIN qhelpgenerator )
      if( QHELPGENERATOR_BIN )
        file( APPEND ${CMAKE_BINARY_DIR}/make-html-${FULL_VERSION}.sh
-          "cp doc/html/libakrypt.qch ${CMAKE_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.qch\n" )
+          "cp doc/html/libakrypt.qch ${CMAKE_BINARY_DIR}/libakrypt-doc.${FULL_VERSION}.qch\n" )
        file( APPEND ${CMAKE_BINARY_DIR}/make-html-${FULL_VERSION}.sh
                                                                 "rm doc/html/libakrypt.qch\n" )
      endif()
@@ -42,8 +42,43 @@ endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # текущее состояние doxygen конфликтует с texlive, нужна пауза
+if( LIBAKRYPT_PDF_DOC )
+ # подправляем исходники
+  configure_file( ${CMAKE_SOURCE_DIR}/doc/libakrypt-doc.tex.in
+                                                 ${CMAKE_BINARY_DIR}/latex/libakrypt-doc.tex @ONLY )
+  configure_file( ${CMAKE_SOURCE_DIR}/doc/Makefile.in ${CMAKE_BINARY_DIR}/latex/Makefile @ONLY )
 
-#if( LIBAKRYPT_PDF_DOC )
+ # копируем данные
+  foreach( file ${DOC_SOURCES} )
+    execute_process( COMMAND cp ${CMAKE_SOURCE_DIR}/doc/${file} ${CMAKE_BINARY_DIR}/latex/${file} )
+  endforeach()
+
+ # формируем аннотацию
+  if( PANDOC )
+    execute_process( COMMAND pandoc -f markdown -t latex --top-level-division=chapter
+          -o ${CMAKE_BINARY_DIR}/latex/00-introduction.tex ${CMAKE_SOURCE_DIR}/doc/00-introduction.md )
+    execute_process( COMMAND pandoc -f markdown -t latex --top-level-division=chapter
+          -o ${CMAKE_BINARY_DIR}/latex/01-install-guide.tex ${CMAKE_SOURCE_DIR}/doc/01-install-guide.md )
+
+    if( SED )
+      execute_process( COMMAND sed -i s/chapter/chapter*/g ${CMAKE_BINARY_DIR}/latex/00-introduction.tex )
+      execute_process( COMMAND sed -i s/section/section*/g ${CMAKE_BINARY_DIR}/latex/00-introduction.tex )
+    endif()
+  endif()
+
+ # формируем скрипт
+  set( MYDFILE "${CMAKE_BINARY_DIR}/make-pdf-${FULL_VERSION}.sh" )
+  file( WRITE ${MYDFILE} "#/bin/bash\n" )
+  file( APPEND ${MYDFILE} "cd latex; make; cd ..\n")
+  file( APPEND ${MYDFILE} "cp latex/libakrypt-doc.*.pdf .\n")
+
+  execute_process( COMMAND chmod +x ${CMAKE_BINARY_DIR}/make-pdf-${FULL_VERSION}.sh )
+  add_custom_target( pdf ${CMAKE_BINARY_DIR}/make-pdf-${FULL_VERSION}.sh )
+  message("-- Script for documentation in PDF format is done (now \"make pdf\" enabled)")
+
+endif()
+
+
 #  find_file( DOXYGEN_BIN doxygen )
 #  if( DOXYGEN_BIN )
 
