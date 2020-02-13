@@ -193,14 +193,14 @@
                                { ( ak_function_void *) ak_signkey_context_create_streebog512,
                                       ( ak_function_void *) ak_signkey_context_destroy,
                                        ( ak_function_void *) ak_signkey_context_delete, NULL, NULL }},
-//   { verify_function, algorithm, on_verify256, "1.2.643.7.1.1.1.1", NULL,
-//                               { ( ak_function_void *) ak_verifykey_context_create_streebog256,
-//                                      ( ak_function_void *) ak_verifykey_context_destroy,
-//                                       ( ak_function_void *) ak_verifykey_context_delete, NULL, NULL }},
-//   { verify_function, algorithm, on_verify512, "1.2.643.7.1.1.1.2", NULL,
-//                               { ( ak_function_void *) ak_verifykey_context_create_streebog512,
-//                                      ( ak_function_void *) ak_verifykey_context_destroy,
-//                                       ( ak_function_void *) ak_verifykey_context_delete, NULL, NULL }},
+   { verify_function, algorithm, on_verify256, "1.2.643.7.1.1.1.1", NULL,
+                               { ( ak_function_void *) ak_verifykey_context_create_streebog256,
+                                      ( ak_function_void *) ak_verifykey_context_destroy,
+                                       ( ak_function_void *) ak_verifykey_context_delete, NULL, NULL }},
+   { verify_function, algorithm, on_verify512, "1.2.643.7.1.1.1.2", NULL,
+                               { ( ak_function_void *) ak_verifykey_context_create_streebog512,
+                                      ( ak_function_void *) ak_verifykey_context_destroy,
+                                       ( ak_function_void *) ak_verifykey_context_delete, NULL, NULL }},
   #endif
 
   /* 12. идентификаторы параметров эллиптических кривых, в частности, из Р 50.1.114-2016

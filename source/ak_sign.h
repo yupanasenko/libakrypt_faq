@@ -83,15 +83,17 @@
   ak_oid oid;
  /*! \brief точка кривой, являющаяся открытым ключом электронной подписи */
   struct wpoint qpoint;
+ /*! \brief Флаги ключа */
+  ak_uint64 flags;
 } *ak_verifykey;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация контекста открытого ключа алгоритма ГОСТ Р 34.10-2012. */
  int ak_verifykey_context_create_from_signkey( ak_verifykey , ak_signkey );
 /*! \brief Инициализация контекста открытого ключа алгоритма ГОСТ Р 34.10-2012. */
- int ak_verifykey_context_create_streebog256( ak_signkey , const ak_wcurve );
+ int ak_verifykey_context_create_streebog256( ak_verifykey , const ak_wcurve );
 /*! \brief Инициализация контекста открытого ключа алгоритма ГОСТ Р 34.10-2012. */
- int ak_verifykey_context_create_streebog512( ak_signkey , const ak_wcurve );
+ int ak_verifykey_context_create_streebog512( ak_verifykey , const ak_wcurve );
 /*! \brief Инициализация контекста открытого ключа алгоритма выработки электронной подписи
     по заданным идентификаторам алгоритма и эллиптической кривой. */
  int ak_verifykey_context_create_oid( ak_signkey , ak_oid , ak_oid );
