@@ -117,6 +117,7 @@
      { "context_manager_max_size", 4096 },
      { "pbkdf2_iteration_count", 2000 },
      { "hmac_key_count_resource", 65536 },
+     { "digital_signature_count_resource", 65536 },
 
   /* значение константы задает максимальный объем зашифрованной информации на одном ключе в 4 Mб:
                                  524288 блока x 8 байт на блок = 4.194.304 байт = 4096 Кб = 4 Mб   */
@@ -443,7 +444,7 @@
         }
 
        /* устанавливаем ресурс ключа выработки имитовставки для алгоритма HMAC */
-        if( ak_libakrypt_load_one_option( localbuffer, "hmac_key_counter_resource = ", &value )) {
+        if( ak_libakrypt_load_one_option( localbuffer, "hmac_key_count_resource = ", &value )) {
           if( value < 1024 ) value = 1024;
           if( value > 2147483647 ) value = 2147483647;
           ak_libakrypt_set_option( "hmac_key_count_resource", value );
@@ -461,6 +462,14 @@
           if( value > 2147483647 ) value = 2147483647;
           ak_libakrypt_set_option( "kuznechik_cipher_resource", value );
         }
+
+       /* устанавливаем ресурс ключа электронной подписи */
+        if( ak_libakrypt_load_one_option( localbuffer, "digital_signature_count_resource = ", &value )) {
+          if( value < 1024 ) value = 1024;
+          if( value > 2147483647 ) value = 2147483647;
+          ak_libakrypt_set_option( "digital_signature_count_resource", value );
+        }
+
        /* учет совместимости с другими библиотеками */
         if( ak_libakrypt_load_one_option( localbuffer, "openssl_compability = ", &value )) {
           if(( value < 0 ) || ( value > 1 )) value = 0;

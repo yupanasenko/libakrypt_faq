@@ -249,9 +249,12 @@
     ak_error_message( error, __func__, "incorrect freeing of internal key buffer" );
 
   memset( data, 0, sizeof( skey ));
-  if( skey->generator.random != NULL )
-    if(( error = ak_random_context_random( &skey->generator, data, sizeof( data ))) != ak_error_ok )
-      ak_error_message( error, __func__, "incorrect generation of random buffer" );
+  if( error == ak_error_ok ) {
+    if( skey->generator.random != NULL ) {
+      if(( error = ak_random_context_random( &skey->generator, data, sizeof( data ))) != ak_error_ok )
+        ak_error_message( error, __func__, "incorrect generation of random buffer" );
+    }
+  }
 
   ak_random_context_destroy( &skey->generator );
   if( skey->data != NULL ) {
