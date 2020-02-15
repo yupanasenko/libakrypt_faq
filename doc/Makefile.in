@@ -1,0 +1,10 @@
+all:
+	xelatex -synctex=1 -interaction=nonstopmode -shell-escape libakrypt-doc.tex
+	xelatex -synctex=1 -interaction=nonstopmode -shell-escape libakrypt-doc.tex
+	xelatex -synctex=1 -interaction=nonstopmode -shell-escape libakrypt-doc.tex
+	mv libakrypt-doc.pdf libakrypt-doc.@HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@.pdf
+
+clean:
+	rm -f *.aux *.log *.out *.toc *.pdf *.synctex.gz
+	rmdir --ignore-fail-on-non-empty _minted-*
+
