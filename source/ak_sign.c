@@ -511,8 +511,8 @@
  /* завершаемся */
   memset( &wr, 0, sizeof( struct wpoint ));
   sctx->key.set_mask( &sctx->key );
-  memset( r, 0, sizeof( ak_mpznmax ));
-  memset( s, 0, sizeof( ak_mpznmax ));
+  memset( r, 0, sizeof( ak_mpzn512 ));
+  memset( s, 0, sizeof( ak_mpzn512 ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -595,7 +595,7 @@
                                                  "using null pointer to secret key context" );
   if( in == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                    "using null pointer to signifying value" );
-  if( sctx->ctx.data.sctx.hsize > 64 ) return ak_error_message( ak_error_wrong_length,
+  if( sctx->ctx.data.sctx.hsize > sizeof( hash )) return ak_error_message( ak_error_wrong_length,
                              __func__, "using hash function with very large hash code size" );
 
  /* вычисляем значение хеш-кода, а после подписываем его */
@@ -877,9 +877,179 @@
  return ak_true;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param pctx контекст открытого ключа.
+    @param in область памяти для которой проверяется электронная подпись.
+    @param size размер области памяти в байтах.
+    @param sign электронная подпись, для которой выполняется проверка.
+    @return Функция возвращает истину, если подпись верна. Если функция не верна или если
+    возникла ошибка, то возвращается ложь. Код шибки может получен с помощью
+    вызова функции ak_error_get_value().                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_verifykey_context_verify_ptr( ak_verifykey pctx, const ak_pointer in,
+                                                               const size_t size, ak_pointer sign )
+{
+  ak_uint8 hash[128];
+  int error = ak_error_ok;
+
+ /* необходимые проверки */
+  if( pctx == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__,
+                                                 "using null pointer to secret key context" );
+    return ak_false;
+  }
+  if( in == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__,
+                                                    "using null pointer to verifying value" );
+    return ak_false;
+  }
+  if( pctx->ctx.data.sctx.hsize > sizeof( hash )) {
+    ak_error_message( ak_error_wrong_length, __func__,
+                                            "using hash function with large hash code size" );
+    return ak_false;
+  }
+
+ /* вычисляем значение хеш-кода, а после подписываем его */
+  memset( hash, 0, 64 );
+  ak_hash_context_ptr( &pctx->ctx, in, size, hash, sizeof( hash ));
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong calculation of hash value" );
+    return ak_false;
+  }
+
+ return ak_verifykey_context_verify_hash( pctx, hash, pctx->ctx.data.sctx.hsize, sign );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param pctx контекст открытого ключа.
+    @param filename имя файла, для которого проверяется подпись
+    @param sign электронная подпись, для которой выполняется проверка.
+    @return Функция возыращает истину, если подпись верна. Если функция не верна или если
+    возникла ошибка, то возвращается ложь. Код шибки может получен с помощью
+    вызова функции ak_error_get_value().                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_verifykey_context_verify_file( ak_verifykey pctx, const char *filename, ak_pointer sign )
+{
+  ak_uint8 hash[128];
+  int error = ak_error_ok;
+
+ /* необходимые проверки */
+  if( pctx == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__,
+                                                 "using null pointer to secret key context" );
+    return ak_false;
+  }
+  if( filename == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to filename" );
+    return ak_false;
+  }
+  if( pctx->ctx.data.sctx.hsize > sizeof( hash )) {
+    ak_error_message( ak_error_wrong_length, __func__,
+                                            "using hash function with large hash code size" );
+    return ak_false;
+  }
+  memset( hash, 0, 64 );
+  ak_hash_context_file( &pctx->ctx, filename, hash, sizeof( hash ));
+  if(( error = ak_error_get_value()) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong calculation of hash value" );
+    return ak_false;
+  }
+
+ return ak_verifykey_context_verify_hash( pctx, hash, pctx->ctx.data.sctx.hsize, sign );
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                    функции тестирования                                         */
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция тестирует полный цикл: создание ключа, подпись, проверка для всех кривых
+    заданного размера (256 или 512 бит).
+
+    @return Функция возвращает истину только в том случае,
+    когда будут пройдены все тесты. В противном случае возвращается ложь.                          */
+/* ----------------------------------------------------------------------------------------------- */
+ static bool_t ak_signkey_test_random_signatures( void )
+{
+  size_t count = 0, allcount = 0;
+  ak_uint8 buffer[128];
+  struct random generator;
+  int error = ak_error_ok;
+  bool_t result = ak_false;
+  ak_oid oid = ak_oid_context_find_by_engine( identifier );
+
+  /* создаем тестовый генератор */
+   if(( error = ak_random_context_create_lcg( &generator )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect creation of random generator" );
+     goto labexit;
+   }
+
+  /* перебираем все эллиптические кривые в короткой форме Вейерштрасса  */
+   while( oid != NULL ) {
+     if( oid->mode == wcurve_params ) {
+       ak_wcurve ec = ( ak_wcurve ) oid->data;
+       struct signkey skey;
+       struct verifykey vkey;
+
+      /* теперь полный тест для одной кривой */
+       allcount++;
+       switch( ec->size ) {
+         case ak_mpzn256_size:
+           if(( error = ak_signkey_context_create_streebog256( &skey, ec )) != ak_error_ok ) {
+             ak_error_message( error, __func__, "incorrect creation of secret key context" );
+             goto labexit;
+           }
+           break;
+         case ak_mpzn512_size:
+           if(( error = ak_signkey_context_create_streebog512( &skey, ec )) != ak_error_ok ) {
+             ak_error_message( error, __func__, "incorrect creation of secret key context" );
+             goto labexit;
+           }
+           break;
+         default:
+           ak_error_message( ak_error_wrong_length, __func__, "invalid value of size parameter" );
+           goto labexit;
+       }
+
+       if(( error = ak_signkey_context_set_key_random( &skey, &generator )) != ak_error_ok ) {
+         ak_error_message( error, __func__, "incorrect assigning a secret key value" );
+         ak_signkey_context_destroy( &skey );
+         goto labexit;
+       }
+
+       if(( error = ak_verifykey_context_create_from_signkey( &vkey, &skey )) != ak_error_ok ) {
+         ak_error_message( error, __func__, "incorrect creation of public key value" );
+         ak_signkey_context_destroy( &skey );
+         goto labexit;
+       }
+
+      /* только теперь создаем ЭП, а потом проверем */
+       ak_signkey_context_sign_ptr( &skey, "1234567890", 10, buffer, sizeof( buffer ));
+       result = ak_verifykey_context_verify_ptr( &vkey, "1234567890", 10, buffer );
+
+       ak_verifykey_context_destroy( &vkey );
+       ak_signkey_context_destroy( &skey );
+       if( !result ) {
+         ak_error_message_fmt( ak_error_not_equal_data, __func__,
+             "wrong checking of digital signature for \"%s\" elliptic curve", oid->names[0] );
+         goto labexit;
+       } else count++;
+     }
+     oid = ak_oid_context_findnext_by_engine( oid, identifier );
+   }
+   result = ak_true;
+
+ labexit:
+  error = ak_error_get_value();
+  if(( count > 0 ) && ( ak_log_get_level() >= ak_log_maximum ))
+    ak_error_message_fmt( ak_error_ok, __func__,
+       "executing a %u successfull tests from %u for all predefined elliptic curves",
+                                                                        count, allcount );
+  if( !result ) ak_error_message( error, __func__,
+        "testing a creation and verification processes from GOST R 34.10-2012 is wrong" );
+  ak_random_context_destroy( &generator );
+
+ return result;
+}
+
 /* ----------------------------------------------------------------------------------------------- */
  bool_t ak_signkey_test( void )
 {
@@ -906,13 +1076,33 @@
    0x20, 0x10, 0x8b, 0x50, 0x8e, 0x50, 0xe7, 0x0e, 0x70, 0x69, 0x46, 0x51, 0xe8, 0xa0, 0x91, 0x30,
    0xc9, 0xd7, 0x56, 0x77, 0xd4, 0x36, 0x09, 0xa4, 0x1b, 0x24, 0xae, 0xad, 0x8a, 0x04, 0xa6, 0x0b };
 
+ /* определяем значение открытого ключа
+     Q.x = 115DC5BC96760C7B48598D8AB9E740D4C4A85A65BE33C1815B5C320C854621DD5A515856D13314AF69BC5B924C8B4DDFF75C45415C1D9DD9DD33612CD530EFE1
+     Q.y = 37C7C90CD40B0F5621DC3AC1B751CFA0E2634FA0503B3D52639F5D7FB72AFD61EA199441D943FFE7F0C70A2759A3CDB84C114E1F9339FDF27F35ECA93677BEEC
+     Q.z = 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001 */
+  ak_mpzn512 pkey512x =
+    { 0xDD33612CD530EFE1LL, 0xF75C45415C1D9DD9LL, 0x69BC5B924C8B4DDFLL, 0x5A515856D13314AFLL,
+      0x5B5C320C854621DDLL, 0xC4A85A65BE33C181LL, 0x48598D8AB9E740D4LL, 0x115DC5BC96760C7BLL };
+  ak_mpzn512 pkey512y =
+    { 0x7F35ECA93677BEECLL, 0x4C114E1F9339FDF2LL, 0xF0C70A2759A3CDB8LL, 0xEA199441D943FFE7LL,
+      0x639F5D7FB72AFD61LL, 0xE2634FA0503B3D52LL, 0x21DC3AC1B751CFA0LL, 0x37C7C90CD40B0F56LL };
+  ak_mpzn512 pkey512z = { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
  /* е = 2DFBC1B372D89A1188C09C52E0EEC61FCE52032AB1022E8E67ECE6672B043EE5 */
   ak_uint64 e256[ak_mpzn256_size]  =
     { 0x67ECE6672B043EE5LL, 0xCE52032AB1022E8ELL, 0x88C09C52E0EEC61FLL, 0x2DFBC1B372D89A11LL };
+ /* е = 3754F3CFACC9E0615C4F4A7C4D8DAB531B09B6F9C170C533A71D147035B0C5917184EE536593F4414339976C647C5D5A407ADEDB1D560C4FC6777D2972075B8C */
+  ak_uint64 e512[ak_mpzn512_size]  =
+    { 0xC6777D2972075B8CLL, 0x407ADEDB1D560C4FLL, 0x4339976C647C5D5ALL, 0x7184EE536593F441LL,
+      0xA71D147035B0C591LL, 0x1B09B6F9C170C533LL, 0x5C4F4A7C4D8DAB53LL, 0x3754F3CFACC9E061LL };
 
  /* k = 77105C9B20BCD3122823C8CF6FCC7B956DE33814E95B7FE64FED924594DCEAB3 */
   ak_uint64 k256[ak_mpzn256_size]  =
     { 0x4FED924594DCEAB3LL, 0x6DE33814E95B7FE6LL, 0x2823C8CF6FCC7B95LL, 0x77105C9B20BCD312LL };
+ /* k = 359E7F4B1410FEACC570456C6801496946312120B39D019D455986E364F365886748ED7A44B3E794434006011842286212273A6D14CF70EA3AF71BB1AE679F1 */
+  ak_uint64 k512[ak_mpzn512_size]  =
+    { 0xA3AF71BB1AE679F1LL, 0x212273A6D14CF70ELL, 0x4434006011842286LL, 0x86748ED7A44B3E79LL,
+      0xD455986E364F3658LL, 0x946312120B39D019LL, 0xCC570456C6801496LL, 0x0359E7F4B1410FEALL };
 
  /* результирующие последовательности - электронные подписи, также представляются последовательностями байт */
   ak_uint8 sign256[64] =
@@ -921,8 +1111,21 @@
       0x41, 0xaa, 0x28, 0xd2, 0xf1, 0xab, 0x14, 0x82, 0x80, 0xcd, 0x9e, 0xd5, 0x6f, 0xed, 0xa4, 0x19,
       0x74, 0x05, 0x35, 0x54, 0xa4, 0x27, 0x67, 0xb8, 0x3a, 0xd0, 0x43, 0xfd, 0x39, 0xdc, 0x04, 0x93 };
 
-  ak_uint64 e[64];
-  char *str = NULL;
+ /* r = 2F86FA60A081091A23DD795E1E3C689EE512A3C82EE0DCC2643C78EEA8FCACD35492558486B20F1C9EC197C90699850260C93BCBCD9C5C3317E19344E173AE36
+    s = 1081B394696FFE8E6585E7A9362D26B6325F56778AADBC081C0BFBE933D52FF5823CE288E8C4F362526080DF7F70CE406A6EEB1F56919CB92A9853BDE73E5B4A */
+  ak_uint8 sign512[128] =
+    { 0x10, 0x81, 0xB3, 0x94, 0x69, 0x6F, 0xFE, 0x8E, 0x65, 0x85, 0xE7, 0xA9, 0x36, 0x2D, 0x26, 0xB6,
+      0x32, 0x5F, 0x56, 0x77, 0x8A, 0xAD, 0xBC, 0x08, 0x1C, 0x0B, 0xFB, 0xE9, 0x33, 0xD5, 0x2F, 0xF5,
+      0x82, 0x3C, 0xE2, 0x88, 0xE8, 0xC4, 0xF3, 0x62, 0x52, 0x60, 0x80, 0xDF, 0x7F, 0x70, 0xCE, 0x40,
+      0x6A, 0x6E, 0xEB, 0x1F, 0x56, 0x91, 0x9C, 0xB9, 0x2A, 0x98, 0x53, 0xBD, 0xE7, 0x3E, 0x5B, 0x4A,
+      0x2F, 0x86, 0xFA, 0x60, 0xA0, 0x81, 0x09, 0x1A, 0x23, 0xDD, 0x79, 0x5E, 0x1E, 0x3C, 0x68, 0x9E,
+      0xE5, 0x12, 0xA3, 0xC8, 0x2E, 0xE0, 0xDC, 0xC2, 0x64, 0x3C, 0x78, 0xEE, 0xA8, 0xFC, 0xAC, 0xD3,
+      0x54, 0x92, 0x55, 0x84, 0x86, 0xB2, 0x0F, 0x1C, 0x9E, 0xC1, 0x97, 0xC9, 0x06, 0x99, 0x85, 0x02,
+      0x60, 0xC9, 0x3B, 0xCB, 0xCD, 0x9C, 0x5C, 0x33, 0x17, 0xE1, 0x93, 0x44, 0xE1, 0x73, 0xAE, 0x36 };
+
+#ifndef LIBAKRYPT_LITTLE_ENDIAN
+  int i = 0;
+#endif
   struct signkey sk;
   ak_uint8 sign[128];
   struct verifykey pk;
@@ -931,14 +1134,13 @@
   if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "testing digital signatures started" );
 
- /* 1. первый пример из приложения А ГОСТ Р 34.10-2012. */
+ /* 1. первый пример из приложения А ГОСТ Р 34.10-2012 ------------------------------------------ */
   if(( error = ak_signkey_context_create_streebog256( &sk,
-    (ak_wcurve) &id_tc26_gost_3410_2012_256_paramSetTest )) != ak_error_ok ) {
+                         (ak_wcurve) &id_tc26_gost_3410_2012_256_paramSetTest )) != ak_error_ok ) {
     ak_error_message( error, __func__ ,
-             "incorrect creation of 256 bits secret key for GOST R 34.10-2012" );
+                               "incorrect creation of 256 bits secret key for GOST R 34.10-2012" );
     return ak_false;
   }
-
   if(( error = ak_signkey_context_set_key( &sk, key256, sizeof( key256 ))) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect assigning a constant key value" );
     ak_signkey_context_destroy( &sk );
@@ -984,7 +1186,13 @@
      return ak_false;
    }
 
-  if( ak_verifykey_context_verify_hash( &pk, e256, 32, sign )) {
+  /* поскольку проверка выполняется для результата функции хеширования, то мы
+     преобразуем последовательность 64х битных интов в последовательность байт */
+#ifndef LIBAKRYPT_LITTLE_ENDIAN
+  for( i = 0; i < ak_mpzn256_size; i++ ) ((ak_uint64 *)e256)[i] = bswap_64( e256[i] );
+#endif
+
+  if( ak_verifykey_context_verify_hash( &pk, e256, sizeof( e256 ), sign )) {
     if( audit >= ak_log_maximum )
       ak_error_message( ak_error_ok, __func__ ,
              "digital signature verification process from GOST R 34.10-2012 (for 256 bit curve) is Ok" );
@@ -994,17 +1202,92 @@
       ak_verifykey_context_destroy( &pk );
       return ak_false;
   }
-
   ak_verifykey_context_destroy( &pk );
 
- /*
-     ...
-           */
+ /* возвращаем константу в исходное состояние */
+#ifndef LIBAKRYPT_LITTLE_ENDIAN
+  for( i = 0; i < ak_mpzn256_size; i++ ) ((ak_uint64 *)e256)[i] = bswap_64( e256[i] );
+#endif
 
+ /* 2. Второй пример из приложения А ГОСТ Р 34.10-2012 ------------------------------------------- */
+  if(( error = ak_signkey_context_create_streebog512( &sk,
+                         (ak_wcurve) &id_tc26_gost_3410_2012_512_paramSetTest )) != ak_error_ok ) {
+    ak_error_message( error, __func__ ,
+                               "incorrect creation of 512 bits secret key for GOST R 34.10-2012" );
+    return ak_false;
+  }
+  if(( error = ak_signkey_context_set_key( &sk, key512, sizeof( key512 ))) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect assigning a constant key value" );
+    ak_signkey_context_destroy( &sk );
+    return ak_false;
+  }
+
+  memset( sign, 0, 128 );
+  ak_signkey_context_sign_const_values( &sk, k512, (ak_uint64 *)e512, sign );
+  if( ak_ptr_is_equal_with_log( sign, ( ak_pointer )sign512, 128 )) {
+    if( audit >= ak_log_maximum )
+      ak_error_message( ak_error_ok, __func__ ,
+         "digital signature generation process from GOST R 34.10-2012 (for 512 bit curve) is Ok" );
+  } else {
+     ak_error_message( ak_error_not_equal_data, __func__ ,
+      "digital signature generation process from GOST R 34.10-2012 (for 512 bit curve) is wrong" );
+     ak_signkey_context_destroy( &sk );
+     return ak_false;
+   }
+
+  if(( error = ak_verifykey_context_create_from_signkey( &pk, &sk )) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "incorrect creation of digital signature public key" );
+    ak_signkey_context_destroy( &sk );
+    return ak_false;
+  }
+  ak_signkey_context_destroy( &sk );
+
+ /* проверяем открытый ключ */
+  if( ak_mpzn_cmp( pk.qpoint.x, pkey512x, pk.wc->size )) {
+     ak_ptr_is_equal_with_log( pk.qpoint.x, pkey512x, pk.wc->size*sizeof( ak_uint64 ));
+     ak_error_message( ak_error_not_equal_data, __func__ , "public key x-coordinate is wrong" );
+     ak_verifykey_context_destroy( &pk );
+     return ak_false;
+   }
+  if( ak_mpzn_cmp( pk.qpoint.y, pkey512y, pk.wc->size )) {
+     ak_ptr_is_equal_with_log( pk.qpoint.y, pkey512y, pk.wc->size*sizeof( ak_uint64 ));
+     ak_error_message( ak_error_not_equal_data, __func__ , "public key y-coordinate is wrong" );
+     ak_verifykey_context_destroy( &pk );
+     return ak_false;
+   }
+  if( ak_mpzn_cmp( pk.qpoint.z, pkey512z, pk.wc->size )) {
+     ak_error_message( ak_error_not_equal_data, __func__ , "public key y-coordinate is wrong" );
+     ak_verifykey_context_destroy( &pk );
+     return ak_false;
+   }
+
+#ifndef LIBAKRYPT_LITTLE_ENDIAN
+  for( i = 0; i < ak_mpzn512_size; i++ ) ((ak_uint64 *)e512)[i] = bswap_64( e512[i] );
+#endif
+
+  if( ak_verifykey_context_verify_hash( &pk, e512, sizeof( e512 ), sign )) {
+    if( audit >= ak_log_maximum )
+      ak_error_message( ak_error_ok, __func__ ,
+             "digital signature verification process from GOST R 34.10-2012 (for 512 bit curve) is Ok" );
+  } else {
+      ak_error_message( ak_error_not_equal_data, __func__ ,
+          "digital signature verification process from GOST R 34.10-2012 (for 512 bit curve) is wrong" );
+      ak_verifykey_context_destroy( &pk );
+      return ak_false;
+  }
+  ak_verifykey_context_destroy( &pk );
+
+#ifndef LIBAKRYPT_LITTLE_ENDIAN
+  for( i = 0; i < ak_mpzn512_size; i++ ) ((ak_uint64 *)e512)[i] = bswap_64( e512[i] );
+#endif
+
+ /* 3. Тестирование случайно сгенеренных электронных подписей для всех определенных                                                                              эллиптических кривых */
+  if( !ak_signkey_test_random_signatures( )) return ak_false;
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_get_value(), __func__ ,
                                                 "testing digital signatures ended successfully" );
  return ak_true;
 }
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \example test-sign01.c
  *  \example test-sign02.c                                                                         */
