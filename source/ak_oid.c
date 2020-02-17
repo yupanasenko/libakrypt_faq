@@ -68,7 +68,17 @@
  static const char *on_w512_psc[] =         { "id-tc26-gost-3410-2012-512-paramSetC", NULL };
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
- static const char *on_asn1_akcont[] =      { "libakryptContainer", NULL };
+ static const char *on_asn1_akcont[] =      { "libakrypt-container", NULL };
+ static const char *on_asn1_pbkdf2key[] =   { "pbkdf2-basic-key", NULL };
+ static const char *on_asn1_sdhkey[] =      { "static-dh-basic-key", NULL };
+ static const char *on_asn1_extkey[] =      { "external-basic-key", NULL };
+
+ static const char *on_asn1_symkmd[] =      { "symmetric-key-metadata", NULL };
+ static const char *on_asn1_skmd[] =        { "secret-key-metadata", NULL };
+ static const char *on_asn1_pkmd[] =        { "public-key-metadata", NULL };
+ static const char *on_asn1_ecmd[] =        { "encrypted-content-metadata", NULL };
+ static const char *on_asn1_pcmd[] =        { "plain-content-metadata", NULL };
+
  static const char *on_asn1_ogrn[] =        { "OGRN", "ОГРН", NULL };
  static const char *on_asn1_snils[] =       { "SNILS", "СНИЛС", NULL };
  static const char *on_asn1_ogrnip[] =      { "OGRNIP", "ОГРНИП", NULL };
@@ -258,7 +268,17 @@
     http://www.2410000.ru/p_45_spravochnik_oid_oid__najti_oid_oid_perechen_oid_oid_obektnyj_identifikator_oid_oid_object_identifier.html */
 
   #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
-   { identifier, parameter, on_asn1_akcont, "1.2.643.2.52.1.127.1.2", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_akcont, "1.2.643.2.52.1.127.1.1", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_pbkdf2key, "1.2.643.2.52.1.127.2.1", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_sdhkey, "1.2.643.2.52.1.127.2.2", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_extkey, "1.2.643.2.52.1.127.2.3", NULL, { NULL, NULL, NULL, NULL, NULL }},
+
+/* здесь добавить указатели на функции создания asn.1 и создания (установки параметров) ключа */
+   { identifier, parameter, on_asn1_symkmd, "1.2.643.2.52.1.127.3.1", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_skmd, "1.2.643.2.52.1.127.3.2", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_pkmd, "1.2.643.2.52.1.127.3.3", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_ecmd, "1.2.643.2.52.1.127.3.4", NULL, { NULL, NULL, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_pcmd, "1.2.643.2.52.1.127.3.5", NULL, { NULL, NULL, NULL, NULL, NULL }},
 
    { identifier, parameter, on_asn1_ogrn,   "1.2.643.100.1", NULL, { NULL, NULL, NULL, NULL, NULL }},
    { identifier, parameter, on_asn1_snils,  "1.2.643.100.3", NULL, { NULL, NULL, NULL, NULL, NULL }},

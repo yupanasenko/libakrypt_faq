@@ -184,6 +184,8 @@
  int ak_tlv_context_get_generalized_time_string( ak_tlv , ak_pointer * );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Выделение памяти и создание одного уровня ASN1 дерева. */
+ ak_asn1 ak_asn1_context_new( void );
 /*! \brief Создание одного уровня ASN1 дерева. */
  int ak_asn1_context_create( ak_asn1 );
 /*! \brief Перемещение к следующему узлу текущего уровня ASN1 дерева. */

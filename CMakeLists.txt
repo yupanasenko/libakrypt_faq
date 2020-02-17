@@ -304,7 +304,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  bckey01
                  bckey02
                  bckey03
-                 bckey04
+#                 bckey04
                  context-node
                  context-manager
                  hash01
@@ -318,6 +318,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  skey01
                  asn1-build
                  asn1-parse
+                 asn1-keys
                  sign01
   )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются

@@ -999,6 +999,17 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ ak_asn1 ak_asn1_context_new( void )
+{
+  int error = ak_error_ok;
+  ak_asn1 asn = malloc( sizeof( struct asn1 ));
+  if(( error = ak_asn1_context_create( asn )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect creation of new asn1 context" );
+
+ return asn;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  bool_t ak_asn1_context_next( ak_asn1 asn1 )
 {
   if( asn1 == NULL ) {
