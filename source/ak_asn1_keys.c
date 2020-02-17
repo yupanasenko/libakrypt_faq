@@ -480,6 +480,19 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ int ak_signkey_context_export_to_derfile_with_password( ak_signkey sk, char *filename,
+                                 const size_t size, const char *password, const size_t pass_size )
+{
+  if( sk == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                    "using null pointer to digital signature secret key context" );
+  if(( password == NULL ) || ( pass_size == 0 ))
+    return ak_error_message( ak_error_wrong_length, __func__, "using incorrect password" );
+
+ return ak_skey_context_export_to_derfile_with_password( &sk->key,
+                                                            filename, size, password, pass_size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
                             /* Функции для импорта ключевых контейнеров */
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция считывает der-последовательность из файла и раскодирует ее в заданный asn1 контекст.

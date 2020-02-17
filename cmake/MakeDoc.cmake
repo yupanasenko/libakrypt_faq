@@ -59,6 +59,8 @@ if( LIBAKRYPT_PDF_DOC )
           -o ${CMAKE_BINARY_DIR}/latex/00-introduction.tex ${CMAKE_SOURCE_DIR}/doc/00-introduction.md )
     execute_process( COMMAND pandoc -f markdown -t latex --top-level-division=chapter
           -o ${CMAKE_BINARY_DIR}/latex/01-install-guide.tex ${CMAKE_SOURCE_DIR}/doc/01-install-guide.md )
+    execute_process( COMMAND pandoc -f markdown -t latex --top-level-division=chapter
+          -o ${CMAKE_BINARY_DIR}/latex/06-asn1.tex ${CMAKE_SOURCE_DIR}/doc/06-asn1.md )
 
     if( SED )
       execute_process( COMMAND sed -i s/chapter/chapter*/g ${CMAKE_BINARY_DIR}/latex/00-introduction.tex )

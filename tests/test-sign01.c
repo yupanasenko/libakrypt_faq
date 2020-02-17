@@ -11,6 +11,7 @@
  #include <ak_oid.h>
  #include <ak_skey.h>
  #include <ak_sign.h>
+ #include <ak_asn1_keys.h>
  #include <ak_parameters.h>
 
  int main( int argc, char *argv[] )
@@ -47,7 +48,7 @@
   printf("file:   %s\nsign:   %s\n", argv[0],
      ak_ptr_to_hexstr( sign, ak_signkey_context_get_tag_size(&sk), ak_false ));
 
- /* теперь мы формируем открытый ключ */
+ /* формируем открытый ключ */
   ak_verifykey_context_create_from_signkey( &pk, &sk );
  /* проверяем подпись */
   if(( result = ak_verifykey_context_verify_file( &pk, argv[0], sign )) == ak_true )

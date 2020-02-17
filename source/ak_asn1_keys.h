@@ -9,6 +9,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_asn1.h>
+ #include <ak_sign.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Добавление временного интервала, в ходе которого действительна ключевая информация. */
@@ -28,7 +29,10 @@
  int ak_skey_context_export_to_derfile_with_password( ak_skey, char * , const size_t ,
                                                                      const char * , const size_t );
 /*! \brief Экспорт секретного ключа алгоритма блочного шифрования в файл */
- int ak_bckey_context_export_to_derfile_with_password( ak_bckey, char * , const size_t ,
+ int ak_bckey_context_export_to_derfile_with_password( ak_bckey , char * , const size_t ,
+                                                                     const char * , const size_t );
+/*! \brief Экспорт секретного ключа электронной подписи в файл */
+ int ak_signkey_context_export_to_derfile_with_password( ak_signkey , char * , const size_t ,
                                                                      const char * , const size_t );
 /*! \brief Функция проверяет, что данное ASN.1 дерево является ключевым контейнером. */
  bool_t ak_asn1_context_check_key_container( ak_asn1 , size_t * );

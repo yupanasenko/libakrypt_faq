@@ -145,6 +145,7 @@ set( DOC_SOURCES    axel.sty )
 set( DOCS           ${DOC_SOURCES}
                     00-introduction.md
                     01-install-guide.md
+                    06-asn1.md
                     doc/02-principles.dox
                     doc/Doxyfile.in
                     doc/refman_footer.in

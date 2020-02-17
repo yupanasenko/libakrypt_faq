@@ -1,6 +1,6 @@
 # Аннотация
 
-Библиотека \texttt{libakrypt} представляет собой модуль, реализующий криптографические
+Библиотека `libakrypt` представляет собой модуль, реализующий криптографические
 преобразования в пространстве пользователя. Цель разработки библиотеки заключается в создании СКЗИ
 с открытым исходным кодом, удовлетворяющего рекомендациям по стандартизации
 [Р 1323565.1.012-2017](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-012-2017-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-printsipy-razrabotki-i-modernizatsii-shifrovalnykh-kriptograficheskikh-sredstv-zashchity-informatsii.html)
@@ -10,7 +10,7 @@
 
 ## Возможности
 
-Библиотека \texttt{libakrypt} написана на языке C и реализует механизмы генерации, хранения, экспорта и импорта ключей, а также
+Библиотека `libakrypt` написана на языке C и реализует механизмы генерации, хранения, экспорта и импорта ключей, а также
 основные отечественные криптографические механизмы, регламентированные национальными стандартами
 и рекомендациями по стандартизации.
 
@@ -54,18 +54,20 @@
       согласно рекомендациям по стандартизации
       [Р 1323565.1.006-2017](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-006-2017-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-mekhanizmy-vyrabotki-psevdosluchaynykh-posledovatelnostey.html).
 
- 9. Алгоритмы, реализующие вычисления в конечных простых полях
-   фиксированной размерности 256 и 512 бит с помощью преобразования Монтгомери.
+ 9. Алгоритмы, реализующие операции сложения и умножения в конечных простых полях
+    фиксированной размерности 256 и 512 бит с помощью преобразования Монтгомери.
 
  10. Алгоритмы, реализующие операцию сложения в группах точек эллиптических кривых,
-   удовлетворяющих требованиям
-   стандарта [ГОСТ Р 34.10-2012](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-10-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-protsessy-formirovaniya-i-proverki-elektronnoy-tsifrovoy-podpisi.html).
-   Поддерживаются все отечественные
-   эллиптические кривые, регламентированные рекомендациями по стандартизации
-   [Р 1323565.1.024–2019](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-132356-1-024-2019-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-parametry-ellipticheskikh-krivykh-dlya-kriptograficheskikh-algoritmov-i-protokolov19.html).
+    удовлетворяющих требованиям
+    стандарта [ГОСТ Р 34.10-2012](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-10-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-protsessy-formirovaniya-i-proverki-elektronnoy-tsifrovoy-podpisi.html).
+    Поддерживаются все отечественные
+    эллиптические кривые, регламентированные рекомендациями по стандартизации
+    [Р 1323565.1.024–2019](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-132356-1-024-2019-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-parametry-ellipticheskikh-krivykh-dlya-kriptograficheskikh-algoritmov-i-protokolov19.html).
 
  11. Процедуры выработки и проверки электронной подписи, регламентированные стандартом на электронную подпись
- [ГОСТ Р 34.10-2012](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-10-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-protsessy-formirovaniya-i-proverki-elektronnoy-tsifrovoy-podpisi.html).
+    [ГОСТ Р 34.10-2012](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-10-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-protsessy-formirovaniya-i-proverki-elektronnoy-tsifrovoy-podpisi.html).
+    Используется формат подписи, определяемый
+    [Р 1323565.1.23-2018](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-023-2018-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-ispolzovanie-algoritmov-gost-r-34-10-2012-gost-r-34-11-2012-v-sertifikate-spiske-annulirovannykh-sertifikatov-crl-i-zaprose-na-sertifikat-pkcs-10-infrastruktury-o.html).
 
 ## Платформы и компиляторы
 
