@@ -321,18 +321,17 @@ extern "C" {
  #define ak_error_invalid_asn1_length         (-91)
 /*! \brief Использование неверной функции для чтения отрицательных данных, размещаемых в узле ASN1 дерева */
  #define ak_error_invalid_asn1_significance   (-92)
-/*! \brief Полученные данные содержат неверный или неожидаемый контент */
+/*! \brief Полученные ASN.1 данные содержат неверный или неожидаемый контент */
  #define ak_error_invalid_asn1_content        (-93)
-
+/*! \brief Полученные ASN.1 данные содержат неверное количество элементов */
+ #define ak_error_invalid_asn1_count          (-94)
 /*! \brief Ошибка, возникающая при кодировании ASN1 структуры (перевод в DER-кодировку). */
- #define ak_error_wrong_asn1_encode           (-90)
+ #define ak_error_wrong_asn1_encode           (-95)
 /*! \brief Ошибка, возникающая при декодировании ASN1 структуры (перевод из DER-кодировки в ASN1 структуру). */
- #define ak_error_wrong_asn1_decode           (-91)
-/*! \brief Ошибка, возникающая при сравнивании двух тегов */
-#define ak_error_diff_tags                    (-92)
+ #define ak_error_wrong_asn1_decode           (-96)
+
 /*! \brief Ошибка использования неправильного (неожидаемого) значения. */
 #define ak_error_invalid_value                (-99)
-
 /*! \brief Ошибка сохранения/чтения ключа с неподдерживаемым типом криптографического преобразования. */
  #define ak_error_key_engine                 (-100)
 /*! \brief Ошибка сохранения/чтения ключа в неподдерживаемом формате хранения. */

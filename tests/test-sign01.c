@@ -31,14 +31,14 @@
 
  /* инициализируем секретный ключ */
   oid = ak_oid_context_find_by_name( "cspa" );
-  if(( ak_signkey_context_create_streebog256( &sk, (ak_wcurve) oid->data )) != ak_error_ok ) {
+  if(( ak_signkey_context_create_streebog256_with_curve( &sk, (ak_wcurve) oid->data )) != ak_error_ok ) {
     result = EXIT_FAILURE;
     goto exlab;
   }
  /* устанавливаем значение ключа */
   ak_signkey_context_set_key( &sk, testkey, 32 );
  /* подстраиваем ключ и устанавливаем ресурс */
-  ak_skey_context_set_resource( &sk.key, key_using_resource,
+  ak_skey_context_set_resource_values( &sk.key, key_using_resource,
                "digital_signature_count_resource", 0, time(NULL)+2592000 );
  /* выводим значение ключа для информации */
   ak_skey_context_print_to_file( &sk.key, stdout );
@@ -51,9 +51,9 @@
  /* формируем открытый ключ */
   ak_verifykey_context_create_from_signkey( &pk, &sk );
  /* проверяем подпись */
-  if(( result = ak_verifykey_context_verify_file( &pk, argv[0], sign )) == ak_true )
+  if( ak_verifykey_context_verify_file( &pk, argv[0], sign ) == ak_true )
     printf("verify: Ok\n");
-   else printf("verify: Wrong\n");
+   else { printf("verify: Wrong\n"); result = EXIT_FAILURE; }
 
   ak_signkey_context_destroy( &sk );
   ak_verifykey_context_destroy( &pk );

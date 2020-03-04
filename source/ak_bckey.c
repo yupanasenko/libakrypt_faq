@@ -206,12 +206,12 @@
   }
  /* устанавливаем ресурс использования секретного ключа */
   switch( bkey->bsize ) {
-    case  8: if(( error = ak_skey_context_set_resource( &bkey->key,
+    case  8: if(( error = ak_skey_context_set_resource_values( &bkey->key,
                       block_counter_resource, "magma_cipher_resource", 0, 0 )) != ak_error_ok )
        ak_error_message( error, __func__, "incorrect assigning \"magma_cipher_resource\" option" );
       break;
 
-    case 16: if(( error = ak_skey_context_set_resource( &bkey->key,
+    case 16: if(( error = ak_skey_context_set_resource_values( &bkey->key,
                      block_counter_resource, "kuznechik_cipher_resource", 0, 0 )) != ak_error_ok )
        ak_error_message( error, __func__,
                                       "incorrect assigning \"kuznechik_cipher_resource\" option" );
@@ -255,12 +255,12 @@
 
  /* устанавливаем ресурс использования секретного ключа */
   switch( bkey->bsize ) {
-    case  8: if(( error = ak_skey_context_set_resource( &bkey->key,
+    case  8: if(( error = ak_skey_context_set_resource_values( &bkey->key,
                       block_counter_resource, "magma_cipher_resource", 0, 0 )) != ak_error_ok )
        ak_error_message( error, __func__, "incorrect assigning \"magma_cipher_resource\" option" );
       break;
 
-    case 16: if(( error = ak_skey_context_set_resource( &bkey->key,
+    case 16: if(( error = ak_skey_context_set_resource_values( &bkey->key,
                      block_counter_resource, "kuznechik_cipher_resource", 0, 0 )) != ak_error_ok )
        ak_error_message( error, __func__,
                                       "incorrect assigning \"kuznechik_cipher_resource\" option" );
@@ -312,12 +312,12 @@
 
  /* устанавливаем ресурс использования секретного ключа */
   switch( bkey->bsize ) {
-    case  8: if(( error = ak_skey_context_set_resource( &bkey->key,
+    case  8: if(( error = ak_skey_context_set_resource_values( &bkey->key,
                       block_counter_resource, "magma_cipher_resource", 0, 0 )) != ak_error_ok )
        ak_error_message( error, __func__, "incorrect assigning \"magma_cipher_resource\" option" );
       break;
 
-    case 16: if(( error = ak_skey_context_set_resource( &bkey->key,
+    case 16: if(( error = ak_skey_context_set_resource_values( &bkey->key,
                      block_counter_resource, "kuznechik_cipher_resource", 0, 0 )) != ak_error_ok )
        ak_error_message( error, __func__,
                                       "incorrect assigning \"kuznechik_cipher_resource\" option" );

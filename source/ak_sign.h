@@ -30,16 +30,24 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция создания контекста секретного ключа электронной подписи. */
- typedef int ( ak_function_create_signkey ) ( ak_signkey , const ak_wcurve );
+ typedef int ( ak_function_create_signkey ) ( ak_signkey );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация контекста секретного ключа алгоритма ГОСТ Р 34.10-2012. */
- int ak_signkey_context_create_streebog256( ak_signkey , const ak_wcurve );
+ int ak_signkey_context_create_streebog256( ak_signkey );
+/*! \brief Инициализация контекста секретного ключа алгоритма ГОСТ Р 34.10-2012 с установкой
+    параметров эллиптической кривой. */
+ int ak_signkey_context_create_streebog256_with_curve( ak_signkey , const ak_wcurve );
 /*! \brief Инициализация контекста секретного ключа алгоритма ГОСТ Р 34.10-2012. */
- int ak_signkey_context_create_streebog512( ak_signkey , const ak_wcurve );
+ int ak_signkey_context_create_streebog512( ak_signkey );
+/*! \brief Инициализация контекста секретного ключа алгоритма ГОСТ Р 34.10-2012 с установкой
+    параметров эллиптической кривой. */
+ int ak_signkey_context_create_streebog512_with_curve( ak_signkey , const ak_wcurve );
 /*! \brief Инициализация контекста секретного ключа алгоритма выработки электронной подписи
-    по заданным идентификаторам алгоритма и эллиптической кривой. */
- int ak_signkey_context_create_oid( ak_signkey , ak_oid , ak_oid );
+    по заданному идентификатору алгоритма. */
+ int ak_signkey_context_create_oid( ak_signkey , ak_oid );
+/*! \brief Присвоение контексту секретного ключа указателя на эллиптическую кривую. */
+ int ak_signkey_context_set_curve( ak_signkey , const ak_wcurve );
 /*! \brief Уничтожение контекста секретного ключа. */
  int ak_signkey_context_destroy( ak_signkey );
 /*! \brief Освобождение памяти из под контекста секретного ключа. */

@@ -963,7 +963,6 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
  return ak_error_ok;
 }
 
-
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param tlv указатель на структуру узла ASN1 дерева.
     \param string указатель на область памяти, куда будет помещена строка.
@@ -983,6 +982,96 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   *string = output_buffer;
 
  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param tlv указатель на структуру узла ASN1 дерева.
+    \param not_before переменная, в которую помещается начальное значение времени
+    \param not_after переменная, в которую помещается конечное значение времени
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_context_get_time_validity( ak_tlv tlv, time_t *not_before, time_t *not_after )
+{
+  ak_asn1 asn = NULL;
+  int error = ak_error_ok;
+
+  if(( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) ||
+    ( TAG_NUMBER( tlv->tag ) != TSEQUENCE )) return ak_error_invalid_asn1_tag;
+   else asn = tlv->data.constructed;
+
+  ak_asn1_context_first( asn );
+  if( DATA_STRUCTURE( asn->current->tag ) != PRIMITIVE ) return ak_error_invalid_asn1_tag;
+  if( TAG_NUMBER( asn->current->tag ) == TUTCTIME ) {
+    if(( error = ak_tlv_context_get_utc_time( asn->current, not_before )) != ak_error_ok )
+      return ak_error_message( error, __func__,
+                                       "incorrect reading of not_before time from utc_time item" );
+  } else {
+     if( TAG_NUMBER( asn->current->tag ) == TGENERALIZED_TIME ) {
+       if(( error = ak_tlv_context_get_generalized_time( asn->current,
+                                                                    not_before )) != ak_error_ok )
+         return ak_error_message( error, __func__,
+                              "incorrect reading of not_before time from generalized_time item " );
+     }
+      else return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                                          "incorrect reading of not_before time" );
+  }
+
+  ak_asn1_context_next( asn );
+  if( DATA_STRUCTURE( asn->current->tag ) != PRIMITIVE ) return ak_error_invalid_asn1_tag;
+  if( TAG_NUMBER( asn->current->tag ) == TUTCTIME ) {
+    if(( error = ak_tlv_context_get_utc_time( asn->current, not_after )) != ak_error_ok )
+      return ak_error_message( error, __func__,
+                                       "incorrect reading of not_after time from utc_time item" );
+  } else {
+     if( TAG_NUMBER( asn->current->tag ) == TGENERALIZED_TIME ) {
+       if(( error = ak_tlv_context_get_generalized_time( asn->current,
+                                                                    not_after )) != ak_error_ok )
+         return ak_error_message( error, __func__,
+                              "incorrect reading of not_after time from generalized_time item " );
+     }
+      else return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                                          "incorrect reading of not_after time" );
+  }
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param tlv указатель на структуру узла ASN1 дерева.
+    \param resource указатель на структуру ресурса.
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_context_get_resource( ak_tlv tlv, ak_resource resource )
+{
+  ak_asn1 asn = NULL;
+  int error = ak_error_ok;
+
+ /* проерка элемента */
+  if(( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) ||
+     ( TAG_NUMBER( tlv->tag ) != TSEQUENCE )) return ak_error_invalid_asn1_tag;
+   else asn = tlv->data.constructed;
+
+ /* получение данных */
+   ak_asn1_context_first( asn );
+   if(( DATA_STRUCTURE( asn->current->tag ) != PRIMITIVE ) ||
+        ( TAG_NUMBER( asn->current->tag ) != TINTEGER )) return ak_error_invalid_asn1_tag;
+   if(( error = ak_tlv_context_get_uint32( asn->current, &resource->value.type )) != ak_error_ok )
+     return ak_error_message( error, __func__, "incorrect reading resource type" );
+
+   ak_asn1_context_next( asn );
+   if(( DATA_STRUCTURE( asn->current->tag ) != PRIMITIVE ) ||
+     ( TAG_NUMBER( asn->current->tag ) != TINTEGER )) return ak_error_invalid_asn1_tag;
+   if(( error = ak_tlv_context_get_uint32( asn->current,
+                                        (ak_uint32 *) &resource->value.counter )) != ak_error_ok )
+     return ak_error_message( error, __func__, "incorrect reading resource counter" );
+
+   ak_asn1_context_next( asn );
+   if(( error = ak_tlv_context_get_time_validity( asn->current,
+                         &resource->time.not_before, &resource->time.not_after )) != ak_error_ok )
+     return ak_error_message( error, __func__, "incorrect reading time validity" );
+
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1484,6 +1573,71 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает `SEQUENCE`, которая содержит два примитивных элемента -
+    начало и окончание временного интервала.
+
+   \param asn1 указатель на текущий уровень ASN.1 дерева.
+   \param not_before начало временного интервала
+   \param not_before окончание временного интервала
+   \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_context_add_time_validity( ak_asn1 asn1, time_t not_before, time_t not_after )
+{
+  int error = ak_error_ok;
+  ak_asn1 asn_validity = NULL;
+
+  if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to asn1 element" );
+  if(( error = ak_asn1_context_create( asn_validity = ak_asn1_context_new())) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
+
+  if(( error = ak_asn1_context_add_utc_time( asn_validity, not_before )) != ak_error_ok ) {
+    ak_asn1_context_delete( asn_validity );
+    return ak_error_message( error, __func__, "incorrect adding \"not before\" time" );
+  }
+  if(( error = ak_asn1_context_add_utc_time( asn_validity, not_after )) != ak_error_ok ) {
+    ak_asn1_context_delete( asn_validity );
+    return ak_error_message( error, __func__, "incorrect adding \"not after\" time" );
+  }
+
+ return ak_asn1_context_add_asn1( asn1, TSEQUENCE, asn_validity );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param root ASN.1 структура, к которой добавляется новая структура
+    \param skey секретный ключ, содержащий зашифровываемые данные
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_context_add_resource( ak_asn1 root, ak_resource resource )
+{
+  ak_asn1 params = NULL;
+  int error = ak_error_ok;
+
+  if(( params = ak_asn1_context_new( )) == NULL ) return ak_error_message( ak_error_get_value(),
+                                                  __func__, "incorrect creation of asn1 context" );
+  if(( error = ak_asn1_context_add_uint32( params, resource->value.type )) != ak_error_ok ) {
+    ak_asn1_context_delete( params );
+    return ak_error_message( error, __func__, "incorrect adding secret key resource type" );
+  }
+  if(( error = ak_asn1_context_add_uint32( params,
+                                          (ak_uint32) resource->value.counter )) != ak_error_ok ) {
+    ak_asn1_context_delete( params );
+    return ak_error_message( error, __func__, "incorrect adding secret key resource value" );
+  }
+
+  if(( error = ak_asn1_context_add_time_validity( params,
+                          resource->time.not_before, resource->time.not_after )) != ak_error_ok ) {
+    ak_asn1_context_delete( params );
+    ak_error_message( error, __func__, "incorrect adding secret key time validity" );
+  }
+
+ /* вставляем изготовленную последовательность и выходим */
+ return ak_asn1_context_add_asn1( root, TSEQUENCE, params );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_context_add_asn1( ak_asn1 asn1, ak_uint8 tag, ak_asn1 down )
 {
   ak_tlv tlv = NULL;
@@ -1772,7 +1926,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \param fp Дескриптор файла, в котрый выводится информация;
+/*! \param fp Дескриптор файла, в который выводится информация;
     файл должен предварительно открыт на запись
     \param ptr Указатель на область памяти, где содержится der-последовательность
     \param size Размер der-последовательности в октетах
@@ -1822,6 +1976,83 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
  /* освобождаем выделенную память */
   exitlab: ak_asn1_context_destroy( &asn );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+                                 /* функции для работы с файлами */
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param asn указатель на текущий уровень ASN.1 дерева
+    \param filename имя файла, в который записываются данные
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_context_export_to_derfile( ak_asn1 asn, const char *filename )
+{
+   struct file fp;
+   ssize_t wbb = 0;
+   size_t len = 0, wb = 0;
+   ak_uint8 *buffer = NULL;
+   int error = ak_error_ok;
+
+   if(( error = ak_asn1_context_evaluate_length( asn, &len )) != ak_error_ok )
+     return ak_error_message( error, __func__, "incorrect evaluation total asn1 context length" );
+
+  /* кодируем */
+   if(( buffer = malloc( len )) == NULL )
+     return ak_error_message( ak_error_out_of_memory, __func__,
+                                                  "incorrect memory allocation for der-sequence" );
+   if(( error = ak_asn1_context_encode( asn, buffer, &len )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect encoding of asn1 context" );
+     goto lab2;
+   }
+
+  /* сохраняем */
+   if(( error = ak_file_create_to_write( &fp, filename )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect creation a file for secret key" );
+     goto lab2;
+   }
+   do{
+     wbb = ak_file_write( &fp, buffer, len );
+     if( wbb == -1 ) {
+       ak_error_message( error = ak_error_get_value(), __func__ ,
+                                                     "incorrect writing an encoded data to file" );
+       goto lab3;
+     }
+      else wb += (size_t) wbb;
+   } while( wb < len );
+
+   lab3: ak_file_close( &fp );
+   lab2: free( buffer );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param asn уровень ASN.1 в который помещается считываемое значение
+    \param filename имя файла, в котором содержится der-последовательность
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_context_import_from_derfile( ak_asn1 asn, const char *filename )
+{
+  int error = ak_error_ok;
+  size_t size = ak_libakrypt_encoded_asn1_der_sequence;
+  ak_uint8 *ptr = NULL, buffer[ak_libakrypt_encoded_asn1_der_sequence];
+
+ /* считываем данные */
+  if(( ptr = ak_ptr_load_from_file( buffer, &size, filename )) == NULL )
+   return ak_error_message_fmt( ak_error_get_value(), __func__,
+                                       "incorrect reading a der-sequence from %s file", filename );
+
+ /* декодируем считанную последовательность
+    при этом, поскольку считанная последовательность располагается в стеке, то
+    данные дублируются в ASN.1 дереве */
+  if(( error = ak_asn1_context_decode( asn, ptr, size, ak_true )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect decoding a der-sequence" );
+
+ /* очищаем, при необходимости, выделенную память */
+  if( ptr != buffer ) free( ptr );
  return error;
 }
 

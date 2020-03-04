@@ -119,11 +119,18 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тип зашифровываемого контента. */
  typedef enum {
-  /*! \brief Незаданный или не определенный контент. */
+  /*! \brief Не заданный или не определенный контент. */
    undefined_content,
-  /*! \brief Секретный ключ криптографического алгоритма. */
+  /*! \brief Секретный ключ симметричного криптографического алгоритма. */
+   symmetric_key_content,
+  /*! \brief Секретный ключ асимметричного криптографического алгоритма. */
    secret_key_content,
-
+  /*! \brief Открытый ключ асимметричного криптографического алгоритма. */
+   public_key_content,
+  /*! \brief Зашифрованные, не ключевые данные. */
+   encrypted_content,
+  /*! \brief Незашифрованные, не ключевые данные. */
+   plain_content
 } crypto_content_t;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -186,6 +193,8 @@
  int ak_skey_context_destroy( ak_skey );
 /*! \brief Присвоение секретному ключу уникального номера. */
  int ak_skey_context_set_unique_number( ak_skey );
+/*! \brief Присвоение секретному ключу заданного номера. */
+ int ak_skey_context_set_number( ak_skey , ak_pointer , size_t );
 /*! \brief Присвоение секретному ключу константного значения. */
  int ak_skey_context_set_key( ak_skey , const ak_pointer , const size_t );
 /*! \brief Присвоение секретному ключу случайного значения. */
@@ -207,7 +216,10 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция устанавливает ресурс ключа. */
- int ak_skey_context_set_resource( ak_skey , counter_resource_t , const char * , time_t , time_t );
+ int ak_skey_context_set_resource( ak_skey , ak_resource );
+/*! \brief Функция устанавливает ресурс ключа. */
+ int ak_skey_context_set_resource_values( ak_skey ,
+                                             counter_resource_t , const char * , time_t , time_t );
 /*! \brief Функция устанавливает временной интервал действия ключа. */
  int ak_skey_context_set_resource_time( ak_skey skey, time_t not_before, time_t not_after );
 

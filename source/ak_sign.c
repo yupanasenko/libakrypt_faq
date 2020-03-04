@@ -197,16 +197,37 @@
     @return Функция возвращает ноль (\ref ak_error_ok) в случае успешной иниициализации контекста.
     В случае возникновения ошибки возвращается ее код.                                             */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_signkey_context_create_streebog256( ak_signkey sctx, const ak_wcurve wc )
+ int ak_signkey_context_set_curve( ak_signkey sctx, const ak_wcurve wc )
+{
+   if( sctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                    "using null pointer to digital signature secret key context" );
+   if( wc == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                  "using null pointer to elliptic curve context" );
+   if( wc->size != ( sctx->ctx.data.sctx.hsize >> 3 ))
+     return ak_error_message( ak_error_curve_not_supported,
+                                    __func__ , "elliptic curve not supported for this algorithm" );
+    else sctx->key.data = wc;
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \note Функция не устанавливает указатель на параметры эллиптической кривой. Параметры должны
+    быть установлены позднее с помощью вызова функции ak_signkey_context_set_curve().
+
+    @param sctx Контекст секретного ключа электронной подписи (асимметричного алгоритма).
+    @param wc Контекст параметров эллиптической кривой. Контекст однозначно связывает
+    секретный ключ с эллиптической кривой, на которой происходят вычисления.
+
+    @return Функция возвращает ноль (\ref ak_error_ok) в случае успешной иниициализации контекста.
+    В случае возникновения ошибки возвращается ее код.                                             */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_signkey_context_create_streebog256( ak_signkey sctx )
 {
  int error = ak_error_ok;
 
    if( sctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                     "using null pointer to digital signature secret key context" );
-   if( wc == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                  "using null pointer to elliptic curve context" );
-   if( wc->size != ak_mpzn256_size ) return ak_error_message( ak_error_curve_not_supported,
-                                    __func__ , "elliptic curve not supported for this algorithm" );
   /* первичная инициализация */
    memset( sctx, 0, sizeof( struct signkey ));
 
@@ -229,17 +250,17 @@
      return error;
    }
 
-  /* устанавливаем эллиптическую кривую */
-   sctx->key.data = wc;
+  /* кривая не определена */
+   sctx->key.data = NULL;
 
   /* При удалении ключа не нужно освобождать память из под параметров эллиптической кривой  */
    sctx->key.flags |= ak_key_flag_data_not_free;
 
- /* в заключение определяем указатели на методы */
-  sctx->key.set_mask = ak_signkey_context_set_mask_multiplicative;
-  sctx->key.unmask = ak_signkey_context_unmask_multiplicative;
-  sctx->key.set_icode = ak_signkey_context_set_icode_multiplicative;
-  sctx->key.check_icode = ak_signkey_context_check_icode_multiplicative;
+  /* в заключение определяем указатели на методы */
+   sctx->key.set_mask = ak_signkey_context_set_mask_multiplicative;
+   sctx->key.unmask = ak_signkey_context_unmask_multiplicative;
+   sctx->key.set_icode = ak_signkey_context_set_icode_multiplicative;
+   sctx->key.check_icode = ak_signkey_context_check_icode_multiplicative;
 
  return ak_error_ok;
 }
@@ -252,16 +273,36 @@
     @return Функция возвращает ноль (\ref ak_error_ok) в случае успешной иниициализации контекста.
     В случае возникновения ошибки возвращается ее код.                                             */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_signkey_context_create_streebog512( ak_signkey sctx, const ak_wcurve wc )
+ int ak_signkey_context_create_streebog256_with_curve( ak_signkey sctx, const ak_wcurve wc )
+{
+ int error = ak_error_ok;
+
+   if(( error = ak_signkey_context_create_streebog256( sctx )) != ak_error_ok )
+     return ak_error_message( ak_error_null_pointer, __func__ ,
+                                    "incorrect creation of digital signature secret key" );
+   if(( error = ak_signkey_context_set_curve( sctx, wc )) != ak_error_ok )
+     return ak_error_message( ak_error_null_pointer, __func__ ,
+                                         "incorrect assigning an elliptic curve pointer" );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \note Функция не устанавливает указатель на параметры эллиптической кривой. Параметры должны
+    быть установлены позднее с помощью вызова функции ak_signkey_context_set_curve().
+
+    @param sctx Контекст секретного ключа электронной подписи (асимметричного алгоритма).
+    @param wc Контекст параметров эллиптической кривой. Контекст однозначно связывает
+    секретный ключ с эллиптической кривой, на которой происходят вычисления.
+
+    @return Функция возвращает ноль (\ref ak_error_ok) в случае успешной иниициализации контекста.
+    В случае возникновения ошибки возвращается ее код.                                             */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_signkey_context_create_streebog512( ak_signkey sctx )
 {
  int error = ak_error_ok;
 
    if( sctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                     "using null pointer to digital signature secret key context" );
-   if( wc == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                  "using null pointer to elliptic curve context" );
-   if( wc->size != ak_mpzn512_size ) return ak_error_message( ak_error_curve_not_supported,
-                                    __func__ , "elliptic curve not supported for this algorithm" );
   /* первичная инициализация */
    memset( sctx, 0, sizeof( struct signkey ));
 
@@ -269,7 +310,7 @@
    if(( error = ak_hash_context_create_streebog512( &sctx->ctx )) != ak_error_ok )
      return ak_error_message( error, __func__, "invalid creation of hash function context");
 
-  /* инициализируем контекст секретного ключа */
+  /* инициализируем контекст секретного ключа для хэш-кода размером 64 октета */
    if(( error = ak_skey_context_create( &sctx->key, 64 )) != ak_error_ok ) {
      ak_hash_context_destroy( &sctx->ctx );
      return ak_error_message( error, __func__, "wrong creation of secret key" );
@@ -283,32 +324,55 @@
      ak_hash_context_destroy( &sctx->ctx );
      return error;
    }
-  /* устанавливаем эллиптическую кривую */
-   sctx->key.data = wc;
+
+  /* кривая не определена */
+   sctx->key.data = NULL;
 
   /* При удалении ключа не нужно освобождать память из под параметров эллиптической кривой  */
    sctx->key.flags |= ak_key_flag_data_not_free;
 
- /* в заключение определяем указатели на методы */
-  sctx->key.set_mask = ak_signkey_context_set_mask_multiplicative;
-  sctx->key.unmask = ak_signkey_context_unmask_multiplicative;
-  sctx->key.set_icode = ak_signkey_context_set_icode_multiplicative;
-  sctx->key.check_icode = ak_signkey_context_check_icode_multiplicative;
+  /* в заключение определяем указатели на методы */
+   sctx->key.set_mask = ak_signkey_context_set_mask_multiplicative;
+   sctx->key.unmask = ak_signkey_context_unmask_multiplicative;
+   sctx->key.set_icode = ak_signkey_context_set_icode_multiplicative;
+   sctx->key.check_icode = ak_signkey_context_check_icode_multiplicative;
 
  return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param sctx Контекст секретного ключа электронной подписи (асимметричного алгоритма).
-    @param algoid Идентификатор алгоритма выработки электронной подписи,
-    то есть `algoid->engine = sign_function`.
-    @param curveoid Идентификатор эллиптической кривой, заданной в короткой форме Вейерштрасса,
-    то есть `curveoid->engine = identifier` и `curveoid->mode = wcurve_params`.
+    @param wc Контекст параметров эллиптической кривой. Контекст однозначно связывает
+    секретный ключ с эллиптической кривой, на которой происходят вычисления.
 
     @return Функция возвращает ноль (\ref ak_error_ok) в случае успешной иниициализации контекста.
     В случае возникновения ошибки возвращается ее код.                                             */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_signkey_context_create_oid( ak_signkey sctx, ak_oid algoid, ak_oid curveoid )
+ int ak_signkey_context_create_streebog512_with_curve( ak_signkey sctx, const ak_wcurve wc )
+{
+ int error = ak_error_ok;
+
+   if(( error = ak_signkey_context_create_streebog512( sctx )) != ak_error_ok )
+     return ak_error_message( ak_error_null_pointer, __func__ ,
+                                    "incorrect creation of digital signature secret key" );
+   if(( error = ak_signkey_context_set_curve( sctx, wc )) != ak_error_ok )
+     return ak_error_message( ak_error_null_pointer, __func__ ,
+                                         "incorrect assigning an elliptic curve pointer" );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \note Функция не устанавливает указатель на параметры эллиптической кривой. Параметры должны
+    быть установлены позднее с помощью вызова функции ak_signkey_context_set_curve().
+
+    @param sctx Контекст секретного ключа электронной подписи (асимметричного алгоритма).
+    @param algoid Идентификатор алгоритма выработки электронной подписи,
+    то есть `algoid->engine = sign_function`.
+
+    @return Функция возвращает ноль (\ref ak_error_ok) в случае успешной иниициализации контекста.
+    В случае возникновения ошибки возвращается ее код.                                             */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_signkey_context_create_oid( ak_signkey sctx, ak_oid algoid )
 {
   if( sctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                     "using null pointer to digital signature secret key context" );
@@ -319,17 +383,7 @@
                                                  "using digital signature oid with wrong engine" );
   if( algoid->mode != algorithm ) return ak_error_message( ak_error_oid_mode, __func__ ,
                                                    "using digital signature oid with wrong mode" );
-
-  if( curveoid == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                      "using null pointer to elliptic curve oid" );
-  if( curveoid->engine != identifier ) return ak_error_message( ak_error_oid_engine, __func__ ,
-                                                    "using elliptic curve oid with wrong engine" );
- /* проверяем, что OID от параметров кривой в форме Вейерштрасса */
-  if( curveoid->mode != wcurve_params ) return ak_error_message( ak_error_oid_mode, __func__ ,
-                                                      "using elliptic curve oid with wrong mode" );
-
- return ((ak_function_create_signkey *)algoid->func.create)( sctx,
-                                                               ( const ak_wcurve )curveoid->data );
+ return ((ak_function_create_signkey *)algoid->func.create)( sctx );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -451,7 +505,7 @@
     в первые 256 (512) бит (младшие разряды) помещается значение \f$ s \f$ в big-endian формате,
     в последние 256 (512) бит (страшие разряды) помещается значение \f$ r \f$ в big-endian формате.
 
-    \b Внимание! Входные параметры функции не проверяются.
+    \note Входные параметры функции не проверяются.
 
     @param sctx контекст секретного ключа алгоритма электронной подписи.
     @param k степень кратности точки \f$ P \f$; представляет собой вычет по модулю \f$ q \f$ - порядка
@@ -993,13 +1047,15 @@
        allcount++;
        switch( ec->size ) {
          case ak_mpzn256_size:
-           if(( error = ak_signkey_context_create_streebog256( &skey, ec )) != ak_error_ok ) {
+           if(( error =
+                  ak_signkey_context_create_streebog256_with_curve( &skey, ec )) != ak_error_ok ) {
              ak_error_message( error, __func__, "incorrect creation of secret key context" );
              goto labexit;
            }
            break;
          case ak_mpzn512_size:
-           if(( error = ak_signkey_context_create_streebog512( &skey, ec )) != ak_error_ok ) {
+           if(( error =
+                  ak_signkey_context_create_streebog512_with_curve( &skey, ec )) != ak_error_ok ) {
              ak_error_message( error, __func__, "incorrect creation of secret key context" );
              goto labexit;
            }
@@ -1135,7 +1191,7 @@
    ak_error_message( ak_error_ok, __func__ , "testing digital signatures started" );
 
  /* 1. первый пример из приложения А ГОСТ Р 34.10-2012 ------------------------------------------ */
-  if(( error = ak_signkey_context_create_streebog256( &sk,
+  if(( error = ak_signkey_context_create_streebog256_with_curve( &sk,
                          (ak_wcurve) &id_tc26_gost_3410_2012_256_paramSetTest )) != ak_error_ok ) {
     ak_error_message( error, __func__ ,
                                "incorrect creation of 256 bits secret key for GOST R 34.10-2012" );
@@ -1210,7 +1266,7 @@
 #endif
 
  /* 2. Второй пример из приложения А ГОСТ Р 34.10-2012 ------------------------------------------- */
-  if(( error = ak_signkey_context_create_streebog512( &sk,
+  if(( error = ak_signkey_context_create_streebog512_with_curve( &sk,
                          (ak_wcurve) &id_tc26_gost_3410_2012_512_paramSetTest )) != ak_error_ok ) {
     ak_error_message( error, __func__ ,
                                "incorrect creation of 512 bits secret key for GOST R 34.10-2012" );

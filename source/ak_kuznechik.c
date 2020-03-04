@@ -182,6 +182,21 @@
   int audit = ak_log_get_level(),
       error = ak_bckey_context_kuznechik_init_tables( gost_lvec, gost_pi, &kuznechik_parameters );
 
+ /* ---- удали меня скорее ----
+   FILE *fp = fopen("table.txt", "w" );
+
+    for( int i = 0; i < 16; i++ ) {
+      fprintf( fp, "\n  tab[%02d][j][1]    tab[%02d][j][0] (for j from 0 to 255)\n", i, i );
+      for( int j = 0; j < 256; j++ ) {
+         fprintf( fp, "%016llX:%016llX\n",
+           kuznechik_parameters.enc[i][j][1], kuznechik_parameters.enc[i][j][0] );
+      }
+      fprintf( fp, "\n");
+    }
+   fclose(fp);
+    ---- удали меня скорее ---- */
+
+
   if( error != ak_error_ok )
     return ak_error_message( error, __func__,
                                            "generation of GOST R 34.12-2015 parameters is wrong" );

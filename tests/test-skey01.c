@@ -25,7 +25,7 @@
  /* устанавливаем значение ключа */
   ak_skey_context_set_key( &key, testkey, 32 );
  /* устанавливаем ресурс ключа */
-  ak_skey_context_set_resource( &key, key_using_resource, "hmac_key_count_resource", 0, time(NULL)+2592000 );
+  ak_skey_context_set_resource_values( &key, key_using_resource, "hmac_key_count_resource", 0, time(NULL)+2592000 );
  /* выводим информацию о полях структуры */
   ak_skey_context_print_to_file( &key, stdout );
 

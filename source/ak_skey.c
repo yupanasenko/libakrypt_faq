@@ -164,6 +164,29 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \param skey контекст секретного ключа, для клоторого вырабатывается уникальный номер
+    \param ptr указатель на область памяти, содержащей номер ключа
+    \param size размер области памяти в октетах
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль). В противном случае, возвращается
+    номер ошибки.                                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_context_set_number( ak_skey skey, ak_pointer ptr, size_t size )
+{
+ /* стандартные проверки */
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer,
+                                         __func__ , "using a null pointer to secret key context" );
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer,
+                                                 __func__ , "using a null pointer to key number" );
+  if( size == 0 ) return ak_error_message( ak_error_zero_length, __func__,
+                                                             "using key number with zero length" );
+
+  memset( skey->number, 0, sizeof( skey->number ));
+  memcpy( skey->number, ptr, ak_min( size, sizeof( skey->number )));
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция инициализирует поля структуры, выделяя для этого необходимую память. Всем полям
     присваиваются значения по-умолчанию.
 
@@ -464,6 +487,26 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \param skey Контекст секретного ключа.
+    \param resource указатель на структуру ресурса.
+    \return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_context_set_resource( ak_skey skey, ak_resource resource )
+{
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using a null pointer to secret key" );
+  if( resource == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                    "using a null pointer to resource structure" );
+  skey->resource.value.type = resource->value.type;
+  skey->resource.value.counter = resource->value.counter;
+  skey->resource.time.not_before = resource->time.not_before;
+  skey->resource.time.not_after = resource->time.not_after;
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Счетчику ресурса присваивается значение, определенное заданной опцией библиотеки.
 
     Присвоение времени происходит следующим образом. Если `not_before` равно нулю, то
@@ -479,8 +522,8 @@
     \return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_skey_context_set_resource( ak_skey skey, counter_resource_t type, const char *option,
-                                                               time_t not_before, time_t not_after )
+ int ak_skey_context_set_resource_values( ak_skey skey, counter_resource_t type,
+                                         const char *option, time_t not_before, time_t not_after )
 {
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using a null pointer to secret key" );
