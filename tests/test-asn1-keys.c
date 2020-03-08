@@ -70,13 +70,13 @@
    /* экпортируем ключ в файл (в der-кодировке) */
     ak_symmetric_key_context_export_to_derfile_with_password( &bkey, block_cipher,
                                               "password", 8, NULL, filename, sizeof( filename ));
-//   /* удаляем ключ */
-//    ak_bckey_context_destroy( &bkey );
-//   /* импортируем ключ из файла */
-//    ak_bckey_context_import_from_derfile( &bkey, filename );
-//   /* для отладки - выводим сформированную структуру в консоль
-//    ak_skey_context_print_to_file( &bkey.key, stdout );
-//    printf("\n"); */
+   /* удаляем ключ */
+    ak_bckey_context_destroy( &bkey );
+   /* импортируем ключ из файла */
+    ak_bckey_context_import_from_derfile( &bkey, filename );
+   /* для отладки - выводим сформированную структуру в консоль
+    ak_skey_context_print_to_file( &bkey.key, stdout );
+    printf("\n"); */
 
    /* шифруем тестируемые данные еще раз*/
     ak_bckey_context_ctr( &bkey, testdata, out2, sizeof( testdata ), testkey, bkey.bsize );
@@ -88,8 +88,8 @@
    /* удаляем ключ */
     if( ak_ptr_is_equal_with_log( out, out2, sizeof( testdata ))) printf("encryption: Ok\n");
       else { printf("encryption: Wrong\n"); return EXIT_FAILURE; }
-    if( ak_ptr_is_equal_with_log( im, im2, bkey.bsize )) printf("cmac: Ok\n");
-      else { printf("cmac: Wrong\n"); return EXIT_FAILURE; }
+    if( ak_ptr_is_equal_with_log( im, im2, bkey.bsize )) printf("cmac: Ok\n\n");
+      else { printf("cmac: Wrong\n\n"); return EXIT_FAILURE; }
     ak_bckey_context_destroy( &bkey );
 
  return EXIT_SUCCESS;
@@ -113,9 +113,9 @@
     ak_hmac_context_create_oid( &hctx, oid );
    /* присваиваем ключу константное значение */
     ak_hmac_context_set_key( &hctx, testkey, sizeof( testkey ));
-   /* для отладки - выводим сформированную структуру в консоль */
+   /* для отладки - выводим сформированную структуру в консоль
     ak_skey_context_print_to_file( &hctx.key, stdout );
-    printf("\n");
+    printf("\n"); */
 
    /* вычисляем имитовставку */
     ak_hmac_context_ptr( &hctx, data, sizeof( data ), out, sizeof( out ));
@@ -124,7 +124,22 @@
     ak_symmetric_key_context_export_to_derfile_with_password( &hctx, hmac_function,
                                                  "password", 8, NULL, filename, sizeof( filename ));
 
+   /* удаляем ключ */
     ak_hmac_context_destroy( &hctx );
+   /* импортируем ключ из файла */
+    ak_hmac_context_import_from_derfile( &hctx, filename );
+   /* для отладки - выводим сформированную структуру в консоль
+    ak_skey_context_print_to_file( &hctx.key, stdout );
+    printf("\n"); */
+
+    ak_hmac_context_ptr( &hctx, data, sizeof( data ), out2, sizeof( out2 ));
+    printf("hmac: %s", ak_ptr_to_hexstr( out2, ak_hmac_context_get_tag_size( &hctx ), ak_false ));
+
+    if( ak_ptr_is_equal_with_log( out, out2, ak_hmac_context_get_tag_size( &hctx )))
+      printf(" Ok\n\n");
+      else { printf(" Wrong\n\n"); return EXIT_FAILURE; }
+    ak_hmac_context_destroy( &hctx );
+
  return EXIT_SUCCESS;
 }
 

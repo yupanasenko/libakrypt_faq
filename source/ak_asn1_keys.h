@@ -43,6 +43,9 @@
    в виде der-последовательности. */
  int ak_symmetric_key_context_export_to_derfile_with_password( ak_pointer , oid_engines_t ,
                                const char *, const size_t , const char * , char * , const size_t );
+/*! \brief Функция импортирует ключ симметричного криптографического преобразования
+   der-последовательности, хранящейся в заданном файле. */
+ int ak_symmetric_key_context_import_from_derfile( ak_pointer , oid_engines_t , const char * );
 /*! \brief Функция импортирует ключ алгоритма блочного шифрования из заданного файла. */
  int ak_bckey_context_import_from_derfile( ak_bckey , const char * );
 /*! \brief Функция импортирует ключ алгоритма блочного шифрования из заданного файла. */

@@ -469,7 +469,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
     case TINTEGER:
       if(( error = ak_tlv_context_get_uint32( tlv, &u32 )) == ak_error_ok )
-        fprintf( fp, "%u\n", u32 );
+        fprintf( fp, "%u\n", (unsigned int)u32 );
        else {
          switch( error ) {
 //           case ak_error_invalid_asn1_length:  /* здесь нужно чтение mpzn */ break;
@@ -499,7 +499,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
             if( ak_asn1_context_decode( &asn, ptr, len, ak_false ) == ak_error_ok ) {
               len = strlen( prefix );
               strcat( prefix, "   " );
-              fprintf( fp, " (%u octets, encoded)\n", (ak_uint32)len );
+              fprintf( fp, " (%u octets, encoded)\n", (unsigned int)len );
                 ak_asn1_context_print( &asn, fp );
                 ak_asn1_context_destroy( &asn );
                prefix[len] = 0;
@@ -590,9 +590,9 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
  /* случай, когда предопределенное преобразование неизвестно или выполнено с ошибкой */
   if( dp ) {
-    if( tlv->data.primitive != NULL ) fprintf( fp, " [len: %u, data: 0x%s]\n", tlv->len,
-                                      ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ));
-      else fprintf( fp, " [len: %u, data: %s(null)%s]\n", tlv->len,
+    if( tlv->data.primitive != NULL ) fprintf( fp, " [len: %u, data: 0x%s]\n",
+             (unsigned int) tlv->len, ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ));
+      else fprintf( fp, " [len: %u, data: %s(null)%s]\n", (unsigned int) tlv->len,
                                                               TEXT_COLOR_RED, TEXT_COLOR_DEFAULT );
   }
  return ak_error_ok;
@@ -1056,7 +1056,8 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
    ak_asn1_context_first( asn );
    if(( DATA_STRUCTURE( asn->current->tag ) != PRIMITIVE ) ||
         ( TAG_NUMBER( asn->current->tag ) != TINTEGER )) return ak_error_invalid_asn1_tag;
-   if(( error = ak_tlv_context_get_uint32( asn->current, &resource->value.type )) != ak_error_ok )
+   if(( error = ak_tlv_context_get_uint32( asn->current,
+                                            (ak_uint32*) &resource->value.type )) != ak_error_ok )
      return ak_error_message( error, __func__, "incorrect reading resource type" );
 
    ak_asn1_context_next( asn );
