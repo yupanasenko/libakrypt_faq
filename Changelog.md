@@ -17,7 +17,7 @@
    экспорт: ak_key_context_export_to_derfile_with_password()
    импорт:  ak_bckey_context_import_from_derfile()
             ak_hmac_context_import_from_derfile()
-
+            ak_signkey_context_import_from_derfile()
  - Добавлены функции внешнего интерфейса
     - ak_libakrypt_set_openssl_compability()
     - ak_libakrypt_set_password_read_function()
