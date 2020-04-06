@@ -14,6 +14,10 @@
  - Функционал разбора ASN.1 структур, а фактически - сертификатов ключей, добавлен в утилиту aktool
  - Добавлена документация к утилите aktool
  - Реализован экспорт и импорт секретных ключей в виде ASN.1 деревьев (der-последовательностей)
+   экспорт: ak_key_context_export_to_derfile_with_password()
+   импорт:  ak_bckey_context_import_from_derfile()
+            ak_hmac_context_import_from_derfile()
+
  - Добавлены функции внешнего интерфейса
     - ak_libakrypt_set_openssl_compability()
     - ak_libakrypt_set_password_read_function()

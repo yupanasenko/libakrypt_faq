@@ -8,6 +8,7 @@
 
  int bckey_test( ak_oid );
  int hmac_test( ak_oid );
+ int signkey_test( ak_oid );
 
 /* определяем функцию, которая будет имитировать чтение пароля пользователя */
  int get_user_password( char *password, size_t psize )
@@ -20,6 +21,7 @@
 /* --------------------------------------------------------------------------------------------- */
  int main(void)
 {
+ ak_oid oid = NULL;
  int result = EXIT_SUCCESS;
 
  /* Инициализируем библиотеку */
@@ -34,6 +36,15 @@
    if(( result = bckey_test( ak_oid_context_find_by_name( "magma" ))) != EXIT_SUCCESS ) goto lab1;
    if(( result = hmac_test( ak_oid_context_find_by_name( "hmac-streebog256" ))) != EXIT_SUCCESS ) goto lab1;
    if(( result = hmac_test( ak_oid_context_find_by_name( "hmac-streebog512" ))) != EXIT_SUCCESS ) goto lab1;
+
+  /* тестируем ключи алгоритма ЭП для нескольких кривых */
+   oid = ak_oid_context_find_by_engine( identifier );
+   while( oid != NULL ) {
+     if( oid->mode == wcurve_params ) {
+       if(( result = signkey_test( oid )) != EXIT_SUCCESS ) goto lab1;
+     }
+     oid = ak_oid_context_findnext_by_engine( oid, identifier );
+   }
 
    lab1:
   return ak_libakrypt_destroy();
@@ -50,7 +61,8 @@
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
     0xf1, 0xe2, 0xd3, 0xc4, 0xb5, 0xa6, 0x97, 0x88, 0x79, 0x6a, 0x5b, 0x4c, 0x3d, 0x2e, 0x1f };
   ak_uint8 out[31], out2[31], im[16], im2[16];
-  char filename[128];
+  char filename[128], name[64];
+  char *keyname = NULL;
 
    /* создаем ключ, который будет помещаться в контейнер */
     ak_bckey_context_create_oid( &bkey, oid );
@@ -66,17 +78,20 @@
     ak_bckey_context_cmac( &bkey, testdata, sizeof( testdata ), im, bkey.bsize );
      printf("%-10s: %s ", bkey.key.oid->names[0], ak_ptr_to_hexstr( out, sizeof(out), ak_false ));
      printf("(cmac: %s)\n", ak_ptr_to_hexstr( im, bkey.bsize, ak_false ));
+     ak_snprintf( name, sizeof( name ), "key-%s-%03u", oid->names[0], bkey.key.number[0] ); /* имя ключа */
 
    /* экпортируем ключ в файл (в der-кодировке) */
-    ak_symmetric_key_context_export_to_derfile_with_password( &bkey, block_cipher,
-                                              "password", 8, NULL, filename, sizeof( filename ));
+    ak_key_context_export_to_derfile_with_password( &bkey, block_cipher,
+                                              "password", 8, name, filename, sizeof( filename ));
    /* удаляем ключ */
     ak_bckey_context_destroy( &bkey );
    /* импортируем ключ из файла */
-    ak_bckey_context_import_from_derfile( &bkey, filename );
+    ak_bckey_context_import_from_derfile( &bkey, filename, &keyname );
    /* для отладки - выводим сформированную структуру в консоль
     ak_skey_context_print_to_file( &bkey.key, stdout );
     printf("\n"); */
+    printf("keyname: %s\n", keyname );
+    if( keyname != NULL ) free( keyname );
 
    /* шифруем тестируемые данные еще раз*/
     ak_bckey_context_ctr( &bkey, testdata, out2, sizeof( testdata ), testkey, bkey.bsize );
@@ -108,6 +123,7 @@
   ak_uint8 data[12] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16 };
   ak_uint8 out[64], out2[64];
   char filename[128];
+  char *keyname = NULL;
 
    /* создаем ключ, который будет помещаться в контейнер */
     ak_hmac_context_create_oid( &hctx, oid );
@@ -121,16 +137,18 @@
     ak_hmac_context_ptr( &hctx, data, sizeof( data ), out, sizeof( out ));
     printf("hmac: %s\n", ak_ptr_to_hexstr( out, ak_hmac_context_get_tag_size( &hctx ), ak_false ));
    /* экпортируем ключ в файл (в der-кодировке) */
-    ak_symmetric_key_context_export_to_derfile_with_password( &hctx, hmac_function,
-                                                 "password", 8, NULL, filename, sizeof( filename ));
+    ak_key_context_export_to_derfile_with_password( &hctx, hmac_function,
+                                      "password", 8, "hmac keyname", filename, sizeof( filename ));
 
    /* удаляем ключ */
     ak_hmac_context_destroy( &hctx );
    /* импортируем ключ из файла */
-    ak_hmac_context_import_from_derfile( &hctx, filename );
+    ak_hmac_context_import_from_derfile( &hctx, filename, &keyname );
    /* для отладки - выводим сформированную структуру в консоль
     ak_skey_context_print_to_file( &hctx.key, stdout );
     printf("\n"); */
+    printf("keyname: %s\n", keyname );
+    if( keyname != NULL ) free( keyname );
 
     ak_hmac_context_ptr( &hctx, data, sizeof( data ), out2, sizeof( out2 ));
     printf("hmac: %s", ak_ptr_to_hexstr( out2, ak_hmac_context_get_tag_size( &hctx ), ak_false ));
@@ -141,6 +159,60 @@
     ak_hmac_context_destroy( &hctx );
 
  return EXIT_SUCCESS;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+ int signkey_test( ak_oid curvoid )
+{
+  int result = EXIT_SUCCESS;
+  ak_uint8 testkey[64] = {
+    0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x27, 0x01, 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe,
+    0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00, 0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x38,
+    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+    0xf1, 0xe2, 0xd3, 0xc4, 0xb5, 0xa6, 0x97, 0x88, 0x79, 0x6a, 0x5b, 0x4c, 0x3d, 0x2e, 0x1f, 0x00 };
+  ak_uint8 sign[128];
+  char filename[128];
+  struct signkey skey;
+  struct verifykey vkey;
+
+   if(( curvoid->engine == identifier ) && ( curvoid->mode == wcurve_params )) {
+     switch( ((ak_wcurve)curvoid->data)->size ) {
+       case ak_mpzn256_size:
+         ak_signkey_context_create_streebog256_with_curve( &skey, (ak_wcurve)curvoid->data );
+         ak_signkey_context_set_key( &skey, testkey, 32 );
+         break;
+
+       case ak_mpzn512_size:
+         ak_signkey_context_create_streebog512_with_curve( &skey, (ak_wcurve)curvoid->data );
+         ak_signkey_context_set_key( &skey, testkey, 64 );
+         break;
+
+       default: printf("boreken oid\n"); return EXIT_FAILURE;
+     }
+   } else return EXIT_FAILURE;
+   printf("---- oid: %s (%s)\n", curvoid->id, curvoid->names[0] );
+
+  /* подписываем данные */
+   ak_signkey_context_sign_ptr( &skey, testkey, 13, sign, sizeof( sign ));
+   printf("signature: %s\n", ak_ptr_to_hexstr( sign,
+                                       ak_signkey_context_get_tag_size( &skey ), ak_false ));
+
+  /* сохраняем ключ */
+   ak_key_context_export_to_derfile_with_password( &skey, sign_function,
+                               "password", 8, "DS secret key", filename, sizeof( filename ));
+  /* уничтожаем ключ */
+  /* считываем ключ */
+
+  /* создаем открытый */
+   ak_verifykey_context_create_from_signkey( &vkey, &skey );
+   printf("verify: ");
+   if( ak_verifykey_context_verify_ptr( &vkey, testkey, 13, sign )) printf("Ok\n\n");
+     else { printf("Wrong\n\n"); result = EXIT_FAILURE; }
+
+  /* уничтожаем ключи */
+   ak_signkey_context_destroy( &skey );
+   ak_verifykey_context_destroy( &vkey );
+ return result;
 }
 
 //  ak_uint8 out[31], out2[31], im[16], im2[16];

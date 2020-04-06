@@ -402,7 +402,7 @@
 Формат структуры метаданных `BasicKeyMetaData`, используемой для восстановления ключа,
 содержится в документации к функции ak_asn1_context_add_derived_keys_from_password().
 
-Формат структуры `SymmetricKeyParameters` определяется следующим образом.
+Формат структуры `KeyParameters` определяется следующим образом.
 \code
     KeyParameters ::= SEQUENCE {
        resourceType INTEGER, -- тип ресурса секретного ключа
@@ -487,6 +487,135 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Экспорт асимметричного секретного ключа в ASN.1 дерево.
+
+   Функция создает ASN.1 структуру `Content`, определяемую следующим образом
+\code
+    Content ::= SEQUENCE {
+       type OBJECT IDENTIFIER, -- уникальный тип контента
+                               -- для симметричных ключей это значение равно 1.2.643.2.52.1.127.3.2
+       symkey SecretKeyContent -- собственно контент ключа
+    }
+\endcode
+
+Структура `SecretKeyContent` определяется следующим образом.
+
+\code
+    SecretKeyContent ::= SEQUENCE {
+       algorithm OBJECT IDENTIFIER,   -- идентификатор алгоритма, для которого предназначен ключ
+       number OCTET STRING,           -- уникальный номер ключа
+       keyname UTF8 STRING,           -- человекочитаемое имя (описание) ключа
+       params KeyParameters,          -- параметры секретного ключа, такие ресурс использований и
+                                         временной интервал
+       curveOID OBJECT IDENTIFIER     -- идентификатор эллиптической кривой, на которой выполняются
+                                         криптографические преобразования
+       content EncryptedContent       -- собственно зашифрованные с помощью преобразования KExp15 данные
+    }
+\endcode
+
+Формат структуры метаданных `BasicKeyMetaData`, используемой для восстановления ключа,
+содержится в документации к функции ak_asn1_context_add_derived_keys_from_password().
+
+Формат структуры `KeyParameters` определяется следующим образом.
+\code
+    KeyParameters ::= SEQUENCE {
+       resourceType INTEGER, -- тип ресурса секретного ключа
+       resource INTEGER,     -- значение ресурса
+       validity Validity     -- временной интервал использования ключа
+    }
+\endcode
+
+Структура `Validity` содержит в себе временной интервал действия ключа и определяется стандартным для x509 образом.
+\code
+    Validity ::= SEQUENCE {
+      notBefore Time,
+      notAfter Time
+    }
+
+    Time ::= CHOICE {
+      utcTime UTCTime,
+      generalTime generalizedTime
+    }
+\endcode
+
+ \param root уровень ASN.1 дерева, к которому добавляется структура `Content`
+ \param skey контекст секретного ключа
+ \param ekey контекст производного ключа шифрования
+ \param ikey контекст производного ключа имитозащиты
+ \param keyname строка символов, содержащая пользовательское описание (имя) ключа;
+        может принимать значение null.
+ \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+  возвращается код ошибки.                                                                         */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_asn1_context_add_signature_key_content( ak_asn1 root, ak_skey skey,
+                                                ak_bckey ekey, ak_bckey ikey , const char *keyname )
+{
+  ak_oid eoid = NULL;
+  ak_asn1 symkey = NULL;
+  int error = ak_error_ok;
+
+ /* 1. помечаем контейнер */
+   if(( error = ak_asn1_context_add_oid( root,
+                   ak_oid_context_find_by_name( "secret-key-content" )->id )) != ak_error_ok )
+     return ak_error_message( error, __func__, "incorrect adding contents identifier" );
+
+ /* 2. добавляем соответствующую структуру с данными */
+   if(( error = ak_asn1_context_add_asn1( root, TSEQUENCE,
+                                               symkey = ak_asn1_context_new( ))) != ak_error_ok )
+     return ak_error_message( error, __func__, "incorrect creation of asn1 context for content" );
+
+  /* 3. создаем шесть встроенных полей (данный набор специфичен только для SecretKeyContent
+     - 3.1. - идентификатор ключа */
+   if(( error = ak_asn1_context_add_oid( symkey, skey->oid->id )) != ak_error_ok ) {
+     ak_asn1_context_delete( symkey );
+     return ak_error_message( error, __func__, "incorrect addition of secret key's identifier" );
+   }
+
+  /* - 3.2. - номер ключа ключа */
+   if(( error = ak_asn1_context_add_octet_string( symkey,
+                                          skey->number, sizeof( skey->number ))) != ak_error_ok ) {
+     ak_asn1_context_delete( symkey );
+     return ak_error_message( error, __func__, "incorrect addition of secret key's number" );
+   }
+
+  /* - 3.3. - имя/описание ключа */
+   if(( error = ak_asn1_context_add_utf8_string( symkey, keyname )) != ak_error_ok ) {
+     ak_asn1_context_delete( symkey );
+     ak_error_message( error, __func__, "incorrect creation of secret key's description" );
+     goto labexit;
+   }
+
+  /* - 3.4. - ресурс ключа */
+   if(( error = ak_asn1_context_add_resource( symkey, &skey->resource )) != ak_error_ok ) {
+     ak_asn1_context_delete( symkey );
+     ak_error_message( error, __func__, "incorrect creation of secret key's parameters" );
+     goto labexit;
+   }
+
+  /* - 3.5. - сохраняеми идентификатор эллиптической кривой
+              поскольку мы имеем только указатель на данные, надо найти oid по заданному адресу */
+
+     eoid = ak_oid_context_find_by_engine( identifier );
+     while( eoid != NULL ) {
+       if( eoid->data == skey->data ) {
+           if(( error = ak_asn1_context_add_oid( symkey, eoid->id )) != ak_error_ok )
+             return ak_error_message( error, __func__,
+                                                    "incorrect adding elliptic curve identifier" );
+           break;
+       }
+       eoid = ak_oid_context_findnext_by_engine( eoid, identifier );
+     }
+
+  /* - 3.6. - собственно зашифрованный ключ */
+   if(( error = ak_asn1_context_add_skey_content( symkey, skey, ekey, ikey )) != ak_error_ok ) {
+     ak_asn1_context_delete( symkey );
+     ak_error_message( error, __func__, "incorrect creation of secret key's parameters" );
+   }
+
+  labexit: return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция формирует ASN.1 структуру следующего формата.
 \code
     Container ::= SEQUENCE {
@@ -501,12 +630,17 @@
 зависит от способа генерации ключей. Описание формата при использовании пароля
 содержится в документации к функции ak_asn1_context_add_derived_keys_from_password().
 
-Формат структуры `Content` зависит от типа помещаемых данных. Для симметричных ключей
-(ключей алгоритмов блочного шифрования, алгоритмов выработки имитовставки и т.п.)
-описание формата структуры `Content` содержится в документации к функции
-ak_asn1_context_add_symmetric_key_content().
+Формат структуры `Content` зависит от типа помещаемых данных
 
- \param key ключ симмертричного криптографического преобразования
+ -  для симметричных ключей (ключей алгоритмов блочного шифрования, алгоритмов выработки имитовставки и т.п.)
+    описание формата структуры `Content` содержится в документации к функции
+    ak_asn1_context_add_symmetric_key_content().
+
+ -  для секретных ключей асимметричных алгоритмов, в частности, электронной подписи
+    описание формата структуры `Content` содержится в документации к функции
+    ak_asn1_context_add_signature_key_content().
+
+ \param key секретный ключ криптографического преобразования
  \param engine тип криптографического преобразования
  \param root  уровень ASN.1 дерева, в который помещаются экспортируемые данные
  \param password пароль пользователя
@@ -517,7 +651,7 @@ ak_asn1_context_add_symmetric_key_content().
  \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_symmetric_key_context_export_to_asn1_with_password( ak_pointer key, oid_engines_t engine,
+ int ak_key_context_export_to_asn1_with_password( ak_pointer key, oid_engines_t engine,
                   ak_asn1 root, const char *password, const size_t pass_size, const char *keyname )
 {
   int error = ak_error_ok;
@@ -558,13 +692,35 @@ ak_asn1_context_add_symmetric_key_content().
      goto labexit;
    }
 
-  /* 4. экспортируем данные */
-   if(( error = ak_asn1_context_add_symmetric_key_content( content, (ak_skey)key,
+  /* 4. экспортируем данные.
+        перед экспортом выполняем фильтр криптографического механизма еще раз */
+   switch( engine ) {
+    /* формируем ASN.1 дерево для симметричного секретного ключа */
+     case block_cipher:
+     case hmac_function:
+           if(( error = ak_asn1_context_add_symmetric_key_content( content, (ak_skey)key,
                                                          &ekey, &ikey, keyname )) != ak_error_ok ) {
-     ak_asn1_context_delete( asn );
-     ak_error_message( error, __func__, "incorrect creation of symmetric key content" );
-     goto labexit;
-   }
+              ak_asn1_context_delete( asn );
+              ak_error_message( error, __func__, "incorrect creation of symmetric key content" );
+              goto labexit;
+           }
+           break;
+
+     case sign_function:
+           if(( error = ak_asn1_context_add_signature_key_content( content, (ak_skey)key,
+                                                         &ekey, &ikey, keyname )) != ak_error_ok ) {
+              ak_asn1_context_delete( asn );
+              ak_error_message( error, __func__, "incorrect creation of symmetric key content" );
+              goto labexit;
+           }
+          break;
+
+     default:
+           ak_asn1_context_delete( asn );
+           ak_error_message( error = ak_error_oid_engine, __func__,
+                                                         "using usupported engine of secret key" );
+           goto labexit;
+  }
 
    error = ak_asn1_context_add_asn1( root, TSEQUENCE, asn );
    labexit:
@@ -589,15 +745,15 @@ ak_asn1_context_add_symmetric_key_content().
        char filemane[256];
 
       // сохранение ключа в файле, имя которого возвращается в переменной filename
-       ak_symmetric_key_context_export_to_derfile_with_password( key, block_cipher,
+       ak_key_context_export_to_derfile_with_password( key, block_cipher,
                                "password", 8, "keyname", filename, sizeof( filename ));
 
       // сохранение ключа в файле с заданным именем
-       ak_symmetric_key_context_export_to_derfile_with_password( key, hmac_function,
+       ak_key_context_export_to_derfile_with_password( key, hmac_function,
                                              "password", 8, "keyname", "name.key", 0 );
     \endcode
 
-    \param key контекст экспортируемого ключа симметричного криптографического преобразования;
+    \param key контекст экспортируемого секретного ключа криптографического преобразования;
     контекст должен быть инициализирован ключевым значением, а поле oid должно содержать
     идентификатор алгоритма, для которого предназначен ключ.
     \param engine тип криптографичсекого преобразования, для которого предназначен ключ
@@ -615,7 +771,7 @@ ak_asn1_context_add_symmetric_key_content().
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_symmetric_key_context_export_to_derfile_with_password( ak_pointer key,
+ int ak_key_context_export_to_derfile_with_password( ak_pointer key,
        oid_engines_t engine, const char *password, const size_t pass_size, const char *keyname,
                                                                char *filename, const size_t size )
 {
@@ -625,27 +781,39 @@ ak_asn1_context_add_symmetric_key_content().
 
   /* необходимые проверки */
    if( key == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                   "using null pointer to symmetric key context" );
+                                                      "using null pointer to secret key context" );
    if( skey->oid->engine != engine )
      return ak_error_message( ak_error_oid_engine, __func__,
-                                              "using incorrect pointer on symmetric key context" );
+                                                 "using incorrect pointer to secret key context" );
   /* формируем имя файла для хранения ключа
      (данное имя в точности совпадает с номером ключа) */
    if( size ) {
      if( size < ( 5 + 2*sizeof( skey->number )) )
        return ak_error_message( ak_error_out_of_memory, __func__,
-                                        "insufficent filename buffer size for secret key number" );
+                                                 "insufficent buffer size for secret key number" );
      memset( filename, 0, size );
      ak_snprintf( filename, size, "%s.key",
                                 ak_ptr_to_hexstr( skey->number, sizeof( skey->number), ak_false ));
    }
 
-  /* формируем ASN.1 дерево для секретного ключа */
-   if(( error = ak_symmetric_key_context_export_to_asn1_with_password( key, engine,
+ /* реализуем фильтр для проверки допустимых типов криптографических преобразований */
+  switch( engine ) {
+    /* формируем ASN.1 дерево для секретного ключа */
+     case block_cipher:
+     case hmac_function:
+     case sign_function:
+            if(( error = ak_key_context_export_to_asn1_with_password( key, engine,
                     asn = ak_asn1_context_new(), password, pass_size, keyname )) != ak_error_ok ) {
-     ak_error_message( error, __func__, "incorrect export of block cipher key to asn1 context");
-     goto lab1;
-   }
+              ak_error_message( error, __func__, "incorrect export of secret key to asn1 context");
+              goto lab1;
+            }
+            break;
+
+     default: ak_error_message( ak_error_oid_engine, __func__,
+                                                         "using usupported engine of secret key" );
+            goto lab1;
+            break;
+  }
 
   /* сохраняем дерево в файле */
    if(( error = ak_asn1_context_export_to_derfile( asn, filename )) != ak_error_ok )
@@ -742,7 +910,7 @@ ak_asn1_context_add_symmetric_key_content().
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_context_get_symmetric_key_info( ak_asn1 content,
-                ak_oid *oid, ak_pointer *number, size_t *numlen, char **name, ak_resource resource )
+            ak_oid *oid, ak_pointer *number, size_t *numlen, char **keyname, ak_resource resource )
 {
   ak_asn1 asn = NULL;
   ak_pointer ptr = NULL;
@@ -778,13 +946,23 @@ ak_asn1_context_add_symmetric_key_content().
                                         "context has incorrect asn1 type for symmetric key name" );
    switch( TAG_NUMBER( asn->current->tag )) {
      case TNULL: /* параметр опционален, может быть null */
-              *name = NULL;
+              ptr = NULL;
               break;
      case TUTF8_STRING:
-              ak_tlv_context_get_utf8_string( asn->current, (ak_pointer *)name );
+              ak_tlv_context_get_utf8_string( asn->current, &ptr );
               break;
      default: return ak_error_message( ak_error_invalid_asn1_tag, __func__,
                                         "context has incorrect asn1 type for symmetric key name" );
+   }
+
+  /* копируем имя ключа, если оно определено */
+   *keyname = NULL;
+   if( ptr != NULL ) {
+     size_t len = 1 + strlen( ptr );
+     if(( *keyname = malloc( len )) != NULL ) {
+       memset( *keyname, 0, len );
+       memcpy( *keyname, ptr, --len );
+     }
    }
 
   /* получаем ресурс */
@@ -900,15 +1078,17 @@ ak_asn1_context_add_symmetric_key_content().
 /*! \param key указатель на контекст создаваемого ключа.
     \param engine тип криптографического преобразования
     \param filename имя файла в котором хранятся данные
+    \param keyname переменная, в которую помещается имя ключа; позднее, выделенная память должна
+    быть освобождена вызовом free(). Если имя ключа не определено, переменной присвваивается
+    значение NULL.
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_symmetric_key_context_import_from_derfile( ak_pointer key,
-                                                        oid_engines_t engine, const char *filename )
+                                       oid_engines_t engine, const char *filename, char **keyname )
 {
    ak_oid oid;
    size_t len = 0;
-   char *name = NULL;
    int error = ak_error_ok;
    struct bckey ekey, ikey;
    ak_pointer number = NULL;
@@ -943,7 +1123,7 @@ ak_asn1_context_add_symmetric_key_content().
   /* получаем данные: тип ключа, ресурс и т.п. */
    memset( &resource, 0, sizeof( struct resource ));
    if(( error = ak_asn1_context_get_symmetric_key_info(
-                               content, &oid, &number, &len, &name, &resource )) != ak_error_ok ) {
+                            content, &oid, &number, &len, keyname, &resource )) != ak_error_ok ) {
      ak_error_message( error, __func__, "incorrect reading a symmetric key info" );
      goto lab1;
    }
@@ -1011,15 +1191,18 @@ ak_asn1_context_add_symmetric_key_content().
 
     \param bkey контекст создаваемого ключа алгоритма блочного шифрования
     \param filename имя файла
+    \param keyname переменная, в которую помещается имя ключа; позднее, выделенная память должна
+    быть освобождена вызовом free(). Если имя ключа не определено, переменной присвваивается
+    значение NULL.
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_bckey_context_import_from_derfile( ak_bckey key, const char *filename )
+ int ak_bckey_context_import_from_derfile( ak_bckey key, const char *filename, char **keyname )
 {
   int error = ak_error_ok;
 
   if(( error = ak_symmetric_key_context_import_from_derfile( key,
-                                                        block_cipher, filename )) != ak_error_ok )
+                                               block_cipher, filename, keyname )) != ak_error_ok )
    return ak_error_message( error, __func__, "incorrect creation of block cipher key" );
 
   if( key->schedule_keys != NULL ) {
@@ -1046,15 +1229,19 @@ ak_asn1_context_add_symmetric_key_content().
 
     \param bkey контекст создаваемого ключа алгоритма выработки имитовставки HMAC
     \param filename имя файла
+    \param keyname переменная, в которую помещается имя ключа; позднее, выделенная память должна
+    быть освобождена вызовом free(). Если имя ключа не определено, переменной присвваивается
+    значение NULL.
+
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_context_import_from_derfile( ak_hmac key, const char *filename )
+ int ak_hmac_context_import_from_derfile( ak_hmac key, const char *filename, char **keyname )
 {
   int error = ak_error_ok;
 
   if(( error = ak_symmetric_key_context_import_from_derfile( key,
-                                                       hmac_function, filename )) != ak_error_ok )
+                                              hmac_function, filename, keyname )) != ak_error_ok )
    return ak_error_message( error, __func__, "incorrect creation of hmac secret key" );
 
  return error;

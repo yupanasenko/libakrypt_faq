@@ -364,8 +364,8 @@
       goto lab_iv;
     }
 
-    printf(_("using %s algorithm without the specified key value\n"), algorithm );
-    printf(_("define -p, --password or --hexkey command line option\n"));
+    printf(_("error:\tusing %s algorithm without the specified key value\n"), algorithm );
+    printf(_("\tdefine -p, --password or --hexkey command line option\n"));
     return ak_false;
   }
 

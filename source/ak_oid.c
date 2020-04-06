@@ -79,18 +79,15 @@
  static const char *on_asn1_ecmd[] =        { "encrypted-content", NULL };
  static const char *on_asn1_pcmd[] =        { "plain-content", NULL };
 
- static const char *on_asn1_ogrn[] =        { "OGRN", "ОГРН", NULL };
- static const char *on_asn1_snils[] =       { "SNILS", "СНИЛС", NULL };
- static const char *on_asn1_ogrnip[] =      { "OGRNIP", "ОГРНИП", NULL };
+ static const char *on_asn1_ogrn[] =        { "OGRN", NULL };
+ static const char *on_asn1_snils[] =       { "SNILS", NULL };
+ static const char *on_asn1_ogrnip[] =      { "OGRNIP", NULL };
  static const char
-                *on_asn1_owners_module[] =  { "SubjectsCryptoModule",
-                                              "Средство ЭП владельца сертификата", NULL };
+                *on_asn1_owners_module[] =  { "SubjectsCryptoModule", NULL };
  static const char
-                *on_asn1_issuers_module[] = { "IssuersCryptoModule",
-                                              "Средство ЭП лица, выдавшего сертификат", NULL };
- static const char *on_asn1_inn[] =         { "INN", "ИНН", NULL };
- static const char *on_asn1_email[] =       { "emailAddress", "Адрес электронной почты", NULL };
-
+                *on_asn1_issuers_module[] = { "IssuersCryptoModule", NULL };
+ static const char *on_asn1_inn[] =         { "INN", NULL };
+ static const char *on_asn1_email[] =       { "emailAddress", NULL };
  static const char *on_asn1_cn[] =          { "CommonName", "CN", NULL };
  static const char *on_asn1_s[] =           { "Surname", "S", NULL };
  static const char *on_asn1_sn[] =          { "SerialNumber", "SN", NULL };
