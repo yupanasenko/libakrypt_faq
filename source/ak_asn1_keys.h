@@ -31,6 +31,10 @@
 /*! \brief Функция получает служебную информацию о ключе, расположенном в ASN.1 контейнере. */
  int ak_asn1_context_get_symmetric_key_info( ak_asn1 ,
                                       ak_oid * , ak_pointer * , size_t * , char ** , ak_resource );
+/*! \brief Функция получает служебную информацию об асимметричном ключе,
+   расположенном в ASN.1 контейнере. */
+ int ak_asn1_context_get_secret_key_info( ak_asn1 ,
+                          ak_oid * , ak_pointer * , size_t * , char ** , ak_resource , ak_oid * );
 /*! \brief Функция инициализирует секретный ключ значениями, расположенными в ASN.1 контейнере. */
  int ak_asn1_context_get_skey( ak_asn1 , ak_skey , ak_bckey , ak_bckey );
 
@@ -44,14 +48,15 @@
                                const char *, const size_t , const char * , char * , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция импортирует ключ симметричного криптографического преобразования из
+/*! \brief Функция импортирует секретный ключ криптографического преобразования из
    der-последовательности, хранящейся в заданном файле. */
- int ak_symmetric_key_context_import_from_derfile( ak_pointer , oid_engines_t ,
-                                                                          const char * , char ** );
+ int ak_key_context_import_from_derfile( ak_pointer , oid_engines_t , const char * , char ** );
 /*! \brief Функция импортирует ключ алгоритма блочного шифрования из заданного файла. */
  int ak_bckey_context_import_from_derfile( ak_bckey , const char * , char ** );
 /*! \brief Функция импортирует ключ алгоритма блочного шифрования из заданного файла. */
  int ak_hmac_context_import_from_derfile( ak_hmac , const char * , char ** );
+/*! \brief Функция импортирует ключ асимметричного криптографического алгоритма. */
+ int ak_signkey_context_import_from_derfile( ak_signkey , const char * , char ** );
 
 /** @}*/
 #endif

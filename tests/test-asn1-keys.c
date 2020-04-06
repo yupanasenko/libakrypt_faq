@@ -171,7 +171,7 @@
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
     0xf1, 0xe2, 0xd3, 0xc4, 0xb5, 0xa6, 0x97, 0x88, 0x79, 0x6a, 0x5b, 0x4c, 0x3d, 0x2e, 0x1f, 0x00 };
   ak_uint8 sign[128];
-  char filename[128];
+  char filename[128], tname[256], *keyname = NULL;
   struct signkey skey;
   struct verifykey vkey;
 
@@ -197,11 +197,21 @@
    printf("signature: %s\n", ak_ptr_to_hexstr( sign,
                                        ak_signkey_context_get_tag_size( &skey ), ak_false ));
 
+  /* создаем необязательное имя для ключа */
+   ak_snprintf( tname, sizeof( tname ), "DSkey-%s-%03u", curvoid->names[0], skey.key.number[0] );
   /* сохраняем ключ */
    ak_key_context_export_to_derfile_with_password( &skey, sign_function,
-                               "password", 8, "DS secret key", filename, sizeof( filename ));
+                                             "password", 8, tname, filename, sizeof( filename ));
   /* уничтожаем ключ */
+   ak_signkey_context_destroy( &skey );
+
   /* считываем ключ */
+   ak_signkey_context_import_from_derfile( &skey, filename, &keyname );
+   /* для отладки - выводим сформированную структуру в консоль
+    ak_skey_context_print_to_file( &skey.key, stdout );
+    printf("\n"); */
+    printf("keyname: %s\n", keyname );
+    if( keyname != NULL ) free( keyname );
 
   /* создаем открытый */
    ak_verifykey_context_create_from_signkey( &vkey, &skey );
