@@ -19,7 +19,7 @@ cmake_minimum_required( VERSION 2.8 FATAL_ERROR )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 8 )
-set( MINOR_VERSION 3 )
+set( MINOR_VERSION 4 )
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 
@@ -71,6 +71,7 @@ set( HEADERS        source/ak_tools.h
 )
 
 set( SOURCES        source/ak_tools.c
+                    source/ak_base64.c
                     source/ak_oid.c
                     source/ak_mpzn.c
                     source/ak_curves.c

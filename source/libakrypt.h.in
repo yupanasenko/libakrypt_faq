@@ -331,7 +331,7 @@ extern "C" {
  #define ak_error_wrong_asn1_decode           (-96)
 
 /*! \brief Ошибка использования неправильного (неожидаемого) значения. */
-#define ak_error_invalid_value                (-99)
+ #define ak_error_invalid_value               (-99)
 /*! \brief Ошибка сохранения/чтения ключа с неподдерживаемым типом криптографического преобразования. */
  #define ak_error_key_engine                 (-100)
 /*! \brief Ошибка сохранения/чтения ключа в неподдерживаемом формате хранения. */
@@ -492,6 +492,10 @@ extern "C" {
  dll_export int ak_ptr_fletcher32( ak_const_pointer , const size_t , ak_uint32 * );
 /*! \brief Вычисление 4-х байтной контрольной суммы Флетчера. */
  dll_export int ak_ptr_fletcher32_xor( ak_const_pointer , const size_t , ak_uint32 * );
+/*! \brief Функция чтения заданного файла в буффер. */
+ dll_export ak_uint8 *ak_ptr_load_from_file( ak_pointer , size_t *, const char * );
+/*! \brief Функция чтения данных в кодировке base64 из файла в буффер. */
+ dll_export ak_uint8 *ak_ptr_load_from_base64_file( ak_pointer , size_t *, const char * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция устанавливает домашний каталог пользователя. */

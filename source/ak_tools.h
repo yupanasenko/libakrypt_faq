@@ -40,8 +40,6 @@
  int ak_ptr_context_wipe( ak_pointer , size_t , ak_random );
 /*! \brief Функция сравнения двух массивов данных и вывода информации в систему аудита. */
  bool_t ak_ptr_is_equal_with_log( ak_const_pointer, ak_const_pointer , const size_t );
-/*! \brief Функция чтения заданного файла в буффер. */
- ak_uint8 *ak_ptr_load_from_file( ak_pointer , size_t *, const char * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция открывает заданный файл на чтение. */

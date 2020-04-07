@@ -53,6 +53,7 @@
   if( aktool_check_command( "-h", argv[1] )) return aktool_help();
   if( aktool_check_command( "--help", argv[1] )) return aktool_help();
   if( aktool_check_command( "/?", argv[1] )) return aktool_help();
+  if( aktool_check_command( "--version", argv[1] )) return aktool_version();
 
  #ifdef _WIN32
   if( ak_libakrypt_get_home_path( homepath, FILENAME_MAX ) == ak_error_ok ) {
@@ -77,7 +78,7 @@
   if( aktool_check_command( "i", argv[1] )) return aktool_icode( argc, argv );
   if( aktool_check_command( "icode", argv[1] )) return aktool_icode( argc, argv );
   if( aktool_check_command( "a", argv[1] )) return aktool_asn1( argc, argv );
-  if( aktool_check_command( "asn1", argv[1] )) return aktool_asn1( argc, argv );
+  if( aktool_check_command( "asn1parse", argv[1] )) return aktool_asn1( argc, argv );
 
  /* ничего не подошло, выводим сообщение об ошибке */
   ak_log_set_function( ak_function_log_stderr );
@@ -340,15 +341,23 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ int aktool_version( void )
+{
+  printf(_("version: %s [compiled by %s, version: %s, date: %s at %s]\n"),
+               ak_libakrypt_version(), LIBAKRYPT_COMPILER_NAME, __VERSION__, __DATE__, __TIME__ );
+ return EXIT_SUCCESS;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int aktool_help( void )
 {
   printf(_("aktool (crypto application based on libakrypt library, version: %s)\n"),
                                                                           ak_libakrypt_version( ));
   printf(_("usage \"aktool command [options] [files]\"\n\n"));
   printf(_("available commands (in short and long forms):\n"));
-  printf(_("  a  asn1   decode and print the ASN.1 data\n"));
-  printf(_("  i  icode  calculate or check integrity codes\n"));
-  printf(_("     show   show useful information\n\n"));
+  printf(_("  a, asn1parse - decode and print the ASN.1 data\n"));
+  printf(_("  i, icode     - calculate or check integrity codes\n"));
+  printf(_("     show      - show useful information\n\n"));
   printf(_("also try:\n"));
   printf(_("  \"aktool command --help\" to get information about command options\n"));
   printf(_("  \"man aktool\" to get more information about akrypt programm and some examples\n\n"));

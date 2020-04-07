@@ -328,6 +328,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
     } else tlv->data.primitive = data;
    }
+
   tlv->free = free;
   tlv->prev = tlv->next = NULL;
 
@@ -1710,9 +1711,9 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   ak_uint8 *pcurr = NULL, *pend = NULL, tag = 0;
 
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                             "using null pointer to asn1 element" );
+                                                            "using null pointer to asn1 element" );
   if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                             "using null pointer to der-sequence" );
+                                                            "using null pointer to der-sequence" );
  /* инициируем переменные */
   pcurr = (ak_uint8 *) ptr;
   pend = pcurr + size;
@@ -1727,11 +1728,10 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
       return ak_error_message( ak_error_wrong_length, __func__, "wrong der-sequence length");
 
     switch( DATA_STRUCTURE( tag )) {
-
      /* добавляем в дерево примитивный элемент */
       case PRIMITIVE:
         if(( error = ak_tlv_context_create_primitive(
-               tlv = malloc( sizeof( struct tlv )),  tag, len, pcurr, flag )) != ak_error_ok )
+                    tlv = malloc( sizeof( struct tlv )), tag, len, pcurr, flag )) != ak_error_ok )
           return ak_error_message( error, __func__, "incorrect creation of tlv context" );
         if(( error = ak_asn1_context_add_tlv( asn1, tlv )) != ak_error_ok )
           return ak_error_message( error, __func__,
@@ -1740,14 +1740,16 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
      /* добавляем в дерево составной элемент */
       case CONSTRUCTED:
-        if(( error = ak_asn1_context_create(
-                                         asnew = malloc( sizeof( struct asn1 )))) != ak_error_ok )
-          return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
-        if(( error = ak_asn1_context_decode( asnew, pcurr, len, flag )) != ak_error_ok )
+        if(( error = ak_asn1_context_decode( asnew = ak_asn1_context_new(),
+                                                            pcurr, len, flag )) != ak_error_ok ) {
+          ak_asn1_context_delete( asnew );
           return ak_error_message( error, __func__, "incorrect decoding of asn1 context" );
-        if(( error = ak_asn1_context_add_asn1( asn1, tag, asnew )) != ak_error_ok )
+        }
+        if(( error = ak_asn1_context_add_asn1( asn1, tag, asnew )) != ak_error_ok ) {
+          ak_asn1_context_delete( asnew );
           return ak_error_message( error, __func__,
                                           "incorrect addition of asn1 context into asn1 context" );
+        }
         break;
 
       default: return ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
@@ -1893,7 +1895,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 /*! Реализуется двупроходная процедура:
     - в ходе первого прохода по ASN.1 дереву вычисляется размер, занимаемый низлежащими
       уровнями дерева;
-    - в ходе второго прохода выполняется копирование данных.
+    - в ходе второго прохода выполняется кодирование данных.
 
   \param asn1 указатель на текущий уровень ASN.1 дерева
   \param ptr указатель на область памяти, куда будет помещена закодированная der-последовательность
@@ -1940,7 +1942,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 {
   size_t len = 0;
   struct asn1 asn;
-  ak_uint8 array[2048];
+  ak_uint8 array[4096]; /* при превышении этого размера возбуждается ошибка */
   int error = ak_error_ok;
 
  /* создаем контекст */
@@ -1949,7 +1951,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
  /* декодируем данные */
   if(( error = ak_asn1_context_decode( &asn, ptr, size, ak_false )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "incorrect decoding of der-sequence" );
+    ak_error_message( error, __func__, "incorrect decoding of der-sequence" );    
     goto exitlab;
   }
 
@@ -1967,12 +1969,16 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     if(( error = ak_asn1_context_encode( &asn, array, &len )) != ak_error_ok ) {
       if( error != ak_error_wrong_length )
         ak_error_message( error, __func__, "incorrect encoding of asn1 context" );
+       else  ak_error_message_fmt( error = ak_error_ok, __func__,
+              "size of internal buffer (%u bytes) is "
+              "smaller than size of encoded data (%u bytes)", sizeof( array ), len );
       goto exitlab;
     }
     if(( len != size ) || ( !ak_ptr_is_equal_with_log( array, ptr, len ))) {
       fprintf( fp, "incorrect encoding an initial der-sequence\n");
       error = ak_error_not_equal_data;
     }
+
   }
 
  /* освобождаем выделенную память */
@@ -2060,19 +2066,48 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 /* ----------------------------------------------------------------------------------------------- */
                               /* функции внешнего интерфейса */
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция может считывать данные из файлов двух форматов:
+    - данные содержатся в виде der-последовательности,
+    - данные содержатся в виде der-последовательности, которая, в свою очередь,
+      закодирована в кодировке base64 (формат PEM для сертификатов и секретных ключей).
+
+   \param fp файловый дескриптор, который связан с файлом, в который выводится информация;
+    перед вызовом функции десткриптор должен быть открыт; может принимать значения stdout и stderr.
+    \param filename файл, содержащий ASN.1 дерево.
+    \param check если флаг истинен, то быиблиотека производит проверку корректности
+    декодирования.
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
  dll_export int ak_asn1_fprintf( FILE *fp, const char *filename, bool_t check )
 {
   size_t len = 0;
   ak_uint8 *ptr = NULL;
   int error = ak_error_ok;
 
+ /* в начале считываем как der-последовательность */
   if(( ptr = ak_ptr_load_from_file( ptr, &len, filename )) == NULL )
     return ak_error_message_fmt( ak_error_get_value(), __func__,
-                                        "incorrect loading an ASN.1 data from file %s", filename );
- /* теперь декодируем данные */
+                                                 "incorrect loading data from file %s", filename );
+ /* и декодируем данные */
+  error = ak_asn1_context_fprintf_ptr( fp, ptr, len, check );
+  if( ptr != NULL ) {
+    free (ptr);
+    ptr = NULL;
+  }
+  if( error == ak_error_ok ) return ak_error_ok;
+    else ak_error_message_fmt( error, __func__,
+                                          "file %s not contain a correct der-sequence", filename );
+ /* теперь считываем как base64->der */
+  len = 0; /* значение len используется для определения длины массива */
+  if(( ptr = ak_ptr_load_from_base64_file( ptr, &len, filename )) == NULL )
+    return ak_error_message_fmt( ak_error_get_value(), __func__,
+                                                 "incorrect loading data from file %s", filename );
+ /* и декодируем данные */
   error = ak_asn1_context_fprintf_ptr( fp, ptr, len, check );
   if( ptr != NULL ) free (ptr);
-
+  if( error != ak_error_ok ) ak_error_message_fmt( error, __func__,
+                  "file %s contains an icorrect der-sequence encoded in base64 format", filename );
  return error;
 }
 
