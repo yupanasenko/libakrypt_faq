@@ -1,8 +1,11 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*  Copyright (c) 2020 by Axel Kenzo, axelkenzo@mail.ru                                            */
 /*                                                                                                 */
+/*  Portions Copyright (c) 1996-1999 by Internet Software Consortium.                              */
+/*  Portions Copyright (c) 1995 by International Business Machines, Inc.                           */
+/*                                                                                                 */
 /*  Файл ak_base64.с                                                                               */
-/*  - содержит реализацию функций, реализующих кодирование/декодирование данных в формате BASE64   */
+/*  - содержит реализацию функций для кодирования/декодирования данных в формате BASE64            */
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_tools.h>
 
@@ -118,6 +121,10 @@
       char *pos = 0;
       size_t i = 0, slen = strlen( localbuffer );
 
+     /* обрабатываем конец строки для файлов, созданных в Windows */
+      if((slen > 0) && (localbuffer[slen-1] == 0x0d )) { localbuffer[slen-1] = 0; slen--; }
+
+     /* проверяем корректность строки с данными */
       if(( slen != 0 ) &&              /* строка не пустая */
          ( slen%4 ==0 ) &&             /* длина строки кратна четырем */
          ( strchr( localbuffer, '#' ) == 0 ) &&        /* строка не содержит символ # */
@@ -171,7 +178,7 @@
          if( ch == '=' ) {
            if(( state == 0 ) || ( state == 1 )) {
              ak_error_message( error = ak_error_wrong_length, __func__ ,
-                                                               "incorrect end of encoded data" );
+                                                     "incorrect last symbol(s) of encoded data" );
              goto exlab;
            }
          }
