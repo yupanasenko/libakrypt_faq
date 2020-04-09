@@ -58,6 +58,9 @@
 /*! \brief Функция импортирует ключ асимметричного криптографического алгоритма. */
  int ak_signkey_context_import_from_derfile( ak_signkey , const char * , char ** );
 
+/*! \brief Функция экспортирует открытый ключ асимметричного преобразования из запроса
+   на сертификат открытого ключа (тип CertificationRequest) */
+ int ak_verifykey_context_import_from_request_file( ak_verifykey , const char * );
 /** @}*/
 #endif
 /* ----------------------------------------------------------------------------------------------- */

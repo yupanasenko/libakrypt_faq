@@ -82,14 +82,14 @@
 
  /* открываемся */
   if(( error = ak_file_open_to_read( &sfp, filename )) != ak_error_ok ) {
-    ak_error_message_fmt( error, __func__, "wrong opening the %s file", filename );
+    ak_error_message_fmt( error, __func__, "wrong opening the %s", filename );
     return NULL;
   }
 
   /* надо бы определиться с размером буффера:
      величины 1 + sfp.size*3/4 должно хватить, даже без лишних символов. */
   if( sfp.size < 5 ) {
-    ak_error_message( ak_error_zero_length, __func__, "loading form file with zero length" );
+    ak_error_message( ak_error_zero_length, __func__, "loading from file with zero length" );
     ak_file_close( &sfp );
     return NULL;
   } else ptrlen = 1 + (( 3*sfp.size ) >> 2);
@@ -108,12 +108,12 @@
   for( idx = 0; idx < (size_t) sfp.size; idx++ ) {
      if( ak_file_read( &sfp, &ch, 1 ) != 1 ) {
        ak_error_message_fmt( error = ak_error_read_data, __func__ ,
-                                                          "unexpected end of %f file", filename );
+                                                               "unexpected end of %s", filename );
        goto exlab;
      }
      if( off > 1022 ) {
        ak_error_message_fmt( error = ak_error_read_data, __func__ ,
-                                     "%s file has a line with more than 1022 symbols", filename );
+                                          "%s has a line with more than 1022 symbols", filename );
        goto exlab;
      }
     if( ch == '\n' ) {
@@ -137,7 +137,7 @@
            if( ch == '=' ) break;    /* достигли конца данных */
            if(( pos = strchr( base64, ch )) == NULL ) { /* встречен некорректный символ */
              ak_error_message_fmt( error = ak_error_undefined_value, __func__ ,
-                                               "%s file contains an incorrect symbol", filename );
+                                                    "%s contains an incorrect symbol", filename );
              goto exlab;
            }
            if( len + 1 >= ptrlen ) { /* достаточно места для хранения данных */
@@ -191,7 +191,7 @@
 
  /* получили нулевой вектор => ошибка */
   if( len == 0 ) ak_error_message_fmt( error = ak_error_zero_length, __func__,
-                                  "file %s not contain a correct base64 encoded data", filename );
+                                       "%s not contain a correct base64 encoded data", filename );
  exlab:
   *size = len;
   ak_file_close( &sfp );

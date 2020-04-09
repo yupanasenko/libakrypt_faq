@@ -12,12 +12,10 @@
 #ifdef _WIN32
   unsigned int cp = 0;
 #endif
-  bool_t check = ak_true;
   int next_option = 0, idx = 0, error = ak_error_ok, ecount = 0;
 
   const struct option long_options[] = {
     /* сначала уникальные */
-     { "no-check",            0, NULL, 254 },
 
     /* потом общие */
      { "audit",               1, NULL,   2 },
@@ -38,9 +36,6 @@
                      break;
 
        /* теперь опции, уникальные для asn1parse */
-         case 254 : /* отменяем проверку корректности преобразования данных */
-                     check = ak_false;
-                     break;
 
        /* обрабатываем ошибочные параметры */
          default:
@@ -66,7 +61,7 @@
  /* перебираем все доступные параметры командной строки */
   for( idx = 2; idx < argc; idx++ ) {
      if( aktool_file_or_directory( argv[idx] ) == DT_REG ) {
-       if(( error = ak_asn1_fprintf( stdout, argv[idx], check )) != ak_error_ok ) {
+       if(( error = ak_libakrypt_print_asn1( stdout, argv[idx] )) != ak_error_ok ) {
          fprintf( stdout, _("file %s is wrong\n"), argv[idx] );
          ecount++;
        }
@@ -92,7 +87,6 @@
 {
   printf(_("aktool asn1parse [options] [files] - decode and print ASN.1 data\n\n"));
   printf(_("available options:\n"));
-  printf(_("     --no-check          unset the encoding check for input ASN.1 data\n"));
 
   printf(_("\ncommon aktool options:\n"));
   printf(_("     --audit <file>      set the output file for errors and libakrypt audit system messages\n" ));

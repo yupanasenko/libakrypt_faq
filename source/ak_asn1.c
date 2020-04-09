@@ -452,6 +452,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   size_t len = 0;
   ak_uint32 u32 = 0;
   ak_oid oid = NULL;
+  struct bit_string bs;
   bool_t dp = ak_false;
   ak_pointer ptr = NULL;
   int error = ak_error_ok;
@@ -482,37 +483,13 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
     case TOCTET_STRING:
       if(( error = ak_tlv_context_get_octet_string( tlv, &ptr, &len )) == ak_error_ok ) {
-
-       /* определяем переменные, которые необходимы для декодирования и вывода  */
-        struct asn1 asn;
         size_t i, j, row = len >> 4, /* количество строк, в строке по 16 символов */
                tail = len%16; /* количество символов в последней строке */
         char *fsym = VER_LINE;
+        struct asn1 asn;
 
-       /* проверяем, можно ли декодировать последовательность */
-        if( oidptr != NULL ) {
-          if( !strncmp( oidptr, "1.2.643.100.111", 15 ) ||
-              !strncmp( oidptr, "1.2.643.100.112", 15 ) ||
-              !strncmp( oidptr, "2.5.29.31", 9 ) ||
-              !strncmp( oidptr, "2.5.29.32", 9 ) ||
-              !strncmp( oidptr, "2.5.29.35", 9 )) {
-            ak_asn1_context_create( &asn );
-            if( ak_asn1_context_decode( &asn, ptr, len, ak_false ) == ak_error_ok ) {
-              len = strlen( prefix );
-              strcat( prefix, "   " );
-              fprintf( fp, " (%u octets, encoded)\n", (unsigned int)len );
-                ak_asn1_context_print( &asn, fp );
-                ak_asn1_context_destroy( &asn );
-               prefix[len] = 0;
-            }
-            ak_asn1_context_destroy( &asn );
-            oidptr = NULL;
-            break;
-          }
-          oidptr = NULL;
-        }
-
-       /* здесь обычный шестнадцатеричный вывод */
+       /*  в начале, обычный шестнадцатеричный вывод
+           это все вместо простого fprintf( fp, "%s\n", ak_ptr_to_hexstr( ptr, len, ak_false )); */
         fprintf( fp, "\n" ); /* здесь надо выводить длину в случае, когда данные распарсиваются */
         if( tlv->next == NULL ) fsym = " ";
         for( i = 0; i < row; i++ ) {
@@ -525,7 +502,48 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
            for( j = 0; j < tail; j++ ) fprintf( fp, " %02X", ((ak_uint8 *)ptr)[16*i+j] );
            fprintf( fp, "\n");
         }
-       /* это все вместо простого fprintf( fp, "%s\n", ak_ptr_to_hexstr( ptr, len, ak_false )); */
+
+       /* теперь мы пытаемся распарсить данные (в ряде случаев, это удается сделать) */
+        ak_asn1_context_create( &asn );
+        if( ak_asn1_context_decode( &asn, ptr, len, ak_false ) == ak_error_ok ) {
+          size_t dlen = strlen( prefix );
+          strcat( prefix, "   " );
+          fprintf( fp, "%s%s%s encoded (%u octets)%s\n", prefix,
+                              TEXT_COLOR_RED, LTB_CORNERS, (unsigned int)len, TEXT_COLOR_DEFAULT );
+          ak_asn1_context_print( &asn, fp );
+          ak_asn1_context_destroy( &asn) ;
+          prefix[dlen] = 0;
+        } else ak_error_set_value( ak_error_ok );
+
+      } else dp = ak_true;
+      break;
+
+    case TBIT_STRING:
+      memset( &bs, 0, sizeof( struct bit_string ));
+      if(( error = ak_tlv_context_get_bit_string( tlv, &bs )) == ak_error_ok ) {
+        size_t i, j, row = bs.len >> 4, /* количество строк, в строке по 16 символов */
+               tail = bs.len%16; /* количество символов в последней строке */
+        char *fsym = VER_LINE;
+
+       /*  как и ранее, обычный шестнадцатеричный вывод */
+        fprintf( fp, "\n" ); /* здесь надо выводить длину в случае, когда данные распарсиваются */
+        if( tlv->next == NULL ) fsym = " ";
+        for( i = 0; i < row; i++ ) {
+           fprintf( fp, "%s%s ", prefix, fsym );
+           for( j = 0; j < 16; j++ ) fprintf( fp, " %02X", bs.value[16*i+j] );
+           if(( i == row-1 ) && ( !tail ) && ( bs.unused >0 ))
+             fprintf( fp, " (%u bits unused)\n", bs.unused );
+            else fprintf( fp, "\n");
+        }
+        if( tail ) {
+           fprintf( fp, "%s%s ", prefix, fsym );
+           for( j = 0; j < tail; j++ ) fprintf( fp, " %02X", bs.value[16*i+j] );
+           if( bs.unused > 0 ) fprintf( fp, " (%u bits unused)\n", bs.unused );
+            else fprintf( fp, "\n");
+        }
+
+        /* в ряде случаев можно декодировать и битовые строки,
+           например, открытый ключ, но мы этого, в общем случае, делать не будем  */
       }
        else dp = ak_true;
       break;
@@ -781,6 +799,29 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция не копирует данные в структуру, а только заполняет соответствующие поля.
+
+    \param tlv указатель на структуру узла ASN1 дерева.
+    \param bs указатель на область памяти, в которой будут расположены данные
+    \return В случае успеха функция возввращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_context_get_bit_string( ak_tlv tlv, ak_bit_string bs )
+{
+  if( tlv == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                             "using null pointer to tlv element" );
+  if( tlv->len == 0 ) return ak_error_message( ak_error_zero_length, __func__,
+                                                          "unexpected zero length of bit string" );
+  if(( bs->unused = tlv->data.primitive[0] ) > 7 )
+    return ak_error_message( ak_error_undefined_value, __func__,
+                                                               "unexpected value of unused bits" );
+  bs->len = tlv->len-1;
+  bs->value = tlv->data.primitive+1;
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! На данный момент разбираются только идентификаторы, у который первое число 1 или 2,
     а второе не превосходит 32
 
@@ -992,7 +1033,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_tlv_context_get_time_validity( ak_tlv tlv, time_t *not_before, time_t *not_after )
+ int ak_tlv_context_get_validity( ak_tlv tlv, time_t *not_before, time_t *not_after )
 {
   ak_asn1 asn = NULL;
   int error = ak_error_ok;
@@ -1069,7 +1110,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
      return ak_error_message( error, __func__, "incorrect reading resource counter" );
 
    ak_asn1_context_next( asn );
-   if(( error = ak_tlv_context_get_time_validity( asn->current,
+   if(( error = ak_tlv_context_get_validity( asn->current,
                          &resource->time.not_before, &resource->time.not_after )) != ak_error_ok )
      return ak_error_message( error, __func__, "incorrect reading time validity" );
 
@@ -1575,8 +1616,23 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция создает `SEQUENCE`, которая содержит два примитивных элемента -
+/*! Функция создает структуру `Validity`, которая содержит два примитивных элемента -
     начало и окончание временного интервала.
+    Структура определяется следующим образом.
+
+\code
+Time ::= CHOICE {
+     utcTime        UTCTime,
+     generalTime    GeneralizedTime
+}
+
+Validity ::= SEQUENCE {
+     notBefore      Time,
+     notAfter       Time
+}
+\endcode
+
+   После создания структура добавляется в текущий уровень asn1 дерева.
 
    \param asn1 указатель на текущий уровень ASN.1 дерева.
    \param not_before начало временного интервала
@@ -1584,7 +1640,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_asn1_context_add_time_validity( ak_asn1 asn1, time_t not_before, time_t not_after )
+ int ak_asn1_context_add_validity( ak_asn1 asn1, time_t not_before, time_t not_after )
 {
   int error = ak_error_ok;
   ak_asn1 asn_validity = NULL;
@@ -1629,7 +1685,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     return ak_error_message( error, __func__, "incorrect adding secret key resource value" );
   }
 
-  if(( error = ak_asn1_context_add_time_validity( params,
+  if(( error = ak_asn1_context_add_validity( params,
                           resource->time.not_before, resource->time.not_after )) != ak_error_ok ) {
     ak_asn1_context_delete( params );
     ak_error_message( error, __func__, "incorrect adding secret key time validity" );
@@ -1929,64 +1985,6 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \param fp Дескриптор файла, в который выводится информация;
-    файл должен предварительно открыт на запись
-    \param ptr Указатель на область памяти, где содержится der-последовательность
-    \param size Размер der-последовательности в октетах
-    \param check Флаг, истинное значение которого инициирует проверку правильности декодирования
-    входной последовательности
-    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
-    возвращается код ошибки.                                                                       */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_asn1_context_fprintf_ptr( FILE *fp, ak_uint8 *ptr, const size_t size , bool_t check )
-{
-  size_t len = 0;
-  struct asn1 asn;
-  ak_uint8 array[4096]; /* при превышении этого размера возбуждается ошибка */
-  int error = ak_error_ok;
-
- /* создаем контекст */
-  if(( error = ak_asn1_context_create( &asn )) != ak_error_ok )
-    return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
-
- /* декодируем данные */
-  if(( error = ak_asn1_context_decode( &asn, ptr, size, ak_false )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "incorrect decoding of der-sequence" );    
-    goto exitlab;
-  }
-
- /* выводим данные в консоль (файл) */
-  if(( error = ak_asn1_context_print( &asn, fp )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "incorrect printing of encoded asn1 context" );
-    goto exitlab;
-  }
-
-  if( check ) {
-   /* проверяем, что декодирование было произведено правильно
-      для этого, снова кодируем последовательность и проверяем, что результат
-      кодирования совпадает с входными данными */
-    len = sizeof( array );
-    if(( error = ak_asn1_context_encode( &asn, array, &len )) != ak_error_ok ) {
-      if( error != ak_error_wrong_length )
-        ak_error_message( error, __func__, "incorrect encoding of asn1 context" );
-       else  ak_error_message_fmt( error = ak_error_ok, __func__,
-              "size of internal buffer (%u bytes) is "
-              "smaller than size of encoded data (%u bytes)", sizeof( array ), len );
-      goto exitlab;
-    }
-    if(( len != size ) || ( !ak_ptr_is_equal_with_log( array, ptr, len ))) {
-      fprintf( fp, "incorrect encoding an initial der-sequence\n");
-      error = ak_error_not_equal_data;
-    }
-
-  }
-
- /* освобождаем выделенную память */
-  exitlab: ak_asn1_context_destroy( &asn );
- return error;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
                                  /* функции для работы с файлами */
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param asn указатель на текущий уровень ASN.1 дерева
@@ -2036,12 +2034,20 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \param asn уровень ASN.1 в который помещается считываемое значение
+/*! Функция сперва считывает данные из файла `filename` считая, что он содержит чистую
+    der-последовательность. После считывания данныъ производится попытка их декодирования.
+
+    Если декодирование происходит неудачно, то функция предполагает, что der-последовательность
+    содержится в файле закодированная в кодировке base64. Как правило, в таком виде
+    может хранится ключевая информация. Происходит повторное считывание информации и
+    повторная попытка декодирования считанных данных.
+
+   \param asn уровень ASN.1 в который помещается считываемое значение
     \param filename имя файла, в котором содержится der-последовательность
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_asn1_context_import_from_derfile( ak_asn1 asn, const char *filename )
+ int ak_asn1_context_import_from_file( ak_asn1 asn, const char *filename )
 {
   int error = ak_error_ok;
   size_t size = ak_libakrypt_encoded_asn1_der_sequence;
@@ -2050,8 +2056,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
  /* считываем данные */
   if(( ptr = ak_ptr_load_from_file( buffer, &size, filename )) == NULL )
    return ak_error_message_fmt( ak_error_get_value(), __func__,
-                                       "incorrect reading a der-sequence from %s file", filename );
-
+                                                      "incorrect data reading from %s", filename );
  /* декодируем считанную последовательность
     при этом, поскольку считанная последовательность располагается в стеке, то
     данные дублируются в ASN.1 дереве */
@@ -2060,6 +2065,23 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
  /* очищаем, при необходимости, выделенную память */
   if( ptr != buffer ) free( ptr );
+  if( error == ak_error_ok ) return ak_error_ok; /* если декодировали успешно, то выходим */
+
+ /* заново инициализируем локальные переменные */
+  size = ak_libakrypt_encoded_asn1_der_sequence;
+  while( ak_asn1_context_remove( asn ) == ak_true );
+
+ /* теперь пытаемся считать base64 */
+  if(( ptr = ak_ptr_load_from_base64_file( buffer, &size, filename )) == NULL )
+   return ak_error_message_fmt( ak_error_get_value(), __func__,
+                                       "incorrect reading base64 encoded data from %s", filename );
+
+  if(( error = ak_asn1_context_decode( asn, ptr, size, ak_true )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect decoding a der-sequence" );
+
+ /* очищаем, при необходимости, выделенную память */
+  if( ptr != buffer ) free( ptr );
+
  return error;
 }
 
@@ -2079,35 +2101,20 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- dll_export int ak_asn1_fprintf( FILE *fp, const char *filename, bool_t check )
+ dll_export int ak_libakrypt_print_asn1( FILE *fp, const char *filename )
 {
-  size_t len = 0;
-  ak_uint8 *ptr = NULL;
+  struct asn1 asn;
   int error = ak_error_ok;
 
- /* в начале считываем как der-последовательность */
-  if(( ptr = ak_ptr_load_from_file( ptr, &len, filename )) == NULL )
-    return ak_error_message_fmt( ak_error_get_value(), __func__,
-                                                 "incorrect loading data from file %s", filename );
- /* и декодируем данные */
-  error = ak_asn1_context_fprintf_ptr( fp, ptr, len, check );
-  if( ptr != NULL ) {
-    free (ptr);
-    ptr = NULL;
+ /* создаем контекст */
+  if(( error = ak_asn1_context_create( &asn )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
+
+ /* считываем данные и выводм в консоль */
+  if(( error = ak_asn1_context_import_from_file( &asn, filename )) == ak_error_ok ) {
+    ak_asn1_context_print( &asn, fp );
   }
-  if( error == ak_error_ok ) return ak_error_ok;
-    else ak_error_message_fmt( error, __func__,
-                                          "file %s not contain a correct der-sequence", filename );
- /* теперь считываем как base64->der */
-  len = 0; /* значение len используется для определения длины массива */
-  if(( ptr = ak_ptr_load_from_base64_file( ptr, &len, filename )) == NULL )
-    return ak_error_message_fmt( ak_error_get_value(), __func__,
-                                                 "incorrect loading data from file %s", filename );
- /* и декодируем данные */
-  error = ak_asn1_context_fprintf_ptr( fp, ptr, len, check );
-  if( ptr != NULL ) free (ptr);
-  if( error != ak_error_ok ) ak_error_message_fmt( error, __func__,
-                  "file %s contains an icorrect der-sequence encoded in base64 format", filename );
+  ak_asn1_context_destroy( &asn );
  return error;
 }
 

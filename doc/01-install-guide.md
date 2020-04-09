@@ -132,7 +132,7 @@ Cтабильная версия библиотеки распространяе
     cmake -DCMAKE_C_COMPILER=clang ../libakrypt-0.x
 
 
-Аналогично, следующий вызов позволит произвести сборку библиотеки с помощью компилятора `tcc` (Tiny C Compiler)
+Аналогично, следующий вызов позволит произвести сборку библиотеки с помощью компилятора `tcc` ([Tiny C Compiler](https://bellard.org/tcc/))
 
 
     cmake -DCMAKE_C_COMPILER=tcc ../libakrypt-0.x

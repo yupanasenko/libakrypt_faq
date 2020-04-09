@@ -1395,7 +1395,7 @@
   int error = ak_error_ok;
 
   if(( error = ak_file_open_to_read( &sfp, filename )) != ak_error_ok ) {
-    ak_error_message_fmt( error, __func__, "wrong opening the %s file", filename );
+    ak_error_message_fmt( error, __func__, "wrong opening the %s", filename );
     return NULL;
   }
   if(( buf == NULL ) || ((size_t)sfp.size > *size )) {
@@ -1411,7 +1411,8 @@
 
  /* теперь считываем данные */
   if(( ak_file_read( &sfp, ptr, ( size_t )sfp.size )) != sfp.size ) {
-    ak_error_message( ak_error_get_value(), __func__, "incorrect reading data from file" );
+    ak_error_message_fmt( ak_error_get_value(), __func__,
+                                                      "incorrect reading data from %s", filename );
   }
   ak_file_close( &sfp );
  return ptr;

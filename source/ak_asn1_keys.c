@@ -826,7 +826,6 @@
 /* ----------------------------------------------------------------------------------------------- */
                           /* Функции импорта ключевой информации */
 /* ----------------------------------------------------------------------------------------------- */
-/* ----------------------------------------------------------------------------------------------- */
 /*! Функция присваивает двум своим аргументам ссылки на поддеревья,
     содержащие информацию о процедуре выработки производных ключей (basicKey) и собственно
     зашифрованных данных (content).
@@ -1190,7 +1189,7 @@
    if( filename == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                                 "using null pointer to filename" );
   /* считываем ключ и преобразуем его в ASN.1 дерево */
-   if(( error = ak_asn1_context_import_from_derfile( asn = ak_asn1_context_new(),
+   if(( error = ak_asn1_context_import_from_file( asn = ak_asn1_context_new(),
                                                                    filename )) != ak_error_ok ) {
      ak_error_message_fmt( error, __func__,
                                      "incorrect reading of ASN.1 context from %s file", filename );
@@ -1391,6 +1390,93 @@
 
  return error;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция считывает из заданного файла запрос на получение сертификата. Запрос хранится в виде
+    asn1 дерева, определяемого Р 1323565.1.023-2018.
+    Собственно asn1 дерево может быть сохранено в виде обычной der-последовательности, либо в виде
+    der-последовательности, дополнительно закодированной в base64.
+
+    Функция является конструктором контекста ak_verifykey.
+    После считывания asn1 дерева  функция проверяет подпись под открытым ключом и, в случае успешной проверки,
+    создает контекст `vkey` и инициирует его необходимыми значениями.
+
+    \param vkey контекст создаваемого открытого ключа асимметричного криптографического алгоритма
+    \param filename имя файла
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_verifykey_context_import_from_request_file( ak_verifykey vkey, const char *filename )
+{
+  size_t len = 0;
+  struct asn1 asn;
+  ak_uint8 *ptr = NULL;
+  int error = ak_error_ok;
+
+ /* в начале считываем как der-последовательность,
+    если считали неудачно, то считывать как base64 смысла не имеет, поэтому выходим */
+  if(( ptr = ak_ptr_load_from_file( ptr, &len, filename )) == NULL )
+    return ak_error_message_fmt( ak_error_get_value(), __func__,
+                                                 "incorrect loading data from file %s", filename );
+ /* создаем контекст */
+  if(( error = ak_asn1_context_create( &asn )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
+
+ /* и пробуем декодировать данные */
+  if(( error = ak_asn1_context_decode( &asn, ptr, len, ak_false )) != ak_error_ok ) {
+    ak_error_message_fmt( error, __func__,
+                                          "file %s not contain a correct der-sequence", filename );
+    /* уничтожаем предыдущие достижения */
+    while( ak_asn1_context_remove( &asn ) == ak_true );
+    if( ptr != NULL ) { free( ptr ); ptr = NULL; }
+  } else goto lab1;
+
+ /* теперь пытаемся считать как base64 закодированную der-последовательность )) */
+  if(( ptr = ak_ptr_load_from_base64_file( ptr, &len, filename )) == NULL ) {
+    ak_error_message_fmt( error = ak_error_get_value(), __func__,
+                                          "incorrect loading base64 data from file %s", filename );
+    goto exlab;
+  }
+
+ /* и пробуем декодировать данные снова */
+  if(( error = ak_asn1_context_decode( &asn, ptr, len, ak_false )) != ak_error_ok ) {
+    ak_error_message_fmt( error, __func__,
+                        "file %s not contain a correct der-sequence encoded as base64", filename );
+    goto exlab;
+  }
+
+ lab1: /* считывание asn1 прошло успешно, можно приступать к получению открытого ключа */
+
+
+
+ exlab:
+  if( ptr != NULL ) free( ptr );
+  ak_asn1_context_destroy( &asn );
+
+ return error;
+}
+
+
+//  error = ak_asn1_context_fprintf_ptr( fp, ptr, len, check );
+//  if( ptr != NULL ) {
+//    free (ptr);
+//    ptr = NULL;
+//  }
+//  if( error == ak_error_ok ) return ak_error_ok;
+//    else
+// /* теперь считываем как base64->der */
+//  len = 0; /* значение len используется для определения длины массива */
+//  if(( ptr = ak_ptr_load_from_base64_file( ptr, &len, filename )) == NULL )
+//    return ak_error_message_fmt( ak_error_get_value(), __func__,
+//                                                 "incorrect loading data from file %s", filename );
+// /* и декодируем данные */
+//  error = ak_asn1_context_fprintf_ptr( fp, ptr, len, check );
+//  if( ptr != NULL ) free (ptr);
+//  if( error != ak_error_ok ) ak_error_message_fmt( error, __func__,
+//                  "file %s contains an icorrect der-sequence encoded in base64 format", filename );
+
+//}
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup backend_keys Функции внутреннего интерфейса. Управление ключами.

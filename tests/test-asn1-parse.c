@@ -92,45 +92,23 @@
 /* ----------------------------------------------------------------------------------------------- */
  int main( int argc, char *argv[] )
 {
-  int error = ak_error_ok;
-  size_t data_size = sizeof( test_data );
-  ak_uint8 *ptr_data = test_data, local_buffer[4096];
+  ak_asn1 asn = NULL;
 
  /* инициализируем библиотеку */
   if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true )
     return ak_libakrypt_destroy();
 
-  if( argc > 1 ) {
-   /* интерпретируем параметр программы как имя файла в der-кодировке
-      и считываем данные в массив file_data */
-    FILE *fp = fopen( argv[1], "rb" );
-
-    data_size = 0;
-    memset( local_buffer, 0, sizeof( local_buffer ));
-
-    if( !fp ) {
-      printf("incorrect file name %s\n", argv[1]);
-      ak_libakrypt_destroy();
-      return EXIT_FAILURE;
+ /* если файл задан, то ОК */
+  if( argc > 1 )
+    ak_libakrypt_print_asn1( stdout, argv[1] );
+   else
+    { /* иначе декодируем константные данные */
+       ak_asn1_context_decode( asn = ak_asn1_context_new( ),
+                                test_data, sizeof( test_data ), ak_false );
+       ak_asn1_context_print( asn, stdout );
+       ak_asn1_context_delete( asn );
     }
 
-    while( !feof(fp)) {
-      fread( local_buffer+data_size, 1, 1, fp );
-      data_size++;
-      if( data_size >= sizeof( local_buffer ))
-        break;
-    }
-
-    fclose(fp);
-    data_size--;
-    ptr_data = local_buffer;
-  }
-
- /* собственно вызов функции, выводящей ASN.1 дерево в консоль */
-  if(( error = ak_asn1_context_fprintf_ptr( stdout, ptr_data, data_size, ak_true )) == ak_error_ok )
-   fprintf( stdout, "checking the der-sequence is Ok\n" );
-    else fprintf( stdout, "checking the der-sequence is Wrong\n" );
   ak_libakrypt_destroy();
-
  return EXIT_SUCCESS;
 }

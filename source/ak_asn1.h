@@ -133,6 +133,18 @@
 };
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура данных для операций с битовыми строками. */
+ typedef struct bit_string {
+  /*! \brief массив, содержащий данные (в шестнадцатеричном виде) */
+   ak_uint8 *value;
+  /*! \brief размер массива с данными (в октетах) */
+   ak_uint32 len;
+  /*! \brief кол-во неиспользуемых битов в последнем байте
+     (допустимые значения: от 0 до 7 включительно). */
+   ak_uint8 unused;
+ } *ak_bit_string;
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Определение количества байт, необходимых для кодирования длины элемента ASN1 дерева. */
  size_t ak_asn1_get_length_size( const size_t );
 /*! \brief Определение количества байт, необходимых для кодирования идентификатора объекта. */
@@ -173,6 +185,8 @@
  int ak_tlv_context_get_printable_string( ak_tlv , ak_pointer * );
 /*! \brief Получение указателя на строку, содержащую только арабские цифры и пробел. */
  int ak_tlv_context_get_numeric_string( ak_tlv , ak_pointer * );
+/*! \brief Получение указателя на битовую строку. */
+ int ak_tlv_context_get_bit_string( ak_tlv , ak_bit_string );
 /*! \brief Получение указателя на символьную запись идентификатора объекта (OID),
     хранящуюся в заданном узле ASN1 дерева. */
  int ak_tlv_context_get_oid( ak_tlv , ak_pointer * );
@@ -188,7 +202,7 @@
  int ak_tlv_context_get_generalized_time_string( ak_tlv , ak_pointer * );
 /*! \brief Получение временного интервала в структуру данных TimeValidity, хранящуюся в
    заданном узле ASN1 дерева. */
- int ak_tlv_context_get_time_validity( ak_tlv , time_t * , time_t * );
+ int ak_tlv_context_get_validity( ak_tlv , time_t * , time_t * );
 /*! \brief Получение структуры, содержащей ресурс (структуру struct resource). */
  int ak_tlv_context_get_resource( ak_tlv , ak_resource );
 
@@ -247,7 +261,7 @@
     представленного в виде der-последовательности октетов */
  int ak_asn1_context_add_asn1_as_octet_string( ak_asn1 , ak_asn1 );
 /*! \brief Добавление к текущему уровню ASN1 дерева низлежащего уровня, содержащего временной интервал */
- int ak_asn1_context_add_time_validity( ak_asn1 , time_t , time_t );
+ int ak_asn1_context_add_validity( ak_asn1 , time_t , time_t );
 /*! \brief Функция добавляет в ASN.1 структуру, содержащую ресурс (структуру struct resource). */
  int ak_asn1_context_add_resource( ak_asn1 root, ak_resource );
 
@@ -260,15 +274,12 @@
  int ak_asn1_context_encode( ak_asn1 , ak_pointer , size_t * );
 /*! \brief Декодирование ASN1 дерева из заданной DER-последовательности октетов. */
  int ak_asn1_context_decode( ak_asn1 , const ak_pointer , const size_t , bool_t );
-/*! \brief Декодирование ASN.1 дерева, представленного в der-кодировке,
-    и вывод информации в файловый дескриптор. */
- int ak_asn1_context_fprintf_ptr( FILE * , ak_uint8 * , const size_t , bool_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Экспорт ASN.1 дерева в файл в виде der-последовательности. */
  int ak_asn1_context_export_to_derfile( ak_asn1 , const char * );
 /*! \brief Импорт ASN.1 дерева из файла, содержащего der-последовательность. */
- int ak_asn1_context_import_from_derfile( ak_asn1 , const char * );
+ int ak_asn1_context_import_from_file( ak_asn1 , const char * );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */
