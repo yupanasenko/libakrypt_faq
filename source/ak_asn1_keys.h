@@ -43,9 +43,9 @@
    с использованием пользовательского пароля. */
  int ak_key_context_export_to_asn1_with_password( ak_pointer , oid_engines_t ,
                                             ak_asn1 , const char * , const size_t , const char * );
-/*! \brief Функция экспортирует секретный ключ в заданный файл в виде der-последовательности. */
- int ak_key_context_export_to_derfile_with_password( ak_pointer , oid_engines_t ,
-                               const char *, const size_t , const char * , char * , const size_t );
+/*! \brief Функция экспортирует секретный ключ в заданный файл. */
+ int ak_key_context_export_to_file_with_password( ak_pointer , oid_engines_t ,
+             const char *, const size_t , const char * , char * , const size_t , export_format_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция импортирует секретный ключ криптографического преобразования из

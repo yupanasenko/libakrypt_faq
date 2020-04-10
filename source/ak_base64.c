@@ -41,7 +41,7 @@
     \param out указатель на данные, куда помещается результат
     \param len количество кодируемых октетов (от одного до трех)                                   */
 /* ----------------------------------------------------------------------------------------------- */
- static inline void ak_base64_encodeblock( ak_uint8 *in, ak_uint8 *out, int len )
+ void ak_base64_encodeblock( ak_uint8 *in, ak_uint8 *out, int len )
 {
     out[0] = (ak_uint8) base64[ (int)(in[0] >> 2) ];
     out[1] = (ak_uint8) base64[ (int)(((in[0] & 0x03) << 4) | ((in[1] & 0xf0) >> 4)) ];

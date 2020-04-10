@@ -511,11 +511,12 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
           fprintf( fp, "%s%s%s encoded (%u octets)%s\n", prefix,
                               TEXT_COLOR_RED, LTB_CORNERS, (unsigned int)len, TEXT_COLOR_DEFAULT );
           ak_asn1_context_print( &asn, fp );
-          ak_asn1_context_destroy( &asn) ;
           prefix[dlen] = 0;
-        } else ak_error_set_value( ak_error_ok );
-
-      } else dp = ak_true;
+        }
+        ak_asn1_context_destroy( &asn) ;
+        ak_error_set_value( ak_error_ok );
+      }
+       else dp = ak_true;
       break;
 
     case TBIT_STRING:
@@ -2034,8 +2035,82 @@ Validity ::= SEQUENCE {
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Константы, используемые для сохранения ключевой информации. */
+ const char *crypto_content_titles[] = {
+  "",
+  "ENCRYPTED SYMMETRIC KEY",
+  "PRIVATE KEY",
+  "CERTIFICATE",
+  "CERTIFICATE REQUEST",
+  "ENCRYPTED DATA",
+  "PLAIN DATA"
+ };
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param asn указатель на текущий уровень ASN.1 дерева
+    \param filename имя файла, в который записываются данные
+    \param type тип сохраняемого контента, используется для формирования заголовков pem-файла.
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_context_export_to_pemfile( ak_asn1 asn, const char *filename, crypto_content_t type )
+{
+  FILE *fp = NULL;
+  ak_uint8 out[4];
+  int error = ak_error_ok;
+  ak_uint8 *buffer = NULL, *ptr = NULL;
+  size_t len = 0, cnt = 0, idx, blocks, tail;
+
+  /* получаем длину */
+   if(( error = ak_asn1_context_evaluate_length( asn, &len )) != ak_error_ok )
+     return ak_error_message( error, __func__, "incorrect evaluation total asn1 context length" );
+
+  /* кодируем/декодируем */
+   blocks = len/3;
+   if(( tail = len - 3*blocks ) != 0 ) len = 3*(blocks+1); /* увеличиваем объем до кратного трем
+                               после декодирования переменная len снова примет истинное значение */
+   if(( ptr = buffer = malloc( len )) == NULL )
+     return ak_error_message( ak_error_out_of_memory, __func__,
+                                                  "incorrect memory allocation for der-sequence" );
+   memset( buffer, 0, len );
+   if(( error = ak_asn1_context_encode( asn, buffer, &len )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect encoding of asn1 context" );
+     goto lab2;
+   }
+
+  /* поскольку мы работаем с только текстовыми символами,
+     то для сохранения данных используется стандартная библиотека */
+   if(( fp = fopen( filename, "w" )) == NULL ) {
+     ak_error_message_fmt( error, __func__, "incorrect creation of %s", filename );
+     goto lab2;
+   }
+
+   fprintf( fp, "-----BEGIN %s----\n", crypto_content_titles[type] );
+   for( idx = 0; idx < blocks; idx++ ) {
+     ak_base64_encodeblock( ptr, out, 3);
+     fprintf( fp, "%c%c%c%c", out[0], out[1], out[2], out[3] );
+     ptr += 3;
+     if( ++cnt == 16 ) { /* 16х4 = 64 символа в одной строке */
+       fprintf( fp, "\n" );
+       cnt = 0;
+     }
+   }
+   if( tail ) {
+     ak_base64_encodeblock( ptr, out, tail );
+     fprintf( fp, "%c%c%c%c", out[0], out[1], out[2], out[3] );
+     ++cnt;
+   }
+   if( cnt != 16 ) fprintf( fp, "\n");
+   fprintf( fp, "-----END %s----\n", crypto_content_titles[type] );
+   fclose( fp );
+
+   lab2: free( buffer );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция сперва считывает данные из файла `filename` считая, что он содержит чистую
-    der-последовательность. После считывания данныъ производится попытка их декодирования.
+    der-последовательность. После считывания данных производится попытка их декодирования.
 
     Если декодирование происходит неудачно, то функция предполагает, что der-последовательность
     содержится в файле закодированная в кодировке base64. Как правило, в таком виде
@@ -2081,7 +2156,8 @@ Validity ::= SEQUENCE {
 
  /* очищаем, при необходимости, выделенную память */
   if( ptr != buffer ) free( ptr );
-
+  if( error == ak_error_ok ) ak_error_set_value( ak_error_ok ); /* в случае успеха очищаем
+                                                                   ошибки неудачной конвертации */
  return error;
 }
 

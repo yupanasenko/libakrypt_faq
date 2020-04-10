@@ -278,6 +278,8 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Экспорт ASN.1 дерева в файл в виде der-последовательности. */
  int ak_asn1_context_export_to_derfile( ak_asn1 , const char * );
+/*! \brief Экспорт ASN.1 дерева в файл в виде der-последовательности, закодированной в base64. */
+ int ak_asn1_context_export_to_pemfile( ak_asn1 , const char * , crypto_content_t );
 /*! \brief Импорт ASN.1 дерева из файла, содержащего der-последовательность. */
  int ak_asn1_context_import_from_file( ak_asn1 , const char * );
 

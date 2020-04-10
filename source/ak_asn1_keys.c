@@ -22,6 +22,7 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Указатель на функцию чтения пароля */
  static ak_function_password_read *ak_function_default_password_read = NULL;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -740,23 +741,24 @@
     пользователем не указано. В этом случае функция формирует имя файла (в качестве имени берется номер ключа)
     и помещает сформированную строку в переменную, на которую указывает `filename`.
 
+    Формат хранения зашифрованных данных зависит от значения параметра `format`.
+
     Пример вызова функции.
     \code
-       char filemane[256];
-
       // сохранение ключа в файле, имя которого возвращается в переменной filename
+       char filemane[256];
        ak_key_context_export_to_derfile_with_password( key, block_cipher,
-                               "password", 8, "keyname", filename, sizeof( filename ));
+             "password", 8, "keyname", filename, sizeof( filename ), asn1_der_format );
 
       // сохранение ключа в файле с заданным именем
        ak_key_context_export_to_derfile_with_password( key, hmac_function,
-                                             "password", 8, "keyname", "name.key", 0 );
+                            "password", 8, "keyname", "name.key", 0, asn1_pem_format );
     \endcode
 
     \param key контекст экспортируемого секретного ключа криптографического преобразования;
     контекст должен быть инициализирован ключевым значением, а поле oid должно содержать
     идентификатор алгоритма, для которого предназначен ключ.
-    \param engine тип криптографичсекого преобразования, для которого предназначен ключ
+    \param engine тип криптографического преобразования, для которого предназначен ключ
     \param password пароль, используемый для генерации ключа шифрования контента
     \param pass_size длина пароля (в октетах)
     \param keyname произвольное, человекочитаемое имя ключа, может быть NULL
@@ -767,33 +769,42 @@
     Если размер области недостаточен, то будет возбуждена ошибка.
     Данный параметр должен принимать значение 0 (ноль), если указатель `filename` указывает
     на константную строку.
+    \param format формат, в котором зашифрованные данные сохраняются в файл.
 
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_key_context_export_to_derfile_with_password( ak_pointer key,
+ int ak_key_context_export_to_file_with_password( ak_pointer key,
        oid_engines_t engine, const char *password, const size_t pass_size, const char *keyname,
-                                                               char *filename, const size_t size )
+                                        char *filename, const size_t size, export_format_t format )
 {
    ak_asn1 asn = NULL;
    int error = ak_error_ok;
    ak_skey skey = (ak_skey)key;
+   crypto_content_t content = undefined_content;
+
+   const char *file_extensions[] = { /* имена параметризуются значениями типа export_format_t */
+    "key",
+    "pem"
+   };
 
   /* необходимые проверки */
-   if( key == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+   if( key == NULL )
+     return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using null pointer to secret key context" );
    if( skey->oid->engine != engine )
      return ak_error_message( ak_error_oid_engine, __func__,
                                                  "using incorrect pointer to secret key context" );
+
   /* формируем имя файла для хранения ключа
      (данное имя в точности совпадает с номером ключа) */
    if( size ) {
      if( size < ( 5 + 2*sizeof( skey->number )) )
        return ak_error_message( ak_error_out_of_memory, __func__,
-                                                 "insufficent buffer size for secret key number" );
+                                               "insufficent buffer size for secret key filename" );
      memset( filename, 0, size );
-     ak_snprintf( filename, size, "%s.key",
-                                ak_ptr_to_hexstr( skey->number, sizeof( skey->number), ak_false ));
+     ak_snprintf( filename, size, "%s.%s",
+      ak_ptr_to_hexstr( skey->number, sizeof( skey->number), ak_false ), file_extensions[format] );
    }
 
  /* реализуем фильтр для проверки допустимых типов криптографических преобразований */
@@ -801,12 +812,11 @@
     /* формируем ASN.1 дерево для секретного ключа */
      case block_cipher:
      case hmac_function:
+            content = symmetric_key_content;
+            break;
+
      case sign_function:
-            if(( error = ak_key_context_export_to_asn1_with_password( key, engine,
-                    asn = ak_asn1_context_new(), password, pass_size, keyname )) != ak_error_ok ) {
-              ak_error_message( error, __func__, "incorrect export of secret key to asn1 context");
-              goto lab1;
-            }
+            content = secret_key_content;
             break;
 
      default: ak_error_message( ak_error_oid_engine, __func__,
@@ -815,9 +825,27 @@
             break;
   }
 
-  /* сохраняем дерево в файле */
-   if(( error = ak_asn1_context_export_to_derfile( asn, filename )) != ak_error_ok )
-     ak_error_message( error, __func__, "incorrect saving asn1 context to derfile");
+ /* преобразуем ключ в asn1 дерево */
+  if(( error = ak_key_context_export_to_asn1_with_password( key, engine,
+                    asn = ak_asn1_context_new(), password, pass_size, keyname )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect export of secret key to asn1 context");
+    goto lab1;
+  }
+
+ /* сохраняем созданное asn1 дерево в файле */
+  switch( format ) {
+    case asn1_der_format:
+      if(( error = ak_asn1_context_export_to_derfile( asn, filename )) != ak_error_ok )
+        ak_error_message_fmt( error, __func__,
+                               "incorrect export asn1 context to %s (asn1_der_format)", filename );
+      break;
+
+    case asn1_pem_format:
+      if(( error = ak_asn1_context_export_to_pemfile( asn, filename, content )) != ak_error_ok )
+        ak_error_message_fmt( error, __func__,
+                               "incorrect export asn1 context to %s (asn1_pem_format)", filename );
+      break;
+     }
 
   lab1: if( asn != NULL ) ak_asn1_context_delete( asn );
  return error;
@@ -1529,6 +1557,8 @@
 
  * @}*/
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \example test-asn1-keys.c                                                                      */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                 ak_asn1_keys.c  */
 /* ----------------------------------------------------------------------------------------------- */

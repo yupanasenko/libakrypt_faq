@@ -45,7 +45,6 @@
      }
      oid = ak_oid_context_findnext_by_engine( oid, identifier );
    }
-
    lab1:
   return ak_libakrypt_destroy();
 }
@@ -81,8 +80,8 @@
      ak_snprintf( name, sizeof( name ), "key-%s-%03u", oid->names[0], bkey.key.number[0] ); /* имя ключа */
 
    /* экпортируем ключ в файл (в der-кодировке) */
-    ak_key_context_export_to_derfile_with_password( &bkey, block_cipher,
-                                              "password", 8, name, filename, sizeof( filename ));
+    ak_key_context_export_to_file_with_password( &bkey, block_cipher,
+                                              "password", 8, name, filename, sizeof( filename ), asn1_der_format );
    /* удаляем ключ */
     ak_bckey_context_destroy( &bkey );
    /* импортируем ключ из файла */
@@ -137,9 +136,8 @@
     ak_hmac_context_ptr( &hctx, data, sizeof( data ), out, sizeof( out ));
     printf("hmac: %s\n", ak_ptr_to_hexstr( out, ak_hmac_context_get_tag_size( &hctx ), ak_false ));
    /* экпортируем ключ в файл (в der-кодировке) */
-    ak_key_context_export_to_derfile_with_password( &hctx, hmac_function,
-                                      "password", 8, "hmac keyname", filename, sizeof( filename ));
-
+    ak_key_context_export_to_file_with_password( &hctx, hmac_function,
+                                      "password", 8, "hmac keyname", filename, sizeof( filename ), asn1_pem_format );
    /* удаляем ключ */
     ak_hmac_context_destroy( &hctx );
    /* импортируем ключ из файла */
@@ -200,8 +198,8 @@
   /* создаем необязательное имя для ключа */
    ak_snprintf( tname, sizeof( tname ), "DSkey-%s-%03u", curvoid->names[0], skey.key.number[0] );
   /* сохраняем ключ */
-   ak_key_context_export_to_derfile_with_password( &skey, sign_function,
-                                             "password", 8, tname, filename, sizeof( filename ));
+   ak_key_context_export_to_file_with_password( &skey, sign_function,
+                                             "password", 8, tname, filename, sizeof( filename ), asn1_der_format );
   /* уничтожаем ключ */
    ak_signkey_context_destroy( &skey );
 
