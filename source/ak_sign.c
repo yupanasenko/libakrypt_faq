@@ -708,67 +708,46 @@
     @return В случае успеха возвращается \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_verifykey_context_create_streebog256( ak_verifykey pctx, const ak_wcurve wc )
+ int ak_verifykey_context_create( ak_verifykey pctx, const ak_wcurve wc )
 {
   int error = ak_error_ok;
   if( pctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                     "using null pointer to digital signature public key context" );
   if( wc == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                   "using null pointer to elliptic curve context" );
-  if( wc->size != ak_mpzn256_size ) return ak_error_message( ak_error_wrong_length, __func__ ,
-                                                                    "using wrong elliptic curve" );
+
  /* очищаем контекст */
   memset( pctx, 0, sizeof( struct verifykey ));
 
  /* инициализируем контекст функции хеширования */
-  if(( error = ak_hash_context_create_streebog256( &pctx->ctx )) != ak_error_ok )
-    return ak_error_message( error, __func__, "invalid creation of hash function context");
+  switch( wc->size ) {
+    case ak_mpzn256_size:
+      if(( error = ak_hash_context_create_streebog256( &pctx->ctx )) != ak_error_ok )
+        return ak_error_message( error, __func__, "invalid creation of hash function context");
+      if(( pctx->oid = ak_oid_context_find_by_name( "verify256" )) == NULL )
+       return ak_error_message( ak_error_get_value(), __func__ ,
+                                                "incorrect initialization of hash function OID" );
+      break;
+
+    case ak_mpzn512_size:
+      if(( error = ak_hash_context_create_streebog512( &pctx->ctx )) != ak_error_ok )
+        return ak_error_message( error, __func__, "invalid creation of hash function context");
+      if(( pctx->oid = ak_oid_context_find_by_name( "verify512" )) == NULL )
+       return ak_error_message( ak_error_get_value(), __func__ ,
+                                                "incorrect initialization of hash function OID" );
+      break;
+
+    default: return ak_error_message( ak_error_invalid_value, __func__ ,
+                                        "using elliptic curve context with incorrect field size" );
+  }
 
  /* устанавливаем эллиптическую кривую */
   pctx->wc = wc;
-
- /* устанавливаем oid алгоритма */
-  if(( pctx->oid = ak_oid_context_find_by_name( "verify256" )) == NULL )
-    return ak_error_message( ak_error_get_value(), __func__ ,
-                                                "incorrect initialization of hash function OID" );
+ /* устанавливаем флаг отсутствия кючевого значения */
   pctx->flags = ak_key_flag_undefined;
+
  return error;
 }
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param pctx Контекст открытого ключа электронной подписи
-    @param wc Контекст эллиптической кривой.
-
-    @return В случае успеха возвращается \ref ak_error_ok. В противном случае
-    возвращается код ошибки.                                                                       */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_verifykey_context_create_streebog512( ak_verifykey pctx, const ak_wcurve wc )
-{
-  int error = ak_error_ok;
-  if( pctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                    "using null pointer to digital signature public key context" );
-  if( wc == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                  "using null pointer to elliptic curve context" );
-  if( wc->size != ak_mpzn512_size ) return ak_error_message( ak_error_wrong_length, __func__ ,
-                                                                    "using wrong elliptic curve" );
- /* очищаем контекст */
-  memset( pctx, 0, sizeof( struct verifykey ));
-
- /* инициализируем контекст функции хеширования */
-  if(( error = ak_hash_context_create_streebog512( &pctx->ctx )) != ak_error_ok )
-    return ak_error_message( error, __func__, "invalid creation of hash function context");
-
- /* устанавливаем эллиптическую кривую */
-  pctx->wc = wc;
-
- /* устанавливаем oid алгоритма */
-  if(( pctx->oid = ak_oid_context_find_by_name( "verify512" )) == NULL )
-    return ak_error_message( ak_error_get_value(), __func__ ,
-                                                "incorrect initialization of hash function OID" );
-  pctx->flags = ak_key_flag_undefined;
- return error;
-}
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция инициализирует контекст открытого ключа и вычисляет его значение
@@ -787,20 +766,15 @@
   ak_mpzn512 k, one = ak_mpzn512_one;
 
   if( sctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                 "using a null pointer to digital signature secret key context" );
+                                  "using a null pointer to digital signature secret key context" );
 
-  if( strncmp( "sign256", sctx->key.oid->names[1], 7 ) == 0 ) {
-    if(( error = ak_verifykey_context_create_streebog256( pctx,
-                                                  ( ak_wcurve )sctx->key.data )) != ak_error_ok )
-     return ak_error_message( error, __func__, "incorrect initialization of public key context" );
-  } else {
-     if( strncmp( "sign512", sctx->key.oid->names[1], 7 ) == 0 ) {
-       if(( error = ak_verifykey_context_create_streebog512( pctx,
-                                                  ( ak_wcurve )sctx->key.data )) != ak_error_ok )
-         return ak_error_message( error, __func__,
-                                               "incorrect initialization of public key context" );
-     } else return ak_error_message( error, __func__, "using incorrect oid for secret key" );
-   }
+  if(( strncmp( "sign256", sctx->key.oid->names[1], 7 ) == 0 ) ||
+     ( strncmp( "sign512", sctx->key.oid->names[1], 7 ) == 0 ) ) {
+
+    if(( error = ak_verifykey_context_create( pctx,( ak_wcurve )sctx->key.data )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect initialization of public key context" );
+  }
+   else return ak_error_message( error, __func__, "using incorrect oid for secret key" );
 
  /* теперь определяем открытый ключ */
   ak_mpzn_mul_montgomery( k, ( ak_uint64 *)sctx->key.key, one,
@@ -891,6 +865,7 @@
   ak_mpzn_set_little_endian( s, pctx->wc->size, sign, sizeof(ak_uint64)*pctx->wc->size, ak_true );
   ak_mpzn_set_little_endian( r, pctx->wc->size, ( ak_uint64* )sign + pctx->wc->size,
                                                       sizeof(ak_uint64)*pctx->wc->size, ak_true );
+
   memcpy( h, hash, sizeof( ak_uint64 )*pctx->wc->size );
 #ifndef LIBAKRYPT_LITTLE_ENDIAN
   for( i = 0; i < pctx->wc->size; i++ ) h[i] = bswap_64( h[i] );

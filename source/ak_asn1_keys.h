@@ -12,9 +12,6 @@
  #include <ak_sign.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup backend_keys Функции внутреннего интерфейса. Управление ключами.
- * @{*/
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция вырабатывает производные ключи шифрования и имитозащиты контента из пароля и
     экспортирует в ASN.1 дерево параметры ключа, необходимые для восстановления. */
  int ak_asn1_context_add_derived_keys_from_password( ak_asn1 , ak_oid , ak_bckey ,
@@ -39,6 +36,9 @@
  int ak_asn1_context_get_skey( ak_asn1 , ak_skey , ak_bckey , ak_bckey );
 
 /* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup backend_keys Функции внутреннего интерфейса. Управление ключами.
+ * @{*/
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция экспортирует секретный ключ криптографического преобразования в ASN.1 дерево
    с использованием пользовательского пароля. */
  int ak_key_context_export_to_asn1_with_password( ak_pointer , oid_engines_t ,
@@ -50,17 +50,17 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция импортирует секретный ключ криптографического преобразования из
    der-последовательности, хранящейся в заданном файле. */
- int ak_key_context_import_from_derfile( ak_pointer , oid_engines_t , const char * , char ** );
+ int ak_key_context_import_from_file( ak_pointer , oid_engines_t , const char * , char ** );
 /*! \brief Функция импортирует ключ алгоритма блочного шифрования из заданного файла. */
- int ak_bckey_context_import_from_derfile( ak_bckey , const char * , char ** );
+ int ak_bckey_context_import_from_file( ak_bckey , const char * , char ** );
 /*! \brief Функция импортирует ключ алгоритма блочного шифрования из заданного файла. */
- int ak_hmac_context_import_from_derfile( ak_hmac , const char * , char ** );
+ int ak_hmac_context_import_from_file( ak_hmac , const char * , char ** );
 /*! \brief Функция импортирует ключ асимметричного криптографического алгоритма. */
- int ak_signkey_context_import_from_derfile( ak_signkey , const char * , char ** );
+ int ak_signkey_context_import_from_file( ak_signkey , const char * , char ** );
 
 /*! \brief Функция экспортирует открытый ключ асимметричного преобразования из запроса
    на сертификат открытого ключа (тип CertificationRequest) */
- int ak_verifykey_context_import_from_request_file( ak_verifykey , const char * );
+ int ak_verifykey_context_import_from_request( ak_verifykey , const char * );
 /** @}*/
 #endif
 /* ----------------------------------------------------------------------------------------------- */

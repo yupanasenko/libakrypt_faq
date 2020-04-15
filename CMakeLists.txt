@@ -321,6 +321,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  asn1-parse
                  asn1-keys
                  sign01
+                 sign02
   )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
                                    # при запуске make test

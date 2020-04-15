@@ -26,11 +26,11 @@
 
  /* считаем хэш от пароля */
   ak_hash_context_create_streebog512( &ctx );
-  ak_hash_context_ptr( &ctx, password, strlen( password ), out );
+  ak_hash_context_ptr( &ctx, password, strlen( password ), out, sizeof( out ));
   for( i = 0, j = 0; i < 32; i++, j += 2 ) pctx->x[i] = 1 + out[j] + out[j+1]*256;
 
  /* считаем хэш от соли */
-  ak_hash_context_ptr( &ctx, salt, strlen( salt ), out );
+  ak_hash_context_ptr( &ctx, salt, strlen( salt ), out, sizeof( out ));
   for( i = 0, j = 0; i < 32; i++, j += 2 ) pctx->z[i] = out[j] + out[j+1]*256;
   ak_hash_context_destroy( &ctx );
 

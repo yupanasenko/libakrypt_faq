@@ -199,11 +199,11 @@
                                                ( ak_function_void *) ak_signkey_context_destroy,
                                                 ( ak_function_void *) ak_signkey_context_delete }},
    { verify_function, algorithm, on_verify256, "1.2.643.7.1.1.1.1", NULL,
-                                { ( ak_function_void *) ak_verifykey_context_create_streebog256,
+                                            { ( ak_function_void *) ak_verifykey_context_create,
                                              ( ak_function_void *) ak_verifykey_context_destroy,
                                               ( ak_function_void *) ak_verifykey_context_delete }},
    { verify_function, algorithm, on_verify512, "1.2.643.7.1.1.1.2", NULL,
-                                { ( ak_function_void *) ak_verifykey_context_create_streebog512,
+                                            { ( ak_function_void *) ak_verifykey_context_create,
                                              ( ak_function_void *) ak_verifykey_context_destroy,
                                               ( ak_function_void *) ak_verifykey_context_delete }},
   #endif
@@ -212,7 +212,7 @@
          в дереве библиотеки: 1.2.643.2.52.1.12 - параметры эллиптических кривых в форме Вейерштрасса
          в дереве библиотеки: 1.2.643.2.52.1.12.1 - параметры 256 битных кривых
          в дереве библиотеки: 1.2.643.2.52.1.12.2 - параметры 512 битных кривых */
-   { identifier, wcurve_params, on_w256_pst, "1.2.643.7.1.2.1.1.0",
+   { identifier, wcurve_params, on_w256_pst, "1.2.643.2.2.35.0",
                       (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetTest, { NULL, NULL, NULL }},
    { identifier, wcurve_params, on_w256_psa, "1.2.643.7.1.2.1.1.1",
                          (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetA, { NULL, NULL, NULL }},

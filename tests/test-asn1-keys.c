@@ -85,7 +85,7 @@
    /* удаляем ключ */
     ak_bckey_context_destroy( &bkey );
    /* импортируем ключ из файла */
-    ak_bckey_context_import_from_derfile( &bkey, filename, &keyname );
+    ak_bckey_context_import_from_file( &bkey, filename, &keyname );
    /* для отладки - выводим сформированную структуру в консоль
     ak_skey_context_print_to_file( &bkey.key, stdout );
     printf("\n"); */
@@ -141,7 +141,7 @@
    /* удаляем ключ */
     ak_hmac_context_destroy( &hctx );
    /* импортируем ключ из файла */
-    ak_hmac_context_import_from_derfile( &hctx, filename, &keyname );
+    ak_hmac_context_import_from_file( &hctx, filename, &keyname );
    /* для отладки - выводим сформированную структуру в консоль
     ak_skey_context_print_to_file( &hctx.key, stdout );
     printf("\n"); */
@@ -204,7 +204,7 @@
    ak_signkey_context_destroy( &skey );
 
   /* считываем ключ */
-   ak_signkey_context_import_from_derfile( &skey, filename, &keyname );
+   ak_signkey_context_import_from_file( &skey, filename, &keyname );
    /* для отладки - выводим сформированную структуру в консоль
     ak_skey_context_print_to_file( &skey.key, stdout );
     printf("\n"); */

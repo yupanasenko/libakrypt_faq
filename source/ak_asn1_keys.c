@@ -1199,7 +1199,7 @@
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_key_context_import_from_derfile( ak_pointer key,
+ int ak_key_context_import_from_file( ak_pointer key,
                                        oid_engines_t engine, const char *filename, char **keyname )
 {
    size_t len = 0;
@@ -1335,11 +1335,11 @@
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_bckey_context_import_from_derfile( ak_bckey key, const char *filename, char **keyname )
+ int ak_bckey_context_import_from_file( ak_bckey key, const char *filename, char **keyname )
 {
   int error = ak_error_ok;
 
-  if(( error = ak_key_context_import_from_derfile( key,
+  if(( error = ak_key_context_import_from_file( key,
                                                block_cipher, filename, keyname )) != ak_error_ok )
    return ak_error_message( error, __func__, "incorrect creation of block cipher key" );
 
@@ -1374,11 +1374,11 @@
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_hmac_context_import_from_derfile( ak_hmac key, const char *filename, char **keyname )
+ int ak_hmac_context_import_from_file( ak_hmac key, const char *filename, char **keyname )
 {
   int error = ak_error_ok;
 
-  if(( error = ak_key_context_import_from_derfile( key,
+  if(( error = ak_key_context_import_from_file( key,
                                               hmac_function, filename, keyname )) != ak_error_ok )
    return ak_error_message( error, __func__, "incorrect creation of hmac secret key" );
 
@@ -1408,11 +1408,11 @@
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_signkey_context_import_from_derfile( ak_signkey key, const char *filename, char **keyname )
+ int ak_signkey_context_import_from_file( ak_signkey key, const char *filename, char **keyname )
 {
   int error = ak_error_ok;
 
-  if(( error = ak_key_context_import_from_derfile( key,
+  if(( error = ak_key_context_import_from_file( key,
                                               sign_function, filename, keyname )) != ak_error_ok )
    return ak_error_message( error, __func__, "incorrect creation of secret key" );
 
@@ -1420,10 +1420,162 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция получает значение открытого ключа из запроса на сертификат,
+    разобранного в ASN.1 дерево.
+
+    Функция считывает oid алгоритма подписи и проверяет, что он соответсвует ГОСТ Р 34.12-2012,
+    потом функция считывает параметры эллиптической кривой и проверяет, что библиотека поддерживает
+    данные параметры. В заключение функция считывает открытый ключ и проверяет,
+    что он принадлежит кривой со считанными ранее параметрами.
+
+    \param vkey контекст создаваемого открытого ключа асимметричного криптографического алгоритма
+    \param asnkey считанное из файла asn1 дерево
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_verifykey_context_import_from_request_asn1( ak_verifykey vkey, ak_asn1 asnkey )
+{
+  size_t size = 0;
+  ak_oid oid = NULL;
+  struct bit_string bs;
+  ak_pointer ptr = NULL;
+  int error = ak_error_ok;
+  ak_asn1 asn = asnkey, asnl1; /* копируем адрес */
+  ak_uint32 val = 0, val64 = 0;
+
+ /* проверяем, то первым элементом содержится ноль */
+  ak_asn1_context_first( asn );
+  if(( DATA_STRUCTURE( asn->current->tag ) != PRIMITIVE ) ||
+     ( TAG_NUMBER( asn->current->tag ) != TINTEGER ))
+    return ak_error_message( ak_error_invalid_asn1_tag, __func__ ,
+                                          "the first element of root asn1 context be an integer" );
+  ak_tlv_context_get_uint32( asn->current, &val );
+  if( val != 0 ) return ak_error_message( ak_error_invalid_asn1_content, __func__ ,
+                                              "the first element of asn1 context must be a zero" );
+ /* переходим к третьему элементу -- второй содержит имена владельца ключа */
+  ak_asn1_context_next( asn );
+  ak_asn1_context_next( asn );
+
+ /* третий элемент должен быть SEQUENCE с набором oid и значением ключа */
+  if(( DATA_STRUCTURE( asn->current->tag ) != CONSTRUCTED ) ||
+     ( TAG_NUMBER( asn->current->tag ) != TSEQUENCE ))
+    return ak_error_message( ak_error_invalid_asn1_tag, __func__ ,
+             "the third element of root asn1 context must be a sequence with object identifiers" );
+  asn = asn->current->data.constructed;
+  ak_asn1_context_first( asn );
+  if(( DATA_STRUCTURE( asn->current->tag ) != CONSTRUCTED ) ||
+     ( TAG_NUMBER( asn->current->tag ) != TSEQUENCE ))
+    return ak_error_message( ak_error_invalid_asn1_tag, __func__ ,
+                                               "the first next level element must be a sequence" );
+  asnl1 = asn->current->data.constructed;
+
+ /* получаем алгоритм электронной подписи */
+  ak_asn1_context_first( asnl1 );
+  if(( DATA_STRUCTURE( asnl1->current->tag ) != PRIMITIVE ) ||
+     ( TAG_NUMBER( asnl1->current->tag ) != TOBJECT_IDENTIFIER ))
+    return ak_error_message( ak_error_invalid_asn1_tag, __func__ ,
+                          "the first element of child asn1 context must be an object identifier" );
+  if(( error = ak_tlv_context_get_oid( asnl1->current, &ptr )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect reading an object identifier" );
+
+  if(( oid = ak_oid_context_find_by_id( ptr )) == NULL )
+    return ak_error_message_fmt( ak_error_oid_id, __func__,
+                                                   "using unsupported object identifier %s", ptr );
+  if(( oid->engine != verify_function ) || ( oid->mode != algorithm ))
+    return ak_error_message( ak_error_oid_engine, __func__, "using wrong object identifier" );
+
+ /* получаем параметры элиптической кривой */
+  ak_asn1_context_next( asnl1 );
+  if(( DATA_STRUCTURE( asnl1->current->tag ) != CONSTRUCTED ) ||
+     ( TAG_NUMBER( asnl1->current->tag ) != TSEQUENCE ))
+    return ak_error_message( ak_error_invalid_asn1_tag, __func__ ,
+             "the second element of child asn1 context must be a sequence of object identifiers" );
+  asnl1 = asnl1->current->data.constructed;
+
+  ak_asn1_context_first( asnl1 );
+  if(( DATA_STRUCTURE( asnl1->current->tag ) != PRIMITIVE ) ||
+     ( TAG_NUMBER( asnl1->current->tag ) != TOBJECT_IDENTIFIER ))
+    return ak_error_message( ak_error_invalid_asn1_tag, __func__ ,
+                     "the first element of last child asn1 context must be an object identifier" );
+  if(( error = ak_tlv_context_get_oid( asnl1->current, &ptr )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect reading an object identifier" );
+
+  if(( oid = ak_oid_context_find_by_id( ptr )) == NULL )
+    return ak_error_message_fmt( ak_error_oid_id, __func__,
+                                "using unsupported object identifier %s for elliptic curve", ptr );
+  if(( oid->engine != identifier ) || ( oid->mode != wcurve_params ))
+    return ak_error_message( ak_error_oid_engine, __func__, "using wrong object identifier" );
+
+ /* создаем контекст */
+  asnl1 = NULL;
+  if(( error = ak_verifykey_context_create( vkey, (const ak_wcurve )oid->data )) != ak_error_ok )
+   return ak_error_message( error, __func__, "incorrect creation of verify key context" );
+
+ /* получаем значение открытого ключа */
+  ak_asn1_context_last( asn );
+  if(( DATA_STRUCTURE( asn->current->tag ) != PRIMITIVE ) ||
+     ( TAG_NUMBER( asn->current->tag ) != TBIT_STRING )) {
+    ak_error_message( error = ak_error_invalid_asn1_tag, __func__ ,
+                                 "the second element of child asn1 context must be a bit string" );
+    goto lab1;
+  }
+  if(( error = ak_tlv_context_get_bit_string( asn->current, &bs )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect reading a bit string" );
+    goto lab1;
+  }
+
+ /* считали битовую строку, проверяем что это der-кодировка некоторого целого числа */
+  if(( error = ak_asn1_context_decode( asnl1 = ak_asn1_context_new(),
+                                                   bs.value, bs.len, ak_false )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect decoding a value of public key" );
+    goto lab1;
+  }
+  if(( DATA_STRUCTURE( asnl1->current->tag ) != PRIMITIVE ) ||
+     ( TAG_NUMBER( asnl1->current->tag ) != TOCTET_STRING )) {
+    ak_error_message( error = ak_error_invalid_asn1_tag, __func__ ,
+                                                        "the public key must be an octet string" );
+    goto lab1;
+  }
+
+ /* считываем строку и разбиваем ее на две половинки */
+  val = ( ak_uint32 )vkey->wc->size;
+  val64 = sizeof( ak_uint64 )*val;
+  ak_tlv_context_get_octet_string( asnl1->current, &ptr, &size );
+  if( size != 2*val64 ) {
+    ak_error_message_fmt( error = ak_error_wrong_length, __func__ ,
+        "the size of public key is equal to %u (must be %u octets)", (unsigned int)size, 2*val64 );
+    goto lab1;
+  }
+
+ /* копируем данные и проверям, что точка действительно принадлежит кривой */
+  ak_mpzn_set_little_endian( vkey->qpoint.x, val, ptr, val64, ak_false );
+  ak_mpzn_set_little_endian( vkey->qpoint.y, val, ((ak_uint8*)ptr)+val64, val64, ak_false );
+  ak_mpzn_set_ui( vkey->qpoint.z, val, 1 );
+  if( ak_wpoint_is_ok( &vkey->qpoint, vkey->wc ) != ak_true ) {
+    ak_error_message_fmt( error = ak_error_curve_point, __func__ ,
+                                                  "the public key isn't on given elliptic curve" );
+    goto lab1;
+  }
+
+ /* устанавливаем флаг и выходим */
+  vkey->flags = ak_key_flag_set_key;
+
+  if( asnl1 != NULL ) ak_asn1_context_delete( asnl1 );
+ return ak_error_ok;
+
+ lab1:
+
+  if( asnl1 != NULL ) ak_asn1_context_delete( asnl1 );
+  ak_verifykey_context_destroy( vkey );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция считывает из заданного файла запрос на получение сертификата. Запрос хранится в виде
     asn1 дерева, определяемого Р 1323565.1.023-2018.
-    Собственно asn1 дерево может быть сохранено в виде обычной der-последовательности, либо в виде
-    der-последовательности, дополнительно закодированной в base64.
+    Собственно asn1 дерево может быть храниться в файле в виде обычной der-последовательности,
+    либо в виде der-последовательности, дополнительно закодированной в base64.
 
     Функция является конструктором контекста ak_verifykey.
     После считывания asn1 дерева  функция проверяет подпись под открытым ключом и, в случае успешной проверки,
@@ -1434,77 +1586,93 @@
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_verifykey_context_import_from_request_file( ak_verifykey vkey, const char *filename )
+ int ak_verifykey_context_import_from_request( ak_verifykey vkey, const char *filename )
 {
-  size_t len = 0;
-  struct asn1 asn;
-  ak_uint8 *ptr = NULL;
+  size_t size = 0;
+  ak_tlv tlv = NULL;
+  struct bit_string bs;
+  ak_uint8 buffer[4096];
   int error = ak_error_ok;
+  ak_asn1 root = NULL, asn = NULL, asnkey = NULL;
 
- /* в начале считываем как der-последовательность,
-    если считали неудачно, то считывать как base64 смысла не имеет, поэтому выходим */
-  if(( ptr = ak_ptr_load_from_file( ptr, &len, filename )) == NULL )
-    return ak_error_message_fmt( ak_error_get_value(), __func__,
-                                                 "incorrect loading data from file %s", filename );
- /* создаем контекст */
-  if(( error = ak_asn1_context_create( &asn )) != ak_error_ok )
-    return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
-
- /* и пробуем декодировать данные */
-  if(( error = ak_asn1_context_decode( &asn, ptr, len, ak_false )) != ak_error_ok ) {
+ /* стандартные проверки */
+  if( vkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using null pointer to secret key context" );
+  if( filename == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                                "using null pointer to filename" );
+ /* считываем ключ и преобразуем его в ASN.1 дерево */
+  if(( error = ak_asn1_context_import_from_file( root = ak_asn1_context_new(),
+                                                                    filename )) != ak_error_ok ) {
     ak_error_message_fmt( error, __func__,
-                                          "file %s not contain a correct der-sequence", filename );
-    /* уничтожаем предыдущие достижения */
-    while( ak_asn1_context_remove( &asn ) == ak_true );
-    if( ptr != NULL ) { free( ptr ); ptr = NULL; }
-  } else goto lab1;
-
- /* теперь пытаемся считать как base64 закодированную der-последовательность )) */
-  if(( ptr = ak_ptr_load_from_base64_file( ptr, &len, filename )) == NULL ) {
-    ak_error_message_fmt( error = ak_error_get_value(), __func__,
-                                          "incorrect loading base64 data from file %s", filename );
-    goto exlab;
+                                     "incorrect reading of ASN.1 context from %s file", filename );
+    goto lab1;
   }
 
- /* и пробуем декодировать данные снова */
-  if(( error = ak_asn1_context_decode( &asn, ptr, len, ak_false )) != ak_error_ok ) {
-    ak_error_message_fmt( error, __func__,
-                        "file %s not contain a correct der-sequence encoded as base64", filename );
-    goto exlab;
+ /* здесь мы считали asn1, декодировали и должны убедиться, что это то самое дерево */
+  ak_asn1_context_first( root );
+  tlv = root->current;
+  if( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) {
+    ak_error_message( ak_error_invalid_asn1_tag, __func__, "incorrect structure of asn1 context" );
+    goto lab1;
   }
 
- lab1: /* считывание asn1 прошло успешно, можно приступать к получению открытого ключа */
+ /* проверяем количество узлов */
+  if(( asn = tlv->data.constructed )->count != 3 ) {
+    ak_error_message_fmt( ak_error_invalid_asn1_count, __func__,
+                                          "root asn1 context contains incorrect count of leaves" );
+    goto lab1;
+  }
 
+ /* первый узел позволит нам получить значение открытого ключа
+    (мы считываем параметры эллиптической кривой, инициализируем контекст значением
+    открытого ключа и проверяем, что ключ принадлежит указанной кривой ) */
+  ak_asn1_context_first( asn );
+  if( DATA_STRUCTURE( asn->current->tag ) != CONSTRUCTED ) {
+    ak_error_message( ak_error_invalid_asn1_tag, __func__, "incorrect structure of asn1 context" );
+    goto lab1;
+  }
+  if(( error = ak_verifykey_context_import_from_request_asn1( vkey,
+                                     asnkey = asn->current->data.constructed )) != ak_error_ok ) {
+    ak_error_message( ak_error_invalid_asn1_tag, __func__, "incorrect structure of request" );
+    goto lab1;
+  }
 
+ /* второй узел, в нашей терминологии, содержит идентификатор секретного ключа
+    и бесполезен, поскольку вся информация об открытом ключе проверки подписи,
+    эллиптической кривой и ее параметрах уже считана. остается только проверить подпись,
+    расположенную в последнем, третьем узле запроса. */
 
- exlab:
-  if( ptr != NULL ) free( ptr );
-  ak_asn1_context_destroy( &asn );
+ /* 1. Начинаем с того, что готовим данные, под которыми должна быть проверена подпись */
+  memset( buffer, 0, size = sizeof( buffer ));
+  ak_asn1_context_first( asn );
+  if(( error = ak_tlv_context_encode( asn->current, buffer, &size )) != ak_error_ok ) {
+    ak_error_message_fmt( error, __func__,
+                 "incorrect encoding of asn1 context contains of %u octets", (unsigned int) size );
+    goto lab1;
+  }
 
+ /* 2. Теперь получаем значение подписи из asn1 дерева и сравниваем его с вычисленным значением */
+  ak_asn1_context_last( asn );
+  if(( DATA_STRUCTURE( asn->current->tag ) != PRIMITIVE ) ||
+     ( TAG_NUMBER( asn->current->tag ) != TBIT_STRING )) {
+    ak_error_message( error = ak_error_invalid_asn1_tag, __func__ ,
+                                 "the second element of child asn1 context must be a bit string" );
+    goto lab1;
+  }
+  if(( error = ak_tlv_context_get_bit_string( asn->current, &bs )) != ak_error_ok ) {
+    ak_error_message( error , __func__ , "incorrect value of bit string in root asn1 context" );
+    goto lab1;
+  }
+
+ /* 3. Только сейчас проверяем подпись под данными */
+  if( ak_verifykey_context_verify_ptr( vkey, buffer, size, bs.value ) != ak_true ) {
+    ak_error_message( error = ak_error_get_value(), __func__, "digital signature isn't valid" );
+    goto lab1;
+  }
+
+  lab1: if( root != NULL ) ak_asn1_context_delete( root );
  return error;
 }
-
-
-//  error = ak_asn1_context_fprintf_ptr( fp, ptr, len, check );
-//  if( ptr != NULL ) {
-//    free (ptr);
-//    ptr = NULL;
-//  }
-//  if( error == ak_error_ok ) return ak_error_ok;
-//    else
-// /* теперь считываем как base64->der */
-//  len = 0; /* значение len используется для определения длины массива */
-//  if(( ptr = ak_ptr_load_from_base64_file( ptr, &len, filename )) == NULL )
-//    return ak_error_message_fmt( ak_error_get_value(), __func__,
-//                                                 "incorrect loading data from file %s", filename );
-// /* и декодируем данные */
-//  error = ak_asn1_context_fprintf_ptr( fp, ptr, len, check );
-//  if( ptr != NULL ) free (ptr);
-//  if( error != ak_error_ok ) ak_error_message_fmt( error, __func__,
-//                  "file %s contains an icorrect der-sequence encoded in base64 format", filename );
-
-//}
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup backend_keys Функции внутреннего интерфейса. Управление ключами.

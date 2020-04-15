@@ -169,6 +169,10 @@
  int ak_tlv_context_print( ak_tlv , FILE * );
 /*! \brief Вывод информации о примитивном узле ASN1 дерева. */
  int ak_tlv_context_print_primitive( ak_tlv, FILE * );
+/*! \brief Функция вычисляет размер, занимаемый данным уровнем ASN.1 дерева */
+ int ak_tlv_context_evaluate_length( ak_tlv , size_t * );
+/*! \brief Кодирование одного узла ASN1 дерева в DER-последовательность октетов. */
+ int ak_tlv_context_encode( ak_tlv , ak_pointer , size_t * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Получение булевого значения, хранящегося в заданном узле ASN1 дерева. */

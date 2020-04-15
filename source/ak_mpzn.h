@@ -48,6 +48,8 @@
  int ak_mpzn_set_hexstr( ak_uint64 *, const size_t , const char * );
 /*! \brief Преобразование вычета в строку шестнадцатеричных символов. */
  const char *ak_mpzn_to_hexstr( ak_uint64 *, const size_t );
+/*! \brief Преобразование вычета в строку шестнадцатеричных символов с выделением памяти. */
+ const char *ak_mpzn_to_hexstr_alloc( ak_uint64 *, const size_t );
 /*! \brief Сериализация вычета в последовательность октетов. */
  int ak_mpzn_to_little_endian( ak_uint64 * , const size_t , ak_pointer , const size_t , bool_t );
 /*! \brief Присвоение вычету сериализованного значения. */
@@ -68,6 +70,8 @@
  void ak_mpzn_mul( ak_uint64 *, ak_uint64 *, ak_uint64 *, const size_t );
 /*! \brief Вычисление остатка от деления одного вычета на другой */
  void ak_mpzn_rem( ak_uint64 *, ak_uint64 *, ak_uint64 *, const size_t );
+/*! \brief Вычисление остатка от деления вычета на одноразрядное число */
+ ak_uint32 ak_mpzn_rem_uint32( ak_uint64 *, const size_t , ak_uint32 );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Сложение двух вычетов в представлении Монтгомери. */

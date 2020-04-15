@@ -620,6 +620,39 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param tlv указатель на структуру узла ASN1 дерева.
+    \param length указатель на переменную, в которую будет помещено значение длины.
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае, когда узел действительно содержит
+    булево значение. В противном случае возвращается код ошибки.                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_context_evaluate_length( ak_tlv tlv, size_t *length )
+{
+  size_t subtotal = 0;
+  int error = ak_error_ok;
+
+  if( tlv == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                             "using null pointer to tlv context" );
+  if( length == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                    "using undefined address to length variable" );
+  switch( DATA_STRUCTURE( tlv->tag )) {
+   case PRIMITIVE:
+     *length = 1 + ak_asn1_get_length_size( tlv->len ) + tlv->len;
+     break;
+
+   case CONSTRUCTED:
+     if(( error = ak_asn1_context_evaluate_length(
+                                              tlv->data.constructed, &subtotal )) != ak_error_ok )
+       return ak_error_message( error, __func__, "incorrect length evaluation of tlv element");
+      else *length = 1 + ak_asn1_get_length_size(subtotal) + ( tlv->len = subtotal );
+     break;
+
+     default: return ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                                         "unexpected tag's value of tlv element" );
+  }
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param tlv указатель на структуру узла ASN1 дерева.
     \param bool Указатель на переменную, в которую будет помещено булево значение.
     \return Функция возвращает \ref ak_error_ok (ноль) в случае, когда узел действительно содержит
     булево значение. В противном случае возвращается код ошибки.                                  */
@@ -1748,7 +1781,8 @@ Validity ::= SEQUENCE {
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \param asn1 указатель на текущий уровень ASN.1 дерева
+/*! \param asn1 указатель на уровень ASN.1 дерева, в который помещается декодированная
+    последовательность
     \param ptr указатель на область памяти, содержащей фрагмент der-последовательности
     \param size длина фрагмента (в октетах)
     \param flag булева переменная, указывающая: надо ли выделять память под данные asn1 дерева,
@@ -1958,11 +1992,12 @@ Validity ::= SEQUENCE {
   \param ptr указатель на область памяти, куда будет помещена закодированная der-последовательность
   \param size длина сформированного фрагмента (в октетах);
 
-  \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
-  возвращается код ошибки.
   \note Перед вызовом функции переменная `size` должна быть инициализирована значением,
   указывающим максимальный объем выделенной области памяти. Если данное значение окажется меньше
-  необходимого, то будет возбуждена ошибка, а необходимое значение будет помещено в `size`.        */
+  необходимого, то будет возбуждена ошибка, а необходимое значение будет помещено в `size`.
+
+  \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+  возвращается код ошибки.                                                                         */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_context_encode( ak_asn1 asn1, ak_pointer ptr, size_t *size )
 {
@@ -1980,7 +2015,62 @@ Validity ::= SEQUENCE {
  /* теперь памяти достаточно */
   *size = tlen;
   if(( error = ak_asn1_context_encode_asn1( asn1, &buf )) != ak_error_ok )
-    return ak_error_message( error, __func__, "incorect encoding of asn1 context" );
+    return ak_error_message( error, __func__, "incorrect encoding of asn1 context" );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Так же, как и для функции ak_asn1_context_encode(), реализуется двупроходная процедура,
+    в ходе которой
+    - в начале вычисляется длина данных,
+    - а потом производится кодирование.
+
+  \param tlv указатель на структуру узла ASN1 дерева.
+  \param ptr указатель на область памяти, куда будет помещена закодированная der-последовательность
+  \param size длина сформированного фрагмента (в октетах);
+
+  \note Перед вызовом функции переменная `size` должна быть инициализирована значением,
+  указывающим максимальный объем выделенной области памяти. Если данное значение окажется меньше
+  необходимого, то будет возбуждена ошибка, а необходимое значение будет помещено в `size`.
+
+  \return Функция возвращает \ref ak_error_ok (ноль) в случае, когда узел действительно содержит
+  булево значение. В противном случае возвращается код ошибки.                                     */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_context_encode( ak_tlv tlv, ak_pointer ptr, size_t *size )
+{
+  size_t tlen = 0;
+  ak_uint8 *buf = ptr;
+  int error = ak_error_ok;
+
+  if(( error = ak_tlv_context_evaluate_length( tlv, &tlen )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect evaluation of asn1 context length" );
+  if( *size < tlen ) {
+    *size = tlen;
+    return ak_error_wrong_length;
+  }
+
+ /* теперь памяти достаточно, сохраняем общую часть */
+  *size = tlen;
+  if(( error = ak_asn1_put_tag( &buf, tlv->tag )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect tag encoding of tlv element" );
+  if(( error = ak_asn1_put_length( &buf, tlv->len )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect length encoding of tlv element" );
+
+  switch( DATA_STRUCTURE( tlv->tag )) {
+
+    case PRIMITIVE:
+      memcpy( buf, tlv->data.primitive, tlv->len );
+      break;
+
+    case CONSTRUCTED:
+      if(( error = ak_asn1_context_encode_asn1( tlv->data.constructed, &buf )) != ak_error_ok )
+        return ak_error_message( error, __func__, "incorrect encoding of constructed element" );
+      break;
+
+    default: return ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                                         "unexpected tag's value of tlv element" );
+  }
 
  return error;
 }

@@ -12,7 +12,6 @@
   mpz_t xm, ym, zm, tm, pm;
   ak_mpznmax x, y, z, p;
   struct random generator;
-  char *str = NULL;
   clock_t tmr;
 
   mpz_init(xm);
@@ -54,7 +53,7 @@
   }
   tmr = clock() - tmr;
   printf(" mpzn time: %.3fs\n", ((double) tmr) / ((double) CLOCKS_PER_SEC));
-  printf(" y = %s\n", str = ak_mpzn_to_hexstr( y, size )); free(str);
+  printf(" y = %s\n", ak_mpzn_to_hexstr( y, size ));
 
   tmr = clock();
   for( i = 0; i < count; i++ ) {
@@ -85,7 +84,6 @@
   mpz_t xm, ym, zm, tm, pm, rm, gm, sm, um, nm;
   ak_mpznmax x, y, n, p, z;
   struct random generator;
-  char *str = NULL;
   clock_t tmr;
 
   mpz_init(xm);
@@ -167,7 +165,7 @@
   }
   tmr = clock() - tmr;
   printf(" mpzn time: %.3fs [", ((double) tmr) / ((double) CLOCKS_PER_SEC));
-  printf("y = %s]\n", str = ak_mpzn_to_hexstr( y, size )); free(str);
+  printf("y = %s]\n", ak_mpzn_to_hexstr( y, size ));
 
   ak_mpz_to_mpzn( xm, x, size );
   ak_mpz_to_mpzn( ym, y, size );
@@ -202,7 +200,7 @@
   }
   tmr = clock() - tmr;
   printf(" mpzn time: %.3fs [", ((double) tmr) / ((double) CLOCKS_PER_SEC));
-  printf("x = %s]\n", str = ak_mpzn_to_hexstr( x, size )); free(str);
+  printf("x = %s]\n", ak_mpzn_to_hexstr( x, size ));
 
   tmr = clock();
   for( i = 0; i < count; i++ ) {
@@ -230,7 +228,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int main( void )
 {
-  char *str = NULL;
+  const char *str = NULL;
   ak_oid oid = NULL;
   size_t count = 1000000;
   int totalmany = 0, howmany = 0;
@@ -244,27 +242,27 @@
      /* достаем простое число */
       ak_wcurve wc = ( ak_wcurve ) oid->data;
       if( wc->size == ak_mpzn256_size ) {
-        printf(" - p: %s\n", str = ak_mpzn_to_hexstr( wc->p, wc->size ));
+        printf(" - p: %s\n", str = ak_mpzn_to_hexstr_alloc( wc->p, wc->size ));
         printf(" - ak_mpzn_add_montgomery() function test for ak_mpzn256 started\n");
         totalmany++;
         if( add_montgomery_test( wc->size, str, count )) howmany++;
         printf(" - ak_mpzn_mul_montgomery() function test for ak_mpzn256 started\n");
         totalmany++;
         if( mul_montgomery_test( wc->size, str, wc->n, count )) howmany++;
-        free( str );
+        if( str ) free( (void *)str );
 
   // добавить modpow!!
 
       }
       if( wc->size == ak_mpzn512_size ) {
-        printf(" - p: %s\n", str = ak_mpzn_to_hexstr( wc->p, wc->size ));
+        printf(" - p: %s\n", str = ak_mpzn_to_hexstr_alloc( wc->p, wc->size ));
         printf(" - ak_mpzn_add_montgomery() function test for ak_mpzn512 started\n");
         totalmany++;
         if( add_montgomery_test( wc->size, str, count )) howmany++;
         printf(" - ak_mpzn_mul_montgomery() function test for ak_mpzn512 started\n");
         totalmany++;
         if( mul_montgomery_test( wc->size, str, wc->n, count )) howmany++;
-        free( str );
+        if( str ) free( (void *)str );
       }
     }
     oid = ak_oid_context_findnext_by_engine( oid, identifier );
