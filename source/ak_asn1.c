@@ -2375,8 +2375,45 @@ Validity ::= SEQUENCE {
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ dll_export int ak_libakrypt_convert_asn1( const char *infile, const char *outfile,
+                                                export_format_t format, crypto_content_t content )
+{
+  ak_asn1 asn = NULL;
+  int error = ak_error_ok;
+
+ /* 1. Считываем дерево из файла */
+  if(( asn = ak_asn1_context_new( )) == NULL ) return ak_error_message( ak_error_get_value(),
+                                              __func__, "incorrect creation of new asn1 context" );
+  if(( error = ak_asn1_context_import_from_file( asn, infile )) != ak_error_ok ) {
+    ak_error_message_fmt( error, __func__,
+                                        "incorrect reading an asn1 context from file %s", infile );
+    goto labex;
+  }
+
+ /* 2. Сохраняем созданное дерево в файл */
+  switch( format ) {
+    case asn1_der_format:
+      if(( error = ak_asn1_context_export_to_derfile( asn, outfile )) != ak_error_ok )
+        ak_error_message_fmt( error, __func__,
+                              "incorrect export asn1 context to file %s in der format", outfile );
+      break;
+
+    case asn1_pem_format:
+      if(( error = ak_asn1_context_export_to_pemfile( asn, outfile, content )) != ak_error_ok )
+        ak_error_message_fmt( error, __func__,
+                              "incorrect export asn1 context to file %s in pem format", outfile );
+      break;
+  }
+
+  labex:
+   if( asn != NULL ) ak_asn1_context_delete( asn );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \example test-asn1-build.c                                                                     */
 /*! \example test-asn1-parse.c                                                                     */
+/*! \example test-asn1-keys.c                                                                      */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_asn1.c  */
 /* ----------------------------------------------------------------------------------------------- */

@@ -197,21 +197,40 @@
  int ak_libakrypt_set_color_output( bool_t flag )
 {
   if( flag ) { /* устанавливаем цветной вывод */
+ #ifndef _WIN32
     ak_libakrypt_set_option( "use_color_output", 1 );
     ak_error_code_start_red_string = LIBAKRYPT_START_RED_STRING;
     ak_error_code_end_red_string = LIBAKRYPT_END_RED_STRING;
+ #endif
   } else {
+ #ifndef _WIN32
     ak_libakrypt_set_option( "use_color_output", 0 );
     ak_error_code_start_string = ak_error_code_start_red_string = "";
     ak_error_code_end_string = ak_error_code_end_red_string = "";
+ #endif
   }
-
  return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- const char *ak_libakrypt_get_start_error_string( void ) { return ak_error_code_start_red_string; }
- const char *ak_libakrypt_get_end_error_string( void ) { return ak_error_code_end_red_string; }
+ const char *ak_libakrypt_get_start_error_string( void )
+{
+#ifndef _WIN32
+  return ak_error_code_start_red_string;
+#else
+  return "";
+#endif
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ const char *ak_libakrypt_get_end_error_string( void )
+{
+#ifndef _WIN32
+  return ak_error_code_end_red_string;
+#else
+  return "";
+#endif
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция возвращает указатель на строку символов, содержащую человекочитаемое имя опции
