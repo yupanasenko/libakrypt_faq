@@ -38,10 +38,6 @@
  #define LTB_CORNERS "├"  /* "\xC3" */
  #define RTB_CORNERS "┤"  /* "\xB4" */
 
- #define TEXT_COLOR_DEFAULT ("")
- #define TEXT_COLOR_RED     ("")
- #define TEXT_COLOR_BLUE    ("")
-
 #else
 /*! \brief Символ '─' в кодировке юникод */
  #define HOR_LINE    "\u2500"
@@ -60,12 +56,6 @@
 /*! \brief Символ '┤' в кодировке юникод */
  #define RTB_CORNERS "\u2524"
 
-/*! \brief Изменение цвета выводимых в консоль символов на установленный по-умолчанию */
- #define TEXT_COLOR_DEFAULT ("\x1b[0m")
-/*! \brief Изменение цвета выводимых в консоль символов на красный */
- #define TEXT_COLOR_RED     ("\x1b[31m")
-/*! \brief Изменение цвета выводимых в консоль символов на голубой */
- #define TEXT_COLOR_BLUE    ("\x1b[34m")
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -437,9 +427,11 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
             if( DATA_CLASS( tlv->tag ) == CONTEXT_SPECIFIC ) {
               if( tlv->data.primitive != NULL )
                 fprintf( fp, "%s\n", ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ));
-               else  fprintf( fp, "%s(null)%s", TEXT_COLOR_RED, TEXT_COLOR_DEFAULT );
+               else  fprintf( fp, "%s(null)%s",
+                       ak_libakrypt_get_start_error_string(), ak_libakrypt_get_end_error_string());
             }
-             else fprintf( fp, "%sUnknown data%s\n", TEXT_COLOR_RED, TEXT_COLOR_DEFAULT );
+             else fprintf( fp, "%sUnknown data%s\n",
+                       ak_libakrypt_get_start_error_string(), ak_libakrypt_get_end_error_string());
           } /* конец else UNIVERSAL */
    }
 
@@ -509,7 +501,8 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
           size_t dlen = strlen( prefix );
           strcat( prefix, "   " );
           fprintf( fp, "%s%s%s encoded (%u octets)%s\n", prefix,
-                              TEXT_COLOR_RED, LTB_CORNERS, (unsigned int)len, TEXT_COLOR_DEFAULT );
+                            ak_libakrypt_get_start_error_string(), LTB_CORNERS, (unsigned int)len,
+                                                             ak_libakrypt_get_end_error_string( ));
           ak_asn1_context_print( &asn, fp );
           prefix[dlen] = 0;
         }
@@ -613,7 +606,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     if( tlv->data.primitive != NULL ) fprintf( fp, " [len: %u, data: 0x%s]\n",
              (unsigned int) tlv->len, ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ));
       else fprintf( fp, " [len: %u, data: %s(null)%s]\n", (unsigned int) tlv->len,
-                                                              TEXT_COLOR_RED, TEXT_COLOR_DEFAULT );
+                   ak_libakrypt_get_start_error_string( ), ak_libakrypt_get_start_error_string( ));
   }
  return ak_error_ok;
 }
@@ -1856,14 +1849,15 @@ Validity ::= SEQUENCE {
   ak_tlv x = NULL;
 
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                             "using null pointer to asn1 element" );
+                                                            "using null pointer to asn1 element" );
   if( fp == NULL )  return ak_error_message( ak_error_null_pointer, __func__,
                                                             "using null pointer to file context" );
  /* перебираем все узлы текущего слоя, начиная с первого */
   x = asn1->current;
   ak_asn1_context_first( asn1 );  
   if( asn1->current == NULL ) /* это некорректная ситуация, поэтому сообщение выделяется красным */
-    fprintf( fp, "%s%s (null)%s\n", prefix, TEXT_COLOR_RED, TEXT_COLOR_DEFAULT );
+    fprintf( fp, "%s%s (null)%s\n", prefix,
+                      ak_libakrypt_get_start_error_string(), ak_libakrypt_get_end_error_string( ));
 
    else { /* перебор всех доступных узлов */
     do{

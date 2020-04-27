@@ -366,6 +366,11 @@
      return ak_false;
    }
 #endif
+#ifdef _WIN32
+ /* использование цвета в стандартной консоли Windows бессмысленно
+                            поэтому мы его принудительно запрещаем */
+  ak_libakrypt_set_color_output( ak_false );
+#endif
  /* выводим значения установленных параметров библиотеки */
    ak_libakrypt_log_options();
 

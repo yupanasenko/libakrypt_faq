@@ -18,6 +18,7 @@
     /* сначала уникальные */
 
     /* потом общие */
+     { "dont-use-colors",     0, NULL,   3 },
      { "audit",               1, NULL,   2 },
      { "help",                0, NULL,   1 },
      { NULL,                  0, NULL,   0 }
@@ -34,6 +35,10 @@
          case   2 : /* получили от пользователя имя файла для вывода аудита */
                      aktool_set_audit( optarg );
                      break;
+         case   3 : /* установка флага запрета вывода символов смены цветовой палитры */
+                     ak_libakrypt_set_color_output( ak_false );
+                     break;
+
 
        /* теперь опции, уникальные для asn1parse */
 
@@ -88,9 +93,5 @@
   printf(_("aktool asn1parse [options] [files] - decode and print ASN.1 data\n\n"));
   printf(_("available options:\n"));
 
-  printf(_("\ncommon aktool options:\n"));
-  printf(_("     --audit <file>      set the output file for errors and libakrypt audit system messages\n" ));
-  printf(_("     --help              show this information\n\n"));
-
- return EXIT_SUCCESS;
+ return aktool_print_common_options();
 }

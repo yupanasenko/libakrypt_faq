@@ -349,6 +349,17 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ int aktool_print_common_options( void )
+{
+  printf(_("\ncommon aktool options:\n"));
+  printf(_("     --audit <file>      set the output file for errors and libakrypt audit system messages\n" ));
+  printf(_("     --dont-use-colors   do not use the highlighting of output data\n"));
+  printf(_("     --help              show this information\n\n"));
+
+ return EXIT_SUCCESS;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int aktool_help( void )
 {
   printf(_("aktool (crypto application based on libakrypt library, version: %s)\n"),

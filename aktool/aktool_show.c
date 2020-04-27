@@ -27,6 +27,7 @@
      { "without-caption",  0, NULL,  250 },
      { "modes",            0, NULL,  249 },
 
+     { "dont-use-colors",  0, NULL,   3 },
      { "audit",            1, NULL,   2  },
      { "help",             0, NULL,   1  },
      { NULL,               0, NULL,   0  }
@@ -41,6 +42,8 @@
          case  2  : /* получили от пользователя имя файла для вывода аудита */
                      aktool_set_audit( optarg );
                      break;
+         case  3  : /* установка флага запрета вывода символов смены цветовой палитры */
+                     ak_libakrypt_set_color_output( ak_false );
 
          case 254 : /* выводим список всех доступных oid */
                      work = do_alloids;
@@ -193,10 +196,6 @@
   printf(_("     --modes             show all types of cryptographic modes\n"));
   printf(_("     --without-caption   don't show a caption for displayed values\n"));
 
-  printf(_("\ncommon aktool options:\n"));
-  printf(_("     --audit <file>      set the output file for errors and libakrypt audit system messages\n" ));
-  printf(_("     --help              show this information\n\n"));
-
- return EXIT_SUCCESS;
+ return aktool_print_common_options();
 }
 

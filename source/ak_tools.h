@@ -62,6 +62,12 @@
  void ak_libakrypt_log_options( void );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция возвращает строку, начинающую цветовое выделение. */
+ const char *ak_libakrypt_get_start_error_string( void );
+/*! \brief Функция возвращает строку, завершающую цветовое выделение. */
+ const char *ak_libakrypt_get_end_error_string( void );
+
+/* ----------------------------------------------------------------------------------------------- */
 #ifndef LIBAKRYPT_CONST_CRYPTO_PARAMS
 /*! \brief Функция создает полное имя файла в служебном каталоге библиотеки. */
  int ak_libakrypt_create_filename( char * , const size_t , char * , const int );

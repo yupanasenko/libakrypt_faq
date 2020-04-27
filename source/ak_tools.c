@@ -92,12 +92,16 @@
 /*! \brief Cтатическая переменная для вывода сообщений. */
  static char ak_ptr_to_hexstr_static_buffer[4096];
 
+/* ----------------------------------------------------------------------------------------------- */
+ #define LIBAKRYPT_START_RED_STRING ("\x1b[31m")
+ #define LIBAKRYPT_END_RED_STRING ("\x1b[0m")
+
 /*! \brief Cтатическая переменные для окрашивания кодов и выводимых сообщений. */
  static char *ak_error_code_start_string = "";
  static char *ak_error_code_end_string = "";
 #ifndef _WIN32
- static char *ak_error_code_start_red_string = "\x1b[31m";
- static char *ak_error_code_end_red_string = "\x1b[0m";
+ static char *ak_error_code_start_red_string = LIBAKRYPT_START_RED_STRING;
+ static char *ak_error_code_end_red_string = LIBAKRYPT_END_RED_STRING;
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -132,7 +136,8 @@
 
   /* при значении равным единицы, формат шифрования данных соответствует варианту OpenSSL */
      { "openssl_compability", 0 },
-
+  /* флаг использования цвета при выводе сообщений библиотеки */
+     { "use_color_output", 1 },
      { NULL, 0 } /* завершающая константа, должна всегда принимать нулевые значения */
  };
 
@@ -182,6 +187,31 @@
   }
  return result;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param flag Если значение истинно, то цветовое выделение используется
+
+    \return В случае удачного установления значения опции возввращается \ref ak_error_ok.
+     Если имя опции указано неверно, то возвращается ошибка \ref ak_error_wrong_option.            */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_libakrypt_set_color_output( bool_t flag )
+{
+  if( flag ) { /* устанавливаем цветной вывод */
+    ak_libakrypt_set_option( "use_color_output", 1 );
+    ak_error_code_start_red_string = LIBAKRYPT_START_RED_STRING;
+    ak_error_code_end_red_string = LIBAKRYPT_END_RED_STRING;
+  } else {
+    ak_libakrypt_set_option( "use_color_output", 0 );
+    ak_error_code_start_string = ak_error_code_start_red_string = "";
+    ak_error_code_end_string = ak_error_code_end_red_string = "";
+  }
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ const char *ak_libakrypt_get_start_error_string( void ) { return ak_error_code_start_red_string; }
+ const char *ak_libakrypt_get_end_error_string( void ) { return ak_error_code_end_red_string; }
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция возвращает указатель на строку символов, содержащую человекочитаемое имя опции
