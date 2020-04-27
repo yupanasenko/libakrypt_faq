@@ -20,6 +20,9 @@
 #else
  #error Library cannot be compiled without string.h header
 #endif
+#ifdef LIBAKRYPT_HAVE_TIME_H
+ #include <time.h>
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Установление или изменение маски секретного ключа ассиметричного криптографического
@@ -743,8 +746,12 @@
 
  /* устанавливаем эллиптическую кривую */
   pctx->wc = wc;
- /* устанавливаем флаг отсутствия кючевого значения */
+ /* устанавливаем флаг отсутствия ключевого значения */
   pctx->flags = ak_key_flag_undefined;
+ /* инициализируем ресурс открытого ключа */
+  pctx->time.not_before = pctx->time.not_after = 0;
+ /* имя ключа не определено */
+  pctx->name = NULL;
 
  return error;
 }
@@ -786,10 +793,49 @@
   ak_wpoint_pow( &pctx->qpoint, &pctx->qpoint, k, pctx->wc->size, pctx->wc );
   ak_wpoint_reduce( &pctx->qpoint, pctx->wc );
 
+ /* разбираемся с ресурсом */
+  pctx->time.not_before = sctx->key.resource.time.not_before;
+  pctx->time.not_after = sctx->key.resource.time.not_after;
+
+ /* имя ключа не определено */
+  pctx->name = NULL;
+
  /* перемаскируем секретный ключ */
   pctx->flags = ak_key_flag_set_key;
   ak_ptr_context_wipe( k, sizeof( ak_uint64 )*ak_mpzn512_size, &sctx->key.generator );
   sctx->key.set_mask( &sctx->key );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Присвоение времени происходит следующим образом. Если `not_before` равно нулю, то
+    устанавливается текущее время. Если `not_after` равно нулю или меньше, чем `not_before`,
+    то временной интервал действия ключа устанавливается равным 365 дней.
+
+    \param vkey Контекст открытого ключа.
+    \param not_before Время, начиная с которого ключ действителен. Значение, равное нулю,
+    означает, что будет установлено текущее время.
+    \param not_after Время, начиная с которого ключ недействителен.
+    \return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_verifykey_context_set_resource_time( ak_verifykey vkey, time_t not_before, time_t not_after )
+{
+  if( vkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using a null pointer to public key" );
+ /* устанавливаем временной интервал */
+  if( not_before == 0 )
+ #ifdef LIBAKRYPT_HAVE_TIME_H
+  vkey->time.not_before = time( NULL );
+ #else
+  vkey->time.not_before = 0;
+ #endif
+    else vkey->time.not_before = not_before;
+  if( not_after == 0 ) vkey->time.not_after = vkey->time.not_before + 31536000;
+    else {
+      if( not_after > vkey->time.not_before ) vkey->time.not_after = not_after;
+        else vkey->time.not_after = vkey->time.not_before + 31536000;
+    }
  return ak_error_ok;
 }
 
@@ -805,6 +851,9 @@
                                                       "using null pointer to public key context" );
   if(( error = ak_hash_context_destroy( &pctx->ctx )) != ak_error_ok )
     ak_error_message( error, __func__ , "incorrect destroying hash function context" );
+
+ /* если имя владельца было определено, то удаляем его */
+  if( pctx->name != NULL ) pctx->name = ak_tlv_context_delete( pctx->name );
 
   memset( pctx, 0, sizeof( struct verifykey ));
  return error;
@@ -985,6 +1034,90 @@
   }
 
  return ak_verifykey_context_verify_hash( pctx, hash, pctx->ctx.data.sctx.hsize, sign );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция формирует новую строку, содержащую данные `string` и добавляет строку в asn1 дерево,
+    в соответствии с правилами x509. Тип помещаемых данных определяется строкой `ni`. Допустимыми
+    типами являются, как минимум,
+    -  1.2.840.113549.1.9.1   emailAddress
+    -  2.5.4.3                CommonName
+    -  2.5.4.4                Surname
+    -  2.5.4.5                SerialNumber
+    -  2.5.4.6                CountryName
+    -  2.5.4.7                LocalityName              [Москва]
+    -  2.5.4.8                StateOrProvinceName [77 г. Москва]
+    -  2.5.4.9                StreetAddress
+    -  2.5.4.10               OrganizationName
+    -  2.5.4.11               OrganizationUnit
+
+    - OGRN
+    - OGRNIP
+    - SNILS
+    - INN
+
+    @param vk контекст открытого ключа электронной подписи
+    @param id строка, содержащая имя или идентификатор, определяющий тип помещаемых
+    данных (attribute type)
+    @param string строка с данными.
+
+    @return В случае успеха возвращается \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_verify_context_set_name_string( ak_verifykey vk, const char *ni, const char *string )
+{
+  ak_oid oid = NULL;
+  int error = ak_error_ok;
+  ak_asn1 asn = NULL, asnseq = NULL;
+
+ /* необходимые проверки */
+  if( vk == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using null pointer to secret key context" );
+  if( ni == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                          "using null pointer to attribute type" );
+  if( string == NULL ) return ak_error_ok; /* ни чего не добавляем */
+  if(( oid = ak_oid_context_find_by_ni( ni )) == NULL )
+    return ak_error_message( ak_error_oid_name, __func__,
+                                               "unexpected name or identifier of attribute type" );
+  if( oid->engine != identifier ) return ak_error_message( ak_error_oid_engine, __func__,
+                                                         "unexpected engine of given identifier" );
+  if( oid->mode != descriptor ) return ak_error_message( ak_error_oid_mode, __func__,
+                                                           "unexpected mode of given identifier" );
+ /* проверяем, не нужно ли вызывать конструктор для обощенного имени */
+  if( vk->name == NULL ) {
+    if(( asn = ak_asn1_context_new()) == NULL ) return ak_error_message( ak_error_get_value(),
+                                         __func__, "incorrect creation of internal asn1 context" );
+    if(( error = ak_tlv_context_create_constructed(
+        vk->name = malloc( sizeof( struct tlv )), TSEQUENCE^CONSTRUCTED, asn )) != ak_error_ok ) {
+      if( asn != NULL ) ak_asn1_context_delete( asn );
+      return ak_error_message( error, __func__, "incorrect creation of tlv context" );
+    }
+  }
+
+ /* только сейчас добавляем
+    SET - >
+          SEQUENCE ->
+                    OBJECT IDENTIFIER (тип помещвемых данных)
+                    STRING                                    */
+
+  ak_asn1_context_add_oid( asn = ak_asn1_context_new(), oid->id );
+  if( strncmp( oid->names[0], "emailAddress", 12 ) == 0 ) {
+    error = ak_asn1_context_add_ia5_string( asn, string );
+  } else {
+     if( strncmp( oid->names[0], "CountryName", 11 ) == 0 ) {
+       error = ak_asn1_context_add_printable_string( asn, string );
+     } else {
+        error = ak_asn1_context_add_utf8_string( asn, string );
+       }
+  }
+  if( error != ak_error_ok ) {
+    if( asn != NULL ) ak_asn1_context_delete( asn );
+    return ak_error_message( error, __func__, "incorrect addition of given string" );
+  }
+  ak_asn1_context_add_asn1( asnseq = ak_asn1_context_new(), TSEQUENCE, asn );
+  ak_asn1_context_add_asn1( vk->name->data.constructed, TSET, asnseq );
+
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1321,7 +1454,8 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \example test-sign01.c
- *  \example test-sign02.c                                                                         */
+    \example test-sign02.c
+    \example test-sign03.c                                                                         */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_sign.c  */
 /* ----------------------------------------------------------------------------------------------- */

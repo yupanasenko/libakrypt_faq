@@ -4,8 +4,9 @@
 find_program( PANDOC pandoc )
 find_program( SED sed )
 if( PANDOC )
-  execute_process( COMMAND pandoc -s -t man --ascii
-               ${CMAKE_SOURCE_DIR}/aktool/Readme.md -o ${CMAKE_SOURCE_DIR}/aktool/aktool.1 )
+  execute_process( COMMAND pandoc -s -t man ${CMAKE_SOURCE_DIR}/aktool/Readme.md
+                    --variable header=\""Руководство пользователя\""
+                    -o ${CMAKE_SOURCE_DIR}/aktool/aktool.1 )
   message("-- Manual file aktool.1 updated" )
 endif()
 

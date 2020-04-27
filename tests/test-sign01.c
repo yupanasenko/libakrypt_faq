@@ -43,7 +43,7 @@
  /* выводим значение ключа для информации */
   ak_skey_context_print_to_file( &sk.key, stdout );
  /* только теперь подписываем данные
-    в качестве котрых выступает исполняемый файл */
+    в качестве которых выступает исполняемый файл */
   ak_signkey_context_sign_file( &sk, argv[0], sign, sizeof( sign ));
   printf("file:   %s\nsign:   %s\n", argv[0],
      ak_ptr_to_hexstr( sign, ak_signkey_context_get_tag_size(&sk), ak_false ));

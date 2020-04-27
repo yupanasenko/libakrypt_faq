@@ -1710,6 +1710,44 @@
  #define id_tc26_gost_3410_2012_256_paramSetD ( id_rfc4357_gost_3410_2001_paramSetC )
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Параметры 256-ти битной эллиптической кривой, определяемые в диссертационной 
+    работе Нестеренко А.Ю. (приложение А, набор N0). */
+/*! Для данной кривой выполнено:
+     - числа \f$ p, \frac{p-1}{2}\f$ простые,
+     - числа \f$ q, \frac{q-1}{2}\f$ простые,
+     - порядок всей группы точек \f m = q \f$, кофактор равен 1,
+     - дискриминант кольца эндоморфизмов \f$ d = -354691387 \f$,
+     - число классов \f$ h = 2464\f$.
+
+    \code
+      a = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD2158", -3
+      b = "42DFDE56DD26BB76EBA94CE9565E562BED1FB994675632A264AFEF327AA4E5FF",
+      p = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD215B", 2^256-188069.
+      q = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF2C1B759991830C6B5DCC785B195C4EDB",
+     px = "2",
+     py = "011E47B6E40DC7F783B9F4FC84D085884B9B88CA9EC7DA8C5567C9D87F68A17F"
+    \endcode                                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ const static struct wcurve id_libakrypt_gost_3410_2012_256_paramSet_N0 = {
+  ak_mpzn256_size,
+  1,
+  { 0xFFFFFFFFFFF4856CLL, 0xFFFFFFFFFFFFFFFFLL, 0xFFFFFFFFFFFFFFFFLL, 0xFFFFFFFFFFFFFFFFLL }, /* a */
+  { 0x5537E72FFE703FE3LL, 0xCB8A1CEFBFBC3F5BLL, 0x4EA3980725DF7C30LL, 0xF9C75C119775CB55LL }, /* b */
+  { 0XFFFFFFFFFFFD215BLL, 0XFFFFFFFFFFFFFFFFLL, 0XFFFFFFFFFFFFFFFFLL, 0XFFFFFFFFFFFFFFFFLL }, /* p */
+  { 0x000000083C369659LL, 0x0000000000000000LL, 0x0000000000000000LL, 0x0000000000000000LL }, /* r2 */
+  { 0x5DCC785B195C4EDBLL, 0x2C1B759991830C6BLL, 0xffffffffffffffffLL, 0xffffffffffffffffLL }, /* q */
+  { 0x5F1888618BB22F59LL, 0xB1264EDCDEE377ACLL, 0xD5FFD504DC5F765DLL, 0xAF62882BAB696033LL }, /* r2q */
+  {
+    { 0x0000000000000002LL, 0x0000000000000000LL, 0x0000000000000000LL, 0x0000000000000000LL }, /* px */
+    { 0x5567C9D87F68A17FLL, 0x4B9B88CA9EC7DA8CLL, 0x83B9F4FC84D08588LL, 0x011E47B6E40DC7F7LL }, /* py */
+    { 0x0000000000000001LL, 0x0000000000000000LL, 0x0000000000000000LL, 0x0000000000000000LL }  /* pz */
+  },
+  0x71A1662E6FA1D92DLL, /* n */
+  0x40BB2313A95302ADLL, /* nq */
+  "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd215b"
+ };
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Параметры 512-ти битной эллиптической кривой из тестового примера ГОСТ Р 34.10-2012 (Приложение А.2). */
 /*! \code
       a = "7",

@@ -342,7 +342,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
                                                              "using null pointer to tlv element" );
   if( DATA_STRUCTURE( tag ) != CONSTRUCTED )
     return ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
-                                          "data must be constructed, but tag has value: %u", tag );
+                                "data structure must be CONSTRUCTED, but tag has value: %u", tag );
   tlv->tag = tag;
   tlv->len = 0;
   tlv->data.constructed = asn1;
@@ -1234,7 +1234,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
  /* если список пуст */
   if( asn1->current == NULL ) return ak_false;
- /* если в списоке только один элемент */
+ /* если в списке только один элемент */
   if(( asn1->current->next == NULL ) && ( asn1->current->prev == NULL )) {
     asn1->current = ak_tlv_context_delete( asn1->current );
     asn1->count = 0;
@@ -1262,6 +1262,58 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Алгоритм работы функции аналогичен алгоритму функции ak_asn1_context_remove(),
+   только текущий узел не удаляется, а возвращается пользователю. Пользователь должен позднее
+   самостоятельно удалить узел.
+
+  \param asn1 уровень asn1 дерева, из которого изымается текущий узел.
+  \return В случае успеха функция возвращает указатель на изъятый узел.
+  Если asn1 дерево пусто, а также в случае возникновения ошибки возвращается NULL. Код ошибки
+  может быть получен с помощью вызова функции ak_error_get_value().                                */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_tlv ak_asn1_context_exclude( ak_asn1 asn1 )
+{
+  ak_tlv n = NULL, m = NULL, tlv = NULL;
+  if( asn1 == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to asn1 element" );
+    return NULL;
+  }
+
+ /* если список пуст */
+  if( asn1->current == NULL ) return NULL;
+ /* если в списке только один элемент */
+  if(( asn1->current->next == NULL ) && ( asn1->current->prev == NULL )) {
+    tlv = asn1->current; /* элемент, который будет возвращаться */
+    asn1->current = NULL;
+    asn1->count = 0;
+    return tlv;
+  }
+
+ /* теперь список полон => развлекаемся */
+  n = asn1->current->prev;
+  m = asn1->current->next;
+  tlv = asn1->current; /* сохраняем указатель */
+  tlv->next = tlv->prev = NULL;
+
+  if( m != NULL ) { /* если следующий элемент списка определен (отличен от NULL),
+                      то мы делаем его активным и замещаем им изымаемый элемент) */
+    asn1->current = m;
+    if( n == NULL ) asn1->current->prev = NULL;
+      else { asn1->current->prev = n; n->next = m; }
+    asn1->count--;
+    return tlv;
+
+  } else /* делаем активным предыдущий элемент */
+       {
+         asn1->current = n; asn1->current->next = NULL;
+         asn1->count--;
+         return tlv;
+       }
+
+ return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_context_destroy( ak_asn1 asn1 )
 {
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -1284,15 +1336,24 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_context_add_tlv( ak_asn1 asn1, ak_tlv tlv )
-{
+{ 
+  ak_tlv ptr = tlv;
+
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                             "using null pointer to asn1 element" );
+                                                            "using null pointer to asn1 element" );
+  if( ptr == NULL ) {
+    if(( ptr = malloc( sizeof( struct tlv ))) == NULL )
+     return ak_error_message( ak_error_out_of_memory,  __func__,
+                                                             "incorrect creation of tlv context" );
+    ak_tlv_context_create_primitive( ptr, TNULL, 0, NULL, ak_false );
+  }
+
   ak_asn1_context_last( asn1 );
-  if( asn1->current == NULL ) asn1->current = tlv;
+  if( asn1->current == NULL ) asn1->current = ptr;
    else {
-          tlv->prev = asn1->current;
-          asn1->current->next = tlv;
-          asn1->current = tlv;
+          ptr->prev = asn1->current;
+          asn1->current->next = ptr;
+          asn1->current = ptr;
         }
   asn1->count++;
  return ak_error_ok;
@@ -1517,6 +1578,41 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
       return ak_error_message( error, __func__, "incorrect creation of tlv element" );
   }
    else
+    /* создаем NULL */
+    if(( error = ak_tlv_context_create_primitive(
+          tlv = malloc( sizeof( struct tlv )), TNULL, 0, NULL, ak_false )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+
+ return ak_asn1_context_add_tlv( asn1, tlv );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param asn1 указатель на текущий уровень ASN1 дерева.
+    \param string строка, содержащая указатель на структуру, описывающую битовую строку.
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_context_add_bit_string( ak_asn1 asn1, ak_bit_string bs )
+{
+  ak_tlv tlv = NULL;
+  int error = ak_error_ok;
+
+  if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to asn1 element" );
+  if( bs != NULL ) {
+    if( bs->len == 0 ) return ak_error_message( ak_error_zero_length, __func__,
+                                                            "addition of zero length bit string" );
+    if( bs->unused > 7 ) return ak_error_message( ak_error_undefined_value, __func__,
+                                                "addition bit string with incorrect unused bits" );
+   /* добавляем битовую строку */
+    if(( error = ak_tlv_context_create_primitive(
+                           tlv = malloc( sizeof( struct tlv )), TBIT_STRING,
+                                                      bs->len+1, NULL, ak_true )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+     tlv->data.primitive[0] = bs->unused;
+     memcpy( tlv->data.primitive+1, bs->value, bs->len );
+
+  } else
     /* создаем NULL */
     if(( error = ak_tlv_context_create_primitive(
           tlv = malloc( sizeof( struct tlv )), TNULL, 0, NULL, ak_false )) != ak_error_ok )

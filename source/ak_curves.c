@@ -159,7 +159,7 @@
     return ak_error_message( error, __func__, "incorect asiigning a temporary point" );
   if( ak_wpoint_is_ok( &wp, ec ) != ak_true )
     return ak_error_message( ak_error_curve_point, __func__ ,
-                                               "elliptic curve parameters has'nt correct point" );
+                                               "elliptic curve parameters has incorrect point" );
   if( ak_wpoint_check_order( &wp, ec ) != ak_true )
     return ak_error_message( ak_error_curve_point_order, __func__ ,
                                                          "elliptic curve point has wrong order" );

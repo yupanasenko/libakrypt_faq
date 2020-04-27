@@ -1,4 +1,4 @@
-/* Пример иллюстрирует применение неэкспортируемых функций для создания/чтения
+/* Пример иллюстрирует применение неэкспортируемых функций для чтения
    открытых ключей электронной подписи.
 */
 
@@ -26,9 +26,13 @@
 
  int main( int argc, char *argv[] )
 {
-  char *fname = "reqedw.p10";
   struct verifykey vk;
+  int ecode = EXIT_SUCCESS;
+  char *fname = "reqedw.p10";
 
+ /* эксперимент по чтению открытого ключа из запроса на сертификат
+    если имя файла в командной строке не указано, то используется
+    тестовый запрос из Р 1323565.1.023-2018 */
   if( argc < 2 ) {
     FILE *fp = fopen( fname, "wb" );
     fwrite( reqedw, sizeof( reqedw ), 1, fp );
@@ -36,22 +40,31 @@
   } else fname = argv[1];
 
   ak_libakrypt_create( ak_function_log_stderr );
-  if( ak_verifykey_context_import_from_request( &vk, fname ) == ak_error_ok ) { // request_256.p10
+  if( ak_verifykey_context_import_from_request( &vk, fname ) == ak_error_ok ) {
 
     printf("algorithm: %s (%s)\n", vk.oid->names[0], vk.oid->id );
-    printf("loaded curve:\n p = %s\n", ak_ptr_to_hexstr( vk.wc->p, sizeof( ak_uint64 )*vk.wc->size, ak_true ));
-    printf(" a = %s (in Montgomery form)\n", ak_ptr_to_hexstr( vk.wc->a, sizeof( ak_uint64 )*vk.wc->size, ak_true ));
-    printf(" b = %s (in Montgomery form)\n\n", ak_ptr_to_hexstr( vk.wc->b, sizeof( ak_uint64 )*vk.wc->size, ak_true ));
+    printf("loaded curve:\n p = %s\n",
+                ak_ptr_to_hexstr( vk.wc->p, sizeof( ak_uint64 )*vk.wc->size, ak_true ));
+    printf(" a = %s (in Montgomery form)\n",
+                ak_ptr_to_hexstr( vk.wc->a, sizeof( ak_uint64 )*vk.wc->size, ak_true ));
+    printf(" b = %s (in Montgomery form)\n\n",
+                ak_ptr_to_hexstr( vk.wc->b, sizeof( ak_uint64 )*vk.wc->size, ak_true ));
     if( vk.flags == ak_key_flag_undefined ) printf(" key is undefined\n");
      else {
        printf("public key:\n P.x: %s\n", ak_mpzn_to_hexstr( vk.qpoint.x, vk.wc->size ));
        printf(" P.y: %s\n", ak_mpzn_to_hexstr( vk.qpoint.y, vk.wc->size ));
-//       printf("P.z: %s\n", ak_mpzn_to_hexstr( vk.qpoint.z, vk.wc->size ));
+       if( vk.name != NULL ) {
+         printf("name:\n");
+         ak_tlv_context_print( vk.name, stdout );
+       }
      }
     ak_verifykey_context_destroy( &vk );
   }
-   else fprintf( stdout, "incorrect creation of verify context\n");
+   else {
+          fprintf( stdout, "incorrect creation of verify context\n");
+          ecode = EXIT_FAILURE;
+        }
 
   ak_libakrypt_destroy();
- return EXIT_SUCCESS;
+ return ecode;
 }

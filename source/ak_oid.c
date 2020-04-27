@@ -65,7 +65,8 @@
  static const char *on_w512_pst[] =         { "id-tc26-gost-3410-2012-512-paramSetTest", NULL };
  static const char *on_w512_psa[] =         { "id-tc26-gost-3410-2012-512-paramSetA", NULL };
  static const char *on_w512_psb[] =         { "id-tc26-gost-3410-2012-512-paramSetB", NULL };
- static const char *on_w512_psc[] =         { "id-tc26-gost-3410-2012-512-paramSetC", NULL };
+ static const char *on_w512_psc[] =         { "id-tc26-gost-3410-2012-512-paramSetC", NULL }; 
+ static const char *on_w256_axel[] =        { "id-libakrypt-gost-3410-2012-256-paramSetN0", NULL };
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  static const char *on_asn1_akcont[] =      { "libakrypt-container", NULL };
@@ -96,6 +97,7 @@
  static const char *on_asn1_st[] =          { "StateOrProvinceName", "ST", NULL };
  static const char *on_asn1_sa[] =          { "StreetAddress", "SA", NULL };
  static const char *on_asn1_on[] =          { "OrganizationName", "ON", NULL };
+ static const char *on_asn1_ou[] =          { "OrganizationUnit", "OU", NULL };
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -244,9 +246,13 @@
    { identifier, wcurve_params, on_w512_psc, "1.2.643.7.1.2.1.2.3",
                          (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetC, { NULL, NULL, NULL }},
 
- /* идентификаторы объектов, используемых для создания сертификатов открытых ключей
-    подробный перечень идентификаторов может быть найден по следующему адресу
-    http://www.2410000.ru/p_45_spravochnik_oid_oid__najti_oid_oid_perechen_oid_oid_obektnyj_identifikator_oid_oid_object_identifier.html */
+   { identifier, wcurve_params, on_w256_axel, "1.2.643.2.52.1.12.1.1",
+                  (ak_pointer) &id_libakrypt_gost_3410_2012_256_paramSet_N0, { NULL, NULL, NULL }},
+
+
+  /* идентификаторы объектов, используемых для создания сертификатов открытых ключей
+     подробный перечень идентификаторов может быть найден по следующему адресу
+     http://www.2410000.ru/p_45_spravochnik_oid_oid__najti_oid_oid_perechen_oid_oid_obektnyj_identifikator_oid_oid_object_identifier.html */
 
   #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
    { identifier, parameter, on_asn1_akcont, "1.2.643.2.52.1.127.1.1", NULL, { NULL, NULL, NULL }},
@@ -255,7 +261,7 @@
    { identifier, parameter, on_asn1_sdhkey, "1.2.643.2.52.1.127.2.2", NULL, { NULL, NULL, NULL }},
    { identifier, parameter, on_asn1_extkey, "1.2.643.2.52.1.127.2.3", NULL, { NULL, NULL, NULL }},
 
-/* здесь добавить указатели на функции создания asn.1 и создания (установки параметров) ключа */
+  /* здесь можно добавить указатели на функции создания asn.1 и создания (установки параметров) ключа */
    { identifier, parameter, on_asn1_symkmd, "1.2.643.2.52.1.127.3.1",
                                          (ak_pointer) symmetric_key_content, { NULL, NULL, NULL }},
    { identifier, parameter, on_asn1_skmd, "1.2.643.2.52.1.127.3.2",
@@ -267,22 +273,24 @@
    { identifier, parameter, on_asn1_pcmd, "1.2.643.2.52.1.127.3.5",
                                                  (ak_pointer) plain_content, { NULL, NULL, NULL }},
 
-   { identifier, parameter, on_asn1_ogrn,   "1.2.643.100.1", NULL, { NULL, NULL, NULL }},
-   { identifier, parameter, on_asn1_snils,  "1.2.643.100.3", NULL, { NULL, NULL, NULL }},
-   { identifier, parameter, on_asn1_ogrnip, "1.2.643.100.5", NULL, { NULL, NULL, NULL }},
-   { identifier, parameter, on_asn1_owners_module,  "1.2.643.100.111", NULL, { NULL, NULL, NULL }},
-   { identifier, parameter, on_asn1_issuers_module, "1.2.643.100.112", NULL, { NULL, NULL, NULL }},
-   { identifier, parameter, on_asn1_inn,   "1.2.643.3.131.1.1", NULL, { NULL, NULL, NULL }},
-   { identifier, parameter, on_asn1_email, "1.2.840.113549.1.9.1", NULL, { NULL, NULL, NULL }},
+ /* добавляем аттрибуты типов (X.500) и расширенные аттрибуты */
+   { identifier, descriptor, on_asn1_ogrn,   "1.2.643.100.1", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_snils,  "1.2.643.100.3", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_ogrnip, "1.2.643.100.5", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_owners_module,  "1.2.643.100.111", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_issuers_module, "1.2.643.100.112", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_inn,   "1.2.643.3.131.1.1", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_email, "1.2.840.113549.1.9.1", NULL, { NULL, NULL, NULL }},
 
-   { identifier, parameter, on_asn1_cn, "2.5.4.3", NULL, { NULL, NULL, NULL }},
-   { identifier, parameter, on_asn1_s, "2.5.4.4", NULL, { NULL, NULL, NULL }},
-   { identifier, parameter, on_asn1_sn, "2.5.4.5", NULL, { NULL, NULL, NULL }},
-   { identifier, parameter, on_asn1_c, "2.5.4.6", NULL, { NULL, NULL, NULL }},
-   { identifier, parameter, on_asn1_l, "2.5.4.7", NULL, { NULL, NULL, NULL }},
-   { identifier, parameter, on_asn1_st, "2.5.4.8", NULL, { NULL, NULL, NULL }},
-   { identifier, parameter, on_asn1_sa, "2.5.4.9", NULL, { NULL, NULL, NULL }},
-   { identifier, parameter, on_asn1_on, "2.5.4.10", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_cn, "2.5.4.3", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_s, "2.5.4.4", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_sn, "2.5.4.5", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_c, "2.5.4.6", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_l, "2.5.4.7", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_st, "2.5.4.8", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_sa, "2.5.4.9", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_on, "2.5.4.10", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_ou, "2.5.4.11", NULL, { NULL, NULL, NULL }},
   #endif
 
  /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */
@@ -327,6 +335,7 @@
     "xtsmac",
     "xcrypt",
     "a8",
+    "descriptor",
     "undefined mode"
 };
 
@@ -488,6 +497,31 @@
   ak_error_set_value( ak_error_oid_id );
  return NULL;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param ptr указатель а область памяти, по которой ищется oid
+    @return Функция возвращает указатель на область памяти, в которой находится структура
+    с найденным идентификатором. В случае ошибки, возвращается NULL.                               */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_oid ak_oid_context_find_by_data( ak_const_pointer ptr )
+{
+  size_t idx = 0;
+
+ /* надо ли стартовать */
+  if( ptr == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to oid name" );
+    return NULL;
+  }
+
+ /* перебор по всем возможным значениям */
+  do{
+     if( libakrypt_oids[idx].data == ptr ) return  &libakrypt_oids[idx];
+  } while( ++idx < ak_libakrypt_oids_count( ));
+
+  ak_error_set_value( ak_error_oid_id );
+ return NULL;
+}
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param engine тип криптографическиого механизма.

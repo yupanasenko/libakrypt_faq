@@ -1433,7 +1433,7 @@
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_verifykey_context_import_from_request_asn1( ak_verifykey vkey, ak_asn1 asnkey )
+ static int ak_verifykey_context_import_from_asn1_request( ak_verifykey vkey, ak_asn1 asnkey )
 {
   size_t size = 0;
   ak_oid oid = NULL;
@@ -1452,11 +1452,12 @@
   ak_tlv_context_get_uint32( asn->current, &val );
   if( val != 0 ) return ak_error_message( ak_error_invalid_asn1_content, __func__ ,
                                               "the first element of asn1 context must be a zero" );
- /* переходим к третьему элементу -- второй содержит имена владельца ключа */
-  ak_asn1_context_next( asn );
+ /* второй элемент содержит имя владельца ключа.
+    этот элемент должен быть позднее перенесен в контекст открытого ключа */
   ak_asn1_context_next( asn );
 
  /* третий элемент должен быть SEQUENCE с набором oid и значением ключа */
+  ak_asn1_context_next( asn );
   if(( DATA_STRUCTURE( asn->current->tag ) != CONSTRUCTED ) ||
      ( TAG_NUMBER( asn->current->tag ) != TSEQUENCE ))
     return ak_error_message( ak_error_invalid_asn1_tag, __func__ ,
@@ -1564,7 +1565,6 @@
  return ak_error_ok;
 
  lab1:
-
   if( asnl1 != NULL ) ak_asn1_context_delete( asnl1 );
   ak_verifykey_context_destroy( vkey );
 
@@ -1631,7 +1631,7 @@
     ak_error_message( ak_error_invalid_asn1_tag, __func__, "incorrect structure of asn1 context" );
     goto lab1;
   }
-  if(( error = ak_verifykey_context_import_from_request_asn1( vkey,
+  if(( error = ak_verifykey_context_import_from_asn1_request( vkey,
                                      asnkey = asn->current->data.constructed )) != ak_error_ok ) {
     ak_error_message( ak_error_invalid_asn1_tag, __func__, "incorrect structure of request" );
     goto lab1;
@@ -1670,7 +1670,203 @@
     goto lab1;
   }
 
+ /* 4. В самом конце, после проверки подписи,
+    изымаем узел, содержащий имя владельца открытого ключа -- далее этот узел будет перемещен
+    в сертификат открытого ключа.
+    Все проверки пройдены ранее и нам точно известна структура asn1 дерева. */
+  ak_asn1_context_first( asn );
+  asn = asn->current->data.constructed;
+  ak_asn1_context_first( asn );
+  ak_asn1_context_next( asn ); /* нужен второй узел */
+  vkey->name = ak_asn1_context_exclude( asn );
+
   lab1: if( root != NULL ) ak_asn1_context_delete( root );
+ return error;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция формирует фрагмент asn1  дерева, содержащий параметры открытого ключа.
+   \param vk контекст открытого ключа
+   \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ static ak_tlv ak_verifykey_context_export_to_asn1_value( ak_verifykey vk )
+{
+  ak_oid ec = NULL;
+  ak_tlv tlv = NULL;
+  struct bit_string bs;
+  int error = ak_error_ok;
+  ak_asn1 asn = NULL, basn = NULL;
+  size_t val64 = sizeof( ak_uint64 )*vk->wc->size;          /* количество октетов в одном вычете */
+  ak_uint8 data[ 2*sizeof(ak_uint64)*ak_mpzn512_size +2 ]; /* asn1 представление открытого ключа */
+
+   if(( error = ak_asn1_context_add_oid( asn = ak_asn1_context_new(),
+                                                        vk->oid->id )) != ak_error_ok ) goto labex;
+   if(( error = ak_asn1_context_add_asn1( asn, TSEQUENCE,
+                                              ak_asn1_context_new( ))) != ak_error_ok ) goto labex;
+   if(( ec = ak_oid_context_find_by_data( vk->wc )) == NULL ) goto labex;
+   ak_asn1_context_add_oid( asn->current->data.constructed, ec->id );
+   ak_asn1_context_add_oid( asn->current->data.constructed, vk->ctx.oid->id );
+
+   if(( basn = ak_asn1_context_new()) == NULL ) goto labex;
+   if(( error = ak_asn1_context_add_asn1( basn, TSEQUENCE, asn )) != ak_error_ok ) {
+     if( basn != NULL ) ak_asn1_context_delete( basn );
+     goto labex;
+   }
+
+  /* кодируем открытый ключ */
+   memset( data, 0, sizeof( data ));
+   data[0] = 0x04; data[1] = 0x40;
+   ak_wpoint_reduce( &vk->qpoint, vk->wc );
+   ak_mpzn_to_little_endian( vk->qpoint.x, vk->wc->size, data+2, val64, ak_false );
+   ak_mpzn_to_little_endian( vk->qpoint.y, vk->wc->size, data+2+val64, val64, ak_false );
+   bs.value = data;
+   bs.len = (1 + val64) << 1;
+   bs.unused = 0;
+   ak_asn1_context_add_bit_string( basn, &bs );
+   if(( error = ak_tlv_context_create_constructed( tlv = malloc( sizeof( struct tlv )),
+                                                         TSEQUENCE^CONSTRUCTED, basn )) != ak_error_ok ) {
+     ak_asn1_context_delete( basn );
+     ak_error_message( error, __func__, "incorrect addition the bit sting with public key value" );
+     return NULL;
+   }
+  return  tlv;
+
+ labex:
+  if( asn != NULL ) ak_asn1_context_delete( asn );
+  ak_error_message( error, __func__, "incorrect export of public key to asn1 tree" );
+ return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция формирует asn1 дерево с запросом на сертификат открытого ключа.
+
+    Выполняются следующие действия:
+
+    - формируется tlv элемент, содержащий имя владельца, параметры алгоритма и значение ключа,
+    - tlv элемент кодируется в der-последовательность,
+    - вырабатывается подпись под der-последовательностью,
+    - идентификатор алгоритма выработки подписи и значение подписи также помещаются в asn1 дерево.
+
+   \param vk контекст открытого ключа
+   \param sk контекст секретного ключа
+   \param a уровень asn1 дерева, в который помещается запрос на сертификат.
+
+   \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_verifykey_context_export_to_asn1_request( ak_verifykey vk, ak_signkey sk, ak_asn1 a )
+{
+  ak_tlv tlv = NULL;
+  ak_asn1 asn = NULL;
+  struct bit_string bs;
+  int error = ak_error_ok;
+  ak_uint8 data[4096], s[128];
+  size_t size = sizeof( data );
+
+  if( a == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to asn1 context" );
+  if( ak_signkey_context_get_tag_size( sk ) > sizeof( s ))
+    ak_error_message( ak_error_wrong_length, __func__,
+                                   "using digital signature algorithm with very large signature" );
+
+ /* 1. Создаем последовательность, которая будет содержать даннве запроса */
+  if(( error = ak_asn1_context_add_asn1( a, TSEQUENCE^CONSTRUCTED,
+                                                  asn = ak_asn1_context_new())) != ak_error_ok ) {
+    if( asn != NULL ) ak_asn1_context_delete( asn );
+    return ak_error_message( error, __func__, "incorrect creation of first level sequence");
+  }
+
+ /* 2. Создаем tlv элемент, для которого, потом, будет вычисляться электронная подпись */
+   ak_tlv_context_create_constructed( tlv = malloc( sizeof( struct tlv )),
+                                              TSEQUENCE^CONSTRUCTED, asn = ak_asn1_context_new( ));
+  /* добавляем ноль */
+   ak_asn1_context_add_uint32( asn, 0 );
+  /* переносим asn1 дерево с расширенным именем в asn1 дерево формируемого запроса */
+   ak_asn1_context_add_tlv( asn, vk->name );
+   vk->name = NULL;
+  /* помещаем информацию об алгоритме и открытом ключе */
+   ak_asn1_context_add_tlv( asn, ak_verifykey_context_export_to_asn1_value( vk ));
+  /* 0x00 это помещаемое в CONTEXT_SPECIFIC значение */
+   ak_asn1_context_add_asn1( asn, CONTEXT_SPECIFIC^0x00, ak_asn1_context_new( ));
+
+  /* 3. Помещаем tlv элемент в основное дерево */
+   ak_asn1_context_add_tlv( a->current->data.constructed, tlv );
+
+
+  /* 3. Помещаем идентификатор алгоритма выработки подписи */
+   ak_asn1_context_add_asn1( a->current->data.constructed,
+                               TSEQUENCE^CONSTRUCTED, asn = ak_asn1_context_new());
+   ak_asn1_context_add_oid( asn, sk->key.oid->id );
+
+  /* 4. Помещаем bit-string со значением подписи */
+   if(( error =  ak_tlv_context_encode( tlv, data, &size )) != ak_error_ok )
+     return ak_error_message( error, __func__, "incorrect encoding of asn1 context");
+
+   memset( s, 0, sizeof( s ));
+   if(( error = ak_signkey_context_sign_ptr( sk, data, size, s, sizeof( s ))) != ak_error_ok )
+     return ak_error_message( error, __func__, "incorrect signing internal data" );
+   bs.value = s;
+   bs.len = ak_signkey_context_get_tag_size( sk );
+   bs.unused = 0;
+   if(( error = ak_asn1_context_add_bit_string( a->current->data.constructed, &bs )) != ak_error_ok )
+     ak_error_message( error, __func__, "incorrect adding a digital signature value" );
+
+  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция помещает информацию об открытом ключе в asn1 дерево, подписывает информацию об
+    открытом ключе и сохраняет созданное дерево в файл.
+
+   \param vk контекст открытого ключа
+   \param sk контекст секретного ключа
+   \param filename файл, в который помещается запрос на сертификат
+   \param format формат, в котором сохраняются данные - der или pem.
+
+   \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_verifykey_context_export_to_request( ak_verifykey vk, ak_signkey sk,
+                                                    const char *filename, export_format_t format )
+{
+  ak_asn1 asn = NULL;
+  int error = ak_error_ok;
+
+  if( vk == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using null pointer to public key context" );
+  if( sk == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using null pointer to secret key context" );
+  if( filename == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                               "using null pointer to file name" );
+
+ /* 1. Создаем asn1 дерево */
+  if(( error = ak_verifykey_context_export_to_asn1_request( vk, sk,
+                                                 asn = ak_asn1_context_new( ))) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect creation af asn1 context" );
+    goto labexit;
+  }
+
+ /* 2. Сохраняем созданное дерево в файл */
+  switch( format ) {
+    case asn1_der_format:
+      if(( error = ak_asn1_context_export_to_derfile( asn, filename )) != ak_error_ok )
+        ak_error_message_fmt( error, __func__,
+                              "incorrect export asn1 context to file %s in der format", filename );
+      break;
+
+    case asn1_pem_format:
+      if(( error = ak_asn1_context_export_to_pemfile( asn, filename,
+                                                    public_key_request_content )) != ak_error_ok )
+        ak_error_message_fmt( error, __func__,
+                              "incorrect export asn1 context to file %s in pem format", filename );
+      break;
+  }
+
+  labexit:
+    if( asn != NULL ) asn = ak_asn1_context_delete( asn );
+
  return error;
 }
 

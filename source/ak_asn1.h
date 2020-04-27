@@ -160,7 +160,7 @@
 /*! \brief Создание примитивного узла ASN1 дерева. */
  int ak_tlv_context_create_primitive( ak_tlv , ak_uint8 , size_t , ak_pointer , bool_t );
 /*! \brief Создание составного узла ASN1 дерева. */
- int ak_tlv_context_create_constructed( ak_tlv , ak_uint8 , ak_asn1 );
+ int ak_tlv_context_create_constructed( ak_tlv , ak_uint8 , ak_asn1 ); 
 /*! \brief Уничтожение примитивного узла ASN1 дерева. */
  int ak_tlv_context_destroy( ak_tlv );
 /*! \brief Уничтожение примитивного узла ASN1 дерева и освобождение памяти. */
@@ -223,6 +223,8 @@
  bool_t ak_asn1_context_last( ak_asn1 );
 /*! \brief Перемещение к первому узлу текущего уровня ASN1 дерева. */
  bool_t ak_asn1_context_first( ak_asn1 );
+/*! \brief Изъятие текущего узла из ASN1 дерева. */
+ ak_tlv ak_asn1_context_exclude( ak_asn1 asn1 );
 /*! \brief Уничтожение текущего узла с текущего уровня ASN1 дерева. */
  bool_t ak_asn1_context_remove( ak_asn1 );
 /*! \brief Уничтожение текущего уровня ASN1 дерева. */
@@ -255,6 +257,8 @@
 /*! \brief Добавление к текущему уровню ASN1 дерева узла, содержащего произвольную
     последовательность арабских цифр. */
  int ak_asn1_context_add_numeric_string( ak_asn1 , const char * ); 
+/*! \brief Добавление к текущему уровню ASN1 дерева узла, содержащего двоичную строку. */
+ int ak_asn1_context_add_bit_string( ak_asn1 , ak_bit_string );
 /*! \brief Добавление к текущему уровню ASN1 дерева узла, содержащего идентификатор объекта */
  int ak_asn1_context_add_oid( ak_asn1 , const char * );
 /*!  \brief Добавление универсального времени к текущему уровню ASN1 дерева узла*/
