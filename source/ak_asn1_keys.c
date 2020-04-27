@@ -617,7 +617,10 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция формирует ASN.1 структуру следующего формата.
+/*! \brief Функция экспортирует секретный ключ криптографического преобразования в ASN.1 дерево
+   с использованием пользовательского пароля.
+
+   Функция формирует ASN.1 структуру следующего формата.
 \code
     Container ::= SEQUENCE {
        id OBJECT IDENTIFIER, -- идентификатор контейнера,
@@ -652,7 +655,7 @@
  \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_key_context_export_to_asn1_with_password( ak_pointer key, oid_engines_t engine,
+ static int ak_key_context_export_to_asn1_with_password( ak_pointer key, oid_engines_t engine,
                   ak_asn1 root, const char *password, const size_t pass_size, const char *keyname )
 {
   int error = ak_error_ok;

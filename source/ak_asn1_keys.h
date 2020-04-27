@@ -38,15 +38,14 @@
 /** \addtogroup backend_keys Функции внутреннего интерфейса. Управление ключами.
  * @{*/
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция экспортирует секретный ключ криптографического преобразования в ASN.1 дерево
-   с использованием пользовательского пароля. */
- int ak_key_context_export_to_asn1_with_password( ak_pointer , oid_engines_t ,
-                                            ak_asn1 , const char * , const size_t , const char * );
 /*! \brief Функция экспортирует секретный ключ в заданный файл. */
  int ak_key_context_export_to_file_with_password( ak_pointer , oid_engines_t ,
              const char *, const size_t , const char * , char * , const size_t , export_format_t );
+/*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
+    в запрос на получение сертификата окрытого ключа. */
+ int ak_verifykey_context_export_to_request( ak_verifykey , ak_signkey ,
+                                                                  const char * , export_format_t );
 
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция импортирует секретный ключ криптографического преобразования из
    der-последовательности, хранящейся в заданном файле. */
  int ak_key_context_import_from_file( ak_pointer , oid_engines_t , const char * , char ** );
@@ -59,10 +58,6 @@
 /*! \brief Функция импортирует открытый ключ асимметричного преобразования из запроса
    на сертификат открытого ключа (тип CertificationRequest) */
  int ak_verifykey_context_import_from_request( ak_verifykey , const char * );
-/*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
-    в запрос на получение сертификата окрытого ключа. */
- int ak_verifykey_context_export_to_request( ak_verifykey , ak_signkey ,
-                                                                  const char * , export_format_t );
 /** @}*/
 #endif
 /* ----------------------------------------------------------------------------------------------- */

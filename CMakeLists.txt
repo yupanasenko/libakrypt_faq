@@ -288,7 +288,13 @@ endif()
 
 foreach( programm ${EXAMPLES_LIST} )
   add_executable( example-${programm}${LIBAKRYPT_EXT} examples/example-${programm}.c )
-  target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-shared ${LIBAKRYPT_LIBS} )
+  if( LIBAKRYPT_STATIC_LIB )
+    target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
+  elseif()
+    if( LIBAKRYPT_SHARED_LIB )
+      target_link_libraries( example-${programm}${LIBAKRYPT_EXT} akrypt-shared ${LIBAKRYPT_LIBS} )
+    endif()
+  endif()
 endforeach()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -305,7 +311,6 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  bckey01
                  bckey02
                  bckey03
-#                 bckey04
                  context-node
                  context-manager
                  hash01

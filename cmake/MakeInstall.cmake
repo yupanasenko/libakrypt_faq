@@ -1,11 +1,18 @@
 # -------------------------------------------------------------------------------------------------- #
 # инсталляция библиотеки (только для UNIX)
 if( CMAKE_HOST_UNIX )
-  install( TARGETS akrypt-static akrypt-shared
-           LIBRARY DESTINATION lib
-           ARCHIVE DESTINATION lib
-         )
-
+  if( LIBAKRYPT_STATIC_LIB )
+    install( TARGETS akrypt-static
+             LIBRARY DESTINATION lib
+             ARCHIVE DESTINATION lib
+           )
+  endif()
+  if( LIBAKRYPT_SHARED_LIB )
+    install( TARGETS akrypt-shared
+             LIBRARY DESTINATION lib
+             ARCHIVE DESTINATION lib
+           )
+  endif()
   install( FILES ${MAIN_HEADER} DESTINATION include )
 
   # если нужны заголовки внутреннего инфтерфейса

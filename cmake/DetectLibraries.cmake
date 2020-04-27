@@ -58,7 +58,9 @@ else()
     endif()
 
   else()
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_PTHREAD" )
+    if( LIBAKRYPT_SHARED_LIB )
+      set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_PTHREAD" )
+    endif()
   endif()
 endif()
 
