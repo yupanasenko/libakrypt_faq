@@ -7,6 +7,7 @@
  int aktool_asn1_help( void );
  int aktool_asn1_print( int argc, TCHAR *argv[] );
  int aktool_asn1_convert( int argc, TCHAR *argv[], char * , export_format_t , crypto_content_t );
+ int aktool_asn1_split( int argc, TCHAR *argv[], export_format_t , crypto_content_t );
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_asn1( int argc, TCHAR *argv[] )
@@ -128,9 +129,11 @@
    case do_print:
        exitcode = aktool_asn1_print( argc, argv );
        break;
-
    case do_convert:
        exitcode = aktool_asn1_convert( argc, argv, outname, format, content );
+       break;
+   case do_split:
+       exitcode = aktool_asn1_split( argc, argv, format, content );
        break;
 
    default:
@@ -219,6 +222,28 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ int aktool_asn1_split( int argc, TCHAR *argv[], export_format_t format, crypto_content_t content )
+{
+  int idx = 0, error = ak_error_ok, ecount = 0;
+
+  for( idx = 2; idx < argc; idx++ ) {
+     if( aktool_file_or_directory( argv[idx] ) == DT_REG ) {
+       if(( error = ak_libakrypt_split_asn1( argv[idx], format, content )) != ak_error_ok ) {
+         fprintf( stdout, _("file %s is wrong\n"), argv[idx] );
+         ecount++;
+       }
+     }
+  }
+  if( ecount ) {
+    fprintf( stdout,
+              _("aktool found %d error(s), rerun aktool with \"--audit stderr\" flag\n"), ecount );
+    return EXIT_FAILURE;
+  }
+
+ return EXIT_SUCCESS;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int aktool_asn1_help( void )
 {
   printf(_("aktool asn1parse [options] [files] - decode and print ASN.1 data\n\n"));
@@ -227,6 +252,7 @@
   printf(_(" -o, --output <file>     set the name of output file\n" ));
   printf(_("     --pem <content>     use the specified type of pem content,\n" ));
   printf(_("                         [ enabled values: certificate, request, symkey, secretkey, encrypted, plain ]\n" ));
+  printf(_("     --split             split ASN.1 tree into separate leaves\n" ));
   printf(_("     --to <format>       set the format of output file [ enabled values : der, pem ]\n" ));
 
  return aktool_print_common_options();

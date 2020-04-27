@@ -2375,6 +2375,15 @@ Validity ::= SEQUENCE {
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \param infile имя конвертируемого файла
+    \param outfile имя файла, в котороый помещается результат конвертации
+    \param format формат результирующего файла (pem или der)
+    \param content тип контента; используется для вывода символьной строки, описывающей в pem
+    формате тип контента; для формата der значение роли не играет.
+
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
  dll_export int ak_libakrypt_convert_asn1( const char *infile, const char *outfile,
                                                 export_format_t format, crypto_content_t content )
 {
@@ -2403,6 +2412,68 @@ Validity ::= SEQUENCE {
         ak_error_message_fmt( error, __func__,
                               "incorrect export asn1 context to file %s in pem format", outfile );
       break;
+  }
+
+  labex:
+   if( asn != NULL ) ak_asn1_context_delete( asn );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param infile имя разделяемого файла
+    \param format формат результирующего файла (pem или der)
+    \param content тип контента; используется для вывода символьной строки, описывающей в pem
+    формате тип контента; для формата der значение роли не играет.
+
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ dll_export int ak_libakrypt_split_asn1( const char *infile,
+                                                export_format_t format, crypto_content_t content )
+{
+  ak_asn1 asn = NULL;
+  unsigned int cnt = 0;
+  int error = ak_error_ok;
+  char outfile[FILENAME_MAX];
+
+ /* 1. Считываем дерево из файла */
+  if(( asn = ak_asn1_context_new( )) == NULL ) return ak_error_message( ak_error_get_value(),
+                                              __func__, "incorrect creation of new asn1 context" );
+  if(( error = ak_asn1_context_import_from_file( asn, infile )) != ak_error_ok ) {
+    ak_error_message_fmt( error, __func__,
+                                        "incorrect reading an asn1 context from file %s", infile );
+    goto labex;
+  }
+
+ /* 2. Для каждого узла выполняем одно и тоже действие */
+  ak_asn1_context_first( asn );
+  while( asn->count ) {
+    ak_asn1 next = ak_asn1_context_new();
+    ak_tlv tlv = ak_asn1_context_exclude( asn );
+    ak_asn1_context_add_tlv( next, tlv );
+    if( format == asn1_der_format )
+      ak_snprintf( outfile, sizeof( outfile ), "%s-%04u.der", infile, cnt );
+     else ak_snprintf( outfile, sizeof( outfile ), "%s-%04u.pem", infile, cnt );
+
+    switch( format ) {
+      case asn1_der_format:
+        if(( error = ak_asn1_context_export_to_derfile( next, outfile )) != ak_error_ok ) {
+          ak_error_message_fmt( error, __func__,
+                               "incorrect export asn1 context to file %s in der format", outfile );
+          goto labex;
+        }
+        break;
+      case asn1_pem_format:
+        if(( error = ak_asn1_context_export_to_pemfile( next, outfile, content )) != ak_error_ok )
+        {
+          ak_error_message_fmt( error, __func__,
+                               "incorrect export asn1 context to file %s in pem format", outfile );
+          goto labex;
+        }
+        break;
+    }
+    ++cnt;
+    ak_asn1_context_delete( next );
   }
 
   labex:

@@ -553,7 +553,7 @@ extern "C" {
  dll_export int ak_libakrypt_convert_asn1( const char * , const char * ,
                                                               export_format_t , crypto_content_t );
 /*! \brief Разбиение asn1 дерева на поддеревья первого уровня. */
- dll_export int ak_libakrypt_split_asn1( const char * , const char * , export_format_t );
+ dll_export int ak_libakrypt_split_asn1( const char * , export_format_t , crypto_content_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup frontend_handle Функции внешнего интерфейса
