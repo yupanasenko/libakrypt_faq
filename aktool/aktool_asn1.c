@@ -148,7 +148,13 @@
   SetConsoleOutputCP( cp );
 #endif
 
- return exitcode;
+  if( exitcode ) {
+    fprintf( stdout,
+            _("aktool found %d error(s), rerun aktool with \"--audit stderr\" flag\n"), exitcode );
+    return EXIT_FAILURE;
+  }
+
+ return EXIT_SUCCESS;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -164,15 +170,9 @@
        }
      }
   }
-  if( ecount ) {
-    fprintf( stdout,
-              _("aktool found %d error(s), rerun aktool with \"--audit stderr\" flag\n"), ecount );
-    return EXIT_FAILURE;
-  }
 
- return EXIT_SUCCESS;
+ return ecount;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_asn1_convert( int argc, TCHAR *argv[],
@@ -212,13 +212,7 @@
      }
   }
 
-  if( ecount ) {
-    fprintf( stdout,
-              _("aktool found %d error(s), rerun aktool with \"--audit stderr\" flag\n"), ecount );
-    return EXIT_FAILURE;
-  }
-
- return EXIT_SUCCESS;
+ return ecount;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -234,23 +228,21 @@
        }
      }
   }
-  if( ecount ) {
-    fprintf( stdout,
-              _("aktool found %d error(s), rerun aktool with \"--audit stderr\" flag\n"), ecount );
-    return EXIT_FAILURE;
-  }
 
- return EXIT_SUCCESS;
+ return ecount;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_asn1_help( void )
 {
   printf(_("aktool asn1parse [options] [files] - decode and print ASN.1 data\n\n"));
+  printf(_("aktool a file.der - print ASN.1 data stored as DER sequence\n"));
+  printf(_("aktool a file.pem - print ASN.1 data stored in PEM format (DER sequence encoded in base64)\n\n"));
+
   printf(_("available options:\n"));
   printf(_("     --convert           print and convert file to specified format\n" ));
   printf(_(" -o, --output <file>     set the name of output file\n" ));
-  printf(_("     --pem <content>     use the specified type of pem content,\n" ));
+  printf(_("     --pem <content>     use the specified informational string of pem content\n" ));
   printf(_("                         [ enabled values: certificate, request, symkey, secretkey, encrypted, plain ]\n" ));
   printf(_("     --split             split ASN.1 tree into separate leaves\n" ));
   printf(_("     --to <format>       set the format of output file [ enabled values : der, pem ]\n" ));

@@ -9,7 +9,7 @@
  #include <ak_sign.h>
  #include <ak_asn1_keys.h>
 
- int main( int argc, char *argv[] )
+ int main( void )
 {
   int ecode = EXIT_SUCCESS;
   char *skeyname = "secret.key";
@@ -20,6 +20,7 @@
   ak_uint8 testkey[32] = {
     0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x27, 0x01, 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe,
     0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00, 0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x28 };
+  ak_uint8 sign[128];
 
   ak_libakrypt_create( ak_function_log_stderr );
 
@@ -35,6 +36,13 @@
  /* подстраиваем ключ и устанавливаем ресурс */
   ak_skey_context_set_resource_values( &sk.key, key_using_resource,
                "digital_signature_count_resource", 0, time(NULL)+2592000 ); /* 1 месяц */
+ /* пожписываем данные */
+  if( ak_signkey_context_sign_ptr( &sk, testkey,
+                                         sizeof( testkey ), sign, sizeof( sign )) != ak_error_ok )
+    printf("incorrect creation of digital signature\n");
+   else printf( " signature %s\n",
+                       ak_ptr_to_hexstr( sign, ak_signkey_context_get_tag_size( &sk ), ak_false ));
+
  /* вырабатываем открытый ключ */
   ak_verifykey_context_create_from_signkey( &vk, &sk );
 
@@ -69,6 +77,15 @@
   ak_verifykey_context_destroy( &vk );
  /* уничтожаем секретный ключ */
   ak_signkey_context_destroy( &sk );
+
+ /* 4. Выполняем проверку процедуры чтения ключа и проверки подписи */
+  ak_verifykey_context_import_from_request( &vk, vkeyname );
+  if( ak_verifykey_context_verify_ptr( &vk, testkey, sizeof( testkey ), sign )) {
+    ecode = EXIT_SUCCESS;
+    printf(" is Ok\n");
+  }
+    else ecode = EXIT_FAILURE;
+  ak_verifykey_context_destroy( &vk );
 
   exlab: ak_libakrypt_destroy();
  return ecode;

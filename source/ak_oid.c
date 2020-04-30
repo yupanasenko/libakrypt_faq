@@ -88,7 +88,7 @@
  static const char
                 *on_asn1_issuers_module[] = { "IssuersCryptoModule", NULL };
  static const char *on_asn1_inn[] =         { "INN", NULL };
- static const char *on_asn1_email[] =       { "emailAddress", NULL };
+ static const char *on_asn1_email[] =       { "emailAddress", "email", NULL };
  static const char *on_asn1_cn[] =          { "CommonName", "CN", NULL };
  static const char *on_asn1_s[] =           { "Surname", "S", NULL };
  static const char *on_asn1_sn[] =          { "SerialNumber", "SN", NULL };
@@ -96,7 +96,7 @@
  static const char *on_asn1_l[] =           { "LocalityName", "L", NULL };
  static const char *on_asn1_st[] =          { "StateOrProvinceName", "ST", NULL };
  static const char *on_asn1_sa[] =          { "StreetAddress", "SA", NULL };
- static const char *on_asn1_on[] =          { "OrganizationName", "ON", NULL };
+ static const char *on_asn1_o[] =           { "Organization", "O", NULL };
  static const char *on_asn1_ou[] =          { "OrganizationUnit", "OU", NULL };
 #endif
 
@@ -289,7 +289,7 @@
    { identifier, descriptor, on_asn1_l, "2.5.4.7", NULL, { NULL, NULL, NULL }},
    { identifier, descriptor, on_asn1_st, "2.5.4.8", NULL, { NULL, NULL, NULL }},
    { identifier, descriptor, on_asn1_sa, "2.5.4.9", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_on, "2.5.4.10", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_o, "2.5.4.10", NULL, { NULL, NULL, NULL }},
    { identifier, descriptor, on_asn1_ou, "2.5.4.11", NULL, { NULL, NULL, NULL }},
   #endif
 

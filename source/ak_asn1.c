@@ -285,7 +285,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 /* ----------------------------------------------------------------------------------------------- */
                        /*  функции для разбора/создания узлов ASN1 дерева */
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция заполняет поля структуры примитивного узла ASN1 дерева заданными значениями.
+/*! Функция инициализирует поля структуры примитивного узла ASN1 дерева заданными значениями.
 
     \param tlv указатель на структуру узла, память под tlv структуру должна быть выделена заранее.
     \param tag тип размещаемого элемента
@@ -326,13 +326,59 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция выделяет память и инициализирует поля структуры примитивного узла ASN1 дерева
+   заданными значениями.
+
+    \param tag тип размещаемого элемента
+    \param len длина кодированного представления элемента
+    \param data собственно кодированные данные
+    \param flag флаг, определяющий, нужно ли выделять память под кодированные данные
+    \return Функция возвращает указатель на структуру узла. Данная структура должна
+    быть позднее удалена с помощью явного вызова функции ak_tlv_context_delete() или путем
+    удаления дерева, в который данный узел будет входить.
+    В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_tlv ak_tlv_context_new_primitive( ak_uint8 tag, size_t len, ak_pointer data, bool_t flag )
+{
+  ak_tlv tlv = NULL;
+  int error = ak_error_ok;
+
+  if( DATA_STRUCTURE( tag ) != PRIMITIVE ) {
+    ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                            "data must be primitive, but tag has value: %u", tag );
+    return NULL;
+  }
+  if(( tlv = malloc( sizeof( struct tlv ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__, "allocation memory error" );
+    return NULL;
+  }
+  if(( error = ak_tlv_context_create_primitive( tlv, tag, len, data, flag )) != ak_error_ok ) {
+    if( tlv != NULL ) free( tlv );
+    tlv = NULL;
+    ak_error_message( error, __func__, "incorrect creation of primitive tlv context");
+  }
+
+ return tlv;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция инициализирует поля структуры составного узла ASN1 дерева заданным деревом
+   низлежащего уровня.
+
+    \param tlv указатель на структуру узла, память под tlv структуру должна быть выделена заранее.
+    \param tag тип размещаемого элемента
+    \param asn1 размещаемое дерево нижнего уровня.
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
  int ak_tlv_context_create_constructed( ak_tlv tlv, ak_uint8 tag, ak_asn1 asn1 )
 {
   if( tlv == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                              "using null pointer to tlv element" );
   if( DATA_STRUCTURE( tag ) != CONSTRUCTED )
     return ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
-                                "data structure must be CONSTRUCTED, but tag has value: %u", tag );
+                                          "data must be constructed, but tag has value: %u", tag );
   tlv->tag = tag;
   tlv->len = 0;
   tlv->data.constructed = asn1;
@@ -340,6 +386,46 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   tlv->prev = tlv->next = NULL;
 
  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция выделяет память и инициализирует поля структуры составного узла ASN1 дерева заданным
+   деревом низлежащего уровня.
+
+    \param tag тип размещаемого элемента
+    \param asn1 размещаемое дерево нижнего уровня.
+    \return Функция возвращает указатель на структуру узла. Данная структура должна
+    быть позднее удалена с помощью явного вызова функции ak_tlv_context_delete() или путем
+    удаления дерева, в который данный узел будет входить.
+    В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_tlv ak_tlv_context_new_constructed( ak_uint8 tag, ak_asn1 asn1 )
+{
+  ak_tlv tlv = NULL;
+  int error = ak_error_ok;
+
+  if( DATA_STRUCTURE( tag ) != CONSTRUCTED ) {
+    switch( TAG_NUMBER( tag )) {
+      case TSET:
+      case TSEQUENCE:
+        tag ^= CONSTRUCTED;
+      default:
+        ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                          "data must be constructed, but tag has value: %u", tag );
+        return NULL;
+    }
+  }
+  if(( tlv = malloc( sizeof( struct tlv ))) == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__, "allocation memory error" );
+    return NULL;
+  }
+  if(( error = ak_tlv_context_create_constructed( tlv, tag, asn1 )) != ak_error_ok ) {
+    if( tlv != NULL ) free( tlv );
+    tlv = NULL;
+    ak_error_message( error, __func__, "incorrect creation of primitive tlv context");
+  }
+ return tlv;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1158,6 +1244,12 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция выделяет память и инициализирует начальное состояние.
+
+   \return В случае успеха возвращется указатель на созданный контекст asn1 дерева. В случае
+   ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
+   функции ak_error_get_value().                                                                   */
+/* ----------------------------------------------------------------------------------------------- */
  ak_asn1 ak_asn1_context_new( void )
 {
   int error = ak_error_ok;
@@ -1334,13 +1426,12 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                             "using null pointer to asn1 element" );
-  if( ptr == NULL ) {
-    if(( ptr = malloc( sizeof( struct tlv ))) == NULL )
-     return ak_error_message( ak_error_out_of_memory,  __func__,
-                                                             "incorrect creation of tlv context" );
-    ak_tlv_context_create_primitive( ptr, TNULL, 0, NULL, ak_false );
-  }
-
+ /* если узел неопределен, то вставляем null */
+  if( ptr == NULL )
+   if(( ptr = ak_tlv_context_new_primitive( TNULL, 0, NULL, ak_false )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__,
+                                                        "incorrect creation of NULL tlv context" );
+ /* вставляем узел в конец списка */
   ak_asn1_context_last( asn1 );
   if( asn1->current == NULL ) asn1->current = ptr;
    else {
@@ -1364,14 +1455,12 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 {
   ak_tlv tlv = NULL;
   ak_uint8 val = 0x00;
-  int error = ak_error_ok;
 
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                              "using null pointer to asn1 element" );
   if( bool ) val = 0xFFu;
-  if(( error = ak_tlv_context_create_primitive(
-                tlv = malloc( sizeof( struct tlv )), TBOOLEAN, 1, &val, ak_true )) != ak_error_ok )
-    return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+  if(( tlv = ak_tlv_context_new_primitive( TBOOLEAN, 1, &val, ak_true )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv element" );
 
  return ak_asn1_context_add_tlv( asn1, tlv );
 }
@@ -1390,7 +1479,6 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   ak_uint8 byte = 0;
   ak_tlv tlv = NULL;
   ak_uint32 val = u32;
-  int error = ak_error_ok;
 
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                              "using null pointer to asn1 element" );
@@ -1405,9 +1493,8 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   if( byte&0x80 ) len++;
 
  /* создаем элемент и выделяем память */
-  if(( error = ak_tlv_context_create_primitive(
-              tlv = malloc( sizeof( struct tlv )), TINTEGER, len, NULL, ak_true )) != ak_error_ok )
-    return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+  if(( tlv = ak_tlv_context_new_primitive( TINTEGER, len, NULL, ak_true )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv element" );
 
  /* заполняем выделенную память значениями */
   memset( tlv->data.primitive, 0, len );
@@ -1430,21 +1517,20 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
  int ak_asn1_context_add_octet_string( ak_asn1 asn1, const ak_pointer ptr, const size_t len )
 {
   ak_tlv tlv = NULL;
-  int error = ak_error_ok;
 
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                             "using null pointer to asn1 element" );
+                                                            "using null pointer to asn1 element" );
   if(( ptr != NULL ) && ( len != 0 )) {
    /* создаем элемент и выделяем память */
-    if(( error = ak_tlv_context_create_primitive(
-          tlv = malloc( sizeof( struct tlv )), TOCTET_STRING, len, ptr, ak_true )) != ak_error_ok )
-      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+    if(( tlv = ak_tlv_context_new_primitive( TOCTET_STRING, len, ptr, ak_true )) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__,
+                                                             "incorrect creation of tlv element" );
   }
    else
     /* создаем NULL */
-    if(( error = ak_tlv_context_create_primitive(
-          tlv = malloc( sizeof( struct tlv )), TNULL, 0, NULL, ak_false )) != ak_error_ok )
-      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+    if(( tlv = ak_tlv_context_new_primitive( TNULL, 0, NULL, ak_false )) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__,
+                                                        "incorrect creation of null tlv element" );
 
  return ak_asn1_context_add_tlv( asn1, tlv );
 }
@@ -1458,23 +1544,21 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
  int ak_asn1_context_add_utf8_string( ak_asn1 asn1, const char *string )
 {
   ak_tlv tlv = NULL;
-  int error = ak_error_ok;
 
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                              "using null pointer to asn1 element" );
   if( string != NULL ) {
    /* создаем элемент и выделяем память */
-    if(( error = ak_tlv_context_create_primitive(
-          tlv = malloc( sizeof( struct tlv )), TUTF8_STRING,
-                                   strlen(string), (ak_pointer) string, ak_true )) != ak_error_ok )
-      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+    if(( tlv = ak_tlv_context_new_primitive( TUTF8_STRING,
+                                   strlen(string), (ak_pointer) string, ak_true )) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__,
+                                                             "incorrect creation of tlv element" );
   }
    else
     /* создаем NULL */
-    if(( error = ak_tlv_context_create_primitive(
-          tlv = malloc( sizeof( struct tlv )), TNULL, 0, NULL, ak_false )) != ak_error_ok )
-      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
-
+    if(( tlv = ak_tlv_context_new_primitive( TNULL, 0, NULL, ak_false )) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__,
+                                                        "incorrect creation of null tlv element" );
  return ak_asn1_context_add_tlv( asn1, tlv );
 }
 
@@ -1487,7 +1571,6 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
  int ak_asn1_context_add_ia5_string( ak_asn1 asn1, const char *string )
 {
   ak_tlv tlv = NULL;
-  int error = ak_error_ok;
 
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                             "using null pointer to asn1 element" );
@@ -1497,17 +1580,16 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
        if( string[i] > 127 ) return ak_error_message( ak_error_wrong_asn1_encode, __func__,
                                                                    "string has unexpected symbol");
    /* создаем элемент и выделяем память */
-    if(( error = ak_tlv_context_create_primitive(
-          tlv = malloc( sizeof( struct tlv )), TIA5_STRING,
-                                  strlen(string), (ak_pointer) string, ak_true )) != ak_error_ok )
-      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+    if(( tlv = ak_tlv_context_new_primitive( TIA5_STRING,
+                                  strlen(string), (ak_pointer) string, ak_true )) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__,
+                                                             "incorrect creation of tlv element" );
   }
    else
     /* создаем NULL */
-    if(( error = ak_tlv_context_create_primitive(
-          tlv = malloc( sizeof( struct tlv )), TNULL, 0, NULL, ak_false )) != ak_error_ok )
-      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
-
+    if(( tlv = ak_tlv_context_new_primitive( TNULL, 0, NULL, ak_false )) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__,
+                                                        "incorrect creation of null tlv element" );
  return ak_asn1_context_add_tlv( asn1, tlv );
 }
 
@@ -1520,7 +1602,6 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
  int ak_asn1_context_add_printable_string( ak_asn1 asn1, const char *string )
 {
   ak_tlv tlv = NULL;
-  int error = ak_error_ok;
 
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                             "using null pointer to asn1 element" );
@@ -1529,17 +1610,16 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
       return ak_error_message( ak_error_wrong_asn1_encode, __func__,
                                                                    "string has unexpected symbol");
    /* создаем элемент и выделяем память */
-    if(( error = ak_tlv_context_create_primitive(
-          tlv = malloc( sizeof( struct tlv )), TPRINTABLE_STRING,
-                                  strlen(string), (ak_pointer) string, ak_true )) != ak_error_ok )
-      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+    if(( tlv = ak_tlv_context_new_primitive( TPRINTABLE_STRING,
+                                  strlen(string), (ak_pointer) string, ak_true )) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__,
+                                                             "incorrect creation of tlv element" );
   }
    else
     /* создаем NULL */
-    if(( error = ak_tlv_context_create_primitive(
-          tlv = malloc( sizeof( struct tlv )), TNULL, 0, NULL, ak_false )) != ak_error_ok )
-      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
-
+    if(( tlv = ak_tlv_context_new_primitive( TNULL, 0, NULL, ak_false )) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__,
+                                                        "incorrect creation of null tlv element" );
  return ak_asn1_context_add_tlv( asn1, tlv );
 }
 
@@ -1552,7 +1632,6 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
  int ak_asn1_context_add_numeric_string( ak_asn1 asn1, const char *string )
 {
   ak_tlv tlv = NULL;
-  int error = ak_error_ok;
 
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                             "using null pointer to asn1 element" );
@@ -1565,17 +1644,16 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
                                                                    "string has unexpected symbol");
     }
    /* создаем элемент и выделяем память */
-    if(( error = ak_tlv_context_create_primitive(
-          tlv = malloc( sizeof( struct tlv )), TNUMERIC_STRING,
-                                  strlen(string), (ak_pointer) string, ak_true )) != ak_error_ok )
-      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+    if(( tlv = ak_tlv_context_new_primitive( TNUMERIC_STRING,
+                                  strlen(string), (ak_pointer) string, ak_true )) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__,
+                                                             "incorrect creation of tlv element" );
   }
    else
     /* создаем NULL */
-    if(( error = ak_tlv_context_create_primitive(
-          tlv = malloc( sizeof( struct tlv )), TNULL, 0, NULL, ak_false )) != ak_error_ok )
-      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
-
+    if(( tlv = ak_tlv_context_new_primitive( TNULL, 0, NULL, ak_false )) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__,
+                                                        "incorrect creation of null tlv element" );
  return ak_asn1_context_add_tlv( asn1, tlv );
 }
 
@@ -1588,7 +1666,6 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
  int ak_asn1_context_add_bit_string( ak_asn1 asn1, ak_bit_string bs )
 {
   ak_tlv tlv = NULL;
-  int error = ak_error_ok;
 
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                             "using null pointer to asn1 element" );
@@ -1598,19 +1675,17 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     if( bs->unused > 7 ) return ak_error_message( ak_error_undefined_value, __func__,
                                                 "addition bit string with incorrect unused bits" );
    /* добавляем битовую строку */
-    if(( error = ak_tlv_context_create_primitive(
-                           tlv = malloc( sizeof( struct tlv )), TBIT_STRING,
-                                                      bs->len+1, NULL, ak_true )) != ak_error_ok )
-      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+    if(( tlv = ak_tlv_context_new_primitive( TBIT_STRING, bs->len+1, NULL, ak_true )) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__,
+                                                             "incorrect creation of tlv element" );
      tlv->data.primitive[0] = bs->unused;
      memcpy( tlv->data.primitive+1, bs->value, bs->len );
 
   } else
     /* создаем NULL */
-    if(( error = ak_tlv_context_create_primitive(
-          tlv = malloc( sizeof( struct tlv )), TNULL, 0, NULL, ak_false )) != ak_error_ok )
-      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
-
+    if(( tlv = ak_tlv_context_new_primitive( TNULL, 0, NULL, ak_false )) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__,
+                                                        "incorrect creation of null tlv element" );
  return ak_asn1_context_add_tlv( asn1, tlv );
 }
 
@@ -1628,7 +1703,6 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   size_t p_size;
   ak_tlv tlv = NULL;
   ak_uint64 num = 0;
-  int error = ak_error_ok;
   ak_uint8 *p_enc_oid = NULL;
   char *obj_id = ( char * )string, *p_objid_end = NULL;
 
@@ -1640,11 +1714,9 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   if(( p_size = ak_asn1_get_length_oid( string )) == 0 )
     return ak_error_message( ak_error_wrong_length, __func__,
                                           "incorrect calculation of encoded identifier's length" );
-  if(( error = ak_tlv_context_create_primitive(
-    tlv = malloc( sizeof( struct tlv )), TOBJECT_IDENTIFIER,
-                                                         p_size, NULL, ak_true )) != ak_error_ok )
-      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
-
+  if(( tlv = ak_tlv_context_new_primitive( TOBJECT_IDENTIFIER, p_size, NULL, ak_true )) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__,
+                                                             "incorrect creation of tlv element" );
  /* кодируем элемент */
   p_enc_oid = tlv->data.primitive;
 
@@ -1695,14 +1767,12 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   struct tm tm;
  #endif
   ak_tlv tlv = NULL;
-  int error = ak_error_ok;
 
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                             "using null pointer to asn1 element" );
  /* в начале выделяем память (ее размер известен заранее) */
-  if(( error = ak_tlv_context_create_primitive(
-    tlv = malloc( sizeof( struct tlv )), TUTCTIME, 13, NULL, ak_true )) != ak_error_ok )
-      return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+  if(( tlv = ak_tlv_context_new_primitive( TUTCTIME, 13, NULL, ak_true )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv element" );
 
  /* получаем детальное значение времени */
   #ifdef LIBAKRYPT_HAVE_WINDOWS_H
@@ -1823,16 +1893,14 @@ Validity ::= SEQUENCE {
 {
   ak_tlv tlv = NULL;
   ak_uint8 contag = tag;
-  int error = ak_error_ok;
 
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                         "using null pointer to root asn1 element" );
   if( down == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                              "using null pointer to asn1 element" );
   if( !( contag&CONSTRUCTED )) contag ^= CONSTRUCTED;
-  if(( error = ak_tlv_context_create_constructed(
-                                 tlv = malloc( sizeof( struct tlv )), contag, down )) != ak_error_ok )
-    return ak_error_message( error, __func__, "incorrect creation of tlv element" );
+  if(( tlv = ak_tlv_context_new_constructed( contag, down )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv element" );
 
  return ak_asn1_context_add_tlv( asn1, tlv );
 }
@@ -1911,9 +1979,9 @@ Validity ::= SEQUENCE {
     switch( DATA_STRUCTURE( tag )) {
      /* добавляем в дерево примитивный элемент */
       case PRIMITIVE:
-        if(( error = ak_tlv_context_create_primitive(
-                    tlv = malloc( sizeof( struct tlv )), tag, len, pcurr, flag )) != ak_error_ok )
-          return ak_error_message( error, __func__, "incorrect creation of tlv context" );
+        if(( tlv = ak_tlv_context_new_primitive( tag, len, pcurr, flag )) == NULL )
+          return ak_error_message( ak_error_get_value(), __func__,
+                                                             "incorrect creation of tlv context" );
         if(( error = ak_asn1_context_add_tlv( asn1, tlv )) != ak_error_ok )
           return ak_error_message( error, __func__,
                                            "incorrect addition of tlv context into asn1 context" );

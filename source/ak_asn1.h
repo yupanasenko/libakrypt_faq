@@ -159,8 +159,12 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание примитивного узла ASN1 дерева. */
  int ak_tlv_context_create_primitive( ak_tlv , ak_uint8 , size_t , ak_pointer , bool_t );
+/*! \brief Создание примитивного узла ASN1 дерева. */
+ ak_tlv ak_tlv_context_new_primitive( ak_uint8 , size_t , ak_pointer , bool_t );
 /*! \brief Создание составного узла ASN1 дерева. */
  int ak_tlv_context_create_constructed( ak_tlv , ak_uint8 , ak_asn1 ); 
+/*! \brief Создание составного узла ASN1 дерева. */
+ ak_tlv ak_tlv_context_new_constructed( ak_uint8 , ak_asn1 );
 /*! \brief Уничтожение примитивного узла ASN1 дерева. */
  int ak_tlv_context_destroy( ak_tlv );
 /*! \brief Уничтожение примитивного узла ASN1 дерева и освобождение памяти. */
