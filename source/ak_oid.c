@@ -98,6 +98,25 @@
  static const char *on_asn1_sa[] =          { "StreetAddress", "SA", NULL };
  static const char *on_asn1_o[] =           { "Organization", "O", NULL };
  static const char *on_asn1_ou[] =          { "OrganizationUnit", "OU", NULL };
+
+ static const char *on_asn1_ku[] =          { "Key Usage", NULL };
+ static const char *on_asn1_ski[] =         { "SubjectKey Identifier", NULL };
+ static const char *on_asn1_bc[] =          { "Basic Constraints", NULL };
+ static const char *on_asn1_cp[] =          { "Certificate Policies", NULL };
+ static const char *on_asn1_wcp[] =         { "Wildcard Certificate Policy", NULL };
+
+/* Приказ ФСБ N-795*/
+ static const char *on_asn1_class_kc1[] =   { "Digital Signature Module, class KC1", NULL };
+ static const char *on_asn1_class_kc2[] =   { "Digital Signature Module, class KC2", NULL };
+ static const char *on_asn1_class_kc3[] =   { "Digital Signature Module, class KC3", NULL };
+ static const char *on_asn1_class_kb1[] =   { "Digital Signature Module, class KB1", NULL };
+ static const char *on_asn1_class_kb2[] =   { "Digital Signature Module, class KB2", NULL };
+ static const char *on_asn1_class_ka[] =    { "Digital Signature Module, class KA", NULL };
+
+/* Microsoft */
+ static const char *on_asn1_ms_cav[] =      { "CA Version", NULL };
+ static const char *on_asn1_ms_psh[] =      { "Previous Certificate Hash", NULL };
+
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -291,6 +310,26 @@
    { identifier, descriptor, on_asn1_sa, "2.5.4.9", NULL, { NULL, NULL, NULL }},
    { identifier, descriptor, on_asn1_o, "2.5.4.10", NULL, { NULL, NULL, NULL }},
    { identifier, descriptor, on_asn1_ou, "2.5.4.11", NULL, { NULL, NULL, NULL }},
+
+   { identifier, descriptor, on_asn1_ski, "2.5.29.14", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_ku, "2.5.29.15", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_bc, "2.5.29.19", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_cp, "2.5.29.32", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_wcp, "2.5.29.32.0", NULL, { NULL, NULL, NULL }},
+
+ /* жто из Приказа ФСБ N 795 */
+   { identifier, descriptor, on_asn1_class_kc1, "1.2.643.100.113.1", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_class_kc2, "1.2.643.100.113.2", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_class_kc3, "1.2.643.100.113.3", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_class_kb1, "1.2.643.100.113.4", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_class_kb2, "1.2.643.100.113.5", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_class_ka, "1.2.643.100.113.6", NULL, { NULL, NULL, NULL }},
+
+  /* вот что приходится разбирать в сертификатах от КриптоПро
+     Microsoft OID...................................1.3.6.1.4.1.311  */
+
+   { identifier, descriptor, on_asn1_ms_cav, "1.3.6.1.4.1.311.21.1", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_ms_psh, "1.3.6.1.4.1.311.21.2", NULL, { NULL, NULL, NULL }},
   #endif
 
  /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */

@@ -406,10 +406,12 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   int error = ak_error_ok;
 
   if( DATA_STRUCTURE( tag ) != CONSTRUCTED ) {
-    switch( TAG_NUMBER( tag )) {
+    switch( TAG_NUMBER( tag )) { /* подправляем тип, если пользователь забыл сделать это сам */
       case TSET:
       case TSEQUENCE:
         tag ^= CONSTRUCTED;
+        break;
+
       default:
         ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
                                           "data must be constructed, but tag has value: %u", tag );
@@ -424,6 +426,32 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     if( tlv != NULL ) free( tlv );
     tlv = NULL;
     ak_error_message( error, __func__, "incorrect creation of primitive tlv context");
+  }
+ return tlv;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает составной узел дерева следующего вида.
+
+   \code
+     ┌SEQUENCE┐
+              └ (null)
+   \endcode
+   \return Функция возвращает указатель на структуру узла. Данная структура должна
+   быть позднее удалена с помощью явного вызова функции ak_tlv_context_delete() или путем
+   удаления дерева, в который данный узел будет входить.
+   В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
+   функции ak_error_get_value().                                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_tlv ak_tlv_context_new_sequence( void )
+{
+  ak_asn1 asn = NULL;
+  ak_tlv tlv = ak_tlv_context_new_constructed( TSEQUENCE, asn = ak_asn1_context_new( ));
+  if( asn == NULL ) {
+    ak_error_message( ak_error_out_of_memory, __func__,
+                                                   "incorrect creation of internal asn1 context" );
+    if( tlv != NULL ) free( tlv ); /* удаляем, если создано */
+    tlv = NULL;
   }
  return tlv;
 }
@@ -549,12 +577,24 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
     case TINTEGER:
       if(( error = ak_tlv_context_get_uint32( tlv, &u32 )) == ak_error_ok )
-        fprintf( fp, "%u\n", (unsigned int)u32 );
-       else {
+        fprintf( fp, "0x%x\n", (unsigned int)u32 );
+       else { /* обрабатываем большие целые числа */
          switch( error ) {
-//           case ak_error_invalid_asn1_length:  /* здесь нужно чтение mpzn */ break;
-//           case ak_error_invalid_asn1_significance: /* здесь нужно чтение знаковых целых */ break;
-           default: dp = ak_true;
+           case ak_error_invalid_asn1_length:
+             /* неожиданно получено отрицательное число */
+             if( tlv->data.primitive[0] > 127 ) dp = ak_true;
+              else {
+                 if( tlv->data.primitive[0] == 0 )
+                   fprintf( fp, "0x%s [%u bits]\n",
+                         ak_ptr_to_hexstr( tlv->data.primitive+1, tlv->len-1, ak_false ),
+                                                                                   8*(tlv->len-1));
+                  else fprintf( fp, "0x%s [%u bits]\n",
+                         ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ), 8*tlv->len );
+              }
+             break;
+             case ak_error_invalid_asn1_significance: /* здесь нужно чтение знаковых целых */
+           default:
+             dp = ak_true;
          }
        }
       break;
@@ -998,7 +1038,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
    #endif
                   != 'Z' ) return ak_error_message( ak_error_wrong_asn1_decode, __func__,
                                                               "tlv element has unexpected format");
-  /* заполняем поля */
+  /* заполняем все поля нулями */
    memset( &st, 0, sizeof( struct tm ));
 
   /* YY */
@@ -1008,7 +1048,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
    /* MM */
    memcpy( output_buffer, p_buff, 2 ); output_buffer[2] = 0;
-   st.tm_mon = atoi( output_buffer );
+   st.tm_mon = atoi( output_buffer ) - 1;
    p_buff += 2;
 
    /* DD */
@@ -1032,6 +1072,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
    p_buff += 2;
 
    *time = mktime( &st );
+
  return ak_error_ok;
 }
 
@@ -1228,6 +1269,196 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
      return ak_error_message( error, __func__, "incorrect reading time validity" );
 
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция предназначена для работы с обобщенными (глобальными) именами x.509.
+
+    Предполагается что узел `tlv` еть составной узел, владеющей последовательностью элементов
+    типа
+   \code
+    RelativeDistinguishedName ::= SET SIZE (1 .. MAX) OF AttributeTypeAndValue
+   \endcode
+
+    Функция добавляет в последовательность одну строку, определяемую типом
+   \code
+     AttributeTypeAndValue ::= SEQUENCE {
+        type    OBJECT IDENTIFIER,
+        value   ANY DEFINED BY type
+     }
+   \endcode
+
+   Тип помещаемых данных определяется параметром `type`. Допустимыми
+   типами являются, как минимум,
+    -  1.2.840.113549.1.9.1   emailAddress
+    -  2.5.4.3                CommonName
+    -  2.5.4.4                Surname
+    -  2.5.4.5                SerialNumber
+    -  2.5.4.6                CountryName
+    -  2.5.4.7                LocalityName, пример:  [Москва]
+    -  2.5.4.8                StateOrProvinceName, пример: [77 г. Москва]
+    -  2.5.4.9                StreetAddress
+    -  2.5.4.10               Organization
+    -  2.5.4.11               OrganizationUnit
+
+    - OGRN
+    - OGRNIP
+    - SNILS
+    - INN
+
+   \param tlv указатель на структуру узла ASN1 дерева.
+   \param type тип помещаемоцй строки с данными
+   \param value помещаемая строка
+   \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+   В противном случае, возвращается код ошибки.                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_context_add_string_to_global_name( ak_tlv tlv, const char *type, const char *value )
+{
+  ak_oid oid = NULL;
+  int error = ak_error_ok;
+  ak_asn1 asn = NULL, asnseq = NULL;
+
+ /* проверяем свойства узла */
+  if( tlv == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                             "using null pointer to tlv context" );
+  if( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED )
+    return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                                             "using not constructed tlv context" );
+  if( TAG_NUMBER( tlv->tag ) != TSEQUENCE )
+    return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                                      "using tlv context which are not sequence" );
+ /* проверяем корректность типа данных */
+  if( type == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                          "using null pointer to attribute type" );
+  if( value == NULL ) return ak_error_ok; /* ни чего не добавляем */
+  if(( oid = ak_oid_context_find_by_ni( type )) == NULL )
+    return ak_error_message( ak_error_oid_name, __func__,
+                                               "unexpected name or identifier of attribute type" );
+  if( oid->engine != identifier ) return ak_error_message( ak_error_oid_engine, __func__,
+                                                         "unexpected engine of given identifier" );
+  if( oid->mode != descriptor ) return ak_error_message( ak_error_oid_mode, __func__,
+                                                           "unexpected mode of given identifier" );
+
+ /* получаем указатель на asn1 контекст, который содержит sequence, и
+    только сейчас добавляем
+    SET - >
+          SEQUENCE ->
+                    OBJECT IDENTIFIER (тип помещаемых данных)
+                    STRING                                    */
+
+  if(( error = ak_asn1_context_add_oid( asn = ak_asn1_context_new(), oid->id )) != ak_error_ok ) {
+    if( asn != NULL ) ak_asn1_context_delete( asn );
+    return ak_error_message( error, __func__, "incorrect addition of given type" );
+  }
+  if( strncmp( oid->names[0], "emailAddress", 12 ) == 0 ) {
+    error = ak_asn1_context_add_ia5_string( asn, value );
+  } else {
+     if( strncmp( oid->names[0], "CountryName", 11 ) == 0 ) {
+       error = ak_asn1_context_add_printable_string( asn, value );
+     } else {
+        error = ak_asn1_context_add_utf8_string( asn, value );
+       }
+  }
+  if( error != ak_error_ok ) {
+    if( asn != NULL ) ak_asn1_context_delete( asn );
+    return ak_error_message( error, __func__, "incorrect addition of given string" );
+  }
+  if(( error = ak_asn1_context_add_asn1( asnseq = ak_asn1_context_new(), TSEQUENCE, asn )) != ak_error_ok ) {
+    if( asnseq != NULL ) ak_asn1_context_delete( asnseq );
+    return ak_error_message( error, __func__, "sequence addition error" );
+  }
+  if(( error = ak_asn1_context_add_asn1( tlv->data.constructed, TSET, asnseq )) != ak_error_ok ) {
+    if( asnseq != NULL ) ak_asn1_context_delete( asnseq );
+    return ak_error_message( error, __func__, "sequence addition error" );
+  }
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param tlv указатель на копируемую структуру узла ASN1 дерева.
+    \return Функция возвращает указатель на структуру узла. Данная структура должна
+    быть позднее удалена с помощью явного вызова функции ak_tlv_context_delete() или путем
+    удаления дерева, в который данный узел будет входить.
+    В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_tlv ak_tlv_context_duplicate_global_name( ak_tlv tlv )
+{
+  ak_asn1 asn = NULL;
+  ak_tlv newtlv = NULL;
+  int error = ak_error_ok;
+
+ /* проверяем свойства узла */
+  if( tlv == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to tlv context" );
+    return NULL;
+  }
+  if( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) {
+    ak_error_message( ak_error_invalid_asn1_tag, __func__, "using not constructed tlv context" );
+    return NULL;
+  }
+  if( TAG_NUMBER( tlv->tag ) != TSEQUENCE ) {
+    ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                                      "using tlv context which are not sequence" );
+    return NULL;
+  }
+
+ /* теперь создаем новый объект */
+  if(( newtlv = ak_tlv_context_new_sequence()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                               "incorrect memory allocation for new tlv context" );
+    return NULL;
+  }
+
+ /* исключаем частные случаи */
+  if(( asn = tlv->data.constructed ) == NULL ) return newtlv;
+  if( asn->count == 0 ) return newtlv;
+
+ /* теперь перебор узлов
+    в случае возникновения ошибки - сообщаем, устанавливаем код, но работу не прекращаем */
+  ak_asn1_context_first( asn );
+  do{
+      ak_oid oid = NULL;
+      ak_pointer ptr = NULL;
+      ak_asn1 asnset = NULL, asnseq = NULL;
+
+      if(( DATA_STRUCTURE( asn->current->tag ) != CONSTRUCTED ) ||
+         ( TAG_NUMBER( asn->current->tag ) != TSET )) {
+        ak_error_message( error = ak_error_invalid_asn1_tag, __func__,
+                                              "source tlv context hasn't set as correct subtree" );
+        continue;
+      }
+      if(( asnset = asn->current->data.constructed )->count != 1 ) {
+        ak_error_message( error = ak_error_invalid_asn1_count, __func__,
+                                           "source tlv context hasn't correct count of subtrees" );
+        continue;
+      }
+      if(( DATA_STRUCTURE( asnset->current->tag ) != CONSTRUCTED ) ||
+         ( TAG_NUMBER( asnset->current->tag ) != TSEQUENCE )) {
+        ak_error_message( error = ak_error_invalid_asn1_tag, __func__,
+                                        "nested asn1 context hasn't sequence as correct subtree" );
+        continue;
+      }
+      if(( asnseq = asnset->current->data.constructed )->count != 2 ) {
+        ak_error_message( error = ak_error_invalid_asn1_count, __func__,
+                                          "nested asn1 context hasn't correct count of subtrees" );
+        continue;
+      }
+
+     /* только сейчас, на исходе ночи )), получаем значения, которые должны быть скопированы */
+      ak_asn1_context_first( asnseq );
+      ak_tlv_context_get_oid( asnseq->current, &ptr );
+      if(( oid = ak_oid_context_find_by_id( ptr )) == NULL ) {
+        ak_error_message( error = ak_error_invalid_asn1_count, __func__,
+                                                    "source tlv contains a wrong attribute type" );
+        continue;
+      }
+      ak_asn1_context_next( asnseq );
+      if( ak_tlv_context_get_utf8_string( asnseq->current, &ptr ) == ak_error_ok ) {
+        ak_tlv_context_add_string_to_global_name( newtlv, oid->id, ptr );
+      }
+  } while( ak_asn1_context_next( asn ));
+ return newtlv;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1501,6 +1732,55 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   do{
       tlv->data.primitive[len-1] = val&0xFF;  val >>= 8;
   } while( --len > 0 );
+
+ return ak_asn1_context_add_tlv( asn1, tlv );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция кодирует значение, которое содержится в переменной типа `mpzn` (большое целое число)
+    и помещает его на текущий уровень ASN1 дерева.
+    \param asn1 указатель на текущий уровень ASN1 дерева.
+    \param n указатель на большое целое число
+    \param size количество элементов массива, составляющего большое целое число; данный аргумент
+    должен принимать значения \ref ak_mpzn256_size или \ref ak_mpzn512_size.
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_context_add_mpzn( ak_asn1 asn1, ak_uint64 *n, const size_t size )
+{
+  ak_tlv tlv = NULL;
+  size_t idx = 0, len = size*sizeof( ak_uint64 ), sz = 0;
+  ak_uint8 be[ sizeof( ak_uint64 )*ak_mpznmax_size ]; /* максимально большое целое число */
+
+  if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                             "using null pointer to asn1 element" );
+  if( n == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                              "using null pointer to mpzn number" );
+  if( !size ) return ak_error_message( ak_error_zero_length, __func__,
+                                                             "using mpzn number with zero length" );
+  if( size > ak_mpznmax_size ) return ak_error_message( ak_error_wrong_length, __func__,
+                                                         "using mpzn number with very large size" );
+ /* получаем массив байт в правильной кодировке */
+  ak_mpzn_to_little_endian( n, size, be, sizeof( be ), ak_true );
+
+ /* ищем первый ненулевой октет, одновременно определяем длину копируемых данных */
+  do{
+    if( be[idx] == 0 ) idx++;
+     else break;
+  } while( idx < len );
+  if( idx == len ) return ak_asn1_context_add_uint32( asn1, 0 );
+   else len -= idx;
+
+ /* проверяем старший октет */
+  sz = ( be[idx]&0x80 ) ? len+1 : len;
+
+ /* создаем элемент и выделяем память */
+  if(( tlv = ak_tlv_context_new_primitive( TINTEGER, sz, NULL, ak_true )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv element" );
+
+ /* заполняем выделенную память значениями */
+  memset( tlv->data.primitive, 0, sz );
+  memcpy( tlv->data.primitive + (sz - len), be+idx, len );
 
  return ak_asn1_context_add_tlv( asn1, tlv );
 }
@@ -1792,16 +2072,17 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
    #else
     /* mingw не воспринимает localtime_r, почему? */
      tmptr = localtime( &time );
-     ak_snprintf( (char *)tlv->data.primitive, 12, "%02u%02u%02u%02u%02u%02u",
-                                    tmptr->tm_year%100, tmptr->tm_mon, tmptr->tm_mday,
+     ak_snprintf( (char *)tlv->data.primitive, 13, "%02u%02u%02u%02u%02u%02u",
+                                    tmptr->tm_year%100, tmptr->tm_mon+1, tmptr->tm_mday,
                                                     tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec );
    #endif
 
   #else
     localtime_r( &time, &tm );
-  /* размещаем поля согласно купленным билетам */
-    ak_snprintf( (char *)tlv->data.primitive, 12, "%02u%02u%02u%02u%02u%02u",
-                         tm.tm_year%100, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec );
+  /* размещаем поля согласно купленным билетам
+     добавляем единицу к месяцу, потому что длогическая нумерация с единицы, а mktime - с нуля */
+    ak_snprintf( (char *)tlv->data.primitive, 13, "%02u%02u%02u%02u%02u%02u",
+                       tm.tm_year%100, tm.tm_mon+1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec );
   #endif
 
   tlv->data.primitive[12] = 'Z';
@@ -2333,7 +2614,7 @@ Validity ::= SEQUENCE {
      goto lab2;
    }
 
-   fprintf( fp, "-----BEGIN %s----\n", crypto_content_titles[type] );
+   fprintf( fp, "-----BEGIN %s-----\n", crypto_content_titles[type] );
    for( idx = 0; idx < blocks; idx++ ) {
      ak_base64_encodeblock( ptr, out, 3);
      fprintf( fp, "%c%c%c%c", out[0], out[1], out[2], out[3] );
@@ -2349,7 +2630,7 @@ Validity ::= SEQUENCE {
      ++cnt;
    }
    if( cnt != 16 ) fprintf( fp, "\n");
-   fprintf( fp, "-----END %s----\n", crypto_content_titles[type] );
+   fprintf( fp, "-----END %s-----\n", crypto_content_titles[type] );
    fclose( fp );
 
    lab2: free( buffer );

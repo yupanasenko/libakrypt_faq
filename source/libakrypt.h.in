@@ -556,8 +556,6 @@ extern "C" {
  dll_export int ak_libakrypt_split_asn1( const char * , export_format_t , crypto_content_t );
 
 /* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup frontend_handle Функции внешнего интерфейса
- * @{*/
 /*! \brief Создание дескриптора произвольного криптографического преобразования. */
  dll_export ak_handle ak_handle_new( const char *, const char * );
 /*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
@@ -590,7 +588,6 @@ extern "C" {
  dll_export int ak_handle_mac_ptr( ak_handle , ak_pointer , const size_t , ak_pointer , const size_t );
 /*! \brief Вычисление результата работы алгоритма итерационного сжатия для заданного файла. */
  dll_export int ak_handle_mac_file( ak_handle , const char *, ak_pointer , const size_t );
-/** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Обобщенная реализация функции snprintf для различных компиляторов. */

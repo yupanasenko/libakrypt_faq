@@ -174,6 +174,8 @@
  int ak_skey_context_create( ak_skey , size_t );
 /*! \brief Очистка структуры секретного ключа. */
  int ak_skey_context_destroy( ak_skey );
+/*! \brief Генерация случайного уникального вектора, рассматриваемого как номер ключа. */
+ int ak_skey_context_geneate_unique_number( ak_pointer , const size_t );
 /*! \brief Присвоение секретному ключу уникального номера. */
  int ak_skey_context_set_unique_number( ak_skey );
 /*! \brief Присвоение секретному ключу заданного номера. */

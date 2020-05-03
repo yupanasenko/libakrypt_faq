@@ -23,6 +23,18 @@
 #else
  #error Library cannot be compiled without string.h header
 #endif
+#ifdef LIBAKRYPT_HAVE_PTHREAD
+ #include <pthread.h>
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Переменная определяет порядковый номер ключа в рамках одной сессии.
+    Использование этой переменной помогает избежать одновременной генерации ключей при
+    многопоточной реализации. */
+ static ak_uint32 session_unique_number = 0;
+#ifdef LIBAKRYPT_HAVE_PTHREAD
+ static pthread_mutex_t session_unique_number_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \details Функция выделяет массив памяти, достаточный для размещения секретного ключа и
@@ -105,34 +117,50 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Выработанный функцией номер является уникальным (в рамках библиотеки) и однозначно идентифицирует
-    секретный ключ. Данный идентификатор может сохраняться вместе с ключом.
+/*! Выработанный функцией номер является уникальным (в рамках библиотеки) и может однозначно
+    идентифицировать некоторый объект, например, секретный ключ.
 
-    @param skey контекст секретного ключа, для клоторого вырабатывается уникальный номер
-    @return В случае успеха функция возвращает \ref ak_error_ok (ноль). В противном случае, возвращается
-    номер ошибки.                                                                                  */
+    \param data вектор, куда помещается номер
+    \param size размер вектора (в октетах); данная величина не должна превосходить 32-х.
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль). В противном случае,
+    возвращается номер ошибки.                                                                     */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_skey_context_set_unique_number( ak_skey skey )
+ int ak_skey_context_geneate_unique_number( ak_pointer data, const size_t size )
 {
   time_t tm = 0;
   size_t len = 0;
   struct hash ctx;
-  ak_uint8 out[64];
+  ak_uint8 out[64], hm[32];
   ak_uint64 rvalue = 0;
   int error = ak_error_ok;
   const char *version =  ak_libakrypt_version();
 
- /* стандартные проверки */
-  if( skey == NULL ) return ak_error_message( ak_error_null_pointer,
-                                         __func__ , "using a null pointer to secret key context" );
+  if( data == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                           "using null pointer to result buffer" );
+  if( !size ) return ak_error_message( ak_error_zero_length, __func__,
+                                                                 "using buffer with zero length" );
   if(( error = ak_hash_context_create_streebog256( &ctx )) != ak_error_ok )
     return ak_error_message( error, __func__ , "wrong creation of hash function context" );
 
+ /* готовим вектор, который будет позднее захэширован */
   memset( out, 0, sizeof( out ));
 
- /* заполняем стандартное начало вектора: версия */
+ /* заполняем стандартное начало вектора: версия (не более восьми символов) */
   if(( len = strlen( version )) > sizeof( out )) goto run_point;
   memcpy( out, version, len ); /* сначала версия библиотеки */
+
+ /* добавляем уникальный номер ключа в рамках теущей сессии
+    это не позволит в один интервал времени создать более одного ключа с одинаковым номером */
+  if( len + 2 > sizeof( out )) goto run_point;
+#ifdef LIBAKRYPT_HAVE_PTHREAD
+  pthread_mutex_lock( &session_unique_number_mutex );
+#endif
+  session_unique_number++;
+#ifdef LIBAKRYPT_HAVE_PTHREAD
+  pthread_mutex_unlock( &session_unique_number_mutex );
+#endif
+  memcpy( out+len, &session_unique_number, sizeof( ak_uint32 )); /* потом время генерации номера ключа */
+  len += sizeof( ak_uint32 );
 
  /* заполняем стандартное начало вектора: текущее время */
   if( len + sizeof( time_t ) > sizeof( out )) goto run_point;
@@ -154,17 +182,44 @@
     }
   }
 
- /* вычисляем номер и очищаем память */
-  run_point: if(( error = ak_hash_context_ptr( &ctx, out, sizeof( out ),
-                                            skey->number, sizeof( skey->number ))) != ak_error_ok )
-               ak_error_message( error, __func__, "incorrect creation an unique number" );
-  ak_hash_context_destroy( &ctx );
+ /* перед хешированием мы имеем вектор
+      версия библиотеки || номер в сессии || время || (как бы) случайный мусор
 
+    - в итеративных утилитах, типа aktool, номер, скорее всего, будет равен нулю
+    - (как бы) случайный мусор зависит не только от времени старта программы,
+      но и от номера текущего процесса, что позволяет надеятся на то, что два стартовавших
+      одновременно процесса на одной машине дадут два разных результата.
+
+    далее, вычисляем номер и перемещаем его в заданную память */
+  run_point:
+   memset( data, 0, size );
+   memset( hm, 0, sizeof( hm ));
+   if(( error = ak_hash_context_ptr( &ctx, out, sizeof( out ), hm, sizeof( hm ))) != ak_error_ok )
+     ak_error_message( error, __func__, "incorrect creation an unique number" );
+    else memcpy( data, hm, ak_min( size, sizeof( hm )));
+
+  ak_hash_context_destroy( &ctx );
  return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \param skey контекст секретного ключа, для клоторого вырабатывается уникальный номер
+/*! Выработанный функцией номер является уникальным (в рамках библиотеки) и однозначно идентифицирует
+    секретный ключ. Данный идентификатор может сохраняться вместе с ключом.
+
+    @param skey контекст секретного ключа, для клоторого вырабатывается уникальный номер
+    @return В случае успеха функция возвращает \ref ak_error_ok (ноль). В противном случае,
+    возвращается номер ошибки.                                                                     */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_context_set_unique_number( ak_skey skey )
+{
+ /* стандартная проверка и выработка номера в заданную область */
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer,
+                                         __func__ , "using a null pointer to secret key context" );
+ return ak_skey_context_geneate_unique_number( skey->number,  sizeof( skey->number ));
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param skey контекст секретного ключа, для которого вырабатывается уникальный номер
     \param ptr указатель на область памяти, содержащей номер ключа
     \param size размер области памяти в октетах
     \return В случае успеха функция возвращает \ref ak_error_ok (ноль). В противном случае, возвращается

@@ -44,7 +44,11 @@
 /*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
     в запрос на получение сертификата окрытого ключа. */
  int ak_verifykey_context_export_to_request( ak_verifykey , ak_signkey ,
-                                                                  const char * , export_format_t );
+                                                         char * , const size_t , export_format_t );
+/*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
+    в сертификат открытого ключа. */
+ int ak_verifykey_context_export_to_certificate( ak_verifykey , ak_signkey ,
+                                                         char * , const size_t , export_format_t );
 
 /*! \brief Функция импортирует секретный ключ криптографического преобразования из
    der-последовательности, хранящейся в заданном файле. */

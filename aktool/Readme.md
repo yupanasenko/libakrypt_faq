@@ -363,13 +363,13 @@ der-последовательностей, закодированных в ко
 
 
     cat request_edw.pem
-    -----BEGIN CERTIFICATE REQUEST----
+    -----BEGIN CERTIFICATE REQUEST-----
     MIHKMHkCAQAwEjEQMA4GA1UEAxMHRXhhbXBsZTBeMBcGCCqFAwcBAQEBMAsGCSqF
     AwcBAgEBAQNDAARAdCeV1L7ohN3yhQ/sA+o/rxhE4B2dpgtkUJOlXibfw5l49ZbP
     TU0MbPHRiUPZRJPRa57AoW1RLS4SfMRpGmMY4qAAMAoGCCqFAwcBAQMCA0EAG9wq
     Exdnm2YjL2PqFv98ZMyqua2FX8bhgJFmHbedSBIdDh2lvjR8bxtSVseurCAK1krH
     em9bOg4Jcxjnrm7naQ==
-    -----END CERTIFICATE REQUEST----
+    -----END CERTIFICATE REQUEST-----
 
     aktool a request_edw.p10.pem
 

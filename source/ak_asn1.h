@@ -133,7 +133,7 @@
 };
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Структура данных для операций с битовыми строками. */
+/*! \brief Структура, используемая для передачи информации о битовых строках. */
  typedef struct bit_string {
   /*! \brief массив, содержащий данные (в шестнадцатеричном виде) */
    ak_uint8 *value;
@@ -165,6 +165,8 @@
  int ak_tlv_context_create_constructed( ak_tlv , ak_uint8 , ak_asn1 ); 
 /*! \brief Создание составного узла ASN1 дерева. */
  ak_tlv ak_tlv_context_new_constructed( ak_uint8 , ak_asn1 );
+/*! \brief Создание составного узла ASN1 дерева, содержащего пустую последовательность */
+ ak_tlv ak_tlv_context_new_sequence( void );
 /*! \brief Уничтожение примитивного узла ASN1 дерева. */
  int ak_tlv_context_destroy( ak_tlv );
 /*! \brief Уничтожение примитивного узла ASN1 дерева и освобождение памяти. */
@@ -214,6 +216,13 @@
 /*! \brief Получение структуры, содержащей ресурс (структуру struct resource). */
  int ak_tlv_context_get_resource( ak_tlv , ak_resource );
 
+/*! \brief Добавление типизированной строки в последовательность обобщенных имен,
+    которой владеет текущий узел. */
+ int ak_tlv_context_add_string_to_global_name( ak_tlv , const char * , const char * );
+/*! \brief Функция создает новую последовательность обобщенных имен и копирует в нее типизированные
+    строки из заданной последовательности. */
+ ak_tlv ak_tlv_context_duplicate_global_name( ak_tlv );
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Выделение памяти и создание одного уровня ASN1 дерева. */
  ak_asn1 ak_asn1_context_new( void );
@@ -246,7 +255,7 @@
  int ak_asn1_context_add_uint32( ak_asn1 , const ak_uint32 );
 /*! \brief Добавление к текущему уровню ASN1 дерева большого целого числа, представимого
     в виде объекта класса \ref ak_mpzn */
- int ak_asn1_context_add_mpzn( ak_asn1 , const ak_uint64 * , const size_t );
+ int ak_asn1_context_add_mpzn( ak_asn1 , ak_uint64 * , const size_t );
 /*! \brief Добавление к текущему уровню ASN1 дерева узла, содержащего произвольную
     последовательность октетов */
  int ak_asn1_context_add_octet_string( ak_asn1 , const ak_pointer , const size_t );
