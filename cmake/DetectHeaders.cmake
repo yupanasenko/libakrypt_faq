@@ -60,6 +60,13 @@ check_c_source_compiles("
 
 # -------------------------------------------------------------------------------------------------- #
 check_c_source_compiles("
+  #include <sys/time.h>
+  int main( void ) {
+     return 0;
+  }" LIBAKRYPT_HAVE_SYSTIME_H )
+
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
   #include <syslog.h>
   int main( void ) {
      return 0;

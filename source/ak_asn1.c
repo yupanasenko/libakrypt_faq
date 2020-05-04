@@ -587,9 +587,10 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
                  if( tlv->data.primitive[0] == 0 )
                    fprintf( fp, "0x%s [%u bits]\n",
                          ak_ptr_to_hexstr( tlv->data.primitive+1, tlv->len-1, ak_false ),
-                                                                                   8*(tlv->len-1));
+                                                                  (unsigned int)( 8*(tlv->len-1)));
                   else fprintf( fp, "0x%s [%u bits]\n",
-                         ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ), 8*tlv->len );
+                         ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ),
+                                                                      (unsigned int)(8*tlv->len ));
               }
              break;
              case ak_error_invalid_asn1_significance: /* здесь нужно чтение знаковых целых */
@@ -1015,15 +1016,17 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param tlv указатель на структуру узла ASN1 дерева.
-    \param time указатель на область памяти, куда будет помещено значение времени.
+    \param time указатель на область памяти, куда будет помещено преобразованное,
+    локальное значение времени.
     \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_tlv_context_get_utc_time( ak_tlv tlv, time_t *time )
+ int ak_tlv_context_get_utc_time( ak_tlv tlv, time_t *timeval )
 {
   struct tm st;
-
   ak_uint8 *p_buff = NULL;
+  time_t now = time( NULL );
+
   if( tlv == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                              "using null pointer to tlv element" );
   p_buff = tlv->data.primitive;
@@ -1071,7 +1074,8 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
    st.tm_sec = atoi( output_buffer );
    p_buff += 2;
 
-   *time = mktime( &st );
+   *timeval = mktime( &st ) +  /* добавляем то, что было отнято при помещении в asn1 дерево */
+     (mktime( localtime( &now )) - mktime( gmtime( &now  )));
 
  return ak_error_ok;
 }
@@ -1090,8 +1094,14 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   if(( error = ak_tlv_context_get_utc_time( tlv, &time )) != ak_error_ok )
    return ak_error_message( error, __func__, "incorrect decoding of tlv element" );
 
-  ak_snprintf( output_buffer, sizeof( output_buffer ), "%sUTC", ctime( &time ));
-  output_buffer[strlen(output_buffer)-4] = ' ';
+  memset( output_buffer, 0, sizeof( output_buffer ));
+  #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+   ak_snprintf( output_buffer, sizeof( output_buffer ), "%s", ctime( &time ));
+   output_buffer[strlen( output_buffer)-1] = ' '; /* уничтожаем символ возврата каретки */
+  #else
+   strftime( output_buffer, sizeof( output_buffer ), /* локализованный вывод */
+                                                  "%e %b %Y %H:%M:%S (%A) %Z", localtime( &time ));
+  #endif
   *string = output_buffer;
 
  return ak_error_ok;
@@ -1099,15 +1109,16 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param tlv указатель на структуру узла ASN1 дерева.
-    \param time указатель на область памяти, куда будет помещено значение времени.
+    \param timeval указатель на область памяти, куда будет помещено значение времени.
     \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_tlv_context_get_generalized_time( ak_tlv tlv, time_t *time )
+ int ak_tlv_context_get_generalized_time( ak_tlv tlv, time_t *timeval )
 {
   struct tm st;
-
   ak_uint8 *p_buff = NULL;
+  time_t now = time( NULL );
+
   if( tlv == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                              "using null pointer to tlv element" );
   p_buff = tlv->data.primitive;
@@ -1127,12 +1138,12 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
   /* YYYY */
    memcpy( output_buffer, p_buff, 4 ); output_buffer[4] = 0;
-   st.tm_year = 100 + atoi( output_buffer );
+   st.tm_year = atoi( output_buffer )-1900; /* эта поправка весьма неожиданна */
    p_buff += 4;
 
    /* MM */
    memcpy( output_buffer, p_buff, 2 ); output_buffer[2] = 0;
-   st.tm_mon = atoi( output_buffer );
+   st.tm_mon = atoi( output_buffer )-1;
    p_buff += 2;
 
    /* DD */
@@ -1155,7 +1166,9 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
    st.tm_sec = atoi( output_buffer );
    p_buff += 2;
 
-   *time = mktime( &st );
+   *timeval = mktime( &st ) +  /* добавляем то, что было отнято при помещении в asn1 дерево */
+     (mktime( localtime( &now )) - mktime( gmtime( &now  )));
+
  return ak_error_ok;
 }
 
@@ -1173,8 +1186,14 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   if(( error = ak_tlv_context_get_generalized_time( tlv, &time )) != ak_error_ok )
    return ak_error_message( error, __func__, "incorrect decoding of tlv element" );
 
-  ak_snprintf( output_buffer, sizeof( output_buffer ), "%s", ctime( &time ));
-  output_buffer[strlen(output_buffer)-1] = ' ';
+  memset( output_buffer, 0, sizeof( output_buffer ));
+  #ifdef LIBAKRYPT_HAVE_WINDOWS_H
+   ak_snprintf( output_buffer, sizeof( output_buffer ), "%s", ctime( &time ));
+   output_buffer[strlen( output_buffer)-1] = ' '; /* уничтожаем символ возврата каретки */
+  #else
+    strftime( output_buffer, sizeof( output_buffer ),
+                                                  "%e %b %Y %H:%M:%S (%A) %Z", localtime( &time ));
+  #endif
   *string = output_buffer;
 
  return ak_error_ok;
@@ -2029,23 +2048,17 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \param asn1 указатель на текущий уровень ASN1 дерева.
-    \param time переменная, содержащая время
+/*! При сохранении времени происходит его преобразование из локального времени,
+    в UTC (что приводит к несколько часовому сдвигу).
+
+   \param asn1 указатель на текущий уровень ASN1 дерева.
+    \param time переменная, содержащая локальное время (возвращенное, например, функцией time()).
     \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
     В противном случае, возвращается код ошибки.                                                   */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_context_add_utc_time( ak_asn1 asn1, time_t time )
 {
- #ifdef LIBAKRYPT_HAVE_WINDOWS_H
-  #ifdef _MSC_VER
-   struct tm tm;
-   char str[12];
-  #else
-    struct tm *tmptr = NULL;
-  #endif
- #else
-  struct tm tm;
- #endif
+  char str[16];
   ak_tlv tlv = NULL;
 
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -2055,44 +2068,35 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     return ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv element" );
 
  /* получаем детальное значение времени */
+  memset( str, 0, sizeof( str ));
+ {
   #ifdef LIBAKRYPT_HAVE_WINDOWS_H
-
    #ifdef _MSC_VER
-   /* есть много вещей, которые вызывают искреннее удивление при программировании под Windows,
-      этот код - один из таких примеров ...  */
-     localtime_s( &tm, &time );
-     ak_snprintf( str, sizeof( str ), "%02u", (ak_uint8 ) tm.tm_year%100 );
-      memcpy( tlv->data.primitive, str, sizeof( str ));
-     ak_snprintf( str, sizeof( str ), "%02u", (ak_uint8) tm.tm_mon );
-      memcpy( tlv->data.primitive+2, str, sizeof( str ));
-     ak_snprintf( str, sizeof( str ), "%02u", (ak_uint8) tm.tm_mday );
-      memcpy( tlv->data.primitive+4, str, sizeof( str ));
-    /*  почему данную последовательность нельзя продолжить дальше? */
-
+     struct tm tm;
+     gmtime_s( &tm, &time );
+     ak_snprintf( str, sizeof( str ), "%02u%02u%02u%02u%02u%02uZ",
+                       tm.tm_year%100, tm.tm_mon+1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec );
    #else
-    /* mingw не воспринимает localtime_r, почему? */
-     tmptr = localtime( &time );
-     ak_snprintf( (char *)tlv->data.primitive, 13, "%02u%02u%02u%02u%02u%02u",
+     struct tm *tmptr = gmtime( &time );
+     ak_snprintf( str, sizeof( str ), "%02u%02u%02u%02u%02u%02uZ",
                                     tmptr->tm_year%100, tmptr->tm_mon+1, tmptr->tm_mday,
                                                     tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec );
    #endif
-
   #else
-    localtime_r( &time, &tm );
-  /* размещаем поля согласно купленным билетам
-     добавляем единицу к месяцу, потому что длогическая нумерация с единицы, а mktime - с нуля */
-    ak_snprintf( (char *)tlv->data.primitive, 13, "%02u%02u%02u%02u%02u%02u",
+     struct tm tm;
+     gmtime_r( &time, &tm );
+     ak_snprintf( str, sizeof( str ), "%02u%02u%02u%02u%02u%02uZ",
                        tm.tm_year%100, tm.tm_mon+1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec );
   #endif
-
-  tlv->data.primitive[12] = 'Z';
+ }
+  memcpy( tlv->data.primitive, str, 13 );
  return ak_asn1_context_add_tlv( asn1, tlv );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция создает структуру `Validity`, которая содержит два примитивных элемента -
     начало и окончание временного интервала.
-    Структура определяется следующим образом.
+    ASN.1 структура определяется следующим образом.
 
 \code
 Time ::= CHOICE {
@@ -2108,9 +2112,17 @@ Validity ::= SEQUENCE {
 
    После создания структура добавляется в текущий уровень asn1 дерева.
 
+   Время, которое помещается в структуру `Validity`, приводится из локального времени во
+   время по Гринвичу. При чтении структуры должно производиться обратное преобразование.
+
+   \todo Согласно RFC 5280 даты до 2050 года сохраняются как UTCTime,
+   даты, начиная с 1 января 2050 года сохраняются как GeneralTime.
+
    \param asn1 указатель на текущий уровень ASN.1 дерева.
-   \param not_before начало временного интервала
-   \param not_before окончание временного интервала
+   \param not_before начало временного интервала; локальное время, может быть получено
+   с помощью вызова функции time(),
+   \param not_before окончание временного интервала; предыдущее значение, увеличенное на
+   соответвующую константу.
    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
@@ -2124,6 +2136,7 @@ Validity ::= SEQUENCE {
   if(( error = ak_asn1_context_create( asn_validity = ak_asn1_context_new())) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
 
+ /* преобразуем во время по Гринвичу */
   if(( error = ak_asn1_context_add_utc_time( asn_validity, not_before )) != ak_error_ok ) {
     ak_asn1_context_delete( asn_validity );
     return ak_error_message( error, __func__, "incorrect adding \"not before\" time" );

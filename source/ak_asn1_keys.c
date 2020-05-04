@@ -2010,7 +2010,6 @@
  /* добавляем расширения
     если расширения добавляются, то должна быть версия 3 */
 
-
  /* вставляем в основное дерево созданный элемент */
   ak_asn1_context_add_tlv( tlv->data.constructed, tbs );
  /* добавляем информацию о алгоритме подписи */
@@ -2025,7 +2024,7 @@
  /* вырабатываем подпись */
   len = sizeof( encode );
   if(( error = ak_tlv_context_encode( tbs, encode, &len )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "incorrect encoding an asn1 context" );
+    ak_error_message( error, __func__, "incorrect encoding of tbsCertificate element" );
     goto labex;
   }
   if(( error = ak_signkey_context_sign_ptr( sk, encode, len, out, sizeof( out ))) != ak_error_ok ) {

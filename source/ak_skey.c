@@ -13,6 +13,9 @@
 #else
  #error Library cannot be compiled without time.h header
 #endif
+#ifdef LIBAKRYPT_HAVE_SYSTIME_H
+#include <sys/time.h>
+#endif
 #ifdef LIBAKRYPT_HAVE_STDLIB_H
  #include <stdlib.h>
 #else
@@ -521,7 +524,7 @@
     \return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_skey_context_set_resource_time( ak_skey skey, time_t not_before, time_t not_after )
+ int ak_skey_context_set_validity( ak_skey skey, time_t not_before, time_t not_after )
 {
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using a null pointer to secret key" );
@@ -584,7 +587,7 @@
                                                             "using a null pointer to secret key" );
   if( option == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                            "using a null pointer to option name" );
-  ak_skey_context_set_resource_time( skey, not_before, not_after );
+  ak_skey_context_set_validity( skey, not_before, not_after );
   switch( skey->resource.value.type = type ) {
     case block_counter_resource:
     case key_using_resource:

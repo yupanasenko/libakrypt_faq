@@ -37,9 +37,10 @@
 
  /* устанавливаем значение ключа */
   ak_signkey_context_set_key( &sk, testkey, sizeof( testkey ));
+
  /* подстраиваем ключ и устанавливаем ресурс */
   ak_skey_context_set_resource_values( &sk.key, key_using_resource,
-               "digital_signature_count_resource", 0, time(NULL)+2592000 ); /* 1 месяц */
+               "digital_signature_count_resource", time(NULL), time(NULL)+2592000 ); /* 1 месяц */
  /* подписываем данные */
   if( ak_signkey_context_sign_ptr( &sk, testkey,
                                          sizeof( testkey ), sign, sizeof( sign )) != ak_error_ok )

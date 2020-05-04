@@ -202,11 +202,11 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция устанавливает ресурс ключа. */
  int ak_skey_context_set_resource( ak_skey , ak_resource );
-/*! \brief Функция устанавливает ресурс ключа. */
+/*! \brief Функция устанавливает временной интервал действия ключа. */
+ int ak_skey_context_set_validity( ak_skey , time_t , time_t );
+/*! \brief Функция устанавливает ресурс и временной итервал действия ключа. */
  int ak_skey_context_set_resource_values( ak_skey ,
                                              counter_resource_t , const char * , time_t , time_t );
-/*! \brief Функция устанавливает временной интервал действия ключа. */
- int ak_skey_context_set_resource_time( ak_skey , time_t , time_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_DEBUG_FUNCTIONS
