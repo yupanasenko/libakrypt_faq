@@ -29,7 +29,7 @@
   ak_libakrypt_create( ak_function_log_stderr );
 
  /* создаем секретный ключ */
-  oid = ak_oid_context_find_by_ni( "id-tc26-gost-3410-2012-256-paramSetTest" ); // "1.2.643.7.1.2.1.1.1" );
+  oid = ak_oid_context_find_by_ni( "1.2.643.7.1.2.1.1.1" );
   if( ak_signkey_context_create_streebog256_with_curve( &sk, (ak_wcurve)oid->data ) != ak_error_ok ) {
     ecode = EXIT_FAILURE;
     goto exlab;
@@ -37,7 +37,6 @@
 
  /* устанавливаем значение ключа */
   ak_signkey_context_set_key( &sk, testkey, sizeof( testkey ));
-
  /* подстраиваем ключ и устанавливаем ресурс */
   ak_skey_context_set_resource_values( &sk.key, key_using_resource,
                "digital_signature_count_resource", time(NULL), time(NULL)+2592000 ); /* 1 месяц */

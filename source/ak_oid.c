@@ -104,6 +104,7 @@
  static const char *on_asn1_bc[] =          { "Basic Constraints", NULL };
  static const char *on_asn1_cp[] =          { "Certificate Policies", NULL };
  static const char *on_asn1_wcp[] =         { "Wildcard Certificate Policy", NULL };
+ static const char *on_asn1_aki[] =         { "AuthorityKey Identifier", NULL };
 
 /* Приказ ФСБ N-795*/
  static const char *on_asn1_class_kc1[] =   { "Digital Signature Module, class KC1", NULL };
@@ -316,8 +317,9 @@
    { identifier, descriptor, on_asn1_bc, "2.5.29.19", NULL, { NULL, NULL, NULL }},
    { identifier, descriptor, on_asn1_cp, "2.5.29.32", NULL, { NULL, NULL, NULL }},
    { identifier, descriptor, on_asn1_wcp, "2.5.29.32.0", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_aki, "2.5.29.35", NULL, { NULL, NULL, NULL }},
 
- /* жто из Приказа ФСБ N 795 */
+ /* это добро из Приказа ФСБ N 795 */
    { identifier, descriptor, on_asn1_class_kc1, "1.2.643.100.113.1", NULL, { NULL, NULL, NULL }},
    { identifier, descriptor, on_asn1_class_kc2, "1.2.643.100.113.2", NULL, { NULL, NULL, NULL }},
    { identifier, descriptor, on_asn1_class_kc3, "1.2.643.100.113.3", NULL, { NULL, NULL, NULL }},
