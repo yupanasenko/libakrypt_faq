@@ -49,7 +49,7 @@
     в сертификат открытого ключа. */
  int ak_verifykey_context_export_to_certificate( ak_verifykey , ak_signkey ,
                                                          char * , const size_t , export_format_t );
-
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция импортирует секретный ключ криптографического преобразования из
    der-последовательности, хранящейся в заданном файле. */
  int ak_key_context_import_from_file( ak_pointer , oid_engines_t , const char * , char ** );

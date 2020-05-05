@@ -63,6 +63,8 @@
  int ak_signkey_context_set_key( ak_signkey , const ak_pointer , const size_t );
 /*! \brief Присвоение секретному ключу электронной подписи случайного значения. */
  int ak_signkey_context_set_key_random( ak_signkey , ak_random );
+/*! \brief Функция добавляет к расширенному имени владельца ключа новую строку. */
+ int ak_signkey_context_add_name_string( ak_signkey , const char * , const char * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Выработка электронной подписи для фиксированного значения случайного числа и вычисленного
@@ -93,7 +95,7 @@
  /*! \brief контекст функции хеширования */
   struct hash ctx;  
  /*! \brief уникальный номер открытого ключа */
-  ak_mpzn256 number;
+  ak_uint8 number[32];
  /*! \brief контекст эллиптической кривой */
   ak_wcurve wc;
  /*! \brief OID алгоритма, для которого используется ключ;
@@ -119,6 +121,10 @@
  int ak_verifykey_context_create_from_signkey( ak_verifykey , ak_signkey );
 /*! \brief Функция устанавливает временной интервал действия открытого ключа. */
  int ak_verifykey_context_set_resource_time( ak_verifykey , time_t , time_t );
+/*! \brief Функция вырабатывает номер открытого ключа. */
+ int ak_verifykey_context_set_number( ak_verifykey );
+/*! \brief Функция добавляет к расширенному имени владельца ключа новую строку. */
+ int ak_verifykey_context_add_name_string( ak_verifykey , const char * , const char * );
 /*! \brief Уничтожение контекста открытого ключа. */
  int ak_verifykey_context_destroy( ak_verifykey );
 /*! \brief Освобождение памяти из под контекста открытого ключа. */
@@ -131,8 +137,6 @@
                                                                        const size_t , ak_pointer );
 /*! \brief Проверка электронной подписи для заданного файла. */
  bool_t ak_verifykey_context_verify_file( ak_verifykey , const char * , ak_pointer );
-/*! \brief Функция добавляет к расширенному имени владельца ключа новую строку. */
- int ak_verifykey_context_set_name_string( ak_verifykey , const char * , const char * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Выполнение тестовых примеров для алгоритмов выработки и проверки электронной подписи */

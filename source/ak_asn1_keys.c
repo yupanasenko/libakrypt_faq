@@ -1673,7 +1673,13 @@
     goto lab1;
   }
 
- /* 4. В самом конце, после проверки подписи,
+ /* 4. На основе считанных данных формируем номер ключа */
+  if(( error =ak_verifykey_context_set_number( vkey )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect creation on public key number" );
+    goto lab1;
+  }
+
+ /* 5. В самом конце, после проверки подписи,
     изымаем узел, содержащий имя владельца открытого ключа -- далее этот узел будет перемещен
     в сертификат открытого ключа.
     Все проверки пройдены ранее и нам точно известна структура asn1 дерева. */
@@ -1935,7 +1941,7 @@
                                               "incorrect generation of public key unique number" );
     goto labex;
   }
-  ak_asn1_context_add_mpzn( tbasn, vk->number, ak_mpzn256_size );
+  ak_asn1_context_add_mpzn( tbasn, (ak_uint64 *)vk->number, ak_mpzn256_size );
 
  /* signature: указываем алгоритм подписи (это будет повторено еще раз при выработке подписи) */
   ak_asn1_context_add_tlv( tbasn, tlv = ak_tlv_context_new_sequence( ));
@@ -2095,7 +2101,7 @@
     }
     memset( filename, 0, size );
     ak_snprintf( filename, size, "%s.%s",
-                       ak_mpzn_to_hexstr( vk->number, ak_mpzn256_size ), file_extensions[format] );
+                       ak_mpzn_to_hexstr( (ak_uint64 *)vk->number, ak_mpzn256_size ), file_extensions[format] );
   }
 
  /* 2. Сохраняем созданное дерево в файл */

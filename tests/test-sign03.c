@@ -30,10 +30,16 @@
 
  /* создаем секретный ключ */
   oid = ak_oid_context_find_by_ni( "1.2.643.7.1.2.1.1.1" );
-  if( ak_signkey_context_create_streebog256_with_curve( &sk, (ak_wcurve)oid->data ) != ak_error_ok ) {
+//  if( ak_signkey_context_create_streebog256_with_curve( &sk, (ak_wcurve)oid->data ) != ak_error_ok ) {
+//    ecode = EXIT_FAILURE;
+//    goto exlab;
+//  }
+
+  if( ak_signkey_context_create_oid( &sk, ak_oid_context_find_by_ni( "sign256" )) != ak_error_ok ) {
     ecode = EXIT_FAILURE;
     goto exlab;
   }
+  ak_signkey_context_set_curve( &sk, (ak_wcurve)oid->data );
 
  /* устанавливаем значение ключа */
   ak_signkey_context_set_key( &sk, testkey, sizeof( testkey ));
@@ -50,6 +56,9 @@
  /* вырабатываем открытый ключ */
   ak_verifykey_context_create_from_signkey( &vk, &sk );
 
+ /* выводим номер созданного ключа */
+  printf(" public key number: %s (created)\n",
+                                     ak_ptr_to_hexstr( vk.number, sizeof( vk.number ), ak_false ));
  /* сохраняем секретный ключ*/
   ak_key_context_export_to_file_with_password(
     &sk,                  /* контекст секретного ключа */
@@ -63,11 +72,11 @@
   );
 
  /* создаем последовательность обобщенных имен для владельца ключа */
-  ak_verifykey_context_set_name_string( &vk, "CountryName", "RU" );
-  ak_verifykey_context_set_name_string( &vk, "LocalityName", "Большое Свинорье" );
-  ak_verifykey_context_set_name_string( &vk, "StateOrProvinceName", "Московская область" );
-  ak_verifykey_context_set_name_string( &vk, "emailAddress", "some@mail.address" );
-  ak_verifykey_context_set_name_string( &vk, "CommonName", "Example" );
+  ak_verifykey_context_add_name_string( &vk, "CountryName", "RU" );
+  ak_verifykey_context_add_name_string( &vk, "LocalityName", "Большое Свинорье" );
+  ak_verifykey_context_add_name_string( &vk, "StateOrProvinceName", "Московская область" );
+  ak_verifykey_context_add_name_string( &vk, "emailAddress", "some@mail.address" );
+  ak_verifykey_context_add_name_string( &vk, "CommonName", "Example" );
 
  /* сохраняем запрос */
   ak_verifykey_context_export_to_request(
@@ -94,6 +103,9 @@
       goto exlac;
     }
 
+ /* выводим номер созданного ключа */
+  printf(" public key number: %s (loaded)\n",
+                                     ak_ptr_to_hexstr( vk.number, sizeof( vk.number ), ak_false ));
  /* теперь создаем сертификат ключа
     поскольку у нас только одна пара ключей, то сертификат будет самоподписанным */
 

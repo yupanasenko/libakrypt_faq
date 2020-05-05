@@ -253,6 +253,11 @@
      return error;
    }
 
+  /* если совсем не определять кривую, то в ряде случаев это может привести к непресказуемым
+     и печальным последствиям; поэтому мы реализовали подход с присвоением параметров
+     эллиптической кривой по-умолчанию. */
+   sctx->key.data = (ak_pointer)( &id_tc26_gost_3410_2012_256_paramSetA );
+
   /* имя ключа не определено */
    sctx->name = NULL;
   /* кривая не определена */
@@ -328,6 +333,11 @@
      ak_hash_context_destroy( &sctx->ctx );
      return error;
    }
+
+  /* если совсем не определять кривую, то в ряде случаев это может привести к непресказуемым
+     и печальным последствиям; поэтому мы реализовали подход с присвоением параметров
+     эллиптической кривой по-умолчанию. */
+   sctx->key.data = (ak_pointer)( &id_tc26_gost_3410_2012_512_paramSetA );
 
   /* имя ключа не определено */
    sctx->name = NULL;
@@ -492,6 +502,28 @@
     ... в процессе присвоения ключа, он приводится по модулю и маскируется
         за это отвечает функция ak_signkey_context_set_mask_multiplicative() ...  */
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param sk контекст секретного ключа электронной подписи
+    @param ni строка, содержащая имя или идентификатор, определяющий тип помещаемых
+    данных (attribute type)
+    @param string строка с данными.
+
+    @return В случае успеха возвращается \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_signkey_context_add_name_string( ak_signkey sk, const char *ni, const char *string )
+{
+ /* необходимые проверки */
+  if( sk == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using null pointer to secret key context" );
+  if( sk->name == NULL )
+    if(( sk->name = ak_tlv_context_new_sequence()) == NULL )
+      return ak_error_message( ak_error_get_value(), __func__,
+                                     "incorrect creation of tlv context for owner's common name" );
+
+ return ak_tlv_context_add_string_to_global_name( sk->name, ni, string );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -803,9 +835,12 @@
 
  /* имя ключа не определено */
   pctx->name = NULL;
+ /* устанавливаем флаг  */
+  pctx->flags = ak_key_flag_set_key;
+ /* все параметры установлены => можно вырабатывать номер ключа */
+  ak_verifykey_context_set_number( pctx );
 
  /* перемаскируем секретный ключ */
-  pctx->flags = ak_key_flag_set_key;
   ak_ptr_context_wipe( k, sizeof( ak_uint64 )*ak_mpzn512_size, &sctx->key.generator );
   sctx->key.set_mask( &sctx->key );
  return ak_error_ok;
@@ -1042,14 +1077,14 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param vk контекст открытого ключа электронной подписи
-    @param id строка, содержащая имя или идентификатор, определяющий тип помещаемых
+    @param ni строка, содержащая имя или идентификатор, определяющий тип помещаемых
     данных (attribute type)
     @param string строка с данными.
 
     @return В случае успеха возвращается \ref ak_error_ok. В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_verifykey_context_set_name_string( ak_verifykey vk, const char *ni, const char *string )
+ int ak_verifykey_context_add_name_string( ak_verifykey vk, const char *ni, const char *string )
 {
  /* необходимые проверки */
   if( vk == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -1060,6 +1095,76 @@
                                      "incorrect creation of tlv context for owner's common name" );
 
  return ak_tlv_context_add_string_to_global_name( vk->name, ni, string );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! В отличие от номеров секретных ключей, номера открытых ключей не являются случайными.
+    Согласно рекомендациям RFC 5280 номер открытого ключа вырабатывается из
+
+    - идентификатора алгоритма,
+    - идентификатора эллиптической кривой,
+    - значения открытого ключа.
+
+    Таким образом, номер открытого ключа может быть вычислен без знания связанного с ним
+    секретного ключа.
+
+    \note Данная функция должна вызываться после того, как будет установлено
+    значение открытого ключа.
+    \note Номер открытого ключа помещается в сертификат ключа в расширение `SubjectKeyIdentifier`.
+
+    @param vk контекст открытого ключа
+    @return В случае успеха возвращается \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_verifykey_context_set_number( ak_verifykey vk )
+{
+  struct hash hctx;
+  int error = ak_error_ok;
+  ak_uint8 buffer[ sizeof( ak_uint64 )*ak_mpznmax_size ];
+
+ /* необходимые проверки */
+  if( vk == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using null pointer to secret key context" );
+  if( vk->oid == NULL ) return ak_error_message( ak_error_wrong_oid, __func__,
+                                                           "using null pointer to algorithm oid" );
+  if( vk->wc == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                     "using null pointer to elliptic curve data" );
+ /* теперь создаем контекст для хеширования */
+  if(( error = ak_hash_context_create_streebog256( &hctx )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorret creation of hash function context" );
+
+ /* хешируем параметры алгоритма и кривой, на которой алгоритм реализуется */
+  ak_hash_context_update( &hctx, vk->oid->id, strlen( vk->oid->id ));
+  if(( error = ak_mpzn_to_little_endian( vk->wc->p, vk->wc->size,
+                                           buffer, sizeof( buffer ), ak_false )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect export prime p to little endian octet string" );
+    goto labex;
+  }
+   else ak_hash_context_update( &hctx, buffer, vk->wc->size*sizeof( ak_uint64 ));
+  if(( error = ak_mpzn_to_little_endian( vk->wc->q, vk->wc->size,
+                                           buffer, sizeof( buffer ), ak_false )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect export prime q to little endian octet string" );
+    goto labex;
+  }
+   else ak_hash_context_update( &hctx, buffer, vk->wc->size*sizeof( ak_uint64 ));
+
+ /* хешируем точку на кривой */
+  ak_wpoint_reduce( &vk->qpoint, vk->wc );
+  if(( error = ak_mpzn_to_little_endian( vk->qpoint.x, vk->wc->size,
+                                           buffer, sizeof( buffer ), ak_false )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect export Q.x to little endian octet string" );
+    goto labex;
+  }
+   else ak_hash_context_update( &hctx, buffer, vk->wc->size*sizeof( ak_uint64 ));
+  if(( error = ak_mpzn_to_little_endian( vk->qpoint.y, vk->wc->size,
+                                           buffer, sizeof( buffer ), ak_false )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect export Q.y to little endian octet string" );
+    goto labex;
+  }
+   else ak_hash_context_finalize( &hctx, buffer, vk->wc->size*sizeof( ak_uint64 ),
+                                                                 vk->number, sizeof( vk->number ));
+  labex: ak_hash_context_destroy( &hctx );
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
