@@ -31,7 +31,7 @@
 
  /* инициализируем секретный ключ */
   oid = ak_oid_context_find_by_name( "cspa" );
-  if(( ak_signkey_context_create_streebog256_with_curve( &sk, (ak_wcurve) oid->data )) != ak_error_ok ) {
+  if(( ak_signkey_context_create( &sk, (ak_wcurve) oid->data )) != ak_error_ok ) {
     result = EXIT_FAILURE;
     goto exlab;
   }

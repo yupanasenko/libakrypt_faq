@@ -49,7 +49,7 @@
   /*! \brief собственно OID (cтрока чисел, разделенных точками) */
    char *id;
   /*! \brief указатель на данные. */
-   ak_pointer *data;
+   ak_pointer data;
   /*! \brief структура, контролирующая поведение объекта. */
    struct object func;
 } *ak_oid;

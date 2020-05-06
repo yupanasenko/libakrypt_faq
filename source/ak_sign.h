@@ -37,15 +37,15 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация контекста секретного ключа алгоритма ГОСТ Р 34.10-2012. */
- int ak_signkey_context_create_streebog256( ak_signkey );
-/*! \brief Инициализация контекста секретного ключа алгоритма ГОСТ Р 34.10-2012 с установкой
-    параметров эллиптической кривой. */
- int ak_signkey_context_create_streebog256_with_curve( ak_signkey , const ak_wcurve );
+ int ak_signkey_context_create( ak_signkey , const ak_wcurve );
 /*! \brief Инициализация контекста секретного ключа алгоритма ГОСТ Р 34.10-2012. */
+ int ak_signkey_context_create_str( ak_signkey , const char * );
+/*! \brief Инициализация контекста секретного ключа алгоритма ГОСТ Р 34.10-2012
+   с параметрами эллиптической кривой по-умолчанию. */
+ int ak_signkey_context_create_streebog256( ak_signkey );
+/*! \brief Инициализация контекста секретного ключа алгоритма ГОСТ Р 34.10-2012
+   с параметрами эллиптической кривой по-умолчанию. */
  int ak_signkey_context_create_streebog512( ak_signkey );
-/*! \brief Инициализация контекста секретного ключа алгоритма ГОСТ Р 34.10-2012 с установкой
-    параметров эллиптической кривой. */
- int ak_signkey_context_create_streebog512_with_curve( ak_signkey , const ak_wcurve );
 /*! \brief Инициализация контекста секретного ключа алгоритма выработки электронной подписи
     по заданному идентификатору алгоритма. */
  int ak_signkey_context_create_oid( ak_signkey , ak_oid );

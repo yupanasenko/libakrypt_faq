@@ -66,8 +66,8 @@
  static const char *on_w512_psa[] =         { "id-tc26-gost-3410-2012-512-paramSetA", NULL };
  static const char *on_w512_psb[] =         { "id-tc26-gost-3410-2012-512-paramSetB", NULL };
  static const char *on_w512_psc[] =         { "id-tc26-gost-3410-2012-512-paramSetC", NULL }; 
- static const char *on_w256_axel[] =        { "id-libakrypt-gost-3410-2012-256-paramSetN0", NULL };
-
+ static const char *on_w256_axel[] =        { "id-axel-gost-3410-2012-256-paramSetN0",
+                                              "axel-n0", NULL };
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  static const char *on_asn1_akcont[] =      { "libakrypt-container", NULL };
  static const char *on_asn1_pbkdf2key[] =   { "pbkdf2-basic-key", NULL };

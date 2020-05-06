@@ -128,7 +128,7 @@
     \return В случае успеха функция возвращает \ref ak_error_ok (ноль). В противном случае,
     возвращается номер ошибки.                                                                     */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_skey_context_geneate_unique_number( ak_pointer data, const size_t size )
+ int ak_skey_context_generate_unique_number( ak_pointer data, const size_t size )
 {
   time_t tm = 0;
   size_t len = 0;
@@ -218,7 +218,7 @@
  /* стандартная проверка и выработка номера в заданную область */
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer,
                                          __func__ , "using a null pointer to secret key context" );
- return ak_skey_context_geneate_unique_number( skey->number,  sizeof( skey->number ));
+ return ak_skey_context_generate_unique_number( skey->number,  sizeof( skey->number ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */

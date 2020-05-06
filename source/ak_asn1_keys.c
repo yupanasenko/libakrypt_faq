@@ -1674,7 +1674,7 @@
   }
 
  /* 4. На основе считанных данных формируем номер ключа */
-  if(( error =ak_verifykey_context_set_number( vkey )) != ak_error_ok ) {
+  if(( error = ak_verifykey_context_set_number( vkey )) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect creation on public key number" );
     goto lab1;
   }
@@ -1703,43 +1703,59 @@
  static ak_tlv ak_verifykey_context_export_to_asn1_value( ak_verifykey vk )
 {
   ak_oid ec = NULL;
-  ak_tlv tlv = NULL;
   struct bit_string bs;
   int error = ak_error_ok;
+  ak_tlv tlv = NULL, os = NULL;
   ak_asn1 asn = NULL, basn = NULL;
   size_t val64 = sizeof( ak_uint64 )*vk->wc->size;          /* количество октетов в одном вычете */
-  ak_uint8 data[ 2*sizeof(ak_uint64)*ak_mpzn512_size +2 ]; /* asn1 представление открытого ключа */
+  ak_uint8 data[ 2*sizeof(ak_uint64)*ak_mpznmax_size ];    /* asn1 представление открытого ключа */
+  ak_uint8 encode[ 4 + sizeof( data )];                             /* кодированная octet string */
+  size_t sz = sizeof( encode );
 
-   if(( error = ak_asn1_context_add_oid( asn = ak_asn1_context_new(),
+  if(( error = ak_asn1_context_add_oid( asn = ak_asn1_context_new(),
                                                         vk->oid->id )) != ak_error_ok ) goto labex;
-   if(( error = ak_asn1_context_add_asn1( asn, TSEQUENCE,
+  if(( error = ak_asn1_context_add_asn1( asn, TSEQUENCE,
                                               ak_asn1_context_new( ))) != ak_error_ok ) goto labex;
-   if(( ec = ak_oid_context_find_by_data( vk->wc )) == NULL ) goto labex;
-   ak_asn1_context_add_oid( asn->current->data.constructed, ec->id );
-   ak_asn1_context_add_oid( asn->current->data.constructed, vk->ctx.oid->id );
+  if(( ec = ak_oid_context_find_by_data( vk->wc )) == NULL ) goto labex;
+  ak_asn1_context_add_oid( asn->current->data.constructed, ec->id );
+  ak_asn1_context_add_oid( asn->current->data.constructed, vk->ctx.oid->id );
 
-   if(( basn = ak_asn1_context_new()) == NULL ) goto labex;
-   if(( error = ak_asn1_context_add_asn1( basn, TSEQUENCE, asn )) != ak_error_ok ) {
-     if( basn != NULL ) ak_asn1_context_delete( basn );
-     goto labex;
-   }
+  if(( basn = ak_asn1_context_new()) == NULL ) goto labex;
+  if(( error = ak_asn1_context_add_asn1( basn, TSEQUENCE, asn )) != ak_error_ok ) {
+    if( basn != NULL ) ak_asn1_context_delete( basn );
+    goto labex;
+  }
 
-  /* кодируем открытый ключ */
-   memset( data, 0, sizeof( data ));
-   data[0] = 0x04; data[1] = 0x40;
-   ak_wpoint_reduce( &vk->qpoint, vk->wc );
-   ak_mpzn_to_little_endian( vk->qpoint.x, vk->wc->size, data+2, val64, ak_false );
-   ak_mpzn_to_little_endian( vk->qpoint.y, vk->wc->size, data+2+val64, val64, ak_false );
-   bs.value = data;
-   bs.len = (1 + val64) << 1;
-   bs.unused = 0;
-   ak_asn1_context_add_bit_string( basn, &bs );
-   if(( tlv = ak_tlv_context_new_constructed( TSEQUENCE^CONSTRUCTED, basn )) == NULL ) {
-     ak_asn1_context_delete( basn );
-     ak_error_message( ak_error_get_value(), __func__,
+ /* кодируем открытый ключ => готовим octet string */
+  memset( data, 0, sizeof( data ));
+  if(( os = ak_tlv_context_new_primitive( TOCTET_STRING, ( val64<<1 ), data, ak_false )) == NULL ){
+    ak_error_message( ak_error_get_value(), __func__,
+                                                   "incorrect creation of temporary tlv context" );
+    if( basn != NULL ) ak_asn1_context_delete( basn );
+    goto labex;
+  }
+ /* помещаем в нее данные */
+  ak_wpoint_reduce( &vk->qpoint, vk->wc );
+  ak_mpzn_to_little_endian( vk->qpoint.x, vk->wc->size, data, val64, ak_false );
+  ak_mpzn_to_little_endian( vk->qpoint.y, vk->wc->size, data+val64, val64, ak_false );
+  if(( error = ak_tlv_context_encode( os, encode, &sz )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect encoding of temporary tlv context" );
+    if( os != NULL ) ak_tlv_context_delete( os );
+    if( basn != NULL ) ak_asn1_context_delete( basn );
+    goto labex;
+  }
+  bs.value = encode;
+  bs.len = sz;
+  bs.unused = 0;
+  ak_asn1_context_add_bit_string( basn, &bs );
+  if(( tlv = ak_tlv_context_new_constructed( TSEQUENCE^CONSTRUCTED, basn )) == NULL ) {
+    ak_asn1_context_delete( basn );
+    ak_error_message( ak_error_get_value(), __func__,
                                         "incorrect addition the bit sting with public key value" );
-   }
-  return  tlv;
+  }
+
+  ak_tlv_context_delete( os );
+ return  tlv;
 
  labex:
   if( asn != NULL ) ak_asn1_context_delete( asn );
@@ -1936,7 +1952,7 @@
 
  /* serialNumber: вырабатываем и добавляем номер сертификата */
   memset( vk->number, 0, sizeof( vk->number ));
-  if( ak_skey_context_geneate_unique_number( vk->number, sizeof( vk->number )) != ak_error_ok ) {
+  if( ak_skey_context_generate_unique_number( vk->number, sizeof( vk->number )) != ak_error_ok ) {
     ak_error_message( ak_error_get_value(), __func__,
                                               "incorrect generation of public key unique number" );
     goto labex;

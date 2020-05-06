@@ -172,8 +172,9 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
         len_byte_cnt = (ak_uint8) ((**pp_data) & 0x7Fu);
         (*pp_data)++;
 
-        if (len_byte_cnt > 4)
+        if (len_byte_cnt > 4) {
             return ak_error_wrong_length;
+        }
 
         for (i = 0; i < len_byte_cnt; i++)
         {
@@ -2620,7 +2621,7 @@ Validity ::= SEQUENCE {
      goto lab2;
    }
 
-  /* поскольку мы работаем с только текстовыми символами,
+  /* поскольку мы работаем только с текстовыми символами,
      то для сохранения данных используется стандартная библиотека */
    if(( fp = fopen( filename, "w" )) == NULL ) {
      ak_error_message_fmt( error, __func__, "incorrect creation of %s", filename );
@@ -2642,7 +2643,7 @@ Validity ::= SEQUENCE {
      fprintf( fp, "%c%c%c%c", out[0], out[1], out[2], out[3] );
      ++cnt;
    }
-   if( cnt != 16 ) fprintf( fp, "\n");
+   if(( cnt != 16 ) && ( cnt != 0 )) fprintf( fp, "\n");
    fprintf( fp, "-----END %s-----\n", crypto_content_titles[type] );
    fclose( fp );
 

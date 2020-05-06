@@ -176,12 +176,12 @@
    if(( curvoid->engine == identifier ) && ( curvoid->mode == wcurve_params )) {
      switch( ((ak_wcurve)curvoid->data)->size ) {
        case ak_mpzn256_size:
-         ak_signkey_context_create_streebog256_with_curve( &skey, (ak_wcurve)curvoid->data );
+         ak_signkey_context_create( &skey, (ak_wcurve)curvoid->data );
          ak_signkey_context_set_key( &skey, testkey, 32 );
          break;
 
        case ak_mpzn512_size:
-         ak_signkey_context_create_streebog512_with_curve( &skey, (ak_wcurve)curvoid->data );
+         ak_signkey_context_create( &skey, (ak_wcurve)curvoid->data );
          ak_signkey_context_set_key( &skey, testkey, 64 );
          break;
 
