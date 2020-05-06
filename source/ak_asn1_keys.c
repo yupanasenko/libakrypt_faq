@@ -1912,17 +1912,73 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание tlv узла, содержащего структуру TBSCertificate версии 1 (без расширений)
+/*! \brief Функция вырабатывает серийный номер сертификата.
+
+   Серийным номером сертификата являются младшие 32 байта результата хеширования
+   последовательной конкатенации номеров открытого и секретного ключей.
+   Для хеширования используется функция, определенная в контексте секретного ключа,
+   т.е.  Стрибог512 для длинной подписи и Стрибог256 для короткой.
+
+   \code
+    result[0..31] = Hash( vk->number || sk->number )
+   \endcode
 
    \param vk контекст открытого ключа, помещаемого в asn1 дерево сертификата
    \param sk контекст ключа подписи, содержащий параметры центра сертификации
-   \param version конечная версия сертиката
+   \param serialNumber переменная, в которую помещается серийный номер.
    \return Функция возвращает указатель на созданный объект.
    В случае ошибки возвращается NULL.                                                              */
 /* ----------------------------------------------------------------------------------------------- */
- static ak_tlv ak_verifykey_context_export_to_tbs( ak_verifykey vk, ak_signkey sk,
-                                                                           const ak_uint8 version )
+ static int ak_verifykey_context_generate_certificate_number( ak_verifykey vk,
+                                                            ak_signkey sk, ak_mpzn256 serialNumber )
 {
+  ak_uint8 result[64];
+
+ /* используем для хеширования контекст секретного ключа */
+  if( ak_hash_context_get_tag_size( &sk->ctx ) > sizeof( result ))
+    return ak_error_message( ak_error_wrong_length, __func__,
+                                                      "using secret key with huge signature tag" );
+  memset( result, 0, sizeof( result ));
+  ak_hash_context_clean( &sk->ctx );
+  ak_hash_context_update( &sk->ctx, vk->number, sizeof( vk->number ));
+  ak_hash_context_finalize( &sk->ctx, sk->key.number, sizeof( sk->key.number ),
+                                                                         result, sizeof( result ));
+
+  printf("serialNumber: %s\n", ak_ptr_to_hexstr( result, 64, ak_false ));
+  ak_mpzn_set_little_endian( serialNumber, ak_mpzn256_size, result, 32, ak_true );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Создание tlv узла, содержащего структуру TBSCertificate версии 1 (без расширений)
+
+   Структура `tbsCertificate` определяется следующим образом
+
+   \code
+    TBSCertificate  ::=  SEQUENCE  {
+        version         [0]  Version DEFAULT v1,
+        serialNumber         CertificateSerialNumber,
+        signature            AlgorithmIdentifier,
+        issuer               Name,
+        validity             Validity,
+        subject              Name,
+        subjectPublicKeyInfo SubjectPublicKeyInfo,
+        issuerUniqueID  [1]  IMPLICIT UniqueIdentifier OPTIONAL,
+                             -- If present, version MUST be v2 or v3
+        subjectUniqueID [2]  IMPLICIT UniqueIdentifier OPTIONAL,
+                             -- If present, version MUST be v2 or v3
+        extensions      [3]  Extensions OPTIONAL
+                             -- If present, version MUST be v3 --  }
+   \endcode
+
+   \param vk контекст открытого ключа, помещаемого в asn1 дерево сертификата
+   \param sk контекст ключа подписи, содержащий параметры центра сертификации
+   \return Функция возвращает указатель на созданный объект.
+   В случае ошибки возвращается NULL.                                                              */
+/* ----------------------------------------------------------------------------------------------- */
+ static ak_tlv ak_verifykey_context_export_to_tbs( ak_verifykey vk, ak_signkey sk )
+{
+  ak_mpzn256 serialNumber;
   ak_tlv tbs = NULL, tlv = NULL;
   ak_asn1 asn = NULL, tbasn = NULL;
 
@@ -1943,7 +1999,7 @@
      │   └INTEGER 2 (величина 2 является максимально возможным значением ) */
 
   ak_asn1_context_add_asn1( tbasn, CONTEXT_SPECIFIC^0x00, asn = ak_asn1_context_new( ));
-  if( asn != NULL ) ak_asn1_context_add_uint32( asn, ak_min( version, 2 ));
+  if( asn != NULL ) ak_asn1_context_add_uint32( asn, 2 );
     else {
       ak_error_message( ak_error_get_value(), __func__,
                                               "incorrect creation of certificate version context");
@@ -1951,13 +2007,8 @@
     }
 
  /* serialNumber: вырабатываем и добавляем номер сертификата */
-  memset( vk->number, 0, sizeof( vk->number ));
-  if( ak_skey_context_generate_unique_number( vk->number, sizeof( vk->number )) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                              "incorrect generation of public key unique number" );
-    goto labex;
-  }
-  ak_asn1_context_add_mpzn( tbasn, (ak_uint64 *)vk->number, ak_mpzn256_size );
+  ak_verifykey_context_generate_certificate_number( vk, sk, serialNumber );
+  ak_asn1_context_add_mpzn( tbasn, serialNumber, ak_mpzn256_size );
 
  /* signature: указываем алгоритм подписи (это будет повторено еще раз при выработке подписи) */
   ak_asn1_context_add_tlv( tbasn, tlv = ak_tlv_context_new_sequence( ));
@@ -1988,6 +2039,27 @@
                                                "incorrect generation of subject public key info" );
     goto labex;
   }
+
+ /* вставляем перечень расширений
+    0x03 это помещаемое в CONTEXT_SPECIFIC значение */
+  ak_asn1_context_add_asn1( tbasn, CONTEXT_SPECIFIC^0x03, asn = ak_asn1_context_new( ));
+  if( asn == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                      "incorrect creation of certificate extensions asn1 context");
+    goto labex;
+  }
+  ak_asn1_context_add_tlv( asn, ak_tlv_context_new_sequence( ));
+  asn = asn->current->data.constructed;
+
+ /* в обязательном порядке добавляем номер открытого ключа */
+  ak_asn1_context_add_tlv( asn,
+               tlv = ak_tlv_context_new_subject_key_identifier( vk->number, sizeof( vk->number )));
+  if( tlv == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                        "incorrect generation of SubjectKeyIdentifier extension" );
+    goto labex;
+  }
+
  return tbs;
 
   labex: if( tbs != NULL ) tbs = ak_tlv_context_delete( tbs );
@@ -2022,8 +2094,8 @@
     goto labex;
   }
 
- /* создаем сертификат первой версии */
-  if(( tbs = ak_verifykey_context_export_to_tbs( vk, sk, 0 )) == NULL ) {
+ /* создаем поле tbsCertificate */
+  if(( tbs = ak_verifykey_context_export_to_tbs( vk, sk )) == NULL ) {
     ak_error_message( ak_error_get_value(), __func__,
                                                   "incorrect creation of tbsCertificate element" );
     goto labex;

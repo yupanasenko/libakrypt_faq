@@ -223,6 +223,9 @@
     строки из заданной последовательности. */
  ak_tlv ak_tlv_context_duplicate_global_name( ak_tlv );
 
+/*! \brief Создание идентификатора открытого ключа (x509v3: SubjectKeyIdentifier ) */
+ ak_tlv ak_tlv_context_new_subject_key_identifier( ak_pointer, const size_t );
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Выделение памяти и создание одного уровня ASN1 дерева. */
  ak_asn1 ak_asn1_context_new( void );

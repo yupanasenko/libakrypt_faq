@@ -1482,6 +1482,59 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает расширение x509v3 следующего вида.
+
+ \code
+   ├SEQUENCE┐
+   │        ├OBJECT IDENTIFIER 2.5.29.14 (SubjectKey Identifier)
+   │        └OCTET STRING
+   │           04 14 9B 85 5E FB 81 DC 4D 59 07 51 63 CF BE DF
+   │           DA 2C 7F C9 44 3C
+   │           ├ encoded (22 octets)
+   │           └OCTET STRING
+   │              9B 85 5E FB 81 DC 4D 59 07 51 63 CF BE DF DA 2C  // данные, на которые
+   │              7F C9 44 3C                                      // указывает ptr
+ \endcode
+
+ \param ptr указатель на область памяти, содержащую идентификатор ключа
+ \param size размер области памяти
+ \return Функция возвращает указатель на структуру узла. Данная структура должна
+  быть позднее удалена с помощью явного вызова функции ak_tlv_context_delete() или путем
+  удаления дерева, в который данный узел будет входить.
+  В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
+  функции ak_error_get_value().                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_tlv ak_tlv_context_new_subject_key_identifier( ak_pointer ptr, const size_t size )
+{
+  ak_uint8 encode[256]; /* очень длинные идентификаторы это плохо */
+  ak_tlv tlv = NULL, os = NULL;
+  size_t len = sizeof( encode );
+
+  if(( tlv = ak_tlv_context_new_sequence()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
+    return NULL;
+  }
+ /* добавляем идентификатор расширения */
+  ak_asn1_context_add_oid( tlv->data.constructed, "2.5.29.14" );
+ /* добавляем закодированный идентификатор (номер) ключа */
+  memset( encode, 0, sizeof( encode ));
+  if(( os = ak_tlv_context_new_primitive( TOCTET_STRING, size, ptr, ak_false )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                                   "incorrect creation of temporary tlv context" );
+    return ak_tlv_context_delete( tlv );
+  }
+  if( ak_tlv_context_encode( os, encode, &len ) != ak_error_ok ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                                    "incorrect encoding a temporary tlv context" );
+    return ak_tlv_context_delete( tlv );
+  }
+  ak_tlv_context_delete( os );
+ /* собственно вставка в asn1 дерево */
+  ak_asn1_context_add_octet_string( tlv->data.constructed, encode, len );
+ return tlv;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
                        /*  функции для разбора/создания слоев ASN1 дерева */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_context_create( ak_asn1 asn1 )
@@ -2642,8 +2695,10 @@ Validity ::= SEQUENCE {
      ak_base64_encodeblock( ptr, out, tail );
      fprintf( fp, "%c%c%c%c", out[0], out[1], out[2], out[3] );
      ++cnt;
-   }
-   if(( cnt != 16 ) && ( cnt != 0 )) fprintf( fp, "\n");
+     fprintf( fp, "\n");
+   } else
+      if(( cnt != 16 ) && ( cnt != 0 )) fprintf( fp, "\n");
+
    fprintf( fp, "-----END %s-----\n", crypto_content_titles[type] );
    fclose( fp );
 
