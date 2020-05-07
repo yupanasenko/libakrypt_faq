@@ -125,7 +125,6 @@
 
  /* указываем имя лица, заверяющего сертификат, фактически это имя УЦ */
   sk.name = ak_tlv_context_duplicate_global_name( vk.name );
-  opts.pathlenConstraint = 10;
 
  /* вырабатываем сертикафикат */
   ak_verifykey_context_export_to_certificate(

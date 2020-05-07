@@ -1984,8 +1984,6 @@
   ak_hash_context_update( &sk->ctx, vk->number, sizeof( vk->number ));
   ak_hash_context_finalize( &sk->ctx, sk->key.number, sizeof( sk->key.number ),
                                                                          result, sizeof( result ));
-
-  printf("serialNumber: %s\n", ak_ptr_to_hexstr( result, 64, ak_false ));
   ak_mpzn_set_little_endian( serialNumber, ak_mpzn256_size, result, 32, ak_true );
  return ak_error_ok;
 }
@@ -2017,7 +2015,8 @@
    \return Функция возвращает указатель на созданный объект.
    В случае ошибки возвращается NULL.                                                              */
 /* ----------------------------------------------------------------------------------------------- */
- static ak_tlv ak_verifykey_context_export_to_tbs( ak_verifykey vk, ak_signkey sk )
+ static ak_tlv ak_verifykey_context_export_to_tbs( ak_verifykey vk,
+                                                          ak_signkey sk, ak_certificate_opts opts )
 {
   ak_mpzn256 serialNumber;
   ak_tlv tbs = NULL, tlv = NULL;
@@ -2062,16 +2061,14 @@
 
  /* issuer: вставляем информацию о расширенном имени лица, подписывающего ключ
     (эмитента, выдающего сертификат) */
-  ak_asn1_context_add_tlv( tbasn, sk->name );
-  sk->name = NULL;
+  ak_asn1_context_add_tlv( tbasn, ak_tlv_context_duplicate_global_name( sk->name ));
 
  /* validity: вставляем информацию в времени действия ключа */
   ak_asn1_context_add_validity( tbasn,
                                sk->key.resource.time.not_before, sk->key.resource.time.not_after );
 
  /* subject: вставляем информацию о расширенном имени владельца ключа  */
-  ak_asn1_context_add_tlv( tbasn, vk->name );
-  vk->name = NULL;
+  ak_asn1_context_add_tlv( tbasn, ak_tlv_context_duplicate_global_name( vk->name ));
 
  /* subjectPublicKeyInfo: вставляем информацию об открытом ключе */
   ak_asn1_context_add_tlv( tbasn, tlv = ak_verifykey_context_export_to_asn1_value( vk ));
@@ -2101,6 +2098,45 @@
     goto labex;
   }
 
+ /* теперь мы принимаем решение - сертификат самоподписанный или нет
+    выполняются две проверки:
+      - совпадение subjectKeyIdentifier (номера открытого ключа)
+      - совпадение имен. */
+  if( ak_ptr_is_equal( sk->verifykey_number, vk->number, sizeof( vk->number )) == ak_true ) {
+
+    int error = ak_error_ok;
+    ak_uint8 skname[2048], vkname[2048]; /* это искусственное ограничение */
+    size_t sklen = sizeof( skname ), vklen = sizeof( vkname );
+
+   /* совпали идентификаторы, должны совпасть и имена */
+    if(( error = ak_tlv_context_encode( sk->name, skname, &sklen )) != ak_error_ok ) {
+      ak_error_message( error, __func__, "creation certificate with incorrect name of issuer" );
+      goto labex;
+    }
+    if(( error = ak_tlv_context_encode( vk->name, vkname, &vklen )) != ak_error_ok ) {
+      ak_error_message( error, __func__, "creation certificate with incorrect name of owner" );
+      goto labex;
+    }
+    if( vklen != sklen ) {
+      ak_error_message( error, __func__,
+                       "creation certificate with different length of names of issuer and owner" );
+      goto labex;
+    }
+    if( ak_ptr_is_equal( skname, vkname, sklen ) != ak_true ) {
+      ak_error_message( error, __func__,
+                                 "creation certificate with different names of issuer and owner" );
+      goto labex;
+    }
+   /* теперь добавляем расширение с флагом, что сертификат является самоподписанным */
+    ak_asn1_context_add_tlv( asn,
+      tlv = ak_tlv_context_new_basic_constraints( opts->ca , opts->pathlenConstraint ));
+    if( tlv == NULL ) {
+      ak_error_message( ak_error_get_value(), __func__,
+                                        "incorrect generation of SubjectKeyIdentifier extension" );
+      goto labex;
+    }
+  }
+
  return tbs;
 
   labex: if( tbs != NULL ) tbs = ak_tlv_context_delete( tbs );
@@ -2115,7 +2151,8 @@
    \return Функция возвращает указатель на созданный объект.
    В случае ошибки возвращается NULL.                                                              */
 /* ----------------------------------------------------------------------------------------------- */
- static ak_asn1 ak_verifykey_context_export_to_asn1_certificate( ak_verifykey vk, ak_signkey sk )
+ static ak_asn1 ak_verifykey_context_export_to_asn1_certificate( ak_verifykey vk,
+                                                           ak_signkey sk, ak_certificate_opts opts )
 {
   size_t len = 0;
   struct bit_string bs;
@@ -2136,14 +2173,11 @@
   }
 
  /* создаем поле tbsCertificate */
-  if(( tbs = ak_verifykey_context_export_to_tbs( vk, sk )) == NULL ) {
+  if(( tbs = ak_verifykey_context_export_to_tbs( vk, sk, opts )) == NULL ) {
     ak_error_message( ak_error_get_value(), __func__,
                                                   "incorrect creation of tbsCertificate element" );
     goto labex;
   }
-
- /* добавляем расширения
-    если расширения добавляются, то должна быть версия 3 */
 
  /* вставляем в основное дерево созданный элемент */
   ak_asn1_context_add_tlv( tlv->data.constructed, tbs );
@@ -2217,7 +2251,7 @@
   if( sk == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using null pointer to secret key context" );
  /* вырабатываем asn1 дерево */
-  if(( certificate = ak_verifykey_context_export_to_asn1_certificate( vk, sk )) == NULL )
+  if(( certificate = ak_verifykey_context_export_to_asn1_certificate( vk, sk, opts )) == NULL )
     return ak_error_message( ak_error_get_value(), __func__,
                                             "incorrect creation of asn1 context for certificate" );
  /* формируем имя файла для хранения ключа
@@ -2230,7 +2264,7 @@
     }
     memset( filename, 0, size );
     ak_snprintf( filename, size, "%s.%s",
-                       ak_mpzn_to_hexstr( (ak_uint64 *)vk->number, ak_mpzn256_size ), file_extensions[format] );
+          ak_mpzn_to_hexstr( (ak_uint64 *)vk->number, ak_mpzn256_size ), file_extensions[format] );
   }
 
  /* 2. Сохраняем созданное дерево в файл */

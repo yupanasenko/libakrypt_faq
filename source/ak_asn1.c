@@ -1486,14 +1486,14 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
  \code
    ├SEQUENCE┐
-   │        ├OBJECT IDENTIFIER 2.5.29.14 (SubjectKey Identifier)
-   │        └OCTET STRING
-   │           04 14 9B 85 5E FB 81 DC 4D 59 07 51 63 CF BE DF
-   │           DA 2C 7F C9 44 3C
-   │           ├ encoded (22 octets)
-   │           └OCTET STRING
-   │              9B 85 5E FB 81 DC 4D 59 07 51 63 CF BE DF DA 2C  // данные, на которые
-   │              7F C9 44 3C                                      // указывает ptr
+            ├OBJECT IDENTIFIER 2.5.29.14 (SubjectKey Identifier)
+            └OCTET STRING
+               04 14 9B 85 5E FB 81 DC 4D 59 07 51 63 CF BE DF
+               DA 2C 7F C9 44 3C
+               ├ encoded (22 octets)
+               └OCTET STRING
+                  9B 85 5E FB 81 DC 4D 59 07 51 63 CF BE DF DA 2C  // данные, на которые
+                  7F C9 44 3C                                      // указывает ptr
  \endcode
 
  \param ptr указатель на область памяти, содержащую идентификатор ключа
@@ -1529,6 +1529,67 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     return ak_tlv_context_delete( tlv );
   }
   ak_tlv_context_delete( os );
+ /* собственно вставка в asn1 дерево */
+  ak_asn1_context_add_octet_string( tlv->data.constructed, encode, len );
+ return tlv;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает расширение x509v3 следующего вида.
+
+ \code
+   └SEQUENCE┐
+            ├OBJECT IDENTIFIER 2.5.29.19 (Basic Constraints)
+            ├BOOLEAN TRUE                 // расширение является критичным
+            └OCTET STRING
+               30 06 01 01 FF 02 01 00
+               ├ encoded (8 octets)
+               └SEQUENCE┐
+                        ├BOOLEAN TRUE     //  сертификат может создавать цепочки сертификации
+                        └INTEGER 0x0      //  длина цепочки равна 1
+                                          // (количество промежуточных сертификатов равно ноль)
+ \endcode
+
+ \param ca флаг возможности создавать цепочки сертификации
+ \param pathLen длина цепочки сертифкации
+ \return Функция возвращает указатель на структуру узла. Данная структура должна
+  быть позднее удалена с помощью явного вызова функции ak_tlv_context_delete() или путем
+  удаления дерева, в который данный узел будет входить.
+  В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
+  функции ak_error_get_value().                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_tlv ak_tlv_context_new_basic_constraints( bool_t ca, const ak_uint32 pathLen )
+{
+  ak_uint8 encode[256]; /* очень длинные идентификаторы это плохо */
+  ak_tlv tlv = NULL, os = NULL;
+  size_t len = sizeof( encode );
+
+  if(( tlv = ak_tlv_context_new_sequence()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
+    return NULL;
+  }
+ /* добавляем идентификатор расширения */
+  ak_asn1_context_add_oid( tlv->data.constructed, "2.5.29.19" );
+  ak_asn1_context_add_bool( tlv->data.constructed, ak_true );
+
+ /* добавляем закодированный идентификатор (номер) ключа */
+  if(( os = ak_tlv_context_new_sequence()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                                   "incorrect creation of temporary tlv context" );
+    return ak_tlv_context_delete( tlv );
+  }
+
+  ak_asn1_context_add_bool( os->data.constructed, ca );
+  if( ca ) ak_asn1_context_add_uint32( os->data.constructed, pathLen );
+
+  memset( encode, 0, sizeof( encode ));
+  if( ak_tlv_context_encode( os, encode, &len ) != ak_error_ok ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                                    "incorrect encoding a temporary tlv context" );
+    return ak_tlv_context_delete( tlv );
+  }
+  ak_tlv_context_delete( os );
+
  /* собственно вставка в asn1 дерево */
   ak_asn1_context_add_octet_string( tlv->data.constructed, encode, len );
  return tlv;
