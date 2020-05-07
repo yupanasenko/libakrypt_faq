@@ -301,6 +301,8 @@
                                         "using elliptic curve with unexpected size of parameters");
    }
 
+  /* sk->verifykey_number
+     инициализируется в момент выработки открытого ключа */
   /* сохраняем указатель на параметры эллиптической кривой */
    sk->key.data = wc;
   /* имя ключа не определено */
@@ -844,6 +846,8 @@
   pctx->flags = ak_key_flag_set_key;
  /* все параметры установлены => можно вырабатывать номер ключа */
   ak_verifykey_context_set_number( pctx );
+ /* копируем выработанный номер в контекст секретного ключа */
+  memcpy( sctx->verifykey_number, pctx->number, sizeof( pctx->number ));
 
  /* перемаскируем секретный ключ */
   ak_ptr_context_wipe( k, sizeof( ak_uint64 )*ak_mpzn512_size, &sctx->key.generator );

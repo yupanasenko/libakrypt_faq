@@ -24,6 +24,7 @@
     0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x27, 0x01, 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe,
     0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00, 0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x28 };
   ak_uint8 sign[128];
+  struct certificate_opts opts = certificate_default_options;
 
   ak_libakrypt_create( ak_function_log_stderr );
 
@@ -124,11 +125,13 @@
 
  /* указываем имя лица, заверяющего сертификат, фактически это имя УЦ */
   sk.name = ak_tlv_context_duplicate_global_name( vk.name );
+  opts.pathlenConstraint = 10;
 
  /* вырабатываем сертикафикат */
   ak_verifykey_context_export_to_certificate(
     &vk,  /* контекст открытого ключа -- значение помещается в сертификат */
     &sk, /* контекст секретного ключа -- используем для выработки подписи */
+    &opts,                          /* параметры создаваемого сертификата */
     "first.crt",        /* имя файла, в который будет сохранен сертификат */
     0,                       /* размер доступного буффера для имени файла */
     asn1_pem_format          /* формат хранения сертификата - der или pem */

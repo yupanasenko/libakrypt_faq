@@ -557,6 +557,18 @@ extern "C" {
  dll_export int ak_libakrypt_split_asn1( const char * , export_format_t , crypto_content_t );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура, в которой хранятся параметры создаваемого сертификата открытого ключа. */
+  typedef struct certificate_opts
+{
+ /*! \brief флаг того, что самоподписанный сертификат может порождать цепочки сертификации. */
+  bool_t ca;
+ /*! \brief количество промежуточных сертификатов в цепочке сертификации. */
+  ak_uint32 pathlenConstraint;
+} *ak_certificate_opts;
+
+ extern struct certificate_opts certificate_default_options;
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание дескриптора произвольного криптографического преобразования. */
  dll_export ak_handle ak_handle_new( const char *, const char * );
 /*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */

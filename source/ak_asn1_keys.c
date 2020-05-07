@@ -26,6 +26,12 @@
  static ak_function_password_read *ak_function_default_password_read = NULL;
 
 /* ----------------------------------------------------------------------------------------------- */
+ struct certificate_opts certificate_default_options = {
+   ak_true,     /* по-умолчанию, самоподписанный сертификат может порождать цепочки сертификации */
+   0                      /* длина цепочки равна 1 (ноль - это число промежуточных сертификатов) */
+ };
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \note Функция экспортируется.
     \param function Обработчик операции чтения пароля.
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
@@ -510,6 +516,12 @@
                                          временной интервал
        curveOID OBJECT IDENTIFIER     -- идентификатор эллиптической кривой, на которой выполняются
                                          криптографические преобразования
+       subjectKeyIdentifier CHOICE {
+                                OBJECT IDENTIFIER
+                                NULL
+                            }         -- идентификатор открытого ключа, связанного с данным
+                                         секретным ключом, если идентификатор не определен, то
+                                         помещается NULL
        content EncryptedContent       -- собственно зашифрованные с помощью преобразования KExp15 данные
     }
 \endcode
@@ -548,10 +560,11 @@
  \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
   возвращается код ошибки.                                                                         */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_asn1_context_add_signature_key_content( ak_asn1 root, ak_skey skey,
+ static int ak_asn1_context_add_signature_key_content( ak_asn1 root, ak_signkey skey,
                                                 ak_bckey ekey, ak_bckey ikey , const char *keyname )
 {
   ak_oid eoid = NULL;
+  ak_uint8 pnumber[32];
   ak_asn1 symkey = NULL;
   int error = ak_error_ok;
 
@@ -565,16 +578,16 @@
                                                symkey = ak_asn1_context_new( ))) != ak_error_ok )
      return ak_error_message( error, __func__, "incorrect creation of asn1 context for content" );
 
-  /* 3. создаем шесть встроенных полей (данный набор специфичен только для SecretKeyContent
+  /* 3. создаем семь встроенных полей (данный набор специфичен только для SecretKeyContent
      - 3.1. - идентификатор ключа */
-   if(( error = ak_asn1_context_add_oid( symkey, skey->oid->id )) != ak_error_ok ) {
+   if(( error = ak_asn1_context_add_oid( symkey, skey->key.oid->id )) != ak_error_ok ) {
      ak_asn1_context_delete( symkey );
      return ak_error_message( error, __func__, "incorrect addition of secret key's identifier" );
    }
 
   /* - 3.2. - номер ключа ключа */
    if(( error = ak_asn1_context_add_octet_string( symkey,
-                                          skey->number, sizeof( skey->number ))) != ak_error_ok ) {
+                                skey->key.number, sizeof( skey->key.number ))) != ak_error_ok ) {
      ak_asn1_context_delete( symkey );
      return ak_error_message( error, __func__, "incorrect addition of secret key's number" );
    }
@@ -587,7 +600,7 @@
    }
 
   /* - 3.4. - ресурс ключа */
-   if(( error = ak_asn1_context_add_resource( symkey, &skey->resource )) != ak_error_ok ) {
+   if(( error = ak_asn1_context_add_resource( symkey, &skey->key.resource )) != ak_error_ok ) {
      ak_asn1_context_delete( symkey );
      ak_error_message( error, __func__, "incorrect creation of secret key's parameters" );
      goto labexit;
@@ -598,7 +611,7 @@
 
      eoid = ak_oid_context_find_by_engine( identifier );
      while( eoid != NULL ) {
-       if( eoid->data == skey->data ) {
+       if( eoid->data == skey->key.data ) {
            if(( error = ak_asn1_context_add_oid( symkey, eoid->id )) != ak_error_ok )
              return ak_error_message( error, __func__,
                                                     "incorrect adding elliptic curve identifier" );
@@ -607,8 +620,15 @@
        eoid = ak_oid_context_findnext_by_engine( eoid, identifier );
      }
 
-  /* - 3.6. - собственно зашифрованный ключ */
-   if(( error = ak_asn1_context_add_skey_content( symkey, skey, ekey, ikey )) != ak_error_ok ) {
+  /* - 3.6. идентификатор открытого ключа */
+   memset( pnumber, 0, sizeof( pnumber ));
+   if( memcmp( pnumber, skey->verifykey_number, sizeof( skey->verifykey_number )) == 0 )
+     ak_asn1_context_add_utf8_string( symkey, NULL );
+    else ak_asn1_context_add_octet_string( symkey,
+                                         skey->verifykey_number, sizeof( skey->verifykey_number ));
+
+  /* - 3.7. - собственно зашифрованный ключ */
+   if(( error = ak_asn1_context_add_skey_content( symkey, &skey->key, ekey, ikey )) != ak_error_ok ) {
      ak_asn1_context_delete( symkey );
      ak_error_message( error, __func__, "incorrect creation of secret key's parameters" );
    }
@@ -711,7 +731,7 @@
            break;
 
      case sign_function:
-           if(( error = ak_asn1_context_add_signature_key_content( content, (ak_skey)key,
+           if(( error = ak_asn1_context_add_signature_key_content( content, (ak_signkey)key,
                                                          &ekey, &ikey, keyname )) != ak_error_ok ) {
               ak_asn1_context_delete( asn );
               ak_error_message( error, __func__, "incorrect creation of symmetric key content" );
@@ -1010,14 +1030,16 @@
    \param content указатель на ASN.1 дерево
    \param oid идентификатор криптографического алгоритма
    \param number номер ключа
-   \param name имя ключа
+   \param numlen переменная, в которой возвращается длина номера ключа
+   \param keyname имя ключа
    \param resourse данные о ресурсе ключа
    \param eoid идентификатор эллиптической кривой, но которой реализуется асимметричный алгоритм
    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_asn1_context_get_secret_key_info( ak_asn1 content, ak_oid *oid, ak_pointer *number,
-                               size_t *numlen, char **keyname, ak_resource resource, ak_oid *eoid )
+ int ak_asn1_context_get_secret_key_info(ak_asn1 content, ak_oid *oid, ak_pointer *number,
+                             size_t *numlen, char **keyname, ak_resource resource, ak_oid *eoid ,
+                                                               ak_pointer *vernum, size_t *verlen )
 {
   ak_asn1 asn = NULL;
   ak_pointer ptr = NULL;
@@ -1083,6 +1105,23 @@
    if(( *eoid = ak_oid_context_find_by_id( ptr )) == NULL )
      return ak_error_message( ak_error_invalid_asn1_content, __func__,
                                              "object identifier for elliptic curve is not valid" );
+
+  /* получаем идентификатор открытого ключа */
+   ak_asn1_context_next( asn );
+   if( DATA_STRUCTURE( asn->current->tag ) != PRIMITIVE )
+      return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                   "context has constructed context for subject key identifier " );
+   if( TAG_NUMBER( asn->current->tag ) == TNULL ) {
+     *vernum = NULL;
+     *verlen = 0;
+     return ak_error_ok;
+   }
+   if( TAG_NUMBER( asn->current->tag ) != TOCTET_STRING )
+     return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                    "context has incorrect asn1 type for subject key identifier" );
+   if(( error = ak_tlv_context_get_octet_string( asn->current, vernum, verlen )) != ak_error_ok )
+     return ak_error_message( error, __func__, "incorrect reading of symmetric key number");
+
   return ak_error_ok;
 }
 
@@ -1190,8 +1229,6 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция импортирует ключ с ожидаемым типом криптографического алгоритма и
     может применяться для инициализации статических контекстов ключа.
-    Для создания динамического контекста ключа можно воспользоваться функцией
-    ak_key_context_new_from_derfile().
 
     \param key указатель на контекст создаваемого ключа.
     \param engine тип криптографического преобразования
@@ -1205,13 +1242,13 @@
  int ak_key_context_import_from_file( ak_pointer key,
                                        oid_engines_t engine, const char *filename, char **keyname )
 {
-   size_t len = 0;
    ak_oid oid, eoid = NULL;
    int error = ak_error_ok;
    struct bckey ekey, ikey;
-   ak_pointer number = NULL;
    struct resource resource;
+   size_t len = 0, verlen = 0;
    crypto_content_t content_type;
+   ak_pointer number = NULL, vernum = NULL;
    ak_asn1 asn = NULL, basicKey = NULL, content = NULL;
 
   /* стандартные проверки */
@@ -1249,7 +1286,8 @@
 
      case secret_key_content:
        if(( error = ak_asn1_context_get_secret_key_info(
-                     content, &oid, &number, &len, keyname, &resource, &eoid )) != ak_error_ok ) {
+                          content, &oid, &number, &len, keyname,
+                                          &resource, &eoid, &vernum, &verlen )) != ak_error_ok ) {
          ak_error_message( error, __func__, "incorrect reading a symmetric key info" );
          goto lab1;
        }
@@ -1286,6 +1324,9 @@
        ak_error_message( error, __func__, "incorrect assigning an elliptic curve to seсret key");
        (( ak_function_destroy_object *)oid->func.destroy )( key );
      }
+    /* копируем номер открытого ключа */
+     if( vernum != NULL )
+       memcpy( ((ak_signkey)key)->verifykey_number, vernum, ak_min( verlen, 32 ));
    }
 
   /* присваиваем ключу необходимые данные
@@ -2161,7 +2202,7 @@
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_verifykey_context_export_to_certificate( ak_verifykey vk, ak_signkey sk,
-                                        char *filename, const size_t size, export_format_t format )
+              ak_certificate_opts opts, char *filename, const size_t size, export_format_t format )
 {
   int error = ak_error_ok;
   ak_asn1 certificate = NULL;

@@ -190,28 +190,42 @@
    } else return EXIT_FAILURE;
    printf("---- oid: %s (%s)\n", curvoid->id, curvoid->names[0] );
 
+   ak_verifykey_context_create_from_signkey( &vkey, &skey );       /* этим вызовом мы поместили */
+   ak_verifykey_context_destroy( &vkey );  /* в контекст секретного ключа номер открытого ключа */
+
+   printf("secret key number:\t%s\n",
+                         ak_ptr_to_hexstr( skey.key.number, sizeof( skey.key.number ), ak_false ));
+   printf("subject key identifier:\t%s\n",
+             ak_ptr_to_hexstr( skey.verifykey_number, sizeof( skey.verifykey_number ), ak_false ));
+
   /* подписываем данные */
    ak_signkey_context_sign_ptr( &skey, testkey, 13, sign, sizeof( sign ));
-   printf("signature: %s\n", ak_ptr_to_hexstr( sign,
-                                       ak_signkey_context_get_tag_size( &skey ), ak_false ));
+   printf("signature: %s ... \n", ak_ptr_to_hexstr( sign, 8, ak_false ));
 
   /* создаем необязательное имя для ключа */
    ak_snprintf( tname, sizeof( tname ), "DSkey-%s-%03u", curvoid->names[0], skey.key.number[0] );
   /* сохраняем ключ */
    ak_key_context_export_to_file_with_password( &skey, sign_function,
-                                             "password", 8, tname, filename, sizeof( filename ), asn1_der_format );
+                             "password", 8, tname, filename, sizeof( filename ), asn1_der_format );
   /* уничтожаем ключ */
    ak_signkey_context_destroy( &skey );
 
   /* считываем ключ */
-   ak_signkey_context_import_from_file( &skey, filename, &keyname );
+   if( ak_signkey_context_import_from_file( &skey, filename, &keyname ) == ak_error_ok )
+     printf("import is Ok\n");
    /* для отладки - выводим сформированную структуру в консоль
     ak_skey_context_print_to_file( &skey.key, stdout );
     printf("\n"); */
+   if( keyname != NULL ) {
     printf("keyname: %s\n", keyname );
-    if( keyname != NULL ) free( keyname );
+    free( keyname );
+   }
+   printf("secret key number:\t%s\n",
+                         ak_ptr_to_hexstr( skey.key.number, sizeof( skey.key.number ), ak_false ));
+   printf("subject key identifier:\t%s\n",
+             ak_ptr_to_hexstr( skey.verifykey_number, sizeof( skey.verifykey_number ), ak_false ));
 
-  /* создаем открытый */
+  /* создаем открытый ключ */
    ak_verifykey_context_create_from_signkey( &vkey, &skey );
    printf("verify: ");
    if( ak_verifykey_context_verify_ptr( &vkey, testkey, 13, sign )) printf("Ok\n\n");

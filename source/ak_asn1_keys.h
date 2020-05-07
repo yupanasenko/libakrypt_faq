@@ -29,8 +29,8 @@
                                       ak_oid * , ak_pointer * , size_t * , char ** , ak_resource );
 /*! \brief Функция получает служебную информацию об асимметричном ключе,
    расположенном в ASN.1 контейнере. */
- int ak_asn1_context_get_secret_key_info( ak_asn1 ,
-                          ak_oid * , ak_pointer * , size_t * , char ** , ak_resource , ak_oid * );
+ int ak_asn1_context_get_secret_key_info( ak_asn1 , ak_oid * , ak_pointer * , size_t * ,
+                                      char ** , ak_resource , ak_oid *,  ak_pointer * , size_t * );
 /*! \brief Функция инициализирует секретный ключ значениями, расположенными в ASN.1 контейнере. */
  int ak_asn1_context_get_skey( ak_asn1 , ak_skey , ak_bckey , ak_bckey );
 
@@ -48,7 +48,7 @@
 /*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
     в сертификат открытого ключа. */
  int ak_verifykey_context_export_to_certificate( ak_verifykey , ak_signkey ,
-                                                         char * , const size_t , export_format_t );
+                                   ak_certificate_opts , char * , const size_t , export_format_t );
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция импортирует секретный ключ криптографического преобразования из
    der-последовательности, хранящейся в заданном файле. */
