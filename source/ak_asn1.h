@@ -227,6 +227,8 @@
  ak_tlv ak_tlv_context_new_subject_key_identifier( ak_pointer, const size_t );
 /*! \brief Создание расширения, содержащего основные ограничения (x509v3: BasicConstraints ) */
  ak_tlv ak_tlv_context_new_basic_constraints( bool_t , const ak_uint32 );
+/*! \brief Создание расширения, содержащего область применения сертификата (x509v3: keyUsage ) */
+ ak_tlv ak_tlv_context_new_key_usage( const ak_uint32 );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Выделение памяти и создание одного уровня ASN1 дерева. */

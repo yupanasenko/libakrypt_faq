@@ -1596,6 +1596,80 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает расширение x509v3 следующего вида.
+
+ \code
+    └SEQUENCE┐
+             ├OBJECT IDENTIFIER 2.5.29.15 (Key Usage)
+             └OCTET STRING
+                03 02 00 84
+                ├ encoded (4 octets)
+                └BIT STRING
+                   84
+ \endcode
+
+ \param bits набор флагов
+ \return Функция возвращает указатель на структуру узла. Данная структура должна
+  быть позднее удалена с помощью явного вызова функции ak_tlv_context_delete() или путем
+  удаления дерева, в который данный узел будет входить.
+  В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
+  функции ak_error_get_value().                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_tlv ak_tlv_context_new_key_usage( const ak_uint32 bits )
+{
+  ak_uint8 buffer[2], /* значащими битами являются младшие 9,
+            поэтому нам хватит двух байт для хранения флагов */
+           encode[16];  /* массив для кодирования битовой строки */
+  struct bit_string bs;
+  ak_tlv tlv = NULL, os = NULL;
+  size_t len = sizeof( encode );
+
+  if( !bits ) {
+    ak_error_message( ak_error_zero_length, __func__, "using undefined set of keyUsage flags" );
+    return NULL;
+  }
+  if(( tlv = ak_tlv_context_new_sequence()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
+    return NULL;
+  }
+ /* добавляем идентификатор расширения */
+  ak_asn1_context_add_oid( tlv->data.constructed, "2.5.29.15" );
+
+  buffer[0] = ( bits >> 1 )&0xFF;
+  if( bits&0x01 ) { /* определен бит decipherOnly */
+    buffer[1] = 0x80;
+    bs.unused = 7;
+    bs.len = 2;
+  } else {
+      buffer[1] = 0;
+      bs.unused = 0;
+      bs.len = 1;
+   }
+  bs.value = buffer;
+
+ /* добавляем закодированный идентификатор (номер) ключа */
+  if(( os = ak_tlv_context_new_primitive( TBIT_STRING, bs.len+1, NULL, ak_true )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                                   "incorrect creation of temporary tlv context" );
+    return ak_tlv_context_delete( tlv );
+  }
+  os->data.primitive[0] = bs.unused;
+  memcpy( os->data.primitive+1, bs.value, bs.len );
+
+  memset( encode, 0, sizeof( encode ));
+  if( ak_tlv_context_encode( os, encode, &len ) != ak_error_ok ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                                    "incorrect encoding a temporary tlv context" );
+    return ak_tlv_context_delete( tlv );
+  }
+  ak_tlv_context_delete( os );
+
+ /* собственно вставка в asn1 дерево */
+  ak_asn1_context_add_octet_string( tlv->data.constructed, encode, len );
+ return tlv;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
                        /*  функции для разбора/создания слоев ASN1 дерева */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_context_create( ak_asn1 asn1 )

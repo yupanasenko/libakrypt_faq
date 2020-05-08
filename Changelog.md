@@ -12,6 +12,7 @@
     - ak_verifykey_context_import_from_request()
     - ak_verifykey_context_export_to_request()
  - Реализован экспорт открытого ключа в сертификат согласно Р 1323565.1.023-2018
+   с поддержкой ряда обязательных расширений согласно RFC5280.
     - ak_verifykey_context_export_to_certificate()
  - Добавлены функции внутреннего интерфейса
     - ak_mpzn_to_hexstr_alloc()

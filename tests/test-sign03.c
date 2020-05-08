@@ -126,6 +126,8 @@
  /* указываем имя лица, заверяющего сертификат, фактически это имя УЦ */
   sk.name = ak_tlv_context_duplicate_global_name( vk.name );
 
+  opts.keyUsageBits = ( bit_digitalSignature + bit_keyCertSign );
+
  /* вырабатываем сертикафикат */
   ak_verifykey_context_export_to_certificate(
     &vk,  /* контекст открытого ключа -- значение помещается в сертификат */

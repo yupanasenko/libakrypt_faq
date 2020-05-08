@@ -557,6 +557,26 @@ extern "C" {
  dll_export int ak_libakrypt_split_asn1( const char * , export_format_t , crypto_content_t );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Бит `digitalSignature` расширения `keyUsage`. */
+ #define bit_digitalSignature   (256)
+/*! \brief Бит `contentCommitment` расширения `keyUsage`. */
+ #define bit_contentCommitment  (128)
+/*! \brief Бит `keyEncipherment` расширения `keyUsage`. */
+ #define bit_keyEncipherment     (64)
+/*! \brief Бит `dataEncipherment` расширения `keyUsage`. */
+ #define bit_dataEncipherment    (32)
+/*! \brief Бит `keyAgreement` расширения `keyUsage`. */
+ #define bit_keyAgreement        (16)
+/*! \brief Бит `keyCertSign` расширения `keyUsage`. */
+ #define bit_keyCertSign          (8)
+/*! \brief Бит `cRLSign` расширения `keyUsage`. */
+ #define bit_cRLSign              (4)
+/*! \brief Бит `encipherOnly` расширения `keyUsage`. */
+ #define bit_encipherOnly         (2)
+/*! \brief Бит `decipherOnly` расширения `keyUsage`. */
+ #define bit_decipherOnly         (1)
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура, в которой хранятся параметры создаваемого сертификата открытого ключа. */
   typedef struct certificate_opts
 {
@@ -564,6 +584,8 @@ extern "C" {
   bool_t ca;
  /*! \brief количество промежуточных сертификатов в цепочке сертификации. */
   ak_uint32 pathlenConstraint;
+ /*! \brief набор бит, описывающих область примеения открытого ключа (расширение `keyUsage`). */
+  ak_uint32 keyUsageBits;
 } *ak_certificate_opts;
 
  extern struct certificate_opts certificate_default_options;

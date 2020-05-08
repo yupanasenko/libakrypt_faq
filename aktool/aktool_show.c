@@ -126,6 +126,17 @@
             continue;
           }
 
+         /* проверяем режим криптопреобразования (mode) */
+          if( strstr( ak_libakrypt_get_mode_name( mode ), value ) != NULL ) {
+            /* выводим первое имя */
+             printf("%3u  %-22s %-40s %-20s %-20s\n",
+               (unsigned int) idx, oid, names[0], ak_libakrypt_get_engine_name( engine ),
+                                                               ak_libakrypt_get_mode_name( mode ));
+            /* потом все остальные */
+             while( names[++jdx] != NULL ) printf("%28s%s\n", " ", names[jdx] );
+            continue;
+          }
+
          /* проверяем идентификатор (oid) */
           if( strstr( oid, value ) != NULL ) {
             /* выводим первое имя */
@@ -190,7 +201,8 @@
   printf(_("aktool show [options]  - show useful information about libakrypt parameters\n\n"));
   printf(_("available options:\n"));
   printf(_("     --engines           show all types of available crypto engines\n"));
-  printf(_("     --oid <eni>         show one or more OID's, where \"eni\" is an engine, name or identifier of OID\n"));
+  printf(_("     --oid <enim>        show one or more OID's,\n"));
+  printf(_("                         where \"enim\" is an engine, name, identifier or mode of OID\n"));
   printf(_("     --oids              show the list of all available libakrypt's OIDs\n"));
   printf(_("     --options           show the list of all libakrypt's cryptographic options and their values\n"));
   printf(_("     --modes             show all types of cryptographic modes\n"));
