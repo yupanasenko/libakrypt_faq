@@ -115,8 +115,8 @@
  static const char *on_asn1_class_ka[] =    { "Digital Signature Module, class KA", NULL };
 
 /* Microsoft */
- static const char *on_asn1_ms_cav[] =      { "CA Version", NULL };
- static const char *on_asn1_ms_psh[] =      { "Previous Certificate Hash", NULL };
+ static const char *on_asn1_ms_cav[] =      { "microsoft CA version", NULL };
+ static const char *on_asn1_ms_psh[] =      { "microsoft previous certificate hash", NULL };
 
 #endif
 
@@ -196,20 +196,6 @@
                                       { ( ak_function_void *) ak_bckey_context_create_kuznechik,
                                                  ( ak_function_void *) ak_bckey_context_destroy,
                                                   ( ak_function_void *) ak_bckey_context_delete }},
-
-// рекомендации по cms
-// id-gostr3412-2015-magma-ctracpkm OBJECT IDENTIFIER ::= { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) algorithms(1) cipher(5) gostr3412-2015-magma(1) mode- ctracpkm(1) }
-// id-gostr3412-2015-magma-ctracpkm-omac OBJECT IDENTIFIER ::= { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) algorithms(1) cipher(5) gostr3412-2015-magma(1) mode- ctracpkm-omac(2) }
-// id-gostr3412-2015-kuznyechik-ctracpkm OBJECT IDENTIFIER ::= { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) algorithms(1) cipher(5) gostr3412-2015-kuznyechik(2) mode-ctracpkm(1)
-// id-gostr3412-2015-kuznyechik-ctracpkm-omac OBJECT IDENTIFIER ::= { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) algorithms(1) cipher(5) gostr3412-2015-kuznyechik(2) mode-ctracpkm-omac(2) }
-// id-gostr3412-2015-magma-wrap-kexp15 OBJECT IDENTIFIER ::= { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) algorithms(1) wrap(7) gostr3412-2015-magma(1) kexp15(1) }
-// id-gostr3412-2015-kuznyechik-wrap-kexp15 OBJECT IDENTIFIER ::= { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) algorithms(1) wrap(7) gostr3412-2015-kuznyechik(2) kexp15(1) }
-// id-tc26-agreement-gost-3410-12-256 OBJECT IDENTIFIER ::= { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) algorithms (1) agreement(6) gost3410-2012-256(1) }
-// id-tc26-agreement-gost-3410-12-512 OBJECT IDENTIFIER ::= { iso(1) member-body(2) ru(643) rosstandart(7) tc26(1) algorithms (1) agreement(6) gost3410-2012-512(2) }
-
-// режимы MGM
-// 1.2.643.7.1.1.5.1.3 (id-tc26-cipher- gostr3412-2015-magma-mgm) и
-// 1.2.643.7.1.1.5.2.3 (id-tc26-cipher-gostr3412-2015- kuznyechik-mgm)
 
   /* 11. алгоритмы выработки и проверки электронной подписи */
    { sign_function, algorithm, on_sign256, "1.2.643.7.1.1.3.2", NULL,
@@ -349,7 +335,7 @@
     "hybrid cipher",
     "hash function",
     "hmac function",
-    "omac function",
+    "cmac function",
     "mgm function",
     "mac function",
     "sign function",
@@ -415,31 +401,54 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \note Память, для хранения имени и идентификатора алгоритма должна быть выделена заранее.
-    Необходимый объем памяти должен быть не менее, чем значение, возвращаемое функцией
-    ak_libakrypt_get_oid_max_length().
+/*! @param index Индекс статической структуры oid.
+    @param info указатель на контекст, куда будет помещена информация о криптографическом механизме;
+    перед вызовом функции, контекст `oid` должен быть размещен в статической или динамической памяти.
 
-    @param index Индекс статической структуры oid
-    @param engine Указатель на переменную, куда будет помещено значение engine
-    @param mode Указатель на переменную, куда будет помещено значение mode
-    @param names Указатель на массив строк, заканчивающийся NULL, в котором будет находиться
-    множество доступных имен для данного OID
-    @param oid Указатель на строку, в которую будет скопирован OID -  последовательность чисел,
-    разделенных точками.
-    @param oid_size Размер буффера, в который будет скопирован идентификатор алгоритма.
     @return Функция возвращает \ref ak_error_ok (ноль) в случае успеха. В противном случае,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_get_oid_by_index( const size_t index, oid_engines_t *engine, oid_modes_t *mode,
-                                                             const char **oid, const char ***names )
+ dll_export int ak_libakrypt_get_oid_by_index( const size_t index, ak_oid_info info )
 {
+ /* проверяем, что мы нужном диапазоне */
   if( index >= ak_libakrypt_oids_count())
     return ak_error_message( ak_error_wrong_index, __func__, "incorrect index value" );
+  if( info == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                        "using null pointer to oid_info context" );
+ /* в случае успеха, возвращаем запрашиваемую информацию */
+  info->engine = libakrypt_oids[index].engine;
+  info->mode = libakrypt_oids[index].mode;
+  info->id =  libakrypt_oids[index].id;
+  info->names = libakrypt_oids[index].names;
 
-  *engine = libakrypt_oids[index].engine;
-  *mode = libakrypt_oids[index].mode;
-  *oid =  libakrypt_oids[index].id;
-  *names = libakrypt_oids[index].names;
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param description Строка, содержащая имя или идентификатор криптографического алгоритма.
+    @param info указатель на контекст, куда будет помещена информация о криптографическом механизме;
+    перед вызовом функции, контекст `oid` должен быть размещен в статической или динамической памяти.
+
+    @return Функция возвращает \ref ak_error_ok (ноль) в случае успеха. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ dll_export int ak_libakrypt_get_oid( const char *description , ak_oid_info info )
+{
+  ak_oid oid = NULL;
+
+ /* проверяем область допустимых значений */
+  if( description == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                   "using null pointer to string with name/identifer of cryptographic mechanism" );
+  if( info == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                        "using null pointer to oid_info context" );
+  if(( oid = ak_oid_context_find_by_ni( description )) == NULL )
+    return ak_error_message( ak_error_wrong_oid, __func__,
+                               "incorrect string with name/identifer of cryptographic mechanism" );
+ /* в случае успеха, возвращаем запрашиваемую информацию */
+  info->engine = oid->engine;
+  info->mode = oid->mode;
+  info->id =  oid->id;
+  info->names = oid->names;
 
  return ak_error_ok;
 }

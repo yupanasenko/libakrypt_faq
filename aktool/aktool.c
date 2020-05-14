@@ -79,6 +79,8 @@
   if( aktool_check_command( "icode", argv[1] )) return aktool_icode( argc, argv );
   if( aktool_check_command( "a", argv[1] )) return aktool_asn1( argc, argv );
   if( aktool_check_command( "asn1parse", argv[1] )) return aktool_asn1( argc, argv );
+  if( aktool_check_command( "k", argv[1] )) return aktool_key( argc, argv );
+  if( aktool_check_command( "key", argv[1] )) return aktool_key( argc, argv );
 
  /* ничего не подошло, выводим сообщение об ошибке */
   ak_log_set_function( ak_function_log_stderr );
@@ -327,6 +329,28 @@
  return error;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+ void aktool_error( const char *format, ... )
+{
+  va_list args;
+  int result = 0;
+  char string[1024];
+
+  va_start( args, format );
+ #ifdef _MSC_VER
+  #if _MSC_VER > 1310
+    result = _vsnprintf_s( string, sizeof( string ), size, format, args );
+  #else
+    result = _vsnprintf( string, sizeof( string ), format, args );
+  #endif
+ #else
+  result = vsnprintf( string, sizeof( string ), format, args );
+ #endif
+  va_end( args );
+
+ if( result >= 0 ) printf( "%serror%s: %s\n",
+             ak_libakrypt_get_start_error_string(), ak_libakrypt_get_end_error_string(), string );
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                 реализация вывода справки                                       */
@@ -368,6 +392,7 @@
   printf(_("available commands (in short and long forms):\n"));
   printf(_("  a, asn1parse - decode and print the ASN.1 data\n"));
   printf(_("  i, icode     - calculate or check integrity codes\n"));
+  printf(_("  k, key       - key generation and management functions\n"));
   printf(_("     show      - show useful information\n\n"));
   printf(_("also try:\n"));
   printf(_("  \"aktool command --help\" to get information about command options\n"));

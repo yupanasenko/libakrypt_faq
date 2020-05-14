@@ -39,6 +39,11 @@
  #else
   #error Library cannot be compiled without string.h header
  #endif
+ #ifdef LIBAKRYPT_HAVE_STDARG_H
+  #include <stdarg.h>
+ #else
+  #error Library cannot be compiled without stdarg.h header
+ #endif
 
 /* ----------------------------------------------------------------------------------------------- */
  #ifdef LIBAKRYPT_HAVE_SYSSTAT_H
@@ -82,7 +87,10 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
- #define aktool_max_icode_size  (128)
+ #define aktool_max_icode_size    (128)
+
+/* ----------------------------------------------------------------------------------------------- */
+ #define aktool_max_password_len  (256)
 
 /* ----------------------------------------------------------------------------------------------- */
  extern ak_function_log *audit;
@@ -116,12 +124,15 @@
  void aktool_set_audit( TCHAR * );
 /* построчное чтение файла и применение к каждой строке заданной функции */
  int ak_file_read_by_lines( const char * , ak_file_read_function * , ak_pointer );
+/* вывод в консоль строки с сообщением об ошибке */
+ void aktool_error( const char *format, ... );
 
 /* ----------------------------------------------------------------------------------------------- */
 /* реализации пользовательских команд */
  int aktool_icode( int argc, TCHAR *argv[] );
  int aktool_show( int argc, TCHAR *argv[] );
  int aktool_asn1( int argc, TCHAR *argv[] );
+ int aktool_key( int argc, TCHAR *argv[] );
 
  #endif
 /* ----------------------------------------------------------------------------------------------- */

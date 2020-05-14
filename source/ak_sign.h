@@ -35,7 +35,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция создания контекста секретного ключа электронной подписи. */
- typedef int ( ak_function_create_signkey ) ( ak_signkey );
+ typedef int ( ak_function_signkey_context_create ) ( ak_signkey );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация контекста секретного ключа алгоритма ГОСТ Р 34.10-2012. */
@@ -53,6 +53,8 @@
  int ak_signkey_context_create_oid( ak_signkey , ak_oid );
 /*! \brief Присвоение контексту секретного ключа указателя на эллиптическую кривую. */
  int ak_signkey_context_set_curve( ak_signkey , const ak_wcurve );
+/*! \brief Присвоение контексту секретного ключа указателя на эллиптическую кривую. */
+ int ak_signkey_context_set_curve_str( ak_signkey sctx, const char * );
 /*! \brief Уничтожение контекста секретного ключа. */
  int ak_signkey_context_destroy( ak_signkey );
 /*! \brief Освобождение памяти из под контекста секретного ключа. */

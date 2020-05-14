@@ -355,33 +355,36 @@
    if( wc == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                   "using null pointer to elliptic curve context" );
    if( wc->size != ( sctx->ctx.data.sctx.hsize >> 3 ))
-     return ak_error_message( ak_error_curve_not_supported,
-                                    __func__ , "elliptic curve not supported for this algorithm" );
+    return ak_error_message_fmt( ak_error_curve_not_supported, __func__ ,
+                              "%u bits elliptic curve is not applicable for algorithm %s",
+                                                          wc->size << 6, sctx->key.oid->names[0] );
     else sctx->key.data = wc;
-
  return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \param sctx Контекст секретного ключа электронной подписи (асимметричного алгоритма).
-    \param ni строка, содержащая имя или идентификатор эллиптической кривой, на которой будет
-    реализован криптографический алгоритм.
+/*! @param sctx Контекст секретного ключа электронной подписи (асимметричного алгоритма).
+    @param string Строка, определяющая набор параметров эллиптической кривой. Контекст однозначно связывает
+    секретный ключ с эллиптической кривой, на которой происходят вычисления.
 
-    \return Функция возвращает ноль (\ref ak_error_ok) в случае успешной инициализации контекста.
+    @return Функция возвращает ноль (\ref ak_error_ok) в случае успешной инициализации контекста.
     В случае возникновения ошибки возвращается ее код.                                             */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_signkey_context_set_curve_str( ak_signkey sctx, const char *ni )
+ int ak_signkey_context_set_curve_str( ak_signkey sctx, const char *string )
 {
   ak_wcurve wc = NULL;
 
-  if( sctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                    "using null pointer to digital signature secret key context" );
-  if( ni == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                               "using null pointer to elliptic curve identifier" );
-  if(( wc = ak_signkey_context_get_wcurve( ni )) == NULL )
+  if( sctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using null pointer to secret key context" );
+  if(( wc = ak_signkey_context_get_wcurve( string )) == NULL )
     return ak_error_message( ak_error_get_value(), __func__,
                                                  "incorrect search of elliptic curve parameters" );
- return ak_signkey_context_set_curve( sctx, wc );
+  if( wc->size != ( sctx->ctx.data.sctx.hsize >> 3 ))
+    return ak_error_message_fmt( ak_error_curve_not_supported, __func__ ,
+                              "%u bits elliptic curve is not applicable for algorithm %s",
+                                                          wc->size << 6, sctx->key.oid->names[0] );
+   else sctx->key.data = wc;
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -406,7 +409,7 @@
                                                  "using digital signature oid with wrong engine" );
   if( algoid->mode != algorithm ) return ak_error_message( ak_error_oid_mode, __func__ ,
                                                    "using digital signature oid with wrong mode" );
- return ((ak_function_create_signkey *)algoid->func.create)( sctx );
+ return ((ak_function_signkey_context_create *)algoid->func.create)( sctx );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -761,6 +764,9 @@
                                     "using null pointer to digital signature public key context" );
   if( wc == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                   "using null pointer to elliptic curve context" );
+  if( ak_oid_context_find_by_data( wc ) == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__ ,
+                                          "using unsearchable pointer to elliptic curve context" );
  /* очищаем контекст,
     в частности, здесь обнуляется номер открытого ключа */
   memset( pctx, 0, sizeof( struct verifykey ));
@@ -840,8 +846,9 @@
   pctx->time.not_before = sctx->key.resource.time.not_before;
   pctx->time.not_after = sctx->key.resource.time.not_after;
 
- /* имя ключа не определено */
-  pctx->name = NULL;
+ /* устанавливаем имя ключа, если определено */
+  if( sctx->name != NULL ) pctx->name = ak_tlv_context_duplicate_global_name( sctx->name );
+    else pctx->name = NULL;
  /* устанавливаем флаг  */
   pctx->flags = ak_key_flag_set_key;
  /* все параметры установлены => можно вырабатывать номер ключа */
@@ -852,6 +859,7 @@
  /* перемаскируем секретный ключ */
   ak_ptr_context_wipe( k, sizeof( ak_uint64 )*ak_mpzn512_size, &sctx->key.generator );
   sctx->key.set_mask( &sctx->key );
+
  return ak_error_ok;
 }
 

@@ -15,9 +15,7 @@
 
  /* параметры, запрашиваемые пользователем */
   char *value = NULL;
-  oid_modes_t mode = 0;
-  oid_engines_t engine = 0;
-  const char *oid, **names;
+  struct oid_info oid = { identifier, algorithm, NULL, NULL };
 
   const struct option long_options[] = {
      { "oids",             0, NULL,  254 },
@@ -88,16 +86,15 @@
        for( idx = 0; idx < ak_libakrypt_oids_count(); idx++ ) {
           size_t jdx = 0;
          /* получаем информацию об идентифкаторе с заданным номером */
-          if(( ak_libakrypt_get_oid_by_index( idx, &engine, &mode,
-                                                            &oid, &names )) != ak_error_ok ) break;
-          if( names[0] == NULL ) break;
+          if(( ak_libakrypt_get_oid_by_index( idx, &oid )) != ak_error_ok ) break;
+          if( oid.names[0] == NULL ) break;
 
          /* выводим сначала с одним именем  */
           printf("%3u  %-22s %-40s %-20s %-20s\n",
-            (unsigned int) idx, oid, names[0], ak_libakrypt_get_engine_name( engine ),
-                                                               ak_libakrypt_get_mode_name( mode ));
+            (unsigned int) idx, oid.id, oid.names[0], ak_libakrypt_get_engine_name( oid.engine ),
+                                                           ak_libakrypt_get_mode_name( oid.mode ));
          /* потом выводим остальные имена идентификатора */
-          while( names[++jdx] != NULL ) printf("%28s%s\n", " ", names[jdx] );
+          while( oid.names[++jdx] != NULL ) printf("%28s%s\n", " ", oid.names[jdx] );
        }
        break;
 
@@ -111,50 +108,45 @@
        for( idx = 0; idx < ak_libakrypt_oids_count(); idx++ ) {
           size_t jdx = 0;
          /* получаем информацию об идентифкаторе с заданным номером */
-          if(( ak_libakrypt_get_oid_by_index( idx, &engine, &mode,
-                                                            &oid, &names )) != ak_error_ok ) break;
-          if( names[0] == NULL ) break;
+          if(( ak_libakrypt_get_oid_by_index( idx, &oid )) != ak_error_ok ) break;
+          if( oid.names[0] == NULL ) break;
 
          /* проверяем тип криптопреобразования (engine) */
-          if( strstr( ak_libakrypt_get_engine_name(engine), value ) != NULL ) {
+          if( strstr( ak_libakrypt_get_engine_name( oid.engine ), value ) != NULL ) {
             /* выводим первое имя */
-             printf("%3u  %-22s %-40s %-20s %-20s\n",
-               (unsigned int) idx, oid, names[0], ak_libakrypt_get_engine_name( engine ),
-                                                               ak_libakrypt_get_mode_name( mode ));
+             printf("%3u  %-22s %-40s %-20s %-20s\n", (unsigned int) idx, oid.id, oid.names[0],
+               ak_libakrypt_get_engine_name( oid.engine ), ak_libakrypt_get_mode_name( oid.mode ));
             /* потом все остальные */
-             while( names[++jdx] != NULL ) printf("%28s%s\n", " ", names[jdx] );
+             while( oid.names[++jdx] != NULL ) printf("%28s%s\n", " ", oid.names[jdx] );
             continue;
           }
 
          /* проверяем режим криптопреобразования (mode) */
-          if( strstr( ak_libakrypt_get_mode_name( mode ), value ) != NULL ) {
+          if( strstr( ak_libakrypt_get_mode_name( oid.mode ), value ) != NULL ) {
             /* выводим первое имя */
-             printf("%3u  %-22s %-40s %-20s %-20s\n",
-               (unsigned int) idx, oid, names[0], ak_libakrypt_get_engine_name( engine ),
-                                                               ak_libakrypt_get_mode_name( mode ));
+             printf("%3u  %-22s %-40s %-20s %-20s\n", (unsigned int) idx, oid.id, oid.names[0],
+               ak_libakrypt_get_engine_name( oid.engine ), ak_libakrypt_get_mode_name( oid.mode ));
             /* потом все остальные */
-             while( names[++jdx] != NULL ) printf("%28s%s\n", " ", names[jdx] );
+             while( oid.names[++jdx] != NULL ) printf("%28s%s\n", " ", oid.names[jdx] );
             continue;
           }
 
          /* проверяем идентификатор (oid) */
-          if( strstr( oid, value ) != NULL ) {
+          if( strstr( oid.id, value ) != NULL ) {
             /* выводим первое имя */
-             printf("%3u  %-22s %-40s %-20s %-20s\n",
-               (unsigned int) idx, oid, names[0], ak_libakrypt_get_engine_name( engine ),
-                                                               ak_libakrypt_get_mode_name( mode ));
+             printf("%3u  %-22s %-40s %-20s %-20s\n", (unsigned int) idx, oid.id, oid.names[0],
+               ak_libakrypt_get_engine_name( oid.engine ), ak_libakrypt_get_mode_name( oid.mode ));
             /* потом все остальные */
-             while( names[++jdx] != NULL ) printf("%28s%s\n", " ", names[jdx] );
+             while( oid.names[++jdx] != NULL ) printf("%28s%s\n", " ", oid.names[jdx] );
             continue;
           }
 
          /* последнее - поиск по имени */
           jdx = 0;
-          while( names[jdx] != NULL ) {
-            if( strstr( names[jdx], value ) != NULL ) {
-             printf("%3u  %-22s %-40s %-20s %-20s\n",
-               (unsigned int) idx, oid, names[jdx], ak_libakrypt_get_engine_name( engine ),
-                                                               ak_libakrypt_get_mode_name( mode ));
+          while( oid.names[jdx] != NULL ) {
+            if( strstr( oid.names[jdx], value ) != NULL ) {
+             printf("%3u  %-22s %-40s %-20s %-20s\n", (unsigned int) idx, oid.id, oid.names[jdx],
+               ak_libakrypt_get_engine_name( oid.engine ), ak_libakrypt_get_mode_name( oid.mode ));
             }
             jdx++;
           }
@@ -176,16 +168,16 @@
        if( show_caption )
          printf(" %s\n------------------------------------------------------\n", _("engine"));
        do {
-           printf(" %s\n", ak_libakrypt_get_engine_name( engine ));
-       } while( engine++ < undefined_engine );
+           printf(" %s\n", ak_libakrypt_get_engine_name( oid.engine ));
+       } while( oid.engine++ < undefined_engine );
        break;
 
      case do_modes:
        if( show_caption )
          printf(" %s\n------------------------------------------------------\n", _("mode"));
        do {
-            printf(" %s\n", ak_libakrypt_get_mode_name( mode ));
-       } while( mode++ < undefined_mode );
+            printf(" %s\n", ak_libakrypt_get_mode_name( oid.mode ));
+       } while( oid.mode++ < undefined_mode );
        break;
 
      default:  break;

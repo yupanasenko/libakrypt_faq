@@ -5,7 +5,6 @@
 /*  - содержит реализацию функций,                                                                 */
 /*    используемых для базового кодирования/декодирования ключевой информации                      */
 /* ----------------------------------------------------------------------------------------------- */
- #include <ak_hmac.h>
  #include <ak_tools.h>
  #include <ak_asn1_keys.h>
 
@@ -771,11 +770,11 @@
     \code
       // сохранение ключа в файле, имя которого возвращается в переменной filename
        char filemane[256];
-       ak_key_context_export_to_derfile_with_password( key, block_cipher,
+       ak_key_context_export_to_file_with_password( key, block_cipher,
              "password", 8, "keyname", filename, sizeof( filename ), asn1_der_format );
 
       // сохранение ключа в файле с заданным именем
-       ak_key_context_export_to_derfile_with_password( key, hmac_function,
+       ak_key_context_export_to_file_with_password( key, hmac_function,
                             "password", 8, "keyname", "name.key", 0, asn1_pem_format );
     \endcode
 
@@ -844,7 +843,7 @@
             break;
 
      default: ak_error_message( ak_error_oid_engine, __func__,
-                                                         "using usupported engine of secret key" );
+                                                   "export a secret key with unsupported engine" );
             goto lab1;
             break;
   }
@@ -1758,7 +1757,11 @@
                                                         vk->oid->id )) != ak_error_ok ) goto labex;
   if(( error = ak_asn1_context_add_asn1( asn, TSEQUENCE,
                                               ak_asn1_context_new( ))) != ak_error_ok ) goto labex;
-  if(( ec = ak_oid_context_find_by_data( vk->wc )) == NULL ) goto labex;
+  if(( ec = ak_oid_context_find_by_data( vk->wc )) == NULL ) {
+    ak_error_message( ak_error_wrong_oid, __func__,
+                                 "public key has incorrect pointer to elliptic curve parameters" );
+    goto labex;
+  }
   ak_asn1_context_add_oid( asn->current->data.constructed, ec->id );
   ak_asn1_context_add_oid( asn->current->data.constructed, vk->ctx.oid->id );
 
@@ -1801,7 +1804,8 @@
 
  labex:
   if( asn != NULL ) ak_asn1_context_delete( asn );
-  ak_error_message( error, __func__, "incorrect export of public key to asn1 tree" );
+  ak_error_message( ak_error_get_value(), __func__,
+                                         "incorrect export of public key into request asn1 tree" );
  return NULL;
 }
 
@@ -1824,12 +1828,12 @@
 /* ----------------------------------------------------------------------------------------------- */
  static int ak_verifykey_context_export_to_asn1_request( ak_verifykey vk, ak_signkey sk, ak_asn1 a )
 {
-  ak_tlv tlv = NULL;
   ak_asn1 asn = NULL;
   struct bit_string bs;
   int error = ak_error_ok;
   ak_uint8 data[4096], s[128];
   size_t size = sizeof( data );
+  ak_tlv tlv = NULL, pkey = NULL;
 
   if( a == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                             "using null pointer to asn1 context" );
@@ -1852,7 +1856,12 @@
    ak_asn1_context_add_tlv( asn, vk->name );
    vk->name = NULL;
   /* помещаем информацию об алгоритме и открытом ключе */
-   ak_asn1_context_add_tlv( asn, ak_verifykey_context_export_to_asn1_value( vk ));
+   ak_asn1_context_add_tlv( asn, pkey = ak_verifykey_context_export_to_asn1_value( vk ));
+   if( pkey == NULL ) {
+     if( tlv != NULL ) tlv = ak_tlv_context_delete( tlv );
+     return ak_error_message( ak_error_get_value(), __func__,
+                                               "incorrect export of public key into tlv context" );
+   }
   /* 0x00 это помещаемое в CONTEXT_SPECIFIC значение */
    ak_asn1_context_add_asn1( asn, CONTEXT_SPECIFIC^0x00, ak_asn1_context_new( ));
 

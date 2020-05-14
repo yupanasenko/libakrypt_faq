@@ -411,7 +411,7 @@ extern "C" {
    /*! \brief режим шифрования XTS для блочного шифра */
      xts,
    /*! \brief шифрование с аутентификацией сообщений */
-     xts_mac,
+     xtsmac,
    /*! \brief режим гаммирования поточного шифра (сложение по модулю 2) */
      xcrypt,
    /*! \brief гаммирование по модулю \f$ 2^8 \f$ поточного шифра */
@@ -421,6 +421,19 @@ extern "C" {
    /*! \brief неопределенный режим, может возвращаться в как ошибка */
      undefined_mode
 } oid_modes_t;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Описание криптографического механизма. */
+ typedef struct oid_info {
+  /*! \brief Тип криптографического механизма. */
+   oid_engines_t engine;
+  /*! \brief Режим применения криптографического механизма. */
+   oid_modes_t mode;
+  /*! \brief Идентификатор криптографического механизма. */
+   const char *id;
+  /*! \brief Перечень доступных имен криптографического механизма. */
+   const char **names;
+} *ak_oid_info;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Формат хранения asn1 дерева в файле */
@@ -505,11 +518,12 @@ extern "C" {
  dll_export const char *ak_libakrypt_get_engine_name( const oid_engines_t );
 /*! \brief Получение человекочитаемого имени режима или параметров криптографического механизма. */
  dll_export const char *ak_libakrypt_get_mode_name( const oid_modes_t );
+/*! \brief Получение информации о криптографическом механизме с заданным именем или идентификатором. */
+ dll_export int ak_libakrypt_get_oid( const char * , ak_oid_info );
+/*! \brief Получение информации о криптографическом механизме с заданным индексом. */
+ dll_export int ak_libakrypt_get_oid_by_index( const size_t , ak_oid_info );
 /*! \brief Получение общего количества определенных OID библиотеки. */
  dll_export size_t ak_libakrypt_oids_count( void );
-/*! \brief Получение информации об oid с заданным индексом. */
- dll_export int ak_libakrypt_get_oid_by_index( const size_t ,
-                                 oid_engines_t * , oid_modes_t * , const char **, const char *** );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей человекочитаемое шестнадцатеричное значение
@@ -593,34 +607,40 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание дескриптора произвольного криптографического преобразования. */
  dll_export ak_handle ak_handle_new( const char *, const char * );
-/*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
- dll_export ak_handle ak_handle_new_streebog256( void );
-/*! \brief Создание дескриптора бесключевой функции хеширования Стрибог256. */
- dll_export ak_handle ak_handle_new_streebog512( void );
-/*! \brief Создание дескриптора функции выработки имитовставки (ключевой функции хеширования) HMAC-Стрибог256. */
- dll_export ak_handle ak_handle_new_hmac_streebog256( void );
-/*! \brief Создание дескриптора функции выработки имитовставки (ключевой функции хеширования) HMAC-Стрибог512. */
- dll_export ak_handle ak_handle_new_hmac_streebog512( void );
-/*! \brief Получение информации об параметрах алгоритма по его handle. */
- dll_export int ak_handle_get_oid( ak_handle , oid_engines_t *, oid_modes_t *,
-                                                                   const char **, const char *** );
+/*! \brief Создание дескриптора открытого ключа по заданному секретному ключу. */
+ dll_export ak_handle ak_handle_new_from_signkey( ak_handle , const char * );
 /*! \brief Проверка, обладает ли криптографическое преобразование выходным блоком.  */
  dll_export bool_t ak_handle_check_tag( ak_handle );
+/*! \brief Проверка, допускает ли алгоритм использование секретного ключа. */
+ dll_export bool_t ak_handle_check_secret_key( ak_handle );
+/*! \brief Проверка, допускает ли алгоритм использование открытого ключа. */
+ dll_export bool_t ak_handle_check_public_key( ak_handle );
+/*! \brief Проверка, допускает ли алгоритм использование жллиптических кривых. */
+ dll_export bool_t ak_handle_check_curve( ak_handle );
+/*! \brief Получение информации об параметрах алгоритма по его дескриптору. */
+ dll_export int ak_handle_get_oid( ak_handle , ak_oid_info );
 /*! \brief Функция возвращает длину выходного блока криптографического преобразования. */
  dll_export size_t ak_handle_get_tag_size( ak_handle );
-/*! \brief Проверка, допускает ли алгоритм использование секретного ключа. */
- dll_export bool_t ak_handle_check_key( ak_handle );
-/*! \brief Присвоение константного ключевого значения. */
- dll_export int ak_handle_set_key_from_hexstr( ak_handle , const char * , const bool_t reverse );
+/*! \brief Функция присваивает контексту параметры эллиптической кривой. */
+ dll_export int ak_handle_set_curve( ak_handle , const char * );
 /*! \brief Присвоение случайного ключевого значения значения. */
  dll_export int ak_handle_set_key_random( ak_handle );
+/*! \brief Присвоение константного ключевого значения. */
+ dll_export int ak_handle_set_key_from_hexstr( ak_handle , const char * , const bool_t reverse );
 /*! \brief Присвоение ключевого значения, выработанного из пароля. */
- dll_export int ak_handle_set_key_from_password( ak_handle, const ak_pointer , const size_t ,                                                                 const ak_pointer , const size_t );
+ dll_export int ak_handle_set_key_from_password( ak_handle, const ak_pointer , const size_t ,
+                                                                 const ak_pointer , const size_t );
 /*! \brief Удаление дескриптора криптографического преобразования. */
  dll_export int ak_handle_delete( ak_handle );
-
+/*! \brief Экспорт секретного ключа в файл. */
+ dll_export int ak_handle_export_to_file_with_password( ak_handle,
+                           const char * , const size_t , char * , const size_t , export_format_t );
+/*! \brief Экспорт открытого ключа в запрос на сертификат */
+ dll_export int ak_handle_export_to_request( ak_handle , ak_handle ,
+                                                         char * , const size_t , export_format_t );
 /*! \brief Вычисление результата работы алгоритма итерационного сжатия для заданной области памяти. */
- dll_export int ak_handle_mac_ptr( ak_handle , ak_pointer , const size_t , ak_pointer , const size_t );
+ dll_export int ak_handle_mac_ptr( ak_handle , ak_pointer , const size_t ,
+                                                                       ak_pointer , const size_t );
 /*! \brief Вычисление результата работы алгоритма итерационного сжатия для заданного файла. */
  dll_export int ak_handle_mac_file( ak_handle , const char *, ak_pointer , const size_t );
 
@@ -663,6 +683,12 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 #define ak_max(x,y) ((x) > (y) ? (x) : (y))
 #define ak_min(x,y) ((x) < (y) ? (x) : (y))
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция возвращает строку, начинающую цветовое выделение. */
+ dll_export const char *ak_libakrypt_get_start_error_string( void );
+/*! \brief Функция возвращает строку, завершающую цветовое выделение. */
+ dll_export const char *ak_libakrypt_get_end_error_string( void );
 
 #ifdef __cplusplus
 } /* конец extern "C" */

@@ -58,7 +58,7 @@
    /*! \brief Имя файла для вывода результатов */
     char outfile[FILENAME_MAX];
    /*! \brief Буффер для хранения пароля */
-    char password[256];
+    char password[aktool_max_password_len];
    /*! \brief Флаг выработки ключа из пароля */
     bool_t pass_flag;
    /*! \brief Флаг определения ключа в явном виде */
@@ -335,7 +335,7 @@
   }
 
  /* проверяем, что алгоритм допускает использование ключа */
-  if( ak_handle_check_key( ic.handle )) {
+  if( ak_handle_check_secret_key( ic.handle )) {
 
     if( ic.hexkey_flag ) {
        if(( error =

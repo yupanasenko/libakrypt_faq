@@ -76,6 +76,7 @@ set( SOURCES        source/ak_tools.c
                     source/ak_mpzn.c
                     source/ak_curves.c
                     source/ak_random.c
+                    source/ak_parameters.c
                     source/ak_gf2n.c
                     source/ak_libakrypt.c
 )
@@ -107,6 +108,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_asn1_keys.c
                     source/ak_sign.c
                     source/ak_context_manager.c
+                    source/ak_handle.c
   )
 endif()
 
@@ -119,6 +121,7 @@ if( LIBAKRYPT_AKTOOL )
                     aktool/aktool_show.c
                     aktool/aktool_icode.c
                     aktool/aktool_asn1.c
+                    aktool/aktool_key.c
   )
   set( AKTOOL_FILES
                     aktool/aktool.h
