@@ -88,16 +88,16 @@
  static const char
                 *on_asn1_issuers_module[] = { "IssuersCryptoModule", NULL };
  static const char *on_asn1_inn[] =         { "INN", NULL };
- static const char *on_asn1_email[] =       { "emailAddress", "email", NULL };
- static const char *on_asn1_cn[] =          { "CommonName", "CN", NULL };
+ static const char *on_asn1_email[] =       { "Email Address", "email", NULL };
+ static const char *on_asn1_cn[] =          { "Common Name", "CN", NULL };
  static const char *on_asn1_s[] =           { "Surname", "S", NULL };
- static const char *on_asn1_sn[] =          { "SerialNumber", "SN", NULL };
- static const char *on_asn1_c[] =           { "CountryName", "C", NULL };
- static const char *on_asn1_l[] =           { "LocalityName", "L", NULL };
- static const char *on_asn1_st[] =          { "StateOrProvinceName", "ST", NULL };
- static const char *on_asn1_sa[] =          { "StreetAddress", "SA", NULL };
+ static const char *on_asn1_sn[] =          { "Serial Number", "SN", NULL };
+ static const char *on_asn1_c[] =           { "Country Name", "C", NULL };
+ static const char *on_asn1_l[] =           { "Locality Name", "L", NULL };
+ static const char *on_asn1_st[] =          { "State Or Province Name", "ST", NULL };
+ static const char *on_asn1_sa[] =          { "Street Address", "SA", NULL };
  static const char *on_asn1_o[] =           { "Organization", "O", NULL };
- static const char *on_asn1_ou[] =          { "OrganizationUnit", "OU", NULL };
+ static const char *on_asn1_ou[] =          { "Organization Unit", "OU", NULL };
 
  static const char *on_asn1_ku[] =          { "Key Usage", NULL };
  static const char *on_asn1_ski[] =         { "SubjectKey Identifier", NULL };

@@ -1927,20 +1927,24 @@
                                                       "using null pointer to secret key context" );
   if( filename == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                                "using null pointer to file name" );
-  if( size != 0 ) { /* передан запрос на генерацию имени файла с запросом */
+
+ /* 1. При необходимости, формируем имя файла для экспорта открытого ключа
+       Формируемое имя совпадает с номером ключа и однозначно зависит от его значения */
+  if( size != 0 ) {
     if( size < 12 ) return ak_error_message( ak_error_wrong_length, __func__,
                                                "using small buffer to storing request file name" );
-     else strncpy( filename, "pubkey.csr", size );
+     else ak_snprintf( filename, size, "%s.csr",
+                                   ak_ptr_to_hexstr( vk->number, sizeof( vk->number ), ak_false ));
   }
 
- /* 1. Создаем asn1 дерево */
+ /* 2. Создаем asn1 дерево */
   if(( error = ak_verifykey_context_export_to_asn1_request( vk, sk,
                                                  asn = ak_asn1_context_new( ))) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect creation af asn1 context" );
     goto labexit;
   }
 
- /* 2. Сохраняем созданное дерево в файл */
+ /* 3. Сохраняем созданное дерево в файл */
   switch( format ) {
     case asn1_der_format:
       if(( error = ak_asn1_context_export_to_derfile( asn, filename )) != ak_error_ok )

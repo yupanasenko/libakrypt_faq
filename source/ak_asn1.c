@@ -2325,7 +2325,7 @@ Validity ::= SEQUENCE {
   if(( error = ak_asn1_context_create( asn_validity = ak_asn1_context_new())) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
 
- /* преобразуем во время по Гринвичу */
+ /* последовательно вставляем два значения */
   if(( error = ak_asn1_context_add_utc_time( asn_validity, not_before )) != ak_error_ok ) {
     ak_asn1_context_delete( asn_validity );
     return ak_error_message( error, __func__, "incorrect adding \"not before\" time" );
@@ -2360,7 +2360,6 @@ Validity ::= SEQUENCE {
     ak_asn1_context_delete( params );
     return ak_error_message( error, __func__, "incorrect adding secret key resource value" );
   }
-
   if(( error = ak_asn1_context_add_validity( params,
                           resource->time.not_before, resource->time.not_after )) != ak_error_ok ) {
     ak_asn1_context_delete( params );

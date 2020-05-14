@@ -55,6 +55,8 @@
  int ak_signkey_context_set_curve( ak_signkey , const ak_wcurve );
 /*! \brief Присвоение контексту секретного ключа указателя на эллиптическую кривую. */
  int ak_signkey_context_set_curve_str( ak_signkey sctx, const char * );
+/*! \brief Функция устанавливает временной интервал действия секретного ключа. */
+ int ak_signkey_context_set_validity( ak_signkey , time_t , time_t );
 /*! \brief Уничтожение контекста секретного ключа. */
  int ak_signkey_context_destroy( ak_signkey );
 /*! \brief Освобождение памяти из под контекста секретного ключа. */
@@ -124,7 +126,7 @@
     в частности, алгоритма ГОСТ Р 34.10-2012. */
  int ak_verifykey_context_create_from_signkey( ak_verifykey , ak_signkey );
 /*! \brief Функция устанавливает временной интервал действия открытого ключа. */
- int ak_verifykey_context_set_resource_time( ak_verifykey , time_t , time_t );
+ int ak_verifykey_context_set_validity( ak_verifykey , time_t , time_t );
 /*! \brief Функция вырабатывает номер открытого ключа. */
  int ak_verifykey_context_set_number( ak_verifykey );
 /*! \brief Функция добавляет к расширенному имени владельца ключа новую строку. */

@@ -363,6 +363,94 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_handle_check_name( ak_handle handle )
+{
+  ak_oid oid = NULL;
+  ak_pointer ctx = NULL;
+
+ /* получаем данные */
+  if(( ctx = ak_handle_get_context( handle, &oid, NULL )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect handle value" );
+    return ak_false;
+  }
+
+ /* возвращаем ответ */
+  switch( oid->engine ) {
+    case sign_function:
+    case verify_function:
+      return ak_true;
+
+    default:
+      return ak_false;
+  }
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_handle_check_validity( ak_handle handle ) { return ak_handle_check_name( handle ); }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param handle дескриптор криптографического алгоритма.
+    \param ni строка, содержащая имя или идентификатор, определяющий тип помещаемых
+    данных (attribute type)
+    \param string строка с данными
+
+    \return В случае успеха возвращается \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_handle_add_name_string( ak_handle handle, const char *ni, const char *string )
+{
+  ak_oid oid = NULL;
+  ak_pointer ctx = NULL;
+
+ /* получаем данные */
+  if(( ctx = ak_handle_get_context( handle, &oid, NULL )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__, "incorrect handle value" );
+
+  switch( oid->engine ) {
+    case sign_function:
+      return ak_signkey_context_add_name_string( ctx, ni, string );
+    case verify_function:
+      return ak_verifykey_context_add_name_string( ctx, ni, string );
+
+    default:
+      return ak_error_message( ak_error_wrong_oid, __func__,
+                                                        "using handle with unsupported features" );
+  }
+ return ak_error_wrong_handle;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param handle дескриптор криптографического алгоритма.
+    \param ni строка, содержащая имя или идентификатор, определяющий тип помещаемых
+    данных (attribute type)
+    \param string строка с данными
+
+    \return В случае успеха возвращается \ref ak_error_ok. В противном случае
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_handle_set_validity( ak_handle handle, time_t not_before, time_t not_after )
+{
+  ak_oid oid = NULL;
+  ak_pointer ctx = NULL;
+
+ /* получаем данные */
+  if(( ctx = ak_handle_get_context( handle, &oid, NULL )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__, "incorrect handle value" );
+
+  switch( oid->engine ) {
+    case sign_function:
+      return ak_signkey_context_set_validity( ctx, not_before, not_after );
+    case verify_function:
+      return ak_verifykey_context_set_validity( ctx, not_before, not_after );
+
+    default:
+      return ak_error_message( ak_error_wrong_oid, __func__,
+                                                        "using handle with unsupported features" );
+  }
+ return ak_error_wrong_handle;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int ak_handle_set_curve( ak_handle handle, const char *curve )
 {
   ak_oid oid = NULL;

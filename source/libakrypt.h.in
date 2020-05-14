@@ -556,8 +556,10 @@ extern "C" {
  typedef int ( ak_function_password_read ) ( char *, const size_t );
 /*! \brief Функция устанавливает обработчик - функцию чтения пользовательского пароля. */
  dll_export int ak_libakrypt_set_password_read_function( ak_function_password_read * );
+/*! \brief Чтение строки из консоли. */
+ dll_export int ak_string_read( const char * , char * , size_t * );
 /*! \brief Чтение пароля из консоли. */
- dll_export int ak_password_read( char *, const size_t );
+ dll_export int ak_password_read( char * , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_STDIO_H
@@ -609,19 +611,27 @@ extern "C" {
  dll_export ak_handle ak_handle_new( const char *, const char * );
 /*! \brief Создание дескриптора открытого ключа по заданному секретному ключу. */
  dll_export ak_handle ak_handle_new_from_signkey( ak_handle , const char * );
+
 /*! \brief Проверка, обладает ли криптографическое преобразование выходным блоком.  */
  dll_export bool_t ak_handle_check_tag( ak_handle );
 /*! \brief Проверка, допускает ли алгоритм использование секретного ключа. */
  dll_export bool_t ak_handle_check_secret_key( ak_handle );
 /*! \brief Проверка, допускает ли алгоритм использование открытого ключа. */
  dll_export bool_t ak_handle_check_public_key( ak_handle );
-/*! \brief Проверка, допускает ли алгоритм использование жллиптических кривых. */
+/*! \brief Проверка, допускает ли алгоритм использование эллиптических кривых. */
  dll_export bool_t ak_handle_check_curve( ak_handle );
+/*! \brief Проверка, обладает ли алгоритм расширенным именем согласно x509v3 */
+ dll_export bool_t ak_handle_check_name( ak_handle );
+/*! \brief Проверка, обладает ли алгоритм временным интервалом действия согласно x509v3 */
+ dll_export bool_t ak_handle_check_validity( ak_handle );
+
+/*! \brief Функция добавляет в расширенное имя новую строку. */
+ dll_export int ak_handle_add_name_string( ak_handle , const char * , const char * );
 /*! \brief Получение информации об параметрах алгоритма по его дескриптору. */
  dll_export int ak_handle_get_oid( ak_handle , ak_oid_info );
 /*! \brief Функция возвращает длину выходного блока криптографического преобразования. */
  dll_export size_t ak_handle_get_tag_size( ak_handle );
-/*! \brief Функция присваивает контексту параметры эллиптической кривой. */
+/*! \brief Функция присваивает дескриптору алгоритма новые параметры эллиптической кривой. */
  dll_export int ak_handle_set_curve( ak_handle , const char * );
 /*! \brief Присвоение случайного ключевого значения значения. */
  dll_export int ak_handle_set_key_random( ak_handle );
@@ -630,6 +640,8 @@ extern "C" {
 /*! \brief Присвоение ключевого значения, выработанного из пароля. */
  dll_export int ak_handle_set_key_from_password( ak_handle, const ak_pointer , const size_t ,
                                                                  const ak_pointer , const size_t );
+/*! \brief Присвоение временного интервала действия ключа. */
+ dll_export int ak_handle_set_validity( ak_handle , time_t , time_t );
 /*! \brief Удаление дескриптора криптографического преобразования. */
  dll_export int ak_handle_delete( ak_handle );
 /*! \brief Экспорт секретного ключа в файл. */

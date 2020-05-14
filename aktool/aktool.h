@@ -21,7 +21,7 @@
  #ifdef LIBAKRYPT_HAVE_STDIO_H
   #include <stdio.h>
  #else
-  #error Library cannot be compiled without stdlib.h header
+  #error aktool cannot be compiled without stdlib.h header
  #endif
  #ifdef LIBAKRYPT_HAVE_STDLIB_H
   #ifndef __USE_MISC
@@ -29,7 +29,7 @@
   #endif
   #include <stdlib.h>
  #else
-  #error Library cannot be compiled without stdlib.h header
+  #error aktool cannot be compiled without stdlib.h header
  #endif
  #ifdef LIBAKRYPT_HAVE_STRING_H
   #ifndef __USE_POSIX
@@ -37,12 +37,17 @@
   #endif
   #include <string.h>
  #else
-  #error Library cannot be compiled without string.h header
+  #error aktool cannot be compiled without string.h header
  #endif
  #ifdef LIBAKRYPT_HAVE_STDARG_H
   #include <stdarg.h>
  #else
-  #error Library cannot be compiled without stdarg.h header
+  #error aktool cannot be compiled without stdarg.h header
+ #endif
+ #ifdef LIBAKRYPT_HAVE_TIME_H
+  #include <time.h>
+ #else
+  #error aktool cannot be compiled without time.h header
  #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -72,6 +77,9 @@
   #define _( string ) gettext( string )
  #else
   #define _( string ) ( string )
+ #endif
+ #ifdef LIBAKRYPT_HAVE_CTYPE_H
+  #include <ctype.h>
  #endif
 
 /* ----------------------------------------------------------------------------------------------- */

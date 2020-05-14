@@ -5,6 +5,8 @@
  int aktool_key_help( void );
  int aktool_key_new( void );
  int aktool_key_new_keypair( void );
+ int aktool_key_print_disclaimer( void );
+ int aktool_key_input_name( ak_handle );
 
 /* ----------------------------------------------------------------------------------------------- */
  static struct key_info {
@@ -13,6 +15,7 @@
   char *key_description;
   export_format_t format;
   char *curve;
+  size_t days;
   char password[aktool_max_password_len];
   char keyfile[FILENAME_MAX]; /* имя файла для секретного ключа */
   char csrfile[FILENAME_MAX]; /* имя файла для открытого ключа */
@@ -24,6 +27,7 @@
      NULL,
      asn1_der_format,
      NULL,
+     365,
      "",
      "",
      ""
@@ -46,6 +50,7 @@
      { "password",            1, NULL,  248 },
      { "curve",               1, NULL,  220 },
      { "pubkey",              1, NULL,  210 },
+     { "days",                1, NULL,  209 },
 
     /* потом общие */
      { "dont-use-colors",     0, NULL,   3 },
@@ -122,7 +127,10 @@
                        realpath( optarg , ki.csrfile );
                      #endif
                     break;
-
+       /* интервал действия ключа */
+         case 209 : ki.days = atoi( optarg );
+                    if( !ki.days ) ki.days = 365;
+                    break;
 
          default: /* обрабатываем ошибочные параметры */
                     if( next_option != -1 ) work = do_nothing;
@@ -211,28 +219,34 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key_new_keypair( void )
 {
+  time_t now = time( NULL );
   char password2[aktool_max_password_len];
   int exitcode = EXIT_FAILURE, error = ak_error_ok;
 
  /* создаем дескриптор секретного ключа с пользовательским описанием */
   if(( ki.key = ak_handle_new( ki.algorithm, ki.key_description )) == ak_error_wrong_handle ) {
-    aktool_error(_("wrong creation of a secret key for %s algorithm"), ki.algorithm );
+    aktool_error(_("incorrect creation of a secret key for %s algorithm"), ki.algorithm );
     return EXIT_FAILURE;
   }
  /* если пользователем задана эллиптическая кривая, то устанавливаем ее */
   if( ki.curve ) {
     if( ak_handle_set_curve( ki.key, ki.curve ) != ak_error_ok ) {
-      aktool_error(_("using not applicable elliptic curve"));
+      aktool_error(_("using non applicable elliptic curve"));
       goto labex;
     }
   }
-
  /* теперь вырабатываем случайный секретный ключ */
   if( ak_handle_set_key_random( ki.key ) != ak_error_ok ) {
-    aktool_error(_("incorrect creation of secret key value"));
+    aktool_error(_("incorrect creation of a random secret key value"));
     goto labex;
   }
- /* нужно указать имя владельца, срок действия */
+ /* нужно создать обобщенное имя владельца ключей */
+  if( aktool_key_input_name( ki.key ) != ak_error_ok ) {
+    aktool_error(_("incorrect creation of owner's distinguished name"));
+    goto labex;
+  }
+ /* срок действия, в сутках, начиная с текущего момента */
+  ak_handle_set_validity( ki.key, now, now + ki.days*86400 );
 
  /* вырабатываем открытый ключ,
     это позволяет выработать номер открытого ключа, а также присвоить ему имя и ресурс */
@@ -264,8 +278,7 @@
     }
   }
 
-  aktool_error("i know the pass -> %s", ki.password );
- // нужна опция сохранения ключа в базу в случае ее отсутствия
+ // нужна опция сохранения ключей (в базу в случае ее отсутствия)
 
  /* сохраняем секретный ключ в файловый контейнер */
   if( ak_handle_export_to_file_with_password( ki.key, ki.password, strlen( ki.password ),
@@ -288,8 +301,6 @@
      - в самоподписанный сертификат
  */
 
-
-
   exitcode = EXIT_SUCCESS;
 
   labex:
@@ -302,12 +313,87 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ int aktool_key_input_name( ak_handle handle )
+{
+  size_t len = 0;
+  char string[256];
+  bool_t noname = ak_true;
+
+ /* 0. Выводим стандартное пояснение */
+  aktool_key_print_disclaimer();
+
+ /* 1. Country Name */
+  ak_snprintf( string, len = sizeof( string ), "RU" );
+  if( ak_string_read(_("Country Name (2 letter code)"), string, &len ) == ak_error_ok ) {
+   #ifdef LIBAKRYPT_HAVE_CTYPE_H
+    string[0] = toupper( string[0] );
+    string[1] = toupper( string[1] );
+   #endif
+    string[2] = 0;
+    if( len && ( ak_handle_add_name_string( handle,
+                                      "Country Name", string ) == ak_error_ok )) noname = ak_false;
+  }
+ /* 2. State or Province */
+  memset( string, 0, len = sizeof( string ));
+  if( ak_string_read(_("State or Province"), string, &len ) == ak_error_ok )
+    if( len && ( ak_handle_add_name_string( handle,
+                            "State Or Province Name", string ) == ak_error_ok )) noname = ak_false;
+ /* 3. Locality */
+  memset( string, 0, len = sizeof( string ));
+  if( ak_string_read(_("Locality (eg, city)"), string, &len ) == ak_error_ok )
+    if( len && ( ak_handle_add_name_string( handle,
+                                     "Locality Name", string ) == ak_error_ok )) noname = ak_false;
+ /* 4. Organization */
+  memset( string, 0, len = sizeof( string ));
+  if( ak_string_read(_("Organization (eg, company)"), string, &len ) == ak_error_ok )
+    if( len && ( ak_handle_add_name_string( handle,
+                                       "Orgaization", string ) == ak_error_ok )) noname = ak_false;
+ /* 5. Organization Unit*/
+  memset( string, 0, len = sizeof( string ));
+  if( ak_string_read(_("Organization Unit"), string, &len ) == ak_error_ok )
+    if( len && ( ak_handle_add_name_string( handle,
+                                  "Orgaization Unit", string ) == ak_error_ok )) noname = ak_false;
+ /* 6. Common Name */
+  memset( string, 0, len = sizeof( string ));
+  if( ak_string_read(_("Common Name"), string, &len ) == ak_error_ok )
+    if( len && ( ak_handle_add_name_string( handle,
+                                       "Common Name", string ) == ak_error_ok )) noname = ak_false;
+
+ /* 7. email address */
+  memset( string, 0, len = sizeof( string ));
+  if( ak_string_read(_("Email Address"), string, &len ) == ak_error_ok )
+    if( len && ( ak_handle_add_name_string( handle,
+                                     "Email Address", string ) == ak_error_ok )) noname = ak_false;
+  if( noname ) {
+    aktool_error(_("generation of a secret or public keys without any information about owner are not allowed"));
+    return ak_error_invalid_value;
+  }
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_key_print_disclaimer( void )
+{
+  printf(_(" -----\n"));
+  printf(_(" You are about to be asked to enter information that will be incorporated\n"));
+  printf(_(" into your secret key and certificate request.\n"));
+  printf(_(" What you are about to enter is what is called a Distinguished Name or a DN.\n"));
+  printf(_(" There are quite a few fields but you can leave some blank.\n"));
+  printf(_(" For some fields there will be a default value.\n"));
+  printf(_(" If you do not want to provide information just enter a string of one or more spaces.\n"));
+  printf(_(" -----\n"));
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int aktool_key_help( void )
 {
   printf(_("aktool key [options]  - key generation and management functions\n\n"));
   printf(_("available options:\n"));
   printf(_(" -a, --algorithm <ni>    set the cryptographic algorithm for a new key, where \"ni\" is name or identifier\n" ));
   printf(_("     --curve <ni>        set the elliptic curve identifier for public keys\n"));
+  printf(_("     --days <value>      set the days count to expiration date of secret or public key\n"));
   printf(_(" -l, --label <text>      assign the user-defined label to secret key\n" ));
   printf(_("     --new               generate a new key or key pair for selected algorithm\n" ));
   printf(_(" -o, --outkey <file>     set the name of output file for secret key\n" ));

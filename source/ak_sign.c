@@ -307,8 +307,10 @@
    sk->key.data = wc;
   /* имя ключа не определено */
    sk->name = NULL;
-  /* При удалении ключа не нужно освобождать память из под параметров эллиптической кривой  */
+  /* при удалении ключа не нужно освобождать память из под параметров эллиптической кривой  */
    sk->key.flags |= ak_key_flag_data_not_free;
+  /* устанавливаем время жизни ключа по-умолчанию */
+   ak_signkey_context_set_validity( sk, 0, 0 );
 
   /* в заключение определяем указатели на методы */
    sk->key.set_mask = ak_signkey_context_set_mask_multiplicative;
@@ -513,6 +515,40 @@
     ... в процессе присвоения ключа, он приводится по модулю и маскируется
         за это отвечает функция ak_signkey_context_set_mask_multiplicative() ...  */
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Присвоение времени происходит следующим образом. Если `not_before` равно нулю, то
+    устанавливается текущее время. Если `not_after` равно нулю или меньше, чем `not_before`,
+    то временной интервал действия ключа устанавливается равным 365 дней.
+
+    \param skey Контекст открытого ключа.
+    \param not_before Время, начиная с которого ключ действителен. Значение, равное нулю,
+    означает, что будет установлено текущее время.
+    \param not_after Время, начиная с которого ключ недействителен.
+    \return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_signkey_context_set_validity( ak_signkey skey, time_t not_before, time_t not_after )
+{
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using a null pointer to public key" );
+ /* устанавливаем временной интервал */
+  if( not_before == 0 )
+ #ifdef LIBAKRYPT_HAVE_TIME_H
+  skey->key.resource.time.not_before = time( NULL );
+ #else
+  skey->key.resource.time.not_before = 0;
+ #endif
+    else skey->key.resource.time.not_before = not_before;
+  if( not_after == 0 )
+    skey->key.resource.time.not_after = skey->key.resource.time.not_before + 31536000;
+   else {
+      if( not_after > skey->key.resource.time.not_before )
+        skey->key.resource.time.not_after = not_after;
+       else skey->key.resource.time.not_after = skey->key.resource.time.not_before + 31536000;
+    }
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -875,7 +911,7 @@
     \return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_verifykey_context_set_resource_time( ak_verifykey vkey, time_t not_before, time_t not_after )
+ int ak_verifykey_context_set_validity( ak_verifykey vkey, time_t not_before, time_t not_after )
 {
   if( vkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using a null pointer to public key" );
