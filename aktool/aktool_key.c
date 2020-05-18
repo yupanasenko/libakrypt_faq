@@ -2,6 +2,9 @@
  #include <aktool.h>
 
 /* ----------------------------------------------------------------------------------------------- */
+ #define aktool_magic_number    (113)
+
+/* ----------------------------------------------------------------------------------------------- */
  int aktool_key_help( void );
  int aktool_key_new( void );
  int aktool_key_new_keypair( void );
@@ -16,26 +19,20 @@
   export_format_t format;
   char *curve;
   size_t days;
+  struct certificate_opts opts;
   char password[aktool_max_password_len];
   char keyfile[FILENAME_MAX]; /* имя файла для секретного ключа */
   char csrfile[FILENAME_MAX]; /* имя файла для открытого ключа */
- }
-  ki = {
-     NULL,
-     ak_error_wrong_handle,
-     ak_error_wrong_handle,
-     NULL,
-     asn1_der_format,
-     NULL,
-     365,
-     "",
-     "",
-     ""
- };
+ } ki;
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key( int argc, TCHAR *argv[] )
 {
+#ifdef _WIN32
+  unsigned int cp = 0;
+#endif
+  char tmp[4];
+  size_t i = 0;
   int next_option = 0, exit_status = EXIT_FAILURE;
   enum { do_nothing, do_new } work = do_nothing;
   struct oid_info oid = { undefined_engine, undefined_mode, NULL, NULL };
@@ -59,6 +56,16 @@
      { NULL,                  0, NULL,   0  }
   };
 
+ /* инициализируем множество параметров по-умолчанию */
+  memset( &ki, 0, sizeof( struct key_info ));
+  ki.algorithm = NULL;
+  ki.key = ak_error_wrong_handle;
+  ki.vkey = ak_error_wrong_handle;
+  ki.key_description = NULL;
+  ki.format = asn1_der_format;
+  ki.curve = NULL;
+  ki.days = 365;
+  ki.opts = certificate_default_options;
 
  /* разбираем опции командной строки */
   do {
@@ -68,32 +75,41 @@
        /* сначала обработка стандартных опций */
          case   1 : return aktool_key_help();
 
-         case   2 : /* получили от пользователя имя файла для вывода аудита */
-                     aktool_set_audit( optarg );
-                     break;
-         case   3 : /* установка флага запрета вывода символов смены цветовой палитры */
-                     ak_libakrypt_set_color_output( ak_false );
+       /* получили от пользователя имя файла для вывода аудита */
+         case   2 : aktool_set_audit( optarg );
+                    break;
+
+       /* установка флага запрета вывода символов смены цветовой палитры */
+         case   3 : ak_libakrypt_set_color_output( ak_false );
+                    break;
 
        /* теперь опции специфичные для key */
          case 255:  work = do_new;
                     break;
 
        /* определяем формат выходных данных (--to) */
-         case 250:  if(( strncmp( optarg, "der", 3 ) == 0 ) || ( strncmp( optarg, "DER", 3 ) == 0 ))
+         case 250: memset( tmp, 0, sizeof( tmp ));
+                   strncpy( tmp, optarg, 3 );
+                   for( i = 0; i < sizeof( tmp )-1; i ++ ) tmp[i] = toupper( tmp[i] );
+
+                   if( strncmp( tmp, "DER", 3 ) == 0 )
                       ki.format = asn1_der_format;
                      else
-                      if(( strncmp( optarg, "pem", 3 ) == 0 ) || ( strncmp( optarg, "PEM", 3 ) == 0 ))
+                      if( strncmp( tmp, "PEM", 3 ) == 0 )
                         ki.format = asn1_pem_format;
-                       else {
-                         aktool_error(_("%s is not valid format of output data"), optarg );
-                         return EXIT_FAILURE;
-                       }
+                       else
+                        if( strncmp( tmp, "CER", 3 ) == 0 )
+                          ki.format = aktool_magic_number;
+                         else {
+                          aktool_error(_("%s is not valid format of output data"), optarg );
+                          return EXIT_FAILURE;
+                         }
                     break;
 
        /* передача пароля через коммандную строку */
-         case 248 :  memset( ki.password, 0, sizeof( ki.password ));
-                     strncpy( ki.password, optarg, sizeof( ki.password ) -1 );
-                     break;
+         case 248 : memset( ki.password, 0, sizeof( ki.password ));
+                    strncpy( ki.password, optarg, sizeof( ki.password ) -1 );
+                    break;
 
        /* проверяем идентификатор кривой */
          case 220:  memset( &oid, 0, sizeof( struct oid_info ));
@@ -280,26 +296,32 @@
 
  // нужна опция сохранения ключей (в базу в случае ее отсутствия)
 
+  if( ki.format == aktool_magic_number ) { /* сохраняем открытый ключ как самоподписанный сертификат  */
+
+    ki.format = asn1_pem_format; /* возвращаем необходимое значение */
+    if( ak_handle_export_to_certificate( ki.vkey, ki.key, &ki.opts, ki.csrfile,
+           ( strlen( ki.csrfile ) > 0 ) ? 0 : sizeof( ki.csrfile ), ki.format ) != ak_error_ok ) {
+      aktool_error(_("wrong export a public key to certificate %s"), ki.csrfile );
+      goto labex;
+    } else printf(_("certificate of public key stored in %s\n"), ki.csrfile );
+
+  } else { /* сохраняем запрос на сертификат */
+      if( ak_handle_export_to_request( ki.vkey, ki.key, ki.csrfile,
+           ( strlen( ki.csrfile ) > 0 ) ? 0 : sizeof( ki.csrfile ), ki.format ) != ak_error_ok ) {
+        aktool_error(_("wrong export a public key to request %s"), ki.csrfile );
+        goto labex;
+      } else printf(_("public key stored in %s\n"), ki.csrfile );
+    }
+
  /* сохраняем секретный ключ в файловый контейнер */
   if( ak_handle_export_to_file_with_password( ki.key, ki.password, strlen( ki.password ),
                        ki.keyfile, ( strlen( ki.keyfile ) > 0 ) ? 0 : sizeof( ki.keyfile ),
-                                                                ki.format ) != ak_error_ok ) {
+                                                                    ki.format ) != ak_error_ok ) {
      aktool_error(_("wrong export a secret key to file %s"), ki.keyfile );
      goto labex;
   } else
-     printf(_("secret key stored in %s file\n"), ki.keyfile );
+     printf(_("secret key stored in %s\n"), ki.keyfile );
 
-  if( ak_handle_export_to_request( ki.vkey, ki.key, ki.csrfile,
-      ( strlen( ki.csrfile ) > 0 ) ? 0 : sizeof( ki.csrfile ), ki.format ) != ak_error_ok ) {
-     aktool_error(_("wrong export a public key to request %s"), ki.csrfile );
-     goto labex;
-  } else
-     printf(_("public key stored in %s file\n"), ki.csrfile );
-
- /* сохраняем открытый ключ
-     - в запрос
-     - в самоподписанный сертификат
- */
 
   exitcode = EXIT_SUCCESS;
 
@@ -347,19 +369,23 @@
   memset( string, 0, len = sizeof( string ));
   if( ak_string_read(_("Organization (eg, company)"), string, &len ) == ak_error_ok )
     if( len && ( ak_handle_add_name_string( handle,
-                                       "Orgaization", string ) == ak_error_ok )) noname = ak_false;
+                                      "Organization", string ) == ak_error_ok )) noname = ak_false;
  /* 5. Organization Unit*/
   memset( string, 0, len = sizeof( string ));
   if( ak_string_read(_("Organization Unit"), string, &len ) == ak_error_ok )
     if( len && ( ak_handle_add_name_string( handle,
-                                  "Orgaization Unit", string ) == ak_error_ok )) noname = ak_false;
- /* 6. Common Name */
+                                 "Organization Unit", string ) == ak_error_ok )) noname = ak_false;
+ /* 6. Street Address */
+  memset( string, 0, len = sizeof( string ));
+  if( ak_string_read(_("Street Address"), string, &len ) == ak_error_ok )
+    if( len && ( ak_handle_add_name_string( handle,
+                                    "Street Address", string ) == ak_error_ok )) noname = ak_false;
+ /* 7. Common Name */
   memset( string, 0, len = sizeof( string ));
   if( ak_string_read(_("Common Name"), string, &len ) == ak_error_ok )
     if( len && ( ak_handle_add_name_string( handle,
                                        "Common Name", string ) == ak_error_ok )) noname = ak_false;
-
- /* 7. email address */
+ /* 8. email address */
   memset( string, 0, len = sizeof( string ));
   if( ak_string_read(_("Email Address"), string, &len ) == ak_error_ok )
     if( len && ( ak_handle_add_name_string( handle,
@@ -368,20 +394,21 @@
     aktool_error(_("generation of a secret or public keys without any information about owner are not allowed"));
     return ak_error_invalid_value;
   }
+
  return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key_print_disclaimer( void )
 {
-  printf(_(" -----\n"));
-  printf(_(" You are about to be asked to enter information that will be incorporated\n"));
-  printf(_(" into your secret key and certificate request.\n"));
-  printf(_(" What you are about to enter is what is called a Distinguished Name or a DN.\n"));
-  printf(_(" There are quite a few fields but you can leave some blank.\n"));
-  printf(_(" For some fields there will be a default value.\n"));
-  printf(_(" If you do not want to provide information just enter a string of one or more spaces.\n"));
-  printf(_(" -----\n"));
+  printf(_(" -----\n"
+   " You are about to be asked to enter information that will be incorporated\n"
+   " into your secret key and certificate request.\n"
+   " What you are about to enter is what is called a Distinguished Name or a DN.\n"
+   " There are quite a few fields but you can leave some blank.\n"
+   " For some fields there will be a default value.\n"
+   " If you do not want to provide information just enter a string of one or more spaces.\n"
+   " -----\n"));
 
  return ak_error_ok;
 }
@@ -389,17 +416,17 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key_help( void )
 {
-  printf(_("aktool key [options]  - key generation and management functions\n\n"));
-  printf(_("available options:\n"));
-  printf(_(" -a, --algorithm <ni>    set the cryptographic algorithm for a new key, where \"ni\" is name or identifier\n" ));
-  printf(_("     --curve <ni>        set the elliptic curve identifier for public keys\n"));
-  printf(_("     --days <value>      set the days count to expiration date of secret or public key\n"));
-  printf(_(" -l, --label <text>      assign the user-defined label to secret key\n" ));
-  printf(_("     --new               generate a new key or key pair for selected algorithm\n" ));
-  printf(_(" -o, --outkey <file>     set the name of output file for secret key\n" ));
-  printf(_("     --password <pass>   set the password for storing a secret key directly in command line\n"));
-  printf(_("     --pubkey <file>     set the name of output file for public key request or certificate\n" ));
-  printf(_("     --to <format>       set the format of output file [ enabled values : der, pem ]\n" ));
+  printf(_("aktool key [options]  - key generation and management functions\n\n"
+   "available options:\n"
+   " -a, --algorithm <ni>    set the cryptographic algorithm for a new key, where \"ni\" is name or identifier\n"
+   "     --curve <ni>        set the elliptic curve identifier for public keys\n"
+   "     --days <value>      set the days count to expiration date of secret or public key\n"
+   " -l, --label <text>      assign the user-defined label to secret key\n"
+   "     --new               generate a new key or key pair for selected algorithm\n"
+   " -o, --outkey <file>     set the name of output file for secret key\n"
+   "     --password <pass>   set the password for storing a secret key directly in command line\n"
+   "     --pubkey <file>     set the name of output file for public key request or certificate\n"
+   "     --to <format>       set the format of output file [ enabled values : der, pem, certificate ]\n" ));
 
  return aktool_print_common_options();
 }

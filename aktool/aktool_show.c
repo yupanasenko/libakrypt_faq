@@ -10,8 +10,10 @@
  int aktool_show( int argc, TCHAR *argv[] )
 {
   size_t idx = 0;
+  char *curve = NULL;
   int next_option = 0, show_caption = ak_true;
-  enum { do_nothing, do_alloids, do_oid, do_engines, do_modes, do_options } work = do_nothing;
+  enum { do_nothing, do_alloids, do_oid, do_engines,
+                                                do_modes, do_options, do_curve } work = do_nothing;
 
  /* параметры, запрашиваемые пользователем */
   char *value = NULL;
@@ -24,6 +26,7 @@
      { "options",          0, NULL,  251 },
      { "without-caption",  0, NULL,  250 },
      { "modes",            0, NULL,  249 },
+     { "curve",            1, NULL,  220 },
 
      { "dont-use-colors",  0, NULL,   3 },
      { "audit",            1, NULL,   2  },
@@ -61,6 +64,10 @@
                      show_caption = ak_false;
                      break;
          case 249:   work = do_modes;
+                     break;
+
+         case 220:   work = do_curve;
+                     curve = optarg;
                      break;
 
          default:   /* обрабатываем ошибочные параметры */
@@ -180,6 +187,12 @@
        } while( oid.mode++ < undefined_mode );
        break;
 
+     case do_curve:
+       if( ak_libakrypt_print_curve( stdout, curve ) != ak_error_ok ) {
+         aktool_error(_("using incorrect elliptic curve name or identifier"));
+         aktool_error(_("for more information rerun aktool with \"--audit stderr\" flag"));
+       }
+
      default:  break;
    }
 
@@ -192,6 +205,7 @@
 {
   printf(_("aktool show [options]  - show useful information about libakrypt parameters\n\n"));
   printf(_("available options:\n"));
+  printf(_("     --curve <ni>        show the parameters of elliptic curve with given name or identifier\n"));
   printf(_("     --engines           show all types of available crypto engines\n"));
   printf(_("     --oid <enim>        show one or more OID's,\n"));
   printf(_("                         where \"enim\" is an engine, name, identifier or mode of OID\n"));

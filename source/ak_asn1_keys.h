@@ -30,7 +30,7 @@
 /*! \brief Функция получает служебную информацию об асимметричном ключе,
    расположенном в ASN.1 контейнере. */
  int ak_asn1_context_get_secret_key_info( ak_asn1 , ak_oid * , ak_pointer * , size_t * ,
-                                      char ** , ak_resource , ak_oid *,  ak_pointer * , size_t * );
+                             char ** , ak_resource , ak_oid *,  ak_pointer * , size_t * , ak_tlv );
 /*! \brief Функция инициализирует секретный ключ значениями, расположенными в ASN.1 контейнере. */
  int ak_asn1_context_get_skey( ak_asn1 , ak_skey , ak_bckey , ak_bckey );
 

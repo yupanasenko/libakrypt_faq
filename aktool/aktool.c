@@ -74,6 +74,7 @@
  #endif
 
  /* выполняем команду пользователя */
+  if( aktool_check_command( "s", argv[1] )) return aktool_show( argc, argv );
   if( aktool_check_command( "show", argv[1] )) return aktool_show( argc, argv );
   if( aktool_check_command( "i", argv[1] )) return aktool_icode( argc, argv );
   if( aktool_check_command( "icode", argv[1] )) return aktool_icode( argc, argv );
@@ -339,7 +340,7 @@
   va_start( args, format );
  #ifdef _MSC_VER
   #if _MSC_VER > 1310
-    result = _vsnprintf_s( string, sizeof( string ), size, format, args );
+    result = _vsnprintf_s( string, sizeof( string ), sizeof( string ), format, args );
   #else
     result = _vsnprintf( string, sizeof( string ), format, args );
   #endif

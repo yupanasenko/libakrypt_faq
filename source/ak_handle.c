@@ -746,6 +746,53 @@
  return ak_verifykey_context_export_to_request( pctx, sctx, filename, size, format );
 }
 
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param public Дескриптор открытого ключа асимметричного криптографического механизма.
+    \param secret Дескриптор секретного ключа асимметричного криптографического механизма.
+    \param filename указатель на строку, содержащую имя файла, в который будет экспортирован ключ;
+    Если параметр `filename_size` отличен от нуля,
+    то указатель должен указывать на область памяти, в которую будет помещено сформированное имя файла.
+    \param size  размер области памяти, в которую будет помещено имя файла.
+    Если размер области недостаточен, то будет возбуждена ошибка.
+    Данный параметр должен принимать значение 0 (ноль), если указатель `filename` указывает
+    на константную строку.
+    \param format формат, в котором зашифрованные данные сохраняются в файл.
+
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ dll_export int ak_handle_export_to_certificate( ak_handle public, ak_handle secret,
+              ak_certificate_opts opts, char *filename, const size_t size, export_format_t format )
+{
+  ak_oid pid = NULL, sid = NULL;
+  ak_pointer pctx = NULL, sctx = NULL;
+
+ /* проверяем дескрипторы, аналогично тому, как это делалось в экспорте запроса на сертификат */
+  if(( pctx = ak_handle_get_context( public, &pid, NULL )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__, "incorrect public key handle" );
+  switch( pid->engine ) {
+    case verify_function:
+      if( pid->mode != algorithm ) return ak_error_message( ak_error_oid_mode, __func__,
+                                                     "unsupported public key handle, wrong mode");
+      break;
+    default:
+      return ak_error_message( ak_error_oid_engine, __func__, "unsupported handle, wrong engine");
+  }
+  if(( sctx = ak_handle_get_context( secret, &sid, NULL )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__, "incorrect secret key handle" );
+  switch( sid->engine ) {
+    case sign_function:
+      if( sid->mode != algorithm ) return ak_error_message( ak_error_oid_mode, __func__,
+                                                     "unsupported secret key handle, wrong mode");
+      break;
+    default:
+      return ak_error_message( ak_error_oid_engine, __func__, "unsupported handle, wrong engine");
+  }
+
+ return ak_verifykey_context_export_to_certificate( pctx, sctx, opts, filename, size, format );
+}
+
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                    ak_handle.c  */
 /* ----------------------------------------------------------------------------------------------- */

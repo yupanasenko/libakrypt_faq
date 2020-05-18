@@ -511,7 +511,10 @@
     SecretKeyContent ::= SEQUENCE {
        algorithm OBJECT IDENTIFIER,   -- идентификатор алгоритма, для которого предназначен ключ
        number OCTET STRING,           -- уникальный номер ключа
-       keyname UTF8 STRING,           -- человекочитаемое имя (описание) ключа
+       keyName              CHOICE {
+                              UTF8 STRING,
+                              NULL    -- человекочитаемое имя (описание) ключа, если имя не определено,
+                            }            то помещается NULL
        params KeyParameters,          -- параметры секретного ключа, такие ресурс использований и
                                          временной интервал
        curveOID OBJECT IDENTIFIER     -- идентификатор эллиптической кривой, на которой выполняются
@@ -520,8 +523,12 @@
                                 OBJECT IDENTIFIER
                                 NULL
                             }         -- идентификатор открытого ключа, связанного с данным
-                                         секретным ключом, если идентификатор не определен, то
-                                         помещается NULL
+                                         секретным ключом, если идентификатор не определен,
+                                         то помещается NULL
+       subjectName          CHOICE {
+                                Name
+                                NULL  -- обощенное имя владельца ключа (как в открытом ключе), если
+                            }            имя не определено, то помещается NULL
        content EncryptedContent       -- собственно зашифрованные с помощью преобразования KExp15 данные
     }
 \endcode
@@ -578,7 +585,8 @@
                                                symkey = ak_asn1_context_new( ))) != ak_error_ok )
      return ak_error_message( error, __func__, "incorrect creation of asn1 context for content" );
 
-  /* 3. создаем семь встроенных полей (данный набор специфичен только для SecretKeyContent
+  /* 3. создаем восемь встроенных полей (данный набор специфичен только для SecretKeyContent
+
      - 3.1. - идентификатор ключа */
    if(( error = ak_asn1_context_add_oid( symkey, skey->key.oid->id )) != ak_error_ok ) {
      ak_asn1_context_delete( symkey );
@@ -627,7 +635,12 @@
     else ak_asn1_context_add_octet_string( symkey,
                                          skey->verifykey_number, sizeof( skey->verifykey_number ));
 
-  /* - 3.7. - собственно зашифрованный ключ */
+  /* - 3.7. - помещаем имя владельца ключа (эта информация используется при подписи запросов на сертификат */
+   if( skey->name == NULL )
+     ak_asn1_context_add_utf8_string( symkey, NULL );
+    else ak_asn1_context_add_tlv( symkey, ak_tlv_context_duplicate_global_name( skey->name ));
+
+  /* - 3.8. - собственно зашифрованный ключ */
    if(( error = ak_asn1_context_add_skey_content( symkey, &skey->key, ekey, ikey )) != ak_error_ok ) {
      ak_asn1_context_delete( symkey );
      ak_error_message( error, __func__, "incorrect creation of secret key's parameters" );
@@ -1039,7 +1052,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_context_get_secret_key_info(ak_asn1 content, ak_oid *oid, ak_pointer *number,
                              size_t *numlen, char **keyname, ak_resource resource, ak_oid *eoid ,
-                                                               ak_pointer *vernum, size_t *verlen )
+                                            ak_pointer *vernum, size_t *verlen, ak_tlv subjectName )
 {
   ak_asn1 asn = NULL;
   ak_pointer ptr = NULL;
@@ -1114,13 +1127,26 @@
    if( TAG_NUMBER( asn->current->tag ) == TNULL ) {
      *vernum = NULL;
      *verlen = 0;
-     return ak_error_ok;
    }
-   if( TAG_NUMBER( asn->current->tag ) != TOCTET_STRING )
-     return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+    else {
+     if( TAG_NUMBER( asn->current->tag ) != TOCTET_STRING )
+       return ak_error_message( ak_error_invalid_asn1_tag, __func__,
                                     "context has incorrect asn1 type for subject key identifier" );
-   if(( error = ak_tlv_context_get_octet_string( asn->current, vernum, verlen )) != ak_error_ok )
-     return ak_error_message( error, __func__, "incorrect reading of symmetric key number");
+     if(( error = ak_tlv_context_get_octet_string( asn->current, vernum, verlen )) != ak_error_ok )
+       return ak_error_message( error, __func__, "incorrect reading of symmetric key number");
+    }
+
+  /* получаем обобщенное имя владельца ключа */
+   ak_asn1_context_next( asn );
+   if( DATA_STRUCTURE( asn->current->tag ) == PRIMITIVE ) {
+     if( TAG_NUMBER( asn->current->tag ) == TNULL ) subjectName = NULL;
+       else return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                   "context has unexpected primitive asn1 type for subject's name" );
+   } else {
+      if( TAG_NUMBER( asn->current->tag ) == TSEQUENCE ) subjectName = asn->current;
+       else return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                 "context has unexpected constructed asn1 type for subject's name" );
+     }
 
   return ak_error_ok;
 }
@@ -1246,6 +1272,7 @@
    int error = ak_error_ok;
    struct bckey ekey, ikey;
    struct resource resource;
+   ak_tlv subjectName = NULL;
    size_t len = 0, verlen = 0;
    crypto_content_t content_type;
    ak_pointer number = NULL, vernum = NULL;
@@ -1287,13 +1314,14 @@
      case secret_key_content:
        if(( error = ak_asn1_context_get_secret_key_info(
                           content, &oid, &number, &len, keyname,
-                                          &resource, &eoid, &vernum, &verlen )) != ak_error_ok ) {
+                             &resource, &eoid, &vernum, &verlen, subjectName )) != ak_error_ok ) {
          ak_error_message( error, __func__, "incorrect reading a symmetric key info" );
          goto lab1;
        }
        break;
 
-     default: ak_error_message( error = ak_error_invalid_asn1_content, __func__,  "incorrect key type" );
+     default: ak_error_message( error = ak_error_invalid_asn1_content,
+                                                                 __func__,  "incorrect key type" );
        goto lab1;
        break;
    }
@@ -1324,6 +1352,9 @@
        ak_error_message( error, __func__, "incorrect assigning an elliptic curve to seсret key");
        (( ak_function_destroy_object *)oid->func.destroy )( key );
      }
+    /* присваиваем обобщенное имя владельца ключа */
+     ((ak_signkey)key)->name = subjectName;
+
     /* копируем номер открытого ключа */
      if( vernum != NULL )
        memcpy( ((ak_signkey)key)->verifykey_number, vernum, ak_min( verlen, 32 ));
@@ -2265,6 +2296,7 @@
  int ak_verifykey_context_export_to_certificate( ak_verifykey vk, ak_signkey sk,
               ak_certificate_opts opts, char *filename, const size_t size, export_format_t format )
 {
+  ak_mpzn256 serialNumber;
   int error = ak_error_ok;
   ak_asn1 certificate = NULL;
   const char *file_extensions[] = { /* имена параметризуются значениями типа export_format_t */
@@ -2290,8 +2322,9 @@
       goto labex;
     }
     memset( filename, 0, size );
+    ak_verifykey_context_generate_certificate_number( vk, sk, serialNumber );
     ak_snprintf( filename, size, "%s.%s",
-          ak_mpzn_to_hexstr( (ak_uint64 *)vk->number, ak_mpzn256_size ), file_extensions[format] );
+          ak_mpzn_to_hexstr( serialNumber, ak_mpzn256_size ), file_extensions[format] );
   }
 
  /* 2. Сохраняем созданное дерево в файл */

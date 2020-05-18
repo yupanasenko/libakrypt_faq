@@ -175,13 +175,61 @@
 /* ----------------------------------------------------------------------------------------------- */
  static void inline ak_wcurve_to_log( ak_wcurve ec, int error )
 {
-  ak_error_message_fmt( error, __func__, " a = %s", ak_mpzn_to_hexstr( ec->a, ec->size ));
-  ak_error_message_fmt( error, __func__, " b = %s", ak_mpzn_to_hexstr( ec->b, ec->size ));
-  ak_error_message_fmt( error, __func__, " p = %s", ak_mpzn_to_hexstr( ec->p, ec->size ));
-  ak_error_message_fmt( error, __func__, " q = %s", ak_mpzn_to_hexstr( ec->q, ec->size ));
-  ak_error_message_fmt( error, __func__, "px = %s", ak_mpzn_to_hexstr( ec->point.x, ec->size ));
-  ak_error_message_fmt( error, __func__, "py = %s", ak_mpzn_to_hexstr( ec->point.y, ec->size ));
-  ak_error_message_fmt( error, __func__, "pz = %s", ak_mpzn_to_hexstr( ec->point.z, ec->size ));
+  ak_mpznmax one = ak_mpznmax_one, tmp;
+  ak_oid oid = ak_oid_context_find_by_data( ec );
+
+  if( oid != NULL ) {
+    ak_error_message_fmt( error, __func__, "elliptic curve: %s (oid: %s)", oid->names[0], oid->id );
+
+    ak_mpzn_mul_montgomery( tmp, ec->a, one, ec->p, ec->n, ec->size );
+    ak_error_message_fmt( error, __func__, " a = %s", ak_mpzn_to_hexstr( tmp, ec->size ));
+    ak_mpzn_mul_montgomery( tmp, ec->b, one, ec->p, ec->n, ec->size );
+    ak_error_message_fmt( error, __func__, " b = %s", ak_mpzn_to_hexstr( tmp, ec->size ));
+    ak_error_message_fmt( error, __func__, " b = %s", ak_mpzn_to_hexstr( ec->b, ec->size ));
+    ak_error_message_fmt( error, __func__, " p = %s", ak_mpzn_to_hexstr( ec->p, ec->size ));
+    ak_error_message_fmt( error, __func__, " q = %s", ak_mpzn_to_hexstr( ec->q, ec->size ));
+    ak_error_message_fmt( error, __func__, "px = %s", ak_mpzn_to_hexstr( ec->point.x, ec->size ));
+    ak_error_message_fmt( error, __func__, "py = %s", ak_mpzn_to_hexstr( ec->point.y, ec->size ));
+    ak_error_message_fmt( error, __func__, "pz = %s", ak_mpzn_to_hexstr( ec->point.z, ec->size ));
+  }
+   else ak_error_message( error, __func__, "unexpected parameters set of elliptic curve" );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param fp дескриптор файла; файл должен быть предварительно открыт для записи.
+    \param curve имя или идентификатор эллиптической кривой.
+     @return В случае успеха, функция возвращает \ref ak_error_ok. В противном случае,
+     возвращается код ошибки.                                                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ dll_export int ak_libakrypt_print_curve( FILE *fp , const char *curve )
+{
+  ak_mpznmax one = ak_mpznmax_one, tmp;
+  ak_oid oid = ak_oid_context_find_by_ni( curve );
+  ak_wcurve ec = NULL;
+
+  if( oid == NULL ) return ak_error_message( ak_error_wrong_oid, __func__,
+                                          "using unexpected name or idenifier of elliptic curve" );
+  if( oid->engine != identifier ) return ak_error_message( ak_error_oid_engine, __func__,
+                                                "using name or idenifier with unexpected engine" );
+  if( oid->mode != wcurve_params ) return ak_error_message( ak_error_oid_engine, __func__,
+                                                  "using name or idenifier with unexpected mode" );
+  ec = oid->data;
+  fprintf( fp, "elliptic curve: %s (oid: %s)\n\n", oid->names[0], oid->id );
+
+  ak_mpzn_mul_montgomery( tmp, ec->a, one, ec->p, ec->n, ec->size );
+  fprintf( fp, "  a = %s\n", ak_mpzn_to_hexstr( tmp, ec->size ));
+  ak_mpzn_mul_montgomery( tmp, ec->b, one, ec->p, ec->n, ec->size );
+  fprintf( fp, "  b = %s\n", ak_mpzn_to_hexstr( tmp, ec->size ));
+
+  fprintf( fp, "  p = %s\n", ak_mpzn_to_hexstr( ec->p, ec->size ));
+  fprintf( fp, "  q = %s\n", ak_mpzn_to_hexstr( ec->q, ec->size ));
+  fprintf( fp, "  c = %u [cofactor]\n\n", ec->cofactor );
+
+
+  fprintf( fp, "point:\n px = %s\n", ak_mpzn_to_hexstr( ec->point.x, ec->size ));
+  fprintf( fp, " py = %s\n", ak_mpzn_to_hexstr( ec->point.y, ec->size ));
+
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

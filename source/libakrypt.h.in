@@ -418,7 +418,7 @@ extern "C" {
      a8,
    /*! \brief описатель для типов данных, помещаемых в asn1 дерево */
      descriptor,
-   /*! \brief неопределенный режим, может возвращаться в как ошибка */
+   /*! \brief неопределенный режим, может возвращаться как ошибка */
      undefined_mode
 } oid_modes_t;
 
@@ -563,6 +563,8 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_STDIO_H
+/*! \brief Печать парметров эллиптической кривой с заданым именем или идентификатором */
+ dll_export int ak_libakrypt_print_curve( FILE * , const char * );
 /*! \brief Декодирование asn1 дерева, содержащегося в файле и вывод информации в файловый дескриптор */
  dll_export int ak_libakrypt_print_asn1( FILE * , const char * );
 #endif
@@ -650,6 +652,9 @@ extern "C" {
 /*! \brief Экспорт открытого ключа в запрос на сертификат */
  dll_export int ak_handle_export_to_request( ak_handle , ak_handle ,
                                                          char * , const size_t , export_format_t );
+/*! \brief Экспорт открытого ключа в сертификат */
+ dll_export int ak_handle_export_to_certificate( ak_handle , ak_handle ,
+                                   ak_certificate_opts , char * , const size_t , export_format_t );
 /*! \brief Вычисление результата работы алгоритма итерационного сжатия для заданной области памяти. */
  dll_export int ak_handle_mac_ptr( ak_handle , ak_pointer , const size_t ,
                                                                        ak_pointer , const size_t );

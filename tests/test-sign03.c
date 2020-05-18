@@ -46,6 +46,10 @@
  /* подстраиваем ключ и устанавливаем ресурс */
   ak_skey_context_set_resource_values( &sk.key, key_using_resource,
                "digital_signature_count_resource", time(NULL), time(NULL)+2592000 ); /* 1 месяц */
+
+ /* развлечение: указываем имя владельца ключа */
+  ak_signkey_context_add_name_string( &sk, "CN", "Владелец Ключа" );
+
  /* подписываем данные */
   if( ak_signkey_context_sign_ptr( &sk, testkey,
                                          sizeof( testkey ), sign, sizeof( sign )) != ak_error_ok )
@@ -70,12 +74,12 @@
     asn1_der_format           /* формат хранения ключа */
   );
 
- /* создаем последовательность обобщенных имен для владельца ключа */
-  ak_verifykey_context_add_name_string( &vk, "CountryName", "RU" );
-  ak_verifykey_context_add_name_string( &vk, "LocalityName", "Большое Свинорье" );
-  ak_verifykey_context_add_name_string( &vk, "StateOrProvinceName", "Московская область" );
-  ak_verifykey_context_add_name_string( &vk, "emailAddress", "some@mail.address" );
-  ak_verifykey_context_add_name_string( &vk, "CommonName", "Example" );
+ /* создаем последовательность обобщенных имен для владельца
+    ключа, к этим именам будут добавлены имена из секретного ключа */
+  ak_verifykey_context_add_name_string( &vk, "C", "RU" );
+  ak_verifykey_context_add_name_string( &vk, "L", "Большое Свинорье" );
+  ak_verifykey_context_add_name_string( &vk, "ST", "Московская область" );
+  ak_verifykey_context_add_name_string( &vk, "email", "some@mail.address" );
 
  /* сохраняем запрос */
   ak_verifykey_context_export_to_request(
