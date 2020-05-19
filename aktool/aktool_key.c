@@ -49,6 +49,17 @@
      { "pubkey",              1, NULL,  210 },
      { "days",                1, NULL,  209 },
 
+    /* флаги использования открытого ключа */
+     { "digitalSignature",    0, NULL,  190 },
+     { "contentCommitment",   0, NULL,  191 },
+     { "keyEncipherment",     0, NULL,  192 },
+     { "dataEncipherment",    0, NULL,  193 },
+     { "keyAgreement",        0, NULL,  194 },
+     { "keyCertSign",         0, NULL,  195 },
+     { "cRLSign",             0, NULL,  196 },
+     { "ca",                  1, NULL,  197 },
+     { "pathlen",             1, NULL,  198 },
+
     /* потом общие */
      { "dont-use-colors",     0, NULL,   3 },
      { "audit",               1, NULL,   2  },
@@ -106,7 +117,7 @@
                          }
                     break;
 
-       /* передача пароля через коммандную строку */
+       /* передача пароля через командную строку */
          case 248 : memset( ki.password, 0, sizeof( ki.password ));
                     strncpy( ki.password, optarg, sizeof( ki.password ) -1 );
                     break;
@@ -119,6 +130,33 @@
                          aktool_error(_("%s is not valid identifier for elliptic curve"), optarg );
                          return EXIT_FAILURE;
                      }
+                    break;
+
+       /* устанавливаем биты для keyUsage */
+         case 190 : ki.opts.keyUsageBits ^= bit_digitalSignature;
+                    break;
+         case 191 : ki.opts.keyUsageBits ^= bit_contentCommitment;
+                    break;
+         case 192 : ki.opts.keyUsageBits ^= bit_keyEncipherment;
+                    break;
+         case 193 : ki.opts.keyUsageBits ^= bit_dataEncipherment;
+                    break;
+         case 194 : ki.opts.keyUsageBits ^= bit_keyAgreement;
+                    break;
+         case 195 : ki.opts.keyUsageBits ^= bit_keyCertSign;
+                    break;
+         case 196 : ki.opts.keyUsageBits ^= bit_cRLSign;
+                    break;
+         case 197 : if( strncmp( optarg, "true", 4 ) == 0 ) ki.opts.ca = ak_true;
+                     else if( strncmp( optarg, "false", 5 ) == 0 ) ki.opts.ca = ak_false;
+                       else {
+                         aktool_error(_("%s is not valid value of certificate authority option"),
+                                                                                          optarg );
+                         return EXIT_FAILURE;
+                       }
+                    break;
+         case 198 : if(( ki.opts.pathlenConstraint = atoi( optarg )) > 100 )
+                      ki.opts.pathlenConstraint = 100;
                     break;
 
        /* устанавливаем имя криптографического алгоритма*/
@@ -298,6 +336,11 @@
 
   if( ki.format == aktool_magic_number ) { /* сохраняем открытый ключ как самоподписанный сертификат  */
 
+   /* для корневого (самоподписанного) сертификата обязательно устанавливаем бит keyCertSign */
+    if(( ki.opts.keyUsageBits&bit_keyCertSign ) == 0 ) {
+      ki.opts.keyUsageBits = ( ki.opts.keyUsageBits&(~bit_keyCertSign ))^bit_keyCertSign;
+    }
+
     ki.format = asn1_pem_format; /* возвращаем необходимое значение */
     if( ak_handle_export_to_certificate( ki.vkey, ki.key, &ki.opts, ki.csrfile,
            ( strlen( ki.csrfile ) > 0 ) ? 0 : sizeof( ki.csrfile ), ki.format ) != ak_error_ok ) {
@@ -426,7 +469,18 @@
    " -o, --outkey <file>     set the name of output file for secret key\n"
    "     --password <pass>   set the password for storing a secret key directly in command line\n"
    "     --pubkey <file>     set the name of output file for public key request or certificate\n"
-   "     --to <format>       set the format of output file [ enabled values : der, pem, certificate ]\n" ));
+   "     --to <format>       set the format of output file [ enabled values : der, pem, certificate ]\n\n"
+   "options for customizing a public key certificate:\n"
+   "     --ca <value>        use as certificate authority [enabled value: true, false ]\n"
+   "     --pathlen <value>   set the maximal length of certificates chain\n"
+   "     --digitalSignature  use for verifying a digital signatures of user data\n"
+   "     --contentCommitment \n"
+   "     --keyEncipherment   use for encipherment of secret keys\n"
+   "     --dataEncipherment  use for encipherment of user data (is not usally used)\n"
+   "     --keyAgreement      use in key agreement protocols for subject's authentication\n"
+   "     --keyCertSign       use for verifying of public key's certificates\n"
+   "     --cRLSign           use for verifying of revocation lists of certificates\n"
+  ));
 
  return aktool_print_common_options();
 }
