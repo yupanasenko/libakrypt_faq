@@ -34,7 +34,7 @@
   char tmp[4];
   size_t i = 0;
   int next_option = 0, exit_status = EXIT_FAILURE;
-  enum { do_nothing, do_new } work = do_nothing;
+  enum { do_nothing, do_new, do_sign } work = do_nothing;
   struct oid_info oid = { undefined_engine, undefined_mode, NULL, NULL };
 
   const struct option long_options[] = {
@@ -42,7 +42,8 @@
      { "algorithm",           1, NULL,  'a' },
      { "outkey",              1, NULL,  'o' },
      { "label",               1, NULL,  'l' },
-     { "new",                 0, NULL,  255 },
+     { "new",                 0, NULL,  'n' },
+     { "sign",                0, NULL,  's' },
      { "to",                  1, NULL,  250 },
      { "password",            1, NULL,  248 },
      { "curve",               1, NULL,  220 },
@@ -80,7 +81,7 @@
 
  /* разбираем опции командной строки */
   do {
-       next_option = getopt_long( argc, argv, "a:o:l:", long_options, NULL );
+       next_option = getopt_long( argc, argv, "a:o:l:ns", long_options, NULL );
        switch( next_option )
       {
        /* сначала обработка стандартных опций */
@@ -95,7 +96,9 @@
                     break;
 
        /* теперь опции специфичные для key */
-         case 255:  work = do_new;
+         case 'n' :  work = do_new;
+                    break;
+         case 's' :  work = do_sign;
                     break;
 
        /* определяем формат выходных данных (--to) */
@@ -362,12 +365,12 @@
                                                                     ki.format ) != ak_error_ok ) {
      aktool_error(_("wrong export a secret key to file %s"), ki.keyfile );
      goto labex;
-  } else
+  } else {
+     /* секретный ключ хорошо хранить в хранилище */
      printf(_("secret key stored in %s\n"), ki.keyfile );
-
+    }
 
   exitcode = EXIT_SUCCESS;
-
   labex:
     memset( password2, 0, sizeof( password2 ));
     memset( ki.password, 0, sizeof( ki.password ));
@@ -464,14 +467,16 @@
    " -a, --algorithm <ni>    set the cryptographic algorithm for a new key, where \"ni\" is name or identifier\n"
    "     --curve <ni>        set the elliptic curve identifier for public keys\n"
    "     --days <value>      set the days count to expiration date of secret or public key\n"
+   "     --key <name>        set the secret key for signing a public key's certificate\n"
    " -l, --label <text>      assign the user-defined label to secret key\n"
-   "     --new               generate a new key or key pair for selected algorithm\n"
+   " -n, --new               generate a new key or key pair for selected algorithm\n"
    " -o, --outkey <file>     set the name of output file for secret key\n"
    "     --password <pass>   set the password for storing a secret key directly in command line\n"
-   "     --pubkey <file>     set the name of output file for public key request or certificate\n"
+   "     --pubkey <file>     set the name of output file for public key's request or certificate\n"
+   " -s, --sign              create a public key's certificate from given request\n"
    "     --to <format>       set the format of output file [ enabled values : der, pem, certificate ]\n\n"
-   "options for customizing a public key certificate:\n"
-   "     --ca <value>        use as certificate authority [enabled value: true, false ]\n"
+   "options for customizing a public key's certificate:\n"
+   "     --ca <value>        use as certificate authority [ enabled value: true, false ]\n"
    "     --pathlen <value>   set the maximal length of certificates chain\n"
    "     --digitalSignature  use for verifying a digital signatures of user data\n"
    "     --contentCommitment \n"

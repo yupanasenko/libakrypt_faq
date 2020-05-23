@@ -70,7 +70,8 @@ set( HEADERS        source/ak_tools.h
                     source/ak_gf2n.h
 )
 
-set( SOURCES        source/ak_tools.c
+set( SOURCES        source/ak_ini.c
+                    source/ak_tools.c
                     source/ak_base64.c
                     source/ak_oid.c
                     source/ak_mpzn.c
@@ -94,6 +95,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_asn1.h
                     source/ak_sign.h
                     source/ak_context_manager.h
+                    source/ak_key_manager.h
   )
   set( SOURCES      ${SOURCES}
                     source/ak_mac.c
@@ -108,6 +110,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_asn1_keys.c
                     source/ak_sign.c
                     source/ak_context_manager.c
+                    source/ak_key_manager.c
                     source/ak_handle.c
   )
 endif()
@@ -282,6 +285,7 @@ endif()
 set( EXAMPLES_LIST hello
                    log
                    oid
+                   ini
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( EXAMPLES_LIST ${EXAMPLES_LIST}
@@ -328,6 +332,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  asn1-build
                  asn1-parse
                  asn1-keys
+                 keys01
                  sign01
                  sign02
                  sign03

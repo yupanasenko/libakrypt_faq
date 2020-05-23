@@ -548,10 +548,6 @@ extern "C" {
  dll_export ak_uint8 *ak_ptr_load_from_base64_file( ak_pointer , size_t *, const char * );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция устанавливает домашний каталог пользователя. */
- dll_export int ak_libakrypt_get_home_path( char *, const size_t );
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тип функции, предназначенной для считывания пароля.  */
  typedef int ( ak_function_password_read ) ( char *, const size_t );
 /*! \brief Функция устанавливает обработчик - функцию чтения пользовательского пароля. */
@@ -700,6 +696,27 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 #define ak_max(x,y) ((x) > (y) ? (x) : (y))
 #define ak_min(x,y) ((x) < (y) ? (x) : (y))
+
+/* ----------------------------------------------------------------------------------------------- */
+#ifndef LIBAKRYPT_CONST_CRYPTO_PARAMS
+/*! \brief Функция устанавливает домашний каталог пользователя. */
+ dll_export int ak_libakrypt_get_home_path( char *, const size_t );
+/*! \brief Функция создает полное имя файла в служебном каталоге библиотеки. */
+ dll_export int ak_libakrypt_create_filename( char * , const size_t , char * , const int );
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Прототип функции-обработчика. */
+ typedef int (*ini_handler)( void *user , const char *section ,
+                                                            const char *name , const char *value );
+/*! \brief Прототип функции чтения строк (fgets-style). */
+ typedef char* (*ini_reader)( char * , int , void * );
+/*! \brief Функция разбора ini-файла с заданным именем */
+ dll_export int ak_libakrypt_ini_parse( const char* , ini_handler , void * );
+/*! \brief Функция разбора ранее открытого ini-файла */
+ dll_export int ak_ini_libakrypt_parse_file( FILE* , ini_handler , void * );
+/*! \brief Функция разбора строки, содержащей корректные данные в формате ini-файла. */
+ dll_export int ak_ini_libakrypt_parse_string( const char * , ini_handler , void* );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает строку, начинающую цветовое выделение. */

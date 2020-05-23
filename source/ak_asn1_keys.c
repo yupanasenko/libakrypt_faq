@@ -1868,11 +1868,14 @@
 
   if( a == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                             "using null pointer to asn1 context" );
+  if( !ak_ptr_is_equal( vk->number, sk->verifykey_number, sizeof( vk->number )))
+    return ak_error_message( ak_error_not_equal_data, __func__,
+                                                     "secret key not correspondig to public key" );
   if( ak_signkey_context_get_tag_size( sk ) > sizeof( s ))
     ak_error_message( ak_error_wrong_length, __func__,
                                    "using digital signature algorithm with very large signature" );
 
- /* 1. Создаем последовательность, которая будет содержать даннве запроса */
+ /* 1. Создаем последовательность, которая будет содержать данные запроса */
   if(( error = ak_asn1_context_add_asn1( a, TSEQUENCE^CONSTRUCTED,
                                                   asn = ak_asn1_context_new())) != ak_error_ok ) {
     if( asn != NULL ) ak_asn1_context_delete( asn );

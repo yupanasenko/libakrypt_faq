@@ -63,8 +63,6 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifndef LIBAKRYPT_CONST_CRYPTO_PARAMS
-/*! \brief Функция создает полное имя файла в служебном каталоге библиотеки. */
- int ak_libakrypt_create_filename( char * , const size_t , char * , const int );
 /*! \brief Функция считывает настройки (параметры) библиотеки из файла libakrypt.conf */
  bool_t ak_libakrypt_load_options( void );
 #endif

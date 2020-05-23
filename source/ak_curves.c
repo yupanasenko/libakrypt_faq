@@ -223,7 +223,7 @@
 
   fprintf( fp, "  p = %s\n", ak_mpzn_to_hexstr( ec->p, ec->size ));
   fprintf( fp, "  q = %s\n", ak_mpzn_to_hexstr( ec->q, ec->size ));
-  fprintf( fp, "  c = %u [cofactor]\n\n", ec->cofactor );
+  fprintf( fp, "  c = %u [cofactor]\n\n", (unsigned int) ec->cofactor );
 
 
   fprintf( fp, "point:\n px = %s\n", ak_mpzn_to_hexstr( ec->point.x, ec->size ));
