@@ -111,34 +111,38 @@
    char *name;
   /*! \brief Численное значение опции (31 значащий бит + знак) */
    ak_int64 value;
+  /*! \brief Минимально возможное значение */
+   ak_int64 min;
+  /*! \brief Максимально возможное значение */
+   ak_int64 max;
  } *ak_option;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения опций (значения по-умолчанию) */
  static struct option options[] = {
-     { "log_level", ak_log_standard },
-     { "context_manager_size", 32 },
-     { "context_manager_max_size", 4096 },
-     { "pbkdf2_iteration_count", 2000 },
-     { "hmac_key_count_resource", 65536 },
-     { "digital_signature_count_resource", 65536 },
+     { "log_level", ak_log_standard, 0, 2 },
+     { "context_manager_size", 32, 32, 65536 },
+     { "context_manager_max_size", 4096, 4096, 2147483648 },
+     { "pbkdf2_iteration_count", 2000, 1000, 65536 },
+     { "hmac_key_count_resource", 65536, 1024, 2147483648 },
+     { "digital_signature_count_resource", 65536, 1024, 2147483648 },
 
   /* значение константы задает максимальный объем зашифрованной информации на одном ключе в 4 Mб:
                                  524288 блока x 8 байт на блок = 4.194.304 байт = 4096 Кб = 4 Mб   */
-     { "magma_cipher_resource", 524288 },
+     { "magma_cipher_resource", 524288, 1024, 2147483648 },
 
   /* значение константы задает максимальный объем зашифрованной информации на одном ключе в 32 Mб:
                              2097152 блока x 16 байт на блок = 33.554.432 байт = 32768 Кб = 32 Mб  */
-     { "kuznechik_cipher_resource", 2097152 },
-     { "acpkm_message_count", 4096 },
-     { "acpkm_section_magma_block_count", 128 },
-     { "acpkm_section_kuznechik_block_count", 512 },
+     { "kuznechik_cipher_resource", 2097152, 8196, 2147483648 },
+     { "acpkm_message_count", 4096, 128, 65536 },
+     { "acpkm_section_magma_block_count", 128, 128, 16777216 },
+     { "acpkm_section_kuznechik_block_count", 512, 512, 16777216 },
 
   /* при значении равным единицы, формат шифрования данных соответствует варианту OpenSSL */
-     { "openssl_compability", 0 },
+     { "openssl_compability", 0, 0, 1 },
   /* флаг использования цвета при выводе сообщений библиотеки */
-     { "use_color_output", 1 },
-     { NULL, 0 } /* завершающая константа, должна всегда принимать нулевые значения */
+     { "use_color_output", 1, 0, 1 },
+     { NULL, 0, 0, 0 } /* завершающая константа, должна всегда принимать нулевые значения */
  };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -408,135 +412,6 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static bool_t ak_libakrypt_load_one_option( const char *string, const char *field, ak_int64 *value )
-{
-  char *ptr = NULL, *endptr = NULL;
-  if(( ptr = strstr( string, field )) != NULL ) {
-    ak_int64 val = ( ak_int64 ) strtoll( ptr += strlen(field), &endptr, 10 ); // strtoll
-    if(( endptr != NULL ) && ( ptr == endptr )) {
-      ak_error_message_fmt( ak_error_undefined_value, __func__,
-                                    "using an undefinded value for variable %s", field );
-      return ak_false;
-    }
-    if(( errno == ERANGE && ( val >= INT_MAX || val <= INT_MIN )) || (errno != 0 && val == 0)) {
-     #ifdef _MSC_VER
-       char mbuf[256];
-       strerror_s( mbuf, 256, errno );
-       ak_error_message_fmt( ak_error_undefined_value, __func__, "%s for field %s", mbuf, field );
-     #else
-       ak_error_message_fmt( ak_error_undefined_value, __func__,
-                                                    "%s for field %s", strerror( errno ), field );
-     #endif
-    } else {
-             *value = val;
-             return ak_true;
-           }
-  }
- return ak_false;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция считывает опции из открытого файла, дескриптор которого передается в
-    качестве аргумента функции.
-
-    @param fd Дескриптор файла. Должен быть предварительно открыт на чтение с помощью функции
-    ak_file_is_exist().
-
-    @return Функция возвращает код ошибки или \ref ak_error_ok.                                    */
-/* ----------------------------------------------------------------------------------------------- */
- static int ak_libakrypt_load_options_from_file( ak_file fd )
-{
- int off = 0;
- size_t idx = 0;
- char ch, localbuffer[1024];
-
- /* нарезаем входные на строки длиной не более чем 1022 символа */
-  memset( localbuffer, 0, 1024 );
-  for( idx = 0; idx < (size_t) fd->size; idx++ ) {
-     if( ak_file_read( fd, &ch, 1 ) != 1 ) {
-       ak_file_close(fd);
-       return ak_error_message( ak_error_read_data, __func__ ,
-                                                         "unexpected end of libakrypt.conf file" );
-     }
-     if( off > 1022 ) {
-       ak_file_close( fd );
-       return ak_error_message( ak_error_read_data, __func__ ,
-                                         "libakrypt.conf has a line with more than 1022 symbols" );
-     }
-    if( ch == '\n' ) {
-      if((strlen(localbuffer) != 0 ) && ( strchr( localbuffer, '#' ) == 0 )) {
-        ak_int64 value = 0;
-
-        /* устанавливаем уровень аудита */
-        if( ak_libakrypt_load_one_option( localbuffer, "log_level = ", &value ))
-          ak_libakrypt_set_option( "log_level", value );
-
-        /* устанавливаем минимальный размер структуры управления контекстами */
-        if( ak_libakrypt_load_one_option( localbuffer, "context_manager_size = ", &value )) {
-          if( value < 32 ) value = 32;
-          if( value > 65536 ) value = 65536;
-          ak_libakrypt_set_option( "context_manager_size", value );
-        }
-
-       /* устанавливаем максимально возможный размер структуры управления контекстами */
-        if( ak_libakrypt_load_one_option( localbuffer, "context_manager_max_size = ", &value )) {
-          if( value < 4096 ) value = 4096;
-          if( value > 2147483647 ) value = 2147483647;
-          ak_libakrypt_set_option( "context_manager_max_size", value );
-        }
-
-       /* устанавливаем количество циклов в алгоритме pbkdf2 */
-        if( ak_libakrypt_load_one_option( localbuffer, "pbkdf2_iteration_count = ", &value )) {
-          if( value < 1000 ) value = 1000;
-          if( value > 32768 ) value = 32768;
-          ak_libakrypt_set_option( "pbkdf2_iteration_count", value );
-        }
-
-       /* устанавливаем ресурс ключа выработки имитовставки для алгоритма HMAC */
-        if( ak_libakrypt_load_one_option( localbuffer, "hmac_key_count_resource = ", &value )) {
-          if( value < 1024 ) value = 1024;
-          if( value > 2147483647 ) value = 2147483647;
-          ak_libakrypt_set_option( "hmac_key_count_resource", value );
-        }
-
-       /* устанавливаем ресурс ключа алгоритма блочного шифрования Магма */
-        if( ak_libakrypt_load_one_option( localbuffer, "magma_cipher_resource = ", &value )) {
-          if( value < 1024 ) value = 1024;
-          if( value > 2147483647 ) value = 2147483647;
-          ak_libakrypt_set_option( "magma_cipher_resource", value );
-        }
-       /* устанавливаем ресурс ключа алгоритма блочного шифрования Кузнечик */
-        if( ak_libakrypt_load_one_option( localbuffer, "kuznechik_cipher_resource = ", &value )) {
-          if( value < 1024 ) value = 1024;
-          if( value > 2147483647 ) value = 2147483647;
-          ak_libakrypt_set_option( "kuznechik_cipher_resource", value );
-        }
-
-       /* устанавливаем ресурс ключа электронной подписи */
-        if( ak_libakrypt_load_one_option( localbuffer, "digital_signature_count_resource = ", &value )) {
-          if( value < 1024 ) value = 1024;
-          if( value > 2147483647 ) value = 2147483647;
-          ak_libakrypt_set_option( "digital_signature_count_resource", value );
-        }
-
-       /* учет совместимости с другими библиотеками */
-        if( ak_libakrypt_load_one_option( localbuffer, "openssl_compability = ", &value )) {
-          if(( value < 0 ) || ( value > 1 )) value = 0;
-          ak_libakrypt_set_option( "openssl_compability", value );
-        }
-
-      } /* далее мы очищаем строку независимо от ее содержимого */
-      off = 0;
-      memset( localbuffer, 0, 1024 );
-    } else localbuffer[off++] = ch;
-  }
-
-  /* закрываем */
-  ak_file_close(fd);
-  return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
  static int ak_libakrypt_write_options( void )
 {
   size_t i;
@@ -609,9 +484,23 @@
   if(( error = ak_file_create_to_write( &fd, filename )) != ak_error_ok )
     return ak_error_message( error, __func__, "wrong creation of libakrypt.conf file");
 
+ /* сперва записываем заголовок секции */
+  ak_snprintf( hpath, FILENAME_MAX - 1, "[libakrypt]\n" );
+  if( ak_file_write( &fd, hpath, strlen( hpath )) < 1 ) {
+   #ifdef _MSC_VER
+    strerror_s( hpath, FILENAME_MAX, errno ); /* помещаем сообщение об ошибке в ненужный буффер */
+    ak_error_message_fmt( error = ak_error_write_data, __func__,
+                                                "section's header stored with error [%s]", hpath );
+   #else
+    ak_error_message_fmt( error = ak_error_write_data, __func__,
+                                     "section's header stored with error [%s]", strerror( errno ));
+   #endif
+  }
+
+ /* потом сохраняем текущие значения всех опций */
   for( i = 0; i < ak_libakrypt_options_count(); i++ ) {
     memset( hpath, 0, ak_min( 1024, FILENAME_MAX ));
-    ak_snprintf( hpath, FILENAME_MAX - 1, "%s = %d\n", options[i].name, options[i].value );
+    ak_snprintf( hpath, FILENAME_MAX - 1, "  %s = %d\n", options[i].name, options[i].value );
     if( ak_file_write( &fd, hpath, strlen( hpath )) < 1 ) {
      #ifdef _MSC_VER
       strerror_s( hpath, FILENAME_MAX, errno ); /* помещаем сообщение об ошибке в ненужный буффер */
@@ -627,6 +516,44 @@
   if( error == ak_error_ok )
     ak_error_message_fmt( ak_error_ok, __func__, "all options stored in %s file", filename );
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ #define opt_check( str, a, b )  do{ \
+  if( strncmp( name, str, strlen( str )) == 0 ) {\
+    if( value < a ) value = a;\
+    if( value > b ) value = b;\
+    ak_libakrypt_set_option( str, value );\
+    return 1;\
+  }\
+ }while(0);\
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_libakrypt_load_option_from_file( void *user ,
+                                      const char *section , const char *name , const char *valstr )
+{
+  size_t idx = 0;
+  char message[256], *endptr = NULL;
+  ak_int64 value = strtoll( valstr, &endptr, 10 );
+
+ /* проверки */
+  if( user != NULL ) return 0;
+  if( strncmp( section, "libakrypt", 9 ) != 0 ) return 0;
+
+ /* теперь детальный разбор каждой опции */
+  while( options[idx].name != NULL ) {
+   opt_check( options[idx].name, options[idx].min, options[idx].max );
+   ++idx;
+  }
+
+ /* если ничего не нашли, выводим красивое сообщение */
+  ak_error_message( ak_error_undefined_value, __func__, "found unexpected following option" );
+  memset( message, 0, sizeof( message ));
+  ak_snprintf( message, sizeof( message )-1, " [%s]\n  %s = %s", section, name, valstr );
+  ak_log_set_message( message );
+
+ /* нулевое значение - неуспешное завершение обработчика */
+ return 0;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -649,14 +576,14 @@
  }
 /* пытаемся считать данные из указанного файла */
  if( ak_file_open_to_read( &fd, name ) == ak_error_ok ) {
-   if(( error = ak_libakrypt_load_options_from_file( &fd )) == ak_error_ok ) {
-     if( ak_libakrypt_get_option( "log_level" ) > ak_log_standard ) {
-       ak_error_message_fmt( ak_error_ok, __func__,
-                                                 "all options was read from %s file", name );
-     }
+   ak_file_close( &fd );
+   if(( error = ak_libakrypt_ini_parse( name,
+                                     ak_libakrypt_load_option_from_file, NULL )) == ak_error_ok ) {
+     if( ak_libakrypt_get_option( "log_level" ) > ak_log_standard )
+       ak_error_message_fmt( ak_error_ok, __func__, "all options was read from %s file", name );
      return ak_true;
    } else {
-         ak_error_message_fmt( error, __func__, "file %s exists, but contains invalid data", name );
+       ak_error_message_fmt( error, __func__, "file %s exists, but contains invalid data", name );
        return ak_false;
      }
  }
@@ -669,18 +596,18 @@
  }
 /* пытаемся считать данные из указанного файла */
  if( ak_file_open_to_read( &fd, name ) == ak_error_ok ) {
-   if(( error = ak_libakrypt_load_options_from_file( &fd )) == ak_error_ok ) {
-     if( ak_libakrypt_get_option( "log_level" ) > ak_log_standard ) {
-       ak_error_message_fmt( ak_error_ok, __func__,
-                                                 "all options was read from %s file", name );
-     }
+   ak_file_close( &fd );
+   if(( error = ak_libakrypt_ini_parse( name,
+                                     ak_libakrypt_load_option_from_file, NULL )) == ak_error_ok ) {
+     if( ak_libakrypt_get_option( "log_level" ) > ak_log_standard )
+       ak_error_message_fmt( ak_error_ok, __func__, "all options was read from %s file", name );
      return ak_true;
    } else {
        ak_error_message_fmt( error, __func__, "wrong options reading from %s file", name );
        return ak_false;
      }
  } else ak_error_message( ak_error_access_file, __func__,
-                         "file libakrypt.conf not found either in home or system directory");
+                         "file libakrypt.conf not found either in home or system directories");
 
  /* формируем дерево подкаталогов и записываем файл с настройками */
   if(( error = ak_libakrypt_write_options( )) != ak_error_ok ) {
