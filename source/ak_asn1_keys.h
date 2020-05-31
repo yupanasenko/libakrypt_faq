@@ -20,17 +20,40 @@
  int ak_asn1_context_get_derived_keys( ak_asn1 , ak_bckey , ak_bckey );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура для получения информации о содержимом ключевого контейнера. */
+ typedef struct container_info {
+  /*! \brief Идентификатор криптографического алгоритма. */
+   ak_oid oid;
+  /*! \brief Номер ключа. */
+   ak_pointer number;
+  /*! \brief Длина ключа (в октетах). */
+   size_t numlen;
+  /*! \brief Ресурс ключа. */
+   struct resource resource;
+  /*! \brief Имя ключа. */
+   char *alias;
+  /*! \brief Идентификатор параметров эллиптической кривой, на которой
+     реализуется асимметричный алгоритм */
+   ak_oid ec_oid;
+  /*! \brief Идентификатор открытого ключа владельца */
+   ak_pointer subjectKeyIdentifier;
+  /*! \brief Длина идентификатора открытого ключа владельца */
+   size_t subjectKeyLength;
+  /*! \brief Обощенное имя владельца. */
+   ak_tlv subjectName;
+
+} *ak_container_info;
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция проверяет, что данный узел ASN.1 дерева является контейнером. */
  bool_t ak_tlv_context_check_libakrypt_container( ak_tlv tlv, ak_asn1 * , ak_asn1 * );
 /*! \brief Функция возвращает тип контента, помещенного в ASN.1 контейнер. */
  crypto_content_t ak_asn1_context_get_content_type( ak_asn1 );
 /*! \brief Функция получает служебную информацию о ключе, расположенном в ASN.1 контейнере. */
- int ak_asn1_context_get_symmetric_key_info( ak_asn1 ,
-                                      ak_oid * , ak_pointer * , size_t * , char ** , ak_resource );
+ int ak_asn1_context_get_symmetric_key_info( ak_asn1 , ak_container_info );
 /*! \brief Функция получает служебную информацию об асимметричном ключе,
    расположенном в ASN.1 контейнере. */
- int ak_asn1_context_get_secret_key_info( ak_asn1 , ak_oid * , ak_pointer * , size_t * ,
-                             char ** , ak_resource , ak_oid *,  ak_pointer * , size_t * , ak_tlv );
+ int ak_asn1_context_get_secret_key_info( ak_asn1 , ak_container_info );
 /*! \brief Функция инициализирует секретный ключ значениями, расположенными в ASN.1 контейнере. */
  int ak_asn1_context_get_skey( ak_asn1 , ak_skey , ak_bckey , ak_bckey );
 

@@ -10,35 +10,35 @@
 /* ----------------------------------------------------------------------------------------------- */
  #include <libakrypt.h>
 
-#ifdef LIBAKRYPT_HAVE_STDIO_H
- #define key_manager_blob_size  ( FILENAME_MAX )
-#else
+/* ----------------------------------------------------------------------------------------------- */
  #define key_manager_blob_size  ( 4096 )
-#endif
 
 /* ----------------------------------------------------------------------------------------------- */
- typedef int ( ak_function_key_manager_add )( const char * , crypto_content_t );
+ struct key_manager;
+ typedef struct key_manager *ak_key_manager;
+
+/* ----------------------------------------------------------------------------------------------- */
+ typedef int ( ak_function_key_manager_add )( ak_key_manager , const char * , crypto_content_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Класс, реализующий произвольный менеджер управления ключами                             */
 /*! \details Любой менеджер управления ключами должен предоставлять следующий набор функций
     - сохранение готового (созданного независимо от менеджера ключей) ключевого контейнера.
-
                                                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- typedef struct key_manager {
+ struct key_manager {
   /* статическая область памяти для размещения данных */
    ak_uint8 blob[ key_manager_blob_size ];
 
   /*! \brief Указатель на функцию добавления ключевого контейнера */
    ak_function_key_manager_add *add_container;
-} *ak_key_manager;
+};
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция создает менеджер управления ключами, расположенными в заданном каталоге. */
- int ak_key_manager_create_directory( ak_key_manager , const char * );
+ int ak_key_manager_context_create_in_directory( ak_key_manager , const char * );
 /*! \brief Функция уничтожает менеджер управления ключами. */
- int ak_key_manager_destroy( ak_key_manager );
+ int ak_key_manager_context_destroy( ak_key_manager );
 
 #endif
 /* ----------------------------------------------------------------------------------------------- */

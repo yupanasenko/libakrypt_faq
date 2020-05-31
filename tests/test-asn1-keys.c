@@ -77,15 +77,19 @@
     ak_bckey_context_cmac( &bkey, testdata, sizeof( testdata ), im, bkey.bsize );
      printf("%-10s: %s ", bkey.key.oid->names[0], ak_ptr_to_hexstr( out, sizeof(out), ak_false ));
      printf("(cmac: %s)\n", ak_ptr_to_hexstr( im, bkey.bsize, ak_false ));
-     ak_snprintf( name, sizeof( name ), "key-%s-%03u", oid->names[0], bkey.key.number[0] ); /* имя ключа */
 
    /* экпортируем ключ в файл (в der-кодировке) */
-    ak_key_context_export_to_file_with_password( &bkey, block_cipher,
-                                              "password", 8, name, filename, sizeof( filename ), asn1_der_format );
+    ak_snprintf( name, sizeof( name ), "key-%s-%03u", oid->names[0], bkey.key.number[0] ); /* имя ключа */
+    if( ak_key_context_export_to_file_with_password( &bkey, block_cipher,
+          "password", 8, name, filename, sizeof( filename ), asn1_der_format ) == ak_error_ok )
+      printf("key exported to %s file\n", filename );
    /* удаляем ключ */
     ak_bckey_context_destroy( &bkey );
+
    /* импортируем ключ из файла */
-    ak_bckey_context_import_from_file( &bkey, filename, &keyname );
+    if( ak_bckey_context_import_from_file( &bkey, filename, &keyname ) == ak_error_ok )
+      printf("key imported from %s file\n", filename );
+
    /* для отладки - выводим сформированную структуру в консоль
     ak_skey_context_print_to_file( &bkey.key, stdout );
     printf("\n"); */

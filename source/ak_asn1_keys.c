@@ -965,19 +965,18 @@
     содержащему секретный ключ симметричного криптографического алгоритма.
 
    \param content указатель на ASN.1 дерево
-   \param oid идентификатор криптографического алгоритма
-   \param number номер ключа
-   \param name имя ключа
-   \param resourse данные о ресурсе ключа
+   \param ci контекст, содержащий указатели на ключевые данные
    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_asn1_context_get_symmetric_key_info( ak_asn1 content,
-            ak_oid *oid, ak_pointer *number, size_t *numlen, char **keyname, ak_resource resource )
+ int ak_asn1_context_get_symmetric_key_info( ak_asn1 content, ak_container_info ci )
 {
   ak_asn1 asn = NULL;
   ak_pointer ptr = NULL;
   int error = ak_error_ok;
+
+  /* готовим память */
+   memset( ci, 0, sizeof( struct container_info ));
 
   /* получаем доступ */
    ak_asn1_context_last( content );
@@ -990,7 +989,7 @@
       return ak_error_message( ak_error_invalid_asn1_tag, __func__,
                                           "context has'nt object identifer for crypto algorithm" );
    ak_tlv_context_get_oid( asn->current, &ptr );
-   if(( *oid = ak_oid_context_find_by_id( ptr )) == NULL )
+   if(( ci->oid = ak_oid_context_find_by_id( ptr )) == NULL )
      return ak_error_message( ak_error_invalid_asn1_content, __func__,
                                            "object identifier for crypto algorithm is not valid" );
   /* получаем номер ключа */
@@ -999,7 +998,7 @@
      ( TAG_NUMBER( asn->current->tag ) != TOCTET_STRING ))
       return ak_error_message( ak_error_invalid_asn1_tag, __func__,
                                       "context has incorrect asn1 type for symmetric key number" );
-   if(( error = ak_tlv_context_get_octet_string( asn->current, number, numlen )) != ak_error_ok )
+   if(( error = ak_tlv_context_get_octet_string( asn->current, &ci->number, &ci->numlen )) != ak_error_ok )
      return ak_error_message( error, __func__, "incorrect reading of symmetric key number");
 
   /* получаем имя/название ключа */
@@ -1019,18 +1018,18 @@
    }
 
   /* копируем имя ключа, если оно определено */
-   *keyname = NULL;
+   ci->alias = NULL;
    if( ptr != NULL ) {
      size_t len = 1 + strlen( ptr );
-     if(( *keyname = malloc( len )) != NULL ) {
-       memset( *keyname, 0, len );
-       memcpy( *keyname, ptr, --len );
+     if(( ci->alias = malloc( len )) != NULL ) {
+       memset( ci->alias, 0, len );
+       memcpy( ci->alias, ptr, --len );
      }
    }
 
   /* получаем ресурс */
    ak_asn1_context_next( asn );
-   if(( error = ak_tlv_context_get_resource( asn->current, resource )) != ak_error_ok )
+   if(( error = ak_tlv_context_get_resource( asn->current, &ci->resource )) != ak_error_ok )
      return ak_error_message( error, __func__, "incorrect reading of symmetric key resource" );
 
   return ak_error_ok;
@@ -1041,22 +1040,18 @@
     содержащему секретный ключ асимметричного криптографического преобразования.
 
    \param content указатель на ASN.1 дерево
-   \param oid идентификатор криптографического алгоритма
-   \param number номер ключа
-   \param numlen переменная, в которой возвращается длина номера ключа
-   \param keyname имя ключа
-   \param resourse данные о ресурсе ключа
-   \param eoid идентификатор эллиптической кривой, но которой реализуется асимметричный алгоритм
+   \param ci контекст, содержащий указатели на ключевые данные
    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_asn1_context_get_secret_key_info(ak_asn1 content, ak_oid *oid, ak_pointer *number,
-                             size_t *numlen, char **keyname, ak_resource resource, ak_oid *eoid ,
-                                            ak_pointer *vernum, size_t *verlen, ak_tlv subjectName )
+ int ak_asn1_context_get_secret_key_info(ak_asn1 content, ak_container_info ci )
 {
   ak_asn1 asn = NULL;
   ak_pointer ptr = NULL;
   int error = ak_error_ok;
+
+  /* готовим память */
+   memset( ci, 0, sizeof( struct container_info ));
 
   /* получаем доступ */
    ak_asn1_context_last( content );
@@ -1069,7 +1064,7 @@
       return ak_error_message( ak_error_invalid_asn1_tag, __func__,
                                           "context has'nt object identifer for crypto algorithm" );
    ak_tlv_context_get_oid( asn->current, &ptr );
-   if(( *oid = ak_oid_context_find_by_id( ptr )) == NULL )
+   if(( ci->oid = ak_oid_context_find_by_id( ptr )) == NULL )
      return ak_error_message( ak_error_invalid_asn1_content, __func__,
                                            "object identifier for crypto algorithm is not valid" );
   /* получаем номер ключа */
@@ -1078,7 +1073,7 @@
      ( TAG_NUMBER( asn->current->tag ) != TOCTET_STRING ))
       return ak_error_message( ak_error_invalid_asn1_tag, __func__,
                                          "context has incorrect asn1 type for secret key number" );
-   if(( error = ak_tlv_context_get_octet_string( asn->current, number, numlen )) != ak_error_ok )
+   if(( error = ak_tlv_context_get_octet_string( asn->current, &ci->number, &ci->numlen )) != ak_error_ok )
      return ak_error_message( error, __func__, "incorrect reading of symmetric key number");
 
   /* получаем имя/название ключа */
@@ -1098,24 +1093,24 @@
    }
 
   /* копируем имя ключа, если оно определено */
-   *keyname = NULL;
+   ci->alias = NULL;
    if( ptr != NULL ) {
      size_t len = 1 + strlen( ptr );
-     if(( *keyname = malloc( len )) != NULL ) {
-       memset( *keyname, 0, len );
-       memcpy( *keyname, ptr, --len );
+     if(( ci->alias = malloc( len )) != NULL ) {
+       memset( ci->alias, 0, len );
+       memcpy( ci->alias, ptr, --len );
      }
    }
 
   /* получаем ресурс */
    ak_asn1_context_next( asn );
-   if(( error = ak_tlv_context_get_resource( asn->current, resource )) != ak_error_ok )
+   if(( error = ak_tlv_context_get_resource( asn->current, &ci->resource )) != ak_error_ok )
      return ak_error_message( error, __func__, "incorrect reading of secret key resource" );
 
   /* получаем идентификатор кривой */
    ak_asn1_context_next( asn );
    ak_tlv_context_get_oid( asn->current, &ptr );
-   if(( *eoid = ak_oid_context_find_by_id( ptr )) == NULL )
+   if(( ci->ec_oid = ak_oid_context_find_by_id( ptr )) == NULL )
      return ak_error_message( ak_error_invalid_asn1_content, __func__,
                                              "object identifier for elliptic curve is not valid" );
 
@@ -1125,25 +1120,26 @@
       return ak_error_message( ak_error_invalid_asn1_tag, __func__,
                                    "context has constructed context for subject key identifier " );
    if( TAG_NUMBER( asn->current->tag ) == TNULL ) {
-     *vernum = NULL;
-     *verlen = 0;
+     ci->subjectKeyIdentifier = NULL;
+     ci->subjectKeyLength = 0;
    }
     else {
      if( TAG_NUMBER( asn->current->tag ) != TOCTET_STRING )
        return ak_error_message( ak_error_invalid_asn1_tag, __func__,
                                     "context has incorrect asn1 type for subject key identifier" );
-     if(( error = ak_tlv_context_get_octet_string( asn->current, vernum, verlen )) != ak_error_ok )
+     if(( error = ak_tlv_context_get_octet_string( asn->current,
+                              &ci->subjectKeyIdentifier, &ci->subjectKeyLength )) != ak_error_ok )
        return ak_error_message( error, __func__, "incorrect reading of symmetric key number");
     }
 
   /* получаем обобщенное имя владельца ключа */
    ak_asn1_context_next( asn );
    if( DATA_STRUCTURE( asn->current->tag ) == PRIMITIVE ) {
-     if( TAG_NUMBER( asn->current->tag ) == TNULL ) subjectName = NULL;
+     if( TAG_NUMBER( asn->current->tag ) == TNULL ) ci->subjectName = NULL;
        else return ak_error_message( ak_error_invalid_asn1_tag, __func__,
                                    "context has unexpected primitive asn1 type for subject's name" );
    } else {
-      if( TAG_NUMBER( asn->current->tag ) == TSEQUENCE ) subjectName = asn->current;
+      if( TAG_NUMBER( asn->current->tag ) == TSEQUENCE ) ci->subjectName = asn->current;
        else return ak_error_message( ak_error_invalid_asn1_tag, __func__,
                                  "context has unexpected constructed asn1 type for subject's name" );
      }
@@ -1268,15 +1264,12 @@
  int ak_key_context_import_from_file( ak_pointer key,
                                        oid_engines_t engine, const char *filename, char **keyname )
 {
-   ak_oid oid, eoid = NULL;
    int error = ak_error_ok;
    struct bckey ekey, ikey;
-   struct resource resource;
-   ak_tlv subjectName = NULL;
-   size_t len = 0, verlen = 0;
    crypto_content_t content_type;
-   ak_pointer number = NULL, vernum = NULL;
    ak_asn1 asn = NULL, basicKey = NULL, content = NULL;
+
+   struct container_info ci;
 
   /* стандартные проверки */
    if( key == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -1301,20 +1294,16 @@
 
   /* проверяем тип хранящегося ключа
      и получаем данные: тип ключа, ресурс и т.п. */
-   memset( &resource, 0, sizeof( struct resource ));
    switch( content_type = ak_asn1_context_get_content_type( content )) {
      case symmetric_key_content:
-       if(( error = ak_asn1_context_get_symmetric_key_info(
-                            content, &oid, &number, &len, keyname, &resource )) != ak_error_ok ) {
+       if(( error = ak_asn1_context_get_symmetric_key_info( content, &ci )) != ak_error_ok ) {
          ak_error_message( error, __func__, "incorrect reading a symmetric key info" );
          goto lab1;
        }
        break;
 
      case secret_key_content:
-       if(( error = ak_asn1_context_get_secret_key_info(
-                          content, &oid, &number, &len, keyname,
-                             &resource, &eoid, &vernum, &verlen, subjectName )) != ak_error_ok ) {
+       if(( error = ak_asn1_context_get_secret_key_info( content, &ci )) != ak_error_ok ) {
          ak_error_message( error, __func__, "incorrect reading a symmetric key info" );
          goto lab1;
        }
@@ -1327,7 +1316,7 @@
    }
 
   /* проверяем, что контейнер содержит ключ с ожидаемым типом криптографического алгоритма */
-   if( oid->engine != engine ) {
+   if( ci.oid->engine != engine ) {
      ak_error_message( ak_error_oid_engine, __func__, "incorrect engine of secret key" );
      goto lab1;
    }
@@ -1339,25 +1328,28 @@
    }
 
   /* только сейчас создаем ключ */
-   if(( error = (( ak_function_create_object *)oid->func.create)( key )) != ak_error_ok ) {
+   if(( error = (( ak_function_create_object *)ci.oid->func.create)( key )) != ak_error_ok ) {
      ak_error_message_fmt( error, __func__, "incorrect creation of symmetric key with engine: %s",
                                                            ak_libakrypt_get_engine_name( engine ));
      goto lab2;
    }
 
+  /* передаем наверх указатель на имя ключа */
+   *keyname = ci.alias;
+
   /* для асимметричных ключей необходимо указать параметры эллиптической кривой */
    if( content_type == secret_key_content ) {
      if(( error = ak_signkey_context_set_curve( key,
-                                                 (const ak_wcurve)eoid->data )) != ak_error_ok ) {
+                                            (const ak_wcurve)ci.ec_oid->data )) != ak_error_ok ) {
        ak_error_message( error, __func__, "incorrect assigning an elliptic curve to seсret key");
-       (( ak_function_destroy_object *)oid->func.destroy )( key );
+       (( ak_function_destroy_object *)ci.oid->func.destroy )( key );
      }
     /* присваиваем обобщенное имя владельца ключа */
-     ((ak_signkey)key)->name = subjectName;
+     ((ak_signkey)key)->name = ci.subjectName;
 
     /* копируем номер открытого ключа */
-     if( vernum != NULL )
-       memcpy( ((ak_signkey)key)->verifykey_number, vernum, ak_min( verlen, 32 ));
+     if( ci.subjectKeyIdentifier != NULL ) memcpy( ((ak_signkey)key)->verifykey_number,
+                                       ci.subjectKeyIdentifier, ak_min( ci.subjectKeyLength, 32 ));
    }
 
   /* присваиваем ключу необходимые данные
@@ -1367,19 +1359,19 @@
      (ak_bckey)key == &((ak_bckey)key)->key
      (ak_hmac)key == &((ak_hmac)key)->key   и.т.д. */
 
-   if(( error = ak_skey_context_set_number( key, number, len )) != ak_error_ok ) {
+   if(( error = ak_skey_context_set_number( key, ci.number, ci.numlen )) != ak_error_ok ) {
      ak_error_message( error, __func__, "incorrect assigning a seсret key number");
-     (( ak_function_destroy_object *)oid->func.destroy )( key );
+     (( ak_function_destroy_object *)ci.oid->func.destroy )( key );
      goto lab2;
    }
    if(( error = ak_asn1_context_get_skey( content, key, &ekey, &ikey )) != ak_error_ok ) {
      ak_error_message( error, __func__, "incorrect assigning a seсret key value");
-     (( ak_function_destroy_object *)oid->func.destroy )( key );
+     (( ak_function_destroy_object *)ci.oid->func.destroy )( key );
      goto lab2;
    }
-   if(( error = ak_skey_context_set_resource( key, &resource )) != ak_error_ok ) {
+   if(( error = ak_skey_context_set_resource( key, &ci.resource )) != ak_error_ok ) {
      ak_error_message( error, __func__, "incorrect assigning a seсret key number");
-     (( ak_function_destroy_object *)oid->func.destroy )( key );
+     (( ak_function_destroy_object *)ci.oid->func.destroy )( key );
      goto lab2;
    }
 

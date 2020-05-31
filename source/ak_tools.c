@@ -680,14 +680,20 @@
                      OPEN_EXISTING,          /* open only existing file */
                      FILE_ATTRIBUTE_NORMAL,  /* normal file */
                      NULL )                  /* no attr. template */
-      ) == INVALID_HANDLE_VALUE )
-       return ak_error_message_fmt( ak_error_open_file, __func__,
+      ) == INVALID_HANDLE_VALUE ) {
+      if( ak_log_get_level() >= ak_log_maximum )
+        ak_error_message_fmt( ak_error_open_file, __func__,
                                      "wrong opening a file %s [%s]", filename, strerror( errno ));
+      return ak_error_open_file;
+  }
   file->blksize = 4096;
  #else
-  if(( file->fd = open( filename, O_SYNC|O_RDONLY )) < 0 )
-    return ak_error_message_fmt( ak_error_open_file, __func__ ,
+  if(( file->fd = open( filename, O_SYNC|O_RDONLY )) < 0 ) {
+    if( ak_log_get_level() >= ak_log_maximum )
+      ak_error_message_fmt( ak_error_open_file, __func__ ,
                                      "wrong opening a file %s [%s]", filename, strerror( errno ));
+    return ak_error_open_file;
+  }
   file->blksize = ( ak_int64 )st.st_blksize;
  #endif
 

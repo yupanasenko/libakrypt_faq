@@ -43,10 +43,11 @@
      { "outkey",              1, NULL,  'o' },
      { "label",               1, NULL,  'l' },
      { "new",                 0, NULL,  'n' },
-     { "sign",                0, NULL,  's' },
+//     { "sign",                0, NULL,  's' },
      { "to",                  1, NULL,  250 },
      { "password",            1, NULL,  248 },
      { "curve",               1, NULL,  220 },
+//     { "key",                 1, NULL,  219 },
      { "pubkey",              1, NULL,  210 },
      { "days",                1, NULL,  209 },
 
@@ -467,13 +468,13 @@
    " -a, --algorithm <ni>    set the cryptographic algorithm for a new key, where \"ni\" is name or identifier\n"
    "     --curve <ni>        set the elliptic curve identifier for public keys\n"
    "     --days <value>      set the days count to expiration date of secret or public key\n"
-   "     --key <name>        set the secret key for signing a public key's certificate\n"
+//   "     --key <name>        set the secret key for signing a public key's certificate\n"
    " -l, --label <text>      assign the user-defined label to secret key\n"
    " -n, --new               generate a new key or key pair for selected algorithm\n"
    " -o, --outkey <file>     set the name of output file for secret key\n"
    "     --password <pass>   set the password for storing a secret key directly in command line\n"
    "     --pubkey <file>     set the name of output file for public key's request or certificate\n"
-   " -s, --sign              create a public key's certificate from given request\n"
+//   " -s, --sign              create a public key's certificate from given request\n"
    "     --to <format>       set the format of output file [ enabled values : der, pem, certificate ]\n\n"
    "options for customizing a public key's certificate:\n"
    "     --ca <value>        use as certificate authority [ enabled value: true, false ]\n"
