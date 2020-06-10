@@ -46,6 +46,8 @@
  int ak_file_open_to_read( ak_file , const char * ); 
 /*! \brief Функция создает файл с правами на запись. */
  int ak_file_create_to_write( ak_file , const char * );
+/*! \brief Функция открывает заданный файл с правами запись (используется для дополнения существующих данных). */
+ int ak_file_open_to_append( ak_file , const char * );
 /*! \brief Функция закрывает файл с заданным дескриптором. */
  int ak_file_close( ak_file );
 /*! \brief Функция считывает заданное количество байт из файла. */
