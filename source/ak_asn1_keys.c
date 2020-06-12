@@ -1221,7 +1221,7 @@
      goto labexit;
    }
   /* теперь сверяем значения */
-   if( !ak_ptr_is_equal_with_log( out, ptr+(ivsize+keysize), ikey->bsize )) {
+   if( !ak_ptr_is_equal( out, ptr+(ivsize+keysize), ikey->bsize )) {
      ak_error_message( error = ak_error_not_equal_data, __func__,
                                                              "incorrect value of integrity code" );
      goto labexit;
@@ -1266,10 +1266,9 @@
 {
    int error = ak_error_ok;
    struct bckey ekey, ikey;
+   struct container_info ci;
    crypto_content_t content_type;
    ak_asn1 asn = NULL, basicKey = NULL, content = NULL;
-
-   struct container_info ci;
 
   /* стандартные проверки */
    if( key == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -1379,6 +1378,139 @@
          ak_bckey_context_destroy( &ikey );
    lab1: if( asn != NULL ) ak_asn1_context_delete( asn );
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает контекст в оперативной памяти (куче) и импортирует в него ключ с неизвестным
+    до момента вызова функции типом криптографического алгоритма.
+
+    Функция должна использоваться для создания динамических контекстов.
+
+    \param filename имя файла в котором хранятся данные
+    \param engine тип считанного ключа
+    \param keyname переменная, в которую помещается имя ключа; позднее, выделенная память должна
+    быть освобождена вызовом free(). Если имя ключа не определено, переменной присваивается
+    значение NULL.
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_key_context_new_from_file( const char *filename,
+                                                            oid_engines_t *engine , char **keyname )
+{
+   ak_pointer key = NULL;
+   int error = ak_error_ok;
+   struct bckey ekey, ikey;
+   struct container_info ci;
+   crypto_content_t content_type;
+   ak_asn1 asn = NULL, basicKey = NULL, content = NULL;
+
+  /* стандартные проверки */
+   if( filename == NULL ) {
+     ak_error_message( ak_error_null_pointer, __func__, "using null pointer to filename" );
+     return NULL;
+   }
+
+  /* считываем ключ и преобразуем его в ASN.1 дерево */
+   if(( error = ak_asn1_context_import_from_file( asn = ak_asn1_context_new(),
+                                                                   filename )) != ak_error_ok ) {
+     ak_error_message_fmt( error, __func__,
+                                     "incorrect reading of ASN.1 context from %s file", filename );
+     goto lab1;
+   }
+
+  /* проверяем контейнер на формат хранящихся данных */
+   ak_asn1_context_first( asn );
+   if( !ak_tlv_context_check_libakrypt_container( asn->current, &basicKey, &content )) {
+     ak_error_message( error = ak_error_invalid_asn1_content, __func__,
+                                                      "incorrect format of secret key container" );
+     goto lab1;
+   }
+
+  /* проверяем тип хранящегося ключа
+     и получаем данные: тип ключа, ресурс и т.п. */
+   switch( content_type = ak_asn1_context_get_content_type( content )) {
+     case symmetric_key_content:
+       if(( error = ak_asn1_context_get_symmetric_key_info( content, &ci )) != ak_error_ok ) {
+         ak_error_message( error, __func__, "incorrect reading a symmetric key info" );
+         goto lab1;
+       }
+       break;
+
+     case secret_key_content:
+       if(( error = ak_asn1_context_get_secret_key_info( content, &ci )) != ak_error_ok ) {
+         ak_error_message( error, __func__, "incorrect reading a symmetric key info" );
+         goto lab1;
+       }
+       break;
+
+     default: ak_error_message( error = ak_error_invalid_asn1_content,
+                                                                 __func__,  "incorrect key type" );
+       goto lab1;
+       break;
+   }
+
+  /* получаем производные ключи шифрования и имитозащиты */
+   if(( error = ak_asn1_context_get_derived_keys( basicKey, &ekey, &ikey )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect creation of derived keys" );
+     goto lab1;
+   }
+
+  /* только сейчас создаем ключ */
+   *engine = ci.oid->engine;
+   if(( error = (( ak_function_create_object *)ci.oid->func.create)(
+                                             key = malloc( ci.oid->func.size ))) != ak_error_ok ) {
+     ak_error_message_fmt( error, __func__,
+         "incorrect creation of symmetric key with engine: %s",
+                                                          ak_libakrypt_get_engine_name( *engine ));
+     goto lab2;
+   }
+
+  /* передаем наверх указатель на имя ключа */
+   *keyname = ci.alias;
+
+  /* для асимметричных ключей необходимо указать параметры эллиптической кривой */
+   if( content_type == secret_key_content ) {
+     if(( error = ak_signkey_context_set_curve( key,
+                                            (const ak_wcurve)ci.ec_oid->data )) != ak_error_ok ) {
+       ak_error_message( error, __func__, "incorrect assigning an elliptic curve to seсret key");
+       (( ak_function_destroy_object *)ci.oid->func.destroy )( key );
+     }
+    /* присваиваем обобщенное имя владельца ключа */
+     ((ak_signkey)key)->name = ci.subjectName;
+
+    /* копируем номер открытого ключа */
+     if( ci.subjectKeyIdentifier != NULL ) memcpy( ((ak_signkey)key)->verifykey_number,
+                                       ci.subjectKeyIdentifier, ak_min( ci.subjectKeyLength, 32 ));
+   }
+
+  /* присваиваем ключу необходимые данные
+     при этом, мы невно пользуемся тем фактом, что указатель на структуру создаваемого ключа
+     совпадает с указателем на секретный ключ, т.е.
+
+     (ak_bckey)key == &((ak_bckey)key)->key
+     (ak_hmac)key == &((ak_hmac)key)->key   и.т.д. */
+
+   if(( error = ak_skey_context_set_number( key, ci.number, ci.numlen )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect assigning a seсret key number");
+     (( ak_function_destroy_object *)ci.oid->func.destroy )( key );
+     goto lab2;
+   }
+   if(( error = ak_asn1_context_get_skey( content, key, &ekey, &ikey )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect assigning a seсret key value");
+     (( ak_function_destroy_object *)ci.oid->func.destroy )( key );
+     goto lab2;
+   }
+   if(( error = ak_skey_context_set_resource( key, &ci.resource )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect assigning a seсret key number");
+     (( ak_function_destroy_object *)ci.oid->func.destroy )( key );
+     goto lab2;
+   }
+
+   lab2: ak_bckey_context_destroy( &ekey );
+         ak_bckey_context_destroy( &ikey );
+   lab1: if( asn != NULL ) ak_asn1_context_delete( asn );
+
+ return key;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

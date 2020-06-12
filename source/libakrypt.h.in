@@ -605,13 +605,17 @@ extern "C" {
  extern struct certificate_opts certificate_default_options;
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание дескриптора произвольного криптографического преобразования. */
- dll_export ak_handle ak_handle_new( const char *, const char * );
+/*! \brief Создание дескриптора криптографического преобразования. */
+ dll_export ak_handle ak_handle_new( const char *, char * );
 /*! \brief Создание дескриптора открытого ключа по заданному секретному ключу. */
- dll_export ak_handle ak_handle_new_from_signkey( ak_handle , const char * );
+ dll_export ak_handle ak_handle_new_from_signkey( ak_handle , char * );
+/*! \brief Создание дескриптора ключа из заданного файла (ключевого контейнера) */
+ dll_export ak_handle ak_handle_new_from_file( const char * );
 
 /*! \brief Проверка, обладает ли криптографическое преобразование выходным блоком.  */
  dll_export bool_t ak_handle_check_tag( ak_handle );
+/*! \brief Проверка, может ли криптографическое преобразование вычислять контрольные суммы.  */
+ dll_export bool_t ak_handle_check_icode( ak_handle );
 /*! \brief Проверка, допускает ли алгоритм использование секретного ключа. */
  dll_export bool_t ak_handle_check_secret_key( ak_handle );
 /*! \brief Проверка, допускает ли алгоритм использование открытого ключа. */

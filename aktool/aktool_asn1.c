@@ -150,7 +150,7 @@
 
   if( exitcode ) {
     fprintf( stdout,
-            _("aktool found %d error(s), rerun aktool with \"--audit stderr\" flag\n"), exitcode );
+            _("aktool found %d error(s), rerun aktool with \"--audit stderr\" option\n"), exitcode );
     return EXIT_FAILURE;
   }
 
@@ -235,9 +235,9 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_asn1_help( void )
 {
-  printf(_("aktool asn1parse [options] [files] - decode and print ASN.1 data\n\n"));
-  printf(_("aktool a file.der - print ASN.1 data stored as DER sequence\n"));
-  printf(_("aktool a file.pem - print ASN.1 data stored in PEM format (DER sequence encoded in base64)\n\n"));
+  printf(_("aktool asn1parse [options] [files] - decode and print ASN.1 data\n"));
+  printf(_("usage:\n"));
+  printf(_("  aktool a file - print ASN.1 data stored in DER or PEM format\n\n"));
 
   printf(_("available options:\n"));
   printf(_("     --convert           print and convert file to specified format\n" ));

@@ -7,7 +7,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key_help( void );
  int aktool_key_new( void );
- int aktool_key_new_keypair( void );
+ int aktool_key_new_keypair( bool_t );
  int aktool_key_print_disclaimer( void );
  int aktool_key_input_name( ak_handle );
 
@@ -34,7 +34,7 @@
   char tmp[4];
   size_t i = 0;
   int next_option = 0, exit_status = EXIT_FAILURE;
-  enum { do_nothing, do_new, do_sign } work = do_nothing;
+  enum { do_nothing, do_new, do_cert } work = do_nothing;
   struct oid_info oid = { undefined_engine, undefined_mode, NULL, NULL };
 
   const struct option long_options[] = {
@@ -43,7 +43,7 @@
      { "outkey",              1, NULL,  'o' },
      { "label",               1, NULL,  'l' },
      { "new",                 0, NULL,  'n' },
-//     { "sign",                0, NULL,  's' },
+//     { "cert",                0, NULL,  'c' },
      { "to",                  1, NULL,  250 },
      { "password",            1, NULL,  248 },
      { "curve",               1, NULL,  220 },
@@ -82,7 +82,7 @@
 
  /* разбираем опции командной строки */
   do {
-       next_option = getopt_long( argc, argv, "a:o:l:ns", long_options, NULL );
+       next_option = getopt_long( argc, argv, "a:o:l:nc", long_options, NULL );
        switch( next_option )
       {
        /* сначала обработка стандартных опций */
@@ -99,7 +99,7 @@
        /* теперь опции специфичные для key */
          case 'n' :  work = do_new;
                     break;
-         case 's' :  work = do_sign;
+         case 'c' :  work = do_cert;
                     break;
 
        /* определяем формат выходных данных (--to) */
@@ -167,7 +167,12 @@
          case 'a' : ki.algorithm = optarg;
                     break;
        /* запоминаем указатель на пользовательское описание ключа */
-         case 'l':  ki.key_description = optarg;
+         case 'l':  ki.key_description =
+                             #ifdef _WIN32
+                              _strdup( optarg );
+                             #else
+                               strndup( optarg, 128 );
+                             #endif
                     break;
        /* устанавливаем имя файла для сохранения секретного ключа */
          case 'o' :
@@ -255,10 +260,10 @@
    switch( oid.engine ) {
     case block_cipher:
     case hmac_function:
-      break;
+      return aktool_key_new_keypair( ak_false );
 
     case sign_function: /* создаем пару ключей */
-      return aktool_key_new_keypair();
+      return aktool_key_new_keypair( ak_true );
 
     case verify_function:  /* создаем (должно быть, повторно) открытый ключ из секретного */
       break;
@@ -275,7 +280,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция вырабатывает пару секретный/открытый ключ и сохраняет ключи на диск. */
 /* ----------------------------------------------------------------------------------------------- */
- int aktool_key_new_keypair( void )
+ int aktool_key_new_keypair( bool_t pair )
 {
   time_t now = time( NULL );
   char password2[aktool_max_password_len];
@@ -286,32 +291,60 @@
     aktool_error(_("incorrect creation of a secret key for %s algorithm"), ki.algorithm );
     return EXIT_FAILURE;
   }
- /* если пользователем задана эллиптическая кривая, то устанавливаем ее */
-  if( ki.curve ) {
+
+ /* если пользователем задана эллиптическая кривая, то устанавливаем ее
+    важно, что кривая должна быть определена до момента установки ключевого значения */
+  if( pair && ( ki.curve != NULL )) {
     if( ak_handle_set_curve( ki.key, ki.curve ) != ak_error_ok ) {
       aktool_error(_("using non applicable elliptic curve"));
       goto labex;
     }
-  }
+   }
+
  /* теперь вырабатываем случайный секретный ключ */
   if( ak_handle_set_key_random( ki.key ) != ak_error_ok ) {
     aktool_error(_("incorrect creation of a random secret key value"));
     goto labex;
   }
- /* нужно создать обобщенное имя владельца ключей */
-  if( aktool_key_input_name( ki.key ) != ak_error_ok ) {
-    aktool_error(_("incorrect creation of owner's distinguished name"));
-    goto labex;
-  }
+
  /* срок действия, в сутках, начиная с текущего момента */
   ak_handle_set_validity( ki.key, now, now + ki.days*86400 );
 
- /* вырабатываем открытый ключ,
-    это позволяет выработать номер открытого ключа, а также присвоить ему имя и ресурс */
-  if(( ki.vkey = ak_handle_new_from_signkey( ki.key, NULL )) == ak_error_wrong_handle ) {
-    aktool_error(_("incorrect creation of public key value"));
-    goto labex;
-  }
+  if( pair ) {
+   /* нужно создать обобщенное имя владельца ключей */
+    if( aktool_key_input_name( ki.key ) != ak_error_ok ) {
+      aktool_error(_("incorrect creation of owner's distinguished name"));
+      goto labex;
+    }
+
+   /* вырабатываем открытый ключ,
+      это позволяет выработать номер открытого ключа, а также присвоить ему имя и ресурс */
+    if(( ki.vkey = ak_handle_new_from_signkey( ki.key, NULL )) == ak_error_wrong_handle ) {
+      aktool_error(_("incorrect creation of public key value"));
+      goto labex;
+    }
+
+    if( ki.format == aktool_magic_number ) { /* сохраняем открытый ключ как корневой сертификат
+         для корневого (самоподписанного) сертификата обязательно устанавливаем бит keyCertSign */
+      if(( ki.opts.keyUsageBits&bit_keyCertSign ) == 0 ) {
+        ki.opts.keyUsageBits = ( ki.opts.keyUsageBits&(~bit_keyCertSign ))^bit_keyCertSign;
+      }
+
+      ki.format = asn1_pem_format; /* возвращаем необходимое значение */
+      if( ak_handle_export_to_certificate( ki.vkey, ki.key, &ki.opts, ki.csrfile,
+           ( strlen( ki.csrfile ) > 0 ) ? 0 : sizeof( ki.csrfile ), ki.format ) != ak_error_ok ) {
+        aktool_error(_("wrong export a public key to certificate %s"), ki.csrfile );
+        goto labex;
+      } else printf(_("certificate of public key stored in %s\n"), ki.csrfile );
+
+    } else { /* сохраняем запрос на сертификат */
+       if( ak_handle_export_to_request( ki.vkey, ki.key, ki.csrfile,
+           ( strlen( ki.csrfile ) > 0 ) ? 0 : sizeof( ki.csrfile ), ki.format ) != ak_error_ok ) {
+         aktool_error(_("wrong export a public key to request %s"), ki.csrfile );
+         goto labex;
+       } else printf(_("public key stored in %s (as certificate request)\n"), ki.csrfile );
+      }
+  } /* конец if( pair ) */
 
  /* мастерим пароль для сохранения секретного ключа */
   if( strlen( ki.password ) == 0 ) {
@@ -335,30 +368,6 @@
       goto labex;
     }
   }
-
- // нужна опция сохранения ключей (в базу в случае ее отсутствия)
-
-  if( ki.format == aktool_magic_number ) { /* сохраняем открытый ключ как самоподписанный сертификат  */
-
-   /* для корневого (самоподписанного) сертификата обязательно устанавливаем бит keyCertSign */
-    if(( ki.opts.keyUsageBits&bit_keyCertSign ) == 0 ) {
-      ki.opts.keyUsageBits = ( ki.opts.keyUsageBits&(~bit_keyCertSign ))^bit_keyCertSign;
-    }
-
-    ki.format = asn1_pem_format; /* возвращаем необходимое значение */
-    if( ak_handle_export_to_certificate( ki.vkey, ki.key, &ki.opts, ki.csrfile,
-           ( strlen( ki.csrfile ) > 0 ) ? 0 : sizeof( ki.csrfile ), ki.format ) != ak_error_ok ) {
-      aktool_error(_("wrong export a public key to certificate %s"), ki.csrfile );
-      goto labex;
-    } else printf(_("certificate of public key stored in %s\n"), ki.csrfile );
-
-  } else { /* сохраняем запрос на сертификат */
-      if( ak_handle_export_to_request( ki.vkey, ki.key, ki.csrfile,
-           ( strlen( ki.csrfile ) > 0 ) ? 0 : sizeof( ki.csrfile ), ki.format ) != ak_error_ok ) {
-        aktool_error(_("wrong export a public key to request %s"), ki.csrfile );
-        goto labex;
-      } else printf(_("public key stored in %s\n"), ki.csrfile );
-    }
 
  /* сохраняем секретный ключ в файловый контейнер */
   if( ak_handle_export_to_file_with_password( ki.key, ki.password, strlen( ki.password ),
@@ -474,7 +483,7 @@
    " -o, --outkey <file>     set the name of output file for secret key\n"
    "     --password <pass>   set the password for storing a secret key directly in command line\n"
    "     --pubkey <file>     set the name of output file for public key's request or certificate\n"
-//   " -s, --sign              create a public key's certificate from given request\n"
+//   " -c, --cert              create a public key's certificate from given request\n"
    "     --to <format>       set the format of output file [ enabled values : der, pem, certificate ]\n\n"
    "options for customizing a public key's certificate:\n"
    "     --ca <value>        use as certificate authority [ enabled value: true, false ]\n"

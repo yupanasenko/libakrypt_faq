@@ -5,6 +5,7 @@
  * ----------------------------------------------------------------------------------------------- */
  #include <stdio.h>
  #include <stdlib.h>
+ #include <string.h>
  #include <ak_random.h>
  #include <ak_context_manager.h>
 
@@ -46,12 +47,15 @@
              oid = ak_oid_context_find_by_engine( random_generator );
        if( oid == NULL ) break;
 
-       ak_random_context_create_oid( ctx, oid );
+       if( ak_random_context_create_oid( ctx, oid ) != ak_error_ok ) {
+         if( ctx != NULL ) free(ctx);
+         break;
+       }
        if(( handle = ak_context_manager_add_node(
                       &manager,
                       ctx,
                       random_generator,
-                      "description++"
+                      strdup( "description++" )
        )) == ak_error_wrong_handle ) ak_random_context_delete( ctx );
 
     /* запоминаем некоторые значения дескрипторов */
@@ -65,7 +69,6 @@
          print_context_managet_status( &manager, handle, iternum );
 
   } while( handle != ak_error_wrong_handle );
-
 
   ak_error_set_value( ak_error_ok );
 

@@ -27,14 +27,17 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param ni Строка символов, которая определяет криптографическое преобразование.
     Это может быть одно из допустимых имен или идентификатор преобразования.
+
     \param description Произвольная строка символов, которой пользователь может описать
     криптографичекое преобразование. Как правило, используется для хранения комментариев к
-    секретным и/или открытым ключам. Допускается использование значения NULL.
+    секретным и/или открытым ключам. Память под строку должна быть выделена с помощью
+    функции malloc(). Допускается использование значения NULL.
+
     \return Дескриптор криптографического преобразования. В случае ошибки возвращается
     значение \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью
     функции ak_error_get_value().                                                                  */
 /* ----------------------------------------------------------------------------------------------- */
- ak_handle ak_handle_new( const char *ni, const char *description )
+ ak_handle ak_handle_new( const char *ni, char *description )
 {
   ak_pointer ctx = NULL;
   int error = ak_error_ok;
@@ -85,7 +88,8 @@
                                          "incorrect allocation memory for sign function context" );
         return ak_error_wrong_handle;
       }
-      if(( error = ((ak_function_signkey_context_create *)oid->func.create)( ctx )) != ak_error_ok ) {
+      if(( error =
+              ((ak_function_signkey_context_create *)oid->func.create)( ctx )) != ak_error_ok ) {
         free( ctx );
         ak_error_message( error, __func__, "incorrect creation of sign function context" );
         return ak_error_wrong_handle;
@@ -93,10 +97,21 @@
       break;
 
     case block_cipher:
-    case random_generator:
+      if(( ctx = malloc( sizeof( struct bckey ))) == NULL ) {
+        ak_error_message( ak_error_out_of_memory, __func__,
+                                          "incorrect allocation memory for block cipher context" );
+        return ak_error_wrong_handle;
+      }
+      if(( error = ((ak_function_bckey_create *)oid->func.create)( ctx )) != ak_error_ok ) {
+        free( ctx );
+        ak_error_message( error, __func__, "incorrect creation of block cipher context" );
+        return ak_error_wrong_handle;
+      }
+      break;
 
+    case random_generator:
     default: ak_error_message( ak_error_wrong_oid, __func__,
-                                                        "object identifier has incorrect engine" );
+                                                      "object identifier has unsupported engine" );
       return ak_error_wrong_handle;
   }
 
@@ -106,14 +121,17 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param handle Дескриптор секретного ключа асимметричного алгоритма.
+
     \param description Произвольная строка символов, которой пользователь может описать
     криптографичекое преобразование. Как правило, используется для хранения комментариев к
-    секретным и/или открытым ключам. Допускается использование значения NULL.
+    секретным и/или открытым ключам. Память под строку должна быть выделена с помощью
+    функции malloc(). Допускается использование значения NULL.
+
     \return Дескриптор криптографического преобразования. В случае ошибки возвращается
     значение \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью
     функции ak_error_get_value().                                                                  */
 /* ----------------------------------------------------------------------------------------------- */
- ak_handle ak_handle_new_from_signkey( ak_handle handle, const char *description )
+ ak_handle ak_handle_new_from_signkey( ak_handle handle, char *description )
 {
   ak_handle public;
   ak_oid oid = NULL;
@@ -200,6 +218,34 @@
   info->names = manager->array[idx]->oid->names;
 
  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_handle_check_icode( ak_handle handle )
+{
+  size_t idx = 0;
+  int error = ak_error_ok;
+  ak_context_manager manager = NULL;
+
+ /* получаем доступ к структуре управления контекстами */
+  if(( manager = ak_libakrypt_get_context_manager()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__ , "using a non initialized context manager" );
+    return ak_false;
+  }
+
+  if(( error = ak_context_manager_handle_check( manager, handle, &idx )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong handle" );
+    return ak_false;
+  }
+
+ /* возвращаем ответ */
+  switch( manager->array[idx]->oid->engine ) {
+    case hash_function:
+    case hmac_function:
+      return ak_true;
+
+    default: return ak_false;
+  }
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -442,6 +488,11 @@
       return ak_signkey_context_set_validity( ctx, not_before, not_after );
     case verify_function:
       return ak_verifykey_context_set_validity( ctx, not_before, not_after );
+
+    case block_cipher:
+      return ak_skey_context_set_validity( &((ak_bckey)ctx)->key, not_before, not_after );
+    case hmac_function:
+      return ak_skey_context_set_validity( &((ak_hmac)ctx)->key, not_before, not_after );
 
     default:
       return ak_error_message( ak_error_wrong_oid, __func__,
@@ -771,6 +822,7 @@
  /* проверяем дескрипторы, аналогично тому, как это делалось в экспорте запроса на сертификат */
   if(( pctx = ak_handle_get_context( public, &pid, NULL )) == NULL )
     return ak_error_message( ak_error_get_value(), __func__, "incorrect public key handle" );
+
   switch( pid->engine ) {
     case verify_function:
       if( pid->mode != algorithm ) return ak_error_message( ak_error_oid_mode, __func__,
@@ -779,8 +831,10 @@
     default:
       return ak_error_message( ak_error_oid_engine, __func__, "unsupported handle, wrong engine");
   }
+
   if(( sctx = ak_handle_get_context( secret, &sid, NULL )) == NULL )
     return ak_error_message( ak_error_get_value(), __func__, "incorrect secret key handle" );
+
   switch( sid->engine ) {
     case sign_function:
       if( sid->mode != algorithm ) return ak_error_message( ak_error_oid_mode, __func__,
@@ -791,6 +845,30 @@
   }
 
  return ak_verifykey_context_export_to_certificate( pctx, sctx, opts, filename, size, format );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param filename Строка символов, которая задает имя файла с ключом.
+    Это может быть контейнер с секретным ключом библиотеки, запрос на сертификат
+    или собственно сертификат открытого ключа.
+    \return Дескриптор криптографического преобразования. В случае ошибки возвращается
+    значение \ref ak_error_wrong_handle. Код ошибки может быть получен с помощью
+    функции ak_error_get_value().                                                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_handle ak_handle_new_from_file( const char *filename )
+{
+  oid_engines_t engine;
+  char *description = NULL;
+  ak_pointer ctx = ak_key_context_new_from_file( filename, &engine, &description );
+
+  if( ctx == NULL ) {
+    ak_error_message_fmt( ak_error_get_value(), __func__,
+                                        "incorrect creation a secret key from file %s", filename );
+    if( description ) free( description );
+    return ak_error_wrong_handle;
+  }
+
+ return ak_libakrypt_add_context( ctx, engine, description );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

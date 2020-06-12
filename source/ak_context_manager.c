@@ -96,9 +96,8 @@
     вызова функции ak_error_get_value().                                                           */
 /* ----------------------------------------------------------------------------------------------- */
  ak_context_node ak_context_node_new( const ak_pointer ctx, const ak_handle handle,
-                                               const oid_engines_t engine, const char *description )
+                                                    const oid_engines_t engine, char *description )
 {
-  size_t len = 0;
   ak_oid oid = NULL;
   int error = ak_error_ok;
   ak_context_node node = NULL;
@@ -117,15 +116,9 @@
     return NULL;
   }
 
- /* разбираемся с описанием: выделяем память и копируем */
-  len = 1 + ak_min( strlen( description ), 127 );
-  if(( description == NULL ) || ( len == 1 )) node->description = NULL;
-    else {
-      if(( node->description = malloc( len )) != NULL ) {
-        memset( node->description, 0, len );
-        memcpy( node->description, description, len-1 );
-      }
-  }
+ /* разбираемся с описанием:
+    просто копируем переданную сверху память */
+  node->description = description;
 
  /* присваиваем остальные данные */
   node->ctx = ctx;
@@ -151,7 +144,7 @@
   }
 
  /* уничтожаем описание */
-  if( node->description != NULL ) free( node->description );
+  if( node->description != NULL ) free( (void *)node->description );
  /* уничтожаем контекст */
   if( node->oid->func.delete != NULL ) {
     if( node->ctx != NULL )
@@ -351,13 +344,12 @@
     получен с помощью вызова функции ak_error_get_value().                                         */
 /* ----------------------------------------------------------------------------------------------- */
  ak_handle ak_context_manager_add_node( ak_context_manager manager, const ak_pointer ctx,
-                                              const oid_engines_t engine, const char *description )
+                                                    const oid_engines_t engine, char *description )
 {
   size_t idx = 0;
   int error = ak_error_ok;
   ak_context_node node = NULL;
   ak_handle handle = ak_error_wrong_handle;
-  const char *defaultstr = description;
 
  /* минимальные проверки */
   if( manager == NULL ) {
@@ -368,7 +360,6 @@
     ak_error_message( ak_error_null_pointer, __func__, "using a null pointer to context" );
     return ak_error_wrong_handle;
   }
-  if( defaultstr == NULL )  defaultstr = "";
 
  /* блокируем доступ к структуре управления контекстами */
 #ifdef LIBAKRYPT_HAVE_PTHREAD
@@ -391,7 +382,7 @@
 
  /* адрес найден, теперь размещаем контекст */
   handle = ak_context_manager_idx_to_handle( manager, idx );
-  if(( node = ak_context_node_new( ctx, handle, engine, defaultstr )) == NULL ) {
+  if(( node = ak_context_node_new( ctx, handle, engine, description )) == NULL ) {
     ak_error_message( ak_error_get_value(), __func__, "wrong creation of context manager node" );
     #ifdef LIBAKRYPT_HAVE_PTHREAD
      pthread_mutex_unlock( &ak_context_manager_mutex );
@@ -569,13 +560,13 @@
 
     @param ctx контекст объекта.
     @param engine тип контекста: блочный шифр, функия хеширования, массив с данными и т.п.
-    @param description пользовательское описание контекста
+    @param description пользовательское описание контекста.
+    Это должна быть строка символов, выделенная с помощью функции malloc() или NULL.
     @return Функция возвращает дескриптор созданного контекста. В случае
     возникновения ошибки возвращается значение \ref ak_error_wrong_handle. Код ошибки может быть
     получен с помощью вызова функции ak_error_get_value().                                         */
 /* ----------------------------------------------------------------------------------------------- */
- ak_handle ak_libakrypt_add_context( ak_pointer ctx,
-                                               const oid_engines_t engine, const char *description )
+ ak_handle ak_libakrypt_add_context( ak_pointer ctx, const oid_engines_t engine, char *description )
 {
   ak_context_manager manager = NULL;
   ak_handle handle = ak_error_wrong_handle;

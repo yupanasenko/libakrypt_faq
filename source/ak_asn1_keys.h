@@ -72,10 +72,14 @@
     в сертификат открытого ключа. */
  int ak_verifykey_context_export_to_certificate( ak_verifykey , ak_signkey ,
                                    ak_certificate_opts , char * , const size_t , export_format_t );
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция импортирует секретный ключ криптографического преобразования из
    der-последовательности, хранящейся в заданном файле. */
  int ak_key_context_import_from_file( ak_pointer , oid_engines_t , const char * , char ** );
+/*! \brief Функция импортирует секретный ключ криптографического преобразования из
+   der-последовательности, хранящейся в заданном файле. */
+ ak_pointer ak_key_context_new_from_file( const char *, oid_engines_t * , char ** );
 /*! \brief Функция импортирует ключ алгоритма блочного шифрования из заданного файла. */
  int ak_bckey_context_import_from_file( ak_bckey , const char * , char ** );
 /*! \brief Функция импортирует ключ алгоритма блочного шифрования из заданного файла. */

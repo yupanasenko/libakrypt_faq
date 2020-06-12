@@ -7,6 +7,7 @@
 */
  #include <stdio.h>
  #include <stdlib.h>
+ #include <string.h>
  #include <ak_bckey.h>
  #include <ak_context_manager.h>
 
@@ -41,7 +42,7 @@
 
    /* 1. первый тест на создание */
     if(( node = ak_context_node_new( create_random(),
-                                123, random_generator, "linear congruence generator" )) != NULL ) {
+                       123, random_generator, strdup( "linear congruence generator" ))) != NULL ) {
       printf("\ncreated: %s (OID: %s)\n", node->oid->names[0], node->oid->id );
       printf("user description: %s\n", node->description );
      /* имитируем работу генератора */
@@ -55,7 +56,7 @@
 
    /* 2. тест на использование блочного шифра */
     if(( node = ak_context_node_new( create_bckey(),
-                                       124, block_cipher, "block_cipher" )) != NULL ) {
+                                       124, block_cipher, strdup( "block_cipher" ))) != NULL ) {
       printf("\ncreated: %s (OID: %s)\n", node->oid->names[0], node->oid->id );
       printf("user description: %s\n", node->description );
      /* имитируем работу */
@@ -73,12 +74,12 @@
 
    /* 3. тест на некорректные данные
       передаем явный мусор как контекст функции hmac */
-    if(( node = ak_context_node_new( databuffer,
-                             125, hmac_function, "digital sign create function" )) != NULL ) {
+    if(( node = ak_context_node_new( databuffer, 125, hmac_function, NULL )) != NULL ) {
       printf("unexpected success\n");
       ak_error_set_value( ak_error_undefined_value );
       result = EXIT_FAILURE;
-    } {
+    }
+      {
         printf("correct work with wrong context pointer\n");
         ak_error_set_value( ak_error_ok );
       }

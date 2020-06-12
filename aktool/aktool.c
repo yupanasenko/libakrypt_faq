@@ -358,7 +358,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_litehelp( void )
 {
-  printf(_("aktool (crypto application based on libakrypt library, version: %s)\n\n"),
+  printf(_("aktool - crypto utility based on libakrypt library, version: %s)\n\n"),
                                                                           ak_libakrypt_version( ));
   printf(_("try \"aktool --help\" to get more information\n"));
 
@@ -387,14 +387,15 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_help( void )
 {
-  printf(_("aktool (crypto application based on libakrypt library, version: %s)\n"),
+  printf(_("aktool - crypto utility based on libakrypt library, version: %s)\n"),
                                                                           ak_libakrypt_version( ));
-  printf(_("usage \"aktool command [options] [files]\"\n\n"));
+  printf(_("usage:\n"));
+  printf(_("  aktool command [options] [files]\n\n"));
   printf(_("available commands (in short and long forms):\n"));
-  printf(_("  a, asn1parse - decode and print the ASN.1 data\n"));
-  printf(_("  i, icode     - calculate or check integrity codes\n"));
-  printf(_("  k, key       - key generation and management functions\n"));
-  printf(_("     show      - show useful information\n\n"));
+  printf(_("  a, asn1parse  -  decode and print the ASN.1 data\n"));
+  printf(_("  i, icode      -  calculate or check integrity codes\n"));
+  printf(_("  k, key        -  key generation and management functions\n"));
+  printf(_("  s, show       -  show useful information\n\n"));
   printf(_("also try:\n"));
   printf(_("  \"aktool command --help\" to get information about command options\n"));
   printf(_("  \"man aktool\" to get more information about akrypt programm and some examples\n\n"));

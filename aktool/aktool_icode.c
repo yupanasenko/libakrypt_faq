@@ -19,7 +19,7 @@
  int aktool_icode_help( void );
  int aktool_icode_function( const char * , ak_pointer );
  int aktool_icode_check_function( char * , ak_pointer );
- bool_t aktool_create_handle( char * );
+ bool_t aktool_create_handle( void );
 
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -63,8 +63,12 @@
     bool_t pass_flag;
    /*! \brief Флаг определения ключа в явном виде */
     bool_t hexkey_flag;
+   /*! \brief Флаг определения ключа в виде имени файла */
+    bool_t keyfile_flag;
    /*! \brief Указатель на строку с шестнадцатеричной записью ключа */
     char *hexstr;
+   /*! \brief Указатель на строку с именем файла ключа */
+    char *keyfile;
    /*! \brief Инициализационный вектор для алгоритма выработки ключа из пароля (константа) */
     ak_uint8 salt[32];
    /*! \brief Длина инициализационного вектора */
@@ -81,7 +85,7 @@
 #ifdef _WIN32
   unsigned int cp = 0;
 #endif
-  int next_option = 0, idx = 0, exit_status = EXIT_FAILURE, error = ak_error_ok;
+  int next_option = 0, exit_status = EXIT_FAILURE, error = ak_error_ok;
   enum { do_nothing, do_hash, do_check } work = do_hash;
 
   const struct option long_options[] = {
@@ -102,6 +106,7 @@
      { "hexkey",              1, NULL,  246 },
      { "salt",                1, NULL,  245 },
      { "salt-len",            1, NULL,  244 },
+     { "key",                 1, NULL,  'k' },
 
     /* потом общие */
      { "dont-use-colors",     0, NULL,   3 },
@@ -141,12 +146,14 @@
   memcpy( ic.salt, "aKtool^_Qz;spe71oS--aG|q1#ck", 28 );
   ic.salt_len = sizeof( ic.salt ) >> 1;
   ic.hexkey_flag = ak_false;
+  ic.keyfile_flag = ak_false;
   ic.hexstr = NULL;
+  ic.keyfile = NULL;
   ic.openssl = ak_false;
 
  /* разбираем опции командной строки */
   do {
-       next_option = getopt_long( argc, argv, "a:c:t:o:rp", long_options, NULL );
+       next_option = getopt_long( argc, argv, "a:c:t:o:k:rp", long_options, NULL );
        switch( next_option )
       {
        /* сначала обработка стандартных опций */
@@ -174,7 +181,7 @@
 
          case 'o' : /* устанавливаем имя файла для вывода результатов */
                      if(( ic.outfp = fopen( optarg, "w" )) == NULL ) {
-                       printf( _("audit file \"%s\" cannot be created\n"), optarg );
+                       aktool_error(_("audit file \"%s\" cannot be created"), optarg );
                        return EXIT_FAILURE;
                      } else {
                              #ifdef _WIN32
@@ -236,7 +243,7 @@
                      memset( ic.salt, 0, sizeof( ic.salt ));
                      if( ak_hexstr_to_ptr( optarg, ic.salt, sizeof( ic.salt ),
                                                               ic.reverse_order ) != ak_error_ok ) {
-                       printf(_("salt consists of incorrect hexademal digits\n"));
+                       aktool_error(_("salt consists of incorrect hexademal digits"));
                        goto lab_exit;
                      }
                      break;
@@ -244,6 +251,11 @@
          case 244: /* длина salt */
                      ic.salt_len =
                              ak_min( sizeof( ic.salt ), ak_max( 8, (unsigned int) atoi( optarg )));
+                     break;
+
+         case 'k':  /* определение имени файла с секретным ключом */
+                     ic.keyfile = optarg;
+                     ic.keyfile_flag = ak_true;
                      break;
 
          default:   /* обрабатываем ошибочные параметры */
@@ -269,21 +281,52 @@
    switch( work )
   {
     case do_hash: /* вычисляем контрольную сумму */
-      if( !aktool_create_handle( ic.algorithm_ni )) goto lab_exit;
+      ++optind; /* пропускаем команду - i или icode */
+      if( optind < argc ) {
+       /* создаем дескриптор алгоритма */
+        if( !aktool_create_handle( )) goto lab_exit;
+       /* перебираем возможные значения */
+        while( optind < argc ) {
+           char *value = argv[optind++];
 
-     /* перебираем все доступные параметры командной строки */
-      for( idx = 2; idx < argc; idx++ ) {
-         switch( aktool_file_or_directory( argv[idx] ))
-        {
-          case DT_DIR: aktool_find( argv[idx], ic.template, aktool_icode_function, NULL, ic.tree );
-            break;
-          case DT_REG: aktool_icode_function( argv[idx] , NULL );
-            break;
-          default:    /* убираем из перебираемого списка параметры опций */
-            if( strlen( argv[idx] ) && ( argv[idx][0] == '-' )) idx++;
-            break;
-         }
+           switch( aktool_file_or_directory( value )) {
+             case DT_DIR: aktool_find( value, ic.template, aktool_icode_function, NULL, ic.tree );
+                break;
+             case DT_REG: aktool_icode_function( value, NULL );
+                break;
+             default: aktool_error(_("%s is unsupported argument"), value );
+                break;
+           }
+        }
+
+    } else {
+        exit_status = EXIT_FAILURE;
+        aktool_error(_("no checksum arguments are defined"));
       }
+    break;
+
+//      do{
+//        char *value = argv[--argc];
+//        if( !strncmp( value, "i", 1 ) || !strncmp( value, "icode", 5 )) break;
+//        printf("[%02d]: %s\n", argc, value );
+//      }  while(1);
+
+//      if( !aktool_create_handle( )) goto lab_exit;
+
+//     /* перебираем все доступные параметры командной строки */
+//      for( idx = 2; idx < argc; idx++ ) {
+//         switch( aktool_file_or_directory( argv[idx] ))
+//        {
+//          case DT_DIR: aktool_find( argv[idx], ic.template, aktool_icode_function, NULL, ic.tree );
+//            break;
+//          case DT_REG: aktool_icode_function( argv[idx] , NULL );
+//            break;
+
+//          default:    /* убираем из перебираемого списка параметры опций */
+//            if( strlen( argv[idx] ) && ( argv[idx][0] == '-' )) idx++;
+//            break;
+//        }
+//      }
       exit_status = EXIT_SUCCESS;
       break;
 
@@ -292,7 +335,7 @@
         exit_status = EXIT_SUCCESS;
       if( !ic.status ) {
         if( !ic.dont_stat_show ) {
-          printf(_("\n%s [%lu lines, %lu files, where: correct %lu, wrong %lu]\n\n"),
+          printf(_("\n%s [%lu lines, %lu files, where: correct %lu, wrong %lu]\n"),
                   ic.checkfile, (unsigned long int)ic.stat_lines,
                   (unsigned long int)ic.stat_total, (unsigned long int)ic.stat_successed,
                                          (unsigned long int)( ic.stat_total - ic.stat_successed ));
@@ -319,28 +362,51 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- bool_t aktool_create_handle( char *algorithm )
+ bool_t aktool_create_handle( void )
 {
   int error = ak_error_ok;
 
- /* создаем дескриптор алгоритма запрошенного пользователем алгоритма */
-  if(( ic.handle = ak_handle_new( algorithm, NULL )) == ak_error_wrong_handle ) {
-    printf(_("\"%s\" is incorrect name/identifier for hash or mac function\n"), algorithm );
-    return ak_false;
+ /* сначала пытаемся считать ключ из заданного файла */
+  if( ic.keyfile_flag ) {
+    struct oid_info oid;
+
+   /* мы считываем и далее используем ключ того алгоритма,
+      что указан в ключевом контейнере, а не в командой строке. */
+    if(( ic.handle = ak_handle_new_from_file( ic.keyfile )) == ak_error_wrong_handle )
+    {
+      aktool_error(_("incorrect loading a secret key from file %s"), ic.keyfile );
+      printf(_("try to rerun aktool with \"--audit stderr\" option\n"));
+      return ak_false;
+    }
+
+    ak_handle_get_oid( ic.handle, &oid );
+    ic.algorithm_ni = (char *)oid.names[0];
   }
+   else {
+    /* в альтернативной ветке создаем ключ с нуля:
+       дескриптор алгоритма запрошенного пользователем алгоритма */
+     if(( ic.handle = ak_handle_new( ic.algorithm_ni, NULL )) == ak_error_wrong_handle ) {
+       aktool_error(_("\"%s\" is incorrect name/identifier for hash or mac function"),
+                                                                                 ic.algorithm_ni );
+       return ak_false;
+     }
+   }
+
  /* проверяем, что этот алгоритм позволяет реализовывать сжатие (хеширование или имитозащиту) */
-  if(( ak_handle_check_tag( ic.handle )) != ak_true ) {
-    printf(_("algorithm \"%s\" cannot be used for hash or mac calculations\n"), algorithm );
+  if(( ak_handle_check_icode( ic.handle )) != ak_true ) {
+    aktool_error(_("algorithm %s cannot be used in integrity or authentity code calculation" ),
+                                                                                 ic.algorithm_ni );
     return ak_false;
   }
 
  /* проверяем, что алгоритм допускает использование ключа */
   if( ak_handle_check_secret_key( ic.handle )) {
 
+    if( ic.keyfile_flag ) goto lab_iv; /* уже все создано */
     if( ic.hexkey_flag ) {
        if(( error =
                 ak_handle_set_key_from_hexstr( ic.handle, ic.hexstr, ak_false )) != ak_error_ok ) {
-         printf(_("incorrect key value %s\n"), ic.hexstr );
+         aktool_error(_("incorrect key value %s"), ic.hexstr );
          return ak_false;
        }
      goto lab_iv;
@@ -355,22 +421,25 @@
         if( error != ak_error_ok ) return ak_false;
       } else { /* пароль уже установлен */ }
 
-      printf("salt: %s [%u octets]\n", ak_ptr_to_hexstr( ic.salt, ic.salt_len, ak_false ),
-                                                                      (unsigned int) ic.salt_len );
-
      /* теперь устанавливаем ключ, вырабатывая его из пароля */
       if(( error = ak_handle_set_key_from_password( ic.handle, ic.password,
                                   strlen( ic.password ), ic.salt, ic.salt_len )) != ak_error_ok ) {
-        printf(_("incorrect generation a secret key from password\n"));
+        aktool_error(_("incorrect generation a secret key from password"));
         return ak_false;
       }
       goto lab_iv;
     }
 
-    printf(_("error:\tusing %s algorithm without the specified key value\n"), algorithm );
-    printf(_("\tdefine -p, --password or --hexkey command line option\n"));
+    aktool_error(_("using %s algorithm without the specified key value"), ic.algorithm_ni );
+    printf(_("try to define -p, --password, --key or --hexkey command line option\n"));
     return ak_false;
   }
+   else {
+     if( ic.keyfile_flag ) {
+       aktool_error(_("%s algorithm does not use a secret key"), ic.algorithm_ni );
+       return ak_false;
+     }
+   }
 
  /* проверяем, что алгоритм допускает использование синхропосылки */
   lab_iv:
@@ -468,7 +537,7 @@
 
    /* если дескриптор не создан, то его нужно создать */
     if( ic.handle == ak_error_wrong_handle )
-      if( !aktool_create_handle( ic.algorithm_ni )) return reterrror;
+      if( !aktool_create_handle( )) return reterrror;
 
   } else { /* обнаружилась скобка => вариант строки в формате BSD */
 
@@ -481,8 +550,10 @@
     while(( icode[len] == ' ' ) && ( len )) icode[len--] = 0;
 
    /* если дескриптор не создан, то его нужно создать */
-    if( ic.handle == ak_error_wrong_handle )
-      if( !aktool_create_handle( icode )) return reterrror;
+    if( ic.handle == ak_error_wrong_handle ) {
+      ic.algorithm_ni = icode; /* значение находится в стеке, поэтому оно не исчезает при вызове функции */
+      if( !aktool_create_handle( )) return reterrror;
+    }
 
    /* теперь второй токен - это имя файла */
     if(( filename = strtok_r( substr, ")", &substr )) == NULL ) return reterrror;
@@ -510,8 +581,10 @@
     }
     ic.stat_successed++;
   } else
-     if( !ic.status ) printf("%s Wrong\n", filename );
-
+     if( !ic.status ) {
+      if( ic.quiet ) aktool_error(_("%s"), filename );
+       else aktool_error(_("%s Wrong"), filename );
+     }
  return ak_error_ok;
 }
 
@@ -526,7 +599,8 @@
   printf(_("     --dont-show-stat    don't show a statistical results after checking\n"));
   printf(_("     --hexkey <hex>      set the secret key directly in command line as a string of hexademal digits\n"));
   printf(_("     --ignore-errors     don't breake a check when file is missing or corrupted\n" ));
-  printf(_("     --openssl-style     use key and data formats in openssl library style\n"));
+  printf(_(" -k  --key <file>        use the secret key from a specified file\n" ));
+  printf(_("     --openssl-style     use data formats as in openssl library\n"));
   printf(_(" -o, --output <file>     set the output file for generated integrity codes\n" ));
   printf(_(" -p                      load the password from console to generate a secret key\n"));
   printf(_("     --password <pass>   set the password directly in command line\n"));

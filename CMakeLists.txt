@@ -37,8 +37,7 @@ option( LIBAKRYPT_CRYPTO_FUNCTIONS "Build library with crypto functions" ON )
 option( LIBAKRYPT_CONST_CRYPTO_PARAMS "Build library with const values of crypto parameters" OFF )
 option( LIBAKRYPT_INTERNAL_TESTS "Build collection of internal tests using non-export functions" OFF )
 option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
-option( LIBAKRYPT_HTML_DOC "Build documentation in HTML format" OFF )
-option( LIBAKRYPT_PDF_DOC "Build documentation in PDF format" OFF )
+option( LIBAKRYPT_DOC "Build documentation for libakrypt library" OFF )
 option( LIBAKRYPT_AKTOOL "Build console aktool application" ON )
 option( LIBAKRYPT_INSTALL_HEADERS "Install development headers with non-export functions" OFF )
 
@@ -95,7 +94,6 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_asn1.h
                     source/ak_sign.h
                     source/ak_context_manager.h
-                    source/ak_key_manager.h
   )
   set( SOURCES      ${SOURCES}
                     source/ak_mac.c
@@ -110,7 +108,6 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                     source/ak_asn1_keys.c
                     source/ak_sign.c
                     source/ak_context_manager.c
-                    source/ak_key_manager.c
                     source/ak_handle.c
   )
 endif()
@@ -130,7 +127,6 @@ if( LIBAKRYPT_AKTOOL )
                     aktool/aktool.h
                     aktool/getopt.h
                     aktool/getopt.c
-                    aktool/aktool.1
                     aktool/Readme.md
   )
 endif()
@@ -332,7 +328,6 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
                  asn1-build
                  asn1-parse
                  asn1-keys
-                 keys01
                  sign01
                  sign02
                  sign03

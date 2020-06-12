@@ -126,30 +126,30 @@
   /* 1. идентификаторы алгоритмов выработки псевдо-случайных последовательностей,
         значения OID находятся в дереве библиотеки: 1.2.643.2.52.1.1 - генераторы ПСЧ  */
    { random_generator, algorithm, on_lcg, "1.2.643.2.52.1.1.1", NULL,
-                                            { ( ak_function_void *) ak_random_context_create_lcg,
+                   { sizeof( struct random ), ( ak_function_void *) ak_random_context_create_lcg,
                                                  ( ak_function_void *) ak_random_context_destroy,
                                                  ( ak_function_void *) ak_random_context_delete }},
 
   #if defined(__unix__) || defined(__APPLE__)
    { random_generator, algorithm, on_dev_random, "1.2.643.2.52.1.1.2", NULL,
-                                        { ( ak_function_void *) ak_random_context_create_random,
+               { sizeof( struct random ), ( ak_function_void *) ak_random_context_create_random,
                                                 ( ak_function_void *) ak_random_context_destroy,
                                                  ( ak_function_void *) ak_random_context_delete }},
 
    { random_generator, algorithm, on_dev_urandom, "1.2.643.2.52.1.1.3", NULL,
-                                       { ( ak_function_void *) ak_random_context_create_urandom,
+              { sizeof( struct random ), ( ak_function_void *) ak_random_context_create_urandom,
                                                 ( ak_function_void *) ak_random_context_destroy,
                                                  ( ak_function_void *) ak_random_context_delete }},
   #endif
   #ifdef _WIN32
    { random_generator, algorithm, on_winrtl, "1.2.643.2.52.1.1.4", NULL,
-                                        { ( ak_function_void *) ak_random_context_create_winrtl,
+               { sizeof( struct random ), ( ak_function_void *) ak_random_context_create_winrtl,
                                                 ( ak_function_void *) ak_random_context_destroy,
                                                  ( ak_function_void *) ak_random_context_delete }},
   #endif
   #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
    { random_generator, algorithm, on_hashrnd, "1.2.643.2.52.1.1.5", NULL,
-                                       { ( ak_function_void *) ak_random_context_create_hashrnd,
+              { sizeof( struct random ), ( ak_function_void *) ak_random_context_create_hashrnd,
                                                 ( ak_function_void *) ak_random_context_destroy,
                                                  ( ak_function_void *) ak_random_context_delete }},
 
@@ -157,12 +157,12 @@
         значения OID взяты из перечней КриптоПро и ТК26 (http://tk26.ru/methods/OID_TK_26/index.php)
         в дереве библиотеки: 1.2.643.2.52.1.2 - функции бесключевого хеширования */
    { hash_function, algorithm, on_streebog256, "1.2.643.7.1.1.2.2", NULL,
-                                     { ( ak_function_void *) ak_hash_context_create_streebog256,
+              { sizeof( struct hash ), ( ak_function_void *) ak_hash_context_create_streebog256,
                                                   ( ak_function_void *) ak_hash_context_destroy,
                                                    ( ak_function_void *) ak_hash_context_delete }},
 
    { hash_function, algorithm, on_streebog512, "1.2.643.7.1.1.2.3", NULL,
-                                     { ( ak_function_void *) ak_hash_context_create_streebog512,
+              { sizeof( struct hash ), ( ak_function_void *) ak_hash_context_create_streebog512,
                                                   ( ak_function_void *) ak_hash_context_destroy,
                                                    ( ak_function_void *) ak_hash_context_delete }},
 
@@ -174,12 +174,12 @@
   /* 4. идентификаторы алгоритмов HMAC согласно Р 50.1.113-2016
         в дереве библиотеки: 1.2.643.2.52.1.4 - функции ключевого хеширования (имитозащиты) */
    { hmac_function, algorithm, on_hmac_streebog256, "1.2.643.7.1.1.4.1", NULL,
-                                     { ( ak_function_void *) ak_hmac_context_create_streebog256,
+              { sizeof( struct hmac ), ( ak_function_void *) ak_hmac_context_create_streebog256,
                                                   ( ak_function_void *) ak_hmac_context_destroy,
                                                    ( ak_function_void *) ak_hmac_context_delete }},
 
    { hmac_function, algorithm, on_hmac_streebog512, "1.2.643.7.1.1.4.2", NULL,
-                                      { ( ak_function_void *)ak_hmac_context_create_streebog512,
+               { sizeof( struct hmac ), ( ak_function_void *)ak_hmac_context_create_streebog512,
                                                   ( ak_function_void *) ak_hmac_context_destroy,
                                                    ( ak_function_void *) ak_hmac_context_delete }},
 
@@ -188,30 +188,30 @@
         в дереве библиотеки: 1.2.643.2.52.1.7 - параметры алгоритмов блочного шифрования */
 
    { block_cipher, algorithm, on_magma, "1.2.643.7.1.1.5.1", NULL,
-                                          { ( ak_function_void *) ak_bckey_context_create_magma,
+                  { sizeof( struct bckey ), ( ak_function_void *) ak_bckey_context_create_magma,
                                                  ( ak_function_void *) ak_bckey_context_destroy,
                                                   ( ak_function_void *) ak_bckey_context_delete }},
 
    { block_cipher, algorithm, on_kuznechik, "1.2.643.7.1.1.5.2", NULL,
-                                      { ( ak_function_void *) ak_bckey_context_create_kuznechik,
+              { sizeof( struct bckey ), ( ak_function_void *) ak_bckey_context_create_kuznechik,
                                                  ( ak_function_void *) ak_bckey_context_destroy,
                                                   ( ak_function_void *) ak_bckey_context_delete }},
 
   /* 11. алгоритмы выработки и проверки электронной подписи */
    { sign_function, algorithm, on_sign256, "1.2.643.7.1.1.3.2", NULL,
-                                  { ( ak_function_void *) ak_signkey_context_create_streebog256,
+        { sizeof( struct signkey ), ( ak_function_void *) ak_signkey_context_create_streebog256,
                                                ( ak_function_void *) ak_signkey_context_destroy,
                                                 ( ak_function_void *) ak_signkey_context_delete }},
    { sign_function, algorithm, on_sign512, "1.2.643.7.1.1.3.3", NULL,
-                                  { ( ak_function_void *) ak_signkey_context_create_streebog512,
+        { sizeof( struct signkey ), ( ak_function_void *) ak_signkey_context_create_streebog512,
                                                ( ak_function_void *) ak_signkey_context_destroy,
                                                 ( ak_function_void *) ak_signkey_context_delete }},
    { verify_function, algorithm, on_verify256, "1.2.643.7.1.1.1.1", NULL,
-                                            { ( ak_function_void *) ak_verifykey_context_create,
+                { sizeof( struct verifykey ), ( ak_function_void *) ak_verifykey_context_create,
                                              ( ak_function_void *) ak_verifykey_context_destroy,
                                               ( ak_function_void *) ak_verifykey_context_delete }},
    { verify_function, algorithm, on_verify512, "1.2.643.7.1.1.1.2", NULL,
-                                            { ( ak_function_void *) ak_verifykey_context_create,
+                { sizeof( struct verifykey ), ( ak_function_void *) ak_verifykey_context_create,
                                              ( ak_function_void *) ak_verifykey_context_destroy,
                                               ( ak_function_void *) ak_verifykey_context_delete }},
   #endif
@@ -221,39 +221,39 @@
          в дереве библиотеки: 1.2.643.2.52.1.12.1 - параметры 256 битных кривых
          в дереве библиотеки: 1.2.643.2.52.1.12.2 - параметры 512 битных кривых */
    { identifier, wcurve_params, on_w256_pst, "1.2.643.2.2.35.0",
-                      (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetTest, { NULL, NULL, NULL }},
+                   (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetTest, { 0, NULL, NULL, NULL }},
    { identifier, wcurve_params, on_w256_psa, "1.2.643.7.1.2.1.1.1",
-                         (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetA, { NULL, NULL, NULL }},
+                      (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetA, { 0, NULL, NULL, NULL }},
   /* кривая A из 4357 три раза */
    { identifier, wcurve_params, on_w256_psb, "1.2.643.7.1.2.1.1.2",
-                          (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA, { NULL, NULL, NULL }},
+                       (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA, { 0, NULL, NULL, NULL }},
    { identifier, wcurve_params, on_w256_ps4357a, "1.2.643.2.2.35.1",
-                          (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA, { NULL, NULL, NULL }},
+                       (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA, { 0, NULL, NULL, NULL }},
    { identifier, wcurve_params, on_w256_ps4357d, "1.2.643.2.2.36.0",
-                          (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA, { NULL, NULL, NULL }},
+                       (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA, { 0, NULL, NULL, NULL }},
   /* кривая В из 4357 два раза */
    { identifier, wcurve_params, on_w256_psc, "1.2.643.7.1.2.1.1.3",
-                          (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB, { NULL, NULL, NULL }},
+                       (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB, { 0, NULL, NULL, NULL }},
    { identifier, wcurve_params, on_w256_ps4357b, "1.2.643.2.2.35.2",
-                          (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB, { NULL, NULL, NULL }},
+                       (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB, { 0, NULL, NULL, NULL }},
   /* кривая С из 4357 два раза */
    { identifier, wcurve_params, on_w256_psd, "1.2.643.7.1.2.1.1.4",
-                          (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC, { NULL, NULL, NULL }},
+                       (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC, { 0, NULL, NULL, NULL }},
    { identifier, wcurve_params, on_w256_ps4357c, "1.2.643.2.2.35.3",
-                          (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC, { NULL, NULL, NULL }},
+                       (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC, { 0, NULL, NULL, NULL }},
 
   /* теперь кривые длиной 512 бит */
    { identifier, wcurve_params, on_w512_pst, "1.2.643.7.1.2.1.2.0",
-                      (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetTest, { NULL, NULL, NULL }},
+                   (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetTest, { 0, NULL, NULL, NULL }},
    { identifier, wcurve_params, on_w512_psa, "1.2.643.7.1.2.1.2.1",
-                         (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetA, { NULL, NULL, NULL }},
+                      (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetA, { 0, NULL, NULL, NULL }},
    { identifier, wcurve_params, on_w512_psb, "1.2.643.7.1.2.1.2.2",
-                         (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetB, { NULL, NULL, NULL }},
+                      (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetB, { 0, NULL, NULL, NULL }},
    { identifier, wcurve_params, on_w512_psc, "1.2.643.7.1.2.1.2.3",
-                         (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetC, { NULL, NULL, NULL }},
+                      (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetC, { 0, NULL, NULL, NULL }},
 
    { identifier, wcurve_params, on_w256_axel, "1.2.643.2.52.1.12.1.1",
-                  (ak_pointer) &id_libakrypt_gost_3410_2012_256_paramSet_N0, { NULL, NULL, NULL }},
+               (ak_pointer) &id_libakrypt_gost_3410_2012_256_paramSet_N0, { 0, NULL, NULL, NULL }},
 
 
   /* идентификаторы объектов, используемых для создания сертификатов открытых ключей
@@ -261,67 +261,67 @@
      http://www.2410000.ru/p_45_spravochnik_oid_oid__najti_oid_oid_perechen_oid_oid_obektnyj_identifikator_oid_oid_object_identifier.html */
 
   #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
-   { identifier, parameter, on_asn1_akcont, "1.2.643.2.52.1.127.1.1", NULL, { NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_akcont, "1.2.643.2.52.1.127.1.1", NULL, { 0, NULL, NULL, NULL }},
    { identifier, parameter, on_asn1_pbkdf2key, "1.2.643.2.52.1.127.2.1",
-                                                                      NULL, { NULL, NULL, NULL }},
-   { identifier, parameter, on_asn1_sdhkey, "1.2.643.2.52.1.127.2.2", NULL, { NULL, NULL, NULL }},
-   { identifier, parameter, on_asn1_extkey, "1.2.643.2.52.1.127.2.3", NULL, { NULL, NULL, NULL }},
+                                                                      NULL, { 0, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_sdhkey, "1.2.643.2.52.1.127.2.2", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, parameter, on_asn1_extkey, "1.2.643.2.52.1.127.2.3", NULL, { 0, NULL, NULL, NULL }},
 
   /* здесь можно добавить указатели на функции создания asn.1 и создания (установки параметров) ключа */
    { identifier, parameter, on_asn1_symkmd, "1.2.643.2.52.1.127.3.1",
-                                         (ak_pointer) symmetric_key_content, { NULL, NULL, NULL }},
+                                         (ak_pointer) symmetric_key_content, { 0, NULL, NULL, NULL }},
    { identifier, parameter, on_asn1_skmd, "1.2.643.2.52.1.127.3.2",
-                                            (ak_pointer) secret_key_content, { NULL, NULL, NULL }},
+                                            (ak_pointer) secret_key_content, { 0, NULL, NULL, NULL }},
    { identifier, parameter, on_asn1_pkmd, "1.2.643.2.52.1.127.3.3",
-                                            (ak_pointer) public_key_content, { NULL, NULL, NULL }},
+                                            (ak_pointer) public_key_content, { 0, NULL, NULL, NULL }},
    { identifier, parameter, on_asn1_ecmd, "1.2.643.2.52.1.127.3.4",
-                                             (ak_pointer) encrypted_content, { NULL, NULL, NULL }},
+                                             (ak_pointer) encrypted_content, { 0, NULL, NULL, NULL }},
    { identifier, parameter, on_asn1_pcmd, "1.2.643.2.52.1.127.3.5",
-                                                 (ak_pointer) plain_content, { NULL, NULL, NULL }},
+                                                 (ak_pointer) plain_content, { 0, NULL, NULL, NULL }},
 
  /* добавляем аттрибуты типов (X.500) и расширенные аттрибуты */
-   { identifier, descriptor, on_asn1_ogrn,   "1.2.643.100.1", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_snils,  "1.2.643.100.3", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_ogrnip, "1.2.643.100.5", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_owners_module,  "1.2.643.100.111", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_issuers_module, "1.2.643.100.112", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_inn,   "1.2.643.3.131.1.1", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_email, "1.2.840.113549.1.9.1", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_ogrn,   "1.2.643.100.1", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_snils,  "1.2.643.100.3", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_ogrnip, "1.2.643.100.5", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_owners_module,  "1.2.643.100.111", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_issuers_module, "1.2.643.100.112", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_inn,   "1.2.643.3.131.1.1", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_email, "1.2.840.113549.1.9.1", NULL, { 0, NULL, NULL, NULL }},
 
-   { identifier, descriptor, on_asn1_cn, "2.5.4.3", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_s, "2.5.4.4", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_sn, "2.5.4.5", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_c, "2.5.4.6", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_l, "2.5.4.7", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_st, "2.5.4.8", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_sa, "2.5.4.9", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_o, "2.5.4.10", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_ou, "2.5.4.11", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_cn, "2.5.4.3", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_s, "2.5.4.4", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_sn, "2.5.4.5", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_c, "2.5.4.6", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_l, "2.5.4.7", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_st, "2.5.4.8", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_sa, "2.5.4.9", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_o, "2.5.4.10", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_ou, "2.5.4.11", NULL, { 0, NULL, NULL, NULL }},
 
-   { identifier, descriptor, on_asn1_ski, "2.5.29.14", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_ku, "2.5.29.15", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_bc, "2.5.29.19", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_cp, "2.5.29.32", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_wcp, "2.5.29.32.0", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_aki, "2.5.29.35", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_ski, "2.5.29.14", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_ku, "2.5.29.15", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_bc, "2.5.29.19", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_cp, "2.5.29.32", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_wcp, "2.5.29.32.0", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_aki, "2.5.29.35", NULL, { 0, NULL, NULL, NULL }},
 
  /* это добро из Приказа ФСБ N 795 */
-   { identifier, descriptor, on_asn1_class_kc1, "1.2.643.100.113.1", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_class_kc2, "1.2.643.100.113.2", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_class_kc3, "1.2.643.100.113.3", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_class_kb1, "1.2.643.100.113.4", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_class_kb2, "1.2.643.100.113.5", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_class_ka, "1.2.643.100.113.6", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_class_kc1, "1.2.643.100.113.1", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_class_kc2, "1.2.643.100.113.2", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_class_kc3, "1.2.643.100.113.3", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_class_kb1, "1.2.643.100.113.4", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_class_kb2, "1.2.643.100.113.5", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_class_ka, "1.2.643.100.113.6", NULL, { 0, NULL, NULL, NULL }},
 
   /* вот что приходится разбирать в сертификатах от КриптоПро
      Microsoft OID...................................1.3.6.1.4.1.311  */
 
-   { identifier, descriptor, on_asn1_ms_cav, "1.3.6.1.4.1.311.21.1", NULL, { NULL, NULL, NULL }},
-   { identifier, descriptor, on_asn1_ms_psh, "1.3.6.1.4.1.311.21.2", NULL, { NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_ms_cav, "1.3.6.1.4.1.311.21.1", NULL, { 0, NULL, NULL, NULL }},
+   { identifier, descriptor, on_asn1_ms_psh, "1.3.6.1.4.1.311.21.2", NULL, { 0, NULL, NULL, NULL }},
   #endif
 
  /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */
-  { undefined_engine, undefined_mode, NULL, NULL, NULL, { NULL, NULL, NULL }}
+  { undefined_engine, undefined_mode, NULL, NULL, NULL, { 0, NULL, NULL, NULL }}
 
  /* при добавлении нового типа (engine)
     не забыть также добавить его обработку в функцию ak_context_node_get_context_oid() */
