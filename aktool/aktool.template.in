@@ -36,7 +36,28 @@ $endif$
 \date{$date$}
 
 \begin{document}
-\maketitle
+\thispagestyle{empty}
+\vfill
+\hbox{%
+\rule{1pt}{1.0\textheight}
+\hspace*{0.05\textwidth}%
+\parbox[b]{0.95\textwidth}{
+\vbox{%
+\vspace{0.1\textwidth}
+{\noindent\Huge\bfseries AKTOOL}\\[1\baselineskip]
+\textsc{версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@} \\[5\baselineskip]
+
+{\bfseries\textsc{Инструкция по применению}}\\[1\baselineskip]
+
+\vspace{0.5\textheight}
+{\small\textsc{Axel Kenzo и <<Компания изящной словесности>>~~\copyright~~\today}}\\[1\baselineskip]
+
+} % end vbox
+} % end parbox
+} % end hbox
+\vfill
+\newpage
+
 \tableofcontents
 \newpage
 

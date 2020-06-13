@@ -29,6 +29,9 @@ if( LIBAKRYPT_DOC )
 
   # документация для утилиты aktool
   if( LIBAKRYPT_AKTOOL )
+   # подправляем исходники
+    configure_file( ${CMAKE_SOURCE_DIR}/aktool/aktool.template.in ${CMAKE_BINARY_DIR}/aktool.template @ONLY )
+
     if( PANDOC )
       # определяем команду для генерации man файла
       file( APPEND ${script} "echo Documentation for aktool utility\n" )
@@ -39,8 +42,8 @@ if( LIBAKRYPT_DOC )
       if( XELATEX )
         file( APPEND ${script}
           "pandoc -s ${CMAKE_SOURCE_DIR}/aktool/Readme.md"
-          " --pdf-engine=xelatex --template ${CMAKE_SOURCE_DIR}/aktool/aktool.template"
-          " -o ${CMAKE_SOURCE_DIR}/aktool/aktool.pdf\n" )
+          " --pdf-engine=xelatex --template ${CMAKE_BINARY_DIR}/aktool.template"
+          " -o ${CMAKE_BINARY_DIR}/aktool-doc-${FULL_VERSION}.pdf\n" )
       endif()
     endif()
   endif()
