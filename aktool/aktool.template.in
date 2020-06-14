@@ -1,7 +1,7 @@
 % ---------------------------------------------------------------------------------------------- %
 % корневой файл
 % ---------------------------------------------------------------------------------------------- %
-\documentclass[a4paper,12pt,oneside]{article}
+\documentclass[a4paper, 12pt, oneside]{article}
 \usepackage[cm-default]{fontspec}
 \usepackage{xunicode, xltxtra}
 \usepackage[russian]{babel}
@@ -10,9 +10,11 @@
 \usepackage[unicode, colorlinks]{hyperref} % настройка PDF
 \usepackage[left=20mm, right=15mm,top=22mm,bottom=22mm]{geometry}
 % ---------------------------------------------------------------------------------------------- %
-\setmainfont{CMU Serif}%{Petersburg}%
+\setmainfont{CMU Sans Serif}
 \setsansfont{CMU Sans Serif}
 \setmonofont{CMU Typewriter Text}
+
+
 % ---------------------------------------------------------------------------------------------- %
 %
 \providecommand{\tightlist}{%
@@ -44,7 +46,7 @@ $endif$
 \parbox[b]{0.95\textwidth}{
 \vbox{%
 \vspace{0.1\textwidth}
-{\noindent\Huge\bfseries AKTOOL}\\[1\baselineskip]
+{\noindent\Huge\bfseries \uppercase{$title$}}\\[1\baselineskip]
 \textsc{версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@} \\[5\baselineskip]
 
 {\bfseries\textsc{Инструкция по применению}}\\[1\baselineskip]

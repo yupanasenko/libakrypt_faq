@@ -35,10 +35,6 @@ We support various architecture such as `x86`, `x64`, `arm32v7`, `arm32v7eb`, `m
 
 The library can be compiled with many compilers,
 such as `gcc`, `clang`, `Microsoft Visual C`, `TinyCC` and `icc`.
-You can get the last version of source codes from github.com
-
-    git clone https://github.com/axelkenzo/libakrypt-0.x
-
 The build system for libakrypt is [cmake](https://cmake.org/).
 
 ### Unix

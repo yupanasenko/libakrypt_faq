@@ -6,18 +6,20 @@ find_program( SED sed )
 find_program( DOXYGEN doxygen )
 find_program( XELATEX xelatex )
 find_program( QHELPGENERATOR qhelpgenerator )
+find_program( ETAGS etags.emacs )
 
 set( script ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh )
 
 if( LIBAKRYPT_DOC )
   file( WRITE ${script} "#/bin/bash\n" )
-
+  
   # документация для функций библиотеки
   if( DOXYGEN )
     # doxygen найден и документация может быть сгенерирована
     configure_file( ${CMAKE_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY )
-    file( APPEND ${script} "doxygen Doxyfile\n" )
+    configure_file( ${CMAKE_SOURCE_DIR}/doc/libakrypt-header.tex.in ${CMAKE_BINARY_DIR}/libakrypt-header.tex @ONLY )
 
+    file( APPEND ${script} "doxygen Doxyfile\n" )
     if( QHELPGENERATOR )
       file( APPEND ${script} "cp doc/html/libakrypt.qch ${CMAKE_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.qch\n" )
       file( APPEND ${script} "rm doc/html/libakrypt.qch\n" )
@@ -51,6 +53,12 @@ if( LIBAKRYPT_DOC )
   execute_process( COMMAND chmod +x ${script} )
   add_custom_target( doc ${script} )
   message("-- Script for documentation is done (now \"make doc\" enabled)")
+endif()
+
+if( ETAGS )
+  execute_process( COMMAND
+    cd ${CMAKE_SOURCE_DIR}; etags.emacs source/*.[ch] aktool/*.[ch]; cd ${CMAKE_BINARY_DIR} )
+  message("-- Tables for source code navigation is done")
 endif()
 
 ## -------------------------------------------------------------------------------------------------- #
