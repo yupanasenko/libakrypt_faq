@@ -42,7 +42,7 @@
    /* выводим сгенерированные данные и информацию о генераторе,
                                 используя oid созданного генератора */
     printf("%02d: %s [%s, %s]", ++count, ak_ptr_to_hexstr( data, 32, ak_false ),
-                                        generator.oid->names[0], generator.oid->id );
+                                 generator.oid->info.name[0], generator.oid->info.id[0] );
    /* проверка совпадения oid */
     if( generator.oid != oid ) printf(" wrong oid pointer\n");
      else printf("\n");

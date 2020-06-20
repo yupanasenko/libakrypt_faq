@@ -8,61 +8,61 @@ find_program( XELATEX xelatex )
 find_program( QHELPGENERATOR qhelpgenerator )
 find_program( ETAGS etags )
 
-set( script ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh )
+if( UNIX )
 
-if( LIBAKRYPT_DOC )
-  file( WRITE ${script} "#/bin/bash\n" )
+  set( script ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh )
+  if( LIBAKRYPT_DOC )
+    file( WRITE ${script} "#/bin/bash\n" )
   
-  # документация для функций библиотеки
-  if( DOXYGEN )
-    # doxygen найден и документация может быть сгенерирована
-    configure_file( ${CMAKE_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY )
-    configure_file( ${CMAKE_SOURCE_DIR}/doc/libakrypt-header.tex.in ${CMAKE_BINARY_DIR}/libakrypt-header.tex @ONLY )
+    # документация для функций библиотеки
+    if( DOXYGEN )
+      # doxygen найден и документация может быть сгенерирована
+      configure_file( ${CMAKE_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY )
+      configure_file( ${CMAKE_SOURCE_DIR}/doc/libakrypt-header.tex.in ${CMAKE_BINARY_DIR}/libakrypt-header.tex @ONLY )
 
-    file( APPEND ${script} "doxygen Doxyfile\n" )
-    if( XELATEX )
-      file( APPEND ${script} "cd doc/latex; make; cd ../..\n" )
-      file( APPEND ${script} "cp doc/latex/refman.pdf ${CMAKE_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.pdf\n")
-    endif()
-    if( QHELPGENERATOR )
-      file( APPEND ${script} "cp doc/html/libakrypt.qch ${CMAKE_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.qch\n" )
-      file( APPEND ${script} "rm doc/html/libakrypt.qch\n" )
-    endif()
-    file( APPEND ${script} "tar -cjvf libakrypt-doc-${FULL_VERSION}.tar.bz2 doc/html\n")
-  else()
-    message("-- doxygen not found")
-  endif()
-
-  # документация для утилиты aktool
-  if( LIBAKRYPT_AKTOOL )
-   # подправляем исходники
-    configure_file( ${CMAKE_SOURCE_DIR}/aktool/aktool.template.in ${CMAKE_BINARY_DIR}/aktool.template @ONLY )
-
-    if( PANDOC )
-      # определяем команду для генерации man файла
-      file( APPEND ${script} "echo Documentation for aktool utility\n" )
-      file( APPEND ${script}
-        "pandoc -s -t man ${CMAKE_SOURCE_DIR}/aktool/Readme.md -o ${CMAKE_SOURCE_DIR}/aktool/aktool.1\n" )
-
-      # определяем команду для генерации pdf файла
+      file( APPEND ${script} "doxygen Doxyfile\n" )
       if( XELATEX )
+        file( APPEND ${script} "cd doc/latex; make; cd ../..\n" )
+        file( APPEND ${script} "cp doc/latex/refman.pdf ${CMAKE_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.pdf\n")
+      endif()
+      if( QHELPGENERATOR )
+        file( APPEND ${script} "cp doc/html/libakrypt.qch ${CMAKE_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.qch\n" )
+        file( APPEND ${script} "rm doc/html/libakrypt.qch\n" )
+      endif()
+      file( APPEND ${script} "tar -cjvf libakrypt-doc-${FULL_VERSION}.tar.bz2 doc/html\n")
+    else()
+      message("-- doxygen not found")
+    endif()
+
+    if( ETAGS )
+      file( APPEND ${script} "cd ${CMAKE_SOURCE_DIR}; etags.emacs source/*.[ch]; cd ${CMAKE_BINARY_DIR}\n" )
+    endif()
+
+    # документация для утилиты aktool
+    if( LIBAKRYPT_AKTOOL )
+     # подправляем исходники
+      configure_file( ${CMAKE_SOURCE_DIR}/aktool/aktool.template.in ${CMAKE_BINARY_DIR}/aktool.template @ONLY )
+
+      if( PANDOC )
+        # определяем команду для генерации man файла
+        file( APPEND ${script} "echo Documentation for aktool utility\n" )
         file( APPEND ${script}
-          "pandoc -s ${CMAKE_SOURCE_DIR}/aktool/Readme.md"
-          " --pdf-engine=xelatex --template ${CMAKE_BINARY_DIR}/aktool.template"
-          " -o ${CMAKE_BINARY_DIR}/aktool-doc-${FULL_VERSION}.pdf\n" )
+          "pandoc -s -t man ${CMAKE_SOURCE_DIR}/aktool/Readme.md -o ${CMAKE_SOURCE_DIR}/aktool/aktool.1\n" )
+
+        # определяем команду для генерации pdf файла
+        if( XELATEX )
+          file( APPEND ${script}
+            "pandoc -s ${CMAKE_SOURCE_DIR}/aktool/Readme.md"
+            " --pdf-engine=xelatex --template ${CMAKE_BINARY_DIR}/aktool.template"
+            " -o ${CMAKE_BINARY_DIR}/aktool-doc-${FULL_VERSION}.pdf\n" )
+        endif()
       endif()
     endif()
+
+    execute_process( COMMAND chmod +x ${script} )
+    add_custom_target( doc ${script} )
+    message("-- Script for documentation is done (now \"make doc\" enabled)")
   endif()
-
-  execute_process( COMMAND chmod +x ${script} )
-  add_custom_target( doc ${script} )
-  message("-- Script for documentation is done (now \"make doc\" enabled)")
-endif()
-
-if( ETAGS )
-  execute_process( COMMAND
-    cd ${CMAKE_SOURCE_DIR}; etags.emacs source/*.[ch] aktool/*.[ch]; cd ${CMAKE_BINARY_DIR} )
-  message("-- Tables for source code navigation is done")
 endif()
 
 ## -------------------------------------------------------------------------------------------------- #

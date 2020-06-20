@@ -238,7 +238,7 @@
  /* организуем цикл по перебору всех известных простых чисел */
   oid = ak_oid_context_find_by_engine( identifier );
   while( oid != NULL ) {
-    if( oid->mode == wcurve_params ) {
+    if( oid->info.mode == wcurve_params ) {
      /* достаем простое число */
       ak_wcurve wc = ( ak_wcurve ) oid->data;
       if( wc->size == ak_mpzn256_size ) {

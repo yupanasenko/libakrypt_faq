@@ -5,6 +5,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_show_help( void );
+ int aktool_show_oid( size_t , ak_oid_info );
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_show( int argc, TCHAR *argv[] )
@@ -85,80 +86,54 @@
    {
      case do_alloids: /* выводим список всех доступных oid */
        if( show_caption ) {
-         printf("  N  %-22s %-40s %-20s %-20s\n", _("oid"), _("name(s)"), _("engine"), _("mode") );
+         printf("  N  %-25s %-40s %-20s %-20s\n", _("oid(s)"), _("name(s)"), _("engine"), _("mode") );
          printf(" -----------------------------------------------------");
          printf("------------------------------------------------------\n");
        }
 
        for( idx = 0; idx < ak_libakrypt_oids_count(); idx++ ) {
-          size_t jdx = 0;
          /* получаем информацию об идентифкаторе с заданным номером */
           if(( ak_libakrypt_get_oid_by_index( idx, &oid )) != ak_error_ok ) break;
-          if( oid.names[0] == NULL ) break;
+          if(( oid.name[0] == NULL ) || ( oid.id[0] == NULL )) break;
 
-         /* выводим сначала с одним именем  */
-          printf("%3u  %-22s %-40s %-20s %-20s\n",
-            (unsigned int) idx, oid.id, oid.names[0], ak_libakrypt_get_engine_name( oid.engine ),
-                                                           ak_libakrypt_get_mode_name( oid.mode ));
-         /* потом выводим остальные имена идентификатора */
-          while( oid.names[++jdx] != NULL ) printf("%28s%s\n", " ", oid.names[jdx] );
+          aktool_show_oid( idx, &oid );
        }
        break;
 
      case do_oid: /* выводим список тех, кто подходит под заданный шаблон */
        if( show_caption ) {
-         printf("  N  %-22s %-40s %-20s %-20s\n", _("oid"), _("name(s)"), _("engine"), _("mode") );
+         printf("  N  %-25s %-40s %-20s %-20s\n", _("oid(s)"), _("name(s)"), _("engine"), _("mode") );
          printf(" -----------------------------------------------------");
          printf("------------------------------------------------------\n");
        }
 
        for( idx = 0; idx < ak_libakrypt_oids_count(); idx++ ) {
           size_t jdx = 0;
+
          /* получаем информацию об идентифкаторе с заданным номером */
           if(( ak_libakrypt_get_oid_by_index( idx, &oid )) != ak_error_ok ) break;
-          if( oid.names[0] == NULL ) break;
+          if(( oid.name[0] == NULL ) || ( oid.id[0] == NULL )) break;
 
          /* проверяем тип криптопреобразования (engine) */
-          if( strstr( ak_libakrypt_get_engine_name( oid.engine ), value ) != NULL ) {
-            /* выводим первое имя */
-             printf("%3u  %-22s %-40s %-20s %-20s\n", (unsigned int) idx, oid.id, oid.names[0],
-               ak_libakrypt_get_engine_name( oid.engine ), ak_libakrypt_get_mode_name( oid.mode ));
-            /* потом все остальные */
-             while( oid.names[++jdx] != NULL ) printf("%28s%s\n", " ", oid.names[jdx] );
-            continue;
-          }
-
+          if( strstr( ak_libakrypt_get_engine_name( oid.engine ), value ) != NULL ) goto jump;
          /* проверяем режим криптопреобразования (mode) */
-          if( strstr( ak_libakrypt_get_mode_name( oid.mode ), value ) != NULL ) {
-            /* выводим первое имя */
-             printf("%3u  %-22s %-40s %-20s %-20s\n", (unsigned int) idx, oid.id, oid.names[0],
-               ak_libakrypt_get_engine_name( oid.engine ), ak_libakrypt_get_mode_name( oid.mode ));
-            /* потом все остальные */
-             while( oid.names[++jdx] != NULL ) printf("%28s%s\n", " ", oid.names[jdx] );
-            continue;
-          }
-
-         /* проверяем идентификатор (oid) */
-          if( strstr( oid.id, value ) != NULL ) {
-            /* выводим первое имя */
-             printf("%3u  %-22s %-40s %-20s %-20s\n", (unsigned int) idx, oid.id, oid.names[0],
-               ak_libakrypt_get_engine_name( oid.engine ), ak_libakrypt_get_mode_name( oid.mode ));
-            /* потом все остальные */
-             while( oid.names[++jdx] != NULL ) printf("%28s%s\n", " ", oid.names[jdx] );
-            continue;
-          }
-
-         /* последнее - поиск по имени */
+          if( strstr( ak_libakrypt_get_mode_name( oid.mode ), value ) != NULL ) goto jump;
+         /* поиск по идентификатору */
           jdx = 0;
-          while( oid.names[jdx] != NULL ) {
-            if( strstr( oid.names[jdx], value ) != NULL ) {
-             printf("%3u  %-22s %-40s %-20s %-20s\n", (unsigned int) idx, oid.id, oid.names[jdx],
-               ak_libakrypt_get_engine_name( oid.engine ), ak_libakrypt_get_mode_name( oid.mode ));
-            }
-            jdx++;
+          while( oid.id[jdx] != NULL ) {
+            if( strstr( oid.id[jdx], value ) != NULL ) goto jump;
+            ++jdx;
           }
+         /* поиск по имени */
+          jdx = 0;
+          while( oid.name[jdx] != NULL ) {
+            if( strstr( oid.name[jdx], value ) != NULL ) goto jump;
+            ++jdx;
+          }
+          continue;
+          jump: aktool_show_oid( idx, &oid );
+       }
 
-       } /* конец for */
        break;
 
      case do_options:
@@ -190,7 +165,7 @@
      case do_curve:
        if( ak_libakrypt_print_curve( stdout, curve ) != ak_error_ok ) {
          aktool_error(_("using incorrect elliptic curve name or identifier"));
-         aktool_error(_("for more information rerun aktool with \"--audit stderr\" flag"));
+         aktool_error(_("try \"aktool s --oid curve\" to list all supported elliptic curves"));
        }
 
      default:  break;
@@ -199,6 +174,31 @@
  /* завершаем работу и выходим */
  return ak_libakrypt_destroy();
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_show_oid( size_t idx, ak_oid_info oid )
+{
+  size_t ilen = 0, nlen = 0, jdx = 0;
+
+ /* выводим сначала с одним именем  */
+  printf("%3u  %-25s %-40s %-20s %-20s\n",
+         (unsigned int) idx, oid->id[0], oid->name[0],
+         ak_libakrypt_get_engine_name( oid->engine ), ak_libakrypt_get_mode_name( oid->mode ));
+
+ /* потом выводим остальные имена идентификатора */
+  while( oid->id[++ilen] != NULL );
+  while( oid->name[++nlen] != NULL );
+
+  for( jdx = 1; jdx < ak_max( ilen, nlen ); jdx++ ) {
+    if(( jdx < ilen ) && ( oid->id[jdx] != NULL )) printf("%-3s  %-26s", " " , oid->id[jdx] );
+      else printf("%-3s  %-26s", " " , " " );
+    if(( jdx < nlen ) && ( oid->name[jdx] != NULL )) printf("%s\n", oid->name[jdx] );
+      else printf("%s\n", " " );
+  }
+
+ return EXIT_SUCCESS;
+}
+
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_show_help( void )

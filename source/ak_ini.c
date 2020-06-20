@@ -3,8 +3,8 @@
 /*                                                                                                 */
 /*  adopted for libakrypt by Axel Kenzo, axelkenzo@mail.ru                                         */
 /*                                                                                                 */
-/*  Файл ak_ini.h                                                                                  */
-/*  - содержит описания чтения ini файлов                                                          */
+/*  Файл ak_ini.c                                                                                  */
+/*  - содержит реализацию функций чтения данных из ini файлов                                      */
 /* ----------------------------------------------------------------------------------------------- */
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
@@ -13,36 +13,28 @@
 /* ----------------------------------------------------------------------------------------------- */
  #include <libakrypt.h>
 
-#ifdef LIBAKRYPT_HAVE_CTYPE_H
- #include <ctype.h>
-#else
- #error Library cannot be compiled without ctype.h header
-#endif
-#ifdef LIBAKRYPT_HAVE_STRING_H
- #include <string.h>
-#else
- #error Library cannot be compiled without string.h header
-#endif
+/*! \brief Прототип функции чтения строк (fgets-style). */
+ typedef char* (*ak_function_ini_reader)( char * , int , void * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Множество символов с которых могут начинаться строки-комментарии. */
- #define INI_START_COMMENT_PREFIXES ";#"
+ #define ini_start_comment_prefixes ";#"
 /*! \brief Флаг разрешает использование комментариев, расположенных внутри строк с данными. */
- #define INI_ALLOW_INLINE_COMMENTS 1
+ #define ini_allow_inline_comments 1
 /*! \brief Множество символов с которых могут начинаться комментарии, расположенные внутри строк с данными. */
- #define INI_INLINE_COMMENT_PREFIXES ";#"
+ #define ini_inline_comment_prefixes ";#"
 /*! \brief Флаг остановки парсинга ini-файла после возникновения первой ошибки. */
- #define INI_STOP_ON_FIRST_ERROR 1
+ #define ini_stop_on_first_error 1
 /*! \brief Флаг разрешает/запрещает использование полей без параметров. */
- #define INI_ALLOW_NO_VALUE 0
+ #define ini_allow_no_value 0
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Максимальное количество символов в одной строке (включая '\r', '\n', and '\0'). */
- #define INI_MAX_LINE 1024
+ #define ini_max_line 1024
 /*! \brief Максимальный размер строки для имени секции. */
- #define INI_MAX_SECTION 256
+ #define ini_max_section 256
 /*! \brief Максимальный размер строки для имени. */
- #define INI_MAX_NAME 256
+ #define ini_max_name 256
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура, используемая ini_parse_string() для хранения текущего состояния. */
@@ -80,10 +72,10 @@
 /* ----------------------------------------------------------------------------------------------- */
  static char* find_chars_or_comment(const char* s, const char* chars)
 {
-#if INI_ALLOW_INLINE_COMMENTS
+#if ini_allow_inline_comments
     int was_space = 0;
     while (*s && (!chars || !strchr(chars, *s)) &&
-           !(was_space && strchr(INI_INLINE_COMMENT_PREFIXES, *s))) {
+           !(was_space && strchr(ini_inline_comment_prefixes, *s))) {
         was_space = isspace((unsigned char)(*s));
         s++;
     }
@@ -119,12 +111,13 @@
    filename. Used for implementing custom or string-based I/O (see also
    ini_parse_string). */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_ini_parse_stream( ini_reader reader, void* stream, ini_handler handler, void* user )
+ static int ak_ini_parse_stream( ak_function_ini_reader reader, void* stream,
+				                      ak_function_ini_handler handler, void* user )
 {
-    char line[INI_MAX_LINE];
-    int max_line = INI_MAX_LINE;
-    char section[INI_MAX_SECTION] = "";
-    char prev_name[INI_MAX_NAME] = "";
+    char line[ini_max_line];
+    int max_line = ini_max_line;
+    char section[ini_max_section] = "";
+    char prev_name[ini_max_section] = "";
 
     char* start;
     char* end;
@@ -140,7 +133,7 @@
         start = line;
         start = lskip(rstrip(start));
 
-        if (strchr(INI_START_COMMENT_PREFIXES, *start)) {
+        if (strchr(ini_start_comment_prefixes, *start)) {
             /* Start-of-line comment */
         }
         else if (*start == '[') {
@@ -163,7 +156,7 @@
                 *end = '\0';
                 name = rstrip(start);
                 value = end + 1;
-#if INI_ALLOW_INLINE_COMMENTS
+#if ini_allow_inline_comments
                 end = find_chars_or_comment(value, NULL);
                 if (*end)
                     *end = '\0';
@@ -178,7 +171,7 @@
             }
             else if (!error) {
                 /* No '=' or ':' found on name[=:]value line */
-#if INI_ALLOW_NO_VALUE
+#if ini_allow_no_value
                 *end = '\0';
                 name = rstrip(start);
                 if (!handler(user, section, name, NULL) && !error)
@@ -189,7 +182,7 @@
             }
         }
 
-#if INI_STOP_ON_FIRST_ERROR
+#if ini_stop_on_first_error
         if( error ) break;
 #endif
     }
@@ -206,9 +199,9 @@
   \return В случае возникновения ошибки возвращается ее код. В случае успеха
    возвращается \ref ak_error_ok (ноль).                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_ini_parse_file( FILE* file, ini_handler handler, void* user )
+ int ak_ini_parse_file( FILE* file, ak_function_ini_handler handler, void* user )
 {
-    return ak_ini_parse_stream( (ini_reader)fgets, file, handler, user );
+    return ak_ini_parse_stream( (ak_function_ini_reader)fgets, file, handler, user );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -230,14 +223,14 @@
   \return В случае возникновения ошибки возвращается ее код. В случае успеха
    возвращается \ref ak_error_ok (ноль).                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_ini_parse( const char* filename, ini_handler handler, void* user )
+ int ak_ini_parse( const char* filename, ak_function_ini_handler handler, void* user )
 {
   FILE *file = NULL;
   int error = ak_error_ok;
 
   if(( file = fopen(filename, "r")) == NULL ) return ak_error_message_fmt( ak_error_open_file,
                                                    __func__, "wrong opening a %s file", filename );
-  error = ak_libakrypt_ini_parse_file( file, handler, user );
+  error = ak_ini_parse_file( file, handler, user );
   fclose( file );
  return error;
 }
@@ -246,7 +239,8 @@
 /*! An ini_reader function to read the next line from a string buffer. This
    is the fgets() equivalent used by ini_parse_string(). */
 /* ----------------------------------------------------------------------------------------------- */
- static char* ini_reader_string(char* str, int num, void* stream) {
+ static char* ini_reader_string( char* str, int num, void* stream )
+{
     ini_parse_string_ctx* ctx = (ini_parse_string_ctx*)stream;
     const char* ctx_ptr = ctx->ptr;
     size_t ctx_num_left = ctx->num_left;
@@ -282,15 +276,17 @@
   \return В случае возникновения ошибки возвращается ее код. В случае успеха
    возвращается \ref ak_error_ok (ноль).                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_ini_parse_string( const char* string, ini_handler handler, void* user )
+ int ak_ini_parse_string( const char* string, ak_function_ini_handler handler, void* user )
 {
   ini_parse_string_ctx ctx;
 
   ctx.ptr = string;
   ctx.num_left = strlen(string);
- return ak_ini_parse_stream( (ini_reader)ini_reader_string, &ctx, handler, user );
+ return ak_ini_parse_stream( (ak_function_ini_reader)ini_reader_string, &ctx, handler, user );
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \example example-ini.c                                                                         */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                       ak_ini.c  */
 /* ----------------------------------------------------------------------------------------------- */

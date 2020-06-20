@@ -1570,7 +1570,7 @@
 /*! \brief Параметры кривой C из RFC 4357, включенные в состав рекомендаций Р 1323565.0.024-2019 */
  #define id_tc26_gost_3410_2012_256_paramSetD ( id_rfc4357_gost_3410_2001_paramSetC )
 
- extern const struct wcurve id_libakrypt_gost_3410_2012_256_paramSet_N0;
+ extern const struct wcurve id_axel_gost_3410_2012_256_paramSet_N0;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                         параметры 512-ти битных эллиптических кривых                            */

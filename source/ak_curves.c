@@ -179,7 +179,8 @@
   ak_oid oid = ak_oid_context_find_by_data( ec );
 
   if( oid != NULL ) {
-    ak_error_message_fmt( error, __func__, "elliptic curve: %s (oid: %s)", oid->names[0], oid->id );
+    ak_error_message_fmt( error, __func__, "elliptic curve: %s (oid: %s)",
+                                                             oid->info.name[0], oid->info.id[0] );
 
     ak_mpzn_mul_montgomery( tmp, ec->a, one, ec->p, ec->n, ec->size );
     ak_error_message_fmt( error, __func__, " a = %s", ak_mpzn_to_hexstr( tmp, ec->size ));
@@ -203,31 +204,37 @@
 /* ----------------------------------------------------------------------------------------------- */
  dll_export int ak_libakrypt_print_curve( FILE *fp , const char *curve )
 {
+  size_t jdx = 0;
   ak_mpznmax one = ak_mpznmax_one, tmp;
   ak_oid oid = ak_oid_context_find_by_ni( curve );
   ak_wcurve ec = NULL;
 
   if( oid == NULL ) return ak_error_message( ak_error_wrong_oid, __func__,
                                           "using unexpected name or idenifier of elliptic curve" );
-  if( oid->engine != identifier ) return ak_error_message( ak_error_oid_engine, __func__,
+  if( oid->info.engine != identifier ) return ak_error_message( ak_error_oid_engine, __func__,
                                                 "using name or idenifier with unexpected engine" );
-  if( oid->mode != wcurve_params ) return ak_error_message( ak_error_oid_engine, __func__,
+  if( oid->info.mode != wcurve_params ) return ak_error_message( ak_error_oid_engine, __func__,
                                                   "using name or idenifier with unexpected mode" );
   ec = oid->data;
-  fprintf( fp, "elliptic curve: %s (oid: %s)\n\n", oid->names[0], oid->id );
+  fprintf( fp, "curve: %s\n", oid->info.name[0] );
+  while( oid->info.name[++jdx] != NULL ) fprintf( fp, "       %s\n", oid->info.name[jdx] );
+  fprintf( fp, "\noid:   %s\n", oid->info.id[0] );
+  jdx = 0;
+  while( oid->info.id[++jdx] != NULL ) fprintf( fp, "       %s\n", oid->info.id[jdx] );
+  fprintf( fp, "\nparameters:\n");
 
   ak_mpzn_mul_montgomery( tmp, ec->a, one, ec->p, ec->n, ec->size );
-  fprintf( fp, "  a = %s\n", ak_mpzn_to_hexstr( tmp, ec->size ));
+  fprintf( fp, "  a =  %s\n", ak_mpzn_to_hexstr( tmp, ec->size ));
   ak_mpzn_mul_montgomery( tmp, ec->b, one, ec->p, ec->n, ec->size );
-  fprintf( fp, "  b = %s\n", ak_mpzn_to_hexstr( tmp, ec->size ));
+  fprintf( fp, "  b =  %s\n", ak_mpzn_to_hexstr( tmp, ec->size ));
 
-  fprintf( fp, "  p = %s\n", ak_mpzn_to_hexstr( ec->p, ec->size ));
-  fprintf( fp, "  q = %s\n", ak_mpzn_to_hexstr( ec->q, ec->size ));
-  fprintf( fp, "  c = %u [cofactor]\n\n", (unsigned int) ec->cofactor );
+  fprintf( fp, "  p =  %s\n", ak_mpzn_to_hexstr( ec->p, ec->size ));
+  fprintf( fp, "  q =  %s\n", ak_mpzn_to_hexstr( ec->q, ec->size ));
+  fprintf( fp, "  c =  %u [cofactor]\n\n", (unsigned int) ec->cofactor );
 
 
-  fprintf( fp, "point:\n px = %s\n", ak_mpzn_to_hexstr( ec->point.x, ec->size ));
-  fprintf( fp, " py = %s\n", ak_mpzn_to_hexstr( ec->point.y, ec->size ));
+  fprintf( fp, "point:\n px =  %s\n", ak_mpzn_to_hexstr( ec->point.x, ec->size ));
+  fprintf( fp, " py =  %s\n", ak_mpzn_to_hexstr( ec->point.y, ec->size ));
 
  return ak_error_ok;
 }
@@ -252,7 +259,7 @@
  /* организуем цикл по перебору всех известных библиотеке параметров эллиптических кривых */
   oid = ak_oid_context_find_by_engine( identifier );
   while( oid != NULL ) {
-    if( oid->mode == wcurve_params ) {
+    if( oid->info.mode == wcurve_params ) {
       ak_wcurve wc = NULL;
       if(( wc = ( ak_wcurve ) oid->data ) == NULL )  {
         ak_error_message( ak_error_null_pointer, __func__,
@@ -274,13 +281,13 @@
         }
         ak_wcurve_to_log( wc, reason );
         ak_error_message_fmt( reason, __func__ , "curve %s (OID: %s) has wrong %s",
-                                                                       oid->names[0], oid->id, p );
+                                                           oid->info.name[0], oid->info.id[0], p );
         result = ak_false;
         goto lab_exit;
       } else
           if( audit > ak_log_standard ) {
             ak_error_message_fmt( ak_error_ok, __func__ , "curve %s (OID: %s) is Ok",
-                                                                          oid->names[0], oid->id );
+                                                              oid->info.name[0], oid->info.id[0] );
           }
     }
     oid = ak_oid_context_findnext_by_engine( oid, identifier );

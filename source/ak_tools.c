@@ -17,33 +17,6 @@
  #include <ak_tools.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_HAVE_STDIO_H
- #include <stdio.h>
-#else
- #error Library cannot be compiled without stdio.h header
-#endif
-#ifdef LIBAKRYPT_HAVE_STDLIB_H
- #include <stdlib.h>
-#else
- #error Library cannot be compiled without stdlib.h header
-#endif
-#ifdef LIBAKRYPT_HAVE_STRING_H
- #include <string.h>
-#else
- #error Library cannot be compiled without string.h header
-#endif
-#ifdef LIBAKRYPT_HAVE_ERRNO_H
- #include <errno.h>
-#else
- #error Library cannot be compiled without errno.h header
-#endif
-#ifdef LIBAKRYPT_HAVE_STDARG_H
- #include <stdarg.h>
-#else
- #error Library cannot be compiled without stdarg.h header
-#endif
-
-/* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_FCNTL_H
  #include <fcntl.h>
 #endif
@@ -193,6 +166,16 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ const char *ak_libakrypt_version( void )
+{
+#ifdef LIBAKRYPT_VERSION
+  return LIBAKRYPT_VERSION;
+#else
+  return "0.8";
+#endif
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \param flag Если значение истинно, то цветовое выделение используется
 
     \return В случае удачного установления значения опции возввращается \ref ak_error_ok.
@@ -238,8 +221,8 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция возвращает указатель на строку символов, содержащую человекочитаемое имя опции
-    библиотеки. Для строки выделяется память, которая должна быть позднее удалена пользователем
-    самостоятельно.
+    библиотеки. Строка размещается во внутренней статической памяти библиотеки,
+    и библиотека гарантирует сохранность зачения только до вызова слеудщей функции библиотеки.
 
     \b Внимание. Функция экспортируется.
 
@@ -252,15 +235,13 @@
  char *ak_libakrypt_get_option_name( const size_t index )
 {
  size_t len = 0;
- char *ptr = NULL;
  if( index >= ak_libakrypt_options_count() ) return ak_null_string;
   else {
-    len = strlen( options[index].name ) + 1;
-    if(( ptr = malloc( len )) == NULL ) {
-      ak_error_message( ak_error_null_pointer, __func__, "incorrect memory allocation");
-    } else memcpy( ptr, options[index].name, len );
+    memset( ak_ptr_to_hexstr_static_buffer, 0, sizeof( ak_ptr_to_hexstr_static_buffer ));
+    len = ak_min( strlen( options[index].name ), sizeof( ak_ptr_to_hexstr_static_buffer )-1 );
+    memcpy( ak_ptr_to_hexstr_static_buffer, options[index].name, len );
   }
-  return ptr;
+  return ak_ptr_to_hexstr_static_buffer;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -294,38 +275,6 @@
   size );
 }
 
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция заполняет заданную область памяти случайными данными, выработанными заданным
-    генератором псевдослучайных чисел. Генератор должен быть предварительно корректно
-    инициализирован с помощью функции вида `ak_random_context_create_...()`.
-
-    @param ptr Область данных, которая заполняется случайным мусором.
-    @param size Размер заполняемой области в байтах.
-    @param generator Генератор псевдо-случайных чисел, используемый для генерации случайного мусора.
-    @param readflag Булева переменная, отвечающая за обязательное чтение сгенерированных данных.
-    В большинстве случаев должна принимать истинное значение.
-    @return Функция возвращает \ref ak_error_ok (ноль) в случае успешного уничтожения данных.
-    В противном случае возвращается код ошибки.                                                    */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_ptr_context_wipe( ak_pointer ptr, size_t size, ak_random rnd )
-{
-  size_t idx = 0;
-  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                "using null pointer to random generator context" );
-  if( rnd->random == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                  "using uninitialized random generator context" );
-  if( size > (((size_t)-1) >> 1 )) return ak_error_message( ak_error_wrong_length, __func__,
-                                                                   "using very large size value" );
-  if(( ptr == NULL ) || ( size == 0 )) return ak_error_ok;
-
-  if( ak_random_context_random( rnd, ptr, (ssize_t) size ) != ak_error_ok ) {
-    memset( ptr, 0, size );
-    return ak_error_message( ak_error_write_data, __func__, "incorrect memory wiping" );
-  }
- /* запись в память при чтении => необходим вызов функции чтения данных из ptr */
-  for( idx = 0; idx < size; idx++ ) ((ak_uint8 *)ptr)[idx] += ((ak_uint8 *)ptr)[size - 1 - idx];
- return ak_error_ok;
-}
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifndef LIBAKRYPT_CONST_CRYPTO_PARAMS
@@ -370,7 +319,7 @@
    @return В случае возникновения ошибки возвращается ее код. В случае успеха
            возвращается \ref ak_error_ok.                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_create_filename( char *filename,
+ int ak_libakrypt_create_home_filename( char *filename,
                                               const size_t size, char *lastname, const int where  )
 {
  int error = ak_error_ok;
@@ -569,7 +518,7 @@
  char name[FILENAME_MAX];
 
 /* создаем имя файла, расположенного в домашнем каталоге */
- if(( error = ak_libakrypt_create_filename( name, FILENAME_MAX,
+ if(( error = ak_libakrypt_create_home_filename( name, FILENAME_MAX,
                                                           "libakrypt.conf", 0 )) != ak_error_ok ) {
    ak_error_message( error, __func__, "incorrect name generation for options file");
    return ak_false;
@@ -577,8 +526,7 @@
 /* пытаемся считать данные из указанного файла */
  if( ak_file_open_to_read( &fd, name ) == ak_error_ok ) {
    ak_file_close( &fd );
-   if(( error = ak_libakrypt_ini_parse( name,
-                                     ak_libakrypt_load_option_from_file, NULL )) == ak_error_ok ) {
+   if(( error = ak_ini_parse( name, ak_libakrypt_load_option_from_file, NULL )) == ak_error_ok ) {
      if( ak_libakrypt_get_option( "log_level" ) > ak_log_standard )
        ak_error_message_fmt( ak_error_ok, __func__, "all options was read from %s file", name );
      return ak_true;
@@ -589,7 +537,7 @@
  }
 
 /* создаем имя файла, расположенного в системном каталоге */
- if(( error = ak_libakrypt_create_filename( name, FILENAME_MAX,
+ if(( error = ak_libakrypt_create_home_filename( name, FILENAME_MAX,
                                                           "libakrypt.conf", 1 )) != ak_error_ok ) {
    ak_error_message( error, __func__, "incorrect name generation for options file");
    return ak_false;
@@ -597,8 +545,7 @@
 /* пытаемся считать данные из указанного файла */
  if( ak_file_open_to_read( &fd, name ) == ak_error_ok ) {
    ak_file_close( &fd );
-   if(( error = ak_libakrypt_ini_parse( name,
-                                     ak_libakrypt_load_option_from_file, NULL )) == ak_error_ok ) {
+   if(( error = ak_ini_parse( name, ak_libakrypt_load_option_from_file, NULL )) == ak_error_ok ) {
      if( ak_libakrypt_get_option( "log_level" ) > ak_log_standard )
        ak_error_message_fmt( ak_error_ok, __func__, "all options was read from %s file", name );
      return ak_true;
@@ -610,10 +557,8 @@
                          "file libakrypt.conf not found either in home or system directories");
 
  /* формируем дерево подкаталогов и записываем файл с настройками */
-  if(( error = ak_libakrypt_write_options( )) != ak_error_ok ) {
+  if(( error = ak_libakrypt_write_options( )) != ak_error_ok )
     ak_error_message_fmt( error, __func__, "wrong creation a libakrypt.conf file" );
-    return ak_false;
-  }
 
  return ak_true;
 }
@@ -1127,8 +1072,8 @@
     выводятся начиная от старшего к младшему (такой способ вывода принят при стандартном выводе
     чисел: сначала старшие разряды, потом младшие).
 
-    @return Функция возвращает указатель на статическую строку. В случае ошибки конвертации,
-    либо в случае нехватки статической памяти, возвращается NULL.
+    @return Функция возвращает указатель на статическую строку.
+    В случае ошибки конвертации возвращается NULL.
     Код ошибки может быть получен с помощью вызова функции ak_error_get_value().                   */
 /* ----------------------------------------------------------------------------------------------- */
  char *ak_ptr_to_hexstr_alloc( ak_const_pointer ptr, const size_t ptr_size, const bool_t reverse )

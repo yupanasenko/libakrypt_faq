@@ -10,28 +10,6 @@
  #include <ak_tools.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_HAVE_STDIO_H
- #include <stdio.h>
-#else
- #error Library cannot be compiled without stdio.h header
-#endif
-#ifdef LIBAKRYPT_HAVE_STDLIB_H
- #include <stdlib.h>
-#else
- #error Library cannot be compiled without stdlib.h header
-#endif
-#ifdef LIBAKRYPT_HAVE_STRING_H
- #include <string.h>
-#else
- #error Library cannot be compiled without string.h header
-#endif
-#ifdef LIBAKRYPT_HAVE_ERRNO_H
- #include <errno.h>
-#else
- #error Library cannot be compiled without errno.h header
-#endif
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! Encoding table as described in RFC1113 */
  static const char base64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 

@@ -17,21 +17,26 @@
      - доступные имена
      - тип криптографического преобразования
      - режим использования                    */
-  printf("  N  %-22s %-40s %-20s %-20s\n", "oid", "name(s)", "engine", "mode" );
+  printf("  N  %-25s %-40s %-20s %-20s\n", "oid(s)", "name(s)", "engine", "mode" );
   printf(" -----------------------------------------------------");
   printf("------------------------------------------------------\n");
   for( idx = 0; idx < ak_libakrypt_oids_count(); idx++ ) {
     size_t jdx = 0;
    /* получаем информацию об идентифкаторе с заданным номером */
     if(( ak_libakrypt_get_oid_by_index( idx, &oid )) != ak_error_ok ) break;
-    if( oid.names[0] == NULL ) break;
+    if( oid.name[0] == NULL ) break; /* это нештатная ситуация, поскольку
+               всегда должно быть определено одно имя и один идентификатор */
 
    /* выводим сначала с одним именем  */
-    printf("%3u  %-22s %-40s %-20s %-20s\n",
-      (unsigned int) idx, oid.id, oid.names[0], ak_libakrypt_get_engine_name( oid.engine ),
-                                                    ak_libakrypt_get_mode_name( oid.mode ));
-   /* потом выводим остальные имена идентификатора */
-    while( oid.names[++jdx] != NULL ) printf("%28s%s\n", " ", oid.names[jdx] );
+    printf("%3u  %-25s %-40s %-20s %-20s\n",
+           (unsigned int) idx, oid.id[0], oid.name[0],
+	   ak_libakrypt_get_engine_name( oid.engine ),
+	   ak_libakrypt_get_mode_name( oid.mode ));
+
+   /* потом выводим остальные имена идентификатора */    
+    while( oid.name[++jdx] != NULL ) {
+      printf("%-30s %s\n", " ", oid.name[jdx] );
+    }
   }
 
  return ak_libakrypt_destroy();

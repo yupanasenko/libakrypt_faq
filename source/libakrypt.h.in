@@ -35,10 +35,55 @@ extern "C" {
    формируется при вызове программы cmake                                                          */
 /* ----------------------------------------------------------------------------------------------- */
 #cmakedefine LIBAKRYPT_HAVE_STDIO_H
+#ifdef LIBAKRYPT_HAVE_STDIO_H
+ #include <stdio.h>
+#else
+ #error Library cannot be compiled without stdio.h header
+#endif
+
 #cmakedefine LIBAKRYPT_HAVE_STDLIB_H
+#ifdef LIBAKRYPT_HAVE_STDLIB_H
+ #include <stdlib.h>
+#else
+ #error Library cannot be compiled without stdlib.h header
+#endif
+
 #cmakedefine LIBAKRYPT_HAVE_STRING_H
-#cmakedefine LIBAKRYPT_HAVE_STRINGS_H
+#ifdef LIBAKRYPT_HAVE_STRING_H
+ #include <string.h>
+#else
+ #error Library cannot be compiled without string.h header
+#endif
+
+#cmakedefine LIBAKRYPT_HAVE_ERRNO_H
+#ifdef LIBAKRYPT_HAVE_ERRNO_H
+ #include <errno.h>
+#else
+ #error Library cannot be compiled without errno.h header
+#endif
+
+#cmakedefine LIBAKRYPT_HAVE_STDARG_H
+#ifdef LIBAKRYPT_HAVE_STDARG_H
+ #include <stdarg.h>
+#else
+ #error Library cannot be compiled without stdarg.h header
+#endif
+
+#cmakedefine LIBAKRYPT_HAVE_SYSTYPES_H
+#ifdef LIBAKRYPT_HAVE_SYSTYPES_H
+ #include <sys/types.h>
+#else
+ #error Library cannot be compiled without sys/types.h header 
+#endif
+  
 #cmakedefine LIBAKRYPT_HAVE_CTYPE_H
+#ifdef LIBAKRYPT_HAVE_CTYPE_H
+ #include <ctype.h>
+#else
+ #error Library cannot be compiled without ctype.h header
+#endif
+
+#cmakedefine LIBAKRYPT_HAVE_STRINGS_H
 #cmakedefine LIBAKRYPT_HAVE_ENDIAN_H
 #cmakedefine LIBAKRYPT_HAVE_SYSENDIAN_H
 #cmakedefine LIBAKRYPT_HAVE_TIME_H
@@ -49,31 +94,18 @@ extern "C" {
 #cmakedefine LIBAKRYPT_HAVE_LIMITS_H
 #cmakedefine LIBAKRYPT_HAVE_SYSMMAN_H
 #cmakedefine LIBAKRYPT_HAVE_SYSSTAT_H
-#cmakedefine LIBAKRYPT_HAVE_SYSTYPES_H
 #cmakedefine LIBAKRYPT_HAVE_SYSSOCKET_H
 #cmakedefine LIBAKRYPT_HAVE_SYSUN_H
 #cmakedefine LIBAKRYPT_HAVE_SYSSELECT_H
-#cmakedefine LIBAKRYPT_HAVE_ERRNO_H
 #cmakedefine LIBAKRYPT_HAVE_TERMIOS_H
 #cmakedefine LIBAKRYPT_HAVE_DIRENT_H
 #cmakedefine LIBAKRYPT_HAVE_FNMATCH_H
 #cmakedefine LIBAKRYPT_HAVE_STDALIGN_H
-#cmakedefine LIBAKRYPT_HAVE_STDARG_H
 #cmakedefine LIBAKRYPT_HAVE_WINDOWS_H
 #cmakedefine LIBAKRYPT_HAVE_LOCALE_H
 #cmakedefine LIBAKRYPT_HAVE_SIGNAL_H
 #cmakedefine LIBAKRYPT_HAVE_GETOPT_H
 #cmakedefine LIBAKRYPT_HAVE_LIBINTL_H
-
-/* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_HAVE_SYSTYPES_H
- #include <sys/types.h>
-#else
- #error Library cannot be compiled without sys/types.h header 
-#endif
-#ifdef LIBAKRYPT_HAVE_STDIO_H
- #include <stdio.h>
-#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_ENDIAN_H
@@ -105,7 +137,6 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef LIBAKRYPT_HAVE_WINDOWS_H
  #include <io.h>
- #include <conio.h>
  #include <process.h>
  #define LIBAKRYPT_LITTLE_ENDIAN      (1234)
 #endif
@@ -174,8 +205,6 @@ extern "C" {
  typedef ak_int64 ak_handle;
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Класс функций без параметра. */
- typedef ak_pointer ( ak_function_void )( void );
 /*! \brief Пользовательская функция аудита. */
  typedef int ( ak_function_log )( const char * );
 /*! \brief Стандартная для языка С функция выделения памяти. */
@@ -429,59 +458,15 @@ extern "C" {
    oid_engines_t engine;
   /*! \brief Режим применения криптографического механизма. */
    oid_modes_t mode;
-  /*! \brief Идентификатор криптографического механизма. */
-   const char *id;
+  /*! \brief Перечень идентификаторов криптографического механизма. */
+   const char **id;
   /*! \brief Перечень доступных имен криптографического механизма. */
-   const char **names;
+   const char **name;
 } *ak_oid_info;
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Формат хранения asn1 дерева в файле */
- typedef enum {
-  /*! \brief хранение asn1 дерева в виде der-последовательности. */
-   asn1_der_format,
-  /*! \brief хранение asn1 дерева в виде der-последовательнсти, закодированной в base64. */
-   asn1_pem_format
-} export_format_t;
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Тип данных, помещаемых в контейнер */
- typedef enum { symmetric_key, secret_key, public_key, user_data } content_t;
-/*! \brief Состояние данных, помещаемых в контейнер */
- typedef enum { encrypted_state, authenticated_state, signed_state } state_t;
-/*! \brief Физической способ размещения данных */  
- typedef enum { internal_method, external_method, link_method, not_present_method } method_t;
-/*! \brief Тип Физической способ размещения данных в контейнере */
- typedef enum { container, external } place_t;
-
-/* ----------------------------------------------------------------------------------------------- */
- typedef struct crypto_content {
-   content_t content;
-   state_t state;
-   method_t method;
-   place_t place;
-   export_format_t encode;
- } *ak_crypto_content;
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Тип контента, помещаемого в контейнер. */
- typedef enum {
-  /*! \brief Не заданный или не определенный контент. */
-   undefined_content,
-  /*! \brief Секретный ключ симметричного криптографического алгоритма. */
-   symmetric_key_content,
-  /*! \brief Секретный ключ асимметричного криптографического алгоритма. */
-   secret_key_content,
-  /*! \brief Открытый ключ асимметричного криптографического алгоритма. */
-   public_key_certificate_content,
-  /*! \brief Запрос на получение открытого ключа асимметричного криптографического алгоритма. */
-   public_key_request_content,
-  /*! \brief Зашифрованные, не ключевые данные. */
-   encrypted_content,
-  /*! \brief Незашифрованные, не ключевые данные. */
-   plain_content
-} crypto_content_t;
- 
+#define ak_oid_info_undefined { undefined_engine, undefined_mode, NULL, NULL }
+  
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает константный указатель NULL-строку с текущей версией библиотеки. */
  dll_export const char *ak_libakrypt_version( void );
@@ -489,7 +474,7 @@ extern "C" {
  dll_export int ak_libakrypt_create( ak_function_log * );
 /*! \brief Функция остановки поддержки криптографических механизмов. */
  dll_export int ak_libakrypt_destroy( void );
-/*! \brief Запуск динамического тестирования криптографических механизмов. */
+/*! \brief Динамическое тестирование корректной работы библиотеки. */
  dll_export bool_t ak_libakrypt_dynamic_control_test( void );
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -525,14 +510,13 @@ extern "C" {
  dll_export ak_int64 ak_libakrypt_get_option_value( const size_t index );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция устанавливает/снимает режим совместимости с форматами данных,
-    поддерживаемыми gostengine из библиотеки openssl. */
- dll_export int ak_libakrypt_set_openssl_compability( bool_t );
 /*! \brief Функция устанавливает/снимает использование цветового выделения при выводе
     сообщений библиотеки в консоль. */
  dll_export int ak_libakrypt_set_color_output( bool_t );
 
 /* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup frontend_oid Внешний интерфейс. Идентификаторы объектов
+  @{ */
 /*! \brief Получение человекочитаемого имени для заданного типа криптографического механизма. */
  dll_export const char *ak_libakrypt_get_engine_name( const oid_engines_t );
 /*! \brief Получение человекочитаемого имени режима или параметров криптографического механизма. */
@@ -543,6 +527,7 @@ extern "C" {
  dll_export int ak_libakrypt_get_oid_by_index( const size_t , ak_oid_info );
 /*! \brief Получение общего количества определенных OID библиотеки. */
  dll_export size_t ak_libakrypt_oids_count( void );
+/** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание строки символов, содержащей человекочитаемое шестнадцатеричное значение
@@ -562,9 +547,9 @@ extern "C" {
 /*! \brief Вычисление 4-х байтной контрольной суммы Флетчера. */
  dll_export int ak_ptr_fletcher32_xor( ak_const_pointer , const size_t , ak_uint32 * );
 /*! \brief Функция чтения заданного файла в буффер. */
- dll_export ak_uint8 *ak_ptr_load_from_file( ak_pointer , size_t *, const char * );
-/*! \brief Функция чтения данных в кодировке base64 из файла в буффер. */
- dll_export ak_uint8 *ak_ptr_load_from_base64_file( ak_pointer , size_t *, const char * );
+ dll_export ak_uint8 *ak_ptr_load_from_file( ak_pointer , size_t * , const char * );
+/*! \brief Функция чтения заданного файла в кодировке base64 в буффер. */
+ ak_uint8 *ak_ptr_load_from_base64_file( ak_pointer , size_t * , const char * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тип функции, предназначенной для считывания пароля.  */
@@ -575,110 +560,6 @@ extern "C" {
  dll_export int ak_string_read( const char * , char * , size_t * );
 /*! \brief Чтение пароля из консоли. */
  dll_export int ak_password_read( char * , const size_t );
-
-/* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_HAVE_STDIO_H
-/*! \brief Печать парметров эллиптической кривой с заданым именем или идентификатором */
- dll_export int ak_libakrypt_print_curve( FILE * , const char * );
-/*! \brief Декодирование asn1 дерева, содержащегося в файле и вывод информации в файловый дескриптор */
- dll_export int ak_libakrypt_print_asn1( FILE * , const char * );
-#endif
-/*! \brief Конвертирование asn1 дерева из der формата в pem и обратно. */
- dll_export int ak_libakrypt_convert_asn1( const char * , const char * ,
-                                                              export_format_t , crypto_content_t );
-/*! \brief Разбиение asn1 дерева на поддеревья первого уровня. */
- dll_export int ak_libakrypt_split_asn1( const char * , export_format_t , crypto_content_t );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Бит `digitalSignature` расширения `keyUsage`. */
- #define bit_digitalSignature   (256)
-/*! \brief Бит `contentCommitment` расширения `keyUsage`. */
- #define bit_contentCommitment  (128)
-/*! \brief Бит `keyEncipherment` расширения `keyUsage`. */
- #define bit_keyEncipherment     (64)
-/*! \brief Бит `dataEncipherment` расширения `keyUsage`. */
- #define bit_dataEncipherment    (32)
-/*! \brief Бит `keyAgreement` расширения `keyUsage`. */
- #define bit_keyAgreement        (16)
-/*! \brief Бит `keyCertSign` расширения `keyUsage`. */
- #define bit_keyCertSign          (8)
-/*! \brief Бит `cRLSign` расширения `keyUsage`. */
- #define bit_cRLSign              (4)
-/*! \brief Бит `encipherOnly` расширения `keyUsage`. */
- #define bit_encipherOnly         (2)
-/*! \brief Бит `decipherOnly` расширения `keyUsage`. */
- #define bit_decipherOnly         (1)
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Структура, в которой хранятся параметры создаваемого сертификата открытого ключа. */
-  typedef struct certificate_opts
-{
- /*! \brief флаг того, что самоподписанный сертификат может порождать цепочки сертификации. */
-  bool_t ca;
- /*! \brief количество промежуточных сертификатов в цепочке сертификации. */
-  ak_uint32 pathlenConstraint;
- /*! \brief набор бит, описывающих область примеения открытого ключа (расширение `keyUsage`). */
-  ak_uint32 keyUsageBits;
-} *ak_certificate_opts;
-
- extern struct certificate_opts certificate_default_options;
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание дескриптора криптографического преобразования. */
- dll_export ak_handle ak_handle_new( const char *, char * );
-/*! \brief Создание дескриптора открытого ключа по заданному секретному ключу. */
- dll_export ak_handle ak_handle_new_from_signkey( ak_handle , char * );
-/*! \brief Создание дескриптора ключа из заданного файла (ключевого контейнера) */
- dll_export ak_handle ak_handle_new_from_file( const char * );
-
-/*! \brief Проверка, обладает ли криптографическое преобразование выходным блоком.  */
- dll_export bool_t ak_handle_check_tag( ak_handle );
-/*! \brief Проверка, может ли криптографическое преобразование вычислять контрольные суммы.  */
- dll_export bool_t ak_handle_check_icode( ak_handle );
-/*! \brief Проверка, допускает ли алгоритм использование секретного ключа. */
- dll_export bool_t ak_handle_check_secret_key( ak_handle );
-/*! \brief Проверка, допускает ли алгоритм использование открытого ключа. */
- dll_export bool_t ak_handle_check_public_key( ak_handle );
-/*! \brief Проверка, допускает ли алгоритм использование эллиптических кривых. */
- dll_export bool_t ak_handle_check_curve( ak_handle );
-/*! \brief Проверка, обладает ли алгоритм расширенным именем согласно x509v3 */
- dll_export bool_t ak_handle_check_name( ak_handle );
-/*! \brief Проверка, обладает ли алгоритм временным интервалом действия согласно x509v3 */
- dll_export bool_t ak_handle_check_validity( ak_handle );
-
-/*! \brief Функция добавляет в расширенное имя новую строку. */
- dll_export int ak_handle_add_name_string( ak_handle , const char * , const char * );
-/*! \brief Получение информации об параметрах алгоритма по его дескриптору. */
- dll_export int ak_handle_get_oid( ak_handle , ak_oid_info );
-/*! \brief Функция возвращает длину выходного блока криптографического преобразования. */
- dll_export size_t ak_handle_get_tag_size( ak_handle );
-/*! \brief Функция присваивает дескриптору алгоритма новые параметры эллиптической кривой. */
- dll_export int ak_handle_set_curve( ak_handle , const char * );
-/*! \brief Присвоение случайного ключевого значения значения. */
- dll_export int ak_handle_set_key_random( ak_handle );
-/*! \brief Присвоение константного ключевого значения. */
- dll_export int ak_handle_set_key_from_hexstr( ak_handle , const char * , const bool_t reverse );
-/*! \brief Присвоение ключевого значения, выработанного из пароля. */
- dll_export int ak_handle_set_key_from_password( ak_handle, const ak_pointer , const size_t ,
-                                                                 const ak_pointer , const size_t );
-/*! \brief Присвоение временного интервала действия ключа. */
- dll_export int ak_handle_set_validity( ak_handle , time_t , time_t );
-/*! \brief Удаление дескриптора криптографического преобразования. */
- dll_export int ak_handle_delete( ak_handle );
-/*! \brief Экспорт секретного ключа в файл. */
- dll_export int ak_handle_export_to_file_with_password( ak_handle,
-                           const char * , const size_t , char * , const size_t , export_format_t );
-/*! \brief Экспорт открытого ключа в запрос на сертификат */
- dll_export int ak_handle_export_to_request( ak_handle , ak_handle ,
-                                                         char * , const size_t , export_format_t );
-/*! \brief Экспорт открытого ключа в сертификат */
- dll_export int ak_handle_export_to_certificate( ak_handle , ak_handle ,
-                                   ak_certificate_opts , char * , const size_t , export_format_t );
-/*! \brief Вычисление результата работы алгоритма итерационного сжатия для заданной области памяти. */
- dll_export int ak_handle_mac_ptr( ak_handle , ak_pointer , const size_t ,
-                                                                       ak_pointer , const size_t );
-/*! \brief Вычисление результата работы алгоритма итерационного сжатия для заданного файла. */
- dll_export int ak_handle_mac_file( ak_handle , const char *, ak_pointer , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Обобщенная реализация функции snprintf для различных компиляторов. */
@@ -729,17 +610,18 @@ extern "C" {
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Прототип функции-обработчика. */
- typedef int (*ini_handler)( void *user , const char *section ,
-                                                            const char *name , const char *value );
-/*! \brief Прототип функции чтения строк (fgets-style). */
- typedef char* (*ini_reader)( char * , int , void * );
-/*! \brief Функция разбора ini-файла с заданным именем */
- dll_export int ak_libakrypt_ini_parse( const char* , ini_handler , void * );
-/*! \brief Функция разбора ранее открытого ini-файла */
- dll_export int ak_libakrypt_ini_parse_file( FILE* , ini_handler , void * );
+/*! \brief Печать параметров эллиптической кривой с заданым именем или идентификатором */
+ dll_export int ak_libakrypt_print_curve( FILE * , const char * );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Прототип функции-обработчика, используемого при чтении ini-файлов. */
+ typedef int (*ak_function_ini_handler)( void * , const char * , const char * , const char * );
+/*! \brief Функция разбора ini-файла с заданным именем. */
+ dll_export int ak_ini_parse( const char* , ak_function_ini_handler , void * );
+/*! \brief Функция разбора ранее открытого ini-файла. */
+ dll_export int ak_ini_parse_file( FILE* , ak_function_ini_handler , void * );
 /*! \brief Функция разбора строки, содержащей корректные данные в формате ini-файла. */
- dll_export int ak_libakrypt_ini_parse_string( const char * , ini_handler , void* );
+ dll_export int ak_ini_parse_string( const char * , ak_function_ini_handler , void * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает строку, начинающую цветовое выделение. */

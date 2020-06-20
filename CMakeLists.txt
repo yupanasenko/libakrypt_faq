@@ -19,7 +19,7 @@ cmake_minimum_required( VERSION 2.8 FATAL_ERROR )
 
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 8 )
-set( MINOR_VERSION 4 )
+set( MINOR_VERSION 5 )
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 
@@ -65,20 +65,20 @@ set( HEADERS        source/ak_tools.h
                     source/ak_random.h
                     source/ak_mpzn.h
                     source/ak_curves.h
-                    source/ak_parameters.h
                     source/ak_gf2n.h
+                    source/ak_parameters.h
 )
 
 set( SOURCES        source/ak_ini.c
                     source/ak_tools.c
                     source/ak_base64.c
                     source/ak_oid.c
+                    source/ak_random.c
                     source/ak_mpzn.c
                     source/ak_curves.c
-                    source/ak_random.c
-                    source/ak_parameters.c
                     source/ak_gf2n.c
-                    source/ak_libakrypt.c
+                    source/ak_parameters.c
+		    source/ak_libakrypt.c
 )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -86,29 +86,8 @@ set( SOURCES        source/ak_ini.c
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( HEADERS      ${HEADERS}
-                    source/ak_mac.h
-                    source/ak_hash.h
-                    source/ak_skey.h
-                    source/ak_hmac.h
-                    source/ak_bckey.h
-                    source/ak_asn1.h
-                    source/ak_sign.h
-                    source/ak_context_manager.h
   )
   set( SOURCES      ${SOURCES}
-                    source/ak_mac.c
-                    source/ak_hash.c
-                    source/ak_hashrnd.c
-                    source/ak_skey.c
-                    source/ak_hmac.c
-                    source/ak_bckey.c
-                    source/ak_kuznechik.c
-                    source/ak_magma.c
-                    source/ak_asn1.c
-                    source/ak_asn1_keys.c
-                    source/ak_sign.c
-                    source/ak_context_manager.c
-                    source/ak_handle.c
   )
 endif()
 
@@ -117,17 +96,13 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_AKTOOL )
   set( AKTOOL_SOURCES
-                    aktool/aktool.c
-                    aktool/aktool_show.c
-                    aktool/aktool_icode.c
-                    aktool/aktool_asn1.c
-                    aktool/aktool_key.c
+     aktool/aktool.c
+     aktool/aktool_show.c
   )
   set( AKTOOL_FILES
-                    aktool/aktool.h
-                    aktool/getopt.h
-                    aktool/getopt.c
-                    aktool/Readme.md
+     aktool/aktool_h.
+     aktool/getopt.h
+     aktool/getopt.c
   )
 endif()
 
@@ -143,25 +118,10 @@ set( CMAKES         cmake/DetectFlags.cmake
                     cmake/MakeInstall.cmake
 )
 
-set( DOC_SOURCES    axel.sty )
-
-set( DOCS           ${DOC_SOURCES}
-                    00-introduction.md
-                    01-install-guide.md
-                    06-asn1.md
-                    doc/02-principles.dox
-                    doc/Doxyfile.in
-                    doc/refman_footer.in
-                    doc/refman_header.in
-                    doc/asn1.md
+set( DOCS
 )
 
 set( OTHERS         CMakeLists.txt
-                    Readme.md
-                    Changelog.md
-                    libakrypt.conf
-                    libakrypt.rc.in
-                    LICENSE
 )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -278,14 +238,14 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 # Сборка примеров, иллюстрирующих работу с внешним интерфейсом библиотеки
 # -------------------------------------------------------------------------------------------------- #
-set( EXAMPLES_LIST hello
-                   log
-                   oid
-                   ini
+set( EXAMPLES_LIST
+  ini
+  log
+  oid
+  hello
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( EXAMPLES_LIST ${EXAMPLES_LIST}
-                   icode
   )
 endif()
 
@@ -304,37 +264,18 @@ endforeach()
 # Добавляем исходные тексты примеров, иллюстрирующих работу с внутренним интерфейсом библиотеки
 # -------------------------------------------------------------------------------------------------- #
 set( INTERNAL_TEST_LIST
-                 gf2n
-                 mpzn01
-                 oid01
-                 random01
+  oid01
+  random01
+  mpzn01
+  gf2n
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
-                 bckey01
-                 bckey02
-                 bckey03
-                 context-node
-                 context-manager
-                 hash01
-                 hash01a
-                 hash02
-                 hash03
-                 hmac01
-                 hmac02
-                 oid03
-                 random02
-                 skey01
-                 asn1-build
-                 asn1-parse
-                 asn1-keys
-                 sign01
-                 sign02
-                 sign03
+   #oid02
+   #random02
   )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
                                    # при запуске make test
-                 hash04
   )
   if( LIBAKRYPT_HAVE_SYSUN )
     set( INTERNAL_TEST_LIST_EXAMPLES
@@ -362,9 +303,9 @@ if( LIBAKRYPT_INTERNAL_TESTS )
        target_link_libraries( test-${programm}${LIBAKRYPT_EXT} akrypt-static ${LIBAKRYPT_LIBS} )
     endforeach()
     message("-- Added tests for internal functions (now \"make test\" enabled): ")
-    message("   - ${INTERNAL_TEST_LIST}" )
+    message("   ${INTERNAL_TEST_LIST}" )
     if( INTERNAL_TEST_LIST_EXAMPLES )
-      message("   - ${INTERNAL_TEST_LIST_EXAMPLES}" )
+      message("   ${INTERNAL_TEST_LIST_EXAMPLES}" )
     endif()
   endif()
 endif()
@@ -373,10 +314,10 @@ endif()
 # Добавляем исходные тексты примеров, тестирующих арифметические операции
 # -------------------------------------------------------------------------------------------------- #
 set( ARITHMETIC_TESTS_LIST
-                 mpzn-convert
-                 mpzn-arithmetic
-                 mpzn-montgomery
-                 mpzn-rem
+  mpzn-arithmetic
+  mpzn-convert
+  mpzn-montgomery
+  mpzn-rem
 )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -384,7 +325,7 @@ set( ARITHMETIC_TESTS_LIST
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_GMP_TESTS )
   if( LIBAKRYPT_CRYPTO_FUNCTIONS )
-    set( ARITHMETIC_TESTS_LIST ${ARITHMETIC_TESTS_LIST} mpzn-password )
+    #set( ARITHMETIC_TESTS_LIST ${ARITHMETIC_TESTS_LIST} mpzn-password )
   endif()
 
   # добавляем примеры только в случае сборки статической библиотеки
@@ -396,13 +337,13 @@ if( LIBAKRYPT_GMP_TESTS )
       add_test( NAME test-${programm} COMMAND test-${programm}${LIBAKRYPT_EXT} )
     endforeach()
     message("-- Added tests for integer arithmetic and comparizon with libgmp (now \"make test\" enabled):")
-    message("   - ${ARITHMETIC_TESTS_LIST}" )
+    message("   ${ARITHMETIC_TESTS_LIST}" )
   endif()
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # Сборка документации и завершающие настройки
 # -------------------------------------------------------------------------------------------------- #
-include( MakeDoc )
-include( MakeDist )
-include( MakeInstall )
+ include( MakeDoc )
+# include( MakeDist )
+# include( MakeInstall )

@@ -176,7 +176,7 @@
     - дискриминант кольца эндоморфизмов \f$ d = -354691387 \f$,
     - число классов \f$ h = 2464 \f$.                                                              */
 /* ----------------------------------------------------------------------------------------------- */
- const struct wcurve id_libakrypt_gost_3410_2012_256_paramSet_N0 = {
+ const struct wcurve id_axel_gost_3410_2012_256_paramSet_N0 = {
   ak_mpzn256_size,
   1,
   { 0xFFFFFFFFFFF4856CLL, 0xFFFFFFFFFFFFFFFFLL, 0xFFFFFFFFFFFFFFFFLL, 0xFFFFFFFFFFFFFFFFLL }, /* a */

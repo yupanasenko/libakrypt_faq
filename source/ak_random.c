@@ -7,16 +7,6 @@
  #include <ak_random.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_HAVE_STDLIB_H
- #include <stdlib.h>
-#else
- #error Library cannot be compiled without stdlib.h header
-#endif
-#ifdef LIBAKRYPT_HAVE_STRING_H
- #include <string.h>
-#else
- #error Library cannot be compiled without string.h header
-#endif
 #ifdef LIBAKRYPT_HAVE_TIME_H
  #include <time.h>
 #endif
@@ -150,10 +140,10 @@
   if( oid == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                  "using null pointer to random generator OID" );
  /* проверяем, что OID от того, что нужно */
-  if( oid->engine != random_generator )
+  if( oid->info.engine != random_generator )
     return ak_error_message( ak_error_oid_engine, __func__ , "using oid with wrong engine" );
  /* проверяем, что OID от алгоритма, а не от каких-то там параметров  */
-  if( oid->mode != algorithm )
+  if( oid->info.mode != algorithm )
     return ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
  /* проверяем, что производящая функция определена */
   if( oid->func.create == NULL )
@@ -483,7 +473,6 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*!  \example test-random01.c                                                                      */
 /*!  \example test-random02.c                                                                      */
-/*!  \example test-random03.c                                                                      */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                    ak_random.c  */
 /* ----------------------------------------------------------------------------------------------- */

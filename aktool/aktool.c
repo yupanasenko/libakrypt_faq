@@ -76,12 +76,12 @@
  /* выполняем команду пользователя */
   if( aktool_check_command( "s", argv[1] )) return aktool_show( argc, argv );
   if( aktool_check_command( "show", argv[1] )) return aktool_show( argc, argv );
-  if( aktool_check_command( "i", argv[1] )) return aktool_icode( argc, argv );
-  if( aktool_check_command( "icode", argv[1] )) return aktool_icode( argc, argv );
-  if( aktool_check_command( "a", argv[1] )) return aktool_asn1( argc, argv );
-  if( aktool_check_command( "asn1parse", argv[1] )) return aktool_asn1( argc, argv );
-  if( aktool_check_command( "k", argv[1] )) return aktool_key( argc, argv );
-  if( aktool_check_command( "key", argv[1] )) return aktool_key( argc, argv );
+//  if( aktool_check_command( "i", argv[1] )) return aktool_icode( argc, argv );
+//  if( aktool_check_command( "icode", argv[1] )) return aktool_icode( argc, argv );
+//  if( aktool_check_command( "a", argv[1] )) return aktool_asn1( argc, argv );
+//  if( aktool_check_command( "asn1parse", argv[1] )) return aktool_asn1( argc, argv );
+//  if( aktool_check_command( "k", argv[1] )) return aktool_key( argc, argv );
+//  if( aktool_check_command( "key", argv[1] )) return aktool_key( argc, argv );
 
  /* ничего не подошло, выводим сообщение об ошибке */
   ak_log_set_function( ak_function_log_stderr );

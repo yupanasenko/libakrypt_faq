@@ -44,6 +44,9 @@ else()
   try_append_c_flag( "-O3" CMAKE_C_FLAGS )
   try_append_c_flag( "-funroll-loops" CMAKE_C_FLAGS )
   try_append_c_flag( "-pipe" CMAKE_C_FLAGS )
+  try_append_c_flag( "-mpclmul" CMAKE_C_FLAGS )
+  try_append_c_flag( "-msse2" CMAKE_C_FLAGS )
+
 #  флаг -march-native позволяет получить доступ к регистам sse, mmx и т.п.
 #  но приводит к ошибке при кросс-платформенной компиляции.
 #  правильно указывать архитектуру при певом вызове cmake

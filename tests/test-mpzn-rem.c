@@ -150,7 +150,7 @@
   oid = ak_oid_context_find_by_engine( identifier );
 
   while( oid != NULL ) {
-    if( oid->mode == wcurve_params ) {
+    if( oid->info.mode == wcurve_params ) {
      /* достаем простое число */
       totalmany += 2;
       howmany += mpzn_rem_test( (ak_wcurve)(oid->data), 1000000 );

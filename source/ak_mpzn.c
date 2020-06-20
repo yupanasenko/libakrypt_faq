@@ -839,6 +839,7 @@
     \example test-mpzn-arithmetic.c
     \example test-mpzn-montgomery.c
     \example test-mpzn-rem.c
+    \example test-mpzn01.c
                                                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_mpzn.c  */
