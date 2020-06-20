@@ -445,6 +445,25 @@ extern "C" {
 } export_format_t;
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Тип данных, помещаемых в контейнер */
+ typedef enum { symmetric_key, secret_key, public_key, user_data } content_t;
+/*! \brief Состояние данных, помещаемых в контейнер */
+ typedef enum { encrypted_state, authenticated_state, signed_state } state_t;
+/*! \brief Физической способ размещения данных */  
+ typedef enum { internal_method, external_method, link_method, not_present_method } method_t;
+/*! \brief Тип Физической способ размещения данных в контейнере */
+ typedef enum { container, external } place_t;
+
+/* ----------------------------------------------------------------------------------------------- */
+ typedef struct crypto_content {
+   content_t content;
+   state_t state;
+   method_t method;
+   place_t place;
+   export_format_t encode;
+ } *ak_crypto_content;
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тип контента, помещаемого в контейнер. */
  typedef enum {
   /*! \brief Не заданный или не определенный контент. */
@@ -454,7 +473,7 @@ extern "C" {
   /*! \brief Секретный ключ асимметричного криптографического алгоритма. */
    secret_key_content,
   /*! \brief Открытый ключ асимметричного криптографического алгоритма. */
-   public_key_content,
+   public_key_certificate_content,
   /*! \brief Запрос на получение открытого ключа асимметричного криптографического алгоритма. */
    public_key_request_content,
   /*! \brief Зашифрованные, не ключевые данные. */
@@ -462,7 +481,7 @@ extern "C" {
   /*! \brief Незашифрованные, не ключевые данные. */
    plain_content
 } crypto_content_t;
-
+ 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает константный указатель NULL-строку с текущей версией библиотеки. */
  dll_export const char *ak_libakrypt_version( void );

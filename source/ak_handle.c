@@ -868,6 +868,8 @@
     return ak_error_wrong_handle;
   }
 
+  // crypto_content_t
+  
  return ak_libakrypt_add_context( ctx, engine, description );
 }
 

@@ -273,7 +273,7 @@
    { identifier, parameter, on_asn1_skmd, "1.2.643.2.52.1.127.3.2",
                                             (ak_pointer) secret_key_content, { 0, NULL, NULL, NULL }},
    { identifier, parameter, on_asn1_pkmd, "1.2.643.2.52.1.127.3.3",
-                                            (ak_pointer) public_key_content, { 0, NULL, NULL, NULL }},
+                                (ak_pointer) public_key_certificate_content, { 0, NULL, NULL, NULL }},
    { identifier, parameter, on_asn1_ecmd, "1.2.643.2.52.1.127.3.4",
                                              (ak_pointer) encrypted_content, { 0, NULL, NULL, NULL }},
    { identifier, parameter, on_asn1_pcmd, "1.2.643.2.52.1.127.3.5",

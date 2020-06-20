@@ -46,7 +46,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция проверяет, что данный узел ASN.1 дерева является контейнером. */
- bool_t ak_tlv_context_check_libakrypt_container( ak_tlv tlv, ak_asn1 * , ak_asn1 * );
+ bool_t ak_tlv_context_check_libakrypt_container( ak_tlv , ak_asn1 * , ak_asn1 * );
 /*! \brief Функция возвращает тип контента, помещенного в ASN.1 контейнер. */
  crypto_content_t ak_asn1_context_get_content_type( ak_asn1 );
 /*! \brief Функция получает служебную информацию о ключе, расположенном в ASN.1 контейнере. */

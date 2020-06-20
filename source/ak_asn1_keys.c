@@ -2464,7 +2464,7 @@
 
     case asn1_pem_format:
       if(( error = ak_asn1_context_export_to_pemfile( certificate, filename,
-                                                            public_key_content )) != ak_error_ok )
+                                                public_key_certificate_content )) != ak_error_ok )
         ak_error_message_fmt( error, __func__,
                               "incorrect export asn1 context to file %s in pem format", filename );
       break;

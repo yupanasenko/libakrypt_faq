@@ -74,7 +74,7 @@
 
        /* определяем тип pem-контейнера */
          case 249 :  if( strncmp( optarg, "certificate", 7 ) == 0 ) {
-                       content = public_key_content;
+                       content = public_key_certificate_content;
                        break;
                      }
                      if( strncmp( optarg, "request", 7 ) == 0 ) {
