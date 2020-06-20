@@ -22,6 +22,7 @@
 #else
  ak_function_log_syslog;
 #endif
+ int aktool_log_level = -1;
 
 /* ----------------------------------------------------------------------------------------------- */
  int main( int argc, TCHAR *argv[] )
@@ -76,6 +77,8 @@
  /* выполняем команду пользователя */
   if( aktool_check_command( "s", argv[1] )) return aktool_show( argc, argv );
   if( aktool_check_command( "show", argv[1] )) return aktool_show( argc, argv );
+  if( aktool_check_command( "test", argv[1] )) return aktool_test( argc, argv );
+
 //  if( aktool_check_command( "i", argv[1] )) return aktool_icode( argc, argv );
 //  if( aktool_check_command( "icode", argv[1] )) return aktool_icode( argc, argv );
 //  if( aktool_check_command( "a", argv[1] )) return aktool_asn1( argc, argv );
@@ -377,7 +380,8 @@
  int aktool_print_common_options( void )
 {
   printf(_("\ncommon aktool options:\n"));
-  printf(_("     --audit <file>      set the output file for errors and libakrypt audit system messages\n" ));
+  printf(_("     --audit             set the audit level [ enabled values : 0 (none), 1 (standard), 2 (max) ]\n" ));
+  printf(_("     --audit-file        set the output file for errors and libakrypt audit system messages\n" ));
   printf(_("     --dont-use-colors   do not use the highlighting of output data\n"));
   printf(_("     --help              show this information\n\n"));
 

@@ -7,6 +7,10 @@
 /* ----------------------------------------------------------------------------------------------- */
  #include <ak_parameters.h>
 
+#ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
+ #include <ak_hash.h>
+#endif
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения имен идентификаторов */
  static const char *asn1_lcg_n[] =          { "lcg", NULL };
@@ -20,6 +24,15 @@
 #ifdef _WIN32
  static const char *asn1_winrtl_n[] =       { "winrtl", NULL };
  static const char *asn1_winrtl_i[] =       { "1.2.643.2.52.1.1.4", NULL };
+#endif
+
+#ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
+ static const char *asn1_hashrnd_n[] =      { "hashrnd", NULL };
+ static const char *asn1_hashrnd_i[] =      { "1.2.643.2.52.1.1.5", NULL };
+ static const char *asn1_streebog256_n[] =  { "streebog256", "md_gost12_256", NULL };
+ static const char *asn1_streebog256_i[] =  { "1.2.643.7.1.1.2.2", NULL };
+ static const char *asn1_streebog512_n[] =  { "streebog512", "md_gost12_512", NULL };
+ static const char *asn1_streebog512_i[] =  { "1.2.643.7.1.1.2.3", NULL };
 #endif
 
  static const char *asn1_w256_pst_n[] =     { "id-tc26-gost-3410-2012-256-paramSetTest", NULL };
@@ -169,8 +182,20 @@ static struct oid libakrypt_oids[] =
 #endif
 #ifdef _WIN32
  {{ random_generator, algorithm, asn1_winrtl_i, asn1_winrtl_n }, NULL,
-  { sizeof( struct random ), (ak_function_create_object *)ak_random_context_create_winrtl,
+  { sizeof( struct random ), (ak_function_create_object *) ak_random_context_create_winrtl,
+                                  (ak_function_destroy_object *) ak_random_context_destroy }},
+#endif
+
+#ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
+ {{ random_generator, algorithm, asn1_hashrnd_i, asn1_hashrnd_n }, NULL,
+  { sizeof( struct random ), (ak_function_create_object *)ak_random_context_create_hashrnd,
                                    (ak_function_destroy_object *)ak_random_context_destroy }},
+ {{ hash_function, algorithm, asn1_streebog256_i, asn1_streebog256_n }, NULL,
+  { sizeof( struct hash ), (ak_function_create_object *) ak_hash_context_create_streebog256,
+                                    (ak_function_destroy_object *) ak_hash_context_destroy }},
+ {{ hash_function, algorithm, asn1_streebog512_i, asn1_streebog512_n }, NULL,
+  { sizeof( struct hash ), (ak_function_create_object *) ak_hash_context_create_streebog512,
+                                    (ak_function_destroy_object *) ak_hash_context_destroy }},
 #endif
 
  {{ identifier, wcurve_params, asn1_w256_pst_i, asn1_w256_pst_n },

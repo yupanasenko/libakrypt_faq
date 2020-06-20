@@ -20,6 +20,13 @@ if( UNIX )
       configure_file( ${CMAKE_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY )
       configure_file( ${CMAKE_SOURCE_DIR}/doc/libakrypt-header.tex.in ${CMAKE_BINARY_DIR}/libakrypt-header.tex @ONLY )
 
+      execute_process( COMMAND pandoc ${CMAKE_SOURCE_DIR}/Readme.md
+                             -t latex --top-level-division=chapter -o ${CMAKE_BINARY_DIR}/libakrypt-abstract.tex )
+      if( SED )
+        execute_process( COMMAND sed -i s/chapter/chapter*/g ${CMAKE_BINARY_DIR}/libakrypt-abstract.tex )
+        execute_process( COMMAND sed -i s/section/section*/g ${CMAKE_BINARY_DIR}/libakrypt-abstract.tex )
+      endif()
+
       file( APPEND ${script} "doxygen Doxyfile\n" )
       if( XELATEX )
         file( APPEND ${script} "cd doc/latex; make; cd ../..\n" )

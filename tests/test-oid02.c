@@ -28,11 +28,11 @@
   oid = ak_oid_context_find_by_engine( hash_function );
 
   while( oid != NULL ) {
-    if( oid->mode == kbox_params ) {
-      printf("\nkbox: %s (%s)\ndata: %s\n", oid->names[0], oid->id,
-                                 ak_ptr_to_hexstr( oid->data, 16*8, ak_false ));
+    if( oid->info.mode == kbox_params ) {
+      printf("\nkbox: %s (%s)\ndata: %s\n", oid->info.name[0], oid->info.id[0],
+                                   ak_ptr_to_hexstr( oid->data, 16*8, ak_false ));
     }
-    if( oid->mode == algorithm ) {
+    if( oid->info.mode == algorithm ) {
       size_t size;
       struct hash ctx;
 
@@ -40,7 +40,7 @@
       if( ak_hash_context_create_oid( &ctx, oid ) != ak_error_ok ) continue;
 
       ++count;
-      printf("\n%s (OID: %s)\n", ctx.oid->names[0], ctx.oid->id );
+      printf("\n%s (OID: %s)\n", ctx.oid->info.name[0], ctx.oid->info.id[0] );
       if(( size = ak_hash_context_get_tag_size( &ctx )) > sizeof( data )) continue;
 
       ak_hash_context_ptr( &ctx, test, sizeof( test ), data, size );
@@ -58,7 +58,7 @@
   printf("\nsearching test:\n");
   for( count = 0; count < 8; count++ )
      if(( oid = ak_oid_context_find_by_ni( names[count] )) != NULL )
-       printf(" + oid %s found (aka %s)\n", names[count], oid->names[0] );
+       printf(" + oid %s found (aka %s)\n", names[count], oid->info.name[0] );
       else printf(" - oid %s not found\n", names[count] );
 
   ak_libakrypt_destroy();

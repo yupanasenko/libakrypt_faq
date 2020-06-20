@@ -103,6 +103,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  extern ak_function_log *audit;
  extern char audit_filename[1024];
+ extern int aktool_log_level;
 
 /* ----------------------------------------------------------------------------------------------- */
 /* определение функции для выполнения действий с заданным файлом */
@@ -141,6 +142,7 @@
  int aktool_show( int argc, TCHAR *argv[] );
  int aktool_asn1( int argc, TCHAR *argv[] );
  int aktool_key( int argc, TCHAR *argv[] );
+ int aktool_test( int argc, TCHAR *argv[] );
 
  #endif
 /* ----------------------------------------------------------------------------------------------- */

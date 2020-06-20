@@ -15,7 +15,6 @@
   int next_option = 0, show_caption = ak_true;
   enum { do_nothing, do_alloids, do_oid, do_engines,
                                                 do_modes, do_options, do_curve } work = do_nothing;
-
  /* параметры, запрашиваемые пользователем */
   char *value = NULL;
   struct oid_info oid = { identifier, algorithm, NULL, NULL };
@@ -29,8 +28,9 @@
      { "modes",            0, NULL,  249 },
      { "curve",            1, NULL,  220 },
 
-     { "dont-use-colors",  0, NULL,   3 },
-     { "audit",            1, NULL,   2  },
+     { "audit",            1, NULL,   4  },
+     { "dont-use-colors",  0, NULL,   3  },
+     { "audit-file",       1, NULL,   2  },
      { "help",             0, NULL,   1  },
      { NULL,               0, NULL,   0  }
   };
@@ -46,6 +46,10 @@
                      break;
          case  3  : /* установка флага запрета вывода символов смены цветовой палитры */
                      ak_libakrypt_set_color_output( ak_false );
+                     break;
+         case  4  : /* устанавливаем уровень аудита */
+                     aktool_log_level = atoi( optarg );
+                     break;
 
          case 254 : /* выводим список всех доступных oid */
                      work = do_alloids;
@@ -80,6 +84,7 @@
 
  /* начинаем работу с криптографическими примитивами */
    if( ak_libakrypt_create( audit ) != ak_true ) return ak_libakrypt_destroy();
+   ak_log_set_level( aktool_log_level );
 
  /* выбираем заданное пользователем действие */
     switch( work )
@@ -217,3 +222,6 @@
  return aktool_print_common_options();
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*                                                                                  aktool_show.c  */
+/* ----------------------------------------------------------------------------------------------- */

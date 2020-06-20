@@ -157,6 +157,12 @@
 \etocsettocstyle{\doxytocparskip}{\doxynormalparskip}
 \renewcommand{\numberline}[1]{#1~}
 
+% ---------------------------------------------------------------------------------------------- %
+%
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+%
+
 %===== C O N T E N T S =====
 
 
@@ -178,7 +184,7 @@
 {\bfseries\textsc{Принципы реализации}}\\[1\baselineskip]
 
 \vspace{0.5\textheight}
-{\small\textsc{Axel Kenzo и <<Компания изящной словесности>>~~\copyright~~\today}}\\[1\baselineskip]
+{\small\textsc{Axel Kenzo и <<Компания изящной словесности>>~~\copyright~~2020}}\\[1\baselineskip]
 
 } % end vbox
 } % end parbox
@@ -187,3 +193,7 @@
 %
 % --------------------------------------------------------------
 
+\input{@CMAKE_BINARY_DIR@/libakrypt-abstract}
+%
+\newpage
+\tableofcontents

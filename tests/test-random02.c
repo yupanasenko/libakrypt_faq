@@ -55,6 +55,7 @@
       off += len;
     }
   }
+  printf("\n");
 
   if(( str = ak_ptr_to_hexstr( buffer, sizeof( buffer ), ak_false )) != NULL )
     printf("random data: %s ", str );

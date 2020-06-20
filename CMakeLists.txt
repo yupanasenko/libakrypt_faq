@@ -86,8 +86,13 @@ set( SOURCES        source/ak_ini.c
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( HEADERS      ${HEADERS}
+    source/ak_mac.h
+    source/ak_hash.h
   )
   set( SOURCES      ${SOURCES}
+    source/ak_mac.c
+    source/ak_hash.c
+    source/ak_hashrnd.c
   )
 endif()
 
@@ -98,6 +103,7 @@ if( LIBAKRYPT_AKTOOL )
   set( AKTOOL_SOURCES
      aktool/aktool.c
      aktool/aktool_show.c
+     aktool/aktool_test.c
   )
   set( AKTOOL_FILES
      aktool/aktool_h.
@@ -271,11 +277,15 @@ set( INTERNAL_TEST_LIST
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
-   #oid02
-   #random02
+   oid02
+   random02
+   hash01
+   hash02
+   hash03
   )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
                                    # при запуске make test
+   hash04
   )
   if( LIBAKRYPT_HAVE_SYSUN )
     set( INTERNAL_TEST_LIST_EXAMPLES
@@ -325,7 +335,7 @@ set( ARITHMETIC_TESTS_LIST
 # -------------------------------------------------------------------------------------------------- #
 if( LIBAKRYPT_GMP_TESTS )
   if( LIBAKRYPT_CRYPTO_FUNCTIONS )
-    #set( ARITHMETIC_TESTS_LIST ${ARITHMETIC_TESTS_LIST} mpzn-password )
+    set( ARITHMETIC_TESTS_LIST ${ARITHMETIC_TESTS_LIST} mpzn-password )
   endif()
 
   # добавляем примеры только в случае сборки статической библиотеки

@@ -69,9 +69,9 @@
 #endif
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
-// if( test_function( ak_random_context_create_hashrnd,
-//      "1c48e724f9a72c5889d5b98f2efd54fb7272ca77a056fe1d015a6d7a2ec90cb3" ) != ak_true )
-//     error = EXIT_FAILURE;
+ if( test_function( ak_random_context_create_hashrnd,
+      "1c48e724f9a72c5889d5b98f2efd54fb7272ca77a056fe1d015a6d7a2ec90cb3" ) != ak_true )
+     error = EXIT_FAILURE;
 #endif
 
  ak_libakrypt_destroy();

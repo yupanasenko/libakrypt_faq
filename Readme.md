@@ -10,61 +10,30 @@ in accordance with R 1323565.1.012-2017
 
 We have implementation of:
 
- 1. GOST R 34.12-2015 block ciphers "Magma" & "Kuznechik" with 64 bit and 128 bit block sizes respectively;
+ 1. GOST R 34.12-2015 block ciphers "Magma" & "Kuznechik" with 64 bit and 128 bit block sizes respectively,
+  see [here](https://datatracker.ietf.org/doc/draft-dolmatov-magma/) and [RFC 7801](https://tools.ietf.org/html/rfc7801);
  2. GOST R 34.13-2015 modes for block ciphers including CMAC algorithm;
-<!---
- 3. ACPKM encryption mode described by R 1323565.1.017-2018;
- 4. New russian AEAD mode (MGM, Multilinear Galois mode) for authenticated encryption;
---->
+ 3. ACPKM encryption mode described by R 1323565.1.017-2018 and [RFC 8645](https://tools.ietf.org/html/rfc8645);
+ 4. Authenticated encryption mode (MGM, Multilinear Galois mode) described by R 1323565.026-2019,
+ see also [here](https://datatracker.ietf.org/doc/draft-smyshlyaev-mgm/);
  5. GOST R 34.11-2012 hash functions from Streebog family;
- 6. Montgomery arithmetic for prime fileds;
- 7. Group operations on elliptic curves in short Weierstrass form for all elliptic curves
-    described by R 50.1.114-2016;
- 8. GOST R 34.10-2012 digital signature generation and verification algorithms;
- 9. R 50.1.113-2016 crypto algorithms such as HMAC;
-10. National variant of password-based key derivation function (PBKDF2) described by R 50.1.111-2016;
-11. A some set of pseudo random generators for various operation systems including R 1323565.1.006-2017 mechanism.
-
-Library can be used successfully under `Linux`, `Windows`, `FreeBSD` and `MacOS` operation systems.
-Also we have positive runs on mobile devices under [Sailfish OS](https://sailfishos.org/).
-
-We support various architecture such as `x86`, `x64`, `arm32v7`, `arm32v7eb`, `mips32r2` and `mips64r2`.
-
-
-## Compilation
+ 6. R 50.1.113-2016 crypto algorithms such as HMAC;
+ 7. Password-based key derivation function (PBKDF2) described by R 50.1.111-2016;
+ 8. A some set of pseudo random generators for various operation systems including R 1323565.1.006-2017 mechanism;
+ 9. Montgomery arithmetic for prime fileds;
+10. Group operations on elliptic curves in short Weierstrass form for all elliptic curves
+    described by R 1323565.024-2019;
+11. GOST R 34.10-2012 digital signature generation and verification algorithms;
+12. x509 certificate management, including formats described by R 1323565.023-2018.
 
 The library can be compiled with many compilers,
 such as `gcc`, `clang`, `Microsoft Visual C`, `TinyCC` and `icc`.
-The build system for libakrypt is [cmake](https://cmake.org/).
+The build system is [cmake](https://cmake.org/).
 
-### Unix
-On Unix platforms you can compile & build library with following commands
+Library can be used successfully under `Linux`, `Windows`, `FreeBSD` and `MacOS` operation systems.
+Also we have positive runs on [ReactOS](https://reactos.org) and mobile devices under [Sailfish OS](https://sailfishos.org/).
 
-    mkdir build
-    cd build
-    cmake -DCMAKE_C_FLAGS="-march=native" ../libakrypt-0.x
-    make
-
-If you want to compile and build a set of test programs you may run
-
-    cmake -DLIBAKRYPT_INTERNAL_TESTS=ON ../libakrypt-0.x
-    make && make test
-
-### Windows
-On Windows you may to install [phtreads library](https://sourceware.org/pthreads-win32/).
-Installing of `pthreads` library is optional.
-
-After you can run a Microsoft Visual 20XX Console and execute a following sequence
-
-    mkdir build
-    cd build
-    cmake.exe -G "NMake Makefiles" -DCMAKE_C_FLAGS="-march=native" ../libakrypt-0.x
-    nmake.exe
-
-## Information
-
-The full list of compile & build options and full documentation you can find
-in `doc` directory or libakrypt-doc-0.x.pdf (in russian).
+We support various architectures such as `x86`, `x64`, `arm32v7`, `arm32v7eb`, `mips32r2` and `mips64r2`.
 
 ## Attention
 
