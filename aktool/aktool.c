@@ -23,6 +23,7 @@
  ak_function_log_syslog;
 #endif
  int aktool_log_level = -1;
+ bool_t aktool_openssl_compability = ak_false;
 
 /* ----------------------------------------------------------------------------------------------- */
  int main( int argc, TCHAR *argv[] )
@@ -357,6 +358,31 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ bool_t aktool_create_libakrypt( void )
+{
+  ak_int64 number;
+
+ /* инициализируем библиотеку */
+  if( ak_libakrypt_create( audit ) != ak_true ) {
+    ak_libakrypt_destroy();
+    aktool_error(_("incorrect initialixation of libakrypt library"));
+    return ak_false;
+  }
+ /* устанавливаем уровень аудита */
+  ak_log_set_level( aktool_log_level );
+
+ /* применяем флаг совместимости с openssl */
+  number = ak_libakrypt_get_option_value_by_name( "openssl_compability ");
+  if(( number != ak_error_wrong_option ) && ( aktool_openssl_compability != number ))
+    ak_libakrypt_set_openssl_compability( aktool_openssl_compability );
+
+ return ak_true;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_destroy_libakrypt( void ) { return ak_libakrypt_destroy(); }
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                 реализация вывода справки                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_litehelp( void )
@@ -379,11 +405,13 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_print_common_options( void )
 {
-  printf(_("\ncommon aktool options:\n"));
-  printf(_("     --audit             set the audit level [ enabled values : 0 (none), 1 (standard), 2 (max) ]\n" ));
-  printf(_("     --audit-file        set the output file for errors and libakrypt audit system messages\n" ));
-  printf(_("     --dont-use-colors   do not use the highlighting of output data\n"));
-  printf(_("     --help              show this information\n\n"));
+  printf(
+   _("\ncommon aktool options:\n"
+     "     --audit             set the audit level [ enabled values : 0 (none), 1 (standard), 2 (max) ]\n"
+     "     --audit-file        set the output file for errors and libakrypt audit system messages\n"
+     "     --dont-use-colors   do not use the highlighting of output data\n"
+     "     --openssl-style     use non-standard variants to some encryption algorithms, as in openssl library\n"
+     "     --help              show this information\n\n"));
 
  return EXIT_SUCCESS;
 }

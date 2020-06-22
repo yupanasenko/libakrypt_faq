@@ -20,6 +20,9 @@
  #include <ak_curves.h>
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
+ #include <ak_bckey.h>
+ #include <ak_sign.h>
+ #include <ak_context_manager.h>
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -101,6 +104,140 @@
  return ak_true;
 }
 
+#ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param flag булева переменная; истинное значение устанавливает режим совместимости,
+    ложное -- снимает.
+
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_libakrypt_set_openssl_compability( bool_t flag )
+{
+  if( ak_libakrypt_set_option( "openssl_compability", flag ) != ak_error_ok )
+    return ak_error_message( ak_error_get_value(), __func__, "using an incorrect option name" );
+  return ak_bckey_context_kuznechik_init_gost_tables();
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция проверяет корректность реализации алгоритмов хэширования
+    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
+    вызова ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ static bool_t ak_libakrypt_test_hash_functions( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing hash functions started" );
+
+ /* тестируем функцию Стрибог256 */
+  if( ak_hash_test_streebog256() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog256 testing" );
+    return ak_false;
+  }
+
+ /* тестируем функцию Стрибог512 */
+  if( ak_hash_test_streebog512() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog512 testing" );
+    return ak_false;
+  }
+
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing hash functions ended successfully" );
+
+ return ak_true;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция проверяет корректность реализации блочных шифрова и режимов их использования.
+    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
+    вызова ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_libakrypt_test_block_ciphers( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing block ciphers started" );
+
+ /* тестируем корректность реализации блочного шифра Магма */
+  if( ak_bckey_test_magma()  != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of magma block cipher" );
+    return ak_false;
+  }
+
+ /* тестируем корректность реализации блочного шифра Кузнечик */
+  if( ak_bckey_test_kuznechik()  != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                                   "incorrect testing of kuznechik block cipher" );
+    return ak_false;
+  }
+
+// /* тестируем дополнительные режимы работы */
+//  if( ak_bckey_test_mgm()  != ak_true ) {
+//    ak_error_message( ak_error_get_value(), __func__ ,
+//                                               "incorrect testing of mgm mode for block ciphers" );
+//    return ak_false;
+//  }
+//  if( ak_bckey_test_acpkm()  != ak_true ) {
+//    ak_error_message( ak_error_get_value(), __func__ ,
+//                                  "incorrect testing of acpkm encryption mode for block ciphers" );
+//    return ak_false;
+//  }
+
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing block ciphers ended successfully" );
+
+ return ak_true;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция проверяет корректность реализации алгоритмов итерационного сжатия
+    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
+    вызова ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ static bool_t ak_libakrypt_test_mac_functions( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing mac algorithms started" );
+
+ /* тестирование механизмов hmac и pbkdf2 */
+  if( ak_hmac_test_streebog() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect testing of hmac functions" );
+    return ak_false;
+  }
+  if( ak_hmac_test_pbkdf2() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect testing of pbkdf2 function" );
+    return ak_false;
+  }
+
+//  /* тестируем механизм итерационного сжатия для ключевых и бесключевых функций хеширования */
+//  if( ak_mac_test_hash_functions() != ak_true ) {
+//    ak_error_message( ak_error_get_value(), __func__,
+//                                  "incorrect testing mac algorithms based on hash functions" );
+//    return ak_false;
+//  }
+//  if( ak_mac_test_hmac_functions() != ak_true ) {
+//    ak_error_message( ak_error_get_value(), __func__, "incorrect testing hmac algorithms" );
+//    return ak_false;
+//  }
+
+//  if( ak_mac_test_omac_functions() != ak_true ) {
+//    ak_error_message( ak_error_get_value(), __func__,
+//                                   "incorrect testing mac algorithms based on block ciphers" );
+//    return ak_false
+//  }
+
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing mac algorithms ended successfully" );
+
+ return ak_true;
+}
+#endif
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция проверяет корректность реализации асимметричных криптографических алгоритмов
     @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
@@ -113,18 +250,18 @@
   if( audit >= ak_log_maximum )
     ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms started" );
 
- /* тестируем корректность реализации операций с эллиптическими кривыми в короткой форме Вейерштрасса */
+ /* тестируем корректность реализации операций с эллиптическими кривыми в форме Вейерштрасса */
   if( ak_wcurve_test() != ak_true ) {
     ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of Weierstrass curves" );
     return ak_false;
   }
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
-// /* тестируем корректность реализации алгоритмов электронной подписи */
-//  if( ak_signkey_test() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of digital signatures" );
-//    return ak_false;
-//  }
+ /* тестируем корректность реализации алгоритмов электронной подписи */
+  if( ak_signkey_test() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of digital signatures" );
+    return ak_false;
+  }
 #endif
 
   if( audit >= ak_log_maximum )
@@ -151,23 +288,23 @@
   }
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
-// /* проверяем корректность реализации алгоритмов бесключевого хеширования */
-//  if( ak_libakrypt_test_hash_functions( ) != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of hash functions" );
-//    return ak_false;
-//  }
+ /* проверяем корректность реализации алгоритмов бесключевого хеширования */
+  if( ak_libakrypt_test_hash_functions( ) != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of hash functions" );
+    return ak_false;
+  }
 
-// /* тестируем работу алгоритмов блочного шифрования */
-//  if( ak_libakrypt_test_block_ciphers() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ , "error while testing block ciphers" );
-//    return ak_false;
-//  }
+ /* тестируем работу алгоритмов блочного шифрования */
+  if( ak_libakrypt_test_block_ciphers() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "error while testing block ciphers" );
+    return ak_false;
+  }
 
-// /* проверяем корректность реализации алгоритмов итерационного сжатия */
-//   if( ak_libakrypt_test_mac_functions( ) != ak_true ) {
-//     ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of mac algorithms" );
-//     return ak_false;
-//   }
+ /* проверяем корректность реализации алгоритмов итерационного сжатия */
+   if( ak_libakrypt_test_mac_functions( ) != ak_true ) {
+     ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of mac algorithms" );
+     return ak_false;
+   }
 #endif
 
  /* тестируем работу алгоритмов выработки и проверки электронной подписи */
@@ -248,17 +385,17 @@
    }
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
- /* /\* инициализируем константные таблицы для алгоритма Кузнечик *\/ */
- /*  if(( error = ak_bckey_context_kuznechik_init_gost_tables()) != ak_error_ok ) { */
- /*    ak_error_message( error, __func__, "initialization of context manager is wrong" ); */
- /*    return ak_false; */
- /*  } */
+ /* инициализируем константные таблицы для алгоритма Кузнечик */
+   if(( error = ak_bckey_context_kuznechik_init_gost_tables()) != ak_error_ok ) {
+    ak_error_message( error, __func__, "initialization of context manager is wrong" );
+     return ak_false;
+   }
 
- /* /\* инициализируем структуру управления контекстами *\/ */
- /*   if(( error = ak_libakrypt_create_context_manager()) != ak_error_ok ) { */
- /*     ak_error_message( error, __func__, "initialization of context manager is wrong" ); */
- /*     return ak_false; */
- /*   } */
+ /* инициализируем структуру управления контекстами */
+   if(( error = ak_libakrypt_create_context_manager()) != ak_error_ok ) {
+     ak_error_message( error, __func__, "initialization of context manager is wrong" );
+      return ak_false;
+   }
 #endif
 
  /* в случае, когда компилируются сетевые функции, инициализируем работу с сокетами */
@@ -313,10 +450,10 @@
 #endif
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
- /* /\* уничтожаем структуру управления контекстами *\/ */
- /*  if( ak_libakrypt_destroy_context_manager() != ak_error_ok ) { */
- /*    ak_error_message( ak_error_get_value(), __func__, "destroying of context manager is wrong" ); */
- /*  } */
+ /* уничтожаем структуру управления контекстами *\/ */
+  if( ak_libakrypt_destroy_context_manager() != ak_error_ok ) {
+    ak_error_message( ak_error_get_value(), __func__, "destroying of context manager is wrong" );
+  }
 #endif
 
   if( ak_log_get_level() != ak_log_none )

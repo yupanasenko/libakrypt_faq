@@ -83,10 +83,14 @@ extern "C" {
  #error Library cannot be compiled without ctype.h header
 #endif
 
+#cmakedefine LIBAKRYPT_HAVE_TIME_H
+#ifdef LIBAKRYPT_HAVE_TIME_H
+ #include <time.h>
+#endif
+
 #cmakedefine LIBAKRYPT_HAVE_STRINGS_H
 #cmakedefine LIBAKRYPT_HAVE_ENDIAN_H
 #cmakedefine LIBAKRYPT_HAVE_SYSENDIAN_H
-#cmakedefine LIBAKRYPT_HAVE_TIME_H
 #cmakedefine LIBAKRYPT_HAVE_SYSTIME_H
 #cmakedefine LIBAKRYPT_HAVE_SYSLOG_H
 #cmakedefine LIBAKRYPT_HAVE_UNISTD_H
@@ -464,9 +468,75 @@ extern "C" {
    const char **name;
 } *ak_oid_info;
 
-/* ----------------------------------------------------------------------------------------------- */
 #define ak_oid_info_undefined { undefined_engine, undefined_mode, NULL, NULL }
-  
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Перечисление определяет возможные типы счетчиков ресурса секретного ключа. */
+ typedef enum {
+  /*! \brief Счетчик числа использованных блоков. */
+    block_counter_resource,
+  /*! \brief Счетчик числа использований ключа, например,
+     количество подписанных сообщений или число производных ключей. */
+    key_using_resource,
+} counter_resource_t;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура определяет тип и значение счетчика ресурса ключа. */
+ typedef struct key_resource_counter {
+  /*! \brief Тип ресурса */
+    counter_resource_t type;
+  /*! \brief Дополнение */
+    ak_uint8 padding[4];
+  /*! \brief Cчетчик числа использований, например, зашифрованных/расшифрованных блоков. */
+    ssize_t counter;
+} *ak_key_resoure_counter;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура определяет временной интервал действия ключа. */
+ typedef struct time_interval {
+  /*! \brief Время, до которого ключ недействителен. */
+   time_t not_before;
+  /*! \brief Время, после которого ключ недействителен. */
+   time_t not_after;
+} *ak_time_intermal;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура для хранения ресурса ключа. */
+ typedef struct resource {
+  /*! \brief Счетчик числа использований ключа. */
+   struct key_resource_counter value;
+  /*! \brief Временной интервал использования ключа. */
+   struct time_interval time;
+ } *ak_resource;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Формат хранения asn1 дерева в файле */
+ typedef enum {
+  /*! \brief хранение asn1 дерева в виде der-последовательности. */
+   asn1_der_format,
+  /*! \brief хранение asn1 дерева в виде der-последовательнсти, закодированной в base64. */
+   asn1_pem_format
+} export_format_t;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Тип контента, помещаемого в контейнер. */
+ typedef enum {
+  /*! \brief Не заданный или не определенный контент. */
+   undefined_content,
+  /*! \brief Секретный ключ симметричного криптографического алгоритма. */
+   symmetric_key_content,
+  /*! \brief Секретный ключ асимметричного криптографического алгоритма. */
+   secret_key_content,
+  /*! \brief Открытый ключ асимметричного криптографического алгоритма. */
+   public_key_certificate_content,
+  /*! \brief Запрос на получение открытого ключа асимметричного криптографического алгоритма. */
+   public_key_request_content,
+  /*! \brief Зашифрованные, не ключевые данные. */
+   encrypted_content,
+  /*! \brief Незашифрованные, не ключевые данные. */
+   plain_content
+} crypto_content_t;
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает константный указатель NULL-строку с текущей версией библиотеки. */
  dll_export const char *ak_libakrypt_version( void );
@@ -505,14 +575,21 @@ extern "C" {
 /*! \brief Функция возвращает общее количества опций библиотеки. */
  dll_export size_t ak_libakrypt_options_count( void );
 /*! \brief Получение имени опции по ее номеру. */
- dll_export char *ak_libakrypt_get_option_name( const size_t index );
+ dll_export char *ak_libakrypt_get_option_name( const size_t );
 /*! \brief Получение значения опции по ее номеру. */
- dll_export ak_int64 ak_libakrypt_get_option_value( const size_t index );
+ dll_export ak_int64 ak_libakrypt_get_option_value( const size_t );
+/*! \brief Получение значения опции по ее имени. */
+ dll_export ak_int64 ak_libakrypt_get_option_value_by_name( char * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция устанавливает/снимает использование цветового выделения при выводе
     сообщений библиотеки в консоль. */
  dll_export int ak_libakrypt_set_color_output( bool_t );
+#ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
+/*! \brief Функция устанавливает/снимает режим совместимости с форматами данных,
+    поддерживаемыми gostengine из библиотеки openssl. */
+ dll_export int ak_libakrypt_set_openssl_compability( bool_t );
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup frontend_oid Внешний интерфейс. Идентификаторы объектов

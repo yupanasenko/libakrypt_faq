@@ -28,6 +28,7 @@
      { "modes",            0, NULL,  249 },
      { "curve",            1, NULL,  220 },
 
+     { "openssl-style",    0, NULL,   5 },
      { "audit",            1, NULL,   4  },
      { "dont-use-colors",  0, NULL,   3  },
      { "audit-file",       1, NULL,   2  },
@@ -50,6 +51,10 @@
          case  4  : /* устанавливаем уровень аудита */
                      aktool_log_level = atoi( optarg );
                      break;
+         case  5  : /* переходим к стилю openssl */
+                     aktool_openssl_compability = ak_true;
+                     break;
+
 
          case 254 : /* выводим список всех доступных oid */
                      work = do_alloids;
@@ -83,8 +88,7 @@
    if( work == do_nothing ) return aktool_show_help();
 
  /* начинаем работу с криптографическими примитивами */
-   if( ak_libakrypt_create( audit ) != ak_true ) return ak_libakrypt_destroy();
-   ak_log_set_level( aktool_log_level );
+   if( !aktool_create_libakrypt( )) return EXIT_FAILURE;
 
  /* выбираем заданное пользователем действие */
     switch( work )
@@ -146,9 +150,11 @@
          printf(" %-40s %-16s\n", _("option"), _("value"));
          printf("------------------------------------------------------\n");
        }
-       for( idx = 0; idx < ak_libakrypt_options_count(); idx++ )
-          printf(" %-40s %-16ld\n", ak_libakrypt_get_option_name( idx ),
-                                                  (long int) ak_libakrypt_get_option_value( idx ));
+       for( idx = 0; idx < ak_libakrypt_options_count(); idx++ ) {
+          ak_int64 value = ak_libakrypt_get_option_value( idx );
+          printf(" %-40s %-16ld\n",
+                 ak_libakrypt_get_option_name( idx ), (long int)value );
+       }
        break;
 
      case do_engines:
@@ -175,9 +181,10 @@
 
      default:  break;
    }
-
  /* завершаем работу и выходим */
- return ak_libakrypt_destroy();
+   aktool_destroy_libakrypt();
+
+ return EXIT_SUCCESS;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -204,20 +211,21 @@
  return EXIT_SUCCESS;
 }
 
-
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_show_help( void )
 {
-  printf(_("aktool show [options]  - show useful information about libakrypt parameters\n\n"));
-  printf(_("available options:\n"));
-  printf(_("     --curve <ni>        show the parameters of elliptic curve with given name or identifier\n"));
-  printf(_("     --engines           show all types of available crypto engines\n"));
-  printf(_("     --oid <enim>        show one or more OID's,\n"));
-  printf(_("                         where \"enim\" is an engine, name, identifier or mode of OID\n"));
-  printf(_("     --oids              show the list of all available libakrypt's OIDs\n"));
-  printf(_("     --options           show the list of all libakrypt's cryptographic options and their values\n"));
-  printf(_("     --modes             show all types of cryptographic modes\n"));
-  printf(_("     --without-caption   don't show a caption for displayed values\n"));
+  printf(
+   _("aktool show [options]  - show useful information about libakrypt parameters\n\n"
+     "available options:\n"
+     "     --curve <ni>        show the parameters of elliptic curve with given name or identifier\n"
+     "     --engines           show all types of available crypto engines\n"
+     "     --oid <enim>        show one or more OID's,\n"
+     "                         where \"enim\" is an engine, name, identifier or mode of OID\n"
+     "     --oids              show the list of all available libakrypt's OIDs\n"
+     "     --options           show the list of all libakrypt's cryptographic options and their values\n"
+     "     --modes             show all types of cryptographic modes\n"
+     "     --without-caption   don't show a caption for displayed values\n"
+  ));
 
  return aktool_print_common_options();
 }

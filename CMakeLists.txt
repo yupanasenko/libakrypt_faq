@@ -60,25 +60,29 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 set( MAIN_HEADER    source/libakrypt.h )
 
-set( HEADERS        source/ak_tools.h
-                    source/ak_oid.h
-                    source/ak_random.h
-                    source/ak_mpzn.h
-                    source/ak_curves.h
-                    source/ak_gf2n.h
-                    source/ak_parameters.h
+set( HEADERS
+   source/ak_tools.h
+   source/ak_oid.h
+   source/ak_random.h
+   source/ak_mpzn.h
+   source/ak_curves.h
+   source/ak_gf2n.h
+   source/ak_parameters.h
+   source/ak_asn1.h
 )
 
-set( SOURCES        source/ak_ini.c
-                    source/ak_tools.c
-                    source/ak_base64.c
-                    source/ak_oid.c
-                    source/ak_random.c
-                    source/ak_mpzn.c
-                    source/ak_curves.c
-                    source/ak_gf2n.c
-                    source/ak_parameters.c
-		    source/ak_libakrypt.c
+set( SOURCES
+   source/ak_ini.c
+   source/ak_tools.c
+   source/ak_base64.c
+   source/ak_oid.c
+   source/ak_random.c
+   source/ak_mpzn.c
+   source/ak_curves.c
+   source/ak_gf2n.c
+   source/ak_parameters.c
+   source/ak_asn1.c
+   source/ak_libakrypt.c
 )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -88,11 +92,24 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( HEADERS      ${HEADERS}
     source/ak_mac.h
     source/ak_hash.h
+    source/ak_skey.h
+    source/ak_hmac.h
+    source/ak_bckey.h
+    source/ak_context_manager.h
+    source/ak_sign.h
   )
   set( SOURCES      ${SOURCES}
+    source/ak_base64.c
     source/ak_mac.c
     source/ak_hash.c
     source/ak_hashrnd.c
+    source/ak_skey.c
+    source/ak_hmac.c
+    source/ak_bckey.c
+    source/ak_magma.c
+    source/ak_kuznechik.c
+    source/ak_context_manager.c
+    source/ak_sign.c
   )
 endif()
 
@@ -267,7 +284,7 @@ foreach( programm ${EXAMPLES_LIST} )
 endforeach()
 
 # -------------------------------------------------------------------------------------------------- #
-# Добавляем исходные тексты примеров, иллюстрирующих работу с внутренним интерфейсом библиотеки
+# Добавляем исходные тексты примеров, иллюстрирующих работу с внутренними интерфейсами библиотеки
 # -------------------------------------------------------------------------------------------------- #
 set( INTERNAL_TEST_LIST
   oid01
@@ -282,10 +299,20 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
    hash01
    hash02
    hash03
+   skey01
+   hmac01
+   hmac02
+   bckey01
+   bckey02
+   bckey03
+   context-node
+   context-manager
+   sign01
   )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
                                    # при запуске make test
    hash04
+   bckey04
   )
   if( LIBAKRYPT_HAVE_SYSUN )
     set( INTERNAL_TEST_LIST_EXAMPLES

@@ -104,6 +104,7 @@
  extern ak_function_log *audit;
  extern char audit_filename[1024];
  extern int aktool_log_level;
+ extern bool_t aktool_openssl_compability;
 
 /* ----------------------------------------------------------------------------------------------- */
 /* определение функции для выполнения действий с заданным файлом */
@@ -135,6 +136,10 @@
  int ak_file_read_by_lines( const char * , ak_file_read_function * , ak_pointer );
 /* вывод в консоль строки с сообщением об ошибке */
  void aktool_error( const char *format, ... );
+/* общий для всех подпрограмм запуск процедуры инициализации билиотеки */
+ bool_t aktool_create_libakrypt( void );
+/* общий для всех подпрограмм запуск процедуры остановки билиотеки */
+ int aktool_destroy_libakrypt( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 /* реализации пользовательских команд */

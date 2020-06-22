@@ -9,17 +9,18 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_test( int argc, TCHAR *argv[] )
 {
-  int next_option = 0;
-  enum { do_nothing, do_hash } work = do_nothing;
+  int next_option = 0, exit_status = EXIT_SUCCESS;
+  enum { do_nothing, do_dynamic } work = do_nothing;
 
   const struct option long_options[] = {
-     { "hash",             0, NULL,  254 },
+     { "dynamic-control",  0, NULL, 255 },
 
-     { "audit",            1, NULL,   4  },
-     { "dont-use-colors",  0, NULL,   3  },
-     { "audit-file",       1, NULL,   2  },
-     { "help",             0, NULL,   1  },
-     { NULL,               0, NULL,   0  }
+     { "openssl-style",    0, NULL,   5 },
+     { "audit",            1, NULL,   4 },
+     { "dont-use-colors",  0, NULL,   3 },
+     { "audit-file",       1, NULL,   2 },
+     { "help",             0, NULL,   1 },
+     { NULL,               0, NULL,   0 }
   };
 
  /* разбираем опции командной строки */
@@ -37,9 +38,12 @@
          case  4  : /* устанавливаем уровень аудита */
                      aktool_log_level = atoi( optarg );
                      break;
+         case  5  : /* переходим к стилю openssl */
+                     aktool_openssl_compability = ak_true;
+                     break;
 
-         case 254 : /* тест скорости функций хеширования */
-                     work = do_hash;
+         case 255 : /* тест скорости функций хеширования */
+                     work = do_dynamic;
                      break;
 
          default:   /* обрабатываем ошибочные параметры */
@@ -50,28 +54,39 @@
    if( work == do_nothing ) return aktool_test_help();
 
  /* начинаем работу с криптографическими примитивами */
-   if( ak_libakrypt_create( audit ) != ak_true ) return ak_libakrypt_destroy();
-   ak_log_set_level( aktool_log_level );
+   if( !aktool_create_libakrypt( )) return EXIT_FAILURE;
 
  /* выбираем заданное пользователем действие */
     switch( work )
    {
-     case do_hash:
+     case do_dynamic:
+       if( ak_libakrypt_dynamic_control_test( )) printf(_("dynamic test is Ok\n"));
+        else {
+          printf(_("dynamic test is Wrong\n"));
+          exit_status = EXIT_FAILURE;
+        }
        break;
 
      default:  break;
    }
 
  /* завершаем работу и выходим */
- return ak_libakrypt_destroy();
+   aktool_destroy_libakrypt();
+
+ return exit_status;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_test_help( void )
 {
-  printf(_("aktool test [options]  - run various tests\n\n"));
-  printf(_("available options:\n"));
-  printf(_("     --hash              test of hash functions speed\n"));
+  printf(
+   _("aktool test [options]  - run various tests\n\n"
+     "available options:\n"
+     "     --dynamic           dynamic test of cryptographic algorithms\n"
+     "                         runs all available algorithms on test values taken from standards and recommendations\n"
+     "\n"
+     "for more information run tests with \"--audit-file stderr\" option or see /var/log/auth.log file\n"
+  ));
 
  return aktool_print_common_options();
 }

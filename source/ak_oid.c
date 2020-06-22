@@ -8,7 +8,8 @@
  #include <ak_parameters.h>
 
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
- #include <ak_hash.h>
+ #include <ak_bckey.h>
+ #include <ak_sign.h>
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -33,6 +34,24 @@
  static const char *asn1_streebog256_i[] =  { "1.2.643.7.1.1.2.2", NULL };
  static const char *asn1_streebog512_n[] =  { "streebog512", "md_gost12_512", NULL };
  static const char *asn1_streebog512_i[] =  { "1.2.643.7.1.1.2.3", NULL };
+ static const char *asn1_hmac_streebog256_n[] = { "hmac-streebog256", "HMAC-md_gost12_256", NULL };
+ static const char *asn1_hmac_streebog256_i[] = { "1.2.643.7.1.1.4.1", NULL };
+ static const char *asn1_hmac_streebog512_n[] = { "hmac-streebog512", "HMAC-md_gost12_512", NULL };
+ static const char *asn1_hmac_streebog512_i[] = { "1.2.643.7.1.1.4.2", NULL };
+ static const char *asn1_magma_n[] =        { "magma", NULL };
+ static const char *asn1_magma_i[] =        { "1.2.643.7.1.1.5.1", NULL };
+ static const char *asn1_kuznechik_n[] =    { "kuznechik", "kuznyechik", "grasshopper", NULL };
+ static const char *asn1_kuznechik_i[] =    { "1.2.643.7.1.1.5.2", NULL };
+ static const char *asn1_sign256_n[] =      { "id-tc26-signwithdigest-gost3410-12-256",
+                                              "sign256", NULL };
+ static const char *asn1_sign256_i[] =      { "1.2.643.7.1.1.3.2", NULL };
+ static const char *asn1_sign512_n[] =      { "id-tc26-signwithdigest-gost3410-12-512",
+                                              "sign512", NULL };
+ static const char *asn1_sign512_i[] =      { "1.2.643.7.1.1.3.3", NULL };
+ static const char *asn1_verify256_n[] =    { "id-tc26-gost3410-12-256", "verify256", NULL };
+ static const char *asn1_verify256_i[] =    { "1.2.643.7.1.1.1.1", NULL };
+ static const char *asn1_verify512_n[] =    { "id-tc26-gost3410-12-512", "verify512", NULL };
+ static const char *asn1_verify512_i[] =    { "1.2.643.7.1.1.1.2", NULL };
 #endif
 
  static const char *asn1_w256_pst_n[] =     { "id-tc26-gost-3410-2012-256-paramSetTest", NULL };
@@ -186,16 +205,63 @@ static struct oid libakrypt_oids[] =
                                   (ak_function_destroy_object *) ak_random_context_destroy }},
 #endif
 
+/* добавлем идентификаторы алгоритмов */
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  {{ random_generator, algorithm, asn1_hashrnd_i, asn1_hashrnd_n }, NULL,
-  { sizeof( struct random ), (ak_function_create_object *)ak_random_context_create_hashrnd,
-                                   (ak_function_destroy_object *)ak_random_context_destroy }},
+  { sizeof( struct random ),
+    ( ak_function_create_object *) ak_random_context_create_hashrnd,
+    ( ak_function_destroy_object *) ak_random_context_destroy }
+ },
  {{ hash_function, algorithm, asn1_streebog256_i, asn1_streebog256_n }, NULL,
-  { sizeof( struct hash ), (ak_function_create_object *) ak_hash_context_create_streebog256,
-                                    (ak_function_destroy_object *) ak_hash_context_destroy }},
+  { sizeof( struct hash ),
+    ( ak_function_create_object *) ak_hash_context_create_streebog256,
+    ( ak_function_destroy_object *) ak_hash_context_destroy }
+ },
  {{ hash_function, algorithm, asn1_streebog512_i, asn1_streebog512_n }, NULL,
-  { sizeof( struct hash ), (ak_function_create_object *) ak_hash_context_create_streebog512,
-                                    (ak_function_destroy_object *) ak_hash_context_destroy }},
+  { sizeof( struct hash ),
+    ( ak_function_create_object *) ak_hash_context_create_streebog512,
+    ( ak_function_destroy_object *) ak_hash_context_destroy }
+ },
+ {{ hmac_function, algorithm, asn1_hmac_streebog256_i, asn1_hmac_streebog256_n }, NULL,
+  { sizeof( struct hmac ),
+    ( ak_function_create_object *) ak_hmac_context_create_streebog256,
+    ( ak_function_destroy_object *) ak_hmac_context_destroy }
+ },
+ {{ hmac_function, algorithm, asn1_hmac_streebog512_i, asn1_hmac_streebog512_n }, NULL,
+  { sizeof( struct hmac ),
+    ( ak_function_create_object *) ak_hmac_context_create_streebog512,
+    ( ak_function_destroy_object *) ak_hmac_context_destroy }
+ },
+ {{ block_cipher, algorithm, asn1_magma_i, asn1_magma_n }, NULL,
+  { sizeof( struct bckey ),
+    ( ak_function_create_object *) ak_bckey_context_create_magma,
+    ( ak_function_destroy_object *) ak_bckey_context_destroy }
+ },
+ {{ block_cipher, algorithm, asn1_kuznechik_i, asn1_kuznechik_n }, NULL,
+  { sizeof( struct bckey ),
+    ( ak_function_create_object *) ak_bckey_context_create_kuznechik,
+    ( ak_function_destroy_object *) ak_bckey_context_destroy }
+ },
+ {{ sign_function, algorithm, asn1_sign256_i, asn1_sign256_n }, NULL,
+  { sizeof( struct signkey ),
+    ( ak_function_create_object *) ak_signkey_context_create_streebog256,
+    ( ak_function_destroy_object *) ak_signkey_context_destroy }
+ },
+ {{ sign_function, algorithm, asn1_sign512_i, asn1_sign512_n }, NULL,
+  { sizeof( struct signkey ),
+    ( ak_function_create_object *) ak_signkey_context_create_streebog512,
+    ( ak_function_destroy_object *) ak_signkey_context_destroy }
+ },
+ {{ verify_function, algorithm, asn1_verify256_i, asn1_verify256_n }, NULL,
+  { sizeof( struct verifykey ),
+    ( ak_function_create_object *) ak_verifykey_context_create_streebog256,
+    ( ak_function_destroy_object *) ak_verifykey_context_destroy }
+ },
+ {{ verify_function, algorithm, asn1_verify512_i, asn1_verify512_n }, NULL,
+  { sizeof( struct verifykey ),
+    ( ak_function_create_object *) ak_verifykey_context_create_streebog512,
+    ( ak_function_destroy_object *) ak_verifykey_context_destroy }
+ },
 #endif
 
  {{ identifier, wcurve_params, asn1_w256_pst_i, asn1_w256_pst_n },
@@ -407,7 +473,7 @@ static const char *libakrypt_mode_names[] = {
     \return Функция возвращает указатель на контекст созданного объекта. В случае возникновения
     ошибки возвращается NULL. */
 /* ----------------------------------------------------------------------------------------------- */
-ak_pointer ak_oid_context_new_object( ak_oid oid )
+ ak_pointer ak_oid_context_new_object( ak_oid oid )
 {
   ak_pointer ctx = NULL;
   int error = ak_error_ok;
@@ -443,7 +509,7 @@ ak_pointer ak_oid_context_new_object( ak_oid oid )
     \param ctx Контекст удаляемого объекта
     \return Функция всегда возвращает NULL.                                                        */
 /* ----------------------------------------------------------------------------------------------- */
-ak_pointer ak_oid_context_delete_object( ak_oid oid, ak_pointer ctx )
+ ak_pointer ak_oid_context_delete_object( ak_oid oid, ak_pointer ctx )
 {
   int error = ak_error_ok;
 
@@ -453,16 +519,14 @@ ak_pointer ak_oid_context_delete_object( ak_oid oid, ak_pointer ctx )
 		      "use a null pointer to object identifer" );
     return NULL;
   }
-  if( oid->func.create == NULL ) {
+  if( oid->func.destroy == NULL ) {
     ak_error_message( ak_error_undefined_function, __func__,
 		      "destroy an object that does not support this feature" );
-    return NULL;
-  }
-
-  if(( error = ((ak_function_destroy_object*)oid->func.destroy )( ctx )) != ak_error_ok )
-      ak_error_message_fmt( error, __func__, "the destroing of %s object failed",
-			    ak_libakrypt_get_engine_name( oid->info.engine ));
-  
+  } else {
+     if(( error = ((ak_function_destroy_object*)oid->func.destroy )( ctx )) != ak_error_ok )
+       ak_error_message_fmt( error, __func__, "the destroing of %s object failed",
+                                                 ak_libakrypt_get_engine_name( oid->info.engine ));
+     }
   if( ctx != NULL ) free( ctx );
 
 return NULL;
