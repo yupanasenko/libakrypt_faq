@@ -82,12 +82,22 @@
  int ak_bckey_context_encrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
 /*! \brief Расшифрование данных в режиме простой замены (electronic codebook, ecb). */
  int ak_bckey_context_decrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
-/*! \brief Шифрование данных в режиме гаммирования из ГОСТ Р 34.13-2015 (counter mode, ctr). */
- int ak_bckey_context_ctr( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
- /*! \brief Зашифрование данных в режиме простой замены с зацеплением из ГОСТ Р 34.13-2015 (cbc). */
+ /*! \brief Зашифрование данных в режиме простой замены с зацеплением из ГОСТ Р 34.13-2015
+    (cipher block chaining, cbc). */
  int ak_bckey_context_encrypt_cbc( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
- /*! \brief Расшифрование данных в режиме простой замены с зацеплением из ГОСТ Р 34.13-2015 (cbc). */
+ /*! \brief Расшифрование данных в режиме простой замены с зацеплением из ГОСТ Р 34.13-2015
+    (cipher block chaining, cbc). */
  int ak_bckey_context_decrypt_cbc( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
+/*! \brief Шифрование данных в режиме гаммирования из ГОСТ Р 34.13-2015
+   (counter mode, ctr). */
+ int ak_bckey_context_ctr( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
+/*! \brief Шифрование данных в режиме гаммирования с обратной связью по выходу
+   (output feedback, ofb). */
+ int ak_bckey_context_ofb( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
+/*! \brief Шифрование данных в режиме гаммирования с обратной связью по шифртексту
+   (cipher feedback, cfb). */
+ int ak_bckey_context_cfb( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
+
 /*! \brief Шифрование данных в режиме CTR-ACPKM из Р 1323565.1.017—2018. */
  int ak_bckey_context_ctr_acpkm( ak_bckey , ak_pointer , ak_pointer , size_t , size_t ,
                                                                            ak_pointer , size_t );

@@ -455,12 +455,12 @@
     Данное значение может быть использовано при повторном вызове функции ak_bckey_context_ctr().
     Следующий пример иллюстрирует сказанное.
 
-\code
 
+\code
  // шифрование буффера с данными одним фрагментом
   ak_bckey_context_ctr( key, in, out, size, iv, 4 );
 
- // тот же результат может быть получен за несколько вызовов
+ // тот же результат может быть получен за три последовательных вызова
   ak_bckey_context_ctr( &key, in, out, 16, iv, 4 );
   ak_bckey_context_ctr( &key, in+16, out+16, 16, NULL, 0 );
   ak_bckey_context_ctr( &key, in+32, out+32, size-32, NULL, 0 );
@@ -468,8 +468,8 @@
  //                мы передаем нулевые значения последних параметров
  //        использовать данную возможность можно только в том случае,
  // когда длина переданных в функцию ранее данных кратна длине блока
-
 \endcode
+
 
  В приведенном выше фрагменте исходный буффер сначала зашифровывается за один вызов функции,
  а потом фрагментами, длина которых кратна длине блока используемого алгоритма блочного шифрования.
@@ -767,6 +767,200 @@
 
  return ak_error_ok;
  }
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_bckey_context_ofb( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size,
+                                                                     ak_pointer iv, size_t iv_size )
+{
+  ak_int64 blocks = (ak_int64)( size/bkey->bsize ),
+             tail = (ak_int64)( size%bkey->bsize );
+  ak_uint64 yaout[2], *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
+  int error = ak_error_ok, oc = (int) ak_libakrypt_get_option( "openssl_compability" );
+
+  if(( oc < 0 ) || ( oc > 1 )) return ak_error_message( ak_error_wrong_option, __func__,
+                                               "wrong value for \"openssl_compability\" option" );
+ /* проверяем целостность ключа */
+  if( bkey->key.check_icode( &bkey->key ) != ak_true )
+    return ak_error_message( ak_error_wrong_key_icode, __func__,
+                                                   "incorrect integrity code of secret key value" );
+ /* уменьшаем значение ресурса ключа */
+  if( bkey->key.resource.value.counter < ( blocks + ( tail > 0 )))
+    return ak_error_message( ak_error_low_key_resource,
+                                                     __func__ , "low resource of block cipher key" );
+   else bkey->key.resource.value.counter -= ( blocks + ( tail > 0 ));
+
+  /* проверяем длину синхропосылки */
+  if(( iv == NULL ) || ( iv_size == 0 )) { /* запрос на использование внутреннего значения */
+
+    if( bkey->key.flags&ak_key_flag_not_ctr )
+      return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
+                                           "function call with undefined value of initial vector" );
+  }
+  /* Если длина синхропосылки больше 64 байт (размер буфера ivector
+   * ИЛИ не кратна размеру блока данных шифра (т.к. по ГОСТу m=n*z, z - целое),
+   * завершить работу */
+  if(( iv_size > 64 ) || ( iv_size % bkey->bsize) )
+      return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
+                               "function call with wrong value of initial vector" );
+
+  /* помещаем во внутренний буффер значение синхропосылки */
+   memcpy( bkey->ivector, iv, iv_size);
+  /* поднимаем значение флага: синхропосылка установлена */
+   bkey->key.flags = ( bkey->key.flags&( ~ak_key_flag_not_ctr ))^ak_key_flag_not_ctr;
+
+   unsigned long counter = 0;
+   unsigned long z = iv_size / bkey->bsize; // во сколько раз синхрпосылка длиннее блока
+   /* обработка основного массива данных (кратного длине блока) */
+    switch( bkey->bsize ) {
+        case 8: /* шифр с длиной блока 64 бита */
+            while( blocks > 0 ) {
+                bkey->encrypt( &bkey->key, &bkey->ivector[counter * bkey->bsize], yaout );
+                *outptr = *inptr ^ yaout[0];
+                outptr++; inptr++;
+                /* Помещаем в текущий блок синхрпосылки выход encrypt и сдвигаем указатель синхропосылки */
+                ((ak_uint64 *)bkey->ivector)[counter] = yaout[0];
+                //memmove( bkey->ivector, &bkey->ivector[bkey->bsize], iv_size - bkey->bsize );
+                //memcpy( &bkey->ivector[iv_size - bkey->bsize], yaout, bkey->bsize );
+                if (++counter == z) counter = 0;
+
+                --blocks;
+            }
+        break;
+
+        case 16: /* шифр с длиной блока 128 бит */
+            while( blocks > 0 ) {
+                bkey->encrypt( &bkey->key, &bkey->ivector[counter * bkey->bsize], yaout );
+                *outptr = *inptr ^ yaout[0]; outptr++; inptr++;
+                *outptr = *inptr ^ yaout[1]; outptr++; inptr++;
+                /* Помещаем в текущий блок синхрпосылки выход encrypt и сдвигаем указатель синхропосылки */
+                ((ak_uint64 *)bkey->ivector)[counter << 1] = yaout[0];
+                ((ak_uint64 *)bkey->ivector)[(counter << 1) + 1] = yaout[1];
+                if (++counter == z) counter = 0;
+
+                --blocks;
+            }
+
+          break;
+
+          default: return ak_error_message( ak_error_wrong_block_cipher,
+                                                __func__ , "incorrect block size of block cipher key" );
+    }
+
+    /* обрабатываем хвост сообщения */
+    if( tail ) {
+      int i;
+      bkey->encrypt( &bkey->key, bkey->ivector, yaout );
+      for( i = 0; i < tail; i++ )
+          ( (ak_uint8*)outptr)[i] =
+              ( (ak_uint8*)inptr )[i]^( (ak_uint8 *)yaout)[i];
+
+    /* запрещаем дальнейшее использование функции на данном значении синхропосылки,
+                                            поскольку обрабатываемые данные не кратны длине блока. */
+     memset( bkey->ivector, 0, sizeof( bkey->ivector ));
+     bkey->key.flags = bkey->key.flags&( ~ak_key_flag_not_ctr );
+   }
+
+  /* перемаскируем ключ */
+   if(( error = bkey->key.set_mask( &bkey->key )) != ak_error_ok )
+     ak_error_message( error, __func__ , "wrong remasking of secret key" );
+
+  return error;
+ }
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_bckey_context_cfb( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size,
+                                                                      ak_pointer iv, size_t iv_size )
+ {
+   ak_int64 blocks = (ak_int64)( size/bkey->bsize ),
+              tail = (ak_int64)( size%bkey->bsize );
+   ak_uint8 *vecptr;
+   ak_uint64 yaout[2], *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
+   int error = ak_error_ok, oc = (int) ak_libakrypt_get_option( "openssl_compability" ), i = 0;
+
+   if(( oc < 0 ) || ( oc > 1 )) return ak_error_message( ak_error_wrong_option, __func__,
+                                                 "wrong value for \"openssl_compability\" option" );
+  /* проверяем целостность ключа */
+   if( bkey->key.check_icode( &bkey->key ) != ak_true )
+     return ak_error_message( ak_error_wrong_key_icode, __func__,
+                                                    "incorrect integrity code of secret key value" );
+  /* уменьшаем значение ресурса ключа */
+   if( bkey->key.resource.value.counter < ( blocks + ( tail > 0 )))
+     return ak_error_message( ak_error_low_key_resource,
+                                                     __func__ , "low resource of block cipher key" );
+    else bkey->key.resource.value.counter -= ( blocks + ( tail > 0 ));
+
+  /* выбираем, как вычислять синхропосылку проверяем флаг
+     флаг поднимается при вызове функции с заданным значением синхропосылки и
+     всегда опускается при обработке данных, не кратных длине блока */
+   if(( iv == NULL ) || ( iv_size == 0 )) { /* запрос на использование внутреннего значения */
+
+     if( bkey->key.flags&ak_key_flag_not_ctr )
+       return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
+                                            "function call with undefined value of initial vector" );
+   } else {
+
+     /* проверяем длину синхропосылки (если меньше длины блока, то плохо)
+         если больше, то нормально - лишнее просто не используется */
+      if( (iv_size % bkey->bsize) || (iv_size > 64) )
+        return ak_error_message( ak_error_wrong_iv_length, __func__,
+                                                               "incorrect length of initial value" );
+     /* помещаем во внутренний буффер значение синхропосылки */
+      //memset(bkey->ivector, 0, 64);
+      memcpy(bkey->ivector, iv, iv_size);
+
+     /* поднимаем значение флага: синхропосылка установлена */
+      bkey->key.flags = ( bkey->key.flags&( ~ak_key_flag_not_ctr ))^ak_key_flag_not_ctr;
+     }
+
+
+  /* обработка основного массива данных (кратного длине блока) */
+   switch( bkey->bsize ) {
+     case  8: /* шифр с длиной блока 64 бита */
+       while( blocks > 0 ) {
+           vecptr = (bkey->ivector + bkey->bsize * (i % (int)(iv_size / bkey->bsize)));
+           bkey->encrypt( &bkey->key, vecptr, yaout );
+           *outptr = *inptr ^ yaout[0];
+           ((ak_uint64 *)vecptr)[0] = *outptr;
+           outptr++; inptr++;
+           ++i;
+           --blocks;
+       }
+     break;
+
+     case 16: /* шифр с длиной блока 128 бит */
+       while( blocks > 0 ) {
+           vecptr = (bkey->ivector + bkey->bsize * (i % (int)(iv_size / bkey->bsize)));
+           bkey->encrypt( &bkey->key, vecptr, yaout );
+           *outptr = *inptr ^ yaout[0];
+           ((ak_uint64 *)vecptr)[0] = *outptr; ++outptr; ++inptr;
+           *outptr = *inptr ^ yaout[1];
+           ((ak_uint64 *)vecptr)[1] = *outptr; ++outptr; ++inptr;
+           ++i;
+           --blocks;
+       }
+     break;
+
+     default: return ak_error_message( ak_error_wrong_block_cipher,
+                                           __func__ , "incorrect block size of block cipher key" );
+   }
+
+  /* обрабатываем хвост сообщения */
+   if( tail ) {
+     vecptr = (bkey->ivector + bkey->bsize * (i % (int)(iv_size / bkey->bsize)));
+     bkey->encrypt( &bkey->key, vecptr, yaout );
+     for( i = 0; i < tail; i++ )
+        ( (ak_uint8*)outptr)[i] = ( (ak_uint8*)inptr )[i]^( (ak_uint8 *)yaout)[i];
+
+     /* запрещаем дальнейшее использование функции на данном значении синхропосылки,
+                                               поскольку обрабатываемые данные не кратны длине блока. */
+     memset( bkey->ivector, 0, sizeof( bkey->ivector ));
+     bkey->key.flags = bkey->key.flags&( ~ak_key_flag_not_ctr );
+     /* перемаскируем ключ */
+     if(( error = bkey->key.set_mask( &bkey->key )) != ak_error_ok )
+        ak_error_message( error, __func__ , "wrong remasking of secret key" );
+   }
+   return error;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция вычисляет имитовставку от заданной области памяти фиксированного размера.
