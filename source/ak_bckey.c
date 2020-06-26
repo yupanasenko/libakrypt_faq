@@ -772,10 +772,12 @@
  int ak_bckey_context_ofb( ak_bckey bkey, ak_pointer in, ak_pointer out, size_t size,
                                                                      ak_pointer iv, size_t iv_size )
 {
+  ak_uint8 *vecptr = NULL;
   ak_int64 blocks = (ak_int64)( size/bkey->bsize ),
              tail = (ak_int64)( size%bkey->bsize );
   ak_uint64 yaout[2], *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
   int error = ak_error_ok, oc = (int) ak_libakrypt_get_option( "openssl_compability" );
+  unsigned long counter = 0, z = iv_size / bkey->bsize; /* во сколько раз синхрпосылка длиннее блока */
 
   if(( oc < 0 ) || ( oc > 1 )) return ak_error_message( ak_error_wrong_option, __func__,
                                                "wrong value for \"openssl_compability\" option" );
@@ -808,8 +810,6 @@
   /* поднимаем значение флага: синхропосылка установлена */
    bkey->key.flags = ( bkey->key.flags&( ~ak_key_flag_not_ctr ))^ak_key_flag_not_ctr;
 
-   unsigned long counter = 0;
-   unsigned long z = iv_size / bkey->bsize; // во сколько раз синхрпосылка длиннее блока
    /* обработка основного массива данных (кратного длине блока) */
     switch( bkey->bsize ) {
         case 8: /* шифр с длиной блока 64 бита */
@@ -819,8 +819,6 @@
                 outptr++; inptr++;
                 /* Помещаем в текущий блок синхрпосылки выход encrypt и сдвигаем указатель синхропосылки */
                 ((ak_uint64 *)bkey->ivector)[counter] = yaout[0];
-                //memmove( bkey->ivector, &bkey->ivector[bkey->bsize], iv_size - bkey->bsize );
-                //memcpy( &bkey->ivector[iv_size - bkey->bsize], yaout, bkey->bsize );
                 if (++counter == z) counter = 0;
 
                 --blocks;
@@ -829,12 +827,13 @@
 
         case 16: /* шифр с длиной блока 128 бит */
             while( blocks > 0 ) {
-                bkey->encrypt( &bkey->key, &bkey->ivector[counter * bkey->bsize], yaout );
+                vecptr = (bkey->ivector + counter*bkey->bsize );
+                bkey->encrypt( &bkey->key, vecptr, yaout );
                 *outptr = *inptr ^ yaout[0]; outptr++; inptr++;
                 *outptr = *inptr ^ yaout[1]; outptr++; inptr++;
                 /* Помещаем в текущий блок синхрпосылки выход encrypt и сдвигаем указатель синхропосылки */
-                ((ak_uint64 *)bkey->ivector)[counter << 1] = yaout[0];
-                ((ak_uint64 *)bkey->ivector)[(counter << 1) + 1] = yaout[1];
+                ((ak_uint64 *)vecptr)[0] = yaout[0];
+                ((ak_uint64 *)vecptr)[1] = yaout[1];
                 if (++counter == z) counter = 0;
 
                 --blocks;
@@ -873,9 +872,10 @@
  {
    ak_int64 blocks = (ak_int64)( size/bkey->bsize ),
               tail = (ak_int64)( size%bkey->bsize );
-   ak_uint8 *vecptr;
+   ak_uint8 *vecptr = NULL;
    ak_uint64 yaout[2], *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
-   int error = ak_error_ok, oc = (int) ak_libakrypt_get_option( "openssl_compability" ), i = 0;
+   int error = ak_error_ok, oc = (int) ak_libakrypt_get_option( "openssl_compability" );
+   unsigned long i = 0, z = iv_size / bkey->bsize; // во сколько раз синхрпосылка длиннее блока
 
    if(( oc < 0 ) || ( oc > 1 )) return ak_error_message( ak_error_wrong_option, __func__,
                                                  "wrong value for \"openssl_compability\" option" );
@@ -905,37 +905,35 @@
         return ak_error_message( ak_error_wrong_iv_length, __func__,
                                                                "incorrect length of initial value" );
      /* помещаем во внутренний буффер значение синхропосылки */
-      //memset(bkey->ivector, 0, 64);
       memcpy(bkey->ivector, iv, iv_size);
 
      /* поднимаем значение флага: синхропосылка установлена */
       bkey->key.flags = ( bkey->key.flags&( ~ak_key_flag_not_ctr ))^ak_key_flag_not_ctr;
      }
 
-
   /* обработка основного массива данных (кратного длине блока) */
    switch( bkey->bsize ) {
      case  8: /* шифр с длиной блока 64 бита */
        while( blocks > 0 ) {
-           vecptr = (bkey->ivector + bkey->bsize * (i % (int)(iv_size / bkey->bsize)));
+           vecptr = (bkey->ivector + i*bkey->bsize);
            bkey->encrypt( &bkey->key, vecptr, yaout );
            *outptr = *inptr ^ yaout[0];
            ((ak_uint64 *)vecptr)[0] = *outptr;
            outptr++; inptr++;
-           ++i;
+           if (++i == z) i = 0;
            --blocks;
        }
      break;
 
      case 16: /* шифр с длиной блока 128 бит */
        while( blocks > 0 ) {
-           vecptr = (bkey->ivector + bkey->bsize * (i % (int)(iv_size / bkey->bsize)));
+           vecptr = (bkey->ivector + i*bkey->bsize );
            bkey->encrypt( &bkey->key, vecptr, yaout );
            *outptr = *inptr ^ yaout[0];
            ((ak_uint64 *)vecptr)[0] = *outptr; ++outptr; ++inptr;
            *outptr = *inptr ^ yaout[1];
            ((ak_uint64 *)vecptr)[1] = *outptr; ++outptr; ++inptr;
-           ++i;
+           if (++i == z) i = 0;
            --blocks;
        }
      break;
@@ -948,7 +946,7 @@
    if( tail ) {
      vecptr = (bkey->ivector + bkey->bsize * (i % (int)(iv_size / bkey->bsize)));
      bkey->encrypt( &bkey->key, vecptr, yaout );
-     for( i = 0; i < tail; i++ )
+     for( i = 0; i < (unsigned long)tail; i++ )
         ( (ak_uint8*)outptr)[i] = ( (ak_uint8*)inptr )[i]^( (ak_uint8 *)yaout)[i];
 
      /* запрещаем дальнейшее использование функции на данном значении синхропосылки,

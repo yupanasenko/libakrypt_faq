@@ -306,6 +306,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
    bckey02
    bckey03
    bckey05-ofb
+   bckey05-cfb
    context-node
    context-manager
    sign01

@@ -21,14 +21,12 @@
   ak_uint8 iv[16] = { 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xce, 0xf0,
                      0xfa, 0xaa, 0x31, 0xe2, 0x00, 0xe1, 0xae, 0x1a };
 
+ typedef int ( efunction )( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
+ void test( char *, efunction *, ak_bckey );
+
  int main( void )
 {
-  int i;
-  clock_t timea;
   struct bckey ctx;
-  ak_uint8 *data;
-  size_t size = 0;
-  double iter = 0, avg = 0;
 
  /* инициализируем библиотеку */
   if( !ak_libakrypt_create( ak_function_log_stderr )) return ak_libakrypt_destroy();
@@ -37,47 +35,41 @@
   printf("key create: %d\n", ak_bckey_context_create_kuznechik( &ctx ));
   printf("key set value: %d\n", ak_bckey_context_set_key( &ctx, key, sizeof( key )));
 
-  for( i = 16; i < 129; i += 8 ) {
-    data = malloc( size = ( size_t ) i*1024*1024 );
-    memset( data, (ak_uint8)i+1, size );
-    ctx.key.resource.value.counter = size; /* на очень больших объемах одного ключа мало */
-   /* теперь собственно хеширование памяти */
-    timea = clock();
-    ak_bckey_context_ctr( &ctx, data, data, size, iv, sizeof( iv ));
-    timea = clock() - timea;
-    printf(" %3uMB: CTR time: %fs, per 1MB = %fs, speed = %f MBs\n", (unsigned int)i,
-               (double) timea / (double) CLOCKS_PER_SEC,
-               (double) timea / ( (double) CLOCKS_PER_SEC*i ),
-               (double) CLOCKS_PER_SEC*i / (double) timea );
-    if( i > 16 ) {
-      iter += 1;
-      avg += (double) CLOCKS_PER_SEC*i / (double) timea;
-    }
-    free( data );
-  }
-  printf("average memory CTR speed: %f MByte/sec\n\n", avg/iter );
+  test( "CFB", ak_bckey_context_cfb, &ctx );
+  test( "OFB", ak_bckey_context_ofb, &ctx );
+  test( "CBC", ak_bckey_context_encrypt_cbc, &ctx );
+  test( "CTR", ak_bckey_context_ctr, &ctx );
 
-  iter = 0; avg = 0;
-  for( i = 16; i < 129; i += 8 ) {
-    data = malloc( size = ( size_t ) i*1024*1024 );
-    memset( data, (ak_uint8)i+1, size );
-    ctx.key.resource.value.counter = size; /* на очень больших объемах одного ключа мало */
-   /* теперь собственно хеширование памяти */
-    timea = clock();
-    ak_bckey_context_encrypt_cbc( &ctx, data, data, size, iv, sizeof( iv ));
-    timea = clock() - timea;
-    printf(" %3uMB: CBC time: %fs, per 1MB = %fs, speed = %f MBs\n", (unsigned int)i,
-               (double) timea / (double) CLOCKS_PER_SEC,
-               (double) timea / ( (double) CLOCKS_PER_SEC*i ),
-               (double) CLOCKS_PER_SEC*i / (double) timea );
-    if( i > 16 ) {
-      iter += 1;
-      avg += (double) CLOCKS_PER_SEC*i / (double) timea;
-    }
-    free( data );
-  }
-  printf("average memory CBC speed: %f MByte/sec\n", avg/iter );
   ak_bckey_context_destroy( &ctx );
-
  return ak_libakrypt_destroy();
+}
+
+/* -------------------------------------------------------------------------------------- */
+ void test( char *STR, efunction fun, ak_bckey ctx )
+{
+  int i;
+  clock_t timea;
+  ak_uint8 *data;
+  size_t size;
+  double iter = 0, avg = 0;
+
+  for( i = 16; i < 129; i += 8 ) {
+    data = malloc( size = ( size_t ) i*1024*1024 );
+    memset( data, (ak_uint8)i+1, size );
+    ctx->key.resource.value.counter = size; /* на очень больших объемах одного ключа мало */
+    timea = clock();
+    fun( ctx, data, data, size, iv, sizeof( iv ));
+    timea = clock() - timea;
+    printf(" %3uMB: %s time: %fs, per 1MB = %fs, speed = %f MBs\n", (unsigned int)i, STR,
+               (double) timea / (double) CLOCKS_PER_SEC,
+               (double) timea / ( (double) CLOCKS_PER_SEC*i ),
+               (double) CLOCKS_PER_SEC*i / (double) timea );
+    if( i > 16 ) {
+      iter += 1;
+      avg += (double) CLOCKS_PER_SEC*i / (double) timea;
+    }
+    free( data );
+  }
+  printf("average memory %s speed: %f MByte/sec\n\n", STR, avg/iter );
+
 }
