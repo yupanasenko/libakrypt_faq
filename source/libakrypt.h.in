@@ -689,6 +689,51 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Печать параметров эллиптической кривой с заданым именем или идентификатором */
  dll_export int ak_libakrypt_print_curve( FILE * , const char * );
+/*! \brief Декодирование asn1 дерева, содержащегося в файле и вывод информации в файловый дескриптор */
+ dll_export int ak_libakrypt_print_asn1( FILE * , const char * );
+/*! \brief Конвертирование asn1 дерева из der формата в pem и обратно. */
+ dll_export int ak_libakrypt_convert_asn1( const char * , const char * ,
+                                                              export_format_t , crypto_content_t );
+/*! \brief Разбиение asn1 дерева на поддеревья первого уровня. */
+ dll_export int ak_libakrypt_split_asn1( const char * , export_format_t , crypto_content_t );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Бит `digitalSignature` расширения `keyUsage`. */
+ #define bit_digitalSignature   (256)
+/*! \brief Бит `contentCommitment` расширения `keyUsage`. */
+ #define bit_contentCommitment  (128)
+/*! \brief Бит `keyEncipherment` расширения `keyUsage`. */
+ #define bit_keyEncipherment     (64)
+/*! \brief Бит `dataEncipherment` расширения `keyUsage`. */
+ #define bit_dataEncipherment    (32)
+/*! \brief Бит `keyAgreement` расширения `keyUsage`. */
+ #define bit_keyAgreement        (16)
+/*! \brief Бит `keyCertSign` расширения `keyUsage`. */
+ #define bit_keyCertSign          (8)
+/*! \brief Бит `cRLSign` расширения `keyUsage`. */
+ #define bit_cRLSign              (4)
+/*! \brief Бит `encipherOnly` расширения `keyUsage`. */
+ #define bit_encipherOnly         (2)
+/*! \brief Бит `decipherOnly` расширения `keyUsage`. */
+ #define bit_decipherOnly         (1)
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура, в которой хранятся параметры создаваемого сертификата открытого ключа. */
+  typedef struct certificate_opts
+{
+ /*! \brief флаг того, что самоподписанный сертификат может порождать цепочки сертификации. */
+  bool_t ca;
+ /*! \brief количество промежуточных сертификатов в цепочке сертификации. */
+  ak_uint32 pathlenConstraint;
+ /*! \brief набор бит, описывающих область примеения открытого ключа (расширение `keyUsage`). */
+  ak_uint32 keyUsageBits;
+} *ak_certificate_opts;
+
+/*! \brief параметры сертификата, устанавливаемые по-умолчанию */
+/*! - по-умолчанию, самоподписанный сертификат может порождать цепочки сертификации
+    - длина цепочки равна 1 (ноль - это число промежуточных сертификатов)
+    - флаги применения ключа не установлены */
+ #define certificate_default_options { ak_true, 0, 0 }
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Прототип функции-обработчика, используемого при чтении ini-файлов. */

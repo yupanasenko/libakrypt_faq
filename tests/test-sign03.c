@@ -29,7 +29,7 @@
   ak_libakrypt_create( ak_function_log_stderr );
 
  /* создаем секретный ключ */
-  if( ak_signkey_context_create_str( &sk, "1.2.643.7.1.2.1.2.1" ) != ak_error_ok ) {
+  if( ak_signkey_context_create_str( &sk, "cspa" ) != ak_error_ok ) {
     ecode = EXIT_FAILURE;
     goto exlab;
   }
@@ -42,13 +42,14 @@
     ak_signkey_context_destroy( &sk );
     goto exlab;
   }
+   else printf(" secret key assigned\n");
 
  /* подстраиваем ключ и устанавливаем ресурс */
   ak_skey_context_set_resource_values( &sk.key, key_using_resource,
                "digital_signature_count_resource", time(NULL), time(NULL)+2592000 ); /* 1 месяц */
 
  /* развлечение: указываем имя владельца ключа */
-  ak_signkey_context_add_name_string( &sk, "CN", "Владелец Ключа" );
+  ak_signkey_context_add_name_string( &sk, "cn", "Владелец знатного ключа" );
 
  /* подписываем данные */
   if( ak_signkey_context_sign_ptr( &sk, testkey,
@@ -76,9 +77,9 @@
 
  /* создаем последовательность обобщенных имен для владельца
     ключа, к этим именам будут добавлены имена из секретного ключа */
-  ak_verifykey_context_add_name_string( &vk, "C", "RU" );
-  ak_verifykey_context_add_name_string( &vk, "L", "Большое Свинорье" );
-  ak_verifykey_context_add_name_string( &vk, "ST", "Московская область" );
+  ak_verifykey_context_add_name_string( &vk, "c", "RU" );
+  ak_verifykey_context_add_name_string( &vk, "l", "Большое Свинорье" );
+  ak_verifykey_context_add_name_string( &vk, "st", "Московская область" );
   ak_verifykey_context_add_name_string( &vk, "email", "some@mail.address" );
 
  /* сохраняем запрос */

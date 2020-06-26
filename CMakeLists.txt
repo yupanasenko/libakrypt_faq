@@ -97,6 +97,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
     source/ak_bckey.h
     source/ak_context_manager.h
     source/ak_sign.h
+    source/ak_asn1_keys.h
   )
   set( SOURCES      ${SOURCES}
     source/ak_base64.c
@@ -110,6 +111,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
     source/ak_kuznechik.c
     source/ak_context_manager.c
     source/ak_sign.c
+    source/ak_asn1_keys.c
   )
 endif()
 
@@ -121,6 +123,7 @@ if( LIBAKRYPT_AKTOOL )
      aktool/aktool.c
      aktool/aktool_show.c
      aktool/aktool_test.c
+     aktool/aktool_asn1.c
   )
   set( AKTOOL_FILES
      aktool/aktool_h.
@@ -291,6 +294,7 @@ set( INTERNAL_TEST_LIST
   random01
   mpzn01
   gf2n
+  asn1-build
 )
 if( LIBAKRYPT_CRYPTO_FUNCTIONS )
   set( INTERNAL_TEST_LIST ${INTERNAL_TEST_LIST}
@@ -310,6 +314,10 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
    context-node
    context-manager
    sign01
+   sign02
+   sign03
+   asn1-parse
+   asn1-keys
   )
   set( INTERNAL_TEST_LIST_EXAMPLES # эти программы компилируются, но не вызываются
                                    # при запуске make test

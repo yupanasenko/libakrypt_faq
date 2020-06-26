@@ -42,7 +42,7 @@
   ak_libakrypt_create( ak_function_log_stderr );
   if( ak_verifykey_context_import_from_request( &vk, fname ) == ak_error_ok ) {
 
-    printf("algorithm: %s (%s)\n", vk.oid->names[0], vk.oid->id );
+    printf("algorithm: %s (%s)\n", vk.oid->info.name[0], vk.oid->info.id[0] );
     printf("loaded curve:\n p = %s\n",
                 ak_ptr_to_hexstr( vk.wc->p, sizeof( ak_uint64 )*vk.wc->size, ak_true ));
     printf(" a = %s (in Montgomery form)\n",

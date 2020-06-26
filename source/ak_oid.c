@@ -94,22 +94,26 @@
 #ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
  static const char *asn1_akcont_n[] =       { "libakrypt-container", NULL };
  static const char *asn1_akcont_i[] =       { "1.2.643.2.52.1.127.1.1", NULL };
+
  static const char *asn1_pbkdf2key_n[] =    { "pbkdf2-basic-key", NULL };
  static const char *asn1_pbkdf2key_i[] =    { "1.2.643.2.52.1.127.2.1", NULL };
  static const char *asn1_sdhkey_n[] =       { "static-dh-basic-key", NULL };
  static const char *asn1_sdhkey_i[] =       { "1.2.643.2.52.1.127.2.2", NULL };
  static const char *asn1_extkey_n[] =       { "external-basic-key", NULL };
  static const char *asn1_extkey_i[] =       { "1.2.643.2.52.1.127.2.3", NULL };
+
  static const char *asn1_symkmd_n[] =       { "symmetric-key-content", NULL };
  static const char *asn1_symkmd_i[] =       { "1.2.643.2.52.1.127.3.1", NULL };
  static const char *asn1_skmd_n[] =         { "secret-key-content", NULL };
  static const char *asn1_skmd_i[] =         { "1.2.643.2.52.1.127.3.2", NULL };
- static const char *asn1_pkmd_n[] =         { "public-key-content", NULL };
+ static const char *asn1_pkmd_n[] =         { "public-key-certificate-content", NULL };
  static const char *asn1_pkmd_i[] =         { "1.2.643.2.52.1.127.3.3", NULL };
+ static const char *asn1_pkmdr_n[] =        { "public-key-request-content", NULL };
+ static const char *asn1_pkmdr_i[] =        { "1.2.643.2.52.1.127.3.4", NULL };
  static const char *asn1_ecmd_n[] =         { "encrypted-content", NULL };
- static const char *asn1_ecmd_i[] =         { "1.2.643.2.52.1.127.3.4", NULL };
+ static const char *asn1_ecmd_i[] =         { "1.2.643.2.52.1.127.3.5", NULL };
  static const char *asn1_pcmd_n[] =         { "plain-content", NULL };
- static const char *asn1_pcmd_i[] =         { "1.2.643.2.52.1.127.3.5", NULL };
+ static const char *asn1_pcmd_i[] =         { "1.2.643.2.52.1.127.3.6", NULL };
 
 /* добавляем аттрибуты типов (X.500) и расширенные аттрибуты */
  static const char *asn1_email_n[] =        { "email-address", "email", NULL };
@@ -278,7 +282,7 @@ static struct oid libakrypt_oids[] =
                   (ak_pointer) &id_axel_gost_3410_2012_256_paramSet_N0, ak_object_undefined },
 
  {{ identifier, wcurve_params, asn1_w512_pst_i, asn1_w512_pst_n },
-                  (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetTest, ak_object_undefined },
+                 (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetTest, ak_object_undefined },
  {{ identifier, wcurve_params, asn1_w512_psa_i, asn1_w512_psa_n },
                   (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetA, ak_object_undefined },
  {{ identifier, wcurve_params, asn1_w512_psb_i, asn1_w512_psb_n },
@@ -291,11 +295,18 @@ static struct oid libakrypt_oids[] =
  {{ identifier, descriptor, asn1_pbkdf2key_i, asn1_pbkdf2key_n }, NULL, ak_object_undefined },
  {{ identifier, descriptor, asn1_sdhkey_i, asn1_sdhkey_n }, NULL, ak_object_undefined },
  {{ identifier, descriptor, asn1_extkey_i, asn1_extkey_n }, NULL, ak_object_undefined },
- {{ identifier, descriptor, asn1_symkmd_i, asn1_symkmd_n }, NULL, ak_object_undefined },
- {{ identifier, descriptor, asn1_skmd_i, asn1_skmd_n }, NULL, ak_object_undefined },
- {{ identifier, descriptor, asn1_pkmd_i, asn1_pkmd_n }, NULL, ak_object_undefined },
- {{ identifier, descriptor, asn1_ecmd_i, asn1_ecmd_n }, NULL, ak_object_undefined },
- {{ identifier, descriptor, asn1_pcmd_i, asn1_pcmd_n }, NULL, ak_object_undefined },
+ {{ identifier, parameter, asn1_symkmd_i, asn1_symkmd_n },
+                                    (ak_pointer) symmetric_key_content, ak_object_undefined },
+ {{ identifier, parameter, asn1_skmd_i, asn1_skmd_n },
+                                       (ak_pointer) secret_key_content, ak_object_undefined },
+ {{ identifier, parameter, asn1_pkmd_i, asn1_pkmd_n },
+                           (ak_pointer) public_key_certificate_content, ak_object_undefined },
+ {{ identifier, parameter, asn1_pkmdr_i, asn1_pkmdr_n },
+                               (ak_pointer) public_key_request_content, ak_object_undefined },
+ {{ identifier, parameter, asn1_ecmd_i, asn1_ecmd_n },
+                                        (ak_pointer) encrypted_content, ak_object_undefined },
+ {{ identifier, parameter, asn1_pcmd_i, asn1_pcmd_n },
+                                            (ak_pointer) plain_content, ak_object_undefined },
 
  {{ identifier, descriptor, asn1_email_i, asn1_email_n }, NULL, ak_object_undefined },
  {{ identifier, descriptor, asn1_cn_i, asn1_cn_n }, NULL, ak_object_undefined },

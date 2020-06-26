@@ -827,7 +827,7 @@
 
         case 16: /* шифр с длиной блока 128 бит */
             while( blocks > 0 ) {
-                vecptr = (bkey->ivector + counter*bkey->bsize );
+                vecptr = ( bkey->ivector + counter*bkey->bsize );
                 bkey->encrypt( &bkey->key, vecptr, yaout );
                 *outptr = *inptr ^ yaout[0]; outptr++; inptr++;
                 *outptr = *inptr ^ yaout[1]; outptr++; inptr++;
