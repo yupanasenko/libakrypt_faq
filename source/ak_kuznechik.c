@@ -770,7 +770,6 @@
   int error = ak_error_ok, audit = ak_log_get_level(),
       oc = (int) ak_libakrypt_get_option( "openssl_compability" );
 
- /* тестовый ключ из ГОСТ Р 34.12-2015, приложение А.1 */
  /* тестовый ключ из ГОСТ Р 34.13-2015, приложение А.1 */
   ak_uint8 key[32] = {
     0xef,0xcd,0xab,0x89,0x67,0x45,0x23,0x01,0x10,0x32,0x54,0x76,0x98,0xba,0xdc,0xfe,
@@ -858,6 +857,47 @@
     0x16, 0x76, 0x88, 0x06, 0x5a, 0x89, 0x5c, 0x63, 0x1a, 0x2d, 0x9a, 0x15, 0x60, 0xb6, 0x39, 0x70
   };
 
+ /* инициализационный вектор для режима гаммирования с обратной связью по выходу (ofb) */
+  ak_uint8 ivofb[32] = {
+    0x12, 0x01, 0xf0, 0xe5, 0xd4, 0xc3, 0xb2, 0xa1, 0xf0, 0xce, 0xab, 0x90, 0x78, 0x56, 0x34, 0x12,
+    0x19, 0x18, 0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x90, 0x89, 0x78, 0x67, 0x56, 0x45, 0x34, 0x23
+  };
+
+ /* значение синхропосылки для командной строки:
+    1234567890abcef0a1b2c3d4e5f0011223344556677889901213141516171819 */
+  ak_uint8 openssl_ivofb[32] = {
+    0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xce, 0xf0, 0xa1, 0xb2, 0xc3, 0xd4, 0xe5, 0xf0, 0x01, 0x12,
+    0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89, 0x90, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19
+  };
+
+ /* зашифрованный блок из ГОСТ Р 34.13-2015, прил. А.1.3*/
+  ak_uint8 outofb[64] = {
+    0x95, 0xbd, 0x7a, 0x89, 0x5e, 0x79, 0x1f, 0xff, 0x24, 0x2b, 0x84, 0xb1, 0x59, 0x0a, 0x80, 0x81,
+    0xbf, 0x26, 0x93, 0x9d, 0x36, 0x21, 0xb5, 0x8f, 0xb4, 0xfa, 0x8c, 0x04, 0xa7, 0x47, 0x5b, 0xed,
+    0x13, 0x8a, 0x28, 0x10, 0xfc, 0xe7, 0x0f, 0xc8, 0xb1, 0xb8, 0xa0, 0x3c, 0xac, 0x57, 0xa2, 0x66,
+    0x50, 0x31, 0x90, 0xf6, 0x43, 0x22, 0x29, 0xa0, 0x60, 0x86, 0x13, 0x66, 0xc0, 0xbb, 0x3e, 0x20
+  };
+  ak_uint8 openssl_outofb[64] = {
+    0x81, 0x80, 0x0a, 0x59, 0xb1, 0x84, 0x2b, 0x24, 0xff, 0x1f, 0x79, 0x5e, 0x89, 0x7a, 0xbd, 0x95,
+    0xed, 0x5b, 0x47, 0xa7, 0x04, 0x8c, 0xfa, 0xb4, 0x8f, 0xb5, 0x21, 0x36, 0x9d, 0x93, 0x26, 0xbf,
+    0x66, 0xa2, 0x57, 0xac, 0x3c, 0xa0, 0xb8, 0xb1, 0xc8, 0x0f, 0xe7, 0xfc, 0x10, 0x28, 0x8a, 0x13,
+    0x20, 0x3e, 0xbb, 0xc0, 0x66, 0x13, 0x86, 0x60, 0xa0, 0x29, 0x22, 0x43, 0xf6, 0x90, 0x31, 0x50
+  };
+
+ /* зашифрованный блок из ГОСТ Р 34.13-2015, прил. А.1.5 */
+  ak_uint8 outcfb[64] = {
+    0x95, 0xbd, 0x7a, 0x89, 0x5e, 0x79, 0x1f, 0xff, 0x24, 0x2b, 0x84, 0xb1, 0x59, 0x0a, 0x80, 0x81,
+    0xbf, 0x26, 0x93, 0x9d, 0x36, 0x21, 0xb5, 0x8f, 0xb4, 0xfa, 0x8c, 0x04, 0xa7, 0x47, 0x5b, 0xed,
+    0xb5, 0x38, 0xa2, 0x97, 0x4e, 0x26, 0x2d, 0x84, 0x38, 0x8d, 0xc6, 0x5c, 0xeb, 0xa8, 0xf2, 0x79,
+    0xd1, 0xf4, 0xfb, 0x44, 0xdd, 0xd9, 0x5b, 0xc7, 0xe6, 0x2d, 0x92, 0x4e, 0xcd, 0xbe, 0xfe, 0x4f
+  };
+  ak_uint8 openssl_outcfb[64] = {
+    0x81, 0x80, 0x0a, 0x59, 0xb1, 0x84, 0x2b, 0x24, 0xff, 0x1f, 0x79, 0x5e, 0x89, 0x7a, 0xbd, 0x95,
+    0xed, 0x5b, 0x47, 0xa7, 0x04, 0x8c, 0xfa, 0xb4, 0x8f, 0xb5, 0x21, 0x36, 0x9d, 0x93, 0x26, 0xbf,
+    0x79, 0xf2, 0xa8, 0xeb, 0x5c, 0xc6, 0x8d, 0x38, 0x84, 0x2d, 0x26, 0x4e, 0x97, 0xa2, 0x38, 0xb5,
+    0x4f, 0xfe, 0xbe, 0xcd, 0x4e, 0x92, 0x2d, 0xe6, 0xc7, 0x5b, 0xd9, 0xdd, 0x44, 0xfb, 0xf4, 0xd1
+  };
+
  /* значение имитовставки согласно ГОСТ Р 34.13-2015 (раздел А.1.6) */
   ak_uint8 imito[8] = {
     /* 0x67, 0x9C, 0x74, 0x37, 0x5B, 0xB3, 0xDE, 0x4D - первая часть выработанного блока */
@@ -884,7 +924,9 @@
     return ak_false;
   }
 
+ /* --------------------------------------------------------------------------- */
  /* 1. Создаем контекст ключа алгоритма Кузнечик и устанавливаем значение ключа */
+ /* --------------------------------------------------------------------------- */
   if(( error = ak_bckey_context_create_kuznechik( &bkey )) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect initialization of kuznechik secret key context");
     return ak_false;
@@ -897,7 +939,9 @@
     goto exit;
   }
 
+ /* ------------------------------------------------------------------------------------------- */
  /* 2. Проверяем независимую обработку блоков - режим простой замены согласно ГОСТ Р 34.12-2015 */
+ /* ------------------------------------------------------------------------------------------- */
   if(( error = ak_bckey_context_encrypt_ecb( &bkey, oc ? oc_in : in,
                                                            myout, sizeof( in ))) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong ecb mode encryption" );
@@ -926,7 +970,9 @@
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                 "the ecb mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
 
- /* 3. Проверяем режим гаммирования согласно ГОСТ Р 34.12-2015 */
+ /* --------------------------------------------------------------------------- */
+ /* 3. Проверяем режим гаммирования согласно ГОСТ Р 34.12-2015                  */
+ /* --------------------------------------------------------------------------- */
   if(( error = ak_bckey_context_ctr( &bkey, oc ? oc_in : in,
                    myout, sizeof( in ), oc ? oc_ivctr : ivctr, sizeof( ivctr ))) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong counter mode encryption" );
@@ -942,7 +988,7 @@
 
   if(( error = ak_bckey_context_ctr( &bkey, myout,
                myout, sizeof( outecb ), oc ? oc_ivctr : ivctr, sizeof( ivctr ))) != ak_error_ok ) {
-    ak_error_message( error, __func__ , "wrong ecb mode decryption" );
+    ak_error_message( error, __func__ , "wrong counter mode decryption" );
     result = ak_false;
     goto exit;
   }
@@ -955,7 +1001,9 @@
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                 "the counter mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
 
- /* 4. Проверяем режим простой замены c зацеплением согласно ГОСТ Р 34.12-2015 */
+ /* --------------------------------------------------------------------------- */
+ /* 4. Проверяем режим простой замены c зацеплением согласно ГОСТ Р 34.12-2015  */
+ /* --------------------------------------------------------------------------- */
   if(( error = ak_bckey_context_encrypt_cbc( &bkey, oc ? oc_in : in, myout, sizeof( in ),
                                    oc ? openssl_ivcbc : ivcbc, sizeof( ivcbc ))) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong cbc mode encryption" );
@@ -983,8 +1031,72 @@
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                          "the cbc mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
 
+ /* -------------------------------------------------------------------------------------- */
+ /* 5. Проверяем режим гаммирования c обратной связью по выходу согласно ГОСТ Р 34.12-2015 */
+ /* -------------------------------------------------------------------------------------- */
+  if(( error = ak_bckey_context_ofb( &bkey, oc ? oc_in : in,
+              myout, sizeof( in ), oc ? openssl_ivofb : ivofb, sizeof( ivofb ))) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong ofb mode encryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal_with_log( myout, oc ? openssl_outofb : outofb, sizeof( outofb ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                        "the ofb mode encryption test from GOST R 34.13-2015 is wrong");
+    result = ak_false;
+    goto exit;
+  }
 
- /* 10. Тестируем режим выработки имитовставки (плоская реализация). */
+  if(( error = ak_bckey_context_ofb( &bkey, oc ? openssl_outofb : outofb,
+          myout, sizeof( outofb ), oc ? openssl_ivofb : ivofb, sizeof( ivofb ))) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong ofb mode decryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal_with_log( myout, oc ? oc_in : in, sizeof( in ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                        "the ofb mode decryption test from GOST R 34.13-2015 is wrong");
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                "the ofb mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
+
+ /* -------------------------------------------------------------------------------------- */
+ /* 6. Проверяем режим гаммирования c обратной связью по шифртексту */
+ /* -------------------------------------------------------------------------------------- */
+  if(( error = ak_bckey_context_encrypt_cfb( &bkey, oc ? oc_in : in,
+              myout, sizeof( in ), oc ? openssl_ivofb : ivofb, sizeof( ivofb ))) != ak_error_ok ) {
+               /* используемая синхропосылка совпадает с вектором из режима ofb */
+    ak_error_message( error, __func__ , "wrong cfb mode encryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal_with_log( myout, oc ? openssl_outcfb : outcfb, sizeof( outcfb ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                        "the cfb mode encryption test from GOST R 34.13-2015 is wrong");
+    result = ak_false;
+    goto exit;
+  }
+
+  if(( error = ak_bckey_context_decrypt_cfb( &bkey, oc ? openssl_outcfb : outcfb,
+          myout, sizeof( outcfb ), oc ? openssl_ivofb : ivofb, sizeof( ivofb ))) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong cfb mode decryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal_with_log( myout, oc ? oc_in : in, sizeof( in ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                        "the cfb mode decryption test from GOST R 34.13-2015 is wrong");
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                "the cfb mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
+
+ /* --------------------------------------------------------------------------- */
+ /* 10. Тестируем режим выработки имитовставки (плоская реализация).            */
+ /* --------------------------------------------------------------------------- */
   if(( error = ak_bckey_context_cmac( &bkey, oc ? oc_in : in,
                                                      sizeof( in ), myout, 8 )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong cmac calculation" );

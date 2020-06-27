@@ -786,6 +786,36 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ ssize_t ak_file_printf( ak_file outfile, const char *format, ... )
+{
+  va_list args;
+  ssize_t result = 0;
+  va_start( args, format );
+
+ /* формируем строку (дублируем код функции ak_snprintf) */
+ #ifdef _MSC_VER
+  #if _MSC_VER > 1310
+    _vsnprintf_s( ak_ptr_to_hexstr_static_buffer,
+                  sizeof( ak_ptr_to_hexstr_static_buffer ),
+                  sizeof( ak_ptr_to_hexstr_static_buffer ), format, args );
+  #else
+    _vsnprintf( ak_ptr_to_hexstr_static_buffer,
+                sizeof( ak_ptr_to_hexstr_static_buffer ), format, args );
+  #endif
+ #else
+  vsnprintf( ak_ptr_to_hexstr_static_buffer,
+             sizeof( ak_ptr_to_hexstr_static_buffer ), format, args );
+ #endif
+  va_end( args );
+
+ /* выводим ее в файл как последовательность байт */
+  result = ak_file_write( outfile,
+                          ak_ptr_to_hexstr_static_buffer,
+                          strlen( ak_ptr_to_hexstr_static_buffer ));
+ return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \hidecallgraph
     \hidecallergraph                                                                               */
 /* ----------------------------------------------------------------------------------------------- */

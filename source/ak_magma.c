@@ -737,7 +737,20 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
     0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12
   };
 
- /* зашифрованный блок из ГОСТ Р 34.12-2015 */
+ /* инициализационный вектор для режима гаммирования с обратной связью по выходу
+      и он же
+    инициализационный вектор для режима гаммирования с обратной связью по шифртексту */
+  ak_uint8 magma_ivofb[16] = {
+    0xef, 0xcd, 0xab, 0x90, 0x78, 0x56, 0x34, 0x12,
+    0xf1, 0xde, 0xbc, 0x0a, 0x89, 0x67, 0x45, 0x23,
+  };
+
+  ak_uint8 openssl_magma_ivofb[16] = {
+    0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
+    0x23, 0x45, 0x67, 0x89, 0x0a, 0xbc, 0xde, 0xf1,
+  };
+
+ /* зашифрованный блок из ГОСТ Р 34.12-2015 для режима простой замены */
   ak_uint8 magma_out_cbc[32] = {
     0x19, 0x39, 0x68, 0xea, 0x5e, 0xb0, 0xd1, 0x96,
     0xb9, 0x37, 0xb9, 0xab, 0x29, 0x61, 0xf7, 0xaf,
@@ -749,6 +762,35 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
     0xaf, 0xf7, 0x61, 0x29, 0xab, 0xb9, 0x37, 0xb9,
     0x50, 0x58, 0xb4, 0xa1, 0xc4, 0xbc, 0x00, 0x19,
     0x20, 0xb7, 0x8b, 0x1a, 0x7c, 0xd7, 0xe6, 0x67
+  };
+
+ /* зашифрованный блок из ГОСТ Р 34.12-2015 для режима гаммирования с обратной связью по выходу */
+  ak_uint8 magma_outofb[32] = {
+    0x83, 0x3c, 0x90, 0x66, 0xe2, 0xe0, 0x37, 0xdb,
+    0x9c, 0x08, 0x9a, 0x1f, 0x4c, 0x64, 0x46, 0x0d,
+    0x7e, 0x32, 0x0e, 0x43, 0x62, 0x30, 0xf8, 0xa0,
+    0x05, 0xdb, 0x4f, 0xbd, 0xb8, 0xef, 0x24, 0xc8
+  };
+
+  ak_uint8 openssl_magma_outofb[32] = {
+    0xdb, 0x37, 0xe0, 0xe2, 0x66, 0x90, 0x3c, 0x83,
+    0x0d, 0x46, 0x64, 0x4c, 0x1f, 0x9a, 0x08, 0x9c,
+    0xa0, 0xf8, 0x30, 0x62, 0x43, 0x0e, 0x32, 0x7e,
+    0xc8, 0x24, 0xef, 0xb8, 0xbd, 0x4f, 0xdb, 0x05
+  };
+
+ /* зашифрованный блок из ГОСТ Р 34.12-2015 для режима гаммирования с обратной связью по шифртексту */
+  ak_uint8 magma_outcfb[32] = {
+    0x83, 0x3c, 0x90, 0x66, 0xe2, 0xe0, 0x37, 0xdb,
+    0x9c, 0x08, 0x9a, 0x1f, 0x4c, 0x64, 0x46, 0x0d,
+    0x8b, 0xd3, 0x15, 0x53, 0x03, 0xd2, 0xbd, 0x24,
+    0x05, 0x55, 0x07, 0x21, 0x14, 0x32, 0xc0, 0xbc
+  };
+  ak_uint8 openssl_magma_outcfb[32] = {
+    0xdb, 0x37, 0xe0, 0xe2, 0x66, 0x90, 0x3c, 0x83,
+    0x0d, 0x46, 0x64, 0x4c, 0x1f, 0x9a, 0x08, 0x9c,
+    0x24, 0xbd, 0xd2, 0x03, 0x53, 0x15, 0xd3, 0x8b,
+    0xbc, 0xc0, 0x32, 0x14, 0x21, 0x07, 0x55, 0x05
   };
 
  /* значение имитовставки согласно ГОСТ Р 34.13-2015 (раздел А.2.6) */
@@ -792,7 +834,9 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
      }
   }
 
+ /* ------------------------------------------------------------------------ */
  /* 1. Создаем контекст ключа алгоритма Магма и устанавливаем значение ключа */
+ /* ------------------------------------------------------------------------ */
   if(( error = ak_bckey_context_create_magma( &mkey )) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect initialization of magma secret key context");
     return ak_false;
@@ -805,7 +849,9 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
     goto exit;
   }
 
+ /* ------------------------------------------------------------------------------------------- */
  /* 2. Проверяем независимую обработку блоков - режим простой замены согласно ГОСТ Р 34.12-2015 */
+ /* ------------------------------------------------------------------------------------------- */
   if(( error = ak_bckey_context_encrypt_ecb( &mkey, oc ? openssl_magma_in : magma_in,
                                                      myout, sizeof( magma_in ))) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong ecb mode encryption" );
@@ -835,7 +881,9 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                 "the ecb mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
 
- /* 3. Проверяем режим гаммирования согласно ГОСТ Р 34.12-2015 */
+ /* ----------------------------------------------------------------- */
+ /* 3. Проверяем режим гаммирования согласно ГОСТ Р 34.12-2015        */
+ /* ----------------------------------------------------------------- */
   if(( error = ak_bckey_context_ctr( &mkey, oc ? openssl_magma_in : magma_in,
                    myout, sizeof( magma_in ), oc ? openssl_magma_ivctr : magma_ivctr,
                                                          sizeof( magma_ivctr ))) != ak_error_ok ) {
@@ -854,7 +902,7 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
   if(( error = ak_bckey_context_ctr( &mkey, oc ? openssl_magma_out_ctr : magma_out_ctr,
                         myout, sizeof( magma_out_ecb ), oc ? openssl_magma_ivctr : magma_ivctr,
                                                          sizeof( magma_ivctr ))) != ak_error_ok ) {
-    ak_error_message( error, __func__ , "wrong ecb mode decryption" );
+    ak_error_message( error, __func__ , "wrong counter mode decryption" );
     result = ak_false;
     goto exit;
   }
@@ -868,7 +916,9 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
                 "the counter mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
 
 
- /* 4. Проверяем режим простой замены с зацеплением (cbc) */
+ /* ----------------------------------------------------------------- */
+ /* 4. Проверяем режим простой замены с зацеплением (cbc)             */
+ /* ----------------------------------------------------------------- */
   if(( error = ak_bckey_context_encrypt_cbc( &mkey, oc ? openssl_magma_in : magma_in,
                  myout, sizeof( magma_in ), oc ? openssl_magma_ivcbc : magma_ivcbc,
                                                          sizeof( magma_ivcbc ))) != ak_error_ok ) {
@@ -886,22 +936,91 @@ int ak_bckey_context_create_magma( ak_bckey bkey )
   if(( error = ak_bckey_context_decrypt_cbc( &mkey, oc ? openssl_magma_out_cbc : magma_out_cbc,
                  myout, sizeof( magma_in ), oc ? openssl_magma_ivcbc : magma_ivcbc,
                                                          sizeof( magma_ivcbc ))) != ak_error_ok ) {
-    ak_error_message( error, __func__ , "wrong cbc mode encryption" );
+    ak_error_message( error, __func__ , "wrong cbc mode decryption" );
     result = ak_false;
     goto exit;
   }
   if( !ak_ptr_is_equal_with_log( myout, oc ? openssl_magma_in :
                                                               magma_in, sizeof( magma_out_cbc ))) {
     ak_error_message( ak_error_not_equal_data, __func__ ,
-                        "the cbc mode encryption test from GOST R 34.13-2015 is wrong");
+                        "the cbc mode decryption test from GOST R 34.13-2015 is wrong");
     result = ak_false;
     goto exit;
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                 "the cbc mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
 
+ /* ----------------------------------------------------------------- */
+ /* 5. Проверяем режим гаммирования с обратной связью по выходу (ofb) */
+ /* ----------------------------------------------------------------- */
+  if(( error = ak_bckey_context_ofb( &mkey, oc ? openssl_magma_in : magma_in,
+                 myout, sizeof( magma_in ), oc ? openssl_magma_ivofb : magma_ivofb,
+                                                         sizeof( magma_ivofb ))) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong ofb mode encryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal_with_log( myout, oc ? openssl_magma_outofb :
+                                                           magma_outofb, sizeof( magma_outofb ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                        "the ofb mode encryption test from GOST R 34.13-2015 is wrong");
+    result = ak_false;
+    goto exit;
+  }
+  if(( error = ak_bckey_context_ofb( &mkey, oc ? openssl_magma_outofb : magma_outofb,
+                 myout, sizeof( magma_in ), oc ? openssl_magma_ivofb : magma_ivofb,
+                                                         sizeof( magma_ivofb ))) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong ofb mode decryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal_with_log( myout, oc ? openssl_magma_in : magma_in, sizeof( magma_outofb ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                        "the ofb mode decryption test from GOST R 34.13-2015 is wrong");
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                "the ofb mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
 
- /* 10. Тестируем режим выработки имитовставки (плоская реализация). */
+
+ /* ----------------------------------------------------------------- */
+ /* 6. Проверяем режим гаммирования с обратной связью по выходу (cfb) */
+ /* ----------------------------------------------------------------- */
+  if(( error = ak_bckey_context_encrypt_cfb( &mkey, oc ? openssl_magma_in : magma_in,
+                 myout, sizeof( magma_in ), oc ? openssl_magma_ivofb : magma_ivofb, /* синхропосылка одна и та же */
+                                                         sizeof( magma_ivofb ))) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong cfb mode encryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal_with_log( myout, oc ? openssl_magma_outcfb :
+                                                           magma_outcfb, sizeof( magma_outcfb ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                        "the cfb mode encryption test from GOST R 34.13-2015 is wrong");
+    result = ak_false;
+    goto exit;
+  }
+  if(( error = ak_bckey_context_decrypt_cfb( &mkey, oc ? openssl_magma_outcfb : magma_outcfb,
+                 myout, sizeof( magma_outcfb ), oc ? openssl_magma_ivofb : magma_ivofb,
+                                                         sizeof( magma_ivofb ))) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "wrong cfb mode decryption" );
+    result = ak_false;
+    goto exit;
+  }
+  if( !ak_ptr_is_equal_with_log( myout, oc ? openssl_magma_in : magma_in, sizeof( magma_in ))) {
+    ak_error_message( ak_error_not_equal_data, __func__ ,
+                        "the cfb mode decryption test from GOST R 34.13-2015 is wrong");
+    result = ak_false;
+    goto exit;
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                "the cfb mode encryption/decryption test from GOST R 34.13-2015 is Ok" );
+
+
+ /* ----------------------------------------------------------------- */
+ /* 10. Тестируем режим выработки имитовставки (плоская реализация).  */
+ /* ----------------------------------------------------------------- */
   if(( error = ak_bckey_context_cmac( &mkey, oc ? openssl_magma_in : magma_in,
                                                  sizeof( magma_in ), myout, 4 )) != ak_error_ok ) {
     ak_error_message( error, __func__ , "wrong cmac calculation" );

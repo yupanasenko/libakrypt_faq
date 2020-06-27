@@ -2300,8 +2300,8 @@ Validity ::= SEQUENCE {
    Время, которое помещается в структуру `Validity`, приводится из локального времени во
    время по Гринвичу. При чтении структуры должно производиться обратное преобразование.
 
-   \todo Согласно RFC 5280 даты до 2050 года сохраняются как UTCTime,
-   даты, начиная с 1 января 2050 года сохраняются как GeneralTime.
+   TODO: Согласно RFC 5280 даты до 2050 года должны сохранятся как UTCTime (это сделано)
+   даты, начиная с 1 января 2050 года должны сохранятся как GeneralTime. (это надо сделать)
 
    \param asn1 указатель на текущий уровень ASN.1 дерева.
    \param not_before начало временного интервала; локальное время, может быть получено
@@ -2781,58 +2781,58 @@ Validity ::= SEQUENCE {
 /* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_context_export_to_pemfile( ak_asn1 asn, const char *filename, crypto_content_t type )
 {
-  FILE *fp = NULL;
   ak_uint8 out[4];
+  struct file ofile;
   int error = ak_error_ok;
   ak_uint8 *buffer = NULL, *ptr = NULL;
   size_t len = 0, cnt = 0, idx, blocks, tail;
 
-  /* получаем длину */
-   if(( error = ak_asn1_context_evaluate_length( asn, &len )) != ak_error_ok )
-     return ak_error_message( error, __func__, "incorrect evaluation total asn1 context length" );
+ /* получаем длину */
+  if(( error = ak_asn1_context_evaluate_length( asn, &len )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect evaluation total asn1 context length" );
 
-  /* кодируем/декодируем */
-   blocks = len/3;
-   if(( tail = len - 3*blocks ) != 0 ) len = 3*(blocks+1); /* увеличиваем объем до кратного трем
-                               после декодирования переменная len снова примет истинное значение */
-   if(( ptr = buffer = malloc( len )) == NULL )
-     return ak_error_message( ak_error_out_of_memory, __func__,
+ /* кодируем/декодируем */
+  blocks = len/3;
+  if(( tail = len - 3*blocks ) != 0 ) len = 3*(blocks+1); /* увеличиваем объем до кратного трем
+                              после декодирования переменная len снова примет истинное значение */
+  if(( ptr = buffer = malloc( len )) == NULL )
+    return ak_error_message( ak_error_out_of_memory, __func__,
                                                   "incorrect memory allocation for der-sequence" );
-   memset( buffer, 0, len );
-   if(( error = ak_asn1_context_encode( asn, buffer, &len )) != ak_error_ok ) {
-     ak_error_message( error, __func__, "incorrect encoding of asn1 context" );
-     goto lab2;
-   }
+  memset( buffer, 0, len );
+  if(( error = ak_asn1_context_encode( asn, buffer, &len )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect encoding of asn1 context" );
+    goto lab2;
+  }
 
-  /* поскольку мы работаем только с текстовыми символами,
-     то для сохранения данных используется стандартная библиотека */
-   if(( fp = fopen( filename, "w" )) == NULL ) {
-     ak_error_message_fmt( error, __func__, "incorrect creation of %s", filename );
-     goto lab2;
-   }
+ /* сохраняем закодированый буффер */
+  if(( error = ak_file_create_to_write( &ofile, filename )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect creation a file for secret key" );
+    goto lab2;
+  }
 
-   fprintf( fp, "-----BEGIN %s-----\n", crypto_content_titles[type] );
-   for( idx = 0; idx < blocks; idx++ ) {
+  ak_file_printf( &ofile, "-----BEGIN %s-----\n", crypto_content_titles[type] );
+
+  for( idx = 0; idx < blocks; idx++ ) {
      ak_base64_encodeblock( ptr, out, 3);
-     fprintf( fp, "%c%c%c%c", out[0], out[1], out[2], out[3] );
+     ak_file_printf( &ofile, "%c%c%c%c", out[0], out[1], out[2], out[3] );
      ptr += 3;
      if( ++cnt == 16 ) { /* 16х4 = 64 символа в одной строке */
-       fprintf( fp, "\n" );
+       ak_file_printf( &ofile, "\n" );
        cnt = 0;
      }
-   }
-   if( tail ) {
-     ak_base64_encodeblock( ptr, out, tail );
-     fprintf( fp, "%c%c%c%c", out[0], out[1], out[2], out[3] );
-     ++cnt;
-     fprintf( fp, "\n");
-   } else
-      if(( cnt != 16 ) && ( cnt != 0 )) fprintf( fp, "\n");
+  }
+  if( tail ) {
+    ak_base64_encodeblock( ptr, out, tail );
+    ak_file_printf( &ofile, "%c%c%c%c", out[0], out[1], out[2], out[3] );
+    ++cnt;
+    ak_file_printf( &ofile, "\n" );
+  } else
+     if(( cnt != 16 ) && ( cnt != 0 )) ak_file_printf( &ofile, "\n" );
 
-   fprintf( fp, "-----END %s-----\n", crypto_content_titles[type] );
-   fclose( fp );
+  ak_file_printf( &ofile, "-----END %s-----\n", crypto_content_titles[type] );
+  ak_file_close( &ofile );
 
-   lab2: free( buffer );
+  lab2: free( buffer );
  return error;
 }
 

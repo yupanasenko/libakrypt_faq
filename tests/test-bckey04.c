@@ -23,7 +23,24 @@
 
  typedef int ( efunction )( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
  void test( char *, efunction *, ak_bckey );
+ int ecb_fixed( ak_bckey bkey, ak_pointer in, ak_pointer out,
+                                                  size_t size, ak_pointer iv, size_t ivsize ) {
+  (void) iv;
+  (void) ivsize;
+  return ak_bckey_context_encrypt_ecb( bkey, in, out, size );
+ }
+ int acpkm_fixed( ak_bckey bkey, ak_pointer in, ak_pointer out,
+                                                  size_t size, ak_pointer iv, size_t ivsize ) {
+   return ak_bckey_context_ctr_acpkm( bkey, in, out, size, 8192, iv, ivsize );
+                               /* выполнено равенство 8192 / 16 = 512,
+                                  где 16 длина блока, 512 = acpkm_section_kuznechik_block_count
+                                  это количество блоков для одного ключа                       */
+ }
 
+/* -------------------------------------------------------------------------------------- */
+
+
+/* -------------------------------------------------------------------------------------- */
  int main( void )
 {
   struct bckey ctx;
@@ -33,12 +50,14 @@
 
  /* статический объект существует, но он требует инициализации */
   printf("key create: %d\n", ak_bckey_context_create_kuznechik( &ctx ));
-  printf("key set value: %d\n", ak_bckey_context_set_key( &ctx, key, sizeof( key )));
+  printf("key set value: %d\n\n", ak_bckey_context_set_key( &ctx, key, sizeof( key )));
 
-  test( "CFB", ak_bckey_context_cfb, &ctx );
+  test( "ECB", ecb_fixed, &ctx );
+  test( "CFB", ak_bckey_context_encrypt_cfb, &ctx );
   test( "OFB", ak_bckey_context_ofb, &ctx );
   test( "CBC", ak_bckey_context_encrypt_cbc, &ctx );
   test( "CTR", ak_bckey_context_ctr, &ctx );
+  test( "ACPKM", acpkm_fixed, &ctx );
 
   ak_bckey_context_destroy( &ctx );
  return ak_libakrypt_destroy();
@@ -53,6 +72,7 @@
   size_t size;
   double iter = 0, avg = 0;
 
+  printf("%s\t[16MB ", STR );
   for( i = 16; i < 129; i += 8 ) {
     data = malloc( size = ( size_t ) i*1024*1024 );
     memset( data, (ak_uint8)i+1, size );
@@ -60,16 +80,18 @@
     timea = clock();
     fun( ctx, data, data, size, iv, sizeof( iv ));
     timea = clock() - timea;
-    printf(" %3uMB: %s time: %fs, per 1MB = %fs, speed = %f MBs\n", (unsigned int)i, STR,
+/*  детальный вывод
+    printf(" %3uMB: %s time: %fs, per 1MB = %fs, speed = %3f MBs\n", (unsigned int)i, STR,
                (double) timea / (double) CLOCKS_PER_SEC,
                (double) timea / ( (double) CLOCKS_PER_SEC*i ),
-               (double) CLOCKS_PER_SEC*i / (double) timea );
+               (double) CLOCKS_PER_SEC*i / (double) timea ); */
+    printf("."); fflush(stdout);
     if( i > 16 ) {
       iter += 1;
       avg += (double) CLOCKS_PER_SEC*i / (double) timea;
     }
     free( data );
   }
-  printf("average memory %s speed: %f MByte/sec\n\n", STR, avg/iter );
+  printf(" 128MB] average memory speed: %12f MByte/sec\n", avg/iter );
 
 }

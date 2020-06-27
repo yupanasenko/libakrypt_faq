@@ -46,14 +46,14 @@
  int ak_file_open_to_read( ak_file , const char * ); 
 /*! \brief Функция создает файл с правами на запись. */
  int ak_file_create_to_write( ak_file , const char * );
-/*! \brief Функция открывает заданный файл с правами запись (используется для дополнения существующих данных). */
- int ak_file_open_to_append( ak_file , const char * );
 /*! \brief Функция закрывает файл с заданным дескриптором. */
  int ak_file_close( ak_file );
 /*! \brief Функция считывает заданное количество байт из файла. */
  ssize_t ak_file_read( ak_file , ak_pointer , size_t );
 /*! \brief Функция записывает заданное количество байт в файл. */
  ssize_t ak_file_write( ak_file , ak_const_pointer , size_t );
+/*! \brief Функция записывает в файл строку символов. */
+ ssize_t ak_file_printf( ak_file , const char * , ... );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция устанавливает значение опции с заданным именем. */

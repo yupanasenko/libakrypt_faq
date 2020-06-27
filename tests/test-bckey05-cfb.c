@@ -143,7 +143,7 @@
 
  /* зашифровываем и расшифровываем всего четыре блока данных */
   printf("Kuznechik\n");
-  ak_bckey_context_cfb( &bkey, oc ? openssl_in : in, buf, sizeof( in ),
+  ak_bckey_context_encrypt_cfb( &bkey, oc ? openssl_in : in, buf, sizeof( in ),
                                                   oc ? openssl_ivcfb : ivcfb, 32 );
   printf("encrypted:\n");
   for( i = 0; i < 4; i++ ) {
@@ -165,7 +165,7 @@
 
  /* зашифровываем и расшифровываем всего четыре блока данных */
   printf("Magma\n");
-  ak_bckey_context_cfb( &mkey, oc ? openssl_magma_in : magma_in, buf, sizeof( magma_in ),
+  ak_bckey_context_encrypt_cfb( &mkey, oc ? openssl_magma_in : magma_in, buf, sizeof( magma_in ),
                                      oc ? openssl_magma_ivcfb : magma_ivcfb, sizeof( magma_ivcfb ));
   printf("encrypted:\n");
   for( i = 0; i < 4; i++ ) {

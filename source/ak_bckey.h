@@ -69,7 +69,7 @@
  int ak_bckey_context_set_key_random( ak_bckey , ak_random );
 /*! \brief Присвоение контексту ключа алгоритма блочного шифрования значения, выработанного из пароля. */
  int ak_bckey_context_set_key_from_password( ak_bckey , const ak_pointer , const size_t ,
-                                                                const ak_pointer , const size_t );
+                                                                 const ak_pointer , const size_t );
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация ключа алгоритма блочного шифрования значением другого ключа */
  int ak_bckey_context_create_and_set_bckey( ak_bckey , ak_bckey );
@@ -84,10 +84,12 @@
  int ak_bckey_context_decrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
  /*! \brief Зашифрование данных в режиме простой замены с зацеплением из ГОСТ Р 34.13-2015
     (cipher block chaining, cbc). */
- int ak_bckey_context_encrypt_cbc( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
+ int ak_bckey_context_encrypt_cbc( ak_bckey , ak_pointer , ak_pointer , size_t ,
+                                                                             ak_pointer , size_t );
  /*! \brief Расшифрование данных в режиме простой замены с зацеплением из ГОСТ Р 34.13-2015
     (cipher block chaining, cbc). */
- int ak_bckey_context_decrypt_cbc( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
+ int ak_bckey_context_decrypt_cbc( ak_bckey , ak_pointer , ak_pointer , size_t ,
+                                                                             ak_pointer , size_t );
 /*! \brief Шифрование данных в режиме гаммирования из ГОСТ Р 34.13-2015
    (counter mode, ctr). */
  int ak_bckey_context_ctr( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
@@ -96,14 +98,17 @@
  int ak_bckey_context_ofb( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
 /*! \brief Шифрование данных в режиме гаммирования с обратной связью по шифртексту
    (cipher feedback, cfb). */
- int ak_bckey_context_cfb( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
-
+ int ak_bckey_context_encrypt_cfb( ak_bckey , ak_pointer , ak_pointer , size_t ,
+                                                                             ak_pointer , size_t );
+/*! \brief Расшифрование данных в режиме гаммирования с обратной связью по шифртексту
+   (cipher feedback, cfb). */
+ int ak_bckey_context_decrypt_cfb( ak_bckey , ak_pointer , ak_pointer , size_t ,
+                                                                             ak_pointer , size_t );
 /*! \brief Шифрование данных в режиме CTR-ACPKM из Р 1323565.1.017—2018. */
  int ak_bckey_context_ctr_acpkm( ak_bckey , ak_pointer , ak_pointer , size_t , size_t ,
-                                                                           ak_pointer , size_t );
+                                                                             ak_pointer , size_t );
 /*! \brief Вычисление имитовставки согласно ГОСТ Р 34.13-2015. */
  int ak_bckey_context_cmac( ak_bckey , ak_pointer , const size_t , ak_pointer , const size_t );
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Выработка матрицы, соответствующей 16 тактам работы линейного региста сдвига. */

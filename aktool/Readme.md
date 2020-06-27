@@ -551,7 +551,7 @@ der-последовательностей, закодированных в ко
 
 \-o, \--output \<файл\>
 : Опция позволяет в явном виде определить
-имя файла в который будут помещены конверированные или объединенные данные.
+имя файла в который будут помещены конвертированные или объединенные данные.
 Данную опцию имеет смысл использовать совместно с опциями `--convert` и `--join`.
 
 \--to \<формат\>
@@ -591,33 +591,33 @@ der-последовательностей, закодированных в ко
 
 
     ┌SEQUENCE┐
-         ├SEQUENCE┐
-         │        ├INTEGER 0x0
-         │        ├SEQUENCE┐
-         │        │        └SET┐
-         │        │            └SEQUENCE┐
-         │        │                     ├OBJECT IDENTIFIER 2.5.4.3
-         │        │                     └PRINTABLE STRING Example
-         │        ├SEQUENCE┐
-         │        │        ├SEQUENCE┐
-         │        │        │        ├OBJECT IDENTIFIER 1.2.643.7.1.1.1.1
-         │        │        │        └SEQUENCE┐
-         │        │        │                 └OBJECT IDENTIFIER 1.2.643.7.1.2.1.1.1
-         │        │        └BIT STRING
-         │        │           04 40 74 27 95 D4 BE E8 84 DD F2 85 0F EC 03 EA
-         │        │           3F AF 18 44 E0 1D 9D A6 0B 64 50 93 A5 5E 26 DF
-         │        │           C3 99 78 F5 96 CF 4D 4D 0C 6C F1 D1 89 43 D9 44
-         │        │           93 D1 6B 9E C0 A1 6D 51 2D 2E 12 7C C4 69 1A 63
-         │        │           18 E2
-         │        └[0]┐
-         │             (null)
-         ├SEQUENCE┐
-         │        └OBJECT IDENTIFIER 1.2.643.7.1.1.3.2
-         └BIT STRING
-            1B DC 2A 13 17 67 9B 66 23 2F 63 EA 16 FF 7C 64
-            CC AA B9 AD 85 5F C6 E1 80 91 66 1D B7 9D 48 12
-            1D 0E 1D A5 BE 34 7C 6F 1B 52 56 C7 AE AC 20 0A
-            D6 4A C7 7A 6F 5B 3A 0E 09 73 18 E7 AE 6E E7 69
+             ├SEQUENCE┐
+             │        ├INTEGER 0x0
+             │        ├SEQUENCE┐
+             │        │        └SET┐
+             │        │            └SEQUENCE┐
+             │        │                     ├OBJECT IDENTIFIER 2.5.4.3
+             │        │                     └PRINTABLE STRING Example
+             │        ├SEQUENCE┐
+             │        │        ├SEQUENCE┐
+             │        │        │        ├OBJECT IDENTIFIER 1.2.643.7.1.1.1.1
+             │        │        │        └SEQUENCE┐
+             │        │        │                 └OBJECT IDENTIFIER 1.2.643.7.1.2.1.1.1
+             │        │        └BIT STRING
+             │        │           04 40 74 27 95 D4 BE E8 84 DD F2 85 0F EC 03 EA
+             │        │           3F AF 18 44 E0 1D 9D A6 0B 64 50 93 A5 5E 26 DF
+             │        │           C3 99 78 F5 96 CF 4D 4D 0C 6C F1 D1 89 43 D9 44
+             │        │           93 D1 6B 9E C0 A1 6D 51 2D 2E 12 7C C4 69 1A 63
+             │        │           18 E2
+             │        └[0]┐
+             │             (null)
+             ├SEQUENCE┐
+             │        └OBJECT IDENTIFIER 1.2.643.7.1.1.3.2
+             └BIT STRING
+               1B DC 2A 13 17 67 9B 66 23 2F 63 EA 16 FF 7C 64
+               CC AA B9 AD 85 5F C6 E1 80 91 66 1D B7 9D 48 12
+               1D 0E 1D A5 BE 34 7C 6F 1B 52 56 C7 AE AC 20 0A
+               D6 4A C7 7A 6F 5B 3A 0E 09 73 18 E7 AE 6E E7 69
 
 
 Следующий вызов демонстрирует

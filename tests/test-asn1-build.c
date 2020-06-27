@@ -141,6 +141,8 @@
   }
    else printf(" Wrong\n");
   ak_hash_context_destroy( &ctx );
+#else
+    result = EXIT_SUCCESS;
 #endif
 
  /* уничтожаем дерево и выходим */

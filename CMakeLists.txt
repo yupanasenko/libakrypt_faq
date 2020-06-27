@@ -109,6 +109,7 @@ if( LIBAKRYPT_CRYPTO_FUNCTIONS )
     source/ak_bckey.c
     source/ak_magma.c
     source/ak_kuznechik.c
+    source/ak_acpkm.c
     source/ak_context_manager.c
     source/ak_sign.c
     source/ak_asn1_keys.c
