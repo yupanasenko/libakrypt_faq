@@ -1,7 +1,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*  Copyright (c) 2009-2020, Ben Hoyt, https://github.com/benhoyt/inih                             */
 /*                                                                                                 */
-/*  adopted for libakrypt by Axel Kenzo, axelkenzo@mail.ru                                         */
+/*  adopted by Axel Kenzo, axelkenzo@mail.ru                                                       */
 /*                                                                                                 */
 /*  Файл ak_ini.c                                                                                  */
 /*  - содержит реализацию функций чтения данных из ini файлов                                      */
@@ -11,7 +11,7 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
- #include <libakrypt.h>
+ #include <libakbase.h>
 
 /*! \brief Прототип функции чтения строк (fgets-style). */
  typedef char* (*ak_function_ini_reader)( char * , int , void * );

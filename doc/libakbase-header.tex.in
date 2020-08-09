@@ -7,7 +7,7 @@
 %
 %% ---------------------------------------------------------------------------------------------- %
 %\setmainfont{Petersburg}%
-\setsansfont{CMU Sans Serif} 
+\setsansfont{CMU Sans Serif}
 \setmonofont{CMU Typewriter Text}
 
 %% moved from doxygen.sty due to workaround for LaTex 2019 version and unmaintained tabu package
@@ -203,12 +203,10 @@
 \parbox[b]{0.95\textwidth}{
 \vbox{%
 \vspace{0.1\textwidth}
-{\noindent\Huge\bfseries LIBAKRYPT}\\[1\baselineskip]
+{\noindent\Huge\bfseries libAKBASE}\\[1\baselineskip]
 \textsc{версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@} \\[5\baselineskip]
 
-{\bfseries\textsc{Инструкция по сборке и установке}}\\[1\baselineskip]
-{\bfseries\textsc{Инструкция по встраиванию}}\\[1\baselineskip]
-{\bfseries\textsc{Принципы реализации}}\\[1\baselineskip]
+{\bfseries\textsc{Справочная документация}}\\[1\baselineskip]
 
 \vspace{0.5\textheight}
 {\small\textsc{Axel Kenzo и <<Компания изящной словесности>>~~\copyright~~2020}}\\[1\baselineskip]
@@ -220,7 +218,6 @@
 %
 % --------------------------------------------------------------
 
-\input{@CMAKE_BINARY_DIR@/libakrypt-abstract}
 %
 \newpage
 \tableofcontents

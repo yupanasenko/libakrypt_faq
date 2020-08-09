@@ -13,10 +13,10 @@ check_c_source_compiles("
     #else
       #error Unsupported architecture
     #endif
-  }" LIBAKRYPT_HAVE_BUILTIN_MULQ_GCC )
+  }" AK_HAVE_BUILTIN_MULQ_GCC )
 
-if( LIBAKRYPT_HAVE_BUILTIN_MULQ_GCC )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_BUILTIN_MULQ_GCC" )
+if( AK_HAVE_BUILTIN_MULQ_GCC )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAK_HAVE_BUILTIN_MULQ_GCC" )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -29,8 +29,8 @@ check_c_source_compiles("
    c = _mm_clmulepi64_si128( a, b, 0x00 );
 
   return 0;
- }" LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64 )
+ }" AK_HAVE_BUILTIN_CLMULEPI64 )
 
-if( LIBAKRYPT_HAVE_BUILTIN_CLMULEPI64 )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBAKRYPT_HAVE_BUILTIN_CLMULEPI64" )
+if( AK_HAVE_BUILTIN_CLMULEPI64 )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAK_HAVE_BUILTIN_CLMULEPI64" )
 endif()

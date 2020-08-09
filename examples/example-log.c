@@ -1,5 +1,5 @@
  #include <stdio.h>
- #include <libakrypt.h>
+ #include <libakbase.h>
 
 /* определим пользовательскую функцию аудита
    данная функция использует файл example-log.c.log
@@ -17,22 +17,24 @@
 
  int main( void )
 {
- /* инициализируем библиотеку. в случае возникновения ошибки завершаем работу */
-  if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true ) {
-    return ak_libakrypt_destroy();
-  } else printf(" example-log, libakrypt version: %s\n", ak_libakrypt_version());
+ /* по-умолчанию сообщения об ошибках выволятся в журналы syslog
+    мы изменяем стандартный обработчик, на вывод сообщений в консоль */
+  ak_log_set_function( ak_function_log_stderr );
 
- /* выводим тестовое сообщение в стандарный поток вывода ошибок */
-  ak_log_set_message( " default audit: simple message" );
+ /* выводим тестовые сообщения, иллюстрирующие работу функций аудита */
+  ak_log_set_message( "default audit: simple message" );
+  ak_error_message( ak_error_null_pointer, __func__, "simple message" );
+  ak_error_message_fmt( ak_error_access_file, __func__,
+                        "third message with parameters: %s & %x", "weight", 32 );
 
  /* устанавливаем свою собственную функцию аудита - вывод в файл */
    ak_log_set_function( ak_function_log_user );
 
- /* выводим еще одно тестовое сообщение, теперь в файл */
+ /* выводим тестовые сообщения, иллюстрирующие работу функций аудита */
    ak_log_set_message( " user audit: another simple message" );
+   ak_error_message( ak_error_null_pointer, __func__, "simple message" );
+   ak_error_message_fmt( ak_error_access_file, __func__,
+                        "third message with parameters: %s & %x", "weight", 32 );
 
- /* сообщения, выводимые при остановке баиблиотеки,
-    также выводятся с использованием установленной
-    пользователем функции ak_function_log_user()   */
- return ak_libakrypt_destroy();
+ return 0;
 }

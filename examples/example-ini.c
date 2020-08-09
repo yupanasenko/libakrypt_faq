@@ -1,5 +1,5 @@
-#include <stdio.h>
-#include <libakrypt.h>
+ #include <stdio.h>
+ #include <libakbase.h>
 
 /* определяем функцию, которая должна выполять содержательую работу
                         по разбору данных, считываемых из ini-файла */
@@ -16,12 +16,11 @@
    "  file-name = example-ini.c\n"
    "  description = used as example for reading ini files\n"; 
 
-/* инициализируем библиотеку, в случае возникновения ошибки завершаем работу */
- if( ak_libakrypt_create( ak_function_log_stderr ) != ak_true )
-   return ak_libakrypt_destroy();
+ /* устанавливаем стандартную функцию аудита */
+   ak_log_set_function( ak_function_log_stderr );
 
  if( ak_ini_parse_string( string, user_handler, NULL ) != ak_error_ok )
    printf("incorrect parsing of test string\n");
   
- return ak_libakrypt_destroy();
+ return 0;
 }

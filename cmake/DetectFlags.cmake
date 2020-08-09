@@ -9,7 +9,7 @@ macro( gen_check_name _flag )
      string(REPLACE "/" "_" _check_name "${_check_name}")
      string(REPLACE ":" "_" _check_name "${_check_name}")
      string(TOUPPER "${_check_name}" _check_name)
-     set(_check_name "LIBAKRYPT_HAVE${_check_name}")
+     set(_check_name "AK_HAVE${_check_name}")
 endmacro(gen_check_name)
 
 macro( try_append_c_flag _flag _append_to )
