@@ -18,9 +18,19 @@
 #ifdef AK_HAVE_FCNTL_H
  #include <fcntl.h>
 #endif
+#ifdef AK_HAVE_DIRENT_H
+ #include <dirent.h>
+#endif
+#ifdef AK_HAVE_FNMATCH_H
+ #include <fnmatch.h>
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_file_or_directory( const char *filename )
+/*! \param filename Имя, для которого проводится проверка
+    \return Функция возвращает одну из констант \ref DT_REG или \ref DT_DIR в случае успеха.
+    В случае, если имя ошибочно, то возвращается 0.                                                */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_file_or_directory( const TCHAR *filename )
 {
  struct stat st;
 
@@ -29,6 +39,141 @@
   if( S_ISDIR( st.st_mode )) return DT_DIR;
 
  return 0;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_file_find( const char *root , const char *mask,
+                                          ak_function_find *function, ak_pointer ptr, bool_t tree )
+{
+  int error = ak_error_ok;
+
+#ifdef _WIN32
+  WIN32_FIND_DATA ffd;
+  TCHAR szDir[MAX_PATH];
+  char filename[MAX_PATH];
+  HANDLE hFind = INVALID_HANDLE_VALUE;
+  size_t rlen = 0, mlen = 0;
+
+ #ifdef _MSC_VER
+  if( FAILED( StringCchLength( root, MAX_PATH-1, &rlen )))
+    return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                             "incorrect length for root variable" );
+  if( FAILED( StringCchLength( mask, MAX_PATH-1, &mlen )))
+    return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                            "incorrect length for mask variable" );
+ #else
+  rlen = strlen( root ); mlen = strlen( mask );
+ #endif
+
+  if( rlen > (MAX_PATH - ( mlen + 2 )))
+    return ak_error_message_fmt( ak_error_wrong_length, __func__ , "directory path too long" );
+
+ #ifdef _MSC_VER
+  if( FAILED( StringCchCopy( szDir, MAX_PATH-1, root )))
+    return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                            "incorrect copying of root variable" );
+  if( FAILED( StringCchCat( szDir, MAX_PATH-1, TEXT( "\\" ))))
+    return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                      "incorrect copying of directory separator" );
+  if( FAILED( StringCchCat( szDir, MAX_PATH-1, mask )))
+    return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                            "incorrect copying of mask variable" );
+ #else
+  ak_snprintf( szDir, MAX_PATH-1, "%s\\%s", root, mask );
+ #endif
+
+ /* начинаем поиск */
+  if(( hFind = FindFirstFile( szDir, &ffd )) == INVALID_HANDLE_VALUE )
+    return ak_error_message_fmt( ak_error_access_file, __func__ , "given mask search error" );
+
+  do {
+       if( ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) {
+
+         if( !strcmp( ffd.cFileName, "." )) continue;  // пропускаем себя и каталог верхнего уровня
+         if( !strcmp( ffd.cFileName, ".." )) continue;
+
+         if( tree ) { // выполняем рекурсию для вложенных каталогов
+           memset( szDir, 0, MAX_PATH );
+          #ifdef _MSC_VER
+           if( FAILED( StringCchCopy( szDir, MAX_PATH-1, root )))
+             return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                            "incorrect copying of root variable" );
+           if( FAILED( StringCchCat( szDir, MAX_PATH-1, TEXT( "\\" ))))
+             return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                      "incorrect copying of directory separator" );
+           if( FAILED( StringCchCat( szDir, MAX_PATH-1,  ffd.cFileName )))
+             return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                                "incorrect copying of file name" );
+          #else
+           ak_snprintf( szDir, MAX_PATH-1, "%s\\%s", root,  ffd.cFileName );
+          #endif
+
+           if(( error = aktool_find( szDir, mask, function, ptr, tree )) != ak_error_ok )
+             ak_error_message_fmt( error,
+                                         __func__, "access to \"%s\" directory denied", filename );
+         }
+       } else {
+               if( ffd.dwFileAttributes &FILE_ATTRIBUTE_SYSTEM ) continue;
+                 memset( filename, 0, FILENAME_MAX );
+                #ifdef _MSC_VER
+                 if( FAILED( StringCchCopy( filename, MAX_PATH-1, root )))
+                   return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                            "incorrect copying of root variable" );
+                 if( FAILED( StringCchCat( filename, MAX_PATH-1, TEXT( "\\" ))))
+                   return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                      "incorrect copying of directory separator" );
+                 if( FAILED( StringCchCat( filename, MAX_PATH-1,  ffd.cFileName )))
+                   return ak_error_message_fmt( ak_error_wrong_length, __func__ ,
+                                                               "incorrect copying of file namme" );
+                #else
+                 ak_snprintf( filename, MAX_PATH-1, "%s\\%s", root,  ffd.cFileName );
+                #endif
+                 function( filename, ptr );
+              }
+
+  } while( FindNextFile( hFind, &ffd ) != 0);
+  FindClose(hFind);
+
+// далее используем механизм функций open/readdir + fnmatch
+#else
+  DIR *dp = NULL;
+  struct dirent *ent = NULL;
+  char filename[FILENAME_MAX];
+
+ /* открываем каталог */
+  errno = 0;
+  if(( dp = opendir( root )) == NULL ) {
+    if( errno == EACCES ) return ak_error_message_fmt( ak_error_access_file,
+                                          __func__ , "access to \"%s\" directory denied", root );
+    if( errno > -1 ) return ak_error_message_fmt( ak_error_open_file,
+                                                                __func__ , "%s", strerror( errno ));
+  }
+
+ /* перебираем все файлы и каталоги */
+  while(( ent = readdir( dp )) != NULL ) {
+    if( ent->d_type == DT_DIR ) {
+      if( !strcmp( ent->d_name, "." )) continue;  // пропускаем себя и каталог верхнего уровня
+      if( !strcmp( ent->d_name, ".." )) continue;
+
+      if( tree ) { // выполняем рекурсию для вложенных каталогов
+        memset( filename, 0, FILENAME_MAX );
+        ak_snprintf( filename, FILENAME_MAX, "%s/%s", root, ent->d_name );
+        if(( error = ak_file_find( filename, mask, function, ptr, tree )) != ak_error_ok )
+          ak_error_message_fmt( error, __func__, "access to \"%s\" directory denied", filename );
+      }
+    } else
+       if( ent->d_type == DT_REG ) { // обрабатываем только обычные файлы
+          if( !fnmatch( mask, ent->d_name, FNM_PATHNAME )) {
+            memset( filename, 0, FILENAME_MAX );
+            ak_snprintf( filename, FILENAME_MAX, "%s/%s", root, ent->d_name );
+            function( filename, ptr );
+          }
+       }
+  }
+  if( closedir( dp )) return ak_error_message_fmt( ak_error_close_file,
+                                                                __func__ , "%s", strerror( errno ));
+#endif
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -199,6 +344,8 @@
  return result;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \example example-file.c                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_file.c  */
 /* ----------------------------------------------------------------------------------------------- */

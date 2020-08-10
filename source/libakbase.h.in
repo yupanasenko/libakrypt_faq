@@ -93,13 +93,13 @@ extern "C" {
 #cmakedefine AK_HAVE_SIGNAL_H
 #cmakedefine AK_HAVE_GETOPT_H
 #cmakedefine AK_HAVE_LIBINTL_H
-#cmakedefine AK_HAVE_STDIO_H
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef AK_HAVE_WINDOWS_H
  #include <windows.h>
  #include <io.h>
  #include <process.h>
+ #include <tchar.h>
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -138,6 +138,9 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
  typedef signed char ak_int8;
  typedef unsigned char ak_uint8;
+#ifndef _WIN32
+ typedef char TCHAR;
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Определение булева типа, принимающего значения либо истина, либо ложь. */
@@ -349,6 +352,12 @@ extern "C" {
  ssize_t ak_file_printf( ak_file , const char * , ... );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Определение функции для выполнения действий с заданным файлом */
+ typedef int ( ak_function_find )( const TCHAR * , ak_pointer );
+/*! \brief Определение функции, передаваемой в качестве аргумента в функцию построчного чтения файлов. */
+ typedef int ( ak_file_read_function ) ( char * , ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
 #ifdef AK_HAVE_DIRENT_H
  #include <dirent.h>
 #endif
@@ -365,7 +374,9 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Проверка, является ли заданное имя обычным файлом или каталогом. */
- int ak_file_or_directory( const char * );
+ int ak_file_or_directory( const TCHAR * );
+/*! \brief Обход каталога с учетом заданной маски */
+ int ak_file_find( const TCHAR *, const TCHAR *, ak_function_find *, ak_pointer , bool_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef _MSC_VER

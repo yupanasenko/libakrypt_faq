@@ -35,7 +35,7 @@ message("-- Generation of libakbase.h is done")
 
 # -------------------------------------------------------------------------------------------------- #
 # Определяем базовое множество исходных текстов библиотеки
-set( MAIN_HEADER source/libakbase.h )
+set( MAIN_HEADERS source/libakbase.h )
 set( AKBASE_SOURCES
   source/ak_tools.c
   source/ak_list.c
@@ -47,14 +47,14 @@ set( AKBASE_SOURCES
 # Определем процедуры сборки библиотек - статической или динамической
 include_directories( "source" )
 if( AK_SHARED_LIB )
-  add_library( akbase-shared SHARED ${MAIN_HEADER} ${AKBASE_SOURCES} )
+  add_library( akbase-shared SHARED ${MAIN_HEADERS} ${AKBASE_SOURCES} )
   set_target_properties( akbase-shared PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
   set_target_properties( akbase-shared PROPERTIES OUTPUT_NAME akbase CLEAN_DIRECT_CUSTOM 1 )
   message( "-- Building a shared library" )
 endif()
 #
 if( AK_STATIC_LIB )
-  add_library( akbase-static STATIC ${MAIN_HEADER} ${AKBASE_SOURCES} )
+  add_library( akbase-static STATIC ${MAIN_HEADERS} ${AKBASE_SOURCES} )
   set_target_properties( akbase-static PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
   set_target_properties( akbase-static PROPERTIES OUTPUT_NAME akbase CLEAN_DIRECT_CUSTOM 1 )
   message( "-- Building a static library" )
@@ -66,6 +66,7 @@ endif()
 set( EXAMPLES_LIST
   log
   ini
+  file
 )
 
 foreach( programm ${EXAMPLES_LIST} )
@@ -99,7 +100,7 @@ if( CMAKE_HOST_UNIX )
              ARCHIVE DESTINATION lib
            )
   endif()
-  install( FILES ${MAIN_HEADER} DESTINATION include )
+  install( FILES ${MAIN_HEADERS} DESTINATION include )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
