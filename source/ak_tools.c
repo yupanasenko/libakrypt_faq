@@ -131,7 +131,14 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_function_log_stderr( const char *message )
 {
-  if( message != NULL ) fprintf( stderr, "%s\n", message );
+  if( message != NULL ) {
+   #ifdef AK_HAVE_WINDOWS_H
+     fprintf( stderr, "%s\n", message );
+   #else
+     struct file file = { 2, 0, 0 };
+     ak_file_printf( &file, "%s\n", message );
+   #endif
+  }
  return ak_error_ok;
 }
 

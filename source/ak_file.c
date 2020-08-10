@@ -28,19 +28,28 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param filename Имя, для которого проводится проверка
     \return Функция возвращает одну из констант \ref DT_REG или \ref DT_DIR в случае успеха.
-    В случае, если имя ошибочно, то возвращается 0.                                                */
+    В случае, если имя ошибочно, то возвращается \ref ak_error_access_file.                        */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_file_or_directory( const TCHAR *filename )
 {
  struct stat st;
 
-  if(( !filename ) || ( stat( filename, &st )))  return 0;
+  if(( !filename ) || ( stat( filename, &st )))  return ak_error_access_file;
   if( S_ISREG( st.st_mode )) return DT_REG;
   if( S_ISDIR( st.st_mode )) return DT_DIR;
 
  return 0;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param root Имя каталога, в котором проводится поиск файлов
+    \param mask Маска разыскиваемых файлов
+    \param function Пользовательская функция, которой передается управление при нахождении файла
+    \param ptr Указатель на данные, которые передаются пользовательской функции
+    \param tree Флаг, который указывает нужно ли обходить каталоги рекурсивно
+    (искать файлы во вложенных каталогах)
+    \return В случае успеха возвращается \ref ak_error_ok. В случае возникновения ошибки
+    возвращается ее код.                                                                           */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_file_find( const char *root , const char *mask,
                                           ak_function_find *function, ak_pointer ptr, bool_t tree )
@@ -108,7 +117,7 @@
            ak_snprintf( szDir, MAX_PATH-1, "%s\\%s", root,  ffd.cFileName );
           #endif
 
-           if(( error = aktool_find( szDir, mask, function, ptr, tree )) != ak_error_ok )
+           if(( error = ak_file_find( szDir, mask, function, ptr, tree )) != ak_error_ok )
              ak_error_message_fmt( error,
                                          __func__, "access to \"%s\" directory denied", filename );
          }
@@ -174,6 +183,62 @@
                                                                 __func__ , "%s", strerror( errno ));
 #endif
  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param filename Имя файла из которого считываются строки
+    \param function Пользовательская функция, которая производит обработку считанной строки
+    \param ptr Указатель на данные, передаваемые в пользовательскую функцию
+    \return В случае успеха возвращается \ref ak_error_ok. В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_file_read_by_lines( const TCHAR *filename, ak_file_read_function *function , ak_pointer ptr )
+{
+  #define buffer_length ( FILENAME_MAX + 160 )
+
+  struct stat st;
+  size_t idx = 0, off = 0;
+  int fd = 0, error = ak_error_ok;
+  char ch, localbuffer[buffer_length];
+
+ /* проверяем наличие файла и прав доступа к нему */
+  if(( fd = open( filename, O_RDONLY | O_BINARY )) < 0 )
+    return ak_error_message_fmt( ak_error_open_file,
+                             __func__, "wrong open file \"%s\" - %s", filename, strerror( errno ));
+  if( fstat( fd, &st ) ) {
+    close( fd );
+    return ak_error_message_fmt( ak_error_access_file, __func__ ,
+                              "wrong stat file \"%s\" with error %s", filename, strerror( errno ));
+  }
+
+ /* нарезаем входные на строки длиной не более чем buffer_length - 2 символа */
+  memset( localbuffer, 0, buffer_length );
+  for( idx = 0; idx < (size_t) st.st_size; idx++ ) {
+     if( read( fd, &ch, 1 ) != 1 ) {
+       close(fd);
+       return ak_error_message_fmt( ak_error_read_data, __func__ ,
+                                                                "unexpected end of %s", filename );
+     }
+     if( off > buffer_length - 2 ) {
+       close( fd );
+       return ak_error_message_fmt( ak_error_read_data, __func__ ,
+                          "%s has a line with more than %d symbols", filename, buffer_length - 2 );
+     }
+    if( ch == '\n' ) {
+      #ifdef _WIN32
+       if( off ) localbuffer[off-1] = 0;  /* удаляем второй символ перехода на новую строку */
+      #endif
+      error = function( localbuffer, ptr );
+     /* далее мы очищаем строку независимо от ее содержимого */
+      off = 0;
+      memset( localbuffer, 0, buffer_length );
+    } else localbuffer[off++] = ch;
+   /* выходим из цикла если процедура проверки нарушена */
+    if( error != ak_error_ok ) return error;
+  }
+
+  close( fd );
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

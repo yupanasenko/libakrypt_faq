@@ -1,10 +1,10 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
-/*  Файл libakbase.h (определение базовых функций)                                                     */
+/*  Файл libakbase.h (определение базовых функций)                                                 */
 /* ----------------------------------------------------------------------------------------------- */
-#ifndef    __LIBAK_H__
-#define    __LIBAK_H__
+#ifndef    __LIBAKBASE_H__
+#define    __LIBAKBASE_H__
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef __cplusplus
@@ -100,6 +100,9 @@ extern "C" {
  #include <io.h>
  #include <process.h>
  #include <tchar.h>
+ #ifdef _MSC_VER
+  #include <strsafe.h>
+ #endif
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -269,9 +272,9 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание нового узла двусвязного списка, содержащего символьную строку. */
- ak_list_node ak_list_node_new_string( const char * );
+ dll_export ak_list_node ak_list_node_new_string( const char * );
 /*! \brief Удаление узла двусвязного списка */
- ak_pointer ak_list_node_delete( ak_list_node );
+ dll_export ak_pointer ak_list_node_delete( ak_list_node );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Двусвязный список. */
@@ -284,27 +287,27 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание двусвязного списка. */
- int ak_list_create( ak_list );
+ dll_export int ak_list_create( ak_list );
 /*! \brief Создание двусвязного списка. */
- ak_list ak_list_new( void );
+ dll_export ak_list ak_list_new( void );
 /*! \brief Перемещение к следующему узлу двусвязного списка. */
- bool_t ak_list_next( ak_list );
+ dll_export bool_t ak_list_next( ak_list );
 /*! \brief Перемещение к предыдущему узлу двусвязного списка. */
- bool_t ak_list_prev( ak_list );
+ dll_export bool_t ak_list_prev( ak_list );
 /*! \brief Перемещение к последнему узлу двусвязного списка. */
- bool_t ak_list_last( ak_list );
+ dll_export bool_t ak_list_last( ak_list );
 /*! \brief Перемещение к первому узлу двусвязного списка. */
- bool_t ak_list_first( ak_list );
+ dll_export bool_t ak_list_first( ak_list );
 /*! \brief Изъятие текущего узла из двусвязного списка. */
- ak_list_node ak_list_exclude( ak_list );
+ dll_export ak_list_node ak_list_exclude( ak_list );
 /*! \brief Уничтожение текущего узла из двусвязного списка. */
- bool_t ak_list_remove( ak_list );
+ dll_export bool_t ak_list_remove( ak_list );
 /*! \brief Уничтожение двусвязного списка. */
- int ak_list_destroy( ak_list );
+ dll_export int ak_list_destroy( ak_list );
 /*! \brief Уничтожение двусвязного списка. */
- ak_pointer ak_list_delete( ak_list );
+ dll_export ak_pointer ak_list_delete( ak_list );
 /*! \brief Добавление нового узла к двусвязному списку. */
- int ak_list_add_node( ak_list , ak_list_node );
+ dll_export int ak_list_add_node( ak_list , ak_list_node );
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -322,6 +325,8 @@ extern "C" {
 
 
 /* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup file Функции для работы с файлами
+  @{ */
 /*! \brief Структура данных для хранения дескриптора и параметров файла. */
  typedef struct file {
 #ifdef AK_HAVE_WINDOWS_H
@@ -339,23 +344,23 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция открывает заданный файл на чтение. */
- int ak_file_open_to_read( ak_file , const char * );
+ dll_export int ak_file_open_to_read( ak_file , const char * );
 /*! \brief Функция создает файл с правами на запись. */
- int ak_file_create_to_write( ak_file , const char * );
+ dll_export int ak_file_create_to_write( ak_file , const char * );
 /*! \brief Функция закрывает файл с заданным дескриптором. */
- int ak_file_close( ak_file );
+ dll_export int ak_file_close( ak_file );
 /*! \brief Функция считывает заданное количество байт из файла. */
- ssize_t ak_file_read( ak_file , ak_pointer , size_t );
+ dll_export ssize_t ak_file_read( ak_file , ak_pointer , size_t );
 /*! \brief Функция записывает заданное количество байт в файл. */
- ssize_t ak_file_write( ak_file , ak_const_pointer , size_t );
+ dll_export ssize_t ak_file_write( ak_file , ak_const_pointer , size_t );
 /*! \brief Функция записывает в файл строку символов. */
- ssize_t ak_file_printf( ak_file , const char * , ... );
+ dll_export ssize_t ak_file_printf( ak_file , const char * , ... );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Определение функции для выполнения действий с заданным файлом */
  typedef int ( ak_function_find )( const TCHAR * , ak_pointer );
 /*! \brief Определение функции, передаваемой в качестве аргумента в функцию построчного чтения файлов. */
- typedef int ( ak_file_read_function ) ( char * , ak_pointer );
+ typedef int ( ak_file_read_function ) ( const char * , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef AK_HAVE_DIRENT_H
@@ -374,9 +379,12 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Проверка, является ли заданное имя обычным файлом или каталогом. */
- int ak_file_or_directory( const TCHAR * );
+ dll_export int ak_file_or_directory( const TCHAR * );
 /*! \brief Обход каталога с учетом заданной маски */
- int ak_file_find( const TCHAR *, const TCHAR *, ak_function_find *, ak_pointer , bool_t );
+ dll_export int ak_file_find( const TCHAR *, const TCHAR *, ak_function_find *, ak_pointer , bool_t );
+/*! \brief Функция построчного чтения заданного файла */
+ dll_export int ak_file_read_by_lines( const TCHAR *, ak_file_read_function * , ak_pointer );
+/** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef _MSC_VER
@@ -391,7 +399,7 @@ extern "C" {
 #else
  #include <stdlib.h>
  #ifndef _MSC_VER
-   unsigned __int64 __cdecl _byteswap_uint64(unsigned __int64 _Int64);
+   dll_export unsigned __int64 __cdecl _byteswap_uint64(unsigned __int64 _Int64);
 
    #define _byteswap_ulong( x )  ((((x)&0xFF)<<24) \
                                  |(((x)>>24)&0xFF) \
