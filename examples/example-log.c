@@ -1,5 +1,5 @@
  #include <stdio.h>
- #include <libakbase.h>
+ #include <libakrypt-base.h>
 
 /* определим пользовательскую функцию аудита
    данная функция использует файл example-log.c.log

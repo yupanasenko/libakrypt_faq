@@ -203,7 +203,7 @@
 \parbox[b]{0.95\textwidth}{
 \vbox{%
 \vspace{0.1\textwidth}
-{\noindent\Huge\bfseries libAKBASE}\\[1\baselineskip]
+{\noindent\Huge\bfseries libAkrypt-base}\\[1\baselineskip]
 \textsc{версия @HEAD_VERSION@.@MAIN_VERSION@.@MINOR_VERSION@} \\[5\baselineskip]
 
 {\bfseries\textsc{Справочная документация}}\\[1\baselineskip]

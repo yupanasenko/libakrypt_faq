@@ -11,7 +11,7 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
- #include <libakbase.h>
+ #include <libakrypt-base.h>
 
 /*! \brief Прототип функции чтения строк (fgets-style). */
  typedef char* (*ak_function_ini_reader)( char * , int , void * );

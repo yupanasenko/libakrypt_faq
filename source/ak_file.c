@@ -3,7 +3,7 @@
 /*                                                                                                 */
 /*  Файл ak_file.с                                                                                 */
 /* ----------------------------------------------------------------------------------------------- */
- #include <libakbase.h>
+ #include <libakrypt-base.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef AK_HAVE_SYSSTAT_H
@@ -30,7 +30,7 @@
     \return Функция возвращает одну из констант \ref DT_REG или \ref DT_DIR в случае успеха.
     В случае, если имя ошибочно, то возвращается \ref ak_error_access_file.                        */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_file_or_directory( const TCHAR *filename )
+ int ak_file_or_directory( const tchar *filename )
 {
  struct stat st;
 
@@ -172,6 +172,7 @@
       }
     } else
        if( ent->d_type == DT_REG ) { // обрабатываем только обычные файлы
+
           if( !fnmatch( mask, ent->d_name, FNM_PATHNAME )) {
             memset( filename, 0, FILENAME_MAX );
             ak_snprintf( filename, FILENAME_MAX, "%s/%s", root, ent->d_name );
@@ -192,7 +193,7 @@
     \return В случае успеха возвращается \ref ak_error_ok. В случае возникновения ошибки
     возвращается ее код.                                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_file_read_by_lines( const TCHAR *filename, ak_file_read_function *function , ak_pointer ptr )
+ int ak_file_read_by_lines( const tchar *filename, ak_file_read_function *function , ak_pointer ptr )
 {
   #define buffer_length ( FILENAME_MAX + 160 )
 

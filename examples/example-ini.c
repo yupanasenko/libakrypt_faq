@@ -1,5 +1,5 @@
  #include <stdio.h>
- #include <libakbase.h>
+ #include <libakrypt-base.h>
 
 /* определяем функцию, которая должна выполять содержательую работу
                         по разбору данных, считываемых из ini-файла */

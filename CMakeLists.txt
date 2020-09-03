@@ -30,12 +30,12 @@ include( DetectIntrinsics )
 
 # -------------------------------------------------------------------------------------------------- #
 # вырабатываем заголовочный файл
-configure_file( ${CMAKE_SOURCE_DIR}/source/libakbase.h.in ${CMAKE_SOURCE_DIR}/source/libakbase.h @ONLY )
-message("-- Generation of libakbase.h is done")
+configure_file( ${CMAKE_SOURCE_DIR}/source/libakrypt-base.h.in ${CMAKE_SOURCE_DIR}/source/libakrypt-base.h @ONLY )
+message("-- Generation of libakrypt-base.h is done")
 
 # -------------------------------------------------------------------------------------------------- #
 # Определяем базовое множество исходных текстов библиотеки
-set( MAIN_HEADERS source/libakbase.h )
+set( MAIN_HEADERS source/libakrypt-base.h )
 set( AKBASE_SOURCES
   source/ak_tools.c
   source/ak_list.c
@@ -73,11 +73,10 @@ foreach( programm ${EXAMPLES_LIST} )
   if( AK_STATIC_LIB )
     add_executable( example-${programm} examples/example-${programm}.c )
     target_link_libraries( example-${programm} akbase-static )
-  else()
-    if( AK_SHARED_LIB )
-      add_executable( example-shared-${programm} examples/example-${programm}.c )
-      target_link_libraries( example-shared-${programm} akbase-shared )
-    endif()
+  endif()
+  if( AK_SHARED_LIB )
+    add_executable( example-shared-${programm} examples/example-${programm}.c )
+    target_link_libraries( example-shared-${programm} akbase-shared )
   endif()
 endforeach()
 

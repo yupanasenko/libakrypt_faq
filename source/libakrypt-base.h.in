@@ -1,10 +1,10 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
-/*  Файл libakbase.h (определение базовых функций)                                                 */
+/*  Файл libakrypt-base.h (определение платформозависимых функций)                                 */
 /* ----------------------------------------------------------------------------------------------- */
-#ifndef    __LIBAKBASE_H__
-#define    __LIBAKBASE_H__
+#ifndef    __LIBAKRYPT_BASE_H__
+#define    __LIBAKRYPT_BASE_H__
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef __cplusplus
@@ -88,13 +88,13 @@ extern "C" {
 #cmakedefine AK_HAVE_DIRENT_H
 #cmakedefine AK_HAVE_FNMATCH_H
 #cmakedefine AK_HAVE_STDALIGN_H
-#cmakedefine AK_HAVE_WINDOWS_H
 #cmakedefine AK_HAVE_LOCALE_H
 #cmakedefine AK_HAVE_SIGNAL_H
 #cmakedefine AK_HAVE_GETOPT_H
 #cmakedefine AK_HAVE_LIBINTL_H
 
 /* ----------------------------------------------------------------------------------------------- */
+#cmakedefine AK_HAVE_WINDOWS_H
 #ifdef AK_HAVE_WINDOWS_H
  #include <windows.h>
  #include <io.h>
@@ -142,7 +142,9 @@ extern "C" {
  typedef signed char ak_int8;
  typedef unsigned char ak_uint8;
 #ifndef _WIN32
- typedef char TCHAR;
+ typedef char tchar;
+#else
+ typedef TCHAR tchar;
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -229,18 +231,20 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup audit Функции контроля ошибок исполнения программы
-  @{ */
+  @{
+  Функции контроля шибок позволяют организовать единый механизм вывода ошибок исполнения программы,
+  а также сообщений пользователя. */
 /*! \brief Функция возвращает уровень аудита библиотеки. */
  dll_export int ak_log_get_level( void );
 /*! \brief Функция устанавливает уровень аудита библиотеки. */
  dll_export  int ak_log_set_level( int );
 /*! \brief Прямой вывод сообщения аудита. */
  dll_export int ak_log_set_message( const char * );
-/*! \brief Явное задание функции аудита. */
+/*! \brief Установка функции аудита. */
  dll_export int ak_log_set_function( ak_function_log * );
 #ifdef AK_HAVE_SYSLOG_H
  /*! \brief Функция вывода сообщения об ошибке с помощью демона операционной системы. */
- int ak_function_log_syslog( const char * );
+ dll_export int ak_function_log_syslog( const char * );
 #endif
 /*! \brief Функция вывода сообщения об ошибке в стандартный канал вывода ошибок. */
  dll_export int ak_function_log_stderr( const char * );
@@ -257,7 +261,6 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup list Реализация двусвязных списков
  * @{ */
-
 /* ----------------------------------------------------------------------------------------------- */
  typedef struct list_node *ak_list_node;
 /*! \brief Узел двусвязного списка. */
@@ -358,7 +361,7 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Определение функции для выполнения действий с заданным файлом */
- typedef int ( ak_function_find )( const TCHAR * , ak_pointer );
+ typedef int ( ak_function_find )( const tchar * , ak_pointer );
 /*! \brief Определение функции, передаваемой в качестве аргумента в функцию построчного чтения файлов. */
  typedef int ( ak_file_read_function ) ( const char * , ak_pointer );
 
@@ -379,11 +382,11 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Проверка, является ли заданное имя обычным файлом или каталогом. */
- dll_export int ak_file_or_directory( const TCHAR * );
+ dll_export int ak_file_or_directory( const tchar * );
 /*! \brief Обход каталога с учетом заданной маски */
- dll_export int ak_file_find( const TCHAR *, const TCHAR *, ak_function_find *, ak_pointer , bool_t );
+ dll_export int ak_file_find( const tchar *, const tchar *, ak_function_find *, ak_pointer , bool_t );
 /*! \brief Функция построчного чтения заданного файла */
- dll_export int ak_file_read_by_lines( const TCHAR *, ak_file_read_function * , ak_pointer );
+ dll_export int ak_file_read_by_lines( const tchar *, ak_file_read_function * , ak_pointer );
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */

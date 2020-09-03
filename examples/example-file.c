@@ -1,8 +1,8 @@
  #include <stdio.h>
- #include <libakbase.h>
+ #include <libakrypt-base.h>
 
 /* функция, которая будет обрабатывать найденные файлы */
- int user_function( const TCHAR *name, ak_pointer ptr )
+ int user_function( const tchar *name, ak_pointer ptr )
 {
   struct file file;
 
