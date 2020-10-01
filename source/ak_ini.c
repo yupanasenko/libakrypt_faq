@@ -205,17 +205,29 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Parse given INI-style file. May have [section]s, name=value pairs
-    (whitespace stripped), and comments starting with ';' (semicolon). Section
-    is "" if name=value pair parsed before any section heading. name:value
-    pairs are also supported as a concession to Python's configparser.
+/*! Обрабатываемый ini-файл с именем filename может содержать секции,
+    обозначаемые словами в квадратных скобках, пары имя=значение (пробелы справа и слева от знака
+    равно - опускаются), а также символы комментариев "#", ";".
+    Если имя секции не определено, то пара имя=значение отправляется в секцию "".
+    Также, для совместимости с Питоном, поддерживаются пары имя:значение.
 
-    For each name=value pair parsed, call handler function with given user
-    pointer as well as section, name, and value (data only valid for duration
-    of handler call). Handler should return nonzero on success, zero on error.
+    Например
+    \code
+     [Section]
+       code = AU
+       number = 162344-xa
+       time: 14.15
+    \endcode
 
-    Returns 0 on success, line number of first error on parse error (doesn't
-    stop on first error), -1 on file open error.
+    Все пары имя=значение обрабатываются последовательно.
+    Для каждой пары вызывается обработчик handler, которому передаются строки,
+    содержащие секцию, имя, значение имени, а также указатель на данные user.
+    Отметим, что время хранения строковых данных ограничено
+    временем работы обработчика, а дакнные должны быть скопированы/сохранены для
+    дальнейшего использования.
+
+    Обработчик должен возвращать ненулевое значение в случае успеха и ноль, в случае
+    возникновения ошибки.
 
   \param filename имя ini-файла
   \param handler функция-обработчик найденных значений
