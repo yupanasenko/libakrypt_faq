@@ -64,8 +64,6 @@
  static const char *asn1_winrtl_i[] =       { "1.2.643.2.52.1.1.4", NULL };
 #endif
 
- static const char *asn1_hashrnd_n[] =      { "hashrnd", NULL };
- static const char *asn1_hashrnd_i[] =      { "1.2.643.2.52.1.1.5", NULL };
  static const char *asn1_streebog256_n[] =  { "streebog256", "md_gost12_256", NULL };
  static const char *asn1_streebog256_i[] =  { "1.2.643.7.1.1.2.2", NULL };
  static const char *asn1_streebog512_n[] =  { "streebog512", "md_gost12_512", NULL };
