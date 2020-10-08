@@ -840,6 +840,7 @@ INPUT                  = @CMAKE_SOURCE_DIR@/source/ak_file.c \
                          @CMAKE_SOURCE_DIR@/source/ak_ini.c \
                          @CMAKE_SOURCE_DIR@/source/ak_tools.c \
                          @CMAKE_SOURCE_DIR@/source/ak_list.c \
+                         @CMAKE_SOURCE_DIR@/source/ak_base64.c \
                          @CMAKE_SOURCE_DIR@/source/libakrypt-base.h
 
 # This tag can be used to specify the character encoding of the source files
