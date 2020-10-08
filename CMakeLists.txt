@@ -56,6 +56,8 @@ if( AK_HAVE_LIBAKRYPT )
  set( AKRYPT_SOURCES
     source/ak_options.c
     source/ak_libakrypt.c
+    source/ak_oid.c
+    source/ak_random.c
  )
 endif()
 
