@@ -1,5 +1,6 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2019 by Diffractee                                                               */
 /*                                                                                                 */
 /*  Файл libakrypt.h                                                                               */
 /* ----------------------------------------------------------------------------------------------- */
@@ -17,6 +18,8 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Попытка доступа к неопределенной опции библиотеки. */
  #define ak_error_wrong_option                (-100)
+/*! \brief Ошибка использования неправильного (неожидаемого) значения. */
+ #define ak_error_invalid_value               (-101)
 
 /*! \brief Неверный тип криптографического механизма. */
  #define ak_error_oid_engine                  (-110)
@@ -31,6 +34,19 @@ extern "C" {
 /*! \brief Ошибка с обращением к oid. */
  #define ak_error_wrong_oid                   (-115)
 
+/*! \brief Ошибка, возникающая когда параметры кривой не соответствуют алгоритму, в котором они используются. */
+ #define ak_error_curve_not_supported         (-120)
+/*! \brief Ошибка, возникающая если точка не принадлежит заданной кривой. */
+ #define ak_error_curve_point                 (-121)
+/*! \brief Ошибка, возникающая когда порядок точки неверен. */
+ #define ak_error_curve_point_order           (-122)
+/*! \brief Ошибка, возникающая если дискриминант кривой равен нулю (уравнение не задает кривую). */
+ #define ak_error_curve_discriminant          (-123)
+/*! \brief Ошибка, возникающая когда неверно определены вспомогательные параметры эллиптической кривой. */
+ #define ak_error_curve_order_parameters      (-124)
+/*! \brief Ошибка, возникающая когда простой модуль кривой задан неверно. */
+ #define ak_error_curve_prime_modulo          (-125)
+
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup test-options Инициализация и настройка параметров библиотеки
  @{ */
@@ -40,6 +56,13 @@ extern "C" {
  int ak_libakrypt_destroy( void );
 /*! \brief Функция выполняет динамическое тестирование работоспособности криптографических преобразований. */
  dll_export bool_t ak_libakrypt_dynamic_control_test( void );
+/*! \brief Функция тестирования корректности реализации операций умножения в полях характеристики два. */
+ dll_export bool_t ak_libakrypt_test_gfn_multiplication( void );
+ /*! \brief Функция тестирует все определяемые библиотекой параметры эллиптических кривых,
+    заданных в короткой форме Вейерштрасса. */
+ dll_export bool_t ak_libakrypt_test_wcurves( void );
+/*! \brief Функция проверяет корректность реализации асимметричных криптографических алгоритмов. */
+ dll_export bool_t ak_libakrypt_test_asymmetric_functions( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает номер версии бибилиотеки libakrypt. */
@@ -66,6 +89,8 @@ extern "C" {
  dll_export int ak_libakrypt_get_home_path( char * , const size_t );
 /*! \brief Функция создает полное имя файла в домашем каталоге библиотеки. */
  dll_export int ak_libakrypt_create_home_filename( char * , const size_t , char * , const int );
+/*! \brief Функция выводит в заданный файл параметры эллиптической кривой. */
+ int ak_libakrypt_print_curve( FILE * , const char * );
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -296,6 +321,273 @@ extern "C" {
  dll_export ak_uint64 ak_random_value( void );
 /*! \brief Уничтожение данных, хранящихся в полях структуры struct random. */
  int ak_random_destroy( ak_random );
+/** @} */
+
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup mpzn Арифметика больших чисел
+ @{ */
+#ifdef LIBAKRYPT_HAVE_GMP_H
+ #include <gmp.h>
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
+ #define ak_mpzn256_size     (4)
+ #define ak_mpzn512_size     (8)
+ #define ak_mpznmax_size    (18)
+
+ #define ak_mpzn256_zero  { 0, 0, 0, 0 }
+ #define ak_mpzn256_one   { 1, 0, 0, 0 }
+ #define ak_mpzn512_zero  { 0, 0, 0, 0, 0, 0, 0, 0 }
+ #define ak_mpzn512_one   { 1, 0, 0, 0, 0, 0, 0, 0 }
+ #define ak_mpznmax_zero  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+ #define ak_mpznmax_one   { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Элемент кольца вычетов по модулю \f$2^{256}\f$. */
+ typedef ak_uint64 ak_mpzn256[ ak_mpzn256_size ];
+/*! \brief Элемент кольца вычетов по модулю \f$2^{512}\f$. */
+ typedef ak_uint64 ak_mpzn512[ ak_mpzn512_size ];
+/*! \brief Тип данных для хранения максимально возможного большого числа. */
+ typedef ak_uint64 ak_mpznmax[ ak_mpznmax_size ];
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Присвоение вычету другого вычета. */
+ dll_export void ak_mpzn_set( ak_uint64 *, ak_uint64 * , const size_t );
+/*! \brief Присвоение вычету беззнакового целого значения. */
+ dll_export void ak_mpzn_set_ui( ak_uint64 *, const size_t , const ak_uint64 );
+/*! \brief Присвоение вычету случайного значения. */
+ dll_export int ak_mpzn_set_random( ak_uint64 *, const size_t , ak_random );
+/*! \brief Присвоение вычету случайного значения по фиксированному модулю. */
+ dll_export int ak_mpzn_set_random_modulo( ak_uint64 *, ak_uint64 *, const size_t , ak_random );
+/*! \brief Присвоение вычету значения, записанного строкой шестнадцатеричных символов. */
+ dll_export int ak_mpzn_set_hexstr( ak_uint64 *, const size_t , const char * );
+/*! \brief Преобразование вычета в строку шестнадцатеричных символов. */
+ dll_export const char *ak_mpzn_to_hexstr( ak_uint64 *, const size_t );
+/*! \brief Преобразование вычета в строку шестнадцатеричных символов с выделением памяти. */
+ dll_export char *ak_mpzn_to_hexstr_alloc( ak_uint64 *, const size_t );
+/*! \brief Сериализация вычета в последовательность октетов. */
+ dll_export int ak_mpzn_to_little_endian( ak_uint64 * , const size_t ,
+                                                             ak_pointer , const size_t , bool_t );
+/*! \brief Присвоение вычету сериализованного значения. */
+ dll_export int ak_mpzn_set_little_endian( ak_uint64 * , const size_t ,
+                                                       const ak_pointer , const size_t , bool_t );
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Сложение двух вычетов */
+ dll_export ak_uint64 ak_mpzn_add( ak_uint64 *, ak_uint64 *, ak_uint64 *, const size_t );
+/*! \brief Вычитание двух вычетов */
+ dll_export ak_uint64 ak_mpzn_sub( ak_uint64 *, ak_uint64 *, ak_uint64 *, const size_t );
+/*! \brief Сравнение двух вычетов */
+ dll_export int ak_mpzn_cmp( ak_uint64 *, ak_uint64 *, const size_t );
+/*! \brief Сравнение вычета с беззнаковым целым числом (типа ak_uint64) */
+ dll_export bool_t ak_mpzn_cmp_ui( ak_uint64 *, const size_t , const ak_uint64 );
+/*! \brief Умножение вычета на беззнаковое целое */
+ dll_export ak_uint64 ak_mpzn_mul_ui( ak_uint64 *, ak_uint64 *, const size_t, const ak_uint64 );
+/*! \brief Умножение двух вычетов как целых чисел */
+ dll_export void ak_mpzn_mul( ak_uint64 *, ak_uint64 *, ak_uint64 *, const size_t );
+/*! \brief Вычисление остатка от деления одного вычета на другой */
+ dll_export void ak_mpzn_rem( ak_uint64 *, ak_uint64 *, ak_uint64 *, const size_t );
+/*! \brief Вычисление остатка от деления вычета на одноразрядное число */
+ dll_export ak_uint32 ak_mpzn_rem_uint32( ak_uint64 *, const size_t , ak_uint32 );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Сложение двух вычетов в представлении Монтгомери. */
+ dll_export void ak_mpzn_add_montgomery( ak_uint64 *, ak_uint64 *,
+                                                         ak_uint64 *, ak_uint64 *, const size_t );
+/*! \brief Удвоение на двойку в представлении Монтгомери. */
+ dll_export void ak_mpzn_lshift_montgomery( ak_uint64 *, ak_uint64 *, ak_uint64 *, const size_t );
+/*! \brief Умножение двух вычетов в представлении Монтгомери. */
+ dll_export void ak_mpzn_mul_montgomery( ak_uint64 *, ak_uint64 *, ak_uint64 *,
+                                                           ak_uint64 *, ak_uint64, const size_t );
+/*! \brief Модульное возведение в степень в представлении Монтгомери. */
+ dll_export void ak_mpzn_modpow_montgomery( ak_uint64 *, ak_uint64 *, ak_uint64 *,
+                                                           ak_uint64 *, ak_uint64, const size_t );
+/* ----------------------------------------------------------------------------------------------- */
+#ifdef LIBAKRYPT_HAVE_GMP_H
+/*! \brief Преобразование ak_mpznxxx в mpz_t. */
+ dll_export void ak_mpzn_to_mpz( const ak_uint64 *, const size_t , mpz_t );
+/*! \brief Преобразование mpz_t в ak_mpznxxx. */
+ dll_export void ak_mpz_to_mpzn( const mpz_t , ak_uint64 *, const size_t );
+#endif
+/** @} */
+
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup curves Эллиптические кривые
+ @{ */
+ struct wcurve;
+/*! \brief Контекст эллиптической кривой, заданной в короткой форме Вейерштрасса. */
+ typedef struct wcurve *ak_wcurve;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Класс, реализующий точку эллиптической кривой.
+
+    Класс представляет собой точку \f$ P \f$ эллиптической кривой, заданной в короткой форме Вейерштрасса,
+    в проективных координатах, т.е. точка представляется в виде вектора \f$ P=(x:y:z) \f$,
+    удовлетворяющего сравнению \f$ y^2z \equiv x^3 + axz^2 + bz^3 \pmod{p} \f$.
+    В дальнейшем, при проведении вычислений, для координат точки используется
+    представление Монтгомери.                                                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ struct wpoint
+{
+/*! \brief x-координата точки эллиптической кривой */
+ ak_uint64 x[ak_mpzn512_size];
+/*! \brief y-координата точки эллиптической кривой */
+ ak_uint64 y[ak_mpzn512_size];
+/*! \brief z-координата точки эллиптической кривой */
+ ak_uint64 z[ak_mpzn512_size];
+};
+/*! \brief Контекст точки эллиптической кривой в короткой форме Вейерштрасса */
+ typedef struct wpoint *ak_wpoint;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Инициализация и присвоение контексту значения образующей точки эллиптической кривой. */
+ dll_export int ak_wpoint_set( ak_wpoint, ak_wcurve );
+/*! \brief Инициализация и присвоение контексту значения бесконечно удаленной точки эллиптической кривой. */
+ dll_export int ak_wpoint_set_as_unit( ak_wpoint , ak_wcurve );
+/*! \brief Инициализация и присвоение контексту значения заданной точки эллиптической кривой. */
+ dll_export int ak_wpoint_set_wpoint( ak_wpoint , ak_wpoint , ak_wcurve );
+
+/*! \brief Проверка принадлежности точки заданной кривой. */
+ dll_export bool_t ak_wpoint_is_ok( ak_wpoint , ak_wcurve );
+/*! \brief Проверка порядка заданной точки. */
+ dll_export bool_t ak_wpoint_check_order( ak_wpoint , ak_wcurve );
+
+/*! \brief Удвоение точки эллиптической кривой, заданной в короткой форме Вейерштрасса. */
+ dll_export void ak_wpoint_double( ak_wpoint , ak_wcurve );
+/*! \brief Прибавление к одной точке эллиптической кривой значения другой точки. */
+ dll_export void ak_wpoint_add( ak_wpoint , ak_wpoint , ak_wcurve );
+/*! \brief Приведение проективной точки к аффинному виду. */
+ dll_export void ak_wpoint_reduce( ak_wpoint , ak_wcurve );
+/*! \brief Вычисление кратной точки эллиптической кривой. */
+ dll_export void ak_wpoint_pow( ak_wpoint , ak_wpoint , ak_uint64 *, size_t , ak_wcurve );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Класс, реализующий эллиптическую кривую, заданную в короткой форме Вейерштрасса
+
+    Класс определяет эллиптическую кривую, заданную сравнением
+    \f$ y^2 \equiv x^3 + ax + b \pmod{p} \f$, а также образующую точку \f$P=(x_P, y_P)\f$
+    на этой кривой с заданным порядком \f$ q \f$.
+
+    Порядок \f$ m \f$ всей группы точек эллиптической кривой может быть определен
+    из равенства \f$ m = dq \f$, где величину \f$ d \f$ называют кофактором.
+
+    Параметры \f$ n, n_q, r_2\f$ вводятся для оптимизации вычислений. Определим \f$ r = 2^{256}\f$
+    или \f$ r=2^{512}\f$, тогда \f$ n \equiv n_0 \pmod{2^{64}}\f$,
+    где \f$ n_0 \equiv -p^{-1} \pmod{r}\f$.
+
+    Величина \f$ r_2 \f$ удовлетворяет сравнению \f$ r_2 \equiv r^2 \pmod{p}\f$.                   */
+/* ----------------------------------------------------------------------------------------------- */
+ struct wcurve
+{
+ /*! \brief Размер параметров эллиптической кривой, исчисляемый количеством 64-х битных блоков. */
+  ak_uint32 size;
+ /*! \brief Кофактор эллиптической кривой - делитель порядка группы точек. */
+  ak_uint32 cofactor;
+ /*! \brief Коэффициент \f$ a \f$ эллиптической кривой (в представлении Монтгомери) */
+  ak_uint64 a[ak_mpzn512_size];
+ /*! \brief Коэффициент \f$ b \f$ эллиптической кривой (в представлении Монтгомери). */
+  ak_uint64 b[ak_mpzn512_size];
+ /*! \brief Модуль \f$ p \f$ эллиптической кривой. */
+  ak_uint64 p[ak_mpzn512_size];
+ /*! \brief Величина \f$ r^2\f$, взятая по модулю \f$ p \f$ и используемая в арифметике Монтгомери. */
+  ak_uint64 r2[ak_mpzn512_size];
+ /*! \brief Порядок \f$ q \f$ подгруппы, порождаемой образующей точкой \f$ P \f$. */
+  ak_uint64 q[ak_mpzn512_size];
+ /*! \brief Величина \f$ r^2\f$, взятая по модулю \f$ q \f$ и используемая в арифметике Монтгомери. */
+  ak_uint64 r2q[ak_mpzn512_size];
+ /*! \brief Точка \f$ P \f$ эллиптической кривой, порождающая подгруппу порядка \f$ q \f$. */
+  struct wpoint point;
+ /*! \brief Константа \f$ n \f$, используемая в арифметике Монтгомери по модулю \f$ p \f$. */
+  ak_uint64 n;
+ /*! \brief Константа \f$ n_q \f$, используемая в арифметике Монтгомери по модулю \f$ q\f$. */
+  ak_uint64 nq;
+ /*! \brief Строка, содержащая символьную запись модуля \f$ p \f$.
+     \details Используется для проверки корректного хранения параметров кривой в памяти. */
+  const char *pchar;
+};
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Вычисление дискриминанта эллиптической кривой, заданной в короткой форме Вейерштрасса. */
+ dll_export void ak_mpzn_set_wcurve_discriminant( ak_uint64 *, ak_wcurve );
+/*! \brief Проверка корректности дискриминанта эллиптической кривой, заданной в форме Вейерштрасса. */
+ dll_export int ak_wcurve_discriminant_is_ok( ak_wcurve );
+/*! \brief Проверка корректности параметров, необходимых для вычисления по модулю q. */
+ dll_export int ak_wcurve_check_order_parameters( ak_wcurve );
+/*! \brief Проверка набора параметров эллиптической кривой, заданной в форме Вейерштрасса. */
+ dll_export int ak_wcurve_is_ok( ak_wcurve );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                         параметры 256-ти битных эллиптических кривых                            */
+/* ----------------------------------------------------------------------------------------------- */
+ extern const struct wcurve id_tc26_gost_3410_2012_256_paramSetTest;
+ extern const struct wcurve id_tc26_gost_3410_2012_256_paramSetA;
+ extern const struct wcurve id_rfc4357_gost_3410_2001_paramSetA;
+ extern const struct wcurve id_rfc4357_gost_3410_2001_paramSetB;
+ extern const struct wcurve id_rfc4357_gost_3410_2001_paramSetC;
+
+/*! \brief Параметры кривой A из RFC 4357, включенные в состав рекомендаций Р 1323565.0.024-2019 */
+ #define id_tc26_gost_3410_2012_256_paramSetB ( id_rfc4357_gost_3410_2001_paramSetA )
+/*! \brief Параметры кривой B из RFC 4357, включенные в состав рекомендаций Р 1323565.0.024-2019 */
+ #define id_tc26_gost_3410_2012_256_paramSetC ( id_rfc4357_gost_3410_2001_paramSetB )
+/*! \brief Параметры кривой C из RFC 4357, включенные в состав рекомендаций Р 1323565.0.024-2019 */
+ #define id_tc26_gost_3410_2012_256_paramSetD ( id_rfc4357_gost_3410_2001_paramSetC )
+
+ extern const struct wcurve id_axel_gost_3410_2012_256_paramSet_N0;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                         параметры 512-ти битных эллиптических кривых                            */
+/* ----------------------------------------------------------------------------------------------- */
+ extern const struct wcurve id_tc26_gost_3410_2012_512_paramSetTest;
+ extern const struct wcurve id_tc26_gost_3410_2012_512_paramSetA;
+ extern const struct wcurve id_tc26_gost_3410_2012_512_paramSetB;
+ extern const struct wcurve id_tc26_gost_3410_2012_512_paramSetC;
+/** @} */
+
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup gf2n Конечные поля характеристики два
+ @{ */
+/*! \brief Умножение элемента поля на примитивный элемент.
+    \details Макрос реализует умножение произвольного элемента поля \f$ \mathbb F_{2^{128}} \f$ на
+    примитивный элемент поля. `s1` задает старшие 64 бита элемента, `s0` - младшие 64 бита.
+    Степень расширения поля равняется 128, а многочлен,
+    порождающий поле равен \f$ f(x) = x^{128} + x^7 + x^2 + x + 1 \in \mathbb F_2[x]\f$.           */
+/* ----------------------------------------------------------------------------------------------- */
+ #define ak_gf128_mul_theta(s1,s0) {\
+   ak_uint64 n = s1&0x8000000000000000LL;\
+   s1 <<= 1; s1 ^= ( s0 >> 63 ); s0 <<= 1;\
+   if( n ) s0 ^= 0x87;\
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Умножение двух элементов поля \f$ \mathbb F_{2^{64}}\f$. */
+ dll_export void ak_gf64_mul_uint64( ak_pointer z, ak_pointer x, ak_pointer y );
+/*! \brief Умножение двух элементов поля \f$ \mathbb F_{2^{128}}\f$. */
+ dll_export void ak_gf128_mul_uint64( ak_pointer z, ak_pointer x, ak_pointer y );
+/*! \brief Умножение двух элементов поля \f$ \mathbb F_{2^{256}}\f$. */
+ dll_export void ak_gf256_mul_uint64( ak_pointer z, ak_pointer x, ak_pointer y );
+/*! \brief Умножение двух элементов поля \f$ \mathbb F_{2^{512}}\f$. */
+ dll_export void ak_gf512_mul_uint64( ak_pointer z, ak_pointer x, ak_pointer y );
+
+#ifdef AK_HAVE_BUILTIN_CLMULEPI64
+/*! \brief Умножение двух элементов поля \f$ \mathbb F_{2^{64}}\f$. */
+ dll_export void ak_gf64_mul_pcmulqdq( ak_pointer z, ak_pointer x, ak_pointer y );
+/*! \brief Умножение двух элементов поля \f$ \mathbb F_{2^{128}}\f$. */
+ dll_export void ak_gf128_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b );
+/*! \brief Умножение двух элементов поля \f$ \mathbb F_{2^{256}}\f$. */
+ dll_export void ak_gf256_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b );
+/*! \brief Умножение двух элементов поля \f$ \mathbb F_{2^{512}}\f$. */
+ dll_export void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b );
+
+ #define ak_gf64_mul ak_gf64_mul_pcmulqdq
+ #define ak_gf128_mul ak_gf128_mul_pcmulqdq
+ #define ak_gf256_mul ak_gf256_mul_pcmulqdq
+ #define ak_gf512_mul ak_gf512_mul_pcmulqdq
+#else
+
+ #define ak_gf64_mul ak_gf64_mul_uint64
+ #define ak_gf128_mul ak_gf128_mul_uint64
+ #define ak_gf256_mul ak_gf256_mul_uint64
+ #define ak_gf512_mul ak_gf512_mul_uint64
+#endif
 /** @} */
 
 #ifdef __cplusplus

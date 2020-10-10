@@ -227,37 +227,34 @@
 // return ak_true;
 //}
 
-///* ----------------------------------------------------------------------------------------------- */
-///*! \brief Функция проверяет корректность реализации асимметричных криптографических алгоритмов
-//    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
-//    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
-//    вызова ak_error_get_value()                                                                    */
-///* ----------------------------------------------------------------------------------------------- */
-// static bool_t ak_libakrypt_test_asymmetric_functions( void )
-//{
-//  int audit = ak_log_get_level();
-//  if( audit >= ak_log_maximum )
-//    ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms started" );
+/* ----------------------------------------------------------------------------------------------- */
+/*! @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
+    вызова ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_libakrypt_test_asymmetric_functions( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms started" );
 
-// /* тестируем корректность реализации операций с эллиптическими кривыми в форме Вейерштрасса */
-//  if( ak_wcurve_test() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of Weierstrass curves" );
-//    return ak_false;
-//  }
+ /* тестируем корректность реализации операций с эллиптическими кривыми в форме Вейерштрасса */
+  if( ak_libakrypt_test_wcurves() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of Weierstrass curves" );
+    return ak_false;
+  }
 
-//#ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
 // /* тестируем корректность реализации алгоритмов электронной подписи */
 //  if( ak_signkey_test() != ak_true ) {
 //    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of digital signatures" );
 //    return ak_false;
 //  }
-//#endif
 
-//  if( audit >= ak_log_maximum )
-//   ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms ended successfully" );
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms ended successfully" );
 
-// return ak_true;
-//}
+ return ak_true;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция проверяет корректность работы всех криптографических механизмов библиотеки
@@ -269,12 +266,12 @@
   int audit = ak_log_get_level();
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ , "testing started" );
 
-// /* тестируем арифметические операции в конечных полях */
-//  if( ak_gfn_multiplication_test() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ ,
-//                                          "incorrect testing of multiplication in Galois fields" );
-//    return ak_false;
-//  }
+ /* тестируем арифметические операции в конечных полях */
+  if( ak_libakrypt_test_gfn_multiplication() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                          "incorrect testing of multiplication in Galois fields" );
+    return ak_false;
+  }
 
 // /* проверяем корректность реализации алгоритмов бесключевого хеширования */
 //  if( ak_libakrypt_test_hash_functions( ) != ak_true ) {
@@ -294,12 +291,12 @@
 //     return ak_false;
 //   }
 
-// /* тестируем работу алгоритмов выработки и проверки электронной подписи */
-//  if( ak_libakrypt_test_asymmetric_functions() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ ,
-//                                        "error while testing digital signature mechanisms" );
-//    return ak_false;
-//  }
+ /* тестируем работу алгоритмов выработки и проверки электронной подписи */
+  if( ak_libakrypt_test_asymmetric_functions() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                        "error while testing digital signature mechanisms" );
+    return ak_false;
+  }
 
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ , "testing is Ok" );
  return ak_true;
@@ -433,6 +430,8 @@
  return error;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \example aktool_test.c                                                                         */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                 ak_libakrypt.c  */
 /* ----------------------------------------------------------------------------------------------- */

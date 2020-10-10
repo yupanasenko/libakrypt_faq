@@ -40,7 +40,7 @@
        next_option = getopt_long( argc, argv, "", long_options, NULL );
        switch( next_option )
       {
-        case  1  : return aktool_show_help();
+        case  1  :   return aktool_show_help();
         case  2  : /* получили от пользователя имя файла для вывода аудита */
                      aktool_set_audit( optarg );
                      break;                     
@@ -166,11 +166,11 @@
        } while( mode++ < undefined_mode );
        break;
 
-//     case do_curve:
-//       if( ak_libakrypt_print_curve( stdout, curve ) != ak_error_ok ) {
-//         aktool_error(_("using incorrect elliptic curve name or identifier"));
-//         aktool_error(_("try \"aktool s --oid curve\" to list all supported elliptic curves"));
-//       }
+     case do_curve:
+       if( ak_libakrypt_print_curve( stdout, value ) != ak_error_ok ) {
+         aktool_error(_("using incorrect elliptic curve name or identifier"));
+         aktool_error(_("try \"aktool s --oid curve\" to list all supported elliptic curves"));
+       }
 
      default:  break;
    }

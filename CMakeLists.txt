@@ -21,6 +21,20 @@ project( libakrypt-${FULL_VERSION} C )
 option( AK_STATIC_LIB "Build the static library" ON )
 option( AK_SHARED_LIB "Build the shared library" ON )
 option( AK_HAVE_LIBAKRYPT "Build crypto library" ON )
+option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
+
+if( LIBAKRYPT_GMP_TESTS )
+  find_library( GMP_LIB gmp )
+  if( GMP_LIB )
+    set( AK_HAVE_LIBAKRYPT ON )
+    set( AK_STATIC_LIB ON )
+    message("-- Found libgmp: ${GMP_LIB}" )
+  else()
+    set( LIBAKRYPT_GMP_TESTS OFF )
+    message("-- libgmp not found" )
+  endif()
+
+endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # подключаем модули CMake для тонкой настройки параметров сборки
@@ -58,6 +72,10 @@ if( AK_HAVE_LIBAKRYPT )
     source/ak_libakrypt.c
     source/ak_oid.c
     source/ak_random.c
+    source/ak_gf2n.c
+    source/ak_mpzn.c
+    source/ak_curves.c
+    source/ak_parameters.c
  )
 endif()
 
@@ -141,11 +159,37 @@ foreach( programm ${EXAMPLES_LIST} )
 endforeach()
 
 # -------------------------------------------------------------------------------------------------- #
+# Сборка тестовых примеров, проверяющих корректность элементарных арифметических операций
+set ( ARITHMETIC_TESTS_LIST
+      random01
+      gf2n
+    )
+
+if( LIBAKRYPT_GMP_TESTS )
+  set( ARITHMETIC_TESTS_LIST ${ARITHMETIC_TESTS_LIST}
+       mpzn-arithmetic
+       mpzn-convert
+       mpzn-montgomery
+       mpzn-rem
+     )
+endif()
+
+enable_testing()
+foreach( programm ${ARITHMETIC_TESTS_LIST} )
+  add_executable( test-${programm} examples/test-${programm}.c )
+  target_link_libraries( test-${programm} akrypt-static akbase-static ${GMP_LIB} )
+  add_test( NAME test-${programm} COMMAND test-${programm} )
+endforeach()
+message("-- Added tests (now \"make test\" enabled)")
+message("   -- ${ARITHMETIC_TESTS_LIST}" )
+
+# -------------------------------------------------------------------------------------------------- #
 # Сборка большого примера для функций криптобиблиотеки -- утилиты aktool
 # -------------------------------------------------------------------------------------------------- #
 set( AKTOOL_SOURCES
      aktool/aktool.c
      aktool/aktool_show.c
+     aktool/aktool_test.c
    )
 set( AKTOOL_FILES
      aktool/aktool.h
@@ -158,7 +202,8 @@ if( AK_HAVE_GETOPT_H )
 else()
   set( AKTOOL_SOURCES ${AKTOOL_SOURCES} aktool/getopt.c )
 endif()
-message("-- Sources for aktool: ${AKTOOL_SOURCES}" )
+message("-- Sources for aktool" )
+message("   -- ${AKTOOL_SOURCES}" )
 
 find_path( AK_HAVE_LIBINTL_H NAMES libintl.h )
 if( AK_HAVE_LIBINTL_H )
@@ -172,9 +217,9 @@ target_include_directories( aktool PUBLIC "aktool" )
 find_library( LIBINTL_LIB intl )
 if( LIBINTL_LIB )
   message("-- Additional library for aktool is ${LIBINTL_LIB}")
-  target_link_libraries( aktool akrypt-static akbase-static ${LIBINTL_LIB} )
+  target_link_libraries( aktool akrypt-static akbase-static ${LIBINTL_LIB} ${GMP_LIB} )
  else()
-  target_link_libraries( aktool akrypt-static akbase-static )
+  target_link_libraries( aktool akrypt-static akbase-static ${GMP_LIB} )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #

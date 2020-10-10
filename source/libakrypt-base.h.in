@@ -68,12 +68,21 @@ extern "C" {
  #error Library cannot be compiled without stdlib.h header (required to determine malloc() function)
 #endif
 
+#cmakedefine AK_HAVE_SYSENDIAN_H
+#ifdef AK_HAVE_SYSENDIAN_H
+ #include <sys/endian.h>
+#endif
+
+#cmakedefine AK_HAVE_BYTESWAP_H
+#ifdef AK_HAVE_BYTESWAP_H
+ #include <byteswap.h>
+#endif
+
 #cmakedefine AK_HAVE_ERRNO_H
 #cmakedefine AK_HAVE_SYSTYPES_H
 #cmakedefine AK_HAVE_TIME_H
 #cmakedefine AK_HAVE_STRINGS_H
 #cmakedefine AK_HAVE_ENDIAN_H
-#cmakedefine AK_HAVE_SYSENDIAN_H
 #cmakedefine AK_HAVE_SYSTIME_H
 #cmakedefine AK_HAVE_SYSLOG_H
 #cmakedefine AK_HAVE_UNISTD_H
@@ -94,9 +103,10 @@ extern "C" {
 #cmakedefine AK_HAVE_LIBINTL_H
 
 /* ----------------------------------------------------------------------------------------------- */
-#cmakedefine AK_HAVE_INI
-#cmakedefine AK_HAVE_LIST
-#cmakedefine AK_HAVE_FILE
+#cmakedefine LIBAKRYPT_TESTS_GMP
+#ifdef LIBAKRYPT_TESTS_GMP
+ #define LIBAKRYPT_HAVE_GMP_H
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 #cmakedefine AK_HAVE_WINDOWS_H
@@ -151,6 +161,14 @@ extern "C" {
 #else
  typedef TCHAR tchar;
 #endif
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Объединение для обработки 128-ми битных значений. */
+ typedef union {
+    ak_uint8 b[16];
+    ak_uint32 w[4];
+    ak_uint64 q[2];
+ } ak_uint128;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Определение булева типа, принимающего значения либо истина, либо ложь. */
@@ -417,7 +435,7 @@ extern "C" {
 #else
  #include <stdlib.h>
  #ifndef _MSC_VER
-   dll_export unsigned __int64 __cdecl _byteswap_uint64(unsigned __int64 _Int64);
+   unsigned __int64 __cdecl _byteswap_uint64(unsigned __int64 _Int64);
 
    #define _byteswap_ulong( x )  ((((x)&0xFF)<<24) \
                                  |(((x)>>24)&0xFF) \

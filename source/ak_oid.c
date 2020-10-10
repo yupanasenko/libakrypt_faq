@@ -151,9 +151,9 @@
  static const char *asn1_email_n[] =        { "email-address", "email", NULL };
  static const char *asn1_email_i[] =        { "1.2.840.113549.1.9.1", NULL };
  static const char *asn1_cn_n[] =           { "common-name", "cn", NULL };
- static const char *asn1_cn_i[] =           { "2.5.4.3", "cn", NULL };
+ static const char *asn1_cn_i[] =           { "2.5.4.3", NULL };
  static const char *asn1_s_n[] =            { "surname", "s", NULL };
- static const char *asn1_s_i[] =            { "2.5.4.4", "s", NULL };
+ static const char *asn1_s_i[] =            { "2.5.4.4", NULL };
  static const char *asn1_sn_n[] =           { "serial-number", "sn", NULL };
  static const char *asn1_sn_i[] =           { "2.5.4.5", NULL };
  static const char *asn1_c_n[] =            { "country-name", "c", NULL };
@@ -299,33 +299,34 @@ static struct oid libakrypt_oids[] =
 // },
 //#endif
 
-// {{ identifier, wcurve_params, asn1_w256_pst_i, asn1_w256_pst_n },
-//                 (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetTest, ak_object_undefined },
-// {{ identifier, wcurve_params, asn1_w256_psa_i, asn1_w256_psa_n },
-//                    (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetA, ak_object_undefined },
-// {{ identifier, wcurve_params, asn1_w256_psb_i, asn1_w256_psb_n },
-//                     (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA, ak_object_undefined },
-// {{ identifier, wcurve_params, asn1_w256_psc_i, asn1_w256_psc_n },
-//                     (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB, ak_object_undefined },
-// {{ identifier, wcurve_params, asn1_w256_psd_i, asn1_w256_psd_n },
-//                     (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC, ak_object_undefined },
-// {{ identifier, wcurve_params, asn1_w256_axel_i, asn1_w256_axel_n },
-//                  (ak_pointer) &id_axel_gost_3410_2012_256_paramSet_N0, ak_object_undefined },
+ { identifier, wcurve_params, asn1_w256_pst_i, asn1_w256_pst_n,
+                 (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetTest, ak_object_undefined },
+ { identifier, wcurve_params, asn1_w256_psa_i, asn1_w256_psa_n,
+                    (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetA, ak_object_undefined },
+ { identifier, wcurve_params, asn1_w256_psb_i, asn1_w256_psb_n,
+                     (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA, ak_object_undefined },
+ { identifier, wcurve_params, asn1_w256_psc_i, asn1_w256_psc_n,
+                     (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB, ak_object_undefined },
+ { identifier, wcurve_params, asn1_w256_psd_i, asn1_w256_psd_n,
+                     (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC, ak_object_undefined },
+ { identifier, wcurve_params, asn1_w256_axel_i, asn1_w256_axel_n,
+                  (ak_pointer) &id_axel_gost_3410_2012_256_paramSet_N0, ak_object_undefined },
 
-// {{ identifier, wcurve_params, asn1_w512_pst_i, asn1_w512_pst_n },
-//                 (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetTest, ak_object_undefined },
-// {{ identifier, wcurve_params, asn1_w512_psa_i, asn1_w512_psa_n },
-//                  (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetA, ak_object_undefined },
-// {{ identifier, wcurve_params, asn1_w512_psb_i, asn1_w512_psb_n },
-//                  (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetB, ak_object_undefined },
-// {{ identifier, wcurve_params, asn1_w512_psc_i, asn1_w512_psc_n },
-//                  (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetC, ak_object_undefined },
+ { identifier, wcurve_params, asn1_w512_pst_i, asn1_w512_pst_n,
+                 (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetTest, ak_object_undefined },
+ { identifier, wcurve_params, asn1_w512_psa_i, asn1_w512_psa_n,
+                  (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetA, ak_object_undefined },
+ { identifier, wcurve_params, asn1_w512_psb_i, asn1_w512_psb_n,
+                  (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetB, ak_object_undefined },
+ { identifier, wcurve_params, asn1_w512_psc_i, asn1_w512_psc_n,
+                  (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetC, ak_object_undefined },
 
-//#ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
-// {{ identifier, descriptor, asn1_akcont_i, asn1_akcont_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_pbkdf2key_i, asn1_pbkdf2key_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_sdhkey_i, asn1_sdhkey_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_extkey_i, asn1_extkey_n }, NULL, ak_object_undefined },
+/* идентификаторы, используемые при разборе сертификатов и ключевых контейнеров */
+ { identifier, descriptor, asn1_akcont_i, asn1_akcont_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_pbkdf2key_i, asn1_pbkdf2key_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_sdhkey_i, asn1_sdhkey_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_extkey_i, asn1_extkey_n, NULL, ak_object_undefined },
+
 // {{ identifier, parameter, asn1_symkmd_i, asn1_symkmd_n },
 //                                    (ak_pointer) symmetric_key_content, ak_object_undefined },
 // {{ identifier, parameter, asn1_skmd_i, asn1_skmd_n },
@@ -339,41 +340,40 @@ static struct oid libakrypt_oids[] =
 // {{ identifier, parameter, asn1_pcmd_i, asn1_pcmd_n },
 //                                            (ak_pointer) plain_content, ak_object_undefined },
 
-// {{ identifier, descriptor, asn1_email_i, asn1_email_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_cn_i, asn1_cn_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_s_i, asn1_s_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_sn_i, asn1_sn_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_c_i, asn1_c_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_l_i, asn1_l_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_st_i, asn1_st_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_sa_i, asn1_sa_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_o_i, asn1_o_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_ou_i, asn1_ou_n }, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_email_i, asn1_email_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_cn_i, asn1_cn_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_s_i, asn1_s_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_sn_i, asn1_sn_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_c_i, asn1_c_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_l_i, asn1_l_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_st_i, asn1_st_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_sa_i, asn1_sa_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_o_i, asn1_o_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_ou_i, asn1_ou_n, NULL, ak_object_undefined },
 
-// {{ identifier, descriptor, asn1_ku_i, asn1_ku_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_ski_i, asn1_ski_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_bc_i, asn1_bc_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_cp_i, asn1_cp_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_wcp_i, asn1_wcp_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_aki_i, asn1_aki_n }, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_ku_i, asn1_ku_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_ski_i, asn1_ski_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_bc_i, asn1_bc_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_cp_i, asn1_cp_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_wcp_i, asn1_wcp_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_aki_i, asn1_aki_n, NULL, ak_object_undefined },
 
-// {{ identifier, descriptor, asn1_ogrn_i, asn1_ogrn_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_snils_i, asn1_snils_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_ogrnip_i, asn1_ogrnip_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_owner_mod_i, asn1_owner_mod_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_issuer_mod_i, asn1_issuer_mod_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_inn_i, asn1_inn_n }, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_ogrn_i, asn1_ogrn_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_snils_i, asn1_snils_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_ogrnip_i, asn1_ogrnip_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_owner_mod_i, asn1_owner_mod_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_issuer_mod_i, asn1_issuer_mod_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_inn_i, asn1_inn_n, NULL, ak_object_undefined },
 
-// {{ identifier, descriptor, asn1_class_kc1_i, asn1_class_kc1_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_class_kc2_i, asn1_class_kc2_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_class_kc3_i, asn1_class_kc3_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_class_kb1_i, asn1_class_kb1_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_class_kb2_i, asn1_class_kb2_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_class_ka1_i, asn1_class_ka1_n }, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_class_kc1_i, asn1_class_kc1_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_class_kc2_i, asn1_class_kc2_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_class_kc3_i, asn1_class_kc3_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_class_kb1_i, asn1_class_kb1_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_class_kb2_i, asn1_class_kb2_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_class_ka1_i, asn1_class_ka1_n, NULL, ak_object_undefined },
 
-// {{ identifier, descriptor, asn1_mscav_i, asn1_mscav_n }, NULL, ak_object_undefined },
-// {{ identifier, descriptor, asn1_mspsh_i, asn1_mspsh_n }, NULL, ak_object_undefined },
-//#endif
+ { identifier, descriptor, asn1_mscav_i, asn1_mscav_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_mspsh_i, asn1_mspsh_n, NULL, ak_object_undefined },
 
  /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */
   ak_oid_undefined
@@ -674,6 +674,8 @@ static struct oid libakrypt_oids[] =
  return result;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*! \example aktool_show.c                                                                         */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                       ak_oid.c  */
 /* ----------------------------------------------------------------------------------------------- */
