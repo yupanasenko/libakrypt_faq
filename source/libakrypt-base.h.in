@@ -1,5 +1,6 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2019 by Anton Sakharov                                                           */
 /*                                                                                                 */
 /*  Файл libakrypt-base.h (определение платформозависимых функций)                                 */
 /* ----------------------------------------------------------------------------------------------- */
@@ -78,6 +79,11 @@ extern "C" {
  #include <byteswap.h>
 #endif
 
+#cmakedefine AK_HAVE_STDALIGN_H
+#ifdef AK_HAVE_STDALIGN_H
+ #include <stdalign.h>
+#endif
+
 #cmakedefine AK_HAVE_ERRNO_H
 #cmakedefine AK_HAVE_SYSTYPES_H
 #cmakedefine AK_HAVE_TIME_H
@@ -96,17 +102,11 @@ extern "C" {
 #cmakedefine AK_HAVE_TERMIOS_H
 #cmakedefine AK_HAVE_DIRENT_H
 #cmakedefine AK_HAVE_FNMATCH_H
-#cmakedefine AK_HAVE_STDALIGN_H
 #cmakedefine AK_HAVE_LOCALE_H
 #cmakedefine AK_HAVE_SIGNAL_H
 #cmakedefine AK_HAVE_GETOPT_H
 #cmakedefine AK_HAVE_LIBINTL_H
-
-/* ----------------------------------------------------------------------------------------------- */
 #cmakedefine LIBAKRYPT_TESTS_GMP
-#ifdef LIBAKRYPT_TESTS_GMP
- #define LIBAKRYPT_HAVE_GMP_H
-#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 #cmakedefine AK_HAVE_WINDOWS_H
@@ -114,6 +114,7 @@ extern "C" {
  #include <windows.h>
  #include <io.h>
  #include <process.h>
+ #include <wincrypt.h>
  #include <tchar.h>
  #ifdef _MSC_VER
   #include <strsafe.h>
@@ -480,6 +481,8 @@ extern "C" {
  dll_export ak_uint8 *ak_ptr_load_from_file( ak_pointer , size_t * , const char * );
 /*! \brief Функция чтения заданного файла в кодировке base64 в буффер. */
  ak_uint8 *ak_ptr_load_from_base64_file( ak_pointer , size_t * , const char * );
+/*! \brief Выделение выравненной памяти. */
+ ak_pointer ak_aligned_malloc( size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция кодирует три байта информации в формат base64.  */

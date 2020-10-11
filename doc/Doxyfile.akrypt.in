@@ -852,7 +852,9 @@ INPUT                  = @CMAKE_SOURCE_DIR@/source/libakrypt.h \
                          @CMAKE_SOURCE_DIR@/source/ak_gf2n.c \
                          @CMAKE_SOURCE_DIR@/source/ak_mpzn.c \
                          @CMAKE_SOURCE_DIR@/source/ak_curves.c \
-                         @CMAKE_SOURCE_DIR@/source/ak_parameters.c
+                         @CMAKE_SOURCE_DIR@/source/ak_parameters.c \
+                         @CMAKE_SOURCE_DIR@/source/ak_mac.c \
+                         @CMAKE_SOURCE_DIR@/source/ak_hash.c
 
 
 # This tag can be used to specify the character encoding of the source files

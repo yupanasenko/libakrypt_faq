@@ -109,35 +109,34 @@
   return ak_error_ok;
 }
 
-///* ----------------------------------------------------------------------------------------------- */
-///*! \brief Функция проверяет корректность реализации алгоритмов хэширования
-//    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
-//    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
-//    вызова ak_error_get_value()                                                                    */
-///* ----------------------------------------------------------------------------------------------- */
-// static bool_t ak_libakrypt_test_hash_functions( void )
-//{
-//  int audit = ak_log_get_level();
-//  if( audit >= ak_log_maximum )
-//    ak_error_message( ak_error_ok, __func__ , "testing hash functions started" );
+/* ----------------------------------------------------------------------------------------------- */
+/*! @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
+    вызова ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_libakrypt_test_hash_functions( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing hash functions started" );
 
-// /* тестируем функцию Стрибог256 */
-//  if( ak_hash_test_streebog256() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog256 testing" );
-//    return ak_false;
-//  }
+ /* тестируем функцию Стрибог256 */
+  if( ak_libakrypt_test_streebog256() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog256 testing" );
+    return ak_false;
+  }
 
-// /* тестируем функцию Стрибог512 */
-//  if( ak_hash_test_streebog512() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog512 testing" );
-//    return ak_false;
-//  }
+ /* тестируем функцию Стрибог512 */
+  if( ak_libakrypt_test_streebog512() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect streebog512 testing" );
+    return ak_false;
+  }
 
-//  if( audit >= ak_log_maximum )
-//   ak_error_message( ak_error_ok, __func__ , "testing hash functions ended successfully" );
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing hash functions ended successfully" );
 
-// return ak_true;
-//}
+ return ak_true;
+}
 
 ///* ----------------------------------------------------------------------------------------------- */
 ///*! \brief Функция проверяет корректность реализации блочных шифрова и режимов их использования.
@@ -273,11 +272,11 @@
     return ak_false;
   }
 
-// /* проверяем корректность реализации алгоритмов бесключевого хеширования */
-//  if( ak_libakrypt_test_hash_functions( ) != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of hash functions" );
-//    return ak_false;
-//  }
+ /* проверяем корректность реализации алгоритмов бесключевого хеширования */
+  if( ak_libakrypt_test_hash_functions( ) != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of hash functions" );
+    return ak_false;
+  }
 
 // /* тестируем работу алгоритмов блочного шифрования */
 //  if( ak_libakrypt_test_block_ciphers() != ak_true ) {

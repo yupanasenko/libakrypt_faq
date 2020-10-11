@@ -144,8 +144,13 @@
          printf("------------------------------------------------------\n");
        }
        for( idx = 0; idx < ak_libakrypt_options_count(); idx++ ) {
-          printf(" %-40s %-16lld\n", ak_libakrypt_get_option_name( idx ),
-                                                          ak_libakrypt_get_option_by_index( idx ));
+         #ifndef __MINGW32__
+          printf(" %-40s %-16lld\n",
+                   ak_libakrypt_get_option_name( idx ), ak_libakrypt_get_option_by_index( idx ));
+         #else
+          printf(" %-40s %-16ld\n", ak_libakrypt_get_option_name( idx ),
+                                             (long int) ak_libakrypt_get_option_by_index( idx ));
+         #endif
        }
        break;
 

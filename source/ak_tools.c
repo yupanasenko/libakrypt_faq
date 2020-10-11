@@ -351,22 +351,24 @@
  int ak_error_message_fmt( const int code, const char *function, const char *format, ... )
 {
   va_list args;
+  char ak_static_buffer_fmt[512];
+
   va_start( args, format );
-  memset( ak_static_buffer, 0, sizeof( ak_static_buffer ));
+  memset( ak_static_buffer_fmt, 0, sizeof( ak_static_buffer_fmt ));
 
  #ifdef _MSC_VER
   #if _MSC_VER > 1310
-    _vsnprintf_s( ak_static_buffer,
-                  sizeof( ak_static_buffer ), sizeof( ak_static_buffer ), format, args );
+    _vsnprintf_s( ak_static_buffer_fmt,
+                  sizeof( ak_static_buffer_fmt ), sizeof( ak_static_buffer_fmt ), format, args );
   #else
-    _vsnprintf( ak_static_buffer, sizeof( ak_static_buffer), format, args );
+    _vsnprintf( ak_static_buffer_fmt, sizeof( ak_static_buffer_fmt ), format, args );
   #endif
  #else
-   vsnprintf( ak_static_buffer, sizeof( ak_static_buffer ), format, args );
+   vsnprintf( ak_static_buffer_fmt, sizeof( ak_static_buffer_fmt ), format, args );
  #endif
    va_end( args );
 
- return ak_error_message( code, function, ak_static_buffer );
+ return ak_error_message( code, function, ak_static_buffer_fmt );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -981,6 +983,26 @@
 }
  #endif
 #endif
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Если это возможно, то функция возвращает память, выравненную по границе 16 байт.
+    @param size Размер выделяемой памяти в байтах.
+    @return Указатель на выделенную память.                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_aligned_malloc( size_t size )
+{
+ return
+#ifndef __MINGW32__
+ #ifdef AK_HAVE_STDALIGN_H
+  aligned_alloc( 16,
+ #else
+  malloc(
+ #endif
+#else
+  malloc(
+#endif
+  size );
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \example example-log.c                                                                         */

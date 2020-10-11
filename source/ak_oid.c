@@ -240,23 +240,18 @@ static struct oid libakrypt_oids[] =
                                   (ak_function_destroy_object *) ak_random_destroy }},
 #endif
 
-///* добавляем идентификаторы алгоритмов */
-//#ifdef LIBAKRYPT_CRYPTO_FUNCTIONS
-// {{ random_generator, algorithm, asn1_hashrnd_i, asn1_hashrnd_n }, NULL,
-//  { sizeof( struct random ),
-//    ( ak_function_create_object *) ak_random_create_hashrnd,
-//    ( ak_function_destroy_object *) ak_random_destroy }
-// },
-// {{ hash_function, algorithm, asn1_streebog256_i, asn1_streebog256_n }, NULL,
-//  { sizeof( struct hash ),
-//    ( ak_function_create_object *) ak_hash_create_streebog256,
-//    ( ak_function_destroy_object *) ak_hash_destroy }
-// },
-// {{ hash_function, algorithm, asn1_streebog512_i, asn1_streebog512_n }, NULL,
-//  { sizeof( struct hash ),
-//    ( ak_function_create_object *) ak_hash_create_streebog512,
-//    ( ak_function_destroy_object *) ak_hash_destroy }
-// },
+/* добавляем идентификаторы алгоритмов */
+ { hash_function, algorithm, asn1_streebog256_i, asn1_streebog256_n, NULL,
+  { sizeof( struct hash ),
+    ( ak_function_create_object *) ak_hash_create_streebog256,
+    ( ak_function_destroy_object *) ak_hash_destroy }
+ },
+ { hash_function, algorithm, asn1_streebog512_i, asn1_streebog512_n, NULL,
+  { sizeof( struct hash ),
+    ( ak_function_create_object *) ak_hash_create_streebog512,
+    ( ak_function_destroy_object *) ak_hash_destroy }
+ },
+
 // {{ hmac_function, algorithm, asn1_hmac_streebog256_i, asn1_hmac_streebog256_n }, NULL,
 //  { sizeof( struct hmac ),
 //    ( ak_function_create_object *) ak_hmac_create_streebog256,
@@ -297,7 +292,6 @@ static struct oid libakrypt_oids[] =
 //    ( ak_function_create_object *) ak_verifykey_create_streebog512,
 //    ( ak_function_destroy_object *) ak_verifykey_destroy }
 // },
-//#endif
 
  { identifier, wcurve_params, asn1_w256_pst_i, asn1_w256_pst_n,
                  (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetTest, ak_object_undefined },

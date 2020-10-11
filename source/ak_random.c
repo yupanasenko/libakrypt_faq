@@ -435,7 +435,7 @@
   HCRYPTPROV handle = 0;
 
   int error = ak_error_ok;
-  if(( error = ak_random_context_create( generator )) != ak_error_ok )
+  if(( error = ak_random_create( generator )) != ak_error_ok )
     return ak_error_message( error, __func__ , "wrong initialization of random generator" );
 
   /* теперь мы открываем криптопровайдер для доступа к генерации случайных значений
@@ -448,20 +448,20 @@
                                             PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT )) {
         ak_error_message_fmt( error = ak_error_open_file, __func__,
               "wrong open default key for system crypto provider with error: %x", GetLastError( ));
-       ak_random_context_destroy( generator );
+       ak_random_destroy( generator );
        return error;
       }
     } else {
        ak_error_message_fmt( error = ak_error_access_file, __func__,
                     "wrong creation of default key for system crypto provider with error: %x",
                                                                                   GetLastError( ));
-       ak_random_context_destroy( generator );
+       ak_random_destroy( generator );
        return error;
      }
   }
 
   generator->data.handle = handle;
-  generator->oid = ak_oid_context_find_by_name("winrtl");
+  generator->oid = ak_oid_find_by_name("winrtl");
   generator->next = NULL;
   generator->randomize_ptr = NULL;
   generator->random = ak_random_winrtl_random;
