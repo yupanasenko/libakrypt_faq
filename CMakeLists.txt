@@ -78,6 +78,8 @@ if( AK_HAVE_LIBAKRYPT )
     source/ak_parameters.c
     source/ak_mac.c
     source/ak_hash.c
+    source/ak_skey.c
+    source/ak_hmac.c
  )
 endif()
 

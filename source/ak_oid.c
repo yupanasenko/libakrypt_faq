@@ -72,20 +72,20 @@
  static const char *asn1_hmac_streebog256_i[] = { "1.2.643.7.1.1.4.1", NULL };
  static const char *asn1_hmac_streebog512_n[] = { "hmac-streebog512", "HMAC-md_gost12_512", NULL };
  static const char *asn1_hmac_streebog512_i[] = { "1.2.643.7.1.1.4.2", NULL };
- static const char *asn1_magma_n[] =        { "magma", NULL };
- static const char *asn1_magma_i[] =        { "1.2.643.7.1.1.5.1", NULL };
- static const char *asn1_kuznechik_n[] =    { "kuznechik", "kuznyechik", "grasshopper", NULL };
- static const char *asn1_kuznechik_i[] =    { "1.2.643.7.1.1.5.2", NULL };
- static const char *asn1_sign256_n[] =      { "id-tc26-signwithdigest-gost3410-12-256",
-                                              "sign256", NULL };
- static const char *asn1_sign256_i[] =      { "1.2.643.7.1.1.3.2", NULL };
- static const char *asn1_sign512_n[] =      { "id-tc26-signwithdigest-gost3410-12-512",
-                                              "sign512", NULL };
- static const char *asn1_sign512_i[] =      { "1.2.643.7.1.1.3.3", NULL };
- static const char *asn1_verify256_n[] =    { "id-tc26-gost3410-12-256", "verify256", NULL };
- static const char *asn1_verify256_i[] =    { "1.2.643.7.1.1.1.1", NULL };
- static const char *asn1_verify512_n[] =    { "id-tc26-gost3410-12-512", "verify512", NULL };
- static const char *asn1_verify512_i[] =    { "1.2.643.7.1.1.1.2", NULL };
+// static const char *asn1_magma_n[] =        { "magma", NULL };
+// static const char *asn1_magma_i[] =        { "1.2.643.7.1.1.5.1", NULL };
+// static const char *asn1_kuznechik_n[] =    { "kuznechik", "kuznyechik", "grasshopper", NULL };
+// static const char *asn1_kuznechik_i[] =    { "1.2.643.7.1.1.5.2", NULL };
+// static const char *asn1_sign256_n[] =      { "id-tc26-signwithdigest-gost3410-12-256",
+//                                              "sign256", NULL };
+// static const char *asn1_sign256_i[] =      { "1.2.643.7.1.1.3.2", NULL };
+// static const char *asn1_sign512_n[] =      { "id-tc26-signwithdigest-gost3410-12-512",
+//                                              "sign512", NULL };
+// static const char *asn1_sign512_i[] =      { "1.2.643.7.1.1.3.3", NULL };
+// static const char *asn1_verify256_n[] =    { "id-tc26-gost3410-12-256", "verify256", NULL };
+// static const char *asn1_verify256_i[] =    { "1.2.643.7.1.1.1.1", NULL };
+// static const char *asn1_verify512_n[] =    { "id-tc26-gost3410-12-512", "verify512", NULL };
+// static const char *asn1_verify512_i[] =    { "1.2.643.7.1.1.1.2", NULL };
 
  static const char *asn1_w256_pst_n[] =     { "id-tc26-gost-3410-2012-256-paramSetTest", NULL };
  static const char *asn1_w256_pst_i[] =     { "1.2.643.7.1.2.1.1.0",
@@ -134,18 +134,18 @@
  static const char *asn1_extkey_n[] =       { "external-basic-key", NULL };
  static const char *asn1_extkey_i[] =       { "1.2.643.2.52.1.127.2.3", NULL };
 
- static const char *asn1_symkmd_n[] =       { "symmetric-key-content", NULL };
- static const char *asn1_symkmd_i[] =       { "1.2.643.2.52.1.127.3.1", NULL };
- static const char *asn1_skmd_n[] =         { "secret-key-content", NULL };
- static const char *asn1_skmd_i[] =         { "1.2.643.2.52.1.127.3.2", NULL };
- static const char *asn1_pkmd_n[] =         { "public-key-certificate-content", NULL };
- static const char *asn1_pkmd_i[] =         { "1.2.643.2.52.1.127.3.3", NULL };
- static const char *asn1_pkmdr_n[] =        { "public-key-request-content", NULL };
- static const char *asn1_pkmdr_i[] =        { "1.2.643.2.52.1.127.3.4", NULL };
- static const char *asn1_ecmd_n[] =         { "encrypted-content", NULL };
- static const char *asn1_ecmd_i[] =         { "1.2.643.2.52.1.127.3.5", NULL };
- static const char *asn1_pcmd_n[] =         { "plain-content", NULL };
- static const char *asn1_pcmd_i[] =         { "1.2.643.2.52.1.127.3.6", NULL };
+// static const char *asn1_symkmd_n[] =       { "symmetric-key-content", NULL };
+// static const char *asn1_symkmd_i[] =       { "1.2.643.2.52.1.127.3.1", NULL };
+// static const char *asn1_skmd_n[] =         { "secret-key-content", NULL };
+// static const char *asn1_skmd_i[] =         { "1.2.643.2.52.1.127.3.2", NULL };
+// static const char *asn1_pkmd_n[] =         { "public-key-certificate-content", NULL };
+// static const char *asn1_pkmd_i[] =         { "1.2.643.2.52.1.127.3.3", NULL };
+// static const char *asn1_pkmdr_n[] =        { "public-key-request-content", NULL };
+// static const char *asn1_pkmdr_i[] =        { "1.2.643.2.52.1.127.3.4", NULL };
+// static const char *asn1_ecmd_n[] =         { "encrypted-content", NULL };
+// static const char *asn1_ecmd_i[] =         { "1.2.643.2.52.1.127.3.5", NULL };
+// static const char *asn1_pcmd_n[] =         { "plain-content", NULL };
+// static const char *asn1_pcmd_i[] =         { "1.2.643.2.52.1.127.3.6", NULL };
 
 /* добавляем аттрибуты типов (X.500) и расширенные аттрибуты */
  static const char *asn1_email_n[] =        { "email-address", "email", NULL };
@@ -252,16 +252,17 @@ static struct oid libakrypt_oids[] =
     ( ak_function_destroy_object *) ak_hash_destroy }
  },
 
-// {{ hmac_function, algorithm, asn1_hmac_streebog256_i, asn1_hmac_streebog256_n }, NULL,
-//  { sizeof( struct hmac ),
-//    ( ak_function_create_object *) ak_hmac_create_streebog256,
-//    ( ak_function_destroy_object *) ak_hmac_destroy }
-// },
-// {{ hmac_function, algorithm, asn1_hmac_streebog512_i, asn1_hmac_streebog512_n }, NULL,
-//  { sizeof( struct hmac ),
-//    ( ak_function_create_object *) ak_hmac_create_streebog512,
-//    ( ak_function_destroy_object *) ak_hmac_destroy }
-// },
+ { hmac_function, algorithm, asn1_hmac_streebog256_i, asn1_hmac_streebog256_n, NULL,
+  { sizeof( struct hmac ),
+    ( ak_function_create_object *) ak_hmac_create_streebog256,
+    ( ak_function_destroy_object *) ak_hmac_destroy }
+ },
+ { hmac_function, algorithm, asn1_hmac_streebog512_i, asn1_hmac_streebog512_n, NULL,
+  { sizeof( struct hmac ),
+    ( ak_function_create_object *) ak_hmac_create_streebog512,
+    ( ak_function_destroy_object *) ak_hmac_destroy }
+ },
+
 // {{ block_cipher, algorithm, asn1_magma_i, asn1_magma_n }, NULL,
 //  { sizeof( struct bckey ),
 //    ( ak_function_create_object *) ak_bckey_create_magma,
@@ -321,17 +322,17 @@ static struct oid libakrypt_oids[] =
  { identifier, descriptor, asn1_sdhkey_i, asn1_sdhkey_n, NULL, ak_object_undefined },
  { identifier, descriptor, asn1_extkey_i, asn1_extkey_n, NULL, ak_object_undefined },
 
-// {{ identifier, parameter, asn1_symkmd_i, asn1_symkmd_n },
+// { identifier, parameter, asn1_symkmd_i, asn1_symkmd_n,
 //                                    (ak_pointer) symmetric_key_content, ak_object_undefined },
-// {{ identifier, parameter, asn1_skmd_i, asn1_skmd_n },
+// { identifier, parameter, asn1_skmd_i, asn1_skmd_n,
 //                                       (ak_pointer) secret_key_content, ak_object_undefined },
-// {{ identifier, parameter, asn1_pkmd_i, asn1_pkmd_n },
+// { identifier, parameter, asn1_pkmd_i, asn1_pkmd_n,
 //                           (ak_pointer) public_key_certificate_content, ak_object_undefined },
-// {{ identifier, parameter, asn1_pkmdr_i, asn1_pkmdr_n },
+// { identifier, parameter, asn1_pkmdr_i, asn1_pkmdr_n,
 //                               (ak_pointer) public_key_request_content, ak_object_undefined },
-// {{ identifier, parameter, asn1_ecmd_i, asn1_ecmd_n },
+// { identifier, parameter, asn1_ecmd_i, asn1_ecmd_n,
 //                                        (ak_pointer) encrypted_content, ak_object_undefined },
-// {{ identifier, parameter, asn1_pcmd_i, asn1_pcmd_n },
+// { identifier, parameter, asn1_pcmd_i, asn1_pcmd_n,
 //                                            (ak_pointer) plain_content, ak_object_undefined },
 
  { identifier, descriptor, asn1_email_i, asn1_email_n, NULL, ak_object_undefined },
@@ -612,7 +613,7 @@ static struct oid libakrypt_oids[] =
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param engine тип криптографическиого механизма.
+/*! @param engine тип криптографического механизма.
 
     @return В случае успешного поиска функция возвращает указатель на  область памяти, в которой
     находится структура с найденным идентификатором. В случае ошибки, возвращается NULL.           */
@@ -623,7 +624,24 @@ static struct oid libakrypt_oids[] =
   do{
      if( libakrypt_oids[idx].engine == engine ) return &libakrypt_oids[idx];
   } while( ++idx < ak_libakrypt_oids_count( ));
-  ak_error_message( ak_error_oid_name, __func__, "searching oid with wrong engine" );
+  ak_error_message( ak_error_oid_engine, __func__, "searching oid with wrong engine" );
+
+ return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param mode режим работы криптографического механизма.
+
+    @return В случае успешного поиска функция возвращает указатель на  область памяти, в которой
+    находится структура с найденным идентификатором. В случае ошибки, возвращается NULL.           */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_oid ak_oid_find_by_mode( const oid_modes_t mode )
+{
+  size_t idx = 0;
+  do{
+     if( libakrypt_oids[idx].mode == mode ) return &libakrypt_oids[idx];
+  } while( ++idx < ak_libakrypt_oids_count( ));
+  ak_error_message( ak_error_oid_mode, __func__, "searching oid with wrong mode" );
 
  return NULL;
 }
@@ -647,6 +665,30 @@ static struct oid libakrypt_oids[] =
  /* сдвигаемся по массиву OID вперед */
   while( (++oid)->engine != undefined_engine ) {
     if( oid->engine == engine ) return oid;
+  }
+
+ return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! @param startoid предыдущий найденный oid.
+    @param mode режим использования криптографического механизма.
+
+    @return В случае успешного поиска функция возвращает указатель на  область памяти, в которой
+    находится структура с найденным идентификатором. В случае ошибки, возвращается NULL.           */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_oid ak_oid_findnext_by_mode( const ak_oid startoid, const oid_modes_t mode )
+{
+ ak_oid oid = ( ak_oid )startoid;
+
+ if( oid == NULL) {
+   ak_error_message( ak_error_null_pointer, __func__, "using null pointer to oid" );
+   return NULL;
+ }
+
+ /* сдвигаемся по массиву OID вперед */
+  while( (++oid)->mode != undefined_mode ) {
+    if( oid->mode == mode ) return oid;
   }
 
  return NULL;

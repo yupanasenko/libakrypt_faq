@@ -54,7 +54,7 @@
     return ak_false;
   }
 
-  if( ak_log_get_level() >= ak_log_maximum ) {
+  if( ak_log_get_level() >= ak_log_maximum )
     ak_error_message_fmt( ak_error_ok, __func__, "size of pointer is %d", sizeof( ak_pointer ));
 
  /* определяем тип платформы: little-endian или big-endian */
@@ -89,7 +89,7 @@
    #ifdef AK_HAVE_GMP_H
     ak_error_message( ak_error_ok, __func__ , "library runs with gmp support" );
    #endif
-  }
+
  return ak_true;
 }
 
@@ -181,50 +181,50 @@
 // return ak_true;
 //}
 
-///* ----------------------------------------------------------------------------------------------- */
-///*! \brief Функция проверяет корректность реализации алгоритмов итерационного сжатия
-//    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
-//    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
-//    вызова ak_error_get_value()                                                                    */
-///* ----------------------------------------------------------------------------------------------- */
-// static bool_t ak_libakrypt_test_mac_functions( void )
-//{
-//  int audit = ak_log_get_level();
-//  if( audit >= ak_log_maximum )
-//    ak_error_message( ak_error_ok, __func__ , "testing mac algorithms started" );
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция проверяет корректность реализации алгоритмов итерационного сжатия
+    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
+    вызова ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_libakrypt_test_mac_functions( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing mac algorithms started" );
 
-// /* тестирование механизмов hmac и pbkdf2 */
-//  if( ak_hmac_test_streebog() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__, "incorrect testing of hmac functions" );
+ /* тестирование механизмов hmac и pbkdf2 */
+  if( ak_libakrypt_test_hmac_streebog() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect testing of hmac functions" );
+    return ak_false;
+  }
+  if( ak_libakrypt_test_pbkdf2() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect testing of pbkdf2 function" );
+    return ak_false;
+  }
+
+//  /* тестируем механизм итерационного сжатия для ключевых и бесключевых функций хеширования */
+//  if( ak_mac_test_hash_functions() != ak_true ) {
+//    ak_error_message( ak_error_get_value(), __func__,
+//                                  "incorrect testing mac algorithms based on hash functions" );
 //    return ak_false;
 //  }
-//  if( ak_hmac_test_pbkdf2() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__, "incorrect testing of pbkdf2 function" );
+//  if( ak_mac_test_hmac_functions() != ak_true ) {
+//    ak_error_message( ak_error_get_value(), __func__, "incorrect testing hmac algorithms" );
 //    return ak_false;
 //  }
 
-////  /* тестируем механизм итерационного сжатия для ключевых и бесключевых функций хеширования */
-////  if( ak_mac_test_hash_functions() != ak_true ) {
-////    ak_error_message( ak_error_get_value(), __func__,
-////                                  "incorrect testing mac algorithms based on hash functions" );
-////    return ak_false;
-////  }
-////  if( ak_mac_test_hmac_functions() != ak_true ) {
-////    ak_error_message( ak_error_get_value(), __func__, "incorrect testing hmac algorithms" );
-////    return ak_false;
-////  }
+//  if( ak_mac_test_omac_functions() != ak_true ) {
+//    ak_error_message( ak_error_get_value(), __func__,
+//                                   "incorrect testing mac algorithms based on block ciphers" );
+//    return ak_false
+//  }
 
-////  if( ak_mac_test_omac_functions() != ak_true ) {
-////    ak_error_message( ak_error_get_value(), __func__,
-////                                   "incorrect testing mac algorithms based on block ciphers" );
-////    return ak_false
-////  }
+  if( audit >= ak_log_maximum )
+   ak_error_message( ak_error_ok, __func__ , "testing mac algorithms ended successfully" );
 
-//  if( audit >= ak_log_maximum )
-//   ak_error_message( ak_error_ok, __func__ , "testing mac algorithms ended successfully" );
-
-// return ak_true;
-//}
+ return ak_true;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
@@ -284,11 +284,11 @@
 //    return ak_false;
 //  }
 
-// /* проверяем корректность реализации алгоритмов итерационного сжатия */
-//   if( ak_libakrypt_test_mac_functions( ) != ak_true ) {
-//     ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of mac algorithms" );
-//     return ak_false;
-//   }
+ /* проверяем корректность реализации алгоритмов итерационного сжатия */
+   if( ak_libakrypt_test_mac_functions( ) != ak_true ) {
+     ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of mac algorithms" );
+     return ak_false;
+   }
 
  /* тестируем работу алгоритмов выработки и проверки электронной подписи */
   if( ak_libakrypt_test_asymmetric_functions() != ak_true ) {
