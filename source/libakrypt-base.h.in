@@ -106,6 +106,7 @@ extern "C" {
 #cmakedefine AK_HAVE_SIGNAL_H
 #cmakedefine AK_HAVE_GETOPT_H
 #cmakedefine AK_HAVE_LIBINTL_H
+#cmakedefine AK_HAVE_PTHREAD_H
 #cmakedefine LIBAKRYPT_TESTS_GMP
 
 /* ----------------------------------------------------------------------------------------------- */

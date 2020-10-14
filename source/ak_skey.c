@@ -25,7 +25,7 @@
 #else
  #error Library cannot be compiled without string.h header
 #endif
-#ifdef AK_HAVE_PTHREAD
+#ifdef AK_HAVE_PTHREAD_H
  #include <pthread.h>
 #endif
 
@@ -34,7 +34,7 @@
     Использование этой переменной помогает избежать одновременной генерации ключей при
     многопоточной реализации. */
  static ak_uint32 session_unique_number = 0;
-#ifdef AK_HAVE_PTHREAD
+#ifdef AK_HAVE_PTHREAD_H
  static pthread_mutex_t session_unique_number_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
@@ -74,11 +74,11 @@
  /* добавляем уникальный номер ключа в рамках теущей сессии
     это не позволит в один интервал времени создать более одного ключа с одинаковым номером */
   if( len + 2 > sizeof( out )) goto run_point;
-#ifdef AK_HAVE_PTHREAD
+#ifdef AK_HAVE_PTHREAD_H
   pthread_mutex_lock( &session_unique_number_mutex );
 #endif
   session_unique_number++;
-#ifdef AK_HAVE_PTHREAD
+#ifdef AK_HAVE_PTHREAD_H
   pthread_mutex_unlock( &session_unique_number_mutex );
 #endif
   memcpy( out+len, &session_unique_number, sizeof( ak_uint32 )); /* потом время генерации номера ключа */

@@ -15,6 +15,9 @@
 #ifdef AK_HAVE_TERMIOS_H
  #include <termios.h>
 #endif
+#ifdef AK_HAVE_PTHREAD_H
+ #include <pthread.h>
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*!  Переменная, содержащая в себе код последней ошибки                                            */
@@ -30,7 +33,7 @@
     ak_function_log_stderr;
   #endif
 
-#ifdef AK_HAVE_PTHREAD
+#ifdef AK_HAVE_PTHREAD_H
  static pthread_mutex_t ak_function_log_default_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
@@ -175,7 +178,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_log_set_function( ak_function_log *function )
 {
-#ifdef AK_HAVE_PTHREAD
+#ifdef AK_HAVE_PTHREAD_H
   pthread_mutex_lock( &ak_function_log_default_mutex );
 #endif
   if( function != NULL ) {
@@ -197,7 +200,7 @@
       ak_function_log_default = ak_function_log_stderr;
     #endif
    }
-#ifdef AK_HAVE_PTHREAD
+#ifdef AK_HAVE_PTHREAD_H
   pthread_mutex_unlock( &ak_function_log_default_mutex );
 #endif
   return ak_error_ok;
@@ -218,11 +221,11 @@
   if( message == NULL ) {
     return ak_error_message( ak_error_null_pointer, __func__ , "use a null string for message" );
   } else {
-          #ifdef AK_HAVE_PTHREAD
+          #ifdef AK_HAVE_PTHREAD_H
            pthread_mutex_lock( &ak_function_log_default_mutex );
           #endif
            result = ak_function_log_default( message );
-          #ifdef AK_HAVE_PTHREAD
+          #ifdef AK_HAVE_PTHREAD_H
            pthread_mutex_unlock( &ak_function_log_default_mutex );
           #endif
       return result;

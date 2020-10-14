@@ -4,7 +4,7 @@
 /*  Файл ak_libakrypt.с                                                                            */
 /*  - содержит реализацию функций инициализации и тестирования библиотеки.                         */
 /* ----------------------------------------------------------------------------------------------- */
-#ifdef AK_HAVE_PTHREAD
+#ifdef AK_HAVE_PTHREAD_H
  #include <pthread.h>
 #endif
 #ifdef AK_HAVE_BUILTIN_XOR_SI128
@@ -83,7 +83,7 @@
    #ifdef AK_HAVE_BUILTIN_MULQ_GCC
     ak_error_message( ak_error_ok, __func__ , "library applies assembler code for mulq command" );
    #endif
-   #ifdef AK_HAVE_PTHREAD
+   #ifdef AK_HAVE_PTHREAD_H
     ak_error_message( ak_error_ok, __func__ , "library runs with pthreads support" );
    #endif
    #ifdef AK_HAVE_GMP_H
@@ -161,17 +161,19 @@
     return ak_false;
   }
 
-//// /* тестируем дополнительные режимы работы */
+ /* тестируем дополнительные режимы работы */
+  if( ak_libakrypt_test_acpkm()  != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                  "incorrect testing of acpkm encryption mode for block ciphers" );
+    return ak_false;
+  }
+
 ////  if( ak_bckey_test_mgm()  != ak_true ) {
 ////    ak_error_message( ak_error_get_value(), __func__ ,
 ////                                               "incorrect testing of mgm mode for block ciphers" );
 ////    return ak_false;
 ////  }
-//  if( ak_bckey_test_acpkm()  != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ ,
-//                                  "incorrect testing of acpkm encryption mode for block ciphers" );
-//    return ak_false;
-//  }
+
 
   if( audit >= ak_log_maximum )
     ak_error_message( ak_error_ok, __func__ , "testing block ciphers ended successfully" );

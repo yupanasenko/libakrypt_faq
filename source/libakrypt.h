@@ -4,6 +4,7 @@
 /*  Copyright (c) 2018 by Mikhail Lavrinovich, mikhail.lavrinovich@netcracker.com                  */
 /*  Copyright (c) 2019 by Diffractee                                                               */
 /*  Copyright (c) 2019 by kirlit26                                                                 */
+/*  Copyright (c) 2019 by Petr Mikhalitsyn, myprettycapybara@gmail.com                             */
 /*                                                                                                 */
 /*  Файл libakrypt.h                                                                               */
 /* ----------------------------------------------------------------------------------------------- */
@@ -142,7 +143,7 @@ extern "C" {
 /*! \brief Тестирование корректной работы режима блочного шифрования с одновременной
     выработкой имитовставки. */
  dll_export bool_t ak_libakrypt_test_mgm( void );
-/*! \brief Тестирование корректной работы режима шифрования ACPKM, регламентируемого Р 1323565.1.017—2018. */
+/*! \brief Тестирование корректной работы режима шифрования `ACPKM`, регламентируемого Р 1323565.1.017—2018. */
  dll_export bool_t ak_libakrypt_test_acpkm( void );
 /** @}*//** @}*/
 
@@ -679,7 +680,7 @@ extern "C" {
    (cipher feedback, cfb). */
  dll_export int ak_bckey_decrypt_cfb( ak_bckey , ak_pointer , ak_pointer , size_t ,
                                                                              ak_pointer , size_t );
-/*! \brief Шифрование данных в режиме CTR-ACPKM из Р 1323565.1.017—2018. */
+/*! \brief Шифрование данных в режиме `CTR-ACPKM` из Р 1323565.1.017—2018. */
  dll_export int ak_bckey_ctr_acpkm( ak_bckey , ak_pointer , ak_pointer , size_t , size_t ,
                                                                              ak_pointer , size_t );
 /** @} */
