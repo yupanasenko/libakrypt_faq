@@ -845,6 +845,7 @@ WARN_LOGFILE           = Doxyfile.log
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = @CMAKE_SOURCE_DIR@/source/libakrypt.h \
+                         @CMAKE_SOURCE_DIR@/source/libakrypt-internal.h \
                          @CMAKE_SOURCE_DIR@/source/ak_options.c \
                          @CMAKE_SOURCE_DIR@/source/ak_libakrypt.c \
                          @CMAKE_SOURCE_DIR@/source/ak_oid.c \
@@ -857,6 +858,9 @@ INPUT                  = @CMAKE_SOURCE_DIR@/source/libakrypt.h \
                          @CMAKE_SOURCE_DIR@/source/ak_hash.c \
                          @CMAKE_SOURCE_DIR@/source/ak_skey.c \
                          @CMAKE_SOURCE_DIR@/source/ak_hmac.c \
+                         @CMAKE_SOURCE_DIR@/source/ak_bckey.c \
+                         @CMAKE_SOURCE_DIR@/source/ak_magma.c \
+                         @CMAKE_SOURCE_DIR@/source/ak_kuznechik.c \
                          @CMAKE_SOURCE_DIR@/doc/00-introduction.md
 
 # This tag can be used to specify the character encoding of the source files

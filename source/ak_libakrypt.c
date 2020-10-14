@@ -138,23 +138,22 @@
  return ak_true;
 }
 
-///* ----------------------------------------------------------------------------------------------- */
-///*! \brief Функция проверяет корректность реализации блочных шифрова и режимов их использования.
-//    @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
-//    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
-//    вызова ak_error_get_value()                                                                    */
-///* ----------------------------------------------------------------------------------------------- */
-// bool_t ak_libakrypt_test_block_ciphers( void )
-//{
-//  int audit = ak_log_get_level();
-//  if( audit >= ak_log_maximum )
-//    ak_error_message( ak_error_ok, __func__ , "testing block ciphers started" );
+/* ----------------------------------------------------------------------------------------------- */
+/*! @return Возвращает ak_true в случае успешного тестирования. В случае возникновения ошибки
+    функция возвращает ak_false. Код ошибки можеть быть получен с помощью
+    вызова ak_error_get_value()                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_libakrypt_test_block_ciphers( void )
+{
+  int audit = ak_log_get_level();
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing block ciphers started" );
 
-// /* тестируем корректность реализации блочного шифра Магма */
-//  if( ak_bckey_test_magma()  != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of magma block cipher" );
-//    return ak_false;
-//  }
+ /* тестируем корректность реализации блочного шифра Магма */
+  if( ak_libakrypt_test_magma()  != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of magma block cipher" );
+    return ak_false;
+  }
 
 // /* тестируем корректность реализации блочного шифра Кузнечик */
 //  if( ak_bckey_test_kuznechik()  != ak_true ) {
@@ -175,11 +174,11 @@
 //    return ak_false;
 //  }
 
-//  if( audit >= ak_log_maximum )
-//   ak_error_message( ak_error_ok, __func__ , "testing block ciphers ended successfully" );
+  if( audit >= ak_log_maximum )
+    ak_error_message( ak_error_ok, __func__ , "testing block ciphers ended successfully" );
 
-// return ak_true;
-//}
+ return ak_true;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция проверяет корректность реализации алгоритмов итерационного сжатия
@@ -278,11 +277,11 @@
     return ak_false;
   }
 
-// /* тестируем работу алгоритмов блочного шифрования */
-//  if( ak_libakrypt_test_block_ciphers() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ , "error while testing block ciphers" );
-//    return ak_false;
-//  }
+ /* тестируем работу алгоритмов блочного шифрования */
+  if( ak_libakrypt_test_block_ciphers() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "error while testing block ciphers" );
+    return ak_false;
+  }
 
  /* проверяем корректность реализации алгоритмов итерационного сжатия */
    if( ak_libakrypt_test_mac_functions( ) != ak_true ) {
@@ -325,7 +324,7 @@
    библиотеки. В противном случае, возвращается \ref ak_false. Код ошибки может быть получен
    с помощью вызова функции ak_error_get_value()                                                   */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_create( ak_function_log *logger )
+ bool_t ak_libakrypt_create( ak_function_log *logger )
 {
  int error;
 

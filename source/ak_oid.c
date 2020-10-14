@@ -72,8 +72,9 @@
  static const char *asn1_hmac_streebog256_i[] = { "1.2.643.7.1.1.4.1", NULL };
  static const char *asn1_hmac_streebog512_n[] = { "hmac-streebog512", "HMAC-md_gost12_512", NULL };
  static const char *asn1_hmac_streebog512_i[] = { "1.2.643.7.1.1.4.2", NULL };
-// static const char *asn1_magma_n[] =        { "magma", NULL };
-// static const char *asn1_magma_i[] =        { "1.2.643.7.1.1.5.1", NULL };
+ static const char *asn1_magma_n[] =        { "magma", NULL };
+ static const char *asn1_magma_i[] =        { "1.2.643.7.1.1.5.1", NULL };
+
 // static const char *asn1_kuznechik_n[] =    { "kuznechik", "kuznyechik", "grasshopper", NULL };
 // static const char *asn1_kuznechik_i[] =    { "1.2.643.7.1.1.5.2", NULL };
 // static const char *asn1_sign256_n[] =      { "id-tc26-signwithdigest-gost3410-12-256",
@@ -262,12 +263,12 @@ static struct oid libakrypt_oids[] =
     ( ak_function_create_object *) ak_hmac_create_streebog512,
     ( ak_function_destroy_object *) ak_hmac_destroy }
  },
+ { block_cipher, algorithm, asn1_magma_i, asn1_magma_n, NULL,
+  { sizeof( struct bckey ),
+    ( ak_function_create_object *) ak_bckey_create_magma,
+    ( ak_function_destroy_object *) ak_bckey_destroy }
+ },
 
-// {{ block_cipher, algorithm, asn1_magma_i, asn1_magma_n }, NULL,
-//  { sizeof( struct bckey ),
-//    ( ak_function_create_object *) ak_bckey_create_magma,
-//    ( ak_function_destroy_object *) ak_bckey_destroy }
-// },
 // {{ block_cipher, algorithm, asn1_kuznechik_i, asn1_kuznechik_n }, NULL,
 //  { sizeof( struct bckey ),
 //    ( ak_function_create_object *) ak_bckey_create_kuznechik,

@@ -5,7 +5,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /* - запуск теста криптографических алгоритмов
-       aktool test --crypto --audit 2 --audit-file stderr                                             */
+       aktool test --crypto --audit 2 --audit-file stderr                                          */
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_test_help( void );
  int aktool_speed_test_hash( ak_oid );
@@ -172,7 +172,7 @@
 
    /* теперь собственно хеширование памяти */
     timea = clock();
-    ak_mac_ptr( &ctx.mctx, data, size, out, sizeof( out ));
+    ak_hash_ptr( &ctx, data, size, out, sizeof( out ));
     timea = clock() - timea;
     printf(_(" %3uMB: hash time: %fs, per 1MB = %fs, speed = %f MBs\n"), (unsigned int)i,
                (double) timea / (double) CLOCKS_PER_SEC,
@@ -226,7 +226,7 @@
 
    /* теперь собственно хеширование памяти */
     timea = clock();
-    ak_mac_ptr( &ctx.mctx, data, size, out, sizeof( out ));
+    ak_hmac_ptr( &ctx, data, size, out, sizeof( out ));
     timea = clock() - timea;
     printf(_(" %3uMB: hmac time: %fs, per 1MB = %fs, speed = %f MBs\n"), (unsigned int)i,
                (double) timea / (double) CLOCKS_PER_SEC,

@@ -1,6 +1,9 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*                                                                                                 */
+/*  Copyright (c) 2018 by Mikhail Lavrinovich, mikhail.lavrinovich@netcracker.com                  */
 /*  Copyright (c) 2019 by Diffractee                                                               */
+/*  Copyright (c) 2019 by kirlit26                                                                 */
 /*                                                                                                 */
 /*  Файл libakrypt.h                                                                               */
 /* ----------------------------------------------------------------------------------------------- */
@@ -72,34 +75,12 @@ extern "C" {
  #define ak_error_wrong_block_cipher_function (-138)
 
 /* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup test-options Инициализация и настройка параметров библиотеки
+/** \addtogroup options Инициализация и настройка параметров библиотеки
  @{ */
 /*! \brief Функция инициализации библиотеки. */
- dll_export int ak_libakrypt_create( ak_function_log * );
+ dll_export bool_t ak_libakrypt_create( ak_function_log * );
 /*! \brief Функция завершает работу с библиотекой. */
- int ak_libakrypt_destroy( void );
-/*! \brief Функция выполняет динамическое тестирование работоспособности криптографических преобразований. */
- dll_export bool_t ak_libakrypt_dynamic_control_test( void );
-/*! \brief Функция тестирования корректности реализации операций умножения в полях характеристики два. */
- dll_export bool_t ak_libakrypt_test_gfn_multiplication( void );
- /*! \brief Функция тестирует все определяемые библиотекой параметры эллиптических кривых,
-    заданных в короткой форме Вейерштрасса. */
- dll_export bool_t ak_libakrypt_test_wcurves( void );
-/*! \brief Функция проверяет корректность реализации асимметричных криптографических алгоритмов. */
- dll_export bool_t ak_libakrypt_test_asymmetric_functions( void );
-/*! \brief Проверка корректной работы функции хеширования Стрибог-256 */
- dll_export bool_t ak_libakrypt_test_streebog256( void );
-/*! \brief Проверка корректной работы функции хеширования Стрибог-512 */
- dll_export bool_t ak_libakrypt_test_streebog512( void );
-/*! \brief Функция проверяет корректность реализации алгоритмов хэширования. */
- dll_export bool_t ak_libakrypt_test_hash_functions( void );
-/*! \brief Функция проверяет корректность реализации алгоритмов выработки имитовставки. */
- bool_t ak_libakrypt_test_mac_functions( void );
-/*! \brief Тестирование алгоритмов выработки имитовставки HMAC с отечественными
-    функциями хеширования семейства Стрибог (ГОСТ Р 34.11-2012). */
- dll_export bool_t ak_libakrypt_test_hmac_streebog( void );
-/*! \brief Тестирование алгоритма PBKDF2, регламентируемого Р 50.1.113-2016. */
- dll_export bool_t ak_libakrypt_test_pbkdf2( void );
+ dll_export int ak_libakrypt_destroy( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает номер версии бибилиотеки libakrypt. */
@@ -127,8 +108,43 @@ extern "C" {
 /*! \brief Функция создает полное имя файла в домашем каталоге библиотеки. */
  dll_export int ak_libakrypt_create_home_filename( char * , const size_t , char * , const int );
 /*! \brief Функция выводит в заданный файл параметры эллиптической кривой. */
- int ak_libakrypt_print_curve( FILE * , const char * );
-/** @} */
+ dll_export int ak_libakrypt_print_curve( FILE * , const char * );
+/** \addtogroup tests Тестирование криптографических механизмов
+ @{ */
+/*! \brief Функция выполняет динамическое тестирование работоспособности криптографических преобразований. */
+ dll_export bool_t ak_libakrypt_dynamic_control_test( void );
+/*! \brief Функция тестирования корректности реализации операций умножения в полях характеристики два. */
+ dll_export bool_t ak_libakrypt_test_gfn_multiplication( void );
+ /*! \brief Функция тестирует все определяемые библиотекой параметры эллиптических кривых,
+    заданных в короткой форме Вейерштрасса. */
+ dll_export bool_t ak_libakrypt_test_wcurves( void );
+/*! \brief Функция проверяет корректность реализации асимметричных криптографических алгоритмов. */
+ dll_export bool_t ak_libakrypt_test_asymmetric_functions( void );
+/*! \brief Проверка корректной работы функции хеширования Стрибог-256 */
+ dll_export bool_t ak_libakrypt_test_streebog256( void );
+/*! \brief Проверка корректной работы функции хеширования Стрибог-512 */
+ dll_export bool_t ak_libakrypt_test_streebog512( void );
+/*! \brief Функция проверяет корректность реализации алгоритмов хэширования. */
+ dll_export bool_t ak_libakrypt_test_hash_functions( void );
+/*! \brief Функция проверяет корректность реализации алгоритмов выработки имитовставки. */
+ dll_export bool_t ak_libakrypt_test_mac_functions( void );
+/*! \brief Тестирование алгоритмов выработки имитовставки HMAC с отечественными
+    функциями хеширования семейства Стрибог (ГОСТ Р 34.11-2012). */
+ dll_export bool_t ak_libakrypt_test_hmac_streebog( void );
+/*! \brief Тестирование алгоритма PBKDF2, регламентируемого Р 50.1.113-2016. */
+ dll_export bool_t ak_libakrypt_test_pbkdf2( void );
+/*! \brief Функция тестирует корректность реализации блочных шифрова и режимов их использования. */
+ dll_export bool_t ak_libakrypt_test_block_ciphers( void );
+/*! \brief Тестирование корректной работы алгоритма блочного шифрования Магма (ГОСТ Р 34.12-2015). */
+ dll_export bool_t ak_libakrypt_test_magma( void );
+/*! \brief Тестирование корректной работы алгоритма блочного шифрования Кузнечик (ГОСТ Р 34.12-2015). */
+ dll_export bool_t ak_libakrypt_test_kuznechik( void );
+/*! \brief Тестирование корректной работы режима блочного шифрования с одновременной
+    выработкой имитовставки. */
+ dll_export bool_t ak_libakrypt_test_mgm( void );
+/*! \brief Тестирование корректной работы режима шифрования ACPKM, регламентируемого Р 1323565.1.017—2018. */
+ dll_export bool_t ak_libakrypt_test_acpkm( void );
+/** @}*//** @}*/
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup oid Идентификаторы криптографических механизмов
@@ -367,6 +383,503 @@ extern "C" {
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup skey Cекретные ключи криптографических механизмов
+ @{ */
+/*! \brief Указатель на структуру секретного ключа. */
+ typedef struct skey *ak_skey;
+/*! \brief Однопараметрическая функция для проведения действий с секретным ключом, возвращает код ошибки. */
+ typedef int ( ak_function_skey )( ak_skey );
+/*! \brief Однопараметрическая функция для проведения действий с секретным ключом, возвращает истину или ложь. */
+ typedef bool_t ( ak_function_skey_check )( ak_skey );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Перечисление, определяющее флаги хранения и обработки секретных ключей. */
+ typedef ak_uint64 key_flags_t;
+
+/* константные битовые маски, используемые как флаги */
+/*! \brief Неопределенное значение */
+ #define ak_key_flag_undefined          (0x0000000000000000ULL)
+
+/*! \brief Младший (нулевой) бит отвечает за установку значения ключа:
+             0 - ключ не установлен, 1 установлен. */
+ #define ak_key_flag_set_key            (0x0000000000000001ULL)
+
+/*! \brief Первый бит отвечает за установку маски:
+             0 - маска не установлена, 1 - маска установлена. */
+ #define ak_key_flag_set_mask           (0x0000000000000002ULL)
+
+/*! \brief Второй бит отвечает за установку контрольной суммы ключа:
+             0 - контрольная сумма не установлена не установлена, 1 - контрольная сумма установлена. */
+ #define ak_key_flag_set_icode          (0x0000000000000004ULL)
+
+/*! \brief Третий бит отвечает за то, кто из классов skey или его наследники уничтожают внутреннюю
+ память. Если флаг установлен, то класс skey очистку не производит и возлагает это на методы
+ классов-наследников: 0 - очистка производится, 1 - очистка памяти не производится */
+ #define ak_key_flag_data_not_free      (0x0000000000000008ULL)
+
+/*! \brief Флаг, который запрещает использование функции ctr без указания синхропосылки. */
+ #define ak_key_flag_not_ctr            (0x0000000000000100ULL)
+
+/*! \brief Флаг, который определяет, можно ли использовать значение внутреннего буффера в режиме omac. */
+ #define ak_key_flag_omac_buffer_used   (0x0000000000000200ULL)
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Способ выделения памяти для хранения секретной информации. */
+ typedef enum {
+  /*! \brief Механизм выделения памяти не определен. */
+   undefined_policy,
+  /*! \brief Выделение памяти через стандартный malloc */
+   malloc_policy
+
+} memory_allocation_policy_t;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Тип ключа шифрования контента. */
+ typedef enum {
+  /*! \brief Ключ шифрования контента, вырабатываемый из пароля пользователя */
+   password_based_encryption_key,
+
+} kek_t;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Место хранения зашифрованной информации. */
+ typedef enum {
+  /*! \brief Данные отсутствуют. */
+   data_not_present_storage,
+  /*! \brief Данные находятся в наличии. */
+   data_present_storage,
+  /*! \brief Данные находятся в заданном файле. */
+   external_file_storage
+} data_storage_t;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Перечисление определяет возможные типы счетчиков ресурса секретного ключа. */
+ typedef enum {
+  /*! \brief Счетчик числа использованных блоков. */
+    block_counter_resource,
+  /*! \brief Счетчик числа использований ключа, например,
+     количество подписанных сообщений или число производных ключей. */
+    key_using_resource,
+} counter_resource_t;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура определяет тип и значение счетчика ресурса ключа. */
+ typedef struct key_resource_counter {
+  /*! \brief Тип ресурса */
+    counter_resource_t type;
+  /*! \brief Дополнение */
+    ak_uint8 padding[4];
+  /*! \brief Cчетчик числа использований, например, зашифрованных/расшифрованных блоков. */
+    ssize_t counter;
+} *ak_key_resoure_counter;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура определяет временной интервал действия ключа. */
+ typedef struct time_interval {
+  /*! \brief Время, до которого ключ недействителен. */
+   time_t not_before;
+  /*! \brief Время, после которого ключ недействителен. */
+   time_t not_after;
+} *ak_time_intermal;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура для хранения ресурса ключа. */
+ typedef struct resource {
+  /*! \brief Счетчик числа использований ключа. */
+   struct key_resource_counter value;
+  /*! \brief Временной интервал использования ключа. */
+   struct time_interval time;
+ } *ak_resource;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура секретного ключа -- базовый набор данных и методов контроля. */
+ struct skey {
+  /*! \brief ключ */
+#ifdef AK_HAVE_STDALIGN_H
+   alignas(16)
+#endif
+   ak_uint8 *key;
+  /*! \brief размер ключа (в октетах) */
+   size_t key_size;
+  /*! \brief OID алгоритма для которого предназначен секретный ключ */
+   ak_oid oid;
+  /*! \brief уникальный номер ключа */
+   ak_uint8 number[32];
+  /*! \brief контрольная сумма ключа */
+   ak_uint32 icode;
+  /*! \brief генератор случайных масок ключа */
+   struct random generator;
+  /*! \brief ресурс использования ключа */
+   struct resource resource;
+  /*! \brief указатель на внутренние данные ключа */
+   ak_pointer data;
+ /*! \brief Флаги текущего состояния ключа */
+   key_flags_t flags;
+ /*! \brief Способ выделения памяти. */
+   memory_allocation_policy_t policy;
+  /*! \brief указатель на функцию маскирования ключа */
+   ak_function_skey *set_mask;
+  /*! \brief указатель на функцию демаскирования ключа */
+   ak_function_skey *unmask;
+  /*! \brief указатель на функцию выработки контрольной суммы от значения ключа */
+   ak_function_skey *set_icode;
+  /*! \brief указатель на функцию проверки контрольной суммы от значения ключа */
+   ak_function_skey_check *check_icode;
+};
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Генерация случайного уникального вектора, рассматриваемого как номер ключа. */
+ dll_export int ak_libakrypt_generate_unique_number( ak_pointer , const size_t );
+/*! \brief Функция выделения памяти для ключевой информации. */
+ dll_export int ak_skey_alloc_memory( ak_skey , size_t , memory_allocation_policy_t );
+/*! \brief Функция освобождения выделенной ранее памяти. */
+ dll_export int ak_skey_free_memory( ak_skey );
+/*! \brief Инициализация структуры секретного ключа. */
+ dll_export int ak_skey_create( ak_skey , size_t );
+/*! \brief Очистка структуры секретного ключа. */
+ dll_export int ak_skey_destroy( ak_skey );
+/*! \brief Присвоение секретному ключу уникального номера. */
+ dll_export int ak_skey_set_unique_number( ak_skey );
+/*! \brief Присвоение секретному ключу заданного номера. */
+ dll_export int ak_skey_set_number( ak_skey , ak_pointer , size_t );
+/*! \brief Присвоение секретному ключу константного значения. */
+ dll_export int ak_skey_set_key( ak_skey , const ak_pointer , const size_t );
+/*! \brief Присвоение секретному ключу случайного значения. */
+ dll_export int ak_skey_set_key_random( ak_skey , ak_random );
+/*! \brief Присвоение секретному ключу значения, выработанного из пароля */
+ dll_export int ak_skey_set_key_from_password( ak_skey , const ak_pointer , const size_t ,
+                                                                 const ak_pointer , const size_t );
+/*! \brief Наложение или смена маски путем сложения по модулю два
+    случайной последовательности с ключом. */
+ dll_export int ak_skey_set_mask_xor( ak_skey );
+/*! \brief Снятие маски с ключа. */
+ dll_export int ak_skey_unmask_xor( ak_skey );
+/*! \brief Вычисление значения контрольной суммы ключа. */
+ dll_export int ak_skey_set_icode_xor( ak_skey );
+/*! \brief Проверка значения контрольной суммы ключа. */
+ dll_export bool_t ak_skey_check_icode_xor( ak_skey );
+/*! \brief Функция устанавливает ресурс ключа. */
+ dll_export int ak_skey_set_resource( ak_skey , ak_resource );
+/*! \brief Функция устанавливает временной интервал действия ключа. */
+ dll_export int ak_skey_set_validity( ak_skey , time_t , time_t );
+/*! \brief Функция устанавливает ресурс и временной итервал действия ключа. */
+ dll_export int ak_skey_set_resource_values( ak_skey , counter_resource_t ,
+                                                                  const char * , time_t , time_t );
+#ifdef LIBAKRYPT_HAVE_DEBUG_FUNCTIONS
+/*! \brief Функция выводит информацию о контексте секретного ключа в заданный файл. */
+ int ak_skey_print_to_file( ak_skey , FILE *fp );
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Указатель на структуру ключа блочного алгоритма шифрования. */
+ typedef struct bckey *ak_bckey;
+/*! \brief Функция создания ключа блочного алгоритма шифрования. */
+ typedef int ( ak_function_bckey_create ) ( ak_bckey );
+/*! \brief Функция зашифрования/расширования одного блока информации. */
+ typedef void ( ak_function_bckey )( ak_skey, ak_pointer, ak_pointer );
+/*! \brief Функция, предназначенная для зашифрования/расшифрования области памяти заданного размера */
+ typedef int ( ak_function_bckey_encrypt )( ak_bckey, ak_pointer, ak_pointer, size_t,
+                                                                                ak_pointer, size_t );
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Секретный ключ блочного алгоритма шифрования. */
+ struct bckey {
+  /*! \brief Указатель на секретный ключ. */
+   struct skey key;
+  /*! \brief Размер блока обрабатываемых данных (в байтах). */
+   size_t bsize;
+  /*! \brief Буффер, для хранения текущего значения синхропосылки.
+      \details Максимальное количество блоков, помещающихся в буффер,
+      равно 8 для Магмы и 4 для Кузнечика. */
+   ak_uint8 ivector[64];
+  /*! \brief Текущий размер вектора синхропосылки (в октетах) */
+   size_t ivector_size;
+  /*! \brief Функция заширования одного блока информации. */
+   ak_function_bckey *encrypt;
+  /*! \brief Функция расширования одного блока информации. */
+   ak_function_bckey *decrypt;
+  /*! \brief Функция развертки ключа. */
+   ak_function_skey *schedule_keys;
+  /*! \brief Функция уничтожения развернутых ключей. */
+   ak_function_skey *delete_keys;
+};
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Инициализация секретного ключа алгоритма блочного шифрования Магма. */
+ dll_export int ak_bckey_create_magma( ak_bckey );
+/*! \brief Инициализация секретного ключа алгоритма блочного шифрования Кузнечик. */
+ dll_export int ak_bckey_create_kuznechik( ak_bckey );
+/*! \brief Инициализация секретного ключа алгоритма блочного шифрования по его OID. */
+ dll_export int ak_bckey_create_oid( ak_bckey , ak_oid );
+/*! \brief Очистка ключа алгоритма блочного шифрования. */
+ dll_export int ak_bckey_destroy( ak_bckey );
+/*! \brief Присвоение ключу алгоритма блочного шифрования константного значения. */
+ dll_export int ak_bckey_set_key( ak_bckey, const ak_pointer , const size_t );
+/*! \brief Присвоение ключу алгоритма блочного шифрования случайного значения. */
+ dll_export int ak_bckey_set_key_random( ak_bckey , ak_random );
+/*! \brief Присвоение ключу алгоритма блочного шифрования значения, выработанного из пароля. */
+ dll_export int ak_bckey_set_key_from_password( ak_bckey ,
+                                const ak_pointer , const size_t , const ak_pointer , const size_t );
+/** @} */
+
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup enc Шифрование данных
+ @{ */
+/*! \brief Нелинейная перестановка для алгоритмов хеширования и блочного шифрования */
+ typedef ak_uint8 sbox[256];
+/*! \brief Набор таблиц замен для блочного шифра Магма. */
+ typedef sbox magma[4];
+/*! \brief Матрица линейного преобразования */
+ typedef ak_uint8 linear_matrix[16][16];
+/*! \brief Линейный регистр сдвига */
+ typedef ak_uint8 linear_register[16];
+/*! \brief Таблица, используемая для эффективной реализации алгоритма шифрования Кузнечик. */
+ typedef ak_uint64 expanded_table[16][256][2];
+/*! \brief Структура, содержащая параметры алгоритма блочного шифрования Кузнечик. */
+ typedef struct kuznechik_params {
+  /*! \brief Линейный регистр сдвига */
+   linear_register reg;
+  /*! \brief 16я степень сопровождающей матрицы линейного регистра сдвига */
+   linear_matrix L;
+  /*! \brief Нелинейная перестановка */
+   sbox pi;
+  /*! \brief Развернутые таблицы, используемые для эффективного зашифрования */
+   expanded_table enc;
+  /*! \brief Обратная матрица, к 16й степени сопровождающей матрицы линейного регистра сдвига. */
+   linear_matrix Linv;
+  /*! \brief Обратная нелинейная перестановка. */
+   sbox pinv;
+  /*! \brief Развернутые таблицы, используемые для эффективного расшифрования */
+   expanded_table dec;
+ } *ak_kuznechik_params;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Зашифрование данных в режиме простой замены (electronic codebook, ecb). */
+ dll_export int ak_bckey_encrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
+/*! \brief Расшифрование данных в режиме простой замены (electronic codebook, ecb). */
+ dll_export int ak_bckey_decrypt_ecb( ak_bckey , ak_pointer , ak_pointer , size_t );
+ /*! \brief Зашифрование данных в режиме простой замены с зацеплением из ГОСТ Р 34.13-2015
+    (cipher block chaining, cbc). */
+ dll_export int ak_bckey_encrypt_cbc( ak_bckey , ak_pointer , ak_pointer , size_t ,
+                                                                             ak_pointer , size_t );
+ /*! \brief Расшифрование данных в режиме простой замены с зацеплением из ГОСТ Р 34.13-2015
+    (cipher block chaining, cbc). */
+ dll_export int ak_bckey_decrypt_cbc( ak_bckey , ak_pointer , ak_pointer , size_t ,
+                                                                             ak_pointer , size_t );
+/*! \brief Шифрование данных в режиме гаммирования из ГОСТ Р 34.13-2015
+   (counter mode, ctr). */
+ dll_export int ak_bckey_ctr( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
+/*! \brief Шифрование данных в режиме гаммирования с обратной связью по выходу
+   (output feedback, ofb). */
+ dll_export int ak_bckey_ofb( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
+/*! \brief Шифрование данных в режиме гаммирования с обратной связью по шифртексту
+   (cipher feedback, cfb). */
+ dll_export int ak_bckey_encrypt_cfb( ak_bckey , ak_pointer , ak_pointer , size_t ,
+                                                                             ak_pointer , size_t );
+/*! \brief Расшифрование данных в режиме гаммирования с обратной связью по шифртексту
+   (cipher feedback, cfb). */
+ dll_export int ak_bckey_decrypt_cfb( ak_bckey , ak_pointer , ak_pointer , size_t ,
+                                                                             ak_pointer , size_t );
+/*! \brief Шифрование данных в режиме CTR-ACPKM из Р 1323565.1.017—2018. */
+ dll_export int ak_bckey_ctr_acpkm( ak_bckey , ak_pointer , ak_pointer , size_t , size_t ,
+                                                                             ak_pointer , size_t );
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Выработка матрицы, соответствующей 16 тактам работы линейного региста сдвига. */
+ dll_export void ak_bckey_kuznechik_generate_matrix( const linear_register , linear_matrix );
+/*! \brief Обращение сопровождающей матрицы. */
+ dll_export void ak_bckey_kuznechik_invert_matrix( linear_matrix , linear_matrix );
+/*! \brief Обращение таблицы нелинейного преобразования. */
+ dll_export void ak_bckey_kuznechik_invert_permutation( const sbox , sbox );
+/*! \brief Инициализация внутренних структур данных, используемых при реализации алгоритма
+    блочного шифрования Кузнечик (ГОСТ Р 34.12-2015). */
+ dll_export int ak_bckey_kuznechik_init_tables( const linear_register ,
+                                                                const sbox , ak_kuznechik_params );
+/*! \brief Инициализация внутренних переменных значениями, регламентируемыми ГОСТ Р 34.12-2015. */
+ dll_export int ak_bckey_kuznechik_init_gost_tables( void );
+/** @} */
+
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup mac Вычисление кодов целостности (хеширование и имитозащита)
+ @{ */ 
+/*! \brief Вычисление имитовставки согласно ГОСТ Р 34.13-2015. */
+ dll_export int ak_bckey_cmac( ak_bckey , ak_pointer , const size_t , ak_pointer , const size_t );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция очистки контекста хеширования. */
+ typedef int ( ak_function_context_clean )( ak_pointer );
+/*! \brief Однораундовая функция сжатия, применяемая к одному или нескольким входным блокам. */
+ typedef int ( ak_function_context_update )( ak_pointer, const ak_pointer , const size_t );
+/*! \brief Функция завершения вычислений и получения конечного результата. */
+ typedef int ( ak_function_context_finalize )( ak_pointer,
+                                     const ak_pointer , const size_t , ak_pointer , const size_t );
+/*! \brief Функция создания контекста хеширования. */
+ typedef int ( ak_function_hash_create )( ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Максимальный размер блока входных данных в октетах (байтах). */
+ #define ak_mac_max_buffer_size (64)
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Контекст алгоритма итерационного сжатия. */
+/*! Класс предоставляет интерфейс для реализации процедруры сжатия данных фрагментами произвольной длины.
+    Данная процедура может применяться в алгоритмах хеширования, выработки имитовставки и т.п.*/
+/* ----------------------------------------------------------------------------------------------- */
+ typedef struct mac {
+  /*! \brief Размер входного блока данных (в октетах) */
+   size_t bsize;
+  /*! \brief Текущее количество данных во внутреннем буффере. */
+   size_t length;
+  /*! \brief Внутренний буффер для хранения входных данных. */
+   ak_uint8 data[ ak_mac_max_buffer_size ];
+  /*! \brief Указатель на контекст, содержащий внутреннее состояние алгоритма сжатия. */
+   ak_pointer ctx;
+  /*! \brief Функция очистки контекста ctx */
+   ak_function_context_clean *clean;
+  /*! \brief Функция обновления состояния контекста ctx  */
+   ak_function_context_update *update;
+  /*! \brief Функция завершения вычислений и получения конечного результата */
+   ak_function_context_finalize *finalize;
+ } *ak_mac;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура для хранения внутренних данных функций хеширования семейства Стрибог. */
+/* ----------------------------------------------------------------------------------------------- */
+ typedef struct streebog {
+ /*! \brief Вектор h - временный */
+  ak_uint64 h[8];
+ /*! \brief Вектор n - временный */
+  ak_uint64 n[8];
+ /*! \brief Вектор  \f$ \Sigma \f$ - контрольная сумма */
+  ak_uint64 sigma[8];
+ /*! \brief Размер блока выходных данных (хеш-кода)*/
+  size_t hsize;
+} *ak_streebog;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Бесключевая функция хеширования. */
+/*! \details Класс предоставляет интерфейс для реализации бесключевых функций хеширования, построенных
+    с использованием итеративных сжимающих отображений. В настоящее время
+    с использованием класса \ref hash реализованы следующие отечественные алгоритмы хеширования
+     - Стрибог256,
+     - Стрибог512.
+
+  Перед началом работы контекст функции хэширования должен быть инициализирован
+  вызовом одной из функций инициализации, например, функции ak_hash_context_create_streebog256()
+  или функции ak_hash_context_create_streebog512().
+  После завершения вычислений контекст должен быть освобожден с помощью функции
+  ak_hash_context_destroy().                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ typedef struct hash {
+  /*! \brief OID алгоритма хеширования */
+   ak_oid oid;
+  /*! \brief Контекст итерационного сжатия. */
+   struct mac mctx;
+  /*! \brief Внутренние данные контекста */
+   union {
+   /*! \brief Структура алгоритмов семейства Стрибог. */
+    struct streebog sctx;
+   } data;
+ } *ak_hash;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Инициализация контекста функции бесключевого хеширования ГОСТ Р 34.11-2012 (Стрибог256). */
+ dll_export int ak_hash_create_streebog256( ak_hash );
+/*! \brief Инициализация контекста функции бесключевого хеширования ГОСТ Р 34.11-2012 (Стрибог512). */
+ dll_export int ak_hash_create_streebog512( ak_hash );
+/*! \brief Инициализация контекста функции бесключевого хеширования по заданному OID алгоритма. */
+ dll_export int ak_hash_create_oid( ak_hash, ak_oid );
+/*! \brief Уничтожение контекста функции хеширования. */
+ dll_export int ak_hash_destroy( ak_hash );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция возвращает размер вырабатываемого хеш-кода (в октетах). */
+ dll_export size_t ak_hash_get_tag_size( ak_hash );
+/*! \brief Функция возвращает размер блока входных данных, обрабатываемого функцией хеширования (в октетах). */
+ dll_export size_t ak_hash_get_block_size( ak_hash );
+/*! \brief Очистка контекста алгоритма хеширования. */
+ dll_export int ak_hash_clean( ak_hash );
+/*! \brief Обновление состояния контекста хеширования. */
+ dll_export int ak_hash_update( ak_hash , const ak_pointer , const size_t );
+/*! \brief Обновление состояния и вычисление результата применения алгоритма хеширования. */
+ dll_export int ak_hash_finalize( ak_hash , const ak_pointer , const size_t , ak_pointer , const size_t );
+/*! \brief Хеширование заданной области памяти. */
+ dll_export int ak_hash_ptr( ak_hash , const ak_pointer , const size_t , ak_pointer , const size_t );
+/*! \brief Хеширование заданного файла. */
+ dll_export int ak_hash_file( ak_hash , const char*, ak_pointer , const size_t );
+/** @} */
+
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup skey Cекретные ключи криптографических механизмов
+ @{ */
+/*! \brief Секретный ключ алгоритма выработки имитовставки HMAC. */
+/*!  Алгоритм выработки имитовставки HMAC основан на двукратном применении бесключевой функции
+     хеширования. Алгоритм описывается рекомендациями IETF RFC 2104 (см. также RFC 7836) и
+     стандартизован отечественными рекомендациями по стандартизации Р 50.1.113-2016.
+     Алгоритм предназначен, в основном, для выработки имитовставки и преобразования ключевой
+     информации.
+
+     В нашей реализации алгоритм может быть использован совместно с любой функцией хеширования,
+     реализованной в библиотеке. Отметим, что согласно Р 50.1.113-2016 алгоритм рекомендуется
+     использовать только совместно с функцией хеширования Стрибог
+     (с длиной хеш кода как 256 бит, так и 512 бит).
+
+     \note Использование ключей, чья длина превышает размер блока бесключевой функции
+     хеширования, реализовано в соответствии с RFC 2104.                                           */
+/* ----------------------------------------------------------------------------------------------- */
+ typedef struct hmac {
+  /*! \brief Контекст секретного ключа */
+   struct skey key;
+  /*! \brief Контекст итерационного сжатия. */
+   struct mac mctx;
+  /*! \brief Контекст функции хеширования */
+   struct hash ctx;
+} *ak_hmac;
+
+/*! \brief Создание секретного ключа алгоритма выработки имитовставки HMAC на основе функции Стрибог256. */
+ dll_export int ak_hmac_create_streebog256( ak_hmac );
+/*! \brief Создание секретного ключа алгоритма выработки имитовставки HMAC на основе функции Стрибог512. */
+ dll_export int ak_hmac_create_streebog512( ak_hmac );
+/*! \brief Создание секретного ключа алгоритма выработки имитовставки HMAC c помощью заданного oid. */
+ dll_export int ak_hmac_create_oid( ak_hmac , ak_oid );
+/*! \brief Уничтожение секретного ключа. */
+ dll_export int ak_hmac_destroy( ak_hmac );
+/*! \brief Присвоение секретному ключу константного значения. */
+ dll_export int ak_hmac_set_key( ak_hmac , const ak_pointer , const size_t );
+/*! \brief Присвоение секретному ключу случайного значения. */
+ dll_export int ak_hmac_set_key_random( ak_hmac , ak_random );
+/*! \brief Присвоение секретному ключу значения, выработанного из пароля */
+ dll_export int ak_hmac_set_key_from_password( ak_hmac , const ak_pointer , const size_t ,
+                                                                 const ak_pointer , const size_t );
+/** @} */
+
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup mac Вычисление кодов целостности (хеширование и имитозащита)
+ @{ */
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция возвращает размер вырабатываемой имитовставки. */
+ dll_export size_t ak_hmac_get_tag_size( ak_hmac );
+/*! \brief Функция возвращает размер блока входных данных, обрабатываемого функцией выработки имитовставки. */
+ dll_export size_t ak_hmac_get_block_size( ak_hmac );
+/*! \brief Очистка контекста секретного ключа алгоритма выработки имитовставки HMAC, а также
+    проверка ресурса ключа. */
+ dll_export int ak_hmac_clean( ak_hmac );
+/*! \brief Обновление текущего состояния контекста алгоритма выработки имитовставки HMAC. */
+ dll_export int ak_hmac_update( ak_hmac , const ak_pointer , const size_t );
+/*! \brief Завершение алгоритма выработки имитовставки HMAC. */
+ dll_export int ak_hmac_finalize( ak_hmac , const ak_pointer , const size_t ,
+                                                                       ak_pointer , const size_t );
+/*! \brief Вычисление имитовставки для заданной области памяти. */
+ dll_export int ak_hmac_ptr( ak_hmac , const ak_pointer , const size_t ,
+                                                                       ak_pointer , const size_t );
+/*! \brief Вычисление имитовставки для заданного файла. */
+ dll_export int ak_hmac_file( ak_hmac , const char* , ak_pointer , const size_t );
+/*! \brief Развертка ключевого вектора из пароля (согласно Р 50.1.111-2016, раздел 4) */
+ dll_export int ak_hmac_pbkdf2_streebog512( const ak_pointer , const size_t ,
+                   const ak_pointer , const size_t, const size_t , const size_t , ak_pointer );
+/** @} */
+
+/** \addtogroup math Математические функции
+ @{ */
+/* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup mpzn Арифметика больших чисел
  @{ */
 #ifdef LIBAKRYPT_HAVE_GMP_H
@@ -452,7 +965,6 @@ extern "C" {
  dll_export void ak_mpz_to_mpzn( const mpz_t , ak_uint64 *, const size_t );
 #endif
 /** @} */
-
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup curves Эллиптические кривые
  @{ */
@@ -631,398 +1143,7 @@ extern "C" {
  #define ak_gf256_mul ak_gf256_mul_uint64
  #define ak_gf512_mul ak_gf512_mul_uint64
 #endif
-/** @} */
-
-/* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup skey Cекретные ключи криптографических механизмов
- @{ */
-/*! \brief Указатель на структуру секретного ключа. */
- typedef struct skey *ak_skey;
-/*! \brief Однопараметрическая функция для проведения действий с секретным ключом, возвращает код ошибки. */
- typedef int ( ak_function_skey )( ak_skey );
-/*! \brief Однопараметрическая функция для проведения действий с секретным ключом, возвращает истину или ложь. */
- typedef bool_t ( ak_function_skey_check )( ak_skey );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Перечисление, определяющее флаги хранения и обработки секретных ключей. */
- typedef ak_uint64 key_flags_t;
-
-/* константные битовые маски, используемые как флаги */
-/*! \brief Неопределенное значение */
- #define ak_key_flag_undefined          (0x0000000000000000ULL)
-
-/*! \brief Младший (нулевой) бит отвечает за установку значения ключа:
-             0 - ключ не установлен, 1 установлен. */
- #define ak_key_flag_set_key            (0x0000000000000001ULL)
-
-/*! \brief Первый бит отвечает за установку маски:
-             0 - маска не установлена, 1 - маска установлена. */
- #define ak_key_flag_set_mask           (0x0000000000000002ULL)
-
-/*! \brief Второй бит отвечает за установку контрольной суммы ключа:
-             0 - контрольная сумма не установлена не установлена, 1 - контрольная сумма установлена. */
- #define ak_key_flag_set_icode          (0x0000000000000004ULL)
-
-/*! \brief Третий бит отвечает за то, кто из классов skey или его наследники уничтожают внутреннюю
- память. Если флаг установлен, то класс skey очистку не производит и возлагает это на методы
- классов-наследников: 0 - очистка производится, 1 - очистка памяти не производится */
- #define ak_key_flag_data_not_free      (0x0000000000000008ULL)
-
-/*! \brief Флаг, который запрещает использование функции ctr без указания синхропосылки. */
- #define ak_key_flag_not_ctr            (0x0000000000000100ULL)
-
-/*! \brief Флаг, который определяет, можно ли использовать значение внутреннего буффера в режиме omac. */
- #define ak_key_flag_omac_buffer_used   (0x0000000000000200ULL)
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Способ выделения памяти для хранения секретной информации. */
- typedef enum {
-  /*! \brief Механизм выделения памяти не определен. */
-   undefined_policy,
-  /*! \brief Выделение памяти через стандартный malloc */
-   malloc_policy
-
-} memory_allocation_policy_t;
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Тип ключа шифрования контента. */
- typedef enum {
-  /*! \brief Ключ шифрования контента, вырабатываемый из пароля пользователя */
-   password_based_encryption_key,
-
-} kek_t;
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Место хранения зашифрованной информации. */
- typedef enum {
-  /*! \brief Данные отсутствуют. */
-   data_not_present_storage,
-  /*! \brief Данные находятся в наличии. */
-   data_present_storage,
-  /*! \brief Данные находятся в заданном файле. */
-   external_file_storage
-} data_storage_t;
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Перечисление определяет возможные типы счетчиков ресурса секретного ключа. */
- typedef enum {
-  /*! \brief Счетчик числа использованных блоков. */
-    block_counter_resource,
-  /*! \brief Счетчик числа использований ключа, например,
-     количество подписанных сообщений или число производных ключей. */
-    key_using_resource,
-} counter_resource_t;
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Структура определяет тип и значение счетчика ресурса ключа. */
- typedef struct key_resource_counter {
-  /*! \brief Тип ресурса */
-    counter_resource_t type;
-  /*! \brief Дополнение */
-    ak_uint8 padding[4];
-  /*! \brief Cчетчик числа использований, например, зашифрованных/расшифрованных блоков. */
-    ssize_t counter;
-} *ak_key_resoure_counter;
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Структура определяет временной интервал действия ключа. */
- typedef struct time_interval {
-  /*! \brief Время, до которого ключ недействителен. */
-   time_t not_before;
-  /*! \brief Время, после которого ключ недействителен. */
-   time_t not_after;
-} *ak_time_intermal;
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Структура для хранения ресурса ключа. */
- typedef struct resource {
-  /*! \brief Счетчик числа использований ключа. */
-   struct key_resource_counter value;
-  /*! \brief Временной интервал использования ключа. */
-   struct time_interval time;
- } *ak_resource;
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Структура секретного ключа -- базовый набор данных и методов контроля. */
- struct skey {
-  /*! \brief ключ */
-#ifdef AK_HAVE_STDALIGN_H
-   alignas(16)
-#endif
-   ak_uint8 *key;
-  /*! \brief размер ключа (в октетах) */
-   size_t key_size;
-  /*! \brief OID алгоритма для которого предназначен секретный ключ */
-   ak_oid oid;
-  /*! \brief уникальный номер ключа */
-   ak_uint8 number[32];
-  /*! \brief контрольная сумма ключа */
-   ak_uint32 icode;
-  /*! \brief генератор случайных масок ключа */
-   struct random generator;
-  /*! \brief ресурс использования ключа */
-   struct resource resource;
-  /*! \brief указатель на внутренние данные ключа */
-   ak_pointer data;
- /*! \brief Флаги текущего состояния ключа */
-   key_flags_t flags;
- /*! \brief Способ выделения памяти. */
-   memory_allocation_policy_t policy;
-  /*! \brief указатель на функцию маскирования ключа */
-   ak_function_skey *set_mask;
-  /*! \brief указатель на функцию демаскирования ключа */
-   ak_function_skey *unmask;
-  /*! \brief указатель на функцию выработки контрольной суммы от значения ключа */
-   ak_function_skey *set_icode;
-  /*! \brief указатель на функцию проверки контрольной суммы от значения ключа */
-   ak_function_skey_check *check_icode;
-};
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Генерация случайного уникального вектора, рассматриваемого как номер ключа. */
- int ak_libakrypt_generate_unique_number( ak_pointer , const size_t );
-/*! \brief Функция выделения памяти для ключевой информации. */
- int ak_skey_alloc_memory( ak_skey , size_t , memory_allocation_policy_t );
-/*! \brief Функция освобождения выделенной ранее памяти. */
- int ak_skey_free_memory( ak_skey );
-/*! \brief Инициализация структуры секретного ключа. */
- int ak_skey_create( ak_skey , size_t );
-/*! \brief Очистка структуры секретного ключа. */
- int ak_skey_destroy( ak_skey );
-/*! \brief Присвоение секретному ключу уникального номера. */
- int ak_skey_set_unique_number( ak_skey );
-/*! \brief Присвоение секретному ключу заданного номера. */
- int ak_skey_set_number( ak_skey , ak_pointer , size_t );
-/*! \brief Присвоение секретному ключу константного значения. */
- int ak_skey_set_key( ak_skey , const ak_pointer , const size_t );
-/*! \brief Присвоение секретному ключу случайного значения. */
- int ak_skey_set_key_random( ak_skey , ak_random );
-/*! \brief Присвоение секретному ключу значения, выработанного из пароля */
- int ak_skey_set_key_from_password( ak_skey , const ak_pointer , const size_t ,
-                                                                 const ak_pointer , const size_t );
-/*! \brief Наложение или смена маски путем сложения по модулю два
-    случайной последовательности с ключом. */
- int ak_skey_set_mask_xor( ak_skey );
-/*! \brief Снятие маски с ключа. */
- int ak_skey_unmask_xor( ak_skey );
-/*! \brief Вычисление значения контрольной суммы ключа. */
- int ak_skey_set_icode_xor( ak_skey );
-/*! \brief Проверка значения контрольной суммы ключа. */
- bool_t ak_skey_check_icode_xor( ak_skey );
-/*! \brief Функция устанавливает ресурс ключа. */
- int ak_skey_set_resource( ak_skey , ak_resource );
-/*! \brief Функция устанавливает временной интервал действия ключа. */
- int ak_skey_set_validity( ak_skey , time_t , time_t );
-/*! \brief Функция устанавливает ресурс и временной итервал действия ключа. */
- int ak_skey_set_resource_values( ak_skey , counter_resource_t , const char * , time_t , time_t );
-
-/* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_HAVE_DEBUG_FUNCTIONS
-/*! \brief Функция выводит информацию о контексте секретного ключа в заданный файл. */
- int ak_skey_print_to_file( ak_skey , FILE *fp );
-#endif
-/** @} */
-
-/* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup enc Шифрование данных
- @{ */
-/*! \brief Нелинейная перестановка для алгоритмов хеширования и блочного шифрования */
- typedef ak_uint8 sbox[256];
-/** @} */
-
-/* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup mac Вычисление кодов целостности (хеширование и имитозащита)
- @{ */
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция очистки контекста хеширования. */
- typedef int ( ak_function_context_clean )( ak_pointer );
-/*! \brief Однораундовая функция сжатия, применяемая к одному или нескольким входным блокам. */
- typedef int ( ak_function_context_update )( ak_pointer, const ak_pointer , const size_t );
-/*! \brief Функция завершения вычислений и получения конечного результата. */
- typedef int ( ak_function_context_finalize )( ak_pointer,
-                                     const ak_pointer , const size_t , ak_pointer , const size_t );
-/*! \brief Функция создания контекста хеширования. */
- typedef int ( ak_function_hash_create )( ak_pointer );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Максимальный размер блока входных данных в октетах (байтах). */
- #define ak_mac_max_buffer_size (64)
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Контекст алгоритма итерационного сжатия. */
-/*! Класс предоставляет интерфейс для реализации процедруры сжатия данных фрагментами произвольной длины.
-    Данная процедура может применяться в алгоритмах хеширования, выработки имитовставки и т.п.*/
-/* ----------------------------------------------------------------------------------------------- */
- typedef struct mac {
-  /*! \brief Размер входного блока данных (в октетах) */
-   size_t bsize;
-  /*! \brief Текущее количество данных во внутреннем буффере. */
-   size_t length;
-  /*! \brief Внутренний буффер для хранения входных данных. */
-   ak_uint8 data[ ak_mac_max_buffer_size ];
-  /*! \brief Указатель на контекст, содержащий внутреннее состояние алгоритма сжатия. */
-   ak_pointer ctx;
-  /*! \brief Функция очистки контекста ctx */
-   ak_function_context_clean *clean;
-  /*! \brief Функция обновления состояния контекста ctx  */
-   ak_function_context_update *update;
-  /*! \brief Функция завершения вычислений и получения конечного результата */
-   ak_function_context_finalize *finalize;
- } *ak_mac;
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Структура для хранения внутренних данных функций хеширования семейства Стрибог. */
-/* ----------------------------------------------------------------------------------------------- */
- typedef struct streebog {
- /*! \brief Вектор h - временный */
-  ak_uint64 h[8];
- /*! \brief Вектор n - временный */
-  ak_uint64 n[8];
- /*! \brief Вектор  \f$ \Sigma \f$ - контрольная сумма */
-  ak_uint64 sigma[8];
- /*! \brief Размер блока выходных данных (хеш-кода)*/
-  size_t hsize;
-} *ak_streebog;
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Бесключевая функция хеширования. */
-/*! \details Класс предоставляет интерфейс для реализации бесключевых функций хеширования, построенных
-    с использованием итеративных сжимающих отображений. В настоящее время
-    с использованием класса \ref hash реализованы следующие отечественные алгоритмы хеширования
-     - Стрибог256,
-     - Стрибог512.
-
-  Перед началом работы контекст функции хэширования должен быть инициализирован
-  вызовом одной из функций инициализации, например, функции ak_hash_context_create_streebog256()
-  или функции ak_hash_context_create_streebog512().
-  После завершения вычислений контекст должен быть освобожден с помощью функции
-  ak_hash_context_destroy().                                                                       */
-/* ----------------------------------------------------------------------------------------------- */
- typedef struct hash {
-  /*! \brief OID алгоритма хеширования */
-   ak_oid oid;
-  /*! \brief Контекст итерационного сжатия. */
-   struct mac mctx;
-  /*! \brief Внутренние данные контекста */
-   union {
-   /*! \brief Структура алгоритмов семейства Стрибог. */
-    struct streebog sctx;
-   } data;
- } *ak_hash;
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция инициализации контекста начальными значениями. */
- dll_export int ak_mac_create( ak_mac , const size_t , ak_pointer ,
-     ak_function_context_clean * , ak_function_context_update * , ak_function_context_finalize * );
-/*! \brief Функция удаления контекста. */
- dll_export int ak_mac_destroy( ak_mac );
-/*! \brief Очистка контекста сжимающего отображения. */
- dll_export int ak_mac_clean( ak_mac );
-/*! \brief Обновление состояния контекста сжимающего отображения. */
- dll_export int ak_mac_update( ak_mac , const ak_pointer , const size_t );
-/*! \brief Обновление состояния и вычисление результата применения сжимающего отображения. */
- dll_export int ak_mac_finalize( ak_mac , const ak_pointer , const size_t , ak_pointer , const size_t );
-/*! \brief Применение сжимающего отображения к заданной области памяти. */
- dll_export int ak_mac_ptr( ak_mac , ak_pointer , const size_t , ak_pointer , const size_t );
-/*! \brief Применение сжимающего отображения к заданному файлу. */
- dll_export int ak_mac_file( ak_mac , const char* , ak_pointer , const size_t );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Инициализация контекста функции бесключевого хеширования ГОСТ Р 34.11-2012 (Стрибог256). */
- dll_export int ak_hash_create_streebog256( ak_hash );
-/*! \brief Инициализация контекста функции бесключевого хеширования ГОСТ Р 34.11-2012 (Стрибог512). */
- dll_export int ak_hash_create_streebog512( ak_hash );
-/*! \brief Инициализация контекста функции бесключевого хеширования по заданному OID алгоритма. */
- dll_export int ak_hash_create_oid( ak_hash, ak_oid );
-/*! \brief Уничтожение контекста функции хеширования. */
- dll_export int ak_hash_destroy( ak_hash );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция возвращает размер вырабатываемого хеш-кода (в октетах). */
- dll_export size_t ak_hash_get_tag_size( ak_hash );
-/*! \brief Функция возвращает размер блока входных данных, обрабатываемого функцией хеширования (в октетах). */
- dll_export size_t ak_hash_get_block_size( ak_hash );
-/*! \brief Очистка контекста алгоритма хеширования. */
- dll_export int ak_hash_clean( ak_hash );
-/*! \brief Обновление состояния контекста хеширования. */
- dll_export int ak_hash_update( ak_hash , const ak_pointer , const size_t );
-/*! \brief Обновление состояния и вычисление результата применения алгоритма хеширования. */
- dll_export int ak_hash_finalize( ak_hash , const ak_pointer , const size_t , ak_pointer , const size_t );
-/*! \brief Хеширование заданной области памяти. */
- dll_export int ak_hash_ptr( ak_hash , const ak_pointer , const size_t , ak_pointer , const size_t );
-/*! \brief Хеширование заданного файла. */
- dll_export int ak_hash_file( ak_hash , const char*, ak_pointer , const size_t );
-/** @} */
-
-/* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup skey Cекретные ключи криптографических механизмов
- @{ */
-/*! \brief Секретный ключ алгоритма выработки имитовставки HMAC. */
-/*!  Алгоритм выработки имитовставки HMAC основан на двукратном применении бесключевой функции
-     хеширования. Алгоритм описывается рекомендациями IETF RFC 2104 (см. также RFC 7836) и
-     стандартизован отечественными рекомендациями по стандартизации Р 50.1.113-2016.
-     Алгоритм предназначен, в основном, для выработки имитовставки и преобразования ключевой
-     информации.
-
-     В нашей реализации алгоритм может быть использован совместно с любой функцией хеширования,
-     реализованной в библиотеке. Отметим, что согласно Р 50.1.113-2016 алгоритм рекомендуется
-     использовать только совместно с функцией хеширования Стрибог
-     (с длиной хеш кода как 256 бит, так и 512 бит).
-
-     \note Использование ключей, чья длина превышает размер блока бесключевой функции
-     хеширования, реализовано в соответствии с RFC 2104.                                           */
-/* ----------------------------------------------------------------------------------------------- */
- typedef struct hmac {
-  /*! \brief Контекст секретного ключа */
-   struct skey key;
-  /*! \brief Контекст итерационного сжатия. */
-   struct mac mctx;
-  /*! \brief Контекст функции хеширования */
-   struct hash ctx;
-} *ak_hmac;
-
-/*! \brief Создание секретного ключа алгоритма выработки имитовставки HMAC на основе функции Стрибог256. */
- dll_export int ak_hmac_create_streebog256( ak_hmac );
-/*! \brief Создание секретного ключа алгоритма выработки имитовставки HMAC на основе функции Стрибог512. */
- dll_export int ak_hmac_create_streebog512( ak_hmac );
-/*! \brief Создание секретного ключа алгоритма выработки имитовставки HMAC c помощью заданного oid. */
- dll_export int ak_hmac_create_oid( ak_hmac , ak_oid );
-/*! \brief Уничтожение секретного ключа. */
- dll_export int ak_hmac_destroy( ak_hmac );
-/*! \brief Присвоение секретному ключу константного значения. */
- dll_export int ak_hmac_set_key( ak_hmac , const ak_pointer , const size_t );
-/*! \brief Присвоение секретному ключу случайного значения. */
- dll_export int ak_hmac_set_key_random( ak_hmac , ak_random );
-/*! \brief Присвоение секретному ключу значения, выработанного из пароля */
- dll_export int ak_hmac_set_key_from_password( ak_hmac , const ak_pointer , const size_t ,
-                                                                 const ak_pointer , const size_t );
-/** @} */
-
-/* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup mac Вычисление кодов целостности (хеширование и имитозащита)
- @{ */
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция возвращает размер вырабатываемой имитовставки. */
- dll_export size_t ak_hmac_get_tag_size( ak_hmac );
-/*! \brief Функция возвращает размер блока входных данных, обрабатываемого функцией выработки имитовставки. */
- dll_export size_t ak_hmac_get_block_size( ak_hmac );
-/*! \brief Очистка контекста секретного ключа алгоритма выработки имитовставки HMAC, а также
-    проверка ресурса ключа. */
- dll_export int ak_hmac_clean( ak_hmac );
-/*! \brief Обновление текущего состояния контекста алгоритма выработки имитовставки HMAC. */
- dll_export int ak_hmac_update( ak_hmac , const ak_pointer , const size_t );
-/*! \brief Завершение алгоритма выработки имитовставки HMAC. */
- dll_export int ak_hmac_finalize( ak_hmac , const ak_pointer , const size_t ,
-                                                                       ak_pointer , const size_t );
-/*! \brief Вычисление имитовставки для заданной области памяти. */
- dll_export int ak_hmac_ptr( ak_hmac , const ak_pointer , const size_t ,
-                                                                       ak_pointer , const size_t );
-/*! \brief Вычисление имитовставки для заданного файла. */
- dll_export int ak_hmac_file( ak_hmac , const char* , ak_pointer , const size_t );
-/*! \brief Развертка ключевого вектора из пароля (согласно Р 50.1.111-2016, раздел 4) */
- dll_export int ak_hmac_pbkdf2_streebog512( const ak_pointer , const size_t ,
-                   const ak_pointer , const size_t, const size_t , const size_t , ak_pointer );
-/** @} */
+/** @} *//** @} */
 
 #ifdef __cplusplus
 } /* конец extern "C" */

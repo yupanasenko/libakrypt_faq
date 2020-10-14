@@ -22,6 +22,7 @@ option( AK_STATIC_LIB "Build the static library" ON )
 option( AK_SHARED_LIB "Build the shared library" ON )
 option( AK_HAVE_LIBAKRYPT "Build crypto library" ON )
 option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
+# LIBAKRYPT_CONF
 
 if( LIBAKRYPT_GMP_TESTS )
   find_library( GMP_LIB gmp )
@@ -80,6 +81,8 @@ if( AK_HAVE_LIBAKRYPT )
     source/ak_hash.c
     source/ak_skey.c
     source/ak_hmac.c
+    source/ak_bckey.c
+    source/ak_magma.c
  )
 endif()
 
