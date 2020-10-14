@@ -650,7 +650,7 @@
     @return В случае успеха функция возвращает ak_error_ok. В противном случае,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_magma_context_delete_keys (ak_skey skey)
+ static int ak_magma_delete_keys (ak_skey skey)
 {
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using a null pointer to secret key" );
@@ -671,7 +671,7 @@
     @return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_magma_context_schedule_keys(ak_skey skey)
+ static int ak_magma_schedule_keys(ak_skey skey)
 {
   int idx, error = ak_error_ok;
   struct magma_encrypted_keys *data = NULL;
@@ -682,7 +682,7 @@
   if( skey->check_icode( skey ) != ak_true ) return ak_error_message( ak_error_wrong_key_icode,
                                                 __func__ , "using key with wrong integrity code" );
  /* удаляем былое */
-  if( skey->data != NULL ) ak_magma_context_delete_keys( skey );
+  if( skey->data != NULL ) ak_magma_delete_keys( skey );
 
   if(( data = ak_aligned_malloc( sizeof( struct magma_encrypted_keys ))) == NULL )
     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
@@ -723,7 +723,7 @@
     @return В случае успеха функция возвращает ak_error_ok. В противном случае,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_skey_context_set_mask_additive( ak_skey skey )
+ static int ak_skey_set_mask_additive( ak_skey skey )
 {
   ak_uint32 newmask[8];
   size_t idx = 0, jdx = 0;
@@ -794,7 +794,7 @@
     @return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_skey_context_unmask_additive( ak_skey skey )
+ static int ak_skey_unmask_additive( ak_skey skey )
 {
   size_t idx = 0;
 
@@ -834,7 +834,7 @@
     @return В случае успеха функция возвращает ak_error_ok. В противном случае,
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_skey_context_set_icode_additive( ak_skey skey )
+ static int ak_skey_set_icode_additive( ak_skey skey )
 {
   union {
     ak_uint32 x;
@@ -871,7 +871,7 @@
     @return В случае совпадения контрольной суммы ключа функция возвращает истину (\ref ak_true).
     В противном случае, возвращается ложь (\ref ak_false).                                         */
 /* ----------------------------------------------------------------------------------------------- */
- static bool_t ak_skey_context_check_icode_additive( ak_skey skey )
+ static bool_t ak_skey_check_icode_additive( ak_skey skey )
 {
   union {
     ak_uint32 x;
@@ -936,13 +936,13 @@
  /* ресурс ключа устанавливается в момент присвоения ключа */
 
  /* устанавливаем методы */
-  bkey->key.set_mask = ak_skey_context_set_mask_additive;
-  bkey->key.unmask = ak_skey_context_unmask_additive;
-  bkey->key.set_icode = ak_skey_context_set_icode_additive;
-  bkey->key.check_icode = ak_skey_context_check_icode_additive;
+  bkey->key.set_mask = ak_skey_set_mask_additive;
+  bkey->key.unmask = ak_skey_unmask_additive;
+  bkey->key.set_icode = ak_skey_set_icode_additive;
+  bkey->key.check_icode = ak_skey_check_icode_additive;
 
-  bkey->schedule_keys = ak_magma_context_schedule_keys;
-  bkey->delete_keys = ak_magma_context_delete_keys;
+  bkey->schedule_keys = ak_magma_schedule_keys;
+  bkey->delete_keys = ak_magma_delete_keys;
   if( oc ) {
     bkey->encrypt = ak_magma_encrypt_with_random_walk_oc;
     bkey->decrypt = ak_magma_decrypt_with_random_walk_oc;
@@ -1354,7 +1354,7 @@
     вызывая для этого функцию тестирования дважды
 
     сначала запуск в базовом режиме работы библиотеки */
-   ak_libakrypt_set_option( "openssl_compability", ak_false );
+   ak_libakrypt_set_openssl_compability( ak_false );
    if( ak_libakrypt_test_magma_complete() != ak_true ) {
      ak_error_message( ak_error_get_value(), __func__ ,
                                             "incorrect testing of magma algorithm in base mode" );
@@ -1362,15 +1362,17 @@
    }
 
  /* потом запускаем тестирование в режиме совместимости с openssl */
-   ak_libakrypt_set_option( "openssl_compability", ak_true );
+   ak_libakrypt_set_openssl_compability( ak_true );
    if( ak_libakrypt_test_magma_complete() != ak_true ) {
      ak_error_message( ak_error_get_value(), __func__ ,
                          "incorrect testing of magma algorithm in mode with openssl compability" );
      return ak_false;
    }
 
-  /* восстанавливаем первоначальное состояние */
-   ak_libakrypt_set_option( "openssl_compability", oc );
+ /* восстанавливаем первоначальное состояние */
+   ak_libakrypt_set_openssl_compability( oc );
+   if( ak_log_get_level() >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                                        "testing of magma block cipher is Ok" );
  return ak_true;
 }
 

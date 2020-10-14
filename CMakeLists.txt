@@ -83,6 +83,7 @@ if( AK_HAVE_LIBAKRYPT )
     source/ak_hmac.c
     source/ak_bckey.c
     source/ak_magma.c
+    source/ak_kuznechik.c
  )
 endif()
 

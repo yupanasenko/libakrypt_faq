@@ -33,7 +33,7 @@
  4. Режим работы блочных шифров `ACPKM`, регламентируемый рекомендациями по стандартизации
 [Р 1323565.1.017-2018](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-017-2018-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-kriptograficheskie-algoritmy-soputstvuyushchie-primeneniyu-algoritmov-blochnogo-shifrovaniya.html).
 
- 5. Режим работы блочных шифров, реализующий аутентифицированное шифрование согласно рекомендациям по стандартизации
+ 5. Режим работы блочных шифров `MGM`, реализующий аутентифицированное шифрование согласно рекомендациям по стандартизации
 [Р 1323565.1.026-2019](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-026-2019-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-rezhimy-raboty-blochnykh-shifrov-realizuyushchie-autentifitsirovannoe-shifrovanie.html).
 
  6. Алгоритмы выработки имитовставки (кода аутентичности сообщения):
@@ -59,7 +59,7 @@
  9. Алгоритмы, реализующие операции сложения и умножения в конечных простых полях
     фиксированной размерности 256 и 512 бит с помощью преобразования Монтгомери.
 
- 10. Алгоритмы, реализующие операцию сложения в группах точек эллиптических кривых,
+ 10. Алгоритмы, реализующие операцию вычисления кратной точки на эллиптических кривых,
     удовлетворяющих требованиям
     стандарта [ГОСТ Р 34.10-2012](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-10-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-protsessy-formirovaniya-i-proverki-elektronnoy-tsifrovoy-podpisi.html).
     Поддерживаются все отечественные

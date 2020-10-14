@@ -682,19 +682,6 @@ extern "C" {
 /*! \brief Шифрование данных в режиме CTR-ACPKM из Р 1323565.1.017—2018. */
  dll_export int ak_bckey_ctr_acpkm( ak_bckey , ak_pointer , ak_pointer , size_t , size_t ,
                                                                              ak_pointer , size_t );
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Выработка матрицы, соответствующей 16 тактам работы линейного региста сдвига. */
- dll_export void ak_bckey_kuznechik_generate_matrix( const linear_register , linear_matrix );
-/*! \brief Обращение сопровождающей матрицы. */
- dll_export void ak_bckey_kuznechik_invert_matrix( linear_matrix , linear_matrix );
-/*! \brief Обращение таблицы нелинейного преобразования. */
- dll_export void ak_bckey_kuznechik_invert_permutation( const sbox , sbox );
-/*! \brief Инициализация внутренних структур данных, используемых при реализации алгоритма
-    блочного шифрования Кузнечик (ГОСТ Р 34.12-2015). */
- dll_export int ak_bckey_kuznechik_init_tables( const linear_register ,
-                                                                const sbox , ak_kuznechik_params );
-/*! \brief Инициализация внутренних переменных значениями, регламентируемыми ГОСТ Р 34.12-2015. */
- dll_export int ak_bckey_kuznechik_init_gost_tables( void );
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */

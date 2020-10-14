@@ -15,7 +15,7 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
- #include <libakrypt.h>
+ #include <libakrypt-internal.h>
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция проверяет корректность определения базовых типов данных
@@ -103,10 +103,9 @@
 {
   if( ak_libakrypt_set_option( "openssl_compability", flag ) != ak_error_ok )
     return ak_error_message( ak_error_get_value(), __func__, "using an incorrect option name" );
+  ak_bckey_kuznechik_init_gost_tables();
 
-  ak_error_message( ak_error_ok, __func__, "необходимо исправить код данной функции" );
-  // ak_bckey_context_kuznechik_init_gost_tables();
-  return ak_error_ok;
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -155,12 +154,12 @@
     return ak_false;
   }
 
-// /* тестируем корректность реализации блочного шифра Кузнечик */
-//  if( ak_bckey_test_kuznechik()  != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ ,
-//                                                   "incorrect testing of kuznechik block cipher" );
-//    return ak_false;
-//  }
+ /* тестируем корректность реализации блочного шифра Кузнечик */
+  if( ak_libakrypt_test_kuznechik()  != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                                   "incorrect testing of kuznechik block cipher" );
+    return ak_false;
+  }
 
 //// /* тестируем дополнительные режимы работы */
 ////  if( ak_bckey_test_mgm()  != ak_true ) {
@@ -365,11 +364,11 @@
      return ak_false;
    }
 
-// /* инициализируем константные таблицы для алгоритма Кузнечик */
-//   if(( error = ak_bckey_context_kuznechik_init_gost_tables()) != ak_error_ok ) {
-//    ak_error_message( error, __func__, "initialization of context manager is wrong" );
-//     return ak_false;
-//   }
+ /* инициализируем константные таблицы для алгоритма Кузнечик */
+   if(( error = ak_bckey_kuznechik_init_gost_tables()) != ak_error_ok ) {
+    ak_error_message( error, __func__, "initialization of context manager is wrong" );
+     return ak_false;
+   }
 
  /* в случае, когда компилируются сетевые функции, инициализируем работу с сокетами */
 #ifdef AK_HAVE_WINDOWS_H

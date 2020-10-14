@@ -20,6 +20,20 @@
 /*! \brief Процедура вычисления производного ключа в соответствии с алгоритмом ACPKM
     из рекомендаций Р 1323565.1.012-2018. */
  int ak_bckey_next_acpkm_key( ak_bckey );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Выработка матрицы, соответствующей 16 тактам работы линейного региста сдвига. */
+ void ak_bckey_kuznechik_generate_matrix( const linear_register , linear_matrix );
+/*! \brief Обращение сопровождающей матрицы. */
+ void ak_bckey_kuznechik_invert_matrix( linear_matrix , linear_matrix );
+/*! \brief Обращение таблицы нелинейного преобразования. */
+ void ak_bckey_kuznechik_invert_permutation( const sbox , sbox );
+/*! \brief Инициализация внутренних структур данных, используемых при реализации алгоритма
+    блочного шифрования Кузнечик (ГОСТ Р 34.12-2015). */
+ int ak_bckey_kuznechik_init_tables( const linear_register ,
+                                                                const sbox , ak_kuznechik_params );
+/*! \brief Инициализация внутренних переменных значениями, регламентируемыми ГОСТ Р 34.12-2015. */
+ int ak_bckey_kuznechik_init_gost_tables( void );
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
