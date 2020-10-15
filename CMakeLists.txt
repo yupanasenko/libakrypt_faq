@@ -69,6 +69,7 @@ set( AKBASE_SOURCES
 # Добавляем исходные тексты для криптобиблиотеки
 if( AK_HAVE_LIBAKRYPT )
  set( AKRYPT_SOURCES
+    source/libakrypt-internal.h
     source/ak_options.c
     source/ak_libakrypt.c
     source/ak_oid.c
@@ -85,6 +86,7 @@ if( AK_HAVE_LIBAKRYPT )
     source/ak_magma.c
     source/ak_kuznechik.c
     source/ak_acpkm.c
+    source/ak_mgm.c
  )
 endif()
 
@@ -172,6 +174,7 @@ endforeach()
 set ( ARITHMETIC_TESTS_LIST
       random01
       gf2n
+      mgm01
     )
 
 if( LIBAKRYPT_GMP_TESTS )

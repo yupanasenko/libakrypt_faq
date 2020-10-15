@@ -54,41 +54,40 @@
     return ak_false;
   }
 
-  if( ak_log_get_level() >= ak_log_maximum )
-    ak_error_message_fmt( ak_error_ok, __func__, "size of pointer is %d", sizeof( ak_pointer ));
+  ak_error_message_fmt( ak_error_ok, __func__, "size of pointer is %d", sizeof( ak_pointer ));
 
  /* определяем тип платформы: little-endian или big-endian */
   val.x[0] = 0; val.x[1] = 1; val.x[2] = 2; val.x[3] = 3;
 
-   #ifdef AK_LITTLE_ENDIAN
-    if( val.z != 50462976 ) {
-      ak_error_message( ak_error_wrong_endian, __func__,
-       "incorrect endian: library runs on big endian, but compiled for little endian platform");
-      return ak_false;
-    } else ak_error_message( ak_error_ok, __func__ , "library runs on little endian platform" );
-   #else
-    if( val.z != 66051 ) {
-      ak_error_message( ak_error_wrong_endian, __func__,
-       "incorrect endian: library runs on little endian, but compiled for big endian platform");
-      return ak_false;
-    } else ak_error_message( ak_error_ok, __func__ , "library runs on big endian platform" );
-   #endif
+  #ifdef AK_LITTLE_ENDIAN
+   if( val.z != 50462976 ) {
+     ak_error_message( ak_error_wrong_endian, __func__,
+      "incorrect endian: library runs on big endian, but compiled for little endian platform");
+     return ak_false;
+   } else ak_error_message( ak_error_ok, __func__ , "library runs on little endian platform" );
+  #else
+   if( val.z != 66051 ) {
+     ak_error_message( ak_error_wrong_endian, __func__,
+      "incorrect endian: library runs on little endian, but compiled for big endian platform");
+     return ak_false;
+   } else ak_error_message( ak_error_ok, __func__ , "library runs on big endian platform" );
+  #endif
 
-   #ifdef AK_HAVE_BUILTIN_XOR_SI128
-    ak_error_message( ak_error_ok, __func__ , "library applies __m128i base type" );
-   #endif
-   #ifdef AK_HAVE_BUILTIN_CLMULEPI64
-    ak_error_message( ak_error_ok, __func__ , "library applies clmulepi64 instruction" );
-   #endif
-   #ifdef AK_HAVE_BUILTIN_MULQ_GCC
-    ak_error_message( ak_error_ok, __func__ , "library applies assembler code for mulq command" );
-   #endif
-   #ifdef AK_HAVE_PTHREAD_H
-    ak_error_message( ak_error_ok, __func__ , "library runs with pthreads support" );
-   #endif
-   #ifdef AK_HAVE_GMP_H
-    ak_error_message( ak_error_ok, __func__ , "library runs with gmp support" );
-   #endif
+  #ifdef AK_HAVE_BUILTIN_XOR_SI128
+   ak_error_message( ak_error_ok, __func__ , "library applies __m128i base type" );
+  #endif
+  #ifdef AK_HAVE_BUILTIN_CLMULEPI64
+   ak_error_message( ak_error_ok, __func__ , "library applies clmulepi64 instruction" );
+  #endif
+  #ifdef AK_HAVE_BUILTIN_MULQ_GCC
+   ak_error_message( ak_error_ok, __func__ , "library applies assembler code for mulq command" );
+  #endif
+  #ifdef AK_HAVE_PTHREAD_H
+   ak_error_message( ak_error_ok, __func__ , "library runs with pthreads support" );
+  #endif
+  #ifdef AK_HAVE_GMP_H
+   ak_error_message( ak_error_ok, __func__ , "library runs with gmp support" );
+  #endif
 
  return ak_true;
 }
@@ -167,13 +166,11 @@
                                   "incorrect testing of acpkm encryption mode for block ciphers" );
     return ak_false;
   }
-
-////  if( ak_bckey_test_mgm()  != ak_true ) {
-////    ak_error_message( ak_error_get_value(), __func__ ,
-////                                               "incorrect testing of mgm mode for block ciphers" );
-////    return ak_false;
-////  }
-
+  if( ak_libakrypt_test_mgm()  != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ ,
+                                               "incorrect testing of mgm mode for block ciphers" );
+    return ak_false;
+  }
 
   if( audit >= ak_log_maximum )
     ak_error_message( ak_error_ok, __func__ , "testing block ciphers ended successfully" );

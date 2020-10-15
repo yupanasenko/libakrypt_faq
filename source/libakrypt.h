@@ -163,12 +163,18 @@ extern "C" {
  объекты данного класса, а также вызывать базовые функции чтения и сохранения объектов.            */
 /* ----------------------------------------------------------------------------------------------- */
  typedef struct object {
- /*! \brief Размер области памяти для объекта */
+ /*! \brief Размер области памяти для первого объекта. */
   size_t size;
- /*! \brief Конструктор объекта. */
+ /*! \brief Размер области памяти для второго объекта. */
+  size_t size_second;
+ /*! \brief Конструктор первого объекта. */
   ak_function_create_object *create;
- /*! \brief Деструктор объекта. */
+ /*! \brief Конструктор второго объекта (для алгоритмов с двумя ключами). */
+  ak_function_create_object *create_second;
+ /*! \brief Деструктор первого объекта. */
   ak_function_destroy_object *destroy;
+ /*! \brief Деструктор второго объекта (для алгоритмов с двумя ключами). */
+  ak_function_destroy_object *destroy_second;
 } *ak_object;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -231,10 +237,8 @@ extern "C" {
      cfb,
    /*! \brief режим шифрования XTS для блочного шифра */
      xts,
-   /*! \brief режим аутентифицирующего шифрования, согласно Р 1323565.1.028-2019 */
-     mgm,
    /*! \brief режим аутентифицирующего шифрования */
-     xtsmac,
+     aead,
    /*! \brief режим гаммирования поточного шифра (сложение по модулю 2) */
      xcrypt,
    /*! \brief гаммирование по модулю \f$ 2^8 \f$ поточного шифра */
@@ -271,7 +275,7 @@ extern "C" {
 } *ak_oid;
 
 /* ----------------------------------------------------------------------------------------------- */
- #define ak_object_undefined { 0, NULL, NULL }
+ #define ak_object_undefined { 0, 0, NULL, NULL, NULL, NULL }
  #define ak_oid_undefined { undefined_engine, undefined_mode, NULL, NULL, NULL, ak_object_undefined }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -672,12 +676,12 @@ extern "C" {
 /*! \brief Шифрование данных в режиме гаммирования с обратной связью по выходу
    (output feedback, ofb). */
  dll_export int ak_bckey_ofb( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
-/*! \brief Шифрование данных в режиме гаммирования с обратной связью по шифртексту
-   (cipher feedback, cfb). */
+/*! \brief Зашифрование данных в режиме гаммирования с обратной связью по шифртексту
+   из ГОСТ Р 34.13-2015 (cipher feedback, cfb). */
  dll_export int ak_bckey_encrypt_cfb( ak_bckey , ak_pointer , ak_pointer , size_t ,
                                                                              ak_pointer , size_t );
 /*! \brief Расшифрование данных в режиме гаммирования с обратной связью по шифртексту
-   (cipher feedback, cfb). */
+   из ГОСТ Р 34.13-2015 (cipher feedback, cfb). */
  dll_export int ak_bckey_decrypt_cfb( ak_bckey , ak_pointer , ak_pointer , size_t ,
                                                                              ak_pointer , size_t );
 /*! \brief Шифрование данных в режиме `CTR-ACPKM` из Р 1323565.1.017—2018. */
@@ -767,6 +771,24 @@ extern "C" {
     struct streebog sctx;
    } data;
  } *ak_hash;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура, содержащая текущее состояние внутренних переменных режима
+   аутентифицированного шифрования. */
+ typedef struct mgm_ctx {
+  /*! \brief Текущее значение имитовставки. */
+   ak_uint128 sum;
+  /*! \brief Счетчик, значения которого используются при шифровании информации. */
+   ak_uint128 ycount;
+  /*! \brief Счетчик, значения которого используются при выработке имитовставки. */
+   ak_uint128 zcount;
+  /*! \brief Размер обработанных зашифровываемых/расшифровываемых данных в битах. */
+   ssize_t pbitlen;
+  /*! \brief Размер обработанных дополнительных данных в битах. */
+   ssize_t abitlen;
+  /*! \brief Флаги состояния контекста. */
+   ak_uint32 flags;
+} *ak_mgm_ctx;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация контекста функции бесключевого хеширования ГОСТ Р 34.11-2012 (Стрибог256). */
@@ -865,9 +887,24 @@ extern "C" {
                    const ak_pointer , const size_t, const size_t , const size_t , ak_pointer );
 /** @} */
 
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup aead Аутентифицированное шифрование данных
+ @{ */
+/*! \brief Зашифрование данных в режиме MGM с одновременной выработкой имитовставки
+    согласно Р 1323565.1.026-2019. */
+ dll_export int ak_bckey_encrypt_mgm( ak_bckey , ak_bckey , const ak_pointer , const size_t ,
+                   const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                         ak_pointer , const size_t );
+/*! \brief Расшифрование данных в режиме MGM с одновременной проверкой имитовставки
+    согласно Р 1323565.1.026-2019. */
+ dll_export int ak_bckey_decrypt_mgm( ak_bckey , ak_bckey , const ak_pointer , const size_t ,
+                   const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                          ak_pointer, const size_t );
+/** @} */
+
+/* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup math Математические функции
  @{ */
-/* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup mpzn Арифметика больших чисел
  @{ */
 #ifdef LIBAKRYPT_HAVE_GMP_H

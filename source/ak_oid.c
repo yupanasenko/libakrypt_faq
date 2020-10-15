@@ -41,8 +41,7 @@
     "cbc",
     "cfb",
     "xts",
-    "mgm",
-    "xtsmac",
+    "aead",
     "xcrypt",
     "a8",
     "descriptor",
@@ -64,18 +63,25 @@
  static const char *asn1_winrtl_i[] =       { "1.2.643.2.52.1.1.4", NULL };
 #endif
 
- static const char *asn1_streebog256_n[] =  { "streebog256", "md_gost12_256", NULL };
- static const char *asn1_streebog256_i[] =  { "1.2.643.7.1.1.2.2", NULL };
- static const char *asn1_streebog512_n[] =  { "streebog512", "md_gost12_512", NULL };
- static const char *asn1_streebog512_i[] =  { "1.2.643.7.1.1.2.3", NULL };
+ static const char *asn1_streebog256_n[] = { "streebog256", "md_gost12_256", NULL };
+ static const char *asn1_streebog256_i[] = { "1.2.643.7.1.1.2.2", NULL };
+ static const char *asn1_streebog512_n[] = { "streebog512", "md_gost12_512", NULL };
+ static const char *asn1_streebog512_i[] = { "1.2.643.7.1.1.2.3", NULL };
  static const char *asn1_hmac_streebog256_n[] = { "hmac-streebog256", "HMAC-md_gost12_256", NULL };
  static const char *asn1_hmac_streebog256_i[] = { "1.2.643.7.1.1.4.1", NULL };
  static const char *asn1_hmac_streebog512_n[] = { "hmac-streebog512", "HMAC-md_gost12_512", NULL };
  static const char *asn1_hmac_streebog512_i[] = { "1.2.643.7.1.1.4.2", NULL };
- static const char *asn1_magma_n[] =        { "magma", NULL };
- static const char *asn1_magma_i[] =        { "1.2.643.7.1.1.5.1", NULL };
- static const char *asn1_kuznechik_n[] =    { "kuznechik", "kuznyechik", "grasshopper", NULL };
- static const char *asn1_kuznechik_i[] =    { "1.2.643.7.1.1.5.2", NULL };
+ static const char *asn1_magma_n[] =       { "magma", NULL };
+ static const char *asn1_magma_i[] =       { "1.2.643.7.1.1.5.1", NULL };
+ static const char *asn1_kuznechik_n[] =   { "kuznechik", "kuznyechik", "grasshopper", NULL };
+ static const char *asn1_kuznechik_i[] =   { "1.2.643.7.1.1.5.2", NULL };
+
+ static const char *asn1_mgm_magma_n[] =   { "mgm-magma",
+                                             "id-tc26-cipher-gostr3412-2015-magma-mgm", NULL };
+ static const char *asn1_mgm_magma_i[] =   { "1.2.643.7.1.1.5.1.3", NULL };
+ static const char *asn1_mgm_kuznechik_n[] = { "mgm-kuznechik",
+                                               "id-tc26-cipher-gostr3412-2015-kuznyechik-mgm", NULL };
+ static const char *asn1_mgm_kuznechik_i[] = { "1.2.643.7.1.1.5.2.3", NULL };
 
 // static const char *asn1_sign256_n[] =      { "id-tc26-signwithdigest-gost3410-12-256",
 //                                              "sign256", NULL };
@@ -225,54 +231,56 @@ static struct oid libakrypt_oids[] =
 {
  /* идентификаторы  */
  { random_generator, algorithm, asn1_lcg_i, asn1_lcg_n, NULL,
-  { sizeof( struct random ), (ak_function_create_object *)ak_random_create_lcg,
-                                   (ak_function_destroy_object *)ak_random_destroy }},
+  { sizeof( struct random ), 0, (ak_function_create_object *)ak_random_create_lcg, NULL,
+                                          (ak_function_destroy_object *)ak_random_destroy, NULL }},
 #if defined(__unix__) || defined(__APPLE__)
  { random_generator, algorithm, asn1_dev_random_i, asn1_dev_random_n, NULL,
-  { sizeof( struct random ), (ak_function_create_object *)ak_random_create_random,
-                                   (ak_function_destroy_object *)ak_random_destroy }},
+  { sizeof( struct random ), 0, (ak_function_create_object *)ak_random_create_random, NULL,
+                                          (ak_function_destroy_object *)ak_random_destroy, NULL }},
  { random_generator, algorithm, asn1_dev_urandom_i, asn1_dev_urandom_n, NULL,
-  { sizeof( struct random ), (ak_function_create_object *)ak_random_create_urandom,
-                                   (ak_function_destroy_object *)ak_random_destroy }},
+  { sizeof( struct random ), 0, (ak_function_create_object *)ak_random_create_urandom, NULL,
+                                          (ak_function_destroy_object *)ak_random_destroy, NULL }},
 #endif
 #ifdef _WIN32
  { random_generator, algorithm, asn1_winrtl_i, asn1_winrtl_n, NULL,
-  { sizeof( struct random ), (ak_function_create_object *) ak_random_create_winrtl,
-                                  (ak_function_destroy_object *) ak_random_destroy }},
+  { sizeof( struct random ), 0, (ak_function_create_object *) ak_random_create_winrtl, NULL,
+                                         (ak_function_destroy_object *) ak_random_destroy, NULL }},
 #endif
 
 /* добавляем идентификаторы алгоритмов */
  { hash_function, algorithm, asn1_streebog256_i, asn1_streebog256_n, NULL,
-  { sizeof( struct hash ),
-    ( ak_function_create_object *) ak_hash_create_streebog256,
-    ( ak_function_destroy_object *) ak_hash_destroy }
- },
+  { sizeof( struct hash ), 0, ( ak_function_create_object *) ak_hash_create_streebog256, NULL,
+                                          ( ak_function_destroy_object *) ak_hash_destroy, NULL }},
  { hash_function, algorithm, asn1_streebog512_i, asn1_streebog512_n, NULL,
-  { sizeof( struct hash ),
-    ( ak_function_create_object *) ak_hash_create_streebog512,
-    ( ak_function_destroy_object *) ak_hash_destroy }
- },
+  { sizeof( struct hash ), 0, ( ak_function_create_object *) ak_hash_create_streebog512, NULL,
+                                          ( ak_function_destroy_object *) ak_hash_destroy, NULL }},
 
  { hmac_function, algorithm, asn1_hmac_streebog256_i, asn1_hmac_streebog256_n, NULL,
-  { sizeof( struct hmac ),
-    ( ak_function_create_object *) ak_hmac_create_streebog256,
-    ( ak_function_destroy_object *) ak_hmac_destroy }
- },
+  { sizeof( struct hmac ), 0, ( ak_function_create_object *) ak_hmac_create_streebog256, NULL,
+                                          ( ak_function_destroy_object *) ak_hmac_destroy, NULL }},
  { hmac_function, algorithm, asn1_hmac_streebog512_i, asn1_hmac_streebog512_n, NULL,
-  { sizeof( struct hmac ),
-    ( ak_function_create_object *) ak_hmac_create_streebog512,
-    ( ak_function_destroy_object *) ak_hmac_destroy }
- },
+  { sizeof( struct hmac ), 0, ( ak_function_create_object *) ak_hmac_create_streebog512, NULL,
+                                          ( ak_function_destroy_object *) ak_hmac_destroy, NULL }},
  { block_cipher, algorithm, asn1_magma_i, asn1_magma_n, NULL,
-  { sizeof( struct bckey ),
-    ( ak_function_create_object *) ak_bckey_create_magma,
-    ( ak_function_destroy_object *) ak_bckey_destroy }
- },
+  { sizeof( struct bckey ), 0, ( ak_function_create_object *) ak_bckey_create_magma, NULL,
+                                         ( ak_function_destroy_object *) ak_bckey_destroy, NULL }},
  { block_cipher, algorithm, asn1_kuznechik_i, asn1_kuznechik_n, NULL,
-  { sizeof( struct bckey ),
-    ( ak_function_create_object *) ak_bckey_create_kuznechik,
-    ( ak_function_destroy_object *) ak_bckey_destroy }
- },
+  { sizeof( struct bckey ), 0, ( ak_function_create_object *) ak_bckey_create_kuznechik, NULL,
+                                         ( ak_function_destroy_object *) ak_bckey_destroy, NULL }},
+
+/* режимы блочного шифрования */
+ { block_cipher, aead, asn1_mgm_magma_i, asn1_mgm_magma_n, NULL,
+  { sizeof( struct bckey ), sizeof( struct bckey ),
+                                         ( ak_function_create_object *) ak_bckey_create_magma,
+                                         ( ak_function_create_object *) ak_bckey_create_magma,
+                                             ( ak_function_destroy_object *) ak_bckey_destroy,
+                                               ( ak_function_destroy_object *) ak_bckey_destroy }},
+ { block_cipher, aead, asn1_mgm_kuznechik_i, asn1_mgm_kuznechik_n, NULL,
+  { sizeof( struct bckey ), sizeof( struct bckey ),
+                                     ( ak_function_create_object *) ak_bckey_create_kuznechik,
+                                     ( ak_function_create_object *) ak_bckey_create_kuznechik,
+                                             ( ak_function_destroy_object *) ak_bckey_destroy,
+                                               ( ak_function_destroy_object *) ak_bckey_destroy }},
 
 // {{ sign_function, algorithm, asn1_sign256_i, asn1_sign256_n }, NULL,
 //  { sizeof( struct signkey ),

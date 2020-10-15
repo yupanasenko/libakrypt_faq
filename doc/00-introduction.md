@@ -40,12 +40,12 @@
     * алгоритм выработки имитовставки `HMAC`, регламентированный рекомендациями по
     стандартизации [Р 50.1.113-2016](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-50-1-113-2016-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-kriptograficheskie-algoritmy-soputstvuyushchie-primeneniyu-algoritmov-elektronnoy-tsifrovoy-podpisi-i-funktsii-kheshirovaniya.html) и
     основанный на применении функций хеширования «Стрибог-256» и «Стрибог-512»;
-    * алгоритм выработки имитовставки `OMAC1` (`CMAC`), регламентированный стандартом [ГОСТ Р 34.13-2015](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-13-2015-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-rezhimy-raboty-blochnykh-shifrov.html) и
+    * алгоритм выработки имитовставки `CMAC` (`OMAC1`), регламентированный стандартом [ГОСТ Р 34.13-2015](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-13-2015-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-rezhimy-raboty-blochnykh-shifrov.html) и
     использующий алгоритмы блочного шифрования «Магма» или «Кузнечик».
 
  7. Алгоритм развертки ключа из пароля `PBKDF2`, регламентированный рекомендациями по стандартизации
    [Р 50.1.111-2016](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-50-1-111-2016-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-parolnaya-zashchita-klyuchevoy-informatsii.html)
-   и использующий функции хеширования «Стрибог-256» и «Стрибог-512».
+   и использующий функцию хеширования «Стрибог-512».
 
  8. Программные и биологические генераторы псевдо-случайных чисел:
     * линейный конгруэнтный генератор (используется для генерации уникальных номеров ключей),
@@ -70,6 +70,7 @@
     [ГОСТ Р 34.10-2012](https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-10-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-protsessy-formirovaniya-i-proverki-elektronnoy-tsifrovoy-podpisi.html).
     Используется формат подписи, определяемый рекомендациями по стандартизации
     [Р 1323565.1.23-2018](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-023-2018-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-ispolzovanie-algoritmov-gost-r-34-10-2012-gost-r-34-11-2012-v-sertifikate-spiske-annulirovannykh-sertifikatov-crl-i-zaprose-na-sertifikat-pkcs-10-infrastruktury-o.html).
+
 
 Платформы и компиляторы
 =======================

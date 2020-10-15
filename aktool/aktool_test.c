@@ -272,13 +272,24 @@
  }
 
 /* ----------------------------------------------------------------------------------------------- */
+ static int aktool_speed_test_bckey_cmac_fixed( ak_bckey bkey, ak_pointer in, ak_pointer out,
+                                                  size_t size, ak_pointer iv, size_t ivsize ) {
+  ak_uint8 imito[16];
+
+  (void) iv;
+  (void) ivsize;
+  (void) out;
+  return ak_bckey_cmac( bkey, in, size, imito, bkey->bsize );
+
+}
+/* ----------------------------------------------------------------------------------------------- */
  static int aktool_speed_test_bckey_modes( char *str, efunction fun, ak_bckey ctx )
 {
-  int i;
   clock_t timea;
   ak_uint8 *data;
   size_t size;
   double iter = 0, avg = 0;
+  int i, error = ak_error_ok;
   ak_uint8 iv[16] = { 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xce, 0xf0,
                      0xfa, 0xaa, 0x31, 0xe2, 0x00, 0xe1, 0xae, 0x1a };
 
@@ -288,7 +299,7 @@
     memset( data, (ak_uint8)i+1, size );
     ctx->key.resource.value.counter = size; /* на очень больших объемах одного ключа мало */
     timea = clock();
-    fun( ctx, data, data, size, iv, sizeof( iv ));
+    error = fun( ctx, data, data, size, iv, sizeof( iv ));
     timea = clock() - timea;
 /*  детальный вывод
     printf(" %3uMB: %s time: %fs, per 1MB = %fs, speed = %3f MBs\n", (unsigned int)i, STR,
@@ -304,6 +315,7 @@
   }
   printf(_(" 128MB] average memory speed: %12f MByte/sec\n"), avg/iter );
 
+  if( error != ak_error_ok ) return EXIT_FAILURE;
  return EXIT_SUCCESS;
 }
 
@@ -326,14 +338,22 @@
     ak_bckey_destroy( &ctx );
     return EXIT_FAILURE;
   }
+  if( aktool_speed_test_bckey_modes( "ECB",
+                    aktool_speed_test_bckey_ecb_fixed, &ctx ) != EXIT_SUCCESS ) return EXIT_FAILURE;
+  if( aktool_speed_test_bckey_modes( "CFB",
+                                ak_bckey_encrypt_cfb, &ctx )  != EXIT_SUCCESS ) return EXIT_FAILURE;
+  if( aktool_speed_test_bckey_modes( "OFB",
+                                        ak_bckey_ofb, &ctx )  != EXIT_SUCCESS ) return EXIT_FAILURE;
+  if( aktool_speed_test_bckey_modes( "CBC",
+                                ak_bckey_encrypt_cbc, &ctx )  != EXIT_SUCCESS ) return EXIT_FAILURE;
+  if( aktool_speed_test_bckey_modes( "CTR",
+                                        ak_bckey_ctr, &ctx )  != EXIT_SUCCESS ) return EXIT_FAILURE;
+  if( aktool_speed_test_bckey_modes( "ACPKM",
+                 aktool_speed_test_bckey_acpkm_fixed, &ctx )  != EXIT_SUCCESS ) return EXIT_FAILURE;
+  if( aktool_speed_test_bckey_modes( "CMAC",
+                  aktool_speed_test_bckey_cmac_fixed, &ctx )  != EXIT_SUCCESS ) return EXIT_FAILURE;
 
-  aktool_speed_test_bckey_modes( "ECB", aktool_speed_test_bckey_ecb_fixed, &ctx );
-  aktool_speed_test_bckey_modes( "CFB", ak_bckey_encrypt_cfb, &ctx );
-  aktool_speed_test_bckey_modes( "OFB", ak_bckey_ofb, &ctx );
-  aktool_speed_test_bckey_modes( "CBC", ak_bckey_encrypt_cbc, &ctx );
-  aktool_speed_test_bckey_modes( "CTR", ak_bckey_ctr, &ctx );
-  aktool_speed_test_bckey_modes( "ACPKM", aktool_speed_test_bckey_acpkm_fixed, &ctx );
-
+  ak_bckey_destroy( &ctx );
  return EXIT_SUCCESS;
 }
 
