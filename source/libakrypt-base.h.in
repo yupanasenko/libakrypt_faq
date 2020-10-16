@@ -106,8 +106,6 @@ extern "C" {
 #cmakedefine AK_HAVE_SIGNAL_H
 #cmakedefine AK_HAVE_GETOPT_H
 #cmakedefine AK_HAVE_LIBINTL_H
-#cmakedefine AK_HAVE_PTHREAD_H
-#cmakedefine LIBAKRYPT_TESTS_GMP
 
 /* ----------------------------------------------------------------------------------------------- */
 #cmakedefine AK_HAVE_WINDOWS_H
@@ -481,13 +479,13 @@ extern "C" {
 /*! \brief Функция чтения заданного файла в буффер. */
  dll_export ak_uint8 *ak_ptr_load_from_file( ak_pointer , size_t * , const char * );
 /*! \brief Функция чтения заданного файла в кодировке base64 в буффер. */
- ak_uint8 *ak_ptr_load_from_base64_file( ak_pointer , size_t * , const char * );
+ dll_export ak_uint8 *ak_ptr_load_from_base64_file( ak_pointer , size_t * , const char * );
 /*! \brief Выделение выравненной памяти. */
- ak_pointer ak_aligned_malloc( size_t );
+ dll_export ak_pointer ak_aligned_malloc( size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция кодирует три байта информации в формат base64.  */
- void ak_base64_encodeblock( ak_uint8 *, ak_uint8 *, int );
+ dll_export void ak_base64_encodeblock( ak_uint8 *, ak_uint8 *, int );
 /*! \brief Обобщенная реализация функции snprintf для различных компиляторов. */
  dll_export int ak_snprintf( char *str, size_t size, const char *format, ... );
 /*! \brief Чтение строки из консоли. */

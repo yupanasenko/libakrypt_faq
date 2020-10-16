@@ -2,7 +2,7 @@
 
    Пример использует неэкспортируемые функции.
 
-   test-internal-mgm01.c
+   test-mgm01.c
 */
 
  #include <stdio.h>

@@ -15,7 +15,7 @@
  #include <libakrypt-base.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-#ifdef LIBAKRYPT_TESTS_GMP
+#ifdef AK_HAVE_GMP_H
  #define LIBAKRYPT_HAVE_GMP_H
 #endif
 
