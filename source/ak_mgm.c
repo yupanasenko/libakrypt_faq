@@ -42,7 +42,7 @@
     - режим `MGM`, регламентируемый  рекомендациями по стандартизации Р 1323565.1.026-2019,
     - режим `XTSMAC`, разработанный авторами библиотеки.
 
-    Примером вротого подхода служат комбинации
+    Примером второго подхода служат комбинации
     - шифрование в режиме счетчика `CTR` с вычислением имитовставки по алгоритму `CMAC`,
     регламентируемому стандартом ГОСТ Р 34.11-2012,
     - шифрование в режиме счетчика `CTR` с вычислением имитовставки по алгоритму `HMAC` и т.д.
@@ -94,9 +94,8 @@
 
  if( iv == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using null pointer to initial vector");
- if(( iv_size == 0 ) || ( iv_size > authenticationKey->bsize ))
-   return ak_error_message( ak_error_wrong_length,
-                                           __func__, "using initial vector with unexpected length");
+ if( !iv_size ) return ak_error_message( ak_error_zero_length, __func__,
+                                                            "using initial vector of zero length" );
  /* обнуляем необходимое */
   ctx->abitlen = 0;
   ctx->flags = 0;
@@ -105,7 +104,7 @@
   memset( ctx->sum.b, 0, 16 );
   memset( ctx->sum.b, 0, 16 );
 
-  memcpy( ivector, iv, iv_size ); /* копируем нужное количество байт */
+  memcpy( ivector, iv, ak_min( iv_size, authenticationKey->bsize )); /* копируем нужное количество байт */
  /* принудительно устанавливаем старший бит в 1 */
   ivector[authenticationKey->bsize-1] = ( ivector[authenticationKey->bsize-1]&0x7F ) ^ 0x80;
 
@@ -237,9 +236,8 @@
   if( out == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                            "using null pointer to output buffer" );
  /* проверка запрашиваемой длины iv */
-  if(( out_size == 0 ) || ( out_size > absize ))
-    return ak_error_message( ak_error_wrong_length, __func__,
-                                                           "unexpected length of integrity code" );
+  if( out_size == 0 ) return ak_error_message( ak_error_zero_length, __func__,
+                                                      "unexpected zero length of integrity code" );
  /* проверка длины блока */
   if( absize > 16 ) return ak_error_message( ak_error_wrong_length, __func__,
                                                                "using key with large block size" );
@@ -280,7 +278,9 @@
 
  /* последнее шифрование и завершение работы */
   authenticationKey->encrypt( &authenticationKey->key, &ctx->sum, &ctx->sum );
-  memcpy( out, ctx->sum.b+absize-out_size, out_size );
+ /* если памяти много (out_size >= absize), то копируем все, */
+      /* в противном случае - только ту часть, что вмещается */
+  memcpy( out, ctx->sum.b+(out_size >= absize ? 0 : absize - out_size), ak_min( out_size, absize ));
 
  return ak_error_ok;
 }
@@ -317,17 +317,16 @@
 
  if( iv == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using null pointer to initial vector");
- if(( iv_size == 0 ) || ( iv_size > encryptionKey->bsize ))
-   return ak_error_message( ak_error_wrong_length,
-                                           __func__, "using initial vector with unexpected length");
+ if( !iv_size ) return ak_error_message( ak_error_zero_length,
+                                                 __func__, "using initial vector with zero length");
  /* обнуляем необходимое */
   ctx->flags &= ak_mgm_assosiated_data_bit;
   ctx->pbitlen = 0;
   memset( &ctx->ycount, 0, 16 );
   memset( ivector, 0, 16 );
-  memcpy( ivector, iv, iv_size ); /* копируем нужное количество байт */
+  memcpy( ivector, iv, ak_min( iv_size, encryptionKey->bsize )); /* копируем нужное количество байт */
  /* принудительно устанавливаем старший бит в 0 */
-  ivector[iv_size-1] = ( ivector[iv_size-1]&0x7F );
+  ivector[encryptionKey->bsize-1] = ( ivector[encryptionKey->bsize-1]&0x7F );
 
  /* зашифровываем необходимое и удаляемся */
   encryptionKey->encrypt( &encryptionKey->key, ivector, &ctx->ycount );
@@ -670,12 +669,12 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция реализует режим `MGM` - режим шифрования для блочного шифра с одновременным вычислением
+/*! Функция реализует режим `mgm` - режим шифрования для блочного шифра с одновременным вычислением
     имитовставки. На вход функции подаются как данные, подлежащие зашифрованию,
     так и ассоциированные данные, которые не зашифровываются. При этом имитовставка вычисляется
     для всех переданных на вход функции данных.
 
-    Режим MGM может использовать для шифрования и выработки имитовставки два различных ключа -
+    Режим `mgm` может использовать для шифрования и выработки имитовставки два различных ключа -
     в этом случае длины блоков обрабатываемых данных для ключей должны совпадать (то есть два ключа для
     алгоритмов с длиной блока 64 бита или два ключа для алгоритмов с длиной блока 128 бит).
 
@@ -686,8 +685,7 @@
     Если указатель на ключ выработки имитовставки равен `NULL`, то аутентификация данных не производится.
     В этом случае указатель на ассоциированные данные (associated data) \b должен быть равен `NULL`,
     указатель на имитовставку (icode) \b должен быть равен `NULL`, длина дополнительных данных \b должна
-    равняться нулю. В этом случае также всегда функция возвращает `NULL`, а код ошибки должен быть получен
-    с помощью вызова функции ak_error_get_value().
+    равняться нулю.
 
     Ситуация, при которой оба указателя на ключ принимают значение `NULL` воспринимается как ошибка.
 
@@ -713,7 +711,7 @@
    @return Функция возвращает \ref ak_error_ok в случае успешного завершения.
    В противном случае, возвращается код ошибки.                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_bckey_encrypt_mgm( ak_bckey encryptionKey, ak_bckey authenticationKey,
+ int ak_bckey_encrypt_mgm( ak_pointer encryptionKey, ak_pointer authenticationKey,
            const ak_pointer adata, const size_t adata_size, const ak_pointer in, ak_pointer out,
                                      const size_t size, const ak_pointer iv, const size_t iv_size,
                                                          ak_pointer icode, const size_t icode_size )
@@ -727,12 +725,12 @@
     return ak_error_message( ak_error_null_pointer, __func__ ,
                                "using null pointers both to encryption and authentication keys" );
   if(( encryptionKey != NULL ) && ( authenticationKey ) != NULL ) {
-    if( encryptionKey->bsize != authenticationKey->bsize )
+    if( ((ak_bckey)encryptionKey)->bsize != ((ak_bckey)authenticationKey)->bsize )
       return ak_error_message( ak_error_not_equal_data, __func__,
                                                    "different block sizes for given secret keys");
   }
-  if( encryptionKey != NULL ) bs = encryptionKey->bsize;
-    else bs = authenticationKey->bsize;
+  if( encryptionKey != NULL ) bs = ((ak_bckey)encryptionKey)->bsize;
+    else bs = ((ak_bckey)authenticationKey)->bsize;
 
  /* проверяем размер входных данных */
   if(( error = ak_bckey_check_mgm_length( adata_size, size, bs )) != ak_error_ok )
@@ -745,12 +743,12 @@
   if( authenticationKey != NULL ) {
     if(( error = ak_mgm_authentication_clean( &mgm, authenticationKey, iv, iv_size ))
                                                                               != ak_error_ok ) {
-     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator );
+     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &((ak_bckey)authenticationKey)->key.generator );
      return ak_error_message( error, __func__, "incorrect initialization of internal mgm context" );
     }
     if(( error = ak_mgm_authentication_update( &mgm, authenticationKey, adata, adata_size ))
                                                                               != ak_error_ok ) {
-     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator );
+     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &((ak_bckey)authenticationKey)->key.generator );
      return ak_error_message( error, __func__, "incorrect hashing of associated data" );
     }
   }
@@ -758,12 +756,12 @@
  /* потом зашифровываем данные */
   if( encryptionKey != NULL ) {
     if(( error = ak_mgm_encryption_clean( &mgm, encryptionKey, iv, iv_size )) != ak_error_ok ) {
-     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &encryptionKey->key.generator );
+     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &((ak_bckey)encryptionKey)->key.generator );
      return ak_error_message( error, __func__, "incorrect initialization of internal mgm context" );
     }
     if(( error = ak_mgm_encryption_update( &mgm, encryptionKey, authenticationKey,
                                                              in, out, size )) != ak_error_ok ) {
-     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &encryptionKey->key.generator );
+     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &((ak_bckey)encryptionKey)->key.generator );
      return ak_error_message( error, __func__, "incorrect encryption of plain data" );
     }
   }
@@ -772,13 +770,13 @@
   if( authenticationKey != NULL ) {
     if(( error = ak_mgm_authentication_finalize( &mgm,
                                          authenticationKey, icode, icode_size )) != ak_error_ok ) {
-      ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator );
+      ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &((ak_bckey)authenticationKey)->key.generator );
       return ak_error_message( error, __func__, "incorrect finanlize of integrity code" );
     }
-    ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator );
+    ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &((ak_bckey)authenticationKey)->key.generator );
   } else /* выше проверка того, что два ключа одновременно не равну NULL =>
                                                               один из двух ключей очистит контекст */
-     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &encryptionKey->key.generator );
+     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &((ak_bckey)encryptionKey)->key.generator );
 
  return ak_error_ok;
 }
@@ -789,7 +787,6 @@
     так и ассоциированные данные, которые не незашифровывавались - при этом имитовставка
     проверяется ото всех переданных на вход функции данных. Требования к передаваемым параметрам
     аналогичны требованиям, предъявляемым к параметрам функции ak_bckey_encrypt_mgm().
-
 
     @param encryptionKey ключ шифрования, должен быть инициализирован перед вызовом функции;
            может принимать значение `NULL`;
@@ -812,7 +809,7 @@
             вычисленным в ходе выполнения функции значением; если значения не совпадают,
             или в ходе выполнения функции возникла ошибка, то возвращается код ошибки.             */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_bckey_decrypt_mgm( ak_bckey encryptionKey, ak_bckey authenticationKey,
+ int ak_bckey_decrypt_mgm( ak_pointer encryptionKey, ak_pointer authenticationKey,
            const ak_pointer adata, const size_t adata_size, const ak_pointer in, ak_pointer out,
                                      const size_t size, const ak_pointer iv, const size_t iv_size,
                                                          ak_pointer icode, const size_t icode_size )
@@ -827,11 +824,11 @@
                                "using null pointers both to encryption and authentication keys" );
 
   if(( encryptionKey != NULL ) && ( authenticationKey ) != NULL ) {
-    if( encryptionKey->bsize != authenticationKey->bsize )
+    if( ((ak_bckey)encryptionKey)->bsize != ((ak_bckey)authenticationKey)->bsize )
       return ak_error_message( ak_error_wrong_length, __func__, "different block sizes for given keys");
   }
-   if( encryptionKey != NULL ) bs = encryptionKey->bsize;
-     else bs = authenticationKey->bsize;
+   if( encryptionKey != NULL ) bs = ((ak_bckey)encryptionKey)->bsize;
+     else bs = ((ak_bckey)authenticationKey)->bsize;
 
  /* проверяем размер входных данных */
   if(( error = ak_bckey_check_mgm_length( adata_size, size, bs )) != ak_error_ok )
@@ -844,12 +841,12 @@
   if( authenticationKey != NULL ) {
     if(( error = ak_mgm_authentication_clean( &mgm, authenticationKey, iv, iv_size ))
                                                                               != ak_error_ok ) {
-     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator );
+     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &((ak_bckey)authenticationKey)->key.generator );
      return ak_error_message( error, __func__, "incorrect initialization of internal mgm context" );
     }
     if(( error = ak_mgm_authentication_update( &mgm, authenticationKey, adata, adata_size ))
                                                                               != ak_error_ok ) {
-     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator );
+     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &((ak_bckey)authenticationKey)->key.generator );
      return ak_error_message( error, __func__, "incorrect hashing of associated data" );
     }
   }
@@ -857,12 +854,12 @@
  /* потом расшифровываем данные */
   if( encryptionKey != NULL ) {
     if(( error = ak_mgm_encryption_clean( &mgm, encryptionKey, iv, iv_size )) != ak_error_ok ) {
-      ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &encryptionKey->key.generator );
+      ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &((ak_bckey)encryptionKey)->key.generator );
       return ak_error_message( error, __func__, "incorrect initialization of internal mgm context" );
     }
     if(( error = ak_mgm_decryption_update( &mgm, encryptionKey, authenticationKey,
                                                              in, out, size )) != ak_error_ok ) {
-     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &encryptionKey->key.generator );
+     ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &((ak_bckey)encryptionKey)->key.generator );
      return ak_error_message( error, __func__, "incorrect encryption of plain data" );
     }
   }
@@ -879,12 +876,12 @@
         if( ak_ptr_is_equal( icode, icode2, icode_size )) error = ak_error_ok;
           else error = ak_error_not_equal_data;
      }
-    ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &authenticationKey->key.generator );
+    ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &((ak_bckey)authenticationKey)->key.generator );
 
   } else { /* выше была проверка того, что два ключа одновременно не равну NULL =>
                                                               один из двух ключей очистит контекст */
          error = ak_error_ok; /* мы ни чего не проверяли => все хорошо */
-         ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &encryptionKey->key.generator );
+         ak_ptr_wipe( &mgm, sizeof( struct mgm_ctx ), &((ak_bckey)encryptionKey)->key.generator );
         }
 
  return error;

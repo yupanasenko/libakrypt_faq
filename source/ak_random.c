@@ -148,11 +148,11 @@
   if( oid->mode != algorithm )
     return ak_error_message( ak_error_oid_mode, __func__ , "using oid with wrong mode" );
  /* проверяем, что производящая функция определена */
-  if( oid->func.create == NULL )
+  if( oid->func.first.create == NULL )
     return ak_error_message( ak_error_undefined_function, __func__ ,
                                                        "using oid with undefined constructor" );
  /* инициализируем контекст */
-  if(( error = (( ak_function_random * )oid->func.create )( rnd )) != ak_error_ok )
+  if(( error = (( ak_function_random * )oid->func.first.create )( rnd )) != ak_error_ok )
       return ak_error_message( error, __func__, "invalid creation of random generator context");
 
  return error;

@@ -48,6 +48,36 @@
     "undefined mode"
 };
 
+/*! \addtogroup oid
+
+  Библиотека `libakrypt` поддерживает свое собственное дерево идентификаторов, корнем
+  которого служит последовательность `1.2.643.2.52.1`.
+  Данные значения используются в случае, когда идентификаторы алгоритмов не определены
+  ни рекомендациями ТК 26, ни существующими реализациями других производителей.
+
+  Поддеревья алгоритмов и их параметров определяются следующим образом.
+
+ \code
+  - 1.2.643.2.52.1.1 генераторы псевдо-случайных чисел,
+  - 1.2.643.2.52.1.2 алгоритмы поточного шифрования,
+  - 1.2.643.2.52.1.3 режимы работы поточных шифров,
+  - 1.2.643.2.52.1.4 алгоритмы блочного шифрования,
+  - 1.2.643.2.52.1.5 базовые режимы работы блочных шифров,
+  - 1.2.643.2.52.1.6 расширенные режимы работы блочных шифров,
+  - 1.2.643.2.52.1.7 алгоритмы выработки имитовставки,
+
+  - 1.2.643.2.52.1.10 алгоритмы выработки электронной подписи,
+  - 1.2.643.2.52.1.11 алгоритмы проверки электронной подписи,
+
+  - 1.2.643.2.52.1.12 параметры эллиптических кривых, при этом
+    - корень `1.2.643.2.52.1.12.1 определяет параметры 256 битных кривых,
+    - корень `1.2.643.2.52.1.12.2 определяет параметры 512 битных кривых,
+
+  - 1.2.643.2.52.1.127 контейнеры библиотеки
+ \endcode
+
+ */
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения имен идентификаторов */
  static const char *asn1_lcg_n[] =          { "lcg", NULL };
@@ -79,9 +109,35 @@
  static const char *asn1_mgm_magma_n[] =   { "mgm-magma",
                                              "id-tc26-cipher-gostr3412-2015-magma-mgm", NULL };
  static const char *asn1_mgm_magma_i[] =   { "1.2.643.7.1.1.5.1.3", NULL };
- static const char *asn1_mgm_kuznechik_n[] = { "mgm-kuznechik",
-                                               "id-tc26-cipher-gostr3412-2015-kuznyechik-mgm", NULL };
- static const char *asn1_mgm_kuznechik_i[] = { "1.2.643.7.1.1.5.2.3", NULL };
+ static const char *asn1_mgm_kuznechik_n[] =
+                                           { "mgm-kuznechik", "mgm-kuznyechik",
+                                             "id-tc26-cipher-gostr3412-2015-kuznyechik-mgm", NULL };
+ static const char *asn1_mgm_kuznechik_i[] =
+                                           { "1.2.643.7.1.1.5.2.3", NULL };
+ static const char *asn1_ctr_cmac_magma_n[] =
+                                           { "ctr-cmac-magma", NULL };
+ static const char *asn1_ctr_cmac_magma_i[] =
+                                           { "1.2.643.2.52.1.6.1.1", NULL };
+ static const char *asn1_ctr_cmac_kuznechik_n[] =
+                                           { "ctr-cmac-kuznechik", NULL };
+ static const char *asn1_ctr_cmac_kuznechik_i[] =
+                                           { "1.2.643.2.52.1.6.1.2", NULL };
+ static const char *asn1_ctr_hmac_magma_streebog256_n[] =
+                                           { "ctr-hmac-magma-streebog256", NULL };
+ static const char *asn1_ctr_hmac_magma_streebog256_i[] =
+                                           { "1.2.643.2.52.1.6.2.1.1", NULL };
+ static const char *asn1_ctr_hmac_magma_streebog512_n[] =
+                                           { "ctr-hmac-magma-streebog512", NULL };
+ static const char *asn1_ctr_hmac_magma_streebog512_i[] =
+                                           { "1.2.643.2.52.1.6.2.1.2", NULL };
+ static const char *asn1_ctr_hmac_kuznechik_streebog256_n[] =
+                                           { "ctr-hmac-kuznechik-streebog256", NULL };
+ static const char *asn1_ctr_hmac_kuznechik_streebog256_i[] =
+                                           { "1.2.643.2.52.1.6.2.2.1", NULL };
+ static const char *asn1_ctr_hmac_kuznechik_streebog512_n[] =
+                                           { "ctr-hmac-kuznechik-streebog512", NULL };
+ static const char *asn1_ctr_hmac_kuznechik_streebog512_i[] =
+                                           { "1.2.643.2.52.1.6.2.2.2", NULL };
 
 // static const char *asn1_sign256_n[] =      { "id-tc26-signwithdigest-gost3410-12-256",
 //                                              "sign256", NULL };
@@ -226,61 +282,127 @@
  static const char *asn1_mspsh_i[] =        { "1.3.6.1.4.1.311.21.2", NULL };
 
 /* ----------------------------------------------------------------------------------------------- */
+ #define ak_object_bckey_magma { sizeof( struct bckey ), \
+                           ( ak_function_create_object *) ak_bckey_create_magma, \
+                           ( ak_function_destroy_object *) ak_bckey_destroy, \
+                           ( ak_function_set_key_object *)ak_bckey_set_key, \
+                           ( ak_function_set_key_random_object *)ak_bckey_set_key_random, \
+                      ( ak_function_set_key_from_password_object *)ak_bckey_set_key_from_password }
+
+ #define ak_object_bckey_kuznechik { sizeof( struct bckey ), \
+                           ( ak_function_create_object *) ak_bckey_create_kuznechik, \
+                           ( ak_function_destroy_object *) ak_bckey_destroy, \
+                           ( ak_function_set_key_object *)ak_bckey_set_key, \
+                           ( ak_function_set_key_random_object *)ak_bckey_set_key_random, \
+                      ( ak_function_set_key_from_password_object *)ak_bckey_set_key_from_password }
+
+ #define ak_object_hmac_streebog256 { sizeof( struct hmac ), \
+                           ( ak_function_create_object *) ak_hmac_create_streebog256, \
+                           ( ak_function_destroy_object *) ak_hmac_destroy, \
+                           ( ak_function_set_key_object *)ak_hmac_set_key, \
+                           ( ak_function_set_key_random_object *)ak_hmac_set_key_random, \
+                       ( ak_function_set_key_from_password_object *)ak_hmac_set_key_from_password }
+
+ #define ak_object_hmac_streebog512 { sizeof( struct hmac ), \
+                           ( ak_function_create_object *) ak_hmac_create_streebog512, \
+                           ( ak_function_destroy_object *) ak_hmac_destroy, \
+                           ( ak_function_set_key_object *)ak_hmac_set_key, \
+                           ( ak_function_set_key_random_object *)ak_hmac_set_key_random, \
+                       ( ak_function_set_key_from_password_object *)ak_hmac_set_key_from_password }
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения OID библиотеки */
 static struct oid libakrypt_oids[] =
 {
  /* идентификаторы  */
  { random_generator, algorithm, asn1_lcg_i, asn1_lcg_n, NULL,
-  { sizeof( struct random ), 0, (ak_function_create_object *)ak_random_create_lcg, NULL,
-                                          (ak_function_destroy_object *)ak_random_destroy, NULL }},
+  {{ sizeof( struct random ), (ak_function_create_object *)ak_random_create_lcg,
+                              (ak_function_destroy_object *)ak_random_destroy, NULL, NULL, NULL },
+                                                                ak_object_undefined, NULL, NULL }},
 #if defined(__unix__) || defined(__APPLE__)
  { random_generator, algorithm, asn1_dev_random_i, asn1_dev_random_n, NULL,
-  { sizeof( struct random ), 0, (ak_function_create_object *)ak_random_create_random, NULL,
-                                          (ak_function_destroy_object *)ak_random_destroy, NULL }},
+  {{ sizeof( struct random ), (ak_function_create_object *)ak_random_create_random,
+                              (ak_function_destroy_object *)ak_random_destroy, NULL, NULL, NULL },
+                                                                ak_object_undefined, NULL, NULL }},
  { random_generator, algorithm, asn1_dev_urandom_i, asn1_dev_urandom_n, NULL,
-  { sizeof( struct random ), 0, (ak_function_create_object *)ak_random_create_urandom, NULL,
-                                          (ak_function_destroy_object *)ak_random_destroy, NULL }},
+  {{ sizeof( struct random ), (ak_function_create_object *)ak_random_create_urandom,
+                              (ak_function_destroy_object *)ak_random_destroy, NULL, NULL, NULL },
+                                                                ak_object_undefined, NULL, NULL }},
 #endif
 #ifdef _WIN32
  { random_generator, algorithm, asn1_winrtl_i, asn1_winrtl_n, NULL,
-  { sizeof( struct random ), 0, (ak_function_create_object *) ak_random_create_winrtl, NULL,
-                                         (ak_function_destroy_object *) ak_random_destroy, NULL }},
+  {{ sizeof( struct random ), (ak_function_create_object *) ak_random_create_winrtl,
+                              ak_function_destroy_object *) ak_random_destroy, NULL, NULL, NULL },
+                                                                ak_object_undefined, NULL, NULL }},
 #endif
 
 /* добавляем идентификаторы алгоритмов */
  { hash_function, algorithm, asn1_streebog256_i, asn1_streebog256_n, NULL,
-  { sizeof( struct hash ), 0, ( ak_function_create_object *) ak_hash_create_streebog256, NULL,
-                                          ( ak_function_destroy_object *) ak_hash_destroy, NULL }},
+  {{ sizeof( struct hash ), ( ak_function_create_object *) ak_hash_create_streebog256,
+                              ( ak_function_destroy_object *) ak_hash_destroy, NULL, NULL, NULL },
+                                                                ak_object_undefined, NULL, NULL }},
+
  { hash_function, algorithm, asn1_streebog512_i, asn1_streebog512_n, NULL,
-  { sizeof( struct hash ), 0, ( ak_function_create_object *) ak_hash_create_streebog512, NULL,
-                                          ( ak_function_destroy_object *) ak_hash_destroy, NULL }},
+  {{ sizeof( struct hash ), ( ak_function_create_object *) ak_hash_create_streebog512,
+                              ( ak_function_destroy_object *) ak_hash_destroy, NULL, NULL, NULL },
+                                                                ak_object_undefined, NULL, NULL }},
 
  { hmac_function, algorithm, asn1_hmac_streebog256_i, asn1_hmac_streebog256_n, NULL,
-  { sizeof( struct hmac ), 0, ( ak_function_create_object *) ak_hmac_create_streebog256, NULL,
-                                          ( ak_function_destroy_object *) ak_hmac_destroy, NULL }},
- { hmac_function, algorithm, asn1_hmac_streebog512_i, asn1_hmac_streebog512_n, NULL,
-  { sizeof( struct hmac ), 0, ( ak_function_create_object *) ak_hmac_create_streebog512, NULL,
-                                          ( ak_function_destroy_object *) ak_hmac_destroy, NULL }},
- { block_cipher, algorithm, asn1_magma_i, asn1_magma_n, NULL,
-  { sizeof( struct bckey ), 0, ( ak_function_create_object *) ak_bckey_create_magma, NULL,
-                                         ( ak_function_destroy_object *) ak_bckey_destroy, NULL }},
- { block_cipher, algorithm, asn1_kuznechik_i, asn1_kuznechik_n, NULL,
-  { sizeof( struct bckey ), 0, ( ak_function_create_object *) ak_bckey_create_kuznechik, NULL,
-                                         ( ak_function_destroy_object *) ak_bckey_destroy, NULL }},
+                                  { ak_object_hmac_streebog256, ak_object_undefined, NULL, NULL }},
 
-/* режимы блочного шифрования */
+ { hmac_function, algorithm, asn1_hmac_streebog512_i, asn1_hmac_streebog512_n, NULL,
+                                  { ak_object_hmac_streebog512, ak_object_undefined, NULL, NULL }},
+
+ { block_cipher, algorithm, asn1_magma_i, asn1_magma_n, NULL,
+                                       { ak_object_bckey_magma, ak_object_undefined, NULL, NULL }},
+
+ { block_cipher, algorithm, asn1_kuznechik_i, asn1_kuznechik_n, NULL,
+                                   { ak_object_bckey_kuznechik, ak_object_undefined, NULL, NULL }},
+
+/* базовые режимы блочного шифрования */
+
+/* расширенные режимы блочного шифрования */
  { block_cipher, aead, asn1_mgm_magma_i, asn1_mgm_magma_n, NULL,
-  { sizeof( struct bckey ), sizeof( struct bckey ),
-                                         ( ak_function_create_object *) ak_bckey_create_magma,
-                                         ( ak_function_create_object *) ak_bckey_create_magma,
-                                             ( ak_function_destroy_object *) ak_bckey_destroy,
-                                               ( ak_function_destroy_object *) ak_bckey_destroy }},
+  { ak_object_bckey_magma, ak_object_bckey_magma,
+                                               ( ak_function_run_object *) ak_bckey_encrypt_mgm,
+                                               ( ak_function_run_object *) ak_bckey_decrypt_mgm }},
+
  { block_cipher, aead, asn1_mgm_kuznechik_i, asn1_mgm_kuznechik_n, NULL,
-  { sizeof( struct bckey ), sizeof( struct bckey ),
-                                     ( ak_function_create_object *) ak_bckey_create_kuznechik,
-                                     ( ak_function_create_object *) ak_bckey_create_kuznechik,
-                                             ( ak_function_destroy_object *) ak_bckey_destroy,
-                                               ( ak_function_destroy_object *) ak_bckey_destroy }},
+  { ak_object_bckey_kuznechik, ak_object_bckey_kuznechik,
+                                               ( ak_function_run_object *) ak_bckey_encrypt_mgm,
+                                               ( ak_function_run_object *) ak_bckey_decrypt_mgm }},
+
+ { block_cipher, aead, asn1_ctr_cmac_magma_i, asn1_ctr_cmac_magma_n, NULL,
+  { ak_object_bckey_magma, ak_object_bckey_magma,
+                                          ( ak_function_run_object *) ak_bckey_encrypt_ctr_cmac,
+                                          ( ak_function_run_object *) ak_bckey_decrypt_ctr_cmac }},
+
+ { block_cipher, aead, asn1_ctr_cmac_kuznechik_i, asn1_ctr_cmac_kuznechik_n, NULL,
+  { ak_object_bckey_kuznechik, ak_object_bckey_kuznechik,
+                                          ( ak_function_run_object *) ak_bckey_encrypt_ctr_cmac,
+                                          ( ak_function_run_object *) ak_bckey_decrypt_ctr_cmac }},
+
+ { block_cipher, aead, asn1_ctr_hmac_magma_streebog256_i, asn1_ctr_hmac_magma_streebog256_n, NULL,
+  { ak_object_bckey_magma, ak_object_hmac_streebog256,
+                                          ( ak_function_run_object *) ak_bckey_encrypt_ctr_hmac,
+                                          ( ak_function_run_object *) ak_bckey_decrypt_ctr_hmac }},
+
+ { block_cipher, aead, asn1_ctr_hmac_magma_streebog512_i, asn1_ctr_hmac_magma_streebog512_n, NULL,
+  { ak_object_bckey_magma, ak_object_hmac_streebog512,
+                                          ( ak_function_run_object *) ak_bckey_encrypt_ctr_hmac,
+                                          ( ak_function_run_object *) ak_bckey_decrypt_ctr_hmac }},
+
+ { block_cipher, aead,
+             asn1_ctr_hmac_kuznechik_streebog256_i, asn1_ctr_hmac_kuznechik_streebog256_n, NULL,
+  { ak_object_bckey_kuznechik, ak_object_hmac_streebog256,
+                                          ( ak_function_run_object *) ak_bckey_encrypt_ctr_hmac,
+                                          ( ak_function_run_object *) ak_bckey_decrypt_ctr_hmac }},
+
+ { block_cipher, aead,
+             asn1_ctr_hmac_kuznechik_streebog512_i, asn1_ctr_hmac_kuznechik_streebog512_n, NULL,
+  { ak_object_bckey_kuznechik, ak_object_hmac_streebog512,
+                                          ( ak_function_run_object *) ak_bckey_encrypt_ctr_hmac,
+                                          ( ak_function_run_object *) ak_bckey_decrypt_ctr_hmac }},
 
 // {{ sign_function, algorithm, asn1_sign256_i, asn1_sign256_n }, NULL,
 //  { sizeof( struct signkey ),
@@ -304,80 +426,80 @@ static struct oid libakrypt_oids[] =
 // },
 
  { identifier, wcurve_params, asn1_w256_pst_i, asn1_w256_pst_n,
-                 (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetTest, ak_object_undefined },
+           (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetTest, ak_functional_objects_undefined },
  { identifier, wcurve_params, asn1_w256_psa_i, asn1_w256_psa_n,
-                    (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetA, ak_object_undefined },
+              (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetA, ak_functional_objects_undefined },
  { identifier, wcurve_params, asn1_w256_psb_i, asn1_w256_psb_n,
-                     (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA, ak_object_undefined },
+               (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA, ak_functional_objects_undefined },
  { identifier, wcurve_params, asn1_w256_psc_i, asn1_w256_psc_n,
-                     (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB, ak_object_undefined },
+               (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB, ak_functional_objects_undefined },
  { identifier, wcurve_params, asn1_w256_psd_i, asn1_w256_psd_n,
-                     (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC, ak_object_undefined },
+               (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC, ak_functional_objects_undefined },
  { identifier, wcurve_params, asn1_w256_axel_i, asn1_w256_axel_n,
-                  (ak_pointer) &id_axel_gost_3410_2012_256_paramSet_N0, ak_object_undefined },
+            (ak_pointer) &id_axel_gost_3410_2012_256_paramSet_N0, ak_functional_objects_undefined },
 
  { identifier, wcurve_params, asn1_w512_pst_i, asn1_w512_pst_n,
-                 (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetTest, ak_object_undefined },
+                 (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetTest, ak_functional_objects_undefined },
  { identifier, wcurve_params, asn1_w512_psa_i, asn1_w512_psa_n,
-                  (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetA, ak_object_undefined },
+                  (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetA, ak_functional_objects_undefined },
  { identifier, wcurve_params, asn1_w512_psb_i, asn1_w512_psb_n,
-                  (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetB, ak_object_undefined },
+                  (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetB, ak_functional_objects_undefined },
  { identifier, wcurve_params, asn1_w512_psc_i, asn1_w512_psc_n,
-                  (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetC, ak_object_undefined },
+                  (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetC, ak_functional_objects_undefined },
 
 /* идентификаторы, используемые при разборе сертификатов и ключевых контейнеров */
- { identifier, descriptor, asn1_akcont_i, asn1_akcont_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_pbkdf2key_i, asn1_pbkdf2key_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_sdhkey_i, asn1_sdhkey_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_extkey_i, asn1_extkey_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_akcont_i, asn1_akcont_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_pbkdf2key_i, asn1_pbkdf2key_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_sdhkey_i, asn1_sdhkey_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_extkey_i, asn1_extkey_n, NULL, ak_functional_objects_undefined },
 
 // { identifier, parameter, asn1_symkmd_i, asn1_symkmd_n,
-//                                    (ak_pointer) symmetric_key_content, ak_object_undefined },
+//                                    (ak_pointer) symmetric_key_content, ak_functional_objects_undefined },
 // { identifier, parameter, asn1_skmd_i, asn1_skmd_n,
-//                                       (ak_pointer) secret_key_content, ak_object_undefined },
+//                                       (ak_pointer) secret_key_content, ak_functional_objects_undefined },
 // { identifier, parameter, asn1_pkmd_i, asn1_pkmd_n,
-//                           (ak_pointer) public_key_certificate_content, ak_object_undefined },
+//                           (ak_pointer) public_key_certificate_content, ak_functional_objects_undefined },
 // { identifier, parameter, asn1_pkmdr_i, asn1_pkmdr_n,
-//                               (ak_pointer) public_key_request_content, ak_object_undefined },
+//                               (ak_pointer) public_key_request_content, ak_functional_objects_undefined },
 // { identifier, parameter, asn1_ecmd_i, asn1_ecmd_n,
-//                                        (ak_pointer) encrypted_content, ak_object_undefined },
+//                                        (ak_pointer) encrypted_content, ak_functional_objects_undefined },
 // { identifier, parameter, asn1_pcmd_i, asn1_pcmd_n,
-//                                            (ak_pointer) plain_content, ak_object_undefined },
+//                                            (ak_pointer) plain_content, ak_functional_objects_undefined },
 
- { identifier, descriptor, asn1_email_i, asn1_email_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_cn_i, asn1_cn_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_s_i, asn1_s_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_sn_i, asn1_sn_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_c_i, asn1_c_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_l_i, asn1_l_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_st_i, asn1_st_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_sa_i, asn1_sa_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_o_i, asn1_o_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_ou_i, asn1_ou_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_email_i, asn1_email_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_cn_i, asn1_cn_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_s_i, asn1_s_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_sn_i, asn1_sn_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_c_i, asn1_c_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_l_i, asn1_l_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_st_i, asn1_st_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_sa_i, asn1_sa_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_o_i, asn1_o_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_ou_i, asn1_ou_n, NULL, ak_functional_objects_undefined },
 
- { identifier, descriptor, asn1_ku_i, asn1_ku_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_ski_i, asn1_ski_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_bc_i, asn1_bc_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_cp_i, asn1_cp_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_wcp_i, asn1_wcp_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_aki_i, asn1_aki_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_ku_i, asn1_ku_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_ski_i, asn1_ski_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_bc_i, asn1_bc_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_cp_i, asn1_cp_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_wcp_i, asn1_wcp_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_aki_i, asn1_aki_n, NULL, ak_functional_objects_undefined },
 
- { identifier, descriptor, asn1_ogrn_i, asn1_ogrn_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_snils_i, asn1_snils_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_ogrnip_i, asn1_ogrnip_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_owner_mod_i, asn1_owner_mod_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_issuer_mod_i, asn1_issuer_mod_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_inn_i, asn1_inn_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_ogrn_i, asn1_ogrn_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_snils_i, asn1_snils_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_ogrnip_i, asn1_ogrnip_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_owner_mod_i, asn1_owner_mod_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_issuer_mod_i, asn1_issuer_mod_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_inn_i, asn1_inn_n, NULL, ak_functional_objects_undefined },
 
- { identifier, descriptor, asn1_class_kc1_i, asn1_class_kc1_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_class_kc2_i, asn1_class_kc2_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_class_kc3_i, asn1_class_kc3_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_class_kb1_i, asn1_class_kb1_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_class_kb2_i, asn1_class_kb2_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_class_ka1_i, asn1_class_ka1_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_class_kc1_i, asn1_class_kc1_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_class_kc2_i, asn1_class_kc2_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_class_kc3_i, asn1_class_kc3_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_class_kb1_i, asn1_class_kb1_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_class_kb2_i, asn1_class_kb2_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_class_ka1_i, asn1_class_ka1_n, NULL, ak_functional_objects_undefined },
 
- { identifier, descriptor, asn1_mscav_i, asn1_mscav_n, NULL, ak_object_undefined },
- { identifier, descriptor, asn1_mspsh_i, asn1_mspsh_n, NULL, ak_object_undefined },
+ { identifier, descriptor, asn1_mscav_i, asn1_mscav_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_mspsh_i, asn1_mspsh_n, NULL, ak_functional_objects_undefined },
 
  /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */
   ak_oid_undefined
@@ -425,14 +547,59 @@ static struct oid libakrypt_oids[] =
     ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to object identifer" );
     return NULL;
   }
-  if( oid->func.create == NULL ) {
+  if( oid->func.first.create == NULL ) {
     ak_error_message( ak_error_undefined_function, __func__,
                                            "create an object that does not support this feature" );
     return NULL;
   }
+  if( oid->func.first.destroy == NULL ) {
+    ak_error_message( ak_error_undefined_function, __func__,
+                                        "create an object that does not support destroy feature" );
+    return NULL;
+  }
 
-  if(( ctx = malloc( oid->func.size )) != NULL ) {
-    if(( error = ((ak_function_create_object*)oid->func.create )( ctx )) != ak_error_ok ) {
+  if(( ctx = malloc( oid->func.first.size )) != NULL ) {
+    if(( error = ((ak_function_create_object*)oid->func.first.create )( ctx )) != ak_error_ok ) {
+      ak_error_message_fmt( error, __func__, "creation of the %s object failed",
+                                                      ak_libakrypt_get_engine_name( oid->engine ));
+      if( ctx != NULL ) {
+        free( ctx );
+        ctx = NULL;
+      }
+    }
+  } else
+    ak_error_message( ak_error_out_of_memory, __func__, "memory allocation error" );
+
+ return ctx;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param oid Идентификатор создаваемого объекта
+    \return Функция возвращает указатель на контекст созданного объекта. В случае возникновения
+    ошибки возвращается NULL. */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_oid_new_second_object( ak_oid oid )
+{
+  ak_pointer ctx = NULL;
+  int error = ak_error_ok;
+
+  if( oid == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to object identifer" );
+    return NULL;
+  }
+  if( oid->func.second.create == NULL ) {
+    ak_error_message( ak_error_undefined_function, __func__,
+                                           "create an object that does not support this feature" );
+    return NULL;
+  }
+  if( oid->func.second.destroy == NULL ) {
+    ak_error_message( ak_error_undefined_function, __func__,
+                                        "create an object that does not support destroy feature" );
+    return NULL;
+  }
+
+  if(( ctx = malloc( oid->func.second.size )) != NULL ) {
+    if(( error = ((ak_function_create_object*)oid->func.second.create )( ctx )) != ak_error_ok ) {
       ak_error_message_fmt( error, __func__, "creation of the %s object failed",
                                                       ak_libakrypt_get_engine_name( oid->engine ));
       if( ctx != NULL ) {
@@ -460,11 +627,37 @@ static struct oid libakrypt_oids[] =
     ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to object identifer" );
     return NULL;
   }
-  if( oid->func.destroy == NULL ) {
+  if( oid->func.first.destroy == NULL ) {
     ak_error_message( ak_error_undefined_function, __func__,
                                           "destroy an object that does not support this feature" );
   } else {
-     if(( error = ((ak_function_destroy_object*)oid->func.destroy )( ctx )) != ak_error_ok )
+     if(( error = ((ak_function_destroy_object*)oid->func.first.destroy )( ctx )) != ak_error_ok )
+       ak_error_message_fmt( error, __func__, "the destroing of %s object failed",
+                                                      ak_libakrypt_get_engine_name( oid->engine ));
+     }
+  if( ctx != NULL ) free( ctx );
+ return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param oid Идентификатор удаляемого объекта
+    \param ctx Контекст удаляемого объекта
+    \return Функция всегда возвращает NULL.                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_oid_delete_second_object( ak_oid oid, ak_pointer ctx )
+{
+  int error = ak_error_ok;
+
+  if( ctx == NULL ) return ctx;
+  if( oid == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "use a null pointer to object identifer" );
+    return NULL;
+  }
+  if( oid->func.second.destroy == NULL ) {
+    ak_error_message( ak_error_undefined_function, __func__,
+                                          "destroy an object that does not support this feature" );
+  } else {
+     if(( error = ((ak_function_destroy_object*)oid->func.second.destroy )( ctx )) != ak_error_ok )
        ak_error_message_fmt( error, __func__, "the destroing of %s object failed",
                                                       ak_libakrypt_get_engine_name( oid->engine ));
      }

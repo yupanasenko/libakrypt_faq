@@ -74,6 +74,8 @@ extern "C" {
  #define ak_error_wrong_iv_length             (-137)
 /*! \brief Ошибка, возникающая при неправильном использовании функций зашифрования/расшифрования данных. */
  #define ak_error_wrong_block_cipher_function (-138)
+/*! \brief Ошибка согласования данных. */
+ #define ak_error_linked_data                 (-139)
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup options Инициализация и настройка параметров библиотеки
@@ -148,6 +150,13 @@ extern "C" {
 /** @}*//** @}*/
 
 /* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup random Генераторы псевдо-случайных чисел
+ @{ */
+/*! \brief Указатель на класс генератора псевдо-случайных чисел. */
+ typedef struct random *ak_random;
+/** @} */
+
+/* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup oid Идентификаторы криптографических механизмов
  @{ */
 /*! \brief Указатель на идентификатор криптографического механизма */
@@ -156,6 +165,15 @@ extern "C" {
  typedef int ( ak_function_create_object ) ( ak_pointer );
 /*! \brief Функция, возвращающая код ошибки после разрушения объекта (деструктор). */
  typedef int ( ak_function_destroy_object ) ( ak_pointer );
+/*! \brief Функция, выполняющая криптографическое преобразование. */
+ typedef int ( ak_function_run_object ) ( ak_pointer, ... );
+/*! \brief Функция, выполняющая присвоение фиксированного ключа. */
+ typedef int ( ak_function_set_key_object ) ( ak_pointer, const ak_pointer , const size_t );
+/*! \brief Функция, выполняющая выработку нового случайного ключа. */
+ typedef int ( ak_function_set_key_random_object ) ( ak_pointer, ak_random );
+/*! \brief Функция, выполняющая выработку ключа из пароля. */
+ typedef int ( ak_function_set_key_from_password_object ) ( ak_pointer,
+                               const ak_pointer , const size_t , const ak_pointer , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура, контролирующая функционирование криптографических объектов библиотеки. */
@@ -165,17 +183,36 @@ extern "C" {
  typedef struct object {
  /*! \brief Размер области памяти для первого объекта. */
   size_t size;
- /*! \brief Размер области памяти для второго объекта. */
-  size_t size_second;
  /*! \brief Конструктор первого объекта. */
   ak_function_create_object *create;
- /*! \brief Конструктор второго объекта (для алгоритмов с двумя ключами). */
-  ak_function_create_object *create_second;
  /*! \brief Деструктор первого объекта. */
   ak_function_destroy_object *destroy;
- /*! \brief Деструктор второго объекта (для алгоритмов с двумя ключами). */
-  ak_function_destroy_object *destroy_second;
-} *ak_object;
+ /*! \brief Функция, выполняющая присвоение фиксированного ключа. */
+  ak_function_set_key_object *set_key;
+ /*! \brief Функция, выполняющая выработку нового случайного ключа. */
+  ak_function_set_key_random_object *set_key_random;
+ /*! \brief Функция, выполняющая выработку ключа из пароля. */
+  ak_function_set_key_from_password_object *set_key_from_password;
+ } *ak_object;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура, контролирующая функциональные возможности алгоритма. */
+/*! \details Обеспечиваем доступ к объектам (секретным ключам),
+   а также криптографическим преобразованиям. */
+ typedef struct functional_objects {
+ /*! \brief Управляющий объект криптографического алгоритма */
+  struct object first;
+ /*! \brief Второй объект, в ряде алгоритмов - второй ключ криптографического алгоритма */
+  struct object second;
+ /*! \brief Функция выполняющая прямое преобразование.
+     \details В качестве такого преобразования может выступать, например, режим зашифрования
+     для блочного шифра или алгоритм выработки имитовставки. */
+  ak_function_run_object *direct;
+ /*! \brief Функция выполняющая обратное преобразование.
+     \details В качестве такого преобразования может выступать, например, режим расшифрования
+     для блочного шифра. */
+  ak_function_run_object *invert;
+} *ak_functional_objects;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Тип криптографического механизма. */
@@ -270,13 +307,15 @@ extern "C" {
    const char **name;
   /*! \brief Указатель на данные. */
    ak_pointer data;
-  /*! \brief Структура, контролирующая поведение объекта */
-   struct object func;
+  /*! \brief Структура, контролирующая поведение объектов криптографического механизма. */
+   struct functional_objects func;
 } *ak_oid;
 
 /* ----------------------------------------------------------------------------------------------- */
- #define ak_object_undefined { 0, 0, NULL, NULL, NULL, NULL }
- #define ak_oid_undefined { undefined_engine, undefined_mode, NULL, NULL, NULL, ak_object_undefined }
+ #define ak_object_undefined { 0, NULL, NULL, NULL, NULL, NULL }
+ #define ak_functional_objects_undefined { ak_object_undefined, ak_object_undefined, NULL, NULL }
+ #define ak_oid_undefined { undefined_engine, undefined_mode, \
+                                              NULL, NULL, NULL, ak_functional_objects_undefined }
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Получение человекочитаемого имени для заданного типа криптографического механизма. */
@@ -289,6 +328,10 @@ extern "C" {
  dll_export ak_pointer ak_oid_new_object( ak_oid );
 /*! \brief Удаление объекта из кучи */
  dll_export ak_pointer ak_oid_delete_object( ak_oid , ak_pointer );
+/*! \brief Создание второго объекта в оперативной памяти (куче) */
+ dll_export ak_pointer ak_oid_new_second_object( ak_oid );
+/*! \brief Удаление второго объекта из кучи */
+ dll_export ak_pointer ak_oid_delete_second_object( ak_oid , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция возвращает количество идентификаторов библиотеки. */
@@ -318,10 +361,6 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup random Генераторы псевдо-случайных чисел
  @{ */
-/*! \brief Указатель на класс генератора псевдо-случайных чисел. */
- typedef struct random *ak_random;
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция, принимающая в качестве аргумента указатель на структуру struct random. */
  typedef int ( ak_function_random )( ak_random );
 /*! \brief Функция обработки данных заданного размера. */
@@ -773,24 +812,6 @@ extern "C" {
  } *ak_hash;
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Структура, содержащая текущее состояние внутренних переменных режима
-   аутентифицированного шифрования. */
- typedef struct mgm_ctx {
-  /*! \brief Текущее значение имитовставки. */
-   ak_uint128 sum;
-  /*! \brief Счетчик, значения которого используются при шифровании информации. */
-   ak_uint128 ycount;
-  /*! \brief Счетчик, значения которого используются при выработке имитовставки. */
-   ak_uint128 zcount;
-  /*! \brief Размер обработанных зашифровываемых/расшифровываемых данных в битах. */
-   ssize_t pbitlen;
-  /*! \brief Размер обработанных дополнительных данных в битах. */
-   ssize_t abitlen;
-  /*! \brief Флаги состояния контекста. */
-   ak_uint32 flags;
-} *ak_mgm_ctx;
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация контекста функции бесключевого хеширования ГОСТ Р 34.11-2012 (Стрибог256). */
  dll_export int ak_hash_create_streebog256( ak_hash );
 /*! \brief Инициализация контекста функции бесключевого хеширования ГОСТ Р 34.11-2012 (Стрибог512). */
@@ -890,15 +911,38 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup aead Аутентифицированное шифрование данных
  @{ */
-/*! \brief Зашифрование данных в режиме MGM с одновременной выработкой имитовставки
-    согласно Р 1323565.1.026-2019. */
- dll_export int ak_bckey_encrypt_mgm( ak_bckey , ak_bckey , const ak_pointer , const size_t ,
+/*! \brief Функция аутентифицированного шифрования. */
+ typedef int ( ak_function_aead )( ak_pointer, ak_pointer, const ak_pointer , const size_t ,
                    const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
                                                                          ak_pointer , const size_t );
-/*! \brief Расшифрование данных в режиме MGM с одновременной проверкой имитовставки
+
+/*! \brief Зашифрование данных в режиме `mgm` с одновременной выработкой имитовставки
     согласно Р 1323565.1.026-2019. */
- dll_export int ak_bckey_decrypt_mgm( ak_bckey , ak_bckey , const ak_pointer , const size_t ,
-                   const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+ dll_export int ak_bckey_encrypt_mgm( ak_pointer , ak_pointer , const ak_pointer ,
+    const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                         ak_pointer , const size_t );
+/*! \brief Расшифрование данных в режиме `mgm` с одновременной проверкой имитовставки
+    согласно Р 1323565.1.026-2019. */
+ dll_export int ak_bckey_decrypt_mgm( ak_pointer , ak_pointer , const ak_pointer ,
+    const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                          ak_pointer, const size_t );
+/*! \brief Зашифрование данных с одновременной выработкой имитовставки согласно ГОСТ Р 34.12-2015. */
+ dll_export int ak_bckey_encrypt_ctr_cmac( ak_pointer , ak_pointer , const ak_pointer ,
+    const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                         ak_pointer , const size_t );
+/*! \brief Расшифрование данных с одновременной проверкой имитовставки согласно ГОСТ Р 34.12-2015. */
+ dll_export int ak_bckey_decrypt_ctr_cmac( ak_pointer , ak_pointer , const ak_pointer ,
+    const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                          ak_pointer, const size_t );
+/*! \brief Зашифрование данных в режиме гаммирования с одновременной выработкой имитовставки
+   согласно Р 50.1.113-2016. */
+ dll_export int ak_bckey_encrypt_ctr_hmac( ak_pointer , ak_pointer , const ak_pointer ,
+    const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                         ak_pointer , const size_t );
+/*! \brief Расшифрование данных в режиме гаммирования с одновременной проверкой имитовставки
+   согласно Р 50.1.113-2016. */
+ dll_export int ak_bckey_decrypt_ctr_hmac( ak_pointer , ak_pointer , const ak_pointer ,
+    const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
                                                                           ak_pointer, const size_t );
 /** @} */
 

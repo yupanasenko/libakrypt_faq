@@ -1097,7 +1097,10 @@
     0x15, 0x4e, 0x72, 0x10 /* 0x20, 0x30, 0xc5, 0xbb - остальные вырабатываемые байты */
   };
 
+  ak_uint32 idx;
+  struct hmac hkey;
   struct bckey mkey;
+  ak_uint8 icode[8];
   size_t i = 0, j = 0;
   ak_uint8 myout[256];
   bool_t result = ak_true;
@@ -1334,6 +1337,93 @@
   }
   if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
                                           "the cmac integrity test from GOST R 34.13-2015 is Ok" );
+
+ /* 11. Несколько странный тест для одновременного шифрования и имитозащиты, алгоритм ctr-cmac */
+  memset( myout, 0, sizeof( myout ));
+  ak_random_ptr( &mkey.key.generator, myout, sizeof( myout ) - mkey.bsize );
+  if(( error = ak_bckey_cmac( &mkey,
+                   myout, sizeof( myout ) - mkey.bsize, icode, sizeof( icode ))) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "incorrect integrity code calculation");
+    result = ak_false;
+    goto exit;
+  }
+  for( idx = 1; idx < sizeof( myout ) - mkey.bsize; idx++ ) {
+   /* зашифровываем и вычисляем имитовставку */
+     ak_bckey_encrypt_ctr_cmac( &mkey, &mkey,
+        myout, idx,
+        myout+idx, myout+idx, sizeof( myout ) - mkey.bsize - idx,
+        magma_ivctr, sizeof( magma_ivctr ), myout + (sizeof( myout ) - mkey.bsize), 8 );
+    /* сравниваем имитовставку с вычисленным ранее значением */
+     if( !ak_ptr_is_equal_with_log( icode, myout + (sizeof( myout ) - mkey.bsize), 8 )) {
+       ak_error_message_fmt( error, __func__ ,
+                               "incorrect checking precalculated integrity code on round %u", idx );
+       result = ak_false;
+       goto exit;
+     }
+    /* расшифровываем и снова проверяем имитовставку */
+     if(( error = ak_bckey_decrypt_ctr_cmac( &mkey, &mkey,
+        myout, idx,
+        myout+idx, myout+idx, sizeof( myout ) - mkey.bsize - idx,
+        magma_ivctr, sizeof( magma_ivctr ),
+                                   myout + (sizeof( myout ) - mkey.bsize), 8 )) != ak_error_ok ) {
+        ak_error_message_fmt( error, __func__ ,
+                                                "incorrect decrypt for ctr-cmac on round %u", idx );
+        result = ak_false;
+        goto exit;
+      }
+  }
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                              "the ctr-cmac integrity test for random data is Ok" );
+
+ /* 12. Второй несколько странный тест для одновременного шифрования и имитозащиты, алгоритм ctr-hmac
+    теперь нам потребуется ключ алгоритма hmac */
+  if(( error = ak_hmac_create_streebog512( &hkey )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect creation of hmac secret key" );
+    result = ak_false;
+    goto exit;
+  } else ak_hmac_set_key( &hkey, key_magma, sizeof( key_magma ));
+
+  memset( myout, 0, sizeof( myout ));
+  ak_random_ptr( &mkey.key.generator, myout, sizeof( myout ) - mkey.bsize );
+  if(( error = ak_hmac_ptr( &hkey,
+              myout, sizeof( myout ) - sizeof( icode ), icode, sizeof( icode ))) != ak_error_ok ) {
+    ak_error_message( error, __func__ , "incorrect integrity code calculation");
+    ak_hmac_destroy( &hkey );
+    result = ak_false;
+    goto exit;
+  }
+
+  for( idx = 1; idx < sizeof( myout ) - sizeof( icode ); idx++ ) {
+   /* зашифровываем и вычисляем имитовставку */
+     ak_bckey_encrypt_ctr_hmac( &mkey, &hkey,
+        myout, idx,
+        myout+idx, myout+idx, sizeof( myout ) - sizeof( icode ) - idx,
+        magma_ivctr, sizeof( magma_ivctr ), myout + (sizeof( myout ) - sizeof( icode )), 8 );
+    /* сравниваем имитовставку с вычисленным ранее значением */
+     if( !ak_ptr_is_equal_with_log( icode, myout + (sizeof( myout ) - sizeof( icode )), 8 )) {
+       ak_error_message_fmt( error, __func__ ,
+                               "incorrect checking precalculated integrity code on round %u", idx );
+       ak_hmac_destroy( &hkey );
+       result = ak_false;
+       goto exit;
+     }
+    /* расшифровываем и снова проверяем имитовставку */
+     if(( error = ak_bckey_decrypt_ctr_hmac( &mkey, &hkey,
+        myout, idx,
+        myout+idx, myout+idx, sizeof( myout ) - sizeof( icode ) - idx,
+        magma_ivctr, sizeof( magma_ivctr ),
+                               myout + (sizeof( myout ) - sizeof( icode )), 8 )) != ak_error_ok ) {
+        ak_error_message_fmt( error, __func__ ,
+                                                "incorrect decrypt for ctr-cmac on round %u", idx );
+        ak_hmac_destroy( &hkey );
+        result = ak_false;
+        goto exit;
+      }
+  }
+
+  ak_hmac_destroy( &hkey );
+  if( audit >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__ ,
+                                              "the ctr-hmac integrity test for random data is Ok" );
 
  /* освобождаем ключ и выходим */
   exit:

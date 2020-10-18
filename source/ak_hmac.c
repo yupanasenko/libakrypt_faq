@@ -193,11 +193,11 @@
     return ak_error_message( ak_error_get_value(), __func__ ,
                                                        "incorrect searching of hash fuction oid" );
  /* проверяем, что производящая функция определена */
-  if( hashoid->func.create == NULL )
+  if( hashoid->func.first.create == NULL )
     return ak_error_message( ak_error_undefined_function, __func__ ,
                                             "using hash function oid with undefined constructor" );
  /* инициализируем контекст функции хеширования */
-  if(( error = (( ak_function_hash_create *)hashoid->func.create )( &hctx->ctx )) != ak_error_ok )
+  if(( error = (( ak_function_hash_create *)hashoid->func.first.create )( &hctx->ctx )) != ak_error_ok )
     return ak_error_message_fmt( error, __func__,
                            "invalid creation of %s hash function context", hashoid->name[0] );
  /* инициализируем контекст сжимающего отображения */

@@ -8,7 +8,7 @@ cmake_minimum_required( VERSION 2.8 FATAL_ERROR )
 # -------------------------------------------------------------------------------------------------- #
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 9 )
-set( MINOR_VERSION 1 )
+set( MINOR_VERSION 2 )
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 
@@ -73,6 +73,7 @@ if( AK_HAVE_LIBAKRYPT )
     source/ak_skey.c
     source/ak_hmac.c
     source/ak_bckey.c
+    source/ak_cmac.c
     source/ak_magma.c
     source/ak_kuznechik.c
     source/ak_acpkm.c
