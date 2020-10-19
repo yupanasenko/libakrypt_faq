@@ -20,10 +20,9 @@ project( libakrypt-${FULL_VERSION} C )
 # Перечень доступных опций для сборки библиотеки
 option( AK_STATIC_LIB "Build the static library" ON )
 option( AK_SHARED_LIB "Build the shared library" ON )
-option( AK_HAVE_LIBAKRYPT "Build crypto library" ON )
 option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
-option( LIBAKRYPT_FIOT "Build library with FIOT protocol support" OFF )
-option( LIBAKRYPT_TLS_13 "Build library with TLS 1.3 protocol support" OFF )
+# option( LIBAKRYPT_FIOT "Build library with FIOT protocol support" OFF )
+# option( LIBAKRYPT_TLS_13 "Build library with TLS 1.3 protocol support" OFF )
 # LIBAKRYPT_CONF
 
 # -------------------------------------------------------------------------------------------------- #
@@ -41,10 +40,7 @@ message("-- Generation of libakrypt-base.h is done")
 
 # -------------------------------------------------------------------------------------------------- #
 # Определяем базовое множество исходных текстов библиотеки
-set( MAIN_HEADERS source/libakrypt-base.h )
-if( AK_HAVE_LIBAKRYPT )
-  set( MAIN_HEADERS ${MAIN_HEADERS} source/libakrypt.h )
-endif()
+set( MAIN_HEADERS source/libakrypt-base.h source/libakrypt.h )
 
 # -------------------------------------------------------------------------------------------------- #
 set( AKBASE_SOURCES
@@ -57,29 +53,27 @@ set( AKBASE_SOURCES
 
 # -------------------------------------------------------------------------------------------------- #
 # Добавляем исходные тексты для криптобиблиотеки
-if( AK_HAVE_LIBAKRYPT )
- set( AKRYPT_SOURCES
-    source/libakrypt-internal.h
-    source/ak_options.c
-    source/ak_libakrypt.c
-    source/ak_oid.c
-    source/ak_random.c
-    source/ak_gf2n.c
-    source/ak_mpzn.c
-    source/ak_curves.c
-    source/ak_parameters.c
-    source/ak_mac.c
-    source/ak_hash.c
-    source/ak_skey.c
-    source/ak_hmac.c
-    source/ak_bckey.c
-    source/ak_cmac.c
-    source/ak_magma.c
-    source/ak_kuznechik.c
-    source/ak_acpkm.c
-    source/ak_mgm.c
- )
-endif()
+set( AKRYPT_SOURCES
+   source/libakrypt-internal.h
+   source/ak_options.c
+   source/ak_libakrypt.c
+   source/ak_oid.c
+   source/ak_random.c
+   source/ak_gf2n.c
+   source/ak_mpzn.c
+   source/ak_curves.c
+   source/ak_parameters.c
+   source/ak_mac.c
+   source/ak_hash.c
+   source/ak_skey.c
+   source/ak_hmac.c
+   source/ak_bckey.c
+   source/ak_cmac.c
+   source/ak_magma.c
+   source/ak_kuznechik.c
+   source/ak_acpkm.c
+   source/ak_mgm.c
+)
 
 # -------------------------------------------------------------------------------------------------- #
 # проверка архитектуры
@@ -231,46 +225,47 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 # Сборка документации и завершающие настройки
  include( MakeDoc )
+ set( LIBAKRYPT_DOCUMENTATION
+      ${CMAKE_BINARY_DIR}/libakrypt-base-doc-${FULL_VERSION}.pdf
+      ${CMAKE_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.pdf
+    )
 
 # -------------------------------------------------------------------------------------------------- #
 # инсталляция библиотеки (только для UNIX)
 if( CMAKE_HOST_UNIX )
   if( AK_STATIC_LIB )
-    install( TARGETS akbase-static
-             LIBRARY DESTINATION lib
-             ARCHIVE DESTINATION lib
-           )
-    if( AK_HAVE_LIBAKRYPT )
-      install( TARGETS akrypt-static
-               LIBRARY DESTINATION lib
-               ARCHIVE DESTINATION lib
-             )
-    endif()
+    install( TARGETS akbase-static LIBRARY DESTINATION lib ARCHIVE DESTINATION lib )
+    install( TARGETS akrypt-static LIBRARY DESTINATION lib ARCHIVE DESTINATION lib )
   endif()
 
   if( AK_SHARED_LIB )
-    install( TARGETS akbase-shared
-             LIBRARY DESTINATION lib
-             ARCHIVE DESTINATION lib
-           )
-    if( AK_HAVE_LIBAKRYPT )
-      install( TARGETS akrypt-shared
-               LIBRARY DESTINATION lib
-               ARCHIVE DESTINATION lib
-             )
-    endif()
+    install( TARGETS akbase-shared LIBRARY DESTINATION lib ARCHIVE DESTINATION lib )
+    install( TARGETS akrypt-shared LIBRARY DESTINATION lib ARCHIVE DESTINATION lib )
   endif()
 
+  install( TARGETS aktool DESTINATION bin )
+
+  install( FILES ${CMAKE_SOURCE_DIR}/libakrypt.conf DESTINATION ${LIBAKRYPT_CONF} )
   install( FILES ${MAIN_HEADERS} DESTINATION include )
+  install( FILES ${LIBAKRYPT_DOCUMENTATION} DESTINATION share/doc/libakrypt )
+
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
 set( CPACK_GENERATOR "DEB" )
 set( CPACK_SOURCE_GENERATOR "TBZ2")
-set( CPACK_DEBIAN_PACKAGE_DEPENDS "libc" )
+set( CPACK_DEBIAN_PACKAGE_DEPENDS "libc-bin" )
+set( CPACK_PACKAGE_VERSION_MAJOR ${HEAD_VERSION} )
+set( CPACK_PACKAGE_VERSION_MINOR ${MAIN_VERSION} )
+set( CPACK_PACKAGE_VERSION_PATCH ${MINOR_VERSION} )
 
 set( CPACK_DEBIAN_PACKAGE_MAINTAINER "Axel Kenzo") #required
-set( CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/Readme.md")
+set( CPACK_PACKAGE_VENDOR "The Company Of Belles Lettres")
+set( CPACK_PACKAGE_FILE_NAME ${CMAKE_PROJECT_NAME}-${CMAKE_SYSTEM_PROCESSOR}.${CMAKE_SYSTEM_NAME} )
+set( CPACK_STRIP_FILES TRUE )
+
+set( CPACK_PACKAGE_DESCRIPTION
+     "Библиотека, реализующая российские криптографические механизмы в пространстве пользователя" )
 
 include(CPack)
 

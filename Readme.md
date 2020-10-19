@@ -21,8 +21,7 @@ We have implementation of:
  7. Password-based key derivation function (PBKDF2) described by R 50.1.111-2016;
  8. A some set of pseudo random generators for various operation systems including R 1323565.1.006-2017 mechanism;
  9. Montgomery arithmetic for prime fileds;
-10. Group operations on elliptic curves in short Weierstrass form for all elliptic curves
-    described by R 1323565.024-2019;
+10. Group operations on elliptic curves in short Weierstrass form for all elliptic curves described by R 1323565.024-2019;
 11. GOST R 34.10-2012 digital signature generation and verification algorithms, see ISO/IEC 14888-3:2016;
 12. x509 certificate management, including public keys formats described by R 1323565.023-2018.
 
