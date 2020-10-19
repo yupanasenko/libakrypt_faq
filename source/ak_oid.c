@@ -34,6 +34,7 @@
     "wcurve params",
     "ecurve params",
     "kbox params",
+    "encryption",
     "ecb",
     "counter",
     "counter-gost",
@@ -41,6 +42,8 @@
     "cbc",
     "cfb",
     "xts",
+    "acpkm",
+    "mac",
     "aead",
     "xcrypt",
     "a8",
@@ -48,36 +51,66 @@
     "undefined mode"
 };
 
-/*! \addtogroup oid
+/*! \addtogroup oid-doc
+
+  \ref oid (Object IDentifier) это уникальная последовательность чисел, разделенных точками.
+  Уникальный идентификатор может быть присвоен любому криптографическому механизму (алгоритму,
+  схеме, протоколу), а также произвольным параметрам этих механизмов.
+  Использование OID'в позволяет однозначно определять тип криптографического механизма или
+  значения его параметров на этапе выполнения программы, а также
+  однозначно связывать данные (как правило ключевые) с алгоритмами, в которых эти данные
+  используются.
+
+  Все \ref oid образуют одно большое дерево,
+  поддерживаемое уполномоченными на то организациями в соответствии с международным стандартом [ГОСТ Р ИСО/МЭК 9834-1-2009](https://files.stroyinf.ru/Data2/1/4293825/4293825307.pdf).
+
+  Корень российского дерева идентификаторов образует идентификатор `1.2.643`.
+  Далее дерево выглядит следующим образом
+
+    - `1.2.643.1`  Операторы связи (communication organization)
+    - `1.2.643.2`  [Производители программного обеспечения](https://oid.iitrust.ru/oid_search/11/) (program organization)
+    - `1.2.643.3`  Удостоверяющие центры (certificate authority)
+    - `1.2.643.4`  Банки (banks)
+    - `1.2.643.5`  Органы власти и государственные организации (government organization)
+    - `1.2.643.6`  Прочие организации (another organization)
+    - `1.2.643.7`  Организации по стандартизации (organization of standardization); сюда, в частности,
+    входит Технический комитет по стандартизации ТК26 "Криптографическая защита информации"
+    - `1.2.643.8`  Образовательные организации (organization of education)
+    - `1.2.643.9`  Муниципальные образования (municipalities)
+    - `1.2.643.10` Индивидуальные предприниматели (individual businessman)
 
   Библиотека `libakrypt` поддерживает свое собственное дерево идентификаторов, корнем
   которого служит последовательность `1.2.643.2.52.1`.
   Данные значения используются в случае, когда идентификаторы алгоритмов не определены
-  ни рекомендациями ТК 26, ни существующими реализациями других производителей.
+  ни рекомендациями ТК 26, ни существующими реализациями других производителей
+  программного обеспечения.
 
   Поддеревья алгоритмов и их параметров определяются следующим образом.
 
- \code
-  - 1.2.643.2.52.1.1 генераторы псевдо-случайных чисел,
-  - 1.2.643.2.52.1.2 алгоритмы поточного шифрования,
-  - 1.2.643.2.52.1.3 режимы работы поточных шифров,
-  - 1.2.643.2.52.1.4 алгоритмы блочного шифрования,
-  - 1.2.643.2.52.1.5 базовые режимы работы блочных шифров,
-  - 1.2.643.2.52.1.6 расширенные режимы работы блочных шифров,
-  - 1.2.643.2.52.1.7 алгоритмы выработки имитовставки,
+  - `1.2.643.2.52.1.1` генераторы псевдо-случайных чисел,
+  - `1.2.643.2.52.1.2` алгоритмы поточного шифрования,
+  - `1.2.643.2.52.1.3` режимы работы поточных шифров,
+  - `1.2.643.2.52.1.4` алгоритмы блочного шифрования,
+  - `1.2.643.2.52.1.5` базовые режимы работы блочных шифров,
+  - `1.2.643.2.52.1.6` расширенные режимы работы блочных шифров,
+  - `1.2.643.2.52.1.7` алгоритмы выработки имитовставки,
 
-  - 1.2.643.2.52.1.10 алгоритмы выработки электронной подписи,
-  - 1.2.643.2.52.1.11 алгоритмы проверки электронной подписи,
+  - `1.2.643.2.52.1.10` алгоритмы выработки электронной подписи,
+  - `1.2.643.2.52.1.11` алгоритмы проверки электронной подписи,
+  - `1.2.643.2.52.1.12` параметры эллиптических кривых
 
-  - 1.2.643.2.52.1.12 параметры эллиптических кривых, при этом
-    - корень `1.2.643.2.52.1.12.1 определяет параметры 256 битных кривых,
-    - корень `1.2.643.2.52.1.12.2 определяет параметры 512 битных кривых,
+  - `1.2.643.2.52.1.127` контейнеры библиотеки
 
-  - 1.2.643.2.52.1.127 контейнеры библиотеки
- \endcode
+  Техническая реализация класса \ref oid представляет собой структуру,
+  связывающую вместе списки имен (каждый \ref oid может иметь несколько имен),
+  списки идентификаторов (каждый \ref oid может иметь несколько идентификаторов, присвоенных
+  различными организациями), указатель на двоичные данные (это, как правило, явно заданные параметры
+  криптографических алгоритмов), а также набор функций,
+  позволяющих создавать, удалять и управлять объектами (секретными ключами)
+  криптографических преобразований.
 
- */
-
+  Реализованы функции поиска идентификаторов по заданным именам, идентификаторам,
+  а также типам (\ref oid_engines_t) и режимам (\ref oid_modes_t) криптографических преобразований.*/
 /* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения имен идентификаторов */
  static const char *asn1_lcg_n[] =          { "lcg", NULL };
@@ -105,6 +138,50 @@
  static const char *asn1_magma_i[] =       { "1.2.643.7.1.1.5.1", NULL };
  static const char *asn1_kuznechik_n[] =   { "kuznechik", "kuznyechik", "grasshopper", NULL };
  static const char *asn1_kuznechik_i[] =   { "1.2.643.7.1.1.5.2", NULL };
+
+ static const char *asn1_ctr_magma_n[] =   { "ctr-magma", NULL };
+ static const char *asn1_ctr_magma_i[] =   { "1.2.643.2.52.1.5.1.1", NULL };
+ static const char *asn1_ctr_kuznechik_n[] =
+                                           { "ctr-kuznechik", "ctr-kuznyechik", NULL };
+ static const char *asn1_ctr_kuznechik_i[] =
+                                           { "1.2.643.2.52.1.5.1.2", NULL };
+ static const char *asn1_ofb_magma_n[] =   { "ofb-magma", NULL };
+ static const char *asn1_ofb_magma_i[] =   { "1.2.643.2.52.1.5.2.1", NULL };
+ static const char *asn1_ofb_kuznechik_n[] =
+                                           { "ofb-kuznechik", "ofb-kuznyechik", NULL };
+ static const char *asn1_ofb_kuznechik_i[] =
+                                           { "1.2.643.2.52.1.5.2.2", NULL };
+ static const char *asn1_cfb_magma_n[] =   { "cfb-magma", NULL };
+ static const char *asn1_cfb_magma_i[] =   { "1.2.643.2.52.1.5.3.1", NULL };
+ static const char *asn1_cfb_kuznechik_n[] =
+                                           { "cfb-kuznechik", "cfb-kuznyechik", NULL };
+ static const char *asn1_cfb_kuznechik_i[] =
+                                           { "1.2.643.2.52.1.5.3.2", NULL };
+ static const char *asn1_cbc_magma_n[] =   { "cbc-magma", NULL };
+ static const char *asn1_cbc_magma_i[] =   { "1.2.643.2.52.1.5.4.1", NULL };
+ static const char *asn1_cbc_kuznechik_n[] =
+                                           { "cbc-kuznechik", "cbc-kuznyechik", NULL };
+ static const char *asn1_cbc_kuznechik_i[] =
+                                           { "1.2.643.2.52.1.5.4.2", NULL };
+ /*
+      id-gostr3412-2015-magma-ctracpkm OBJECT IDENTIFIER ::= { 1.2.643.7.1.1.5.1.1 }
+      id-gostr3412-2015-kuznechik-ctracpkm OBJECT IDENTIFIER ::= { 1.2.643.7.1.1.5.2.1 } */
+
+ static const char *asn1_acpkm_magma_n[] = { "acpkm-magma",
+                                             "id-gostr3412-2015-magma-ctracpkm", NULL };
+ static const char *asn1_acpkm_magma_i[] = { "1.2.643.7.1.1.5.1.1", NULL };
+ static const char *asn1_acpkm_kuznechik_n[] =
+                                           { "acpkm-kuznechik", "acpkm-kuznyechik",
+                                             "id-gostr3412-2015-kuznechik-ctracpkm", NULL };
+ static const char *asn1_acpkm_kuznechik_i[] =
+                                           { "1.2.643.7.1.1.5.2.1", NULL };
+
+ static const char *asn1_cmac_magma_n[] =  { "cmac-magma", NULL };
+ static const char *asn1_cmac_magma_i[] =  { "1.2.643.2.52.1.7.1.1", NULL };
+ static const char *asn1_cmac_kuznechik_n[] =
+                                           { "cmac-kuznechik", "cmac-kuznyechik", NULL };
+ static const char *asn1_cmac_kuznechik_i[] =
+                                           { "1.2.643.2.52.1.7.1.2", NULL };
 
  static const char *asn1_mgm_magma_n[] =   { "mgm-magma",
                                              "id-tc26-cipher-gostr3412-2015-magma-mgm", NULL };
@@ -340,18 +417,20 @@ static struct oid libakrypt_oids[] =
  { hash_function, algorithm, asn1_streebog256_i, asn1_streebog256_n, NULL,
   {{ sizeof( struct hash ), ( ak_function_create_object *) ak_hash_create_streebog256,
                               ( ak_function_destroy_object *) ak_hash_destroy, NULL, NULL, NULL },
-                                                                ak_object_undefined, NULL, NULL }},
+                              ak_object_undefined, (ak_function_run_object *) ak_hash_ptr, NULL }},
 
  { hash_function, algorithm, asn1_streebog512_i, asn1_streebog512_n, NULL,
   {{ sizeof( struct hash ), ( ak_function_create_object *) ak_hash_create_streebog512,
                               ( ak_function_destroy_object *) ak_hash_destroy, NULL, NULL, NULL },
-                                                                ak_object_undefined, NULL, NULL }},
+                              ak_object_undefined, (ak_function_run_object *) ak_hash_ptr, NULL }},
 
  { hmac_function, algorithm, asn1_hmac_streebog256_i, asn1_hmac_streebog256_n, NULL,
-                                  { ak_object_hmac_streebog256, ak_object_undefined, NULL, NULL }},
+                            { ak_object_hmac_streebog256,
+                              ak_object_undefined, (ak_function_run_object *) ak_hmac_ptr, NULL }},
 
  { hmac_function, algorithm, asn1_hmac_streebog512_i, asn1_hmac_streebog512_n, NULL,
-                                  { ak_object_hmac_streebog512, ak_object_undefined, NULL, NULL }},
+                            { ak_object_hmac_streebog512,
+                              ak_object_undefined, (ak_function_run_object *) ak_hmac_ptr, NULL }},
 
  { block_cipher, algorithm, asn1_magma_i, asn1_magma_n, NULL,
                                        { ak_object_bckey_magma, ak_object_undefined, NULL, NULL }},
@@ -360,6 +439,55 @@ static struct oid libakrypt_oids[] =
                                    { ak_object_bckey_kuznechik, ak_object_undefined, NULL, NULL }},
 
 /* базовые режимы блочного шифрования */
+ { block_cipher, encryption, asn1_ctr_magma_i, asn1_ctr_magma_n, NULL,
+  { ak_object_bckey_magma, ak_object_undefined, ( ak_function_run_object *) ak_bckey_ctr,
+                                                       ( ak_function_run_object *) ak_bckey_ctr }},
+
+ { block_cipher, encryption, asn1_ctr_kuznechik_i, asn1_ctr_kuznechik_n, NULL,
+  { ak_object_bckey_kuznechik, ak_object_undefined, ( ak_function_run_object *) ak_bckey_ctr,
+                                                       ( ak_function_run_object *) ak_bckey_ctr }},
+
+ { block_cipher, encryption, asn1_ofb_magma_i, asn1_ofb_magma_n, NULL,
+  { ak_object_bckey_magma, ak_object_undefined, ( ak_function_run_object *) ak_bckey_ofb,
+                                                       ( ak_function_run_object *) ak_bckey_ofb }},
+
+ { block_cipher, encryption, asn1_ofb_kuznechik_i, asn1_ofb_kuznechik_n, NULL,
+  { ak_object_bckey_kuznechik, ak_object_undefined, ( ak_function_run_object *) ak_bckey_ofb,
+                                                       ( ak_function_run_object *) ak_bckey_ofb }},
+
+ { block_cipher, encryption, asn1_cfb_magma_i, asn1_cfb_magma_n, NULL,
+  { ak_object_bckey_magma, ak_object_undefined, ( ak_function_run_object *) ak_bckey_encrypt_cfb,
+                                               ( ak_function_run_object *) ak_bckey_decrypt_cfb }},
+
+ { block_cipher, encryption, asn1_cfb_kuznechik_i, asn1_cfb_kuznechik_n, NULL,
+  { ak_object_bckey_kuznechik, ak_object_undefined,
+                                                ( ak_function_run_object *) ak_bckey_encrypt_cfb,
+                                               ( ak_function_run_object *) ak_bckey_decrypt_cfb }},
+
+ { block_cipher, encryption, asn1_cbc_magma_i, asn1_cbc_magma_n, NULL,
+  { ak_object_bckey_magma, ak_object_undefined, ( ak_function_run_object *) ak_bckey_encrypt_cbc,
+                                               ( ak_function_run_object *) ak_bckey_decrypt_cbc }},
+
+ { block_cipher, encryption, asn1_cbc_kuznechik_i, asn1_cbc_kuznechik_n, NULL,
+  { ak_object_bckey_kuznechik, ak_object_undefined,
+                                                ( ak_function_run_object *) ak_bckey_encrypt_cbc,
+                                               ( ak_function_run_object *) ak_bckey_decrypt_cbc }},
+
+ { block_cipher, acpkm, asn1_acpkm_magma_i, asn1_acpkm_magma_n, NULL,
+  { ak_object_bckey_magma, ak_object_undefined, ( ak_function_run_object *) ak_bckey_ctr_acpkm,
+                                                 ( ak_function_run_object *) ak_bckey_ctr_acpkm }},
+
+ { block_cipher, acpkm, asn1_acpkm_kuznechik_i, asn1_acpkm_kuznechik_n, NULL,
+  { ak_object_bckey_kuznechik, ak_object_undefined,
+                                                  ( ak_function_run_object *) ak_bckey_ctr_acpkm,
+                                                 ( ak_function_run_object *) ak_bckey_ctr_acpkm }},
+
+ { block_cipher, mac, asn1_cmac_magma_i, asn1_cmac_magma_n, NULL,
+  { ak_object_bckey_magma, ak_object_undefined, ( ak_function_run_object *) ak_bckey_cmac, NULL }},
+
+ { block_cipher, mac, asn1_cmac_kuznechik_i, asn1_cmac_kuznechik_n, NULL,
+  { ak_object_bckey_kuznechik, ak_object_undefined,
+                                                ( ak_function_run_object *) ak_bckey_cmac, NULL }},
 
 /* расширенные режимы блочного шифрования */
  { block_cipher, aead, asn1_mgm_magma_i, asn1_mgm_magma_n, NULL,
@@ -426,30 +554,31 @@ static struct oid libakrypt_oids[] =
 // },
 
  { identifier, wcurve_params, asn1_w256_pst_i, asn1_w256_pst_n,
-           (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetTest, ak_functional_objects_undefined },
+          (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetTest, ak_functional_objects_undefined },
  { identifier, wcurve_params, asn1_w256_psa_i, asn1_w256_psa_n,
-              (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetA, ak_functional_objects_undefined },
+             (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetA, ak_functional_objects_undefined },
  { identifier, wcurve_params, asn1_w256_psb_i, asn1_w256_psb_n,
-               (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA, ak_functional_objects_undefined },
+              (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetA, ak_functional_objects_undefined },
  { identifier, wcurve_params, asn1_w256_psc_i, asn1_w256_psc_n,
-               (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB, ak_functional_objects_undefined },
+              (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetB, ak_functional_objects_undefined },
  { identifier, wcurve_params, asn1_w256_psd_i, asn1_w256_psd_n,
-               (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC, ak_functional_objects_undefined },
+              (ak_pointer) &id_rfc4357_gost_3410_2001_paramSetC, ak_functional_objects_undefined },
  { identifier, wcurve_params, asn1_w256_axel_i, asn1_w256_axel_n,
-            (ak_pointer) &id_axel_gost_3410_2012_256_paramSet_N0, ak_functional_objects_undefined },
+           (ak_pointer) &id_axel_gost_3410_2012_256_paramSet_N0, ak_functional_objects_undefined },
 
  { identifier, wcurve_params, asn1_w512_pst_i, asn1_w512_pst_n,
-                 (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetTest, ak_functional_objects_undefined },
+          (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetTest, ak_functional_objects_undefined },
  { identifier, wcurve_params, asn1_w512_psa_i, asn1_w512_psa_n,
-                  (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetA, ak_functional_objects_undefined },
+             (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetA, ak_functional_objects_undefined },
  { identifier, wcurve_params, asn1_w512_psb_i, asn1_w512_psb_n,
-                  (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetB, ak_functional_objects_undefined },
+             (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetB, ak_functional_objects_undefined },
  { identifier, wcurve_params, asn1_w512_psc_i, asn1_w512_psc_n,
-                  (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetC, ak_functional_objects_undefined },
+             (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetC, ak_functional_objects_undefined },
 
 /* идентификаторы, используемые при разборе сертификатов и ключевых контейнеров */
  { identifier, descriptor, asn1_akcont_i, asn1_akcont_n, NULL, ak_functional_objects_undefined },
- { identifier, descriptor, asn1_pbkdf2key_i, asn1_pbkdf2key_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_pbkdf2key_i, asn1_pbkdf2key_n,
+                                                           NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_sdhkey_i, asn1_sdhkey_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_extkey_i, asn1_extkey_n, NULL, ak_functional_objects_undefined },
 
@@ -487,16 +616,24 @@ static struct oid libakrypt_oids[] =
  { identifier, descriptor, asn1_ogrn_i, asn1_ogrn_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_snils_i, asn1_snils_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_ogrnip_i, asn1_ogrnip_n, NULL, ak_functional_objects_undefined },
- { identifier, descriptor, asn1_owner_mod_i, asn1_owner_mod_n, NULL, ak_functional_objects_undefined },
- { identifier, descriptor, asn1_issuer_mod_i, asn1_issuer_mod_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_owner_mod_i, asn1_owner_mod_n,
+                                                           NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_issuer_mod_i, asn1_issuer_mod_n,
+                                                           NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_inn_i, asn1_inn_n, NULL, ak_functional_objects_undefined },
 
- { identifier, descriptor, asn1_class_kc1_i, asn1_class_kc1_n, NULL, ak_functional_objects_undefined },
- { identifier, descriptor, asn1_class_kc2_i, asn1_class_kc2_n, NULL, ak_functional_objects_undefined },
- { identifier, descriptor, asn1_class_kc3_i, asn1_class_kc3_n, NULL, ak_functional_objects_undefined },
- { identifier, descriptor, asn1_class_kb1_i, asn1_class_kb1_n, NULL, ak_functional_objects_undefined },
- { identifier, descriptor, asn1_class_kb2_i, asn1_class_kb2_n, NULL, ak_functional_objects_undefined },
- { identifier, descriptor, asn1_class_ka1_i, asn1_class_ka1_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_class_kc1_i, asn1_class_kc1_n,
+                                                           NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_class_kc2_i, asn1_class_kc2_n,
+                                                           NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_class_kc3_i, asn1_class_kc3_n,
+                                                           NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_class_kb1_i, asn1_class_kb1_n,
+                                                           NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_class_kb2_i, asn1_class_kb2_n,
+                                                           NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_class_ka1_i, asn1_class_ka1_n,
+                                                           NULL, ak_functional_objects_undefined },
 
  { identifier, descriptor, asn1_mscav_i, asn1_mscav_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_mspsh_i, asn1_mspsh_n, NULL, ak_functional_objects_undefined },

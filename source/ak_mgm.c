@@ -17,7 +17,7 @@
 
     В общем случае аутентифицированное шифрование может рассматриваться как отображение
     \f[
-     AEAD:\quad \mathbb A \times \mathbb P \times \mathbb K \times \mathbb K \rightarrow
+     AEAD:\quad \mathbb A \times \mathbb P \times \mathbb K_1 \times \mathbb K_2 \rightarrow
       \mathbb C \times \mathbb V_{m},
     \f]
     где
@@ -27,7 +27,7 @@
     - \f$ \mathbb P \subset \mathbb V_\infty\f$ -- пространство открытых текстов,
     которые подлежат зашифрованию,
     - \f$ \mathbb C \subset \mathbb V_\infty\f$ -- пространство шифртекстов,
-    - \f$ \mathbb K \subset \mathbb V_{256}\f$ -- пространство ключей, используемых для
+    - \f$ \mathbb K_1, \mathbb K_2 \f$ -- пространства ключей, используемых, соответственно, для
     шифрования и имитозащиты.
 
     Отметим, что в общем случае отображение, определяющее аутентифицированное шифрование,

@@ -863,6 +863,7 @@ INPUT                  = @CMAKE_SOURCE_DIR@/source/libakrypt.h \
                          @CMAKE_SOURCE_DIR@/source/ak_kuznechik.c \
                          @CMAKE_SOURCE_DIR@/source/ak_acpkm.c \
                          @CMAKE_SOURCE_DIR@/source/ak_mgm.c \
+                         @CMAKE_SOURCE_DIR@/source/ak_cmac.c \
                          @CMAKE_SOURCE_DIR@/doc/00-introduction.md
 
 # This tag can be used to specify the character encoding of the source files
