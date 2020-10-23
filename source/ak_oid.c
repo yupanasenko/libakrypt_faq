@@ -35,6 +35,7 @@
     "ecurve params",
     "kbox params",
     "encryption",
+    "encryption2k",
     "ecb",
     "counter",
     "counter-gost",
@@ -163,6 +164,14 @@
                                            { "cbc-kuznechik", "cbc-kuznyechik", NULL };
  static const char *asn1_cbc_kuznechik_i[] =
                                            { "1.2.643.2.52.1.5.4.2", NULL };
+
+ static const char *asn1_xts_magma_n[] =   { "xts-magma", NULL };
+ static const char *asn1_xts_magma_i[] =   { "1.2.643.2.52.1.5.5.1", NULL };
+ static const char *asn1_xts_kuznechik_n[] =
+                                           { "xts-kuznechik", NULL };
+ static const char *asn1_xts_kuznechik_i[] =
+                                           { "1.2.643.2.52.1.5.5.2", NULL };
+
  /*
       id-gostr3412-2015-magma-ctracpkm OBJECT IDENTIFIER ::= { 1.2.643.7.1.1.5.1.1 }
       id-gostr3412-2015-kuznechik-ctracpkm OBJECT IDENTIFIER ::= { 1.2.643.7.1.1.5.2.1 } */
@@ -472,6 +481,16 @@ static struct oid libakrypt_oids[] =
   { ak_object_bckey_kuznechik, ak_object_undefined,
                                                 ( ak_function_run_object *) ak_bckey_encrypt_cbc,
                                                ( ak_function_run_object *) ak_bckey_decrypt_cbc }},
+
+ { block_cipher, encryption2k, asn1_xts_magma_i, asn1_xts_magma_n, NULL,
+  { ak_object_bckey_magma, ak_object_bckey_magma, ( ak_function_run_object *) ak_bckey_encrypt_xts,
+                                              NULL }}, //( ak_function_run_object *) ak_bckey_decrypt_xts }},
+
+ { block_cipher, encryption2k, asn1_xts_kuznechik_i, asn1_xts_kuznechik_n, NULL,
+  { ak_object_bckey_kuznechik, ak_object_bckey_kuznechik,
+                                                  ( ak_function_run_object *) ak_bckey_encrypt_xts,
+                                              NULL }}, //( ak_function_run_object *) ak_bckey_decrypt_xts }},
+
 
  { block_cipher, acpkm, asn1_acpkm_magma_i, asn1_acpkm_magma_n, NULL,
   { ak_object_bckey_magma, ak_object_undefined, ( ak_function_run_object *) ak_bckey_ctr_acpkm,

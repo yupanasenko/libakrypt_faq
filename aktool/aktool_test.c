@@ -10,6 +10,7 @@
  int aktool_test_help( void );
 
  int aktool_test_speed_encryption( ak_oid );
+ int aktool_test_speed_encryption2k( ak_oid );
  int aktool_test_speed_acpkm( ak_oid );
  int aktool_test_speed_mac( ak_oid );
  int aktool_test_speed_aead( ak_oid );
@@ -106,6 +107,8 @@
              case aead: exit_status = aktool_test_speed_aead( oid );
                break;
              case encryption: exit_status = aktool_test_speed_encryption( oid );
+               break;
+             case encryption2k: exit_status = aktool_test_speed_encryption2k( oid );
                break;
              case mac: exit_status = aktool_test_speed_mac( oid );
                break;
@@ -242,6 +245,95 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ int aktool_test_speed_encryption2k( ak_oid oid )
+{
+  clock_t timea;
+  size_t size = 0;
+  double iter = 0, avg = 0;
+  ak_uint8 *data;
+  int i, error = ak_error_ok, exit_status = EXIT_FAILURE;
+  ak_pointer encryptionKey = NULL, authenticationKey = NULL;
+
+  printf(_("testing speed of %s (%s) algorithm\n"), oid->name[0], oid->id[0] );
+
+ /* создаем ключи */
+  if(( encryptionKey = ak_oid_new_object( oid )) == NULL ) {
+    aktool_error( _("incorrect creation of encryption key (%d)" ), ak_error_get_value( ));
+    goto exit;
+  }
+  if(( authenticationKey = ak_oid_new_second_object( oid )) == NULL ) {
+    aktool_error( _("incorrect creation of authentication key (%d)" ), ak_error_get_value( ));
+    goto exit;
+  }
+
+ /* приваиваем ключам значения */
+  if(( error = ((ak_function_set_key_object *)oid->func.first.set_key)
+                                                   ( encryptionKey, iv+16, 32 )) != ak_error_ok ) {
+     aktool_error( _("incorrect assigning encryption key value (%d)" ), error );
+     goto exit;
+  }
+  if(( error = ((ak_function_set_key_object *)oid->func.second.set_key)
+                                                  ( authenticationKey, iv, 32 )) != ak_error_ok ) {
+     aktool_error(_("incorrect assigning authentication key value (%d)" ), error );
+     goto exit;
+  }
+  if( !aktool_test_verbose ) { printf(_("[16MB ")); fflush( stdout ); }
+
+ /* теперь собственно тестирование скорости реализации */
+  for( i = 16; i < 129; i += 8 ) {
+    data = malloc( size = ( size_t ) i*1024*1024 );
+    memset( data, (ak_uint8)i+1, size );
+
+   /* на очень больших объемах одного ключа мало, надо увеличивать ресурс */
+   /* далее - не очень хороший стиль, мы пользуемся тем,
+      что все ключевые структуры содержат ключ первым элементом структуры */
+    ((ak_skey)authenticationKey)->resource.value.counter = size;
+    ((ak_skey)encryptionKey)->resource.value.counter = size;
+
+    timea = clock();
+    error =
+    ( oid->func.direct )(
+      encryptionKey,     /* ключ шифрования */
+      authenticationKey, /* ключ имитозащиты */
+      data,              /* указатель на зашифровываемые данные */
+      data,              /* указатель на зашифрованные данные */
+      size,              /* размер шифруемых данных */
+      iv,                /* синхропосылка для режима гаммирования */
+      sizeof( iv )       /* доступный размер синхропосылки */
+    );
+    timea = clock() - timea;
+    if( error != ak_error_ok ) {
+      aktool_error(_("computational error (%d)"), error );
+      if( data ) free( data );
+      goto exit;
+    }
+
+    if( aktool_test_verbose )
+      printf(_(" %3uMB: 2 key encryption time: %fs, per 1MB = %fs, speed = %f MBs\n"), (unsigned int)i,
+               (double) timea / (double) CLOCKS_PER_SEC,
+               (double) timea / ( (double) CLOCKS_PER_SEC*i ),
+               (double) CLOCKS_PER_SEC*i / (double) timea );
+     else { printf("."); fflush( stdout ); }
+
+    if( i > 16 ) {
+      iter += 1;
+      avg += (double) CLOCKS_PER_SEC*i / (double) timea;
+    }
+    free( data );
+  }
+
+  if( !aktool_test_verbose ) printf(_(" 128MB],"));
+  printf(_(" average speed: %10f MBs\n"), avg/iter );
+
+  exit_status = EXIT_SUCCESS;
+  exit:
+   ak_oid_delete_object( oid, encryptionKey );
+   ak_oid_delete_second_object( oid, authenticationKey );
+
+ return exit_status;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int aktool_test_speed_acpkm( ak_oid oid )
 {
   clock_t timea;
@@ -265,13 +357,13 @@
      aktool_error( _("incorrect assigning encryption key value (%d)" ), error );
      goto exit;
   }
-  if( !aktool_test_verbose ) { printf(_("[16MB ")); fflush( stdout ); }
 
  /* определяем максимальный размер секции */
   if( ((ak_bckey)encryptionKey)->bsize == 8 )
     secbytes = 8*ak_libakrypt_get_option_by_name( "acpkm_section_magma_block_count" );
    else secbytes = 16*ak_libakrypt_get_option_by_name( "acpkm_section_kuznechik_block_count" );
   printf(_("size of one section: %lu bytes\n"), (unsigned long int) secbytes );
+  if( !aktool_test_verbose ) { printf(_("[16MB ")); fflush( stdout ); }
 
  /* теперь собственно тестирование скорости реализации */
   for( i = 16; i < 129; i += 8 ) {
@@ -564,6 +656,8 @@
              case aead: exit_status = aktool_test_speed_aead( soid );
                break;
              case encryption: exit_status = aktool_test_speed_encryption( soid );
+               break;
+             case encryption2k: exit_status = aktool_test_speed_encryption2k( soid );
                break;
              case mac: exit_status = aktool_test_speed_mac( soid );
                break;

@@ -227,11 +227,13 @@ check_c_source_compiles("
   }" AK_HAVE_BYTESWAP_H )
 
 # -------------------------------------------------------------------------------------------------- #
-check_c_source_compiles("
-  #include <pthread.h>
-  int main( void ) {
+if( LIBAKRYPT_PTHREAD )
+  check_c_source_compiles("
+   #include <pthread.h>
+   int main( void ) {
      return 0;
   }" AK_HAVE_PTHREAD_H )
+endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # -------------------------------------------------------------------------------------------------- #

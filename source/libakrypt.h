@@ -259,6 +259,8 @@ extern "C" {
      kbox_params,
    /*!  \brief базовый режим шифрования */
      encryption,
+   /*!  \brief режим шифрования с двумя ключами */
+     encryption2k,
    /*! \brief режим простой замены блочного шифра (ГОСТ Р 34.13-2015, раздел 5.1) */
      ecb,
    /*! \brief режим гаммирования для блочного шифра (ГОСТ Р 34.13-2015, раздел 5.2) */
@@ -721,6 +723,12 @@ extern "C" {
                                                                              ak_pointer , size_t );
 /*! \brief Шифрование данных в режиме `CTR-ACPKM` из Р 1323565.1.017—2018. */
  dll_export int ak_bckey_ctr_acpkm( ak_bckey , ak_pointer , ak_pointer , size_t , size_t ,
+                                                                             ak_pointer , size_t );
+/*! \brief Зашифрование данных в режиме `XTS`. */
+ dll_export int ak_bckey_encrypt_xts( ak_bckey ,  ak_bckey , ak_pointer , ak_pointer , size_t ,
+                                                                             ak_pointer , size_t );
+/*! \brief Расшифрование данных в режиме `XTS`. */
+ dll_export int ak_bckey_decrypt_xts( ak_bckey ,  ak_bckey , ak_pointer , ak_pointer , size_t ,
                                                                              ak_pointer , size_t );
 /** @} */
 

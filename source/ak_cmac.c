@@ -294,9 +294,9 @@
     ak_uint8 icode2[32];
     memset( icode2, 0, sizeof( icode2 ));
 
-    if( ((ak_bckey)authenticationKey)->bsize > sizeof( icode ))
+    if( ((ak_bckey)authenticationKey)->bsize > icode_size )
       return ak_error_message( ak_error_wrong_length, __func__,
-                                                 "using block cipher with very huge block length" );
+                                                "using block cipher with very huge block length" );
     if(( error =
              ak_bckey_cmac( authenticationKey, ptr, sizeptr, icode2, icode_size )) != ak_error_ok )
       return ak_error_message( error, __func__,

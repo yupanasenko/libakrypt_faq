@@ -20,6 +20,7 @@ project( libakrypt-${FULL_VERSION} C )
 # Перечень доступных опций для сборки библиотеки
 option( AK_STATIC_LIB "Build the static library" ON )
 option( AK_SHARED_LIB "Build the shared library" ON )
+option( LIBAKRYPT_PTHREAD "Use posix threads" OFF )
 option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
 # option( LIBAKRYPT_FIOT "Build library with FIOT protocol support" OFF )
 # option( LIBAKRYPT_TLS_13 "Build library with TLS 1.3 protocol support" OFF )
@@ -73,6 +74,7 @@ set( AKRYPT_SOURCES
    source/ak_kuznechik.c
    source/ak_acpkm.c
    source/ak_mgm.c
+   source/ak_xts.c
 )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -114,13 +116,12 @@ if( AK_SHARED_LIB )
   set_target_properties( akbase-shared PROPERTIES OUTPUT_NAME akrypt-base CLEAN_DIRECT_CUSTOM 1 )
   target_link_libraries( akbase-shared ${LIBAKRYPT_LIBS} )
   message( "-- Building libakrypt-base: shared library" )
-  if( AK_HAVE_LIBAKRYPT )
-    add_library( akrypt-shared SHARED ${MAIN_HEADERS} ${AKRYPT_SOURCES} )
-    set_target_properties( akrypt-shared PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
-    set_target_properties( akrypt-shared PROPERTIES OUTPUT_NAME akrypt CLEAN_DIRECT_CUSTOM 1 )
-    target_link_libraries( akrypt-shared akbase-shared ${LIBAKRYPT_LIBS} )
-    message( "-- Building libakrypt: shared library" )
-  endif()
+
+  add_library( akrypt-shared SHARED ${MAIN_HEADERS} ${AKRYPT_SOURCES} )
+  set_target_properties( akrypt-shared PROPERTIES VERSION ${MAJOR_VERSION} SOVERSION ${FULL_VERSION} )
+  set_target_properties( akrypt-shared PROPERTIES OUTPUT_NAME akrypt CLEAN_DIRECT_CUSTOM 1 )
+  target_link_libraries( akrypt-shared akbase-shared ${LIBAKRYPT_LIBS} )
+  message( "-- Building libakrypt: shared library" )
 endif()
 
 #
@@ -129,12 +130,11 @@ if( AK_STATIC_LIB )
   set_target_properties( akbase-static PROPERTIES OUTPUT_NAME akrypt-base CLEAN_DIRECT_CUSTOM 1 )
   target_link_libraries( akbase-static ${LIBAKRYPT_LIBS} )
   message( "-- Building libakrypt-base: static library" )
-  if( AK_HAVE_LIBAKRYPT )
-    add_library( akrypt-static STATIC ${MAIN_HEADERS} ${AKRYPT_SOURCES} )
-    set_target_properties( akrypt-static PROPERTIES OUTPUT_NAME akrypt CLEAN_DIRECT_CUSTOM 1 )
-    target_link_libraries( akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
-    message( "-- Building libakrypt: shared library" )
-  endif()
+
+  add_library( akrypt-static STATIC ${MAIN_HEADERS} ${AKRYPT_SOURCES} )
+  set_target_properties( akrypt-static PROPERTIES OUTPUT_NAME akrypt CLEAN_DIRECT_CUSTOM 1 )
+  target_link_libraries( akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
+  message( "-- Building libakrypt: shared library" )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -163,6 +163,7 @@ set ( ARITHMETIC_TESTS_LIST
       random01
       gf2n
       mgm01
+      xex01
     )
 
 if( LIBAKRYPT_GMP_TESTS )
@@ -226,6 +227,8 @@ endif()
 # Сборка документации и завершающие настройки
  include( MakeDoc )
  set( LIBAKRYPT_DOCUMENTATION
+      ${CMAKE_SOURCE_DIR}/LICENSE
+      ${CMAKE_SOURCE_DIR}/Changelog.md
       ${CMAKE_BINARY_DIR}/libakrypt-base-doc-${FULL_VERSION}.pdf
       ${CMAKE_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.pdf
     )
@@ -267,7 +270,7 @@ set( CPACK_STRIP_FILES TRUE )
 set( CPACK_PACKAGE_DESCRIPTION
      "Библиотека, реализующая российские криптографические механизмы в пространстве пользователя" )
 
-include(CPack)
+include( CPack )
 
 # -------------------------------------------------------------------------------------------------- #
 #                                                                                    CMakeLists.txt

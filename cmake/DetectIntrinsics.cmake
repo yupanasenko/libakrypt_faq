@@ -34,3 +34,22 @@ check_c_source_compiles("
 if( AK_HAVE_BUILTIN_CLMULEPI64 )
     set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAK_HAVE_BUILTIN_CLMULEPI64" )
 endif()
+
+# -------------------------------------------------------------------------------------------------- #
+# -------------------------------------------------------------------------------------------------- #
+check_c_source_compiles("
+  #include <immintrin.h>
+  int main( void ) {
+
+   __m256i theta = _mm256_setr_epi64x( 0x425, 0, 0, 0 );
+   __m256i m2 = _mm256_srli_epi64( theta, 63 );
+
+   __m128i count = _mm_setr_epi32( 1, 0, 0, 0 );
+   __m256i m3 = _mm256_sll_epi64( theta, count );
+
+  return 0;
+ }" AK_HAVE_BUILTIN_MM256_SLL )
+
+if( AK_HAVE_BUILTIN_MM256_SLL )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAK_HAVE_BUILTIN_MM256_SLL" )
+endif()

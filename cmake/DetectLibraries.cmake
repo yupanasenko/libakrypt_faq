@@ -83,7 +83,9 @@ else()
     endif()
 
   else()
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAK_HAVE_PTHREAD_H" )
+    if( LIBAKRYPT_PTHREAD )
+      set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAK_HAVE_PTHREAD_H" )
+    endif()
   endif()
 endif()
 
