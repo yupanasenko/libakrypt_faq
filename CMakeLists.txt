@@ -255,6 +255,7 @@ if( CMAKE_HOST_UNIX )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
+# настройка пакета для дистрибуции
 set( CPACK_GENERATOR "DEB" )
 set( CPACK_SOURCE_GENERATOR "TBZ2")
 set( CPACK_DEBIAN_PACKAGE_DEPENDS "libc-bin" )

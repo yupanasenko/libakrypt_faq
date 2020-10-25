@@ -106,9 +106,9 @@
            switch( oid->mode ) {
              case aead: exit_status = aktool_test_speed_aead( oid );
                break;
-             case encryption: exit_status = aktool_test_speed_encryption( oid );
+             case encrypt: exit_status = aktool_test_speed_encryption( oid );
                break;
-             case encryption2k: exit_status = aktool_test_speed_encryption2k( oid );
+             case encrypt2k: exit_status = aktool_test_speed_encryption2k( oid );
                break;
              case mac: exit_status = aktool_test_speed_mac( oid );
                break;
@@ -655,9 +655,9 @@
            switch( soid->mode ) {
              case aead: exit_status = aktool_test_speed_aead( soid );
                break;
-             case encryption: exit_status = aktool_test_speed_encryption( soid );
+             case encrypt: exit_status = aktool_test_speed_encryption( soid );
                break;
-             case encryption2k: exit_status = aktool_test_speed_encryption2k( soid );
+             case encrypt2k: exit_status = aktool_test_speed_encryption2k( soid );
                break;
              case mac: exit_status = aktool_test_speed_mac( soid );
                break;

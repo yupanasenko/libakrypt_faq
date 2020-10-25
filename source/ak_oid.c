@@ -34,8 +34,8 @@
     "wcurve params",
     "ecurve params",
     "kbox params",
-    "encryption",
-    "encryption2k",
+    "encrypt",
+    "encrypt2k",
     "ecb",
     "counter",
     "counter-gost",
@@ -172,8 +172,7 @@
  static const char *asn1_xts_kuznechik_i[] =
                                            { "1.2.643.2.52.1.5.5.2", NULL };
 
- /*
-      id-gostr3412-2015-magma-ctracpkm OBJECT IDENTIFIER ::= { 1.2.643.7.1.1.5.1.1 }
+ /*   id-gostr3412-2015-magma-ctracpkm OBJECT IDENTIFIER ::= { 1.2.643.7.1.1.5.1.1 }
       id-gostr3412-2015-kuznechik-ctracpkm OBJECT IDENTIFIER ::= { 1.2.643.7.1.1.5.2.1 } */
 
  static const char *asn1_acpkm_magma_n[] = { "acpkm-magma",
@@ -448,49 +447,49 @@ static struct oid libakrypt_oids[] =
                                    { ak_object_bckey_kuznechik, ak_object_undefined, NULL, NULL }},
 
 /* базовые режимы блочного шифрования */
- { block_cipher, encryption, asn1_ctr_magma_i, asn1_ctr_magma_n, NULL,
+ { block_cipher, encrypt, asn1_ctr_magma_i, asn1_ctr_magma_n, NULL,
   { ak_object_bckey_magma, ak_object_undefined, ( ak_function_run_object *) ak_bckey_ctr,
                                                        ( ak_function_run_object *) ak_bckey_ctr }},
 
- { block_cipher, encryption, asn1_ctr_kuznechik_i, asn1_ctr_kuznechik_n, NULL,
+ { block_cipher, encrypt, asn1_ctr_kuznechik_i, asn1_ctr_kuznechik_n, NULL,
   { ak_object_bckey_kuznechik, ak_object_undefined, ( ak_function_run_object *) ak_bckey_ctr,
                                                        ( ak_function_run_object *) ak_bckey_ctr }},
 
- { block_cipher, encryption, asn1_ofb_magma_i, asn1_ofb_magma_n, NULL,
+ { block_cipher, encrypt, asn1_ofb_magma_i, asn1_ofb_magma_n, NULL,
   { ak_object_bckey_magma, ak_object_undefined, ( ak_function_run_object *) ak_bckey_ofb,
                                                        ( ak_function_run_object *) ak_bckey_ofb }},
 
- { block_cipher, encryption, asn1_ofb_kuznechik_i, asn1_ofb_kuznechik_n, NULL,
+ { block_cipher, encrypt, asn1_ofb_kuznechik_i, asn1_ofb_kuznechik_n, NULL,
   { ak_object_bckey_kuznechik, ak_object_undefined, ( ak_function_run_object *) ak_bckey_ofb,
                                                        ( ak_function_run_object *) ak_bckey_ofb }},
 
- { block_cipher, encryption, asn1_cfb_magma_i, asn1_cfb_magma_n, NULL,
+ { block_cipher, encrypt, asn1_cfb_magma_i, asn1_cfb_magma_n, NULL,
   { ak_object_bckey_magma, ak_object_undefined, ( ak_function_run_object *) ak_bckey_encrypt_cfb,
                                                ( ak_function_run_object *) ak_bckey_decrypt_cfb }},
 
- { block_cipher, encryption, asn1_cfb_kuznechik_i, asn1_cfb_kuznechik_n, NULL,
+ { block_cipher, encrypt, asn1_cfb_kuznechik_i, asn1_cfb_kuznechik_n, NULL,
   { ak_object_bckey_kuznechik, ak_object_undefined,
                                                 ( ak_function_run_object *) ak_bckey_encrypt_cfb,
                                                ( ak_function_run_object *) ak_bckey_decrypt_cfb }},
 
- { block_cipher, encryption, asn1_cbc_magma_i, asn1_cbc_magma_n, NULL,
+ { block_cipher, encrypt, asn1_cbc_magma_i, asn1_cbc_magma_n, NULL,
   { ak_object_bckey_magma, ak_object_undefined, ( ak_function_run_object *) ak_bckey_encrypt_cbc,
                                                ( ak_function_run_object *) ak_bckey_decrypt_cbc }},
 
- { block_cipher, encryption, asn1_cbc_kuznechik_i, asn1_cbc_kuznechik_n, NULL,
+ { block_cipher, encrypt, asn1_cbc_kuznechik_i, asn1_cbc_kuznechik_n, NULL,
   { ak_object_bckey_kuznechik, ak_object_undefined,
                                                 ( ak_function_run_object *) ak_bckey_encrypt_cbc,
                                                ( ak_function_run_object *) ak_bckey_decrypt_cbc }},
 
- { block_cipher, encryption2k, asn1_xts_magma_i, asn1_xts_magma_n, NULL,
-  { ak_object_bckey_magma, ak_object_bckey_magma, ( ak_function_run_object *) ak_bckey_encrypt_xts,
-                                              NULL }}, //( ak_function_run_object *) ak_bckey_decrypt_xts }},
+ { block_cipher, encrypt2k, asn1_xts_magma_i, asn1_xts_magma_n, NULL,
+  { ak_object_bckey_magma, ak_object_bckey_magma,
+                                                ( ak_function_run_object *) ak_bckey_encrypt_xts,
+                                               ( ak_function_run_object *) ak_bckey_decrypt_xts }},
 
- { block_cipher, encryption2k, asn1_xts_kuznechik_i, asn1_xts_kuznechik_n, NULL,
+ { block_cipher, encrypt2k, asn1_xts_kuznechik_i, asn1_xts_kuznechik_n, NULL,
   { ak_object_bckey_kuznechik, ak_object_bckey_kuznechik,
-                                                  ( ak_function_run_object *) ak_bckey_encrypt_xts,
-                                              NULL }}, //( ak_function_run_object *) ak_bckey_decrypt_xts }},
-
+                                                 ( ak_function_run_object *) ak_bckey_encrypt_xts,
+                                               ( ak_function_run_object *) ak_bckey_decrypt_xts }},
 
  { block_cipher, acpkm, asn1_acpkm_magma_i, asn1_acpkm_magma_n, NULL,
   { ak_object_bckey_magma, ak_object_undefined, ( ak_function_run_object *) ak_bckey_ctr_acpkm,
