@@ -8,6 +8,7 @@
  #include <stdlib.h>
  #include <string.h>
  #include <libakrypt.h>
+ #include <libakrypt-internal.h>
 
 /* Kлюч (закомментированы значения, скопированные из текста рекомендаций )
    88 99 AA BB CC DD EE FF 00 11 22 33 44 55 66 77 FE DC BA 98 76 54 32 10 01 23 45 67 89 AB CD EF */

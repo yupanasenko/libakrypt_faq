@@ -9,6 +9,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_test_help( void );
  int aktool_test_speed_block_cipher( ak_oid );
+ int aktool_test_speed_hash_function( ak_oid );
 
 /* ----------------------------------------------------------------------------------------------- */
   bool_t aktool_test_verbose = ak_false;
@@ -98,6 +99,9 @@
        switch( oid->engine ) {
         case block_cipher: /* разбор алгоритмов для блочного шифрования */
            exit_status = aktool_test_speed_block_cipher( oid );
+           break;
+        case hash_function:
+           exit_status = aktool_test_speed_hash_function( oid );
            break;
 
          default:
@@ -335,6 +339,69 @@
        joid = ak_oid_findnext_by_engine( joid, block_cipher );
      }
    }
+
+ return exit_status;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_test_speed_hash_function( ak_oid oid )
+{
+  size_t size = 0;
+  clock_t timea = 1;
+  double iter = 0, avg = 0;
+  ak_uint8 *data, icode[64];
+  int i, error = ak_error_ok, exit_status = EXIT_FAILURE;
+  ak_pointer ctx;
+
+  if( oid->mode != algorithm ) {
+    printf(_("hash function's mode \"%s\" is not supported yet for testing, sorry ... \n"),
+                                                           ak_libakrypt_get_mode_name( oid->mode ));
+    return EXIT_SUCCESS;
+  }
+
+  if(( ctx = ak_oid_new_object( oid )) == NULL ) {
+    aktool_error( _("incorrect creation of hash function context (code: %d)" ), ak_error_get_value());
+    return exit_status;
+  }
+
+  if( !aktool_test_verbose ) {
+    printf(_("[%s: 16MB "), oid->name[0] );
+    fflush( stdout );
+  }
+
+ /* теперь собственно тестирование скорости реализации */
+  for( i = 16; i < 129; i += 8 ) {
+    data = malloc( size = ( size_t ) i*1024*1024 );
+    memset( data, (ak_uint8)i+13, size );
+
+    timea = clock();
+    error = ak_hash_ptr( ctx, data, size, icode, sizeof( icode ));
+    timea = clock() - timea;
+
+    free( data );
+    if( error != ak_error_ok ) {
+      aktool_error(_("computational error (%d)"), error );
+      goto exit;
+    }
+    if( aktool_test_verbose )
+      printf(_(" %3uMB: %s time = %fs, per 1MB = %fs, speed = %f MBs\n"), (unsigned int)i,
+               oid->name[0],
+               (double) timea / (double) CLOCKS_PER_SEC,
+               (double) timea / ( (double) CLOCKS_PER_SEC*i ),
+               (double) CLOCKS_PER_SEC*i / (double) timea );
+     else { printf("."); fflush( stdout ); }
+
+    if( i > 16 ) {
+      iter += 1;
+      avg += (double) CLOCKS_PER_SEC*i / (double) timea;
+    }
+  }
+  if( !aktool_test_verbose ) printf(_(" 128MB],"));
+  printf(_(" average speed: %10f MBs\n"), avg/iter );
+
+  exit_status = EXIT_SUCCESS;
+  exit:
+   ak_oid_delete_object( oid, ctx );
 
  return exit_status;
 }
