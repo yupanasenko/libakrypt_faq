@@ -3,7 +3,7 @@
 \documentclass[oneside]{book}
 \usepackage[cm-default]{fontspec}
 \usepackage{xunicode, xltxtra}
-%\usepackage[russian]{babel}
+\usepackage[russian]{babel}
 %
 %% ---------------------------------------------------------------------------------------------- %
 %\setmainfont{Petersburg}%
@@ -209,7 +209,7 @@
 {\bfseries\textsc{Справочная документация}}\\[1\baselineskip]
 
 \vspace{0.5\textheight}
-{\small\textsc{Axel Kenzo и <<Компания изящной словесности>>~~\copyright~~2020}}\\[1\baselineskip]
+{\small\textsc{Axel Kenzo и <<Компания изящной словесности>>~~\copyright~~\today}}\\[1\baselineskip]
 
 } % end vbox
 } % end parbox

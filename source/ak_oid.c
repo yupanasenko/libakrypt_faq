@@ -114,13 +114,13 @@
   а также типам (\ref oid_engines_t) и режимам (\ref oid_modes_t) криптографических преобразований.*/
 /* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения имен идентификаторов */
- static const char *asn1_lcg_n[] =          { "lcg", NULL };
- static const char *asn1_lcg_i[] =          { "1.2.643.2.52.1.1.1", NULL };
+ static const char *asn1_lcg_n[] =         { "lcg", NULL };
+ static const char *asn1_lcg_i[] =         { "1.2.643.2.52.1.1.1", NULL };
 #if defined(__unix__) || defined(__APPLE__)
- static const char *asn1_dev_random_n[] =   { "dev-random", "/dev/random", NULL };
- static const char *asn1_dev_random_i[] =   { "1.2.643.2.52.1.1.2", NULL };
- static const char *asn1_dev_urandom_n[] =  { "dev-urandom", "/dev/urandom", NULL };
- static const char *asn1_dev_urandom_i[] =  { "1.2.643.2.52.1.1.3", NULL };
+ static const char *asn1_dev_random_n[] =  { "dev-random", "/dev/random", NULL };
+ static const char *asn1_dev_random_i[] =  { "1.2.643.2.52.1.1.2", NULL };
+ static const char *asn1_dev_urandom_n[] = { "dev-urandom", "/dev/urandom", NULL };
+ static const char *asn1_dev_urandom_i[] = { "1.2.643.2.52.1.1.3", NULL };
 #endif
 #ifdef _WIN32
  static const char *asn1_winrtl_n[] =       { "winrtl", NULL };
@@ -223,6 +223,15 @@
                                            { "ctr-hmac-kuznechik-streebog512", NULL };
  static const char *asn1_ctr_hmac_kuznechik_streebog512_i[] =
                                            { "1.2.643.2.52.1.6.2.2.2", NULL };
+ static const char *asn1_xtsmac_magma_n[] =
+                                           { "xtsmac-magma", NULL };
+ static const char *asn1_xtsmac_magma_i[] =
+                                           { "1.2.643.2.52.1.6.3.1", NULL };
+ static const char *asn1_xtsmac_kuznechik_n[] =
+                                           { "xtsmac-kuznechik", "xtsmac-kuznyechik", NULL };
+ static const char *asn1_xtsmac_kuznechik_i[] =
+                                           { "1.2.643.2.52.1.6.3.2", NULL };
+
 
 // static const char *asn1_sign256_n[] =      { "id-tc26-signwithdigest-gost3410-12-256",
 //                                              "sign256", NULL };
@@ -235,52 +244,52 @@
 // static const char *asn1_verify512_n[] =    { "id-tc26-gost3410-12-512", "verify512", NULL };
 // static const char *asn1_verify512_i[] =    { "1.2.643.7.1.1.1.2", NULL };
 
- static const char *asn1_w256_pst_n[] =     { "id-tc26-gost-3410-2012-256-paramSetTest", NULL };
- static const char *asn1_w256_pst_i[] =     { "1.2.643.7.1.2.1.1.0",
-                                              "1.2.643.2.2.35.0", NULL };
- static const char *asn1_w256_psa_n[] =     { "id-tc26-gost-3410-2012-256-paramSetA", NULL };
- static const char *asn1_w256_psa_i[] =     { "1.2.643.7.1.2.1.1.1", NULL };
- static const char *asn1_w256_psb_n[] =     { "id-tc26-gost-3410-2012-256-paramSetB",
-                                              "id-rfc4357-gost-3410-2001-paramSetA",
-                                              "id-rfc4357-2001dh-paramSet",
-                                              "cspdh",
-                                              "cspa", NULL };
- static const char *asn1_w256_psb_i[] =     { "1.2.643.7.1.2.1.1.2",
-                                              "1.2.643.2.2.35.1",
-                                              "1.2.643.2.2.36.0", NULL };
- static const char *asn1_w256_psc_n[] =     { "id-tc26-gost-3410-2012-256-paramSetC",
-                                              "id-rfc4357-gost-3410-2001-paramSetB",
-                                              "cspb", NULL };
- static const char *asn1_w256_psc_i[] =     { "1.2.643.7.1.2.1.1.3",
-                                              "1.2.643.2.2.35.2", NULL };
- static const char *asn1_w256_psd_n[] =     { "id-tc26-gost-3410-2012-256-paramSetD",
-                                              "id-rfc4357-gost-3410-2001-paramSetC",
-                                              "cspc", NULL };
- static const char *asn1_w256_psd_i[] =     { "1.2.643.7.1.2.1.1.4",
-                                              "1.2.643.2.2.35.3", NULL };
- static const char *asn1_w256_axel_n[] =    { "id-axel-gost-3410-2012-256-paramSetN0",
-                                              "axel-n0", NULL };
- static const char *asn1_w256_axel_i[] =    { "1.2.643.2.52.1.12.1.1", NULL };
+ static const char *asn1_w256_pst_n[] =    { "id-tc26-gost-3410-2012-256-paramSetTest", NULL };
+ static const char *asn1_w256_pst_i[] =    { "1.2.643.7.1.2.1.1.0",
+                                             "1.2.643.2.2.35.0", NULL };
+ static const char *asn1_w256_psa_n[] =    { "id-tc26-gost-3410-2012-256-paramSetA", NULL };
+ static const char *asn1_w256_psa_i[] =    { "1.2.643.7.1.2.1.1.1", NULL };
+ static const char *asn1_w256_psb_n[] =    { "id-tc26-gost-3410-2012-256-paramSetB",
+                                             "id-rfc4357-gost-3410-2001-paramSetA",
+                                             "id-rfc4357-2001dh-paramSet",
+                                             "cspdh",
+                                             "cspa", NULL };
+ static const char *asn1_w256_psb_i[] =    { "1.2.643.7.1.2.1.1.2",
+                                             "1.2.643.2.2.35.1",
+                                             "1.2.643.2.2.36.0", NULL };
+ static const char *asn1_w256_psc_n[] =    { "id-tc26-gost-3410-2012-256-paramSetC",
+                                             "id-rfc4357-gost-3410-2001-paramSetB",
+                                             "cspb", NULL };
+ static const char *asn1_w256_psc_i[] =    { "1.2.643.7.1.2.1.1.3",
+                                             "1.2.643.2.2.35.2", NULL };
+ static const char *asn1_w256_psd_n[] =    { "id-tc26-gost-3410-2012-256-paramSetD",
+                                             "id-rfc4357-gost-3410-2001-paramSetC",
+                                             "cspc", NULL };
+ static const char *asn1_w256_psd_i[] =    { "1.2.643.7.1.2.1.1.4",
+                                             "1.2.643.2.2.35.3", NULL };
+ static const char *asn1_w256_axel_n[] =   { "id-axel-gost-3410-2012-256-paramSetN0",
+                                             "axel-n0", NULL };
+ static const char *asn1_w256_axel_i[] =   { "1.2.643.2.52.1.12.1.1", NULL };
 
 /* теперь кривые длиной 512 бит */
- static const char *asn1_w512_pst_n[] =     { "id-tc26-gost-3410-2012-512-paramSetTest", NULL };
- static const char *asn1_w512_pst_i[] =     { "1.2.643.7.1.2.1.2.0", NULL };
- static const char *asn1_w512_psa_n[] =     { "id-tc26-gost-3410-2012-512-paramSetA", NULL };
- static const char *asn1_w512_psa_i[] =     { "1.2.643.7.1.2.1.2.1", NULL };
- static const char *asn1_w512_psb_n[] =     { "id-tc26-gost-3410-2012-512-paramSetB", NULL };
- static const char *asn1_w512_psb_i[] =     { "1.2.643.7.1.2.1.2.2", NULL };
- static const char *asn1_w512_psc_n[] =     { "id-tc26-gost-3410-2012-512-paramSetC", NULL };
- static const char *asn1_w512_psc_i[] =     { "1.2.643.7.1.2.1.2.3", NULL };
+ static const char *asn1_w512_pst_n[] =    { "id-tc26-gost-3410-2012-512-paramSetTest", NULL };
+ static const char *asn1_w512_pst_i[] =    { "1.2.643.7.1.2.1.2.0", NULL };
+ static const char *asn1_w512_psa_n[] =    { "id-tc26-gost-3410-2012-512-paramSetA", NULL };
+ static const char *asn1_w512_psa_i[] =    { "1.2.643.7.1.2.1.2.1", NULL };
+ static const char *asn1_w512_psb_n[] =    { "id-tc26-gost-3410-2012-512-paramSetB", NULL };
+ static const char *asn1_w512_psb_i[] =    { "1.2.643.7.1.2.1.2.2", NULL };
+ static const char *asn1_w512_psc_n[] =    { "id-tc26-gost-3410-2012-512-paramSetC", NULL };
+ static const char *asn1_w512_psc_i[] =    { "1.2.643.7.1.2.1.2.3", NULL };
 
- static const char *asn1_akcont_n[] =       { "libakrypt-container", NULL };
- static const char *asn1_akcont_i[] =       { "1.2.643.2.52.1.127.1.1", NULL };
+ static const char *asn1_akcont_n[] =      { "libakrypt-container", NULL };
+ static const char *asn1_akcont_i[] =      { "1.2.643.2.52.1.127.1.1", NULL };
 
- static const char *asn1_pbkdf2key_n[] =    { "pbkdf2-basic-key", NULL };
- static const char *asn1_pbkdf2key_i[] =    { "1.2.643.2.52.1.127.2.1", NULL };
- static const char *asn1_sdhkey_n[] =       { "static-dh-basic-key", NULL };
- static const char *asn1_sdhkey_i[] =       { "1.2.643.2.52.1.127.2.2", NULL };
- static const char *asn1_extkey_n[] =       { "external-basic-key", NULL };
- static const char *asn1_extkey_i[] =       { "1.2.643.2.52.1.127.2.3", NULL };
+ static const char *asn1_pbkdf2key_n[] =   { "pbkdf2-basic-key", NULL };
+ static const char *asn1_pbkdf2key_i[] =   { "1.2.643.2.52.1.127.2.1", NULL };
+ static const char *asn1_sdhkey_n[] =      { "static-dh-basic-key", NULL };
+ static const char *asn1_sdhkey_i[] =      { "1.2.643.2.52.1.127.2.2", NULL };
+ static const char *asn1_extkey_n[] =      { "external-basic-key", NULL };
+ static const char *asn1_extkey_i[] =      { "1.2.643.2.52.1.127.2.3", NULL };
 
 // static const char *asn1_symkmd_n[] =       { "symmetric-key-content", NULL };
 // static const char *asn1_symkmd_i[] =       { "1.2.643.2.52.1.127.3.1", NULL };
@@ -296,75 +305,75 @@
 // static const char *asn1_pcmd_i[] =         { "1.2.643.2.52.1.127.3.6", NULL };
 
 /* добавляем аттрибуты типов (X.500) и расширенные аттрибуты */
- static const char *asn1_email_n[] =        { "email-address", "email", NULL };
- static const char *asn1_email_i[] =        { "1.2.840.113549.1.9.1", NULL };
- static const char *asn1_cn_n[] =           { "common-name", "cn", NULL };
- static const char *asn1_cn_i[] =           { "2.5.4.3", NULL };
- static const char *asn1_s_n[] =            { "surname", "s", NULL };
- static const char *asn1_s_i[] =            { "2.5.4.4", NULL };
- static const char *asn1_sn_n[] =           { "serial-number", "sn", NULL };
- static const char *asn1_sn_i[] =           { "2.5.4.5", NULL };
- static const char *asn1_c_n[] =            { "country-name", "c", NULL };
- static const char *asn1_c_i[] =            { "2.5.4.6", NULL };
- static const char *asn1_l_n[] =            { "locality-name", "l", NULL };
- static const char *asn1_l_i[] =            { "2.5.4.7", NULL };
- static const char *asn1_st_n[] =           { "state-or-province-name", "st", NULL };
- static const char *asn1_st_i[] =           { "2.5.4.8", NULL };
- static const char *asn1_sa_n[] =           { "street-address", "sa", NULL };
- static const char *asn1_sa_i[] =           { "2.5.4.9", NULL };
- static const char *asn1_o_n[] =            { "organization", "o", NULL };
- static const char *asn1_o_i[] =            { "2.5.4.10", NULL };
- static const char *asn1_ou_n[] =           { "organization-unit", "ou", NULL };
- static const char *asn1_ou_i[] =           { "2.5.4.11", NULL };
+ static const char *asn1_email_n[] =       { "email-address", "email", NULL };
+ static const char *asn1_email_i[] =       { "1.2.840.113549.1.9.1", NULL };
+ static const char *asn1_cn_n[] =          { "common-name", "cn", NULL };
+ static const char *asn1_cn_i[] =          { "2.5.4.3", NULL };
+ static const char *asn1_s_n[] =           { "surname", "s", NULL };
+ static const char *asn1_s_i[] =           { "2.5.4.4", NULL };
+ static const char *asn1_sn_n[] =          { "serial-number", "sn", NULL };
+ static const char *asn1_sn_i[] =          { "2.5.4.5", NULL };
+ static const char *asn1_c_n[] =           { "country-name", "c", NULL };
+ static const char *asn1_c_i[] =           { "2.5.4.6", NULL };
+ static const char *asn1_l_n[] =           { "locality-name", "l", NULL };
+ static const char *asn1_l_i[] =           { "2.5.4.7", NULL };
+ static const char *asn1_st_n[] =          { "state-or-province-name", "st", NULL };
+ static const char *asn1_st_i[] =          { "2.5.4.8", NULL };
+ static const char *asn1_sa_n[] =          { "street-address", "sa", NULL };
+ static const char *asn1_sa_i[] =          { "2.5.4.9", NULL };
+ static const char *asn1_o_n[] =           { "organization", "o", NULL };
+ static const char *asn1_o_i[] =           { "2.5.4.10", NULL };
+ static const char *asn1_ou_n[] =          { "organization-unit", "ou", NULL };
+ static const char *asn1_ou_i[] =          { "2.5.4.11", NULL };
 
- static const char *asn1_ku_n[] =           { "key-usage", NULL };
- static const char *asn1_ku_i[] =           { "2.5.29.15", NULL };
- static const char *asn1_ski_n[] =          { "subject-key-identifier", NULL };
- static const char *asn1_ski_i[] =          { "2.5.29.14", NULL };
- static const char *asn1_bc_n[] =           { "basic-constraints", NULL };
- static const char *asn1_bc_i[] =           { "2.5.29.19", NULL };
- static const char *asn1_cp_n[] =           { "certificate-policies", NULL };
- static const char *asn1_cp_i[] =           { "2.5.29.32", NULL };
- static const char *asn1_wcp_n[] =          { "wildcard-certificate-policy", NULL };
- static const char *asn1_wcp_i[] =          { "2.5.29.32.0", NULL };
- static const char *asn1_aki_n[] =          { "authority-key-identifier", NULL };
- static const char *asn1_aki_i[] =          { "2.5.29.35", NULL };
+ static const char *asn1_ku_n[] =          { "key-usage", NULL };
+ static const char *asn1_ku_i[] =          { "2.5.29.15", NULL };
+ static const char *asn1_ski_n[] =         { "subject-key-identifier", NULL };
+ static const char *asn1_ski_i[] =         { "2.5.29.14", NULL };
+ static const char *asn1_bc_n[] =          { "basic-constraints", NULL };
+ static const char *asn1_bc_i[] =          { "2.5.29.19", NULL };
+ static const char *asn1_cp_n[] =          { "certificate-policies", NULL };
+ static const char *asn1_cp_i[] =          { "2.5.29.32", NULL };
+ static const char *asn1_wcp_n[] =         { "wildcard-certificate-policy", NULL };
+ static const char *asn1_wcp_i[] =         { "2.5.29.32.0", NULL };
+ static const char *asn1_aki_n[] =         { "authority-key-identifier", NULL };
+ static const char *asn1_aki_i[] =         { "2.5.29.35", NULL };
 
 /* это добро из Приказа ФСБ N 795 */
- static const char *asn1_ogrn_n[] =         { "ogrn", NULL };
- static const char *asn1_ogrn_i[] =         { "1.2.643.100.1", NULL };
- static const char *asn1_snils_n[] =        { "snils", NULL };
- static const char *asn1_snils_i[] =        { "1.2.643.100.3", NULL };
- static const char *asn1_ogrnip_n[] =       { "ogrnip", NULL };
- static const char *asn1_ogrnip_i[] =       { "1.2.643.100.5", NULL };
- static const char *asn1_owner_mod_n[] =    { "subject-crypto-module", NULL };
- static const char *asn1_owner_mod_i[] =    { "1.2.643.100.111", NULL };
- static const char *asn1_issuer_mod_n[] =   { "issuer-crypto-module", NULL };
- static const char *asn1_issuer_mod_i[] =   { "1.2.643.100.112", NULL };
- static const char *asn1_inn_n[] =          { "inn", NULL };
- static const char *asn1_inn_i[] =          { "1.2.643.3.131.1.1", NULL };
+ static const char *asn1_ogrn_n[] =        { "ogrn", NULL };
+ static const char *asn1_ogrn_i[] =        { "1.2.643.100.1", NULL };
+ static const char *asn1_snils_n[] =       { "snils", NULL };
+ static const char *asn1_snils_i[] =       { "1.2.643.100.3", NULL };
+ static const char *asn1_ogrnip_n[] =      { "ogrnip", NULL };
+ static const char *asn1_ogrnip_i[] =      { "1.2.643.100.5", NULL };
+ static const char *asn1_owner_mod_n[] =   { "subject-crypto-module", NULL };
+ static const char *asn1_owner_mod_i[] =   { "1.2.643.100.111", NULL };
+ static const char *asn1_issuer_mod_n[] =  { "issuer-crypto-module", NULL };
+ static const char *asn1_issuer_mod_i[] =  { "1.2.643.100.112", NULL };
+ static const char *asn1_inn_n[] =         { "inn", NULL };
+ static const char *asn1_inn_i[] =         { "1.2.643.3.131.1.1", NULL };
 
- static const char *asn1_class_kc1_n[] =    { "digital-signature-module, class kc1", "kc1", NULL };
- static const char *asn1_class_kc1_i[] =    { "1.2.643.100.113.1", NULL };
- static const char *asn1_class_kc2_n[] =    { "digital-signature-module, class kc2", "kc2", NULL };
- static const char *asn1_class_kc2_i[] =    { "1.2.643.100.113.2", NULL };
- static const char *asn1_class_kc3_n[] =    { "digital-signature-module, class kc3", "kc3", NULL };
- static const char *asn1_class_kc3_i[] =    { "1.2.643.100.113.3", NULL };
- static const char *asn1_class_kb1_n[] =    { "digital-signature-module, class kb1", "kb", NULL };
- static const char *asn1_class_kb1_i[] =    { "1.2.643.100.113.4", NULL };
- static const char *asn1_class_kb2_n[] =    { "digital-signature-module, class kb2", NULL };
- static const char *asn1_class_kb2_i[] =    { "1.2.643.100.113.5", NULL };
- static const char *asn1_class_ka1_n[] =    { "digital-signature-module, class ka", "ka", NULL };
- static const char *asn1_class_ka1_i[] =    { "1.2.643.100.113.6", NULL };
+ static const char *asn1_class_kc1_n[] =   { "digital-signature-module, class kc1", "kc1", NULL };
+ static const char *asn1_class_kc1_i[] =   { "1.2.643.100.113.1", NULL };
+ static const char *asn1_class_kc2_n[] =   { "digital-signature-module, class kc2", "kc2", NULL };
+ static const char *asn1_class_kc2_i[] =   { "1.2.643.100.113.2", NULL };
+ static const char *asn1_class_kc3_n[] =   { "digital-signature-module, class kc3", "kc3", NULL };
+ static const char *asn1_class_kc3_i[] =   { "1.2.643.100.113.3", NULL };
+ static const char *asn1_class_kb1_n[] =   { "digital-signature-module, class kb1", "kb", NULL };
+ static const char *asn1_class_kb1_i[] =   { "1.2.643.100.113.4", NULL };
+ static const char *asn1_class_kb2_n[] =   { "digital-signature-module, class kb2", NULL };
+ static const char *asn1_class_kb2_i[] =   { "1.2.643.100.113.5", NULL };
+ static const char *asn1_class_ka1_n[] =   { "digital-signature-module, class ka", "ka", NULL };
+ static const char *asn1_class_ka1_i[] =   { "1.2.643.100.113.6", NULL };
 
 /* ----------------------------------------------------------------------------------------------- */
 /* вот что приходится разбирать в сертификатах от КриптоПро */
 /*   Microsoft OID...................................1.3.6.1.4.1.311  */
 /* ----------------------------------------------------------------------------------------------- */
- static const char *asn1_mscav_n[] =        { "microsoft-ca-version", NULL };
- static const char *asn1_mscav_i[] =        { "1.3.6.1.4.1.311.21.1", NULL };
- static const char *asn1_mspsh_n[] =        { "microsoft-previous-certhash", NULL };
- static const char *asn1_mspsh_i[] =        { "1.3.6.1.4.1.311.21.2", NULL };
+ static const char *asn1_mscav_n[] =       { "microsoft-ca-version", NULL };
+ static const char *asn1_mscav_i[] =       { "1.3.6.1.4.1.311.21.1", NULL };
+ static const char *asn1_mspsh_n[] =       { "microsoft-previous-certhash", NULL };
+ static const char *asn1_mspsh_i[] =       { "1.3.6.1.4.1.311.21.2", NULL };
 
 /* ----------------------------------------------------------------------------------------------- */
  #define ak_object_bckey_magma { sizeof( struct bckey ), \
@@ -415,9 +424,9 @@ static struct oid libakrypt_oids[] =
                                                                 ak_object_undefined, NULL, NULL }},
 #endif
 #ifdef _WIN32
- { random_generator, algorithm, asn1_winrtl_i, asn1_winrtl_n, NULL,
-  {{ sizeof( struct random ), (ak_function_create_object *) ak_random_create_winrtl,
-                              ak_function_destroy_object *) ak_random_destroy, NULL, NULL, NULL },
+ { random_generator, algorithm,asn1_winrtl_i, asn1_winrtl_n, NULL,
+  {{ sizeof( struct random ), (ak_function_create_object *)ak_random_create_winrtl,
+                              (ak_function_destroy_object *)ak_random_destroy, NULL, NULL, NULL },
                                                                 ak_object_undefined, NULL, NULL }},
 #endif
 
@@ -549,6 +558,16 @@ static struct oid libakrypt_oids[] =
   { ak_object_bckey_kuznechik, ak_object_hmac_streebog512,
                                           ( ak_function_run_object *) ak_bckey_encrypt_ctr_hmac,
                                           ( ak_function_run_object *) ak_bckey_decrypt_ctr_hmac }},
+
+ { block_cipher, aead, asn1_xtsmac_magma_i, asn1_xtsmac_magma_n, NULL,
+  { ak_object_bckey_magma, ak_object_bckey_magma,
+                                            ( ak_function_run_object *) ak_bckey_encrypt_xtsmac,
+                                            ( ak_function_run_object *) ak_bckey_decrypt_xtsmac }},
+
+ { block_cipher, aead, asn1_xtsmac_kuznechik_i, asn1_xtsmac_kuznechik_n, NULL,
+  { ak_object_bckey_kuznechik, ak_object_bckey_kuznechik,
+                                            ( ak_function_run_object *) ak_bckey_encrypt_xtsmac,
+                                            ( ak_function_run_object *) ak_bckey_decrypt_xtsmac }},
 
 // {{ sign_function, algorithm, asn1_sign256_i, asn1_sign256_n }, NULL,
 //  { sizeof( struct signkey ),

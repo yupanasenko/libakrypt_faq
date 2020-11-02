@@ -163,7 +163,7 @@ set ( ARITHMETIC_TESTS_LIST
       random01
       gf2n
       mgm01
-      xex01
+      xtsmac01
     )
 
 if( LIBAKRYPT_GMP_TESTS )

@@ -8,6 +8,27 @@
  #include <libakrypt-internal.h>
 
 /* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup aead
+ @{ */
+/*! \brief Структура, содержащая текущее состояние внутренних переменных режима `mgm`
+   аутентифицированного шифрования. */
+ typedef struct mgm_ctx {
+  /*! \brief Текущее значение имитовставки. */
+   ak_uint128 sum;
+  /*! \brief Счетчик, значения которого используются при шифровании информации. */
+   ak_uint128 ycount;
+  /*! \brief Счетчик, значения которого используются при выработке имитовставки. */
+   ak_uint128 zcount;
+  /*! \brief Размер обработанных зашифровываемых/расшифровываемых данных в битах. */
+   ssize_t pbitlen;
+  /*! \brief Размер обработанных дополнительных данных в битах. */
+   ssize_t abitlen;
+  /*! \brief Флаги состояния контекста. */
+   ak_uint32 flags;
+} *ak_mgm_ctx;
+/** @} */
+
+/* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup aead Аутентифицированное шифрование данных
  @{ \details Аутентифицированное шифрование (AEAD, Authenticated Ecncryption with Associated Data)
     преставляет собой совокупность из одного или
@@ -49,11 +70,6 @@
 
     \note Алгоритм аутентифицированного шифрования может не принимать на вход зашифровываемые
     данные. В этом случае алгоритм должен действовать как обычный алгоритм имитозащиты.   *//** @} */
-/* ----------------------------------------------------------------------------------------------- */
- #define ak_mgm_assosiated_data_bit  (0x1)
- #define ak_mgm_encrypted_data_bit   (0x2)
-
- #define ak_mgm_set_bit( x, n ) ( (x) = ((x)&(0xFFFFFFFF^(n)))^(n) )
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция инициализирует значение счетчика, отвечающего за вычисление значений (множителей),
@@ -101,8 +117,7 @@
   ctx->flags = 0;
   ctx->pbitlen = 0;
   memset( ctx->sum.b, 0, 16 );
-  memset( ctx->sum.b, 0, 16 );
-  memset( ctx->sum.b, 0, 16 );
+  memset( ctx->zcount.b, 0, 16 );
 
   memcpy( ivector, iv, ak_min( iv_size, authenticationKey->bsize )); /* копируем нужное количество байт */
  /* принудительно устанавливаем старший бит в 1 */
@@ -175,7 +190,7 @@
           blocks = ( ssize_t ) adata_size/absize;
 
  /* проверка возможности обновления */
-  if( ctx->flags&ak_mgm_assosiated_data_bit )
+  if( ctx->flags&ak_aead_assosiated_data_bit )
     return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                                   "attemp to update previously closed mgm context");
  /* ни чего не задано => ни чего не обрабатываем */
@@ -196,7 +211,7 @@
     memcpy( temp+absize-tail, aptr, (size_t)tail );
     astep128( temp );
   /* закрываем добавление ассоциированных данных */
-    ak_mgm_set_bit( ctx->flags, ak_mgm_assosiated_data_bit );
+    ak_aead_set_bit( ctx->flags, ak_aead_assosiated_data_bit );
     ctx->abitlen += ( tail << 3 );
   }
  } else { /* обработка 64-битным шифром */
@@ -208,7 +223,7 @@
     memcpy( temp+absize-tail, aptr, (size_t)tail );
     astep64( temp );
    /* закрываем добавление ассоциированных данных */
-    ak_mgm_set_bit( ctx->flags, ak_mgm_assosiated_data_bit );
+    ak_aead_set_bit( ctx->flags, ak_aead_assosiated_data_bit );
     ctx->abitlen += ( tail << 3 );
   }
  }
@@ -248,7 +263,7 @@
    else authenticationKey->key.resource.value.counter--;
 
  /* закрываем добавление шифруемых данных */
-   ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
+   ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
 
  /* формируем последний вектор из длин */
   if(  absize&0x10 ) {
@@ -320,7 +335,7 @@
  if( !iv_size ) return ak_error_message( ak_error_zero_length,
                                                  __func__, "using initial vector with zero length");
  /* обнуляем необходимое */
-  ctx->flags &= ak_mgm_assosiated_data_bit;
+  ctx->flags &= ak_aead_assosiated_data_bit;
   ctx->pbitlen = 0;
   memset( &ctx->ycount, 0, 16 );
   memset( ivector, 0, 16 );
@@ -391,9 +406,9 @@
          blocks = size/absize;
 
  /* принудительно закрываем обновление ассоциированных данных */
-  ak_mgm_set_bit( ctx->flags, ak_mgm_assosiated_data_bit );
+  ak_aead_set_bit( ctx->flags, ak_aead_assosiated_data_bit );
  /* проверяем возможность обновления */
-  if( ctx->flags&ak_mgm_encrypted_data_bit )
+  if( ctx->flags&ak_aead_encrypted_data_bit )
     return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                         "using this function with previously closed aead context");
 
@@ -430,7 +445,7 @@
         for( i = 0; i < tail; i++ )
            ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ e.b[16-tail+i];
        /* закрываем добавление шифруемых данных */
-        ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
+        ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
         ctx->pbitlen += ( tail << 3 );
       }
 
@@ -445,7 +460,7 @@
           for( i = 0; i < tail; i++ )
              ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ e.b[8-tail+i];
          /* закрываем добавление шифруемых данных */
-          ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
+          ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
           ctx->pbitlen += ( tail << 3 );
         }
       } /* конец шифрования без аутентификации для 64-битного шифра */
@@ -468,7 +483,7 @@
         astep128( temp );
 
        /* закрываем добавление шифруемых данных */
-        ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
+        ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
         ctx->pbitlen += ( tail << 3 );
       }
 
@@ -488,7 +503,7 @@
          astep64( temp );
 
         /* закрываем добавление шифруемых данных */
-         ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
+         ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
          ctx->pbitlen += ( tail << 3 );
        }
      } /* конец 64-битного шифра */
@@ -527,9 +542,9 @@
          blocks = size/absize;
 
  /* принудительно закрываем обновление ассоциированных данных */
-  ak_mgm_set_bit( ctx->flags, ak_mgm_assosiated_data_bit );
+  ak_aead_set_bit( ctx->flags, ak_aead_assosiated_data_bit );
  /* проверяем возможность обновления */
-  if( ctx->flags&ak_mgm_encrypted_data_bit )
+  if( ctx->flags&ak_aead_encrypted_data_bit )
     return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                         "using this function with previously closed aead context");
 
@@ -566,7 +581,7 @@
         for( i = 0; i < tail; i++ )
            ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ e.b[16-tail+i];
        /* закрываем добавление шифруемых данных */
-        ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
+        ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
         ctx->pbitlen += ( tail << 3 );
       }
 
@@ -581,7 +596,7 @@
           for( i = 0; i < tail; i++ )
              ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ e.b[8-tail+i];
          /* закрываем добавление шифруемых данных */
-          ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
+          ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
           ctx->pbitlen += ( tail << 3 );
         }
       } /* конец шифрования без аутентификации для 64-битного шифра */
@@ -604,7 +619,7 @@
            ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ e.b[16-tail+i];
 
        /* закрываем добавление шифруемых данных */
-        ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
+        ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
         ctx->pbitlen += ( tail << 3 );
       }
 
@@ -624,7 +639,7 @@
             ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ e.b[8-tail+i];
 
         /* закрываем добавление шифруемых данных */
-         ak_mgm_set_bit( ctx->flags, ak_mgm_encrypted_data_bit );
+         ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
          ctx->pbitlen += ( tail << 3 );
        }
      } /* конец 64-битного шифра */

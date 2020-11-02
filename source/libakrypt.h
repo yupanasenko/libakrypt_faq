@@ -538,7 +538,7 @@ extern "C" {
  struct skey {
   /*! \brief ключ */
 #ifdef AK_HAVE_STDALIGN_H
-   alignas(16)
+   alignas(32)
 #endif
    ak_uint8 *key;
   /*! \brief размер ключа (в октетах) */
@@ -930,11 +930,20 @@ extern "C" {
  dll_export int ak_bckey_decrypt_mgm( ak_pointer , ak_pointer , const ak_pointer ,
     const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
                                                                           ak_pointer, const size_t );
-/*! \brief Зашифрование данных с одновременной выработкой имитовставки согласно ГОСТ Р 34.12-2015. */
+/*! \brief Зашифрование данных в режиме `xtsmac` с одновременной выработкой имитовставки. */
+ dll_export int ak_bckey_encrypt_xtsmac( ak_pointer , ak_pointer , const ak_pointer ,
+    const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                         ak_pointer , const size_t );
+/*! \brief Расшифрование данных в режиме `mgm` с одновременной проверкой имитовставки. */
+ dll_export int ak_bckey_decrypt_xtsmac( ak_pointer , ak_pointer , const ak_pointer ,
+    const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                          ak_pointer, const size_t );
+
+/*! \brief Зашифрование данных с одновременной выработкой имитовставки согласно ГОСТ Р 34.13-2015. */
  dll_export int ak_bckey_encrypt_ctr_cmac( ak_pointer , ak_pointer , const ak_pointer ,
     const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
                                                                          ak_pointer , const size_t );
-/*! \brief Расшифрование данных с одновременной проверкой имитовставки согласно ГОСТ Р 34.12-2015. */
+/*! \brief Расшифрование данных с одновременной проверкой имитовставки согласно ГОСТ Р 34.13-2015. */
  dll_export int ak_bckey_decrypt_ctr_cmac( ak_pointer , ak_pointer , const ak_pointer ,
     const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
                                                                           ak_pointer, const size_t );
