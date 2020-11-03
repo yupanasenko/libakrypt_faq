@@ -229,20 +229,23 @@
   fprintf( fp, "\noid:   %s\n", oid->id[0] );
   jdx = 0;
   while( oid->id[++jdx] != NULL ) fprintf( fp, "       %s\n", oid->id[jdx] );
+
+  fprintf( fp, "\nforms:\n");
+  fprintf( fp, "  short Weierstrass form:   y^2 = x^3 + ax + b (mod p)\n");
+
   fprintf( fp, "\nparameters:\n");
 
   ak_mpzn_mul_montgomery( tmp, ec->a, one, ec->p, ec->n, ec->size );
-  fprintf( fp, "  a =  %s\n", ak_mpzn_to_hexstr( tmp, ec->size ));
+  fprintf( fp, "  a =  0x%s\n", ak_mpzn_to_hexstr( tmp, ec->size ));
   ak_mpzn_mul_montgomery( tmp, ec->b, one, ec->p, ec->n, ec->size );
-  fprintf( fp, "  b =  %s\n", ak_mpzn_to_hexstr( tmp, ec->size ));
+  fprintf( fp, "  b =  0x%s\n", ak_mpzn_to_hexstr( tmp, ec->size ));
 
-  fprintf( fp, "  p =  %s\n", ak_mpzn_to_hexstr( ec->p, ec->size ));
-  fprintf( fp, "  q =  %s\n", ak_mpzn_to_hexstr( ec->q, ec->size ));
-  fprintf( fp, "  c =  %u [cofactor]\n\n", (unsigned int) ec->cofactor );
+  fprintf( fp, "  p =  0x%s\n", ak_mpzn_to_hexstr( ec->p, ec->size ));
+  fprintf( fp, "  q =  0x%s\n", ak_mpzn_to_hexstr( ec->q, ec->size ));
+  fprintf( fp, "  c =  0x%02x [cofactor]\n\n", (unsigned int) ec->cofactor );
 
-
-  fprintf( fp, "point:\n px =  %s\n", ak_mpzn_to_hexstr( ec->point.x, ec->size ));
-  fprintf( fp, " py =  %s\n", ak_mpzn_to_hexstr( ec->point.y, ec->size ));
+  fprintf( fp, "point:\n px =  0x%s\n", ak_mpzn_to_hexstr( ec->point.x, ec->size ));
+  fprintf( fp, " py =  0x%s\n", ak_mpzn_to_hexstr( ec->point.y, ec->size ));
 
  return ak_error_ok;
 }

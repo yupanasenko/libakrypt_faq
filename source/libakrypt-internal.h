@@ -11,7 +11,7 @@
  #include <libakrypt.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup hash
+/** \addtogroup mac
  @{ */
  extern const ak_uint64 streebog_Areverse_expand_with_pi[8][256];
 /** @} */
@@ -48,7 +48,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция инициализации контекста начальными значениями. */
  int ak_mac_create( ak_mac , const size_t , ak_pointer ,
-     ak_function_context_clean * , ak_function_context_update * , ak_function_context_finalize * );
+                             ak_function_clean * , ak_function_update * , ak_function_finalize * );
 /*! \brief Функция удаления контекста. */
  int ak_mac_destroy( ak_mac );
 /*! \brief Очистка контекста сжимающего отображения. */

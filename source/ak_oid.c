@@ -291,18 +291,18 @@
  static const char *asn1_extkey_n[] =      { "external-basic-key", NULL };
  static const char *asn1_extkey_i[] =      { "1.2.643.2.52.1.127.2.3", NULL };
 
-// static const char *asn1_symkmd_n[] =       { "symmetric-key-content", NULL };
-// static const char *asn1_symkmd_i[] =       { "1.2.643.2.52.1.127.3.1", NULL };
-// static const char *asn1_skmd_n[] =         { "secret-key-content", NULL };
-// static const char *asn1_skmd_i[] =         { "1.2.643.2.52.1.127.3.2", NULL };
-// static const char *asn1_pkmd_n[] =         { "public-key-certificate-content", NULL };
-// static const char *asn1_pkmd_i[] =         { "1.2.643.2.52.1.127.3.3", NULL };
-// static const char *asn1_pkmdr_n[] =        { "public-key-request-content", NULL };
-// static const char *asn1_pkmdr_i[] =        { "1.2.643.2.52.1.127.3.4", NULL };
-// static const char *asn1_ecmd_n[] =         { "encrypted-content", NULL };
-// static const char *asn1_ecmd_i[] =         { "1.2.643.2.52.1.127.3.5", NULL };
-// static const char *asn1_pcmd_n[] =         { "plain-content", NULL };
-// static const char *asn1_pcmd_i[] =         { "1.2.643.2.52.1.127.3.6", NULL };
+ static const char *asn1_symkmd_n[] =      { "symmetric-key-content", NULL };
+ static const char *asn1_symkmd_i[] =      { "1.2.643.2.52.1.127.3.1", NULL };
+ static const char *asn1_skmd_n[] =        { "secret-key-content", NULL };
+ static const char *asn1_skmd_i[] =        { "1.2.643.2.52.1.127.3.2", NULL };
+ static const char *asn1_pkmd_n[] =        { "public-key-certificate-content", NULL };
+ static const char *asn1_pkmd_i[] =        { "1.2.643.2.52.1.127.3.3", NULL };
+ static const char *asn1_pkmdr_n[] =       { "public-key-request-content", NULL };
+ static const char *asn1_pkmdr_i[] =       { "1.2.643.2.52.1.127.3.4", NULL };
+ static const char *asn1_ecmd_n[] =        { "encrypted-content", NULL };
+ static const char *asn1_ecmd_i[] =        { "1.2.643.2.52.1.127.3.5", NULL };
+ static const char *asn1_pcmd_n[] =        { "plain-content", NULL };
+ static const char *asn1_pcmd_i[] =        { "1.2.643.2.52.1.127.3.6", NULL };
 
 /* добавляем аттрибуты типов (X.500) и расширенные аттрибуты */
  static const char *asn1_email_n[] =       { "email-address", "email", NULL };
@@ -332,12 +332,26 @@
  static const char *asn1_ski_i[] =         { "2.5.29.14", NULL };
  static const char *asn1_bc_n[] =          { "basic-constraints", NULL };
  static const char *asn1_bc_i[] =          { "2.5.29.19", NULL };
+ static const char *asn1_crldp_n[] =       { "crl-distribution-points", NULL };
+ static const char *asn1_crldp_i[] =       { "2.5.29.31", NULL };
  static const char *asn1_cp_n[] =          { "certificate-policies", NULL };
  static const char *asn1_cp_i[] =          { "2.5.29.32", NULL };
  static const char *asn1_wcp_n[] =         { "wildcard-certificate-policy", NULL };
  static const char *asn1_wcp_i[] =         { "2.5.29.32.0", NULL };
  static const char *asn1_aki_n[] =         { "authority-key-identifier", NULL };
  static const char *asn1_aki_i[] =         { "2.5.29.35", NULL };
+ static const char *asn1_eku_n[] =         { "extended-key-usage", NULL };
+ static const char *asn1_eku_i[] =         { "2.5.29.37", NULL };
+
+/* значения для extended key usage */
+ static const char *asn1_kpsa_n[] =        { "tls-server-authentication", NULL };
+ static const char *asn1_kpsa_i[] =        { "1.3.6.1.5.5.7.3.1", NULL };
+ static const char *asn1_kpca_n[] =        { "tls-client-authentication", NULL };
+ static const char *asn1_kpca_i[] =        { "1.3.6.1.5.5.7.3.2", NULL };
+ static const char *asn1_kpcs_n[] =        { "executable-code-signing", NULL };
+ static const char *asn1_kpcs_i[] =        { "1.3.6.1.5.5.7.3.3", NULL };
+ static const char *asn1_kpep_n[] =        { "email-protection", NULL };
+ static const char *asn1_kpep_i[] =        { "1.3.6.1.5.5.7.3.4", NULL };
 
 /* это добро из Приказа ФСБ N 795 */
  static const char *asn1_ogrn_n[] =        { "ogrn", NULL };
@@ -369,11 +383,15 @@
 /* ----------------------------------------------------------------------------------------------- */
 /* вот что приходится разбирать в сертификатах от КриптоПро */
 /*   Microsoft OID...................................1.3.6.1.4.1.311  */
+/*   см. также https://www.dogtagpki.org/wiki/Certificate_Extensions  */
 /* ----------------------------------------------------------------------------------------------- */
  static const char *asn1_mscav_n[] =       { "microsoft-ca-version", NULL };
  static const char *asn1_mscav_i[] =       { "1.3.6.1.4.1.311.21.1", NULL };
- static const char *asn1_mspsh_n[] =       { "microsoft-previous-certhash", NULL };
+ static const char *asn1_mspsh_n[] =       { "microsoft-previous-certificate-hash", NULL };
  static const char *asn1_mspsh_i[] =       { "1.3.6.1.4.1.311.21.2", NULL };
+ static const char *asn1_mstndc_n[] =      { "microsoft-enrollment-certificate-type-extension",
+                                             NULL };
+ static const char *asn1_mstndc_i[] =      { "1.3.6.1.4.1.311.20.2", NULL };
 
 /* ----------------------------------------------------------------------------------------------- */
  #define ak_object_bckey_magma { sizeof( struct bckey ), \
@@ -619,18 +637,18 @@ static struct oid libakrypt_oids[] =
  { identifier, descriptor, asn1_sdhkey_i, asn1_sdhkey_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_extkey_i, asn1_extkey_n, NULL, ak_functional_objects_undefined },
 
-// { identifier, parameter, asn1_symkmd_i, asn1_symkmd_n,
-//                                    (ak_pointer) symmetric_key_content, ak_functional_objects_undefined },
-// { identifier, parameter, asn1_skmd_i, asn1_skmd_n,
-//                                       (ak_pointer) secret_key_content, ak_functional_objects_undefined },
-// { identifier, parameter, asn1_pkmd_i, asn1_pkmd_n,
-//                           (ak_pointer) public_key_certificate_content, ak_functional_objects_undefined },
-// { identifier, parameter, asn1_pkmdr_i, asn1_pkmdr_n,
-//                               (ak_pointer) public_key_request_content, ak_functional_objects_undefined },
-// { identifier, parameter, asn1_ecmd_i, asn1_ecmd_n,
-//                                        (ak_pointer) encrypted_content, ak_functional_objects_undefined },
-// { identifier, parameter, asn1_pcmd_i, asn1_pcmd_n,
-//                                            (ak_pointer) plain_content, ak_functional_objects_undefined },
+ { identifier, parameter, asn1_symkmd_i, asn1_symkmd_n,
+                             (ak_pointer) symmetric_key_content, ak_functional_objects_undefined },
+ { identifier, parameter, asn1_skmd_i, asn1_skmd_n,
+                                (ak_pointer) secret_key_content, ak_functional_objects_undefined },
+ { identifier, parameter, asn1_pkmd_i, asn1_pkmd_n,
+                    (ak_pointer) public_key_certificate_content, ak_functional_objects_undefined },
+ { identifier, parameter, asn1_pkmdr_i, asn1_pkmdr_n,
+                        (ak_pointer) public_key_request_content, ak_functional_objects_undefined },
+ { identifier, parameter, asn1_ecmd_i, asn1_ecmd_n,
+                                 (ak_pointer) encrypted_content, ak_functional_objects_undefined },
+ { identifier, parameter, asn1_pcmd_i, asn1_pcmd_n,
+                                     (ak_pointer) plain_content, ak_functional_objects_undefined },
 
  { identifier, descriptor, asn1_email_i, asn1_email_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_cn_i, asn1_cn_n, NULL, ak_functional_objects_undefined },
@@ -643,12 +661,18 @@ static struct oid libakrypt_oids[] =
  { identifier, descriptor, asn1_o_i, asn1_o_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_ou_i, asn1_ou_n, NULL, ak_functional_objects_undefined },
 
- { identifier, descriptor, asn1_ku_i, asn1_ku_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_ski_i, asn1_ski_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_ku_i, asn1_ku_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_bc_i, asn1_bc_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_crldp_i, asn1_crldp_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_cp_i, asn1_cp_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_wcp_i, asn1_wcp_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_aki_i, asn1_aki_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_eku_i, asn1_eku_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_kpsa_i, asn1_kpsa_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_kpca_i, asn1_kpca_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_kpcs_i, asn1_kpcs_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_kpep_i, asn1_kpep_n, NULL, ak_functional_objects_undefined },
 
  { identifier, descriptor, asn1_ogrn_i, asn1_ogrn_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_snils_i, asn1_snils_n, NULL, ak_functional_objects_undefined },
@@ -674,6 +698,7 @@ static struct oid libakrypt_oids[] =
 
  { identifier, descriptor, asn1_mscav_i, asn1_mscav_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_mspsh_i, asn1_mspsh_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_mstndc_i, asn1_mstndc_n, NULL, ak_functional_objects_undefined },
 
  /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */
   ak_oid_undefined

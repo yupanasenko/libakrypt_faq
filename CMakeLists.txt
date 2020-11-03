@@ -75,6 +75,7 @@ set( AKRYPT_SOURCES
    source/ak_acpkm.c
    source/ak_mgm.c
    source/ak_xts.c
+   source/ak_asn1.c
 )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -164,6 +165,8 @@ set ( ARITHMETIC_TESTS_LIST
       gf2n
       mgm01
       xtsmac01
+      asn1-build
+      asn1-parse
     )
 
 if( LIBAKRYPT_GMP_TESTS )
@@ -191,6 +194,7 @@ set( AKTOOL_SOURCES
      aktool/aktool.c
      aktool/aktool_show.c
      aktool/aktool_test.c
+     aktool/aktool_asn1.c
    )
 set( AKTOOL_FILES
      aktool/aktool.h

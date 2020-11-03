@@ -2,9 +2,10 @@
 /*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Copyright (c) 2018 by Mikhail Lavrinovich, mikhail.lavrinovich@netcracker.com                  */
+/*  Copyright (c) 2018 by Petr Mikhalitsyn, myprettycapybara@gmail.com                             */
 /*  Copyright (c) 2019 by Diffractee                                                               */
 /*  Copyright (c) 2019 by kirlit26                                                                 */
-/*  Copyright (c) 2019 by Petr Mikhalitsyn, myprettycapybara@gmail.com                             */
+/*  Copyright (c) 2019 by Anton Sakharov                                                           */
 /*                                                                                                 */
 /*  Файл libakrypt.h                                                                               */
 /* ----------------------------------------------------------------------------------------------- */
@@ -76,6 +77,21 @@ extern "C" {
  #define ak_error_wrong_block_cipher_function (-138)
 /*! \brief Ошибка согласования данных. */
  #define ak_error_linked_data                 (-139)
+
+/*! \brief Использование неверного значения поля, определяющего тип данных */
+ #define ak_error_invalid_asn1_tag            (-140)
+/*! \brief Использование неверного значения длины данных, размещаемых в узле ASN1 дерева */
+ #define ak_error_invalid_asn1_length         (-141)
+/*! \brief Использование неверной функции для чтения отрицательных данных, размещаемых в узле ASN1 дерева */
+ #define ak_error_invalid_asn1_significance   (-142)
+/*! \brief Полученные ASN.1 данные содержат неверный или неожидаемый контент */
+ #define ak_error_invalid_asn1_content        (-143)
+/*! \brief Полученные ASN.1 данные содержат неверное количество элементов */
+ #define ak_error_invalid_asn1_count          (-144)
+/*! \brief Ошибка, возникающая при кодировании ASN1 структуры (перевод в DER-кодировку). */
+ #define ak_error_wrong_asn1_encode           (-145)
+/*! \brief Ошибка, возникающая при декодировании ASN1 структуры (перевод из DER-кодировки в ASN1 структуру). */
+ #define ak_error_wrong_asn1_decode           (-146)
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup options Инициализация и настройка параметров библиотеки
@@ -740,11 +756,11 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция очистки контекста хеширования. */
- typedef int ( ak_function_context_clean )( ak_pointer );
+ typedef int ( ak_function_clean )( ak_pointer );
 /*! \brief Однораундовая функция сжатия, применяемая к одному или нескольким входным блокам. */
- typedef int ( ak_function_context_update )( ak_pointer, const ak_pointer , const size_t );
+ typedef int ( ak_function_update )( ak_pointer, const ak_pointer , const size_t );
 /*! \brief Функция завершения вычислений и получения конечного результата. */
- typedef int ( ak_function_context_finalize )( ak_pointer,
+ typedef int ( ak_function_finalize )( ak_pointer,
                                      const ak_pointer , const size_t , ak_pointer , const size_t );
 /*! \brief Функция создания контекста хеширования. */
  typedef int ( ak_function_hash_create )( ak_pointer );
@@ -768,11 +784,11 @@ extern "C" {
   /*! \brief Указатель на контекст, содержащий внутреннее состояние алгоритма сжатия. */
    ak_pointer ctx;
   /*! \brief Функция очистки контекста ctx */
-   ak_function_context_clean *clean;
+   ak_function_clean *clean;
   /*! \brief Функция обновления состояния контекста ctx  */
-   ak_function_context_update *update;
+   ak_function_update *update;
   /*! \brief Функция завершения вычислений и получения конечного результата */
-   ak_function_context_finalize *finalize;
+   ak_function_finalize *finalize;
  } *ak_mac;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -790,7 +806,7 @@ extern "C" {
 } *ak_streebog;
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Бесключевая функция хеширования. */
+/*! \brief Контекст бесключевой функции хеширования. */
 /*! \details Класс предоставляет интерфейс для реализации бесключевых функций хеширования, построенных
     с использованием итеративных сжимающих отображений. В настоящее время
     с использованием класса \ref hash реализованы следующие отечественные алгоритмы хеширования
@@ -798,10 +814,10 @@ extern "C" {
      - Стрибог512.
 
   Перед началом работы контекст функции хэширования должен быть инициализирован
-  вызовом одной из функций инициализации, например, функции ak_hash_context_create_streebog256()
-  или функции ak_hash_context_create_streebog512().
+  вызовом одной из функций инициализации, например, функции ak_hash_create_streebog256()
+  или функции ak_hash_create_streebog512().
   После завершения вычислений контекст должен быть освобожден с помощью функции
-  ak_hash_context_destroy().                                                                       */
+  ak_hash_destroy().                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  typedef struct hash {
   /*! \brief OID алгоритма хеширования */
@@ -1226,6 +1242,339 @@ extern "C" {
  #define ak_gf512_mul ak_gf512_mul_uint64
 #endif
 /** @} *//** @} */
+
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup asn1 Функции кодирования и декодирования ASN.1 нотации
+ @{ */
+/* Флаги, определяющие класс данных ASN.1. */
+ #define UNIVERSAL           0x00u
+ #define APPLICATION         0x40u
+ #define CONTEXT_SPECIFIC    0x80u
+ #define PRIVATE             0xC0u
+
+/* ----------------------------------------------------------------------------------------------- */
+/* Флаг, определяющий структуру блока данных ASN.1. */
+ #define PRIMITIVE           0x00u
+ #define CONSTRUCTED         0x20u
+
+/* ----------------------------------------------------------------------------------------------- */
+/* Номера стандартных тегов ASN.1. */
+ #define TEOC                0x00u
+ #define TBOOLEAN            0x01u
+ #define TINTEGER            0x02u
+ #define TBIT_STRING         0x03u
+ #define TOCTET_STRING       0x04u
+ #define TNULL               0x05u
+ #define TOBJECT_IDENTIFIER  0x06u
+ #define TOBJECT_DESCRIPTOR  0x07u
+ #define TEXTERNAL           0x08u
+ #define TREAL               0x09u
+ #define TENUMERATED         0x0Au
+ #define TUTF8_STRING        0x0Cu
+ #define TSEQUENCE           0x10u
+ #define TSET                0x11u
+ #define TNUMERIC_STRING     0x12u
+ #define TPRINTABLE_STRING   0x13u
+ #define TT61_STRING         0x14u
+ #define TVIDEOTEX_STRING    0x15u
+ #define TIA5_STRING         0x16u
+ #define TUTCTIME            0x17u
+ #define TGENERALIZED_TIME   0x18u
+ #define TGRAPHIC_STRING     0x19u
+ #define TVISIBLE_STRING     0x1Au
+ #define TGENERAL_STRING     0x1Bu
+ #define TUNIVERSAL_STRING   0x1Cu
+ #define TCHARACTER_STRING   0x1Du
+ #define TBMP_STRING         0x1Eu
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Биты, определяющие класс данных */
+ #define DATA_CLASS(x)     ((x) & 0xC0)
+/*! \brief Бит, определяющий структуру данных */
+ #define DATA_STRUCTURE(x) ((x) & 0x20)
+/*! \brief Биты, определяющие номер тега */
+ #define TAG_NUMBER(x)     ((x) & 0x1F)
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Длина тега (текущая реализация поддерживает кодирование
+ *         и декодирование тегов, представленных одним байтом) */
+ #define TAG_LEN 1
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Максимальный размер закодированного ASN.1 дерева в виде der-последовательности */
+ #define ak_libakrypt_max_size_of_encoded_asn1_der_sequence (4096)
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Указатель на примитивный элемент дерева ASN1 нотации */
+ typedef struct tlv *ak_tlv;
+/*! \brief Указатель на один уровень дерева ASN1 нотации */
+ typedef struct asn1 *ak_asn1;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Класс, реализующий один уровень дерева ASN1 нотации.
+    \details Фактически, класс asn1 является двусвязным списком узлов, расположенных на одном
+    уровне ASN1 дерева. Каждый узел, реализуемый при помощи структуры \ref tlv,
+    представляет собой примитивный элемент, либо низлежащий уровень -- двусвязный список,
+    также реализуемый при помощи класса asn1.                                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ typedef struct asn1 {
+   /*! \brief указатель на текущий узел списка */
+    ak_tlv current;
+   /*! \brief количество содержащихся узлов в списке (одного уровня) */
+    size_t count;
+ } *ak_asn1;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура, определяющая элемент дерева ASN1 нотации
+    \details ASN1 дерево представляется в памяти двусвязным списком узлов (tlv структур), образующих
+    один уровень. При этом, каждый узел может быть:
+     - примитивным, содержащим данные, для которых определены стандартные процедуры кодирования и
+       декодирования,
+     - составным, представляющим собой двусвязный список узлов следующего уровня;
+       составные узлы позволяют образовывать произвольные типы данных, отличные от примитивных;
+       процедуры кодирования/декодирования составных узлов сводятся к последовательному применению
+       процедур для примитивных типов.                                                             */
+/* ----------------------------------------------------------------------------------------------- */
+ struct tlv
+{
+ /*! \brief объединение, определяющее способ представления данных (примитивный или составной элемент),
+     а также сами данные. */
+  union {
+   /*! \brief указатель на примитивные, закодированые по правилам ASN.1 данные */
+    ak_uint8* primitive;
+   /*! \brief указатель на составные данные, представляющие собой двусвязный список следующего уровня */
+    ak_asn1 constructed;
+  } data;
+ /*! \brief тег, идентифицирующий данные. */
+  ak_uint8 tag;
+ /*! \brief длинна данных. */
+  ak_uint32 len;
+ /*! \brief флаг, определяющий, должен ли объект освобождать память из под данных, которыми управляет */
+  bool_t free;
+
+ /*! \brief указатель на предыдущий элемент списка. */
+  ak_tlv prev;
+ /*! \brief указатель на следующий элемент списка. */
+  ak_tlv next;
+};
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура, используемая для передачи информации о битовых строках. */
+ typedef struct bit_string {
+  /*! \brief массив, содержащий данные (в шестнадцатеричном виде) */
+   ak_uint8 *value;
+  /*! \brief размер массива с данными (в октетах) */
+   ak_uint32 len;
+  /*! \brief кол-во неиспользуемых битов в последнем байте
+     (допустимые значения: от 0 до 7 включительно). */
+   ak_uint8 unused;
+ } *ak_bit_string;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Формат хранения asn1 дерева в файле */
+ typedef enum {
+  /*! \brief хранение asn1 дерева в виде der-последовательности. */
+   asn1_der_format,
+  /*! \brief хранение asn1 дерева в виде der-последовательнсти, закодированной в base64. */
+   asn1_pem_format
+} export_format_t;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Тип контента, помещаемого в контейнер. */
+ typedef enum {
+  /*! \brief Не заданный или не определенный контент. */
+   undefined_content,
+  /*! \brief Секретный ключ симметричного криптографического алгоритма. */
+   symmetric_key_content,
+  /*! \brief Секретный ключ асимметричного криптографического алгоритма. */
+   secret_key_content,
+  /*! \brief Открытый ключ асимметричного криптографического алгоритма. */
+   public_key_certificate_content,
+  /*! \brief Запрос на получение открытого ключа асимметричного криптографического алгоритма. */
+   public_key_request_content,
+  /*! \brief Зашифрованные, не ключевые данные. */
+   encrypted_content,
+  /*! \brief Незашифрованные, не ключевые данные. */
+   plain_content
+} crypto_content_t;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Определение количества байт, необходимых для кодирования длины элемента ASN1 дерева. */
+ dll_export size_t ak_asn1_get_length_size( const size_t );
+/*! \brief Определение количества байт, необходимых для кодирования идентификатора объекта. */
+ dll_export size_t ak_asn1_get_length_oid( const char * );
+/*! \brief Получение символьного (человекочитаемого) описания типа примитивного элемента ASN1 дерева. */
+ dll_export const char* ak_asn1_get_tag_description( ak_uint8 );
+/*! \brief Получение из DER-последовательности тега для текущего узла ASN1 дерева. */
+ dll_export int ak_asn1_get_tag_from_der( ak_uint8** , ak_uint8 * );
+/*! \brief Получение из DER-последовательности длины текущего узла ASN1 дерева. */
+ dll_export int ak_asn1_get_length_from_der( ak_uint8** , size_t * );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Создание примитивного узла ASN1 дерева. */
+ dll_export int ak_tlv_create_primitive( ak_tlv , ak_uint8 , size_t , ak_pointer , bool_t );
+/*! \brief Создание примитивного узла ASN1 дерева. */
+ dll_export ak_tlv ak_tlv_new_primitive( ak_uint8 , size_t , ak_pointer , bool_t );
+/*! \brief Создание составного узла ASN1 дерева. */
+ dll_export int ak_tlv_create_constructed( ak_tlv , ak_uint8 , ak_asn1 );
+/*! \brief Создание составного узла ASN1 дерева. */
+ dll_export ak_tlv ak_tlv_new_constructed( ak_uint8 , ak_asn1 );
+/*! \brief Создание составного узла ASN1 дерева, содержащего пустую последовательность */
+ dll_export ak_tlv ak_tlv_new_sequence( void );
+/*! \brief Уничтожение примитивного узла ASN1 дерева. */
+ dll_export int ak_tlv_destroy( ak_tlv );
+/*! \brief Уничтожение примитивного узла ASN1 дерева и освобождение памяти. */
+ dll_export ak_pointer ak_tlv_delete( ak_pointer );
+/*! \brief Вывод информации о заданном узле ASN1 дерева. */
+ dll_export int ak_tlv_print( ak_tlv , FILE * );
+/*! \brief Вывод информации о примитивном узле ASN1 дерева. */
+ dll_export int ak_tlv_print_primitive( ak_tlv, FILE * );
+/*! \brief Функция вычисляет размер, занимаемый данным уровнем ASN.1 дерева */
+ dll_export int ak_tlv_evaluate_length( ak_tlv , size_t * );
+/*! \brief Кодирование одного узла ASN1 дерева в DER-последовательность октетов. */
+ dll_export int ak_tlv_encode( ak_tlv , ak_pointer , size_t * );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Получение булевого значения, хранящегося в заданном узле ASN1 дерева. */
+ dll_export int ak_tlv_get_bool( ak_tlv , bool_t * );
+/*! \brief Получение беззнакового, 32-х битного значения, хранящегося в заданном узле ASN1 дерева. */
+ dll_export int ak_tlv_get_uint32( ak_tlv , ak_uint32 * );
+/*! \brief Получение указателя на последовательность октетов, хранящуюся в заданном узле ASN1 дерева. */
+ dll_export int ak_tlv_get_octet_string( ak_tlv , ak_pointer *, size_t * );
+/*! \brief Получение указателя на utf8 последовательность символов, хранящуюся в заданном узле ASN1 дерева. */
+ dll_export int ak_tlv_get_utf8_string( ak_tlv , ak_pointer * );
+/*! \brief Получение указателя на ia5 строку, хранящуюся в заданном узле ASN1 дерева. */
+ dll_export int ak_tlv_get_ia5_string( ak_tlv , ak_pointer * );
+/*! \brief Получение указателя на строку, содержащую только символы английского алфавита (см. стандарт ITU-T X.690 ). */
+ dll_export int ak_tlv_get_printable_string( ak_tlv , ak_pointer * );
+/*! \brief Получение указателя на строку, содержащую только арабские цифры и пробел. */
+ dll_export int ak_tlv_get_numeric_string( ak_tlv , ak_pointer * );
+/*! \brief Получение указателя на битовую строку. */
+ dll_export int ak_tlv_get_bit_string( ak_tlv , ak_bit_string );
+/*! \brief Получение указателя на символьную запись идентификатора объекта (OID),
+    хранящуюся в заданном узле ASN1 дерева. */
+ dll_export int ak_tlv_get_oid( ak_tlv , ak_pointer * );
+/*! \brief Получение универсального времни, хранящегося в заданном узле ASN1 дерева. */
+ dll_export int ak_tlv_get_utc_time( ak_tlv , time_t * );
+/*! \brief Получение указателя на строку, содержащую значение локального времени (UTC),
+    хранящегося в заданном узле ASN1 дерева. */
+ dll_export int ak_tlv_get_utc_time_string( ak_tlv , ak_pointer * );
+/*! \brief Получение времни, хранящегося в заданном узле ASN1 дерева. */
+ dll_export int ak_tlv_get_generalized_time( ak_tlv , time_t * );
+/*! \brief Получение указателя на строку, содержащую значение локального времени (GeneralizedTime),
+    хранящегося в заданном узле ASN1 дерева. */
+ dll_export int ak_tlv_get_generalized_time_string( ak_tlv , ak_pointer * );
+/*! \brief Получение временного интервала в структуру данных TimeValidity, хранящуюся в
+   заданном узле ASN1 дерева. */
+ dll_export int ak_tlv_get_validity( ak_tlv , time_t * , time_t * );
+/*! \brief Получение структуры, содержащей ресурс (структуру struct resource). */
+ dll_export int ak_tlv_get_resource( ak_tlv , ak_resource );
+
+/*! \brief Добавление типизированной строки в последовательность обобщенных имен,
+    которой владеет текущий узел. */
+ dll_export int ak_tlv_add_string_to_global_name( ak_tlv , const char * , const char * );
+/*! \brief Функция создает новую последовательность обобщенных имен и копирует в нее типизированные
+    строки из заданной последовательности. */
+ dll_export ak_tlv ak_tlv_duplicate_global_name( ak_tlv );
+
+/*! \brief Создание расширения, содержащего идентификатор открытого ключа (x509v3: SubjectKeyIdentifier ) */
+ dll_export ak_tlv ak_tlv_new_subject_key_identifier( ak_pointer, const size_t );
+/*! \brief Создание расширения, содержащего основные ограничения (x509v3: BasicConstraints ) */
+ dll_export ak_tlv ak_tlv_new_basic_constraints( bool_t , const ak_uint32 );
+/*! \brief Создание расширения, содержащего область применения сертификата (x509v3: keyUsage ) */
+ dll_export ak_tlv ak_tlv_new_key_usage( const ak_uint32 );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Выделение памяти и создание одного уровня ASN1 дерева. */
+ dll_export ak_asn1 ak_asn1_new( void );
+/*! \brief Создание одного уровня ASN1 дерева. */
+ dll_export int ak_asn1_create( ak_asn1 );
+/*! \brief Перемещение к следующему узлу текущего уровня ASN1 дерева. */
+ dll_export bool_t ak_asn1_next( ak_asn1 );
+/*! \brief Перемещение к предыдущему узлу текущего уровня ASN1 дерева. */
+ dll_export bool_t ak_asn1_prev( ak_asn1 );
+/*! \brief Перемещение к последнему узлу текущего уровня ASN1 дерева. */
+ dll_export bool_t ak_asn1_last( ak_asn1 );
+/*! \brief Перемещение к первому узлу текущего уровня ASN1 дерева. */
+ dll_export bool_t ak_asn1_first( ak_asn1 );
+/*! \brief Изъятие текущего узла из ASN1 дерева. */
+ dll_export ak_tlv ak_asn1_exclude( ak_asn1 asn1 );
+/*! \brief Уничтожение текущего узла с текущего уровня ASN1 дерева. */
+ dll_export bool_t ak_asn1_remove( ak_asn1 );
+/*! \brief Уничтожение текущего уровня ASN1 дерева. */
+ dll_export int ak_asn1_destroy( ak_asn1 );
+/*! \brief Уничтожение текущего уровня ASN1 дерева и освобождение памяти. */
+ dll_export ak_pointer ak_asn1_delete( ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Добавление нового узла к текущему уровню ASN1 дерева. */
+ dll_export int ak_asn1_add_tlv( ak_asn1 , ak_tlv );
+/*! \brief Добавление к текущему уровню ASN1 дерева булева значения. */
+ dll_export int ak_asn1_add_bool( ak_asn1 , const bool_t );
+/*! \brief Добавление к текущему уровню ASN1 дерева целого числа, представимого в виде
+    беззнакового 32-х битного значения. */
+ dll_export int ak_asn1_add_uint32( ak_asn1 , const ak_uint32 );
+/*! \brief Добавление к текущему уровню ASN1 дерева большого целого числа, представимого
+    в виде объекта класса \ref ak_mpzn */
+ dll_export int ak_asn1_add_mpzn( ak_asn1 , ak_uint64 * , const size_t );
+/*! \brief Добавление к текущему уровню ASN1 дерева узла, содержащего произвольную
+    последовательность октетов */
+ dll_export int ak_asn1_add_octet_string( ak_asn1 , const ak_pointer , const size_t );
+/*! \brief Добавление к текущему уровню ASN1 дерева узла, содержащего произвольную строку
+    в кодировке utf-8. */
+ dll_export int ak_asn1_add_utf8_string( ak_asn1 , const char * );
+/*! \brief Добавление к текущему уровню ASN1 дерева узла, содержащего произвольную ia5-строку. */
+ dll_export int ak_asn1_add_ia5_string( ak_asn1 , const char * );
+/*! \brief Добавление к текущему уровню ASN1 дерева узла, содержащего произвольную
+    printable-строку. */
+ dll_export int ak_asn1_add_printable_string( ak_asn1 , const char * );
+/*! \brief Добавление к текущему уровню ASN1 дерева узла, содержащего произвольную
+    последовательность арабских цифр. */
+ dll_export int ak_asn1_add_numeric_string( ak_asn1 , const char * );
+/*! \brief Добавление к текущему уровню ASN1 дерева узла, содержащего двоичную строку. */
+ dll_export int ak_asn1_add_bit_string( ak_asn1 , ak_bit_string );
+/*! \brief Добавление к текущему уровню ASN1 дерева узла, содержащего идентификатор объекта */
+ dll_export int ak_asn1_add_oid( ak_asn1 , const char * );
+/*!  \brief Добавление универсального времени к текущему уровню ASN1 дерева узла*/
+ dll_export int ak_asn1_add_utc_time( ak_asn1 , time_t );
+/*! \brief Добавление к текущему уровню ASN1 дерева низлежащего уровня */
+ dll_export int ak_asn1_add_asn1( ak_asn1 , ak_uint8 , ak_asn1 );
+/*! \brief Добавление к текущему уровню ASN1 дерева низлежащего уровня,
+    представленного в виде der-последовательности октетов */
+ dll_export int ak_asn1_add_asn1_as_octet_string( ak_asn1 , ak_asn1 );
+/*! \brief Добавление к текущему уровню ASN1 дерева низлежащего уровня, содержащего временной интервал */
+ dll_export int ak_asn1_add_validity( ak_asn1 , time_t , time_t );
+/*! \brief Функция добавляет в ASN.1 структуру, содержащую ресурс (структуру struct resource). */
+ dll_export int ak_asn1_add_resource( ak_asn1 root, ak_resource );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Вывод информации о текущем уровне ASN1 дерева. */
+ dll_export int ak_asn1_print( ak_asn1 , FILE * );
+/*! \brief Функция вычисляет размер, занимаемый данным уровнем ASN.1 дерева */
+ dll_export int ak_asn1_evaluate_length( ak_asn1 , size_t * );
+/*! \brief Кодирование ASN1 дерева в DER-последовательность октетов. */
+ dll_export int ak_asn1_encode( ak_asn1 , ak_pointer , size_t * );
+/*! \brief Декодирование ASN1 дерева из заданной DER-последовательности октетов. */
+ dll_export int ak_asn1_decode( ak_asn1 , const ak_pointer , const size_t , bool_t );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Экспорт ASN.1 дерева в файл в виде der-последовательности. */
+ dll_export int ak_asn1_export_to_derfile( ak_asn1 , const char * );
+/*! \brief Экспорт ASN.1 дерева в файл в виде der-последовательности, закодированной в base64. */
+ dll_export int ak_asn1_export_to_pemfile( ak_asn1 , const char * , crypto_content_t );
+/*! \brief Импорт ASN.1 дерева из файла, содержащего der-последовательность. */
+ dll_export int ak_asn1_import_from_file( ak_asn1 , const char * );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция выводит в заданный файл закодированное ASN.1 дерево. */
+ dll_export int ak_libakrypt_print_asn1( const char * , FILE *);
+/*! \brief Конвертирование asn1 дерева из der формата в pem и обратно. */
+ dll_export int ak_libakrypt_convert_asn1( const char * , const char * ,
+                                                              export_format_t , crypto_content_t );
+/*! \brief Разбиение asn1 дерева на поддеревья первого уровня. */
+ dll_export int ak_libakrypt_split_asn1( const char * , export_format_t , crypto_content_t );
+
+/** @} */
 
 #ifdef __cplusplus
 } /* конец extern "C" */

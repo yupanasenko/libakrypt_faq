@@ -55,6 +55,7 @@
 /* реализации пользовательских команд */
  int aktool_show( int argc, tchar *argv[] );
  int aktool_test( int argc, tchar *argv[] );
+ int aktool_asn1( int argc, tchar *argv[] );
 
  #endif
 /* ----------------------------------------------------------------------------------------------- */

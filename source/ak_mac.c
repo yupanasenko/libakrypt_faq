@@ -8,8 +8,8 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_mac_create( ak_mac mctx, const size_t size, ak_pointer ictx,
-                       ak_function_context_clean *clean, ak_function_context_update *update,
-                                                          ak_function_context_finalize *finalize )
+                            ak_function_clean *clean, ak_function_update *update,
+                                                                  ak_function_finalize *finalize )
 {
   if( mctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                              "using null pointer to mac context" );
