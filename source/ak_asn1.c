@@ -2853,8 +2853,8 @@ Validity ::= SEQUENCE {
  int ak_asn1_import_from_file( ak_asn1 asn, const char *filename )
 {
   int error = ak_error_ok;
-  size_t size = ak_libakrypt_max_size_of_encoded_asn1_der_sequence;
-  ak_uint8 *ptr = NULL, buffer[ak_libakrypt_max_size_of_encoded_asn1_der_sequence];
+  ak_uint8 *ptr = NULL, buffer[2048];
+  size_t size = sizeof( buffer );
 
  /* считываем данные */
   if(( ptr = ak_ptr_load_from_file( buffer, &size, filename )) == NULL )
@@ -2871,7 +2871,7 @@ Validity ::= SEQUENCE {
   if( error == ak_error_ok ) return ak_error_ok; /* если декодировали успешно, то выходим */
 
  /* заново инициализируем локальные переменные */
-  size = ak_libakrypt_max_size_of_encoded_asn1_der_sequence;
+  size = sizeof( buffer );
   while( ak_asn1_remove( asn ) == ak_true );
 
  /* теперь пытаемся считать base64 */

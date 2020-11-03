@@ -16,8 +16,8 @@ We have implementation of:
  3. ACPKM encryption mode described by R 1323565.1.017-2018 and [RFC 8645](https://tools.ietf.org/html/rfc8645);
  4. XTS mode described by [IEEE 1619-2007](https://standards.ieee.org/standard/1619-2007.html);
  5. Authenticated encryption modes 
-  - MGM, Multilinear Galois mode, described by R 1323565.026-2019, see also [here](https://datatracker.ietf.org/doc/draft-smyshlyaev-mgm/);
-  - XTSMAC mode, developed by the authors of the library;
+   * MGM, Multilinear Galois mode, described by R 1323565.026-2019, see also [here](https://datatracker.ietf.org/doc/draft-smyshlyaev-mgm/);
+   * XTSMAC mode, developed by the authors of the library;
  6. GOST R 34.11-2012 hash functions from Streebog family, see [RFC-6986](https://tools.ietf.org/html/rfc6986);
  7. R 50.1.113-2016 crypto algorithms such as HMAC;
  8. Password-based key derivation function (PBKDF2) described by R 50.1.111-2016;

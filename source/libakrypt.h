@@ -950,7 +950,7 @@ extern "C" {
  dll_export int ak_bckey_encrypt_xtsmac( ak_pointer , ak_pointer , const ak_pointer ,
     const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
                                                                          ak_pointer , const size_t );
-/*! \brief Расшифрование данных в режиме `mgm` с одновременной проверкой имитовставки. */
+/*! \brief Расшифрование данных в режиме `xtsmac` с одновременной проверкой имитовставки. */
  dll_export int ak_bckey_decrypt_xtsmac( ak_pointer , ak_pointer , const ak_pointer ,
     const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
                                                                           ak_pointer, const size_t );
@@ -1299,10 +1299,6 @@ extern "C" {
 /*! \brief Длина тега (текущая реализация поддерживает кодирование
  *         и декодирование тегов, представленных одним байтом) */
  #define TAG_LEN 1
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Максимальный размер закодированного ASN.1 дерева в виде der-последовательности */
- #define ak_libakrypt_max_size_of_encoded_asn1_der_sequence (4096)
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Указатель на примитивный элемент дерева ASN1 нотации */
