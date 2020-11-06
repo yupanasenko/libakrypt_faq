@@ -232,17 +232,16 @@
  static const char *asn1_xtsmac_kuznechik_i[] =
                                            { "1.2.643.2.52.1.6.3.2", NULL };
 
-
-// static const char *asn1_sign256_n[] =      { "id-tc26-signwithdigest-gost3410-12-256",
-//                                              "sign256", NULL };
-// static const char *asn1_sign256_i[] =      { "1.2.643.7.1.1.3.2", NULL };
-// static const char *asn1_sign512_n[] =      { "id-tc26-signwithdigest-gost3410-12-512",
-//                                              "sign512", NULL };
-// static const char *asn1_sign512_i[] =      { "1.2.643.7.1.1.3.3", NULL };
-// static const char *asn1_verify256_n[] =    { "id-tc26-gost3410-12-256", "verify256", NULL };
-// static const char *asn1_verify256_i[] =    { "1.2.643.7.1.1.1.1", NULL };
-// static const char *asn1_verify512_n[] =    { "id-tc26-gost3410-12-512", "verify512", NULL };
-// static const char *asn1_verify512_i[] =    { "1.2.643.7.1.1.1.2", NULL };
+ static const char *asn1_sign256_n[] =     { "id-tc26-signwithdigest-gost3410-12-256",
+                                             "sign256", NULL };
+ static const char *asn1_sign256_i[] =     { "1.2.643.7.1.1.3.2", NULL };
+ static const char *asn1_sign512_n[] =     { "id-tc26-signwithdigest-gost3410-12-512",
+                                             "sign512", NULL };
+ static const char *asn1_sign512_i[] =     { "1.2.643.7.1.1.3.3", NULL };
+ static const char *asn1_verify256_n[] =   { "id-tc26-gost3410-12-256", "verify256", NULL };
+ static const char *asn1_verify256_i[] =   { "1.2.643.7.1.1.1.1", NULL };
+ static const char *asn1_verify512_n[] =   { "id-tc26-gost3410-12-512", "verify512", NULL };
+ static const char *asn1_verify512_i[] =   { "1.2.643.7.1.1.1.2", NULL };
 
  static const char *asn1_w256_pst_n[] =    { "id-tc26-gost-3410-2012-256-paramSetTest", NULL };
  static const char *asn1_w256_pst_i[] =    { "1.2.643.7.1.2.1.1.0",
@@ -389,7 +388,7 @@
  static const char *asn1_mscav_i[] =       { "1.3.6.1.4.1.311.21.1", NULL };
  static const char *asn1_mspsh_n[] =       { "microsoft-previous-certificate-hash", NULL };
  static const char *asn1_mspsh_i[] =       { "1.3.6.1.4.1.311.21.2", NULL };
- static const char *asn1_mstndc_n[] =      { "microsoft-enrollment-certificate-type-extension",
+ static const char *asn1_mstndc_n[] =      { "microsoft-enrollment-certificate-type",
                                              NULL };
  static const char *asn1_mstndc_i[] =      { "1.3.6.1.4.1.311.20.2", NULL };
 
@@ -421,6 +420,28 @@
                            ( ak_function_set_key_object *)ak_hmac_set_key, \
                            ( ak_function_set_key_random_object *)ak_hmac_set_key_random, \
                        ( ak_function_set_key_from_password_object *)ak_hmac_set_key_from_password }
+
+ #define ak_object_signkey256 { sizeof( struct signkey ), \
+                          ( ak_function_create_object *) ak_signkey_create_streebog256, \
+                          ( ak_function_destroy_object *) ak_signkey_destroy, \
+                          ( ak_function_set_key_object *) ak_signkey_set_key, \
+                          ( ak_function_set_key_random_object *) ak_signkey_set_key_random, NULL }
+
+ #define ak_object_signkey512 { sizeof( struct signkey ), \
+                          ( ak_function_create_object *) ak_signkey_create_streebog512, \
+                          ( ak_function_destroy_object *) ak_signkey_destroy, \
+                          ( ak_function_set_key_object *) ak_signkey_set_key, \
+                          ( ak_function_set_key_random_object *) ak_signkey_set_key_random, NULL }
+
+ #define ak_object_verifykey256 { sizeof( struct signkey ), \
+                          ( ak_function_create_object *) ak_verifykey_create_streebog256, \
+                          ( ak_function_destroy_object *) ak_verifykey_destroy, \
+                                                                                NULL, NULL, NULL }
+
+ #define ak_object_verifykey512 { sizeof( struct signkey ), \
+                          ( ak_function_create_object *) ak_verifykey_create_streebog512, \
+                          ( ak_function_destroy_object *) ak_verifykey_destroy, \
+                                                                                NULL, NULL, NULL }
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Константные значения OID библиотеки */
@@ -587,26 +608,21 @@ static struct oid libakrypt_oids[] =
                                             ( ak_function_run_object *) ak_bckey_encrypt_xtsmac,
                                             ( ak_function_run_object *) ak_bckey_decrypt_xtsmac }},
 
-// {{ sign_function, algorithm, asn1_sign256_i, asn1_sign256_n }, NULL,
-//  { sizeof( struct signkey ),
-//    ( ak_function_create_object *) ak_signkey_create_streebog256,
-//    ( ak_function_destroy_object *) ak_signkey_destroy }
-// },
-// {{ sign_function, algorithm, asn1_sign512_i, asn1_sign512_n }, NULL,
-//  { sizeof( struct signkey ),
-//    ( ak_function_create_object *) ak_signkey_create_streebog512,
-//    ( ak_function_destroy_object *) ak_signkey_destroy }
-// },
-// {{ verify_function, algorithm, asn1_verify256_i, asn1_verify256_n }, NULL,
-//  { sizeof( struct verifykey ),
-//    ( ak_function_create_object *) ak_verifykey_create_streebog256,
-//    ( ak_function_destroy_object *) ak_verifykey_destroy }
-// },
-// {{ verify_function, algorithm, asn1_verify512_i, asn1_verify512_n }, NULL,
-//  { sizeof( struct verifykey ),
-//    ( ak_function_create_object *) ak_verifykey_create_streebog512,
-//    ( ak_function_destroy_object *) ak_verifykey_destroy }
-// },
+ { sign_function, algorithm, asn1_sign256_i, asn1_sign256_n, NULL,
+  { ak_object_signkey256, ak_object_undefined,
+                                          ( ak_function_run_object *) ak_signkey_sign_ptr, NULL }},
+
+ { sign_function, algorithm, asn1_sign512_i, asn1_sign512_n, NULL,
+  { ak_object_signkey512, ak_object_undefined,
+                                          ( ak_function_run_object *) ak_signkey_sign_ptr, NULL }},
+
+ { verify_function, algorithm, asn1_verify256_i, asn1_verify256_n, NULL,
+  { ak_object_verifykey256, ak_object_undefined,
+                                      ( ak_function_run_object *) ak_verifykey_verify_ptr, NULL }},
+
+ { verify_function, algorithm, asn1_verify512_i, asn1_verify512_n, NULL,
+  { ak_object_verifykey256, ak_object_undefined,
+                                      ( ak_function_run_object *) ak_verifykey_verify_ptr, NULL }},
 
  { identifier, wcurve_params, asn1_w256_pst_i, asn1_w256_pst_n,
           (ak_pointer) &id_tc26_gost_3410_2012_256_paramSetTest, ak_functional_objects_undefined },

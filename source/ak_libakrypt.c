@@ -240,11 +240,11 @@
     return ak_false;
   }
 
-// /* тестируем корректность реализации алгоритмов электронной подписи */
-//  if( ak_signkey_test() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of digital signatures" );
-//    return ak_false;
-//  }
+ /* тестируем корректность реализации алгоритмов электронной подписи */
+  if( ak_libakrypt_test_sign() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__ , "incorrect testing of digital signatures" );
+    return ak_false;
+  }
 
   if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "testing asymmetric mechanisms ended successfully" );
@@ -428,6 +428,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \example aktool_test.c                                                                         */
+/*! \example aktool_asn1.c                                                                         */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                 ak_libakrypt.c  */
 /* ----------------------------------------------------------------------------------------------- */

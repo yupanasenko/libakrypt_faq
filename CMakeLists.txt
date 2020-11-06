@@ -3,12 +3,12 @@
 #
 # CMakeLists.txt
 # -------------------------------------------------------------------------------------------------- #
-cmake_minimum_required( VERSION 2.8 FATAL_ERROR )
+cmake_minimum_required( VERSION 3.2 FATAL_ERROR )
 
 # -------------------------------------------------------------------------------------------------- #
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 9 )
-set( MINOR_VERSION 2 )
+set( MINOR_VERSION 3 )
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 
@@ -20,8 +20,8 @@ project( libakrypt-${FULL_VERSION} C )
 # Перечень доступных опций для сборки библиотеки
 option( AK_STATIC_LIB "Build the static library" ON )
 option( AK_SHARED_LIB "Build the shared library" ON )
-option( LIBAKRYPT_PTHREAD "Use posix threads" OFF )
 option( LIBAKRYPT_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
+# option( LIBAKRYPT_PTHREAD "Use posix threads" OFF )
 # option( LIBAKRYPT_FIOT "Build library with FIOT protocol support" OFF )
 # option( LIBAKRYPT_TLS_13 "Build library with TLS 1.3 protocol support" OFF )
 # LIBAKRYPT_CONF
@@ -76,6 +76,7 @@ set( AKRYPT_SOURCES
    source/ak_mgm.c
    source/ak_xts.c
    source/ak_asn1.c
+   source/ak_sign.c
 )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -167,6 +168,7 @@ set ( ARITHMETIC_TESTS_LIST
       xtsmac01
       asn1-build
       asn1-parse
+      sign01
     )
 
 if( LIBAKRYPT_GMP_TESTS )

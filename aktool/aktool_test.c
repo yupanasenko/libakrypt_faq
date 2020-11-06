@@ -10,6 +10,7 @@
  int aktool_test_help( void );
  int aktool_test_speed_block_cipher( ak_oid );
  int aktool_test_speed_hash_function( ak_oid );
+ int aktool_test_speed_sign_function( ak_oid );
 
 /* ----------------------------------------------------------------------------------------------- */
   bool_t aktool_test_verbose = ak_false;
@@ -103,6 +104,10 @@
         case hash_function:
            exit_status = aktool_test_speed_hash_function( oid );
            break;
+        case sign_function:
+           exit_status = aktool_test_speed_sign_function( oid );
+           break;
+
 
          default:
            printf(_("algorithm engine \"%s\" is not supported yet for testing, sorry ... \n"),
@@ -403,6 +408,88 @@
   exit:
    ak_oid_delete_object( oid, ctx );
 
+ return exit_status;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int aktool_test_sign_function_for_one_curve( ak_signkey ctx, ak_oid curve )
+{
+  clock_t timea = 1;
+  ak_uint8 *out[64];
+  struct random generator;
+  size_t j, i = 0, cnt = 0;
+  double iter = 0, avg = 0, val = 0;
+  ak_uint64 e[8], k[8];
+
+  if( ak_random_create_lcg( &generator ) != ak_error_ok ) return EXIT_FAILURE;
+
+  printf(_("curve: %s (%s) "), curve->name[0], curve->id[0] );
+  if( aktool_test_verbose ) printf("\n");
+
+  for( j = 1; j < 9; j++ ) {
+     i = cnt = j*250;
+     ak_random_ptr( &generator, e, 64 );
+     ak_random_ptr( &generator, k, 64 );
+
+     timea = clock();
+     while( i ) {
+        ak_signkey_sign_const_values( ctx, k, e, out );
+        i--;
+     }
+     timea = clock() - timea;
+     val = (cnt *(double) CLOCKS_PER_SEC )/(double) timea;
+     if( aktool_test_verbose ) {
+       printf(_("[count: %3lu, time = %fs, speed: %f sec., count: %f]\n"),
+       (long unsigned int)cnt,
+       (double) timea / (double) CLOCKS_PER_SEC,
+       (double) timea / (cnt *(double) CLOCKS_PER_SEC ),
+       val );
+     } else { printf("."); fflush( stdout ); }
+
+     if( j > 1 ) { iter += 1; avg += val; }
+  }
+  printf(_(" average speed: %10f sgn/sec.\n"), avg/iter );
+  ak_random_destroy( &generator );
+
+ return EXIT_SUCCESS;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_test_speed_sign_function( ak_oid oid )
+{
+  int exit_status = EXIT_FAILURE;
+  ak_oid curve = NULL;
+  ak_signkey ctx = NULL;
+  struct random generator;
+
+  if( oid->mode != algorithm ) {
+    printf(_("using unsupported mode %s"), ak_libakrypt_get_mode_name( oid->mode ));
+    return EXIT_SUCCESS;
+  }
+
+  if( ak_random_create_lcg( &generator ) != ak_error_ok ) return EXIT_FAILURE;
+  if(( ctx = ak_oid_new_object( oid )) == NULL ) {
+    aktool_error( "incorrect creation of secret key context");
+    return EXIT_FAILURE;
+  }
+
+ /* первый тест - скорость вычислений, без учета генерации */
+  curve = ak_oid_find_by_mode( wcurve_params );
+  while( curve != NULL ) {
+    ak_wcurve wc = ( ak_wcurve )curve->data;
+    if(( ctx->ctx.data.sctx.hsize >> 3 ) == wc->size ) {
+      ak_signkey_set_curve( ctx, wc );
+      ak_signkey_set_key_random( ctx, &generator );
+      /* здесь начинаем тестирование */
+      if(( exit_status =
+               aktool_test_sign_function_for_one_curve( ctx, curve )) == EXIT_FAILURE ) goto labex;
+    }
+    curve = ak_oid_findnext_by_mode( curve, wcurve_params );
+  }
+
+  labex:
+    ak_random_destroy( &generator );
+    ak_oid_delete_object( oid, ctx );
  return exit_status;
 }
 

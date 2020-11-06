@@ -441,7 +441,7 @@
     @param wp удваиваемая точка \f$ P \f$ эллиптической кривой.
     @param ec эллиптическая кривая, которой принадлежит точка \f$P\f$.                             */
 /* ----------------------------------------------------------------------------------------------- */
- void ak_wpoint_double( ak_wpoint wp, ak_wcurve ec )
+ inline void ak_wpoint_double( ak_wpoint wp, ak_wcurve ec )
 {
  ak_mpznmax u1, u2, u3, u4, u5, u6, u7;
 
@@ -511,7 +511,7 @@
     @param wp2 Точка \f$ Q \f$, второе слагаемое
     @param ec Эллиптическая кривая, которой принадллежат складываемые точки                        */
 /* ----------------------------------------------------------------------------------------------- */
- void ak_wpoint_add( ak_wpoint wp1, ak_wpoint wp2, ak_wcurve ec )
+ inline void ak_wpoint_add( ak_wpoint wp1, ak_wpoint wp2, ak_wcurve ec )
 {
   ak_mpznmax u1, u2, u3, u4, u5, u6, u7;
 

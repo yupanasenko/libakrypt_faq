@@ -1,3 +1,4 @@
 TAGS
 source/libakrypt-base.h
 CMakeLists.txt.user*
+libakrypt.rc
