@@ -32,20 +32,35 @@ ISO/IEC 18033-3:2010 specifies following algorithms:
 
  1. AES (через интринзики с маскированием)
  2. AES (таблична реализация)
- 3. Belt
- 4. SM4 (https://tools.ietf.org/html/draft-ribose-cfrg-sm4-10)
- 5. Camellia (https://en.wikipedia.org/wiki/Camellia_(cipher))
- 6. SEED (https://tools.ietf.org/html/rfc4009)
+*3. Belt
+*4. SM4 (https://tools.ietf.org/html/draft-ribose-cfrg-sm4-10)
+*5. Camellia (https://en.wikipedia.org/wiki/Camellia_(cipher))
+*6. SEED (https://tools.ietf.org/html/rfc4009)
+
+ 7. Serpent
+ 8. RC6
+ 9. Twofish
 
 режимы
-  7. гост 28147-89 (режим гаммирования/счетчика) (для 64 бит + 128 бит)
-  8. omac-acpkm
+ 10. гост 28147-89 (режим гаммирования/счетчика) (для 64 бит + 128 бит)
+*11. omac-acpkm
+ 12. ocb(1/2/3) одна из
+ 13. gcm
+*14. Poly1305
+
 
 функции хеширования
-  9. kecchak (sha3)
+ 15. kecchak (sha3)    sha 1 (160)  - sha 2 (256,384,512) - sha 3 [sha256sum,sha384sum, md5sum, gost12sum]
+ 16. Белорусский хэш
+
+электронная подпись
+ 17. ECDSA
+ 18. схема Шнорра - Белорусский стандарт ЭП (на эллиптических кривых)?
 
 генераторы ПСП
- 10. генерацию случайных величин согласно Р 1323565.1.006 - 2017.
+*19. генерацию случайных величин согласно Р 1323565.1.006 - 2017.
+ 20. ПСП вихрь Мерсенна
+ 21. Семейство xor-shift генераторов.
 
 
 

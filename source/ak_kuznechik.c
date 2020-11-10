@@ -488,8 +488,7 @@
  /* чистая реализация для 64х битной архитектуры */
   ak_uint64 t, s, x[2];
   ak_uint8 *b = ( ak_uint8 *)x;
-
-  x[0] = (( ak_uint64 *) in)[0]; x[1] = (( ak_uint64 *) in)[1];
+ x[0] = (( ak_uint64 *) in)[0]; x[1] = (( ak_uint64 *) in)[1];
   for( i = 0; i < 16; i++ ) b[i] = kuznechik_parameters.pi[b[i]];
 
   i = 19;

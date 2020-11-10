@@ -308,6 +308,9 @@
   skey->set_icode = ak_skey_set_icode_xor;
   skey->check_icode = ak_skey_check_icode_xor;
 
+ /* последняя мелочь */
+  skey->label = NULL;
+
  return ak_error_ok;
 }
 
@@ -343,6 +346,7 @@
   }
   skey->oid = NULL;
   skey->flags = ak_key_flag_undefined;
+  if( skey->label != NULL ) free( skey->label );
 
  /* замещаем ключевый данные произвольным мусором */
   memcpy( skey, data, sizeof( data ));
@@ -594,6 +598,38 @@
           ak_libakrypt_get_option_by_name( option )) != ak_error_wrong_option ) return ak_error_ok;
         else return ak_error_wrong_option;
   }
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param skey Контекст секретного ключа.
+    \param label Указатель на последовательность символов
+    \param len Длина последовательности симовлов, если длина равна 0, то для определения длиы метки
+    используется функция strlen().
+
+    \return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_set_label( ak_skey skey, const char *label, const size_t len )
+{
+  size_t newlen = 1;
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using a null pointer to secret key" );
+ /* очищаем старое */
+  if( skey->label != NULL ) {
+    free( skey->label );
+    skey->label = NULL;
+  }
+
+ /* присваиваем новое */
+  if( label == NULL ) return ak_error_ok;
+  if( len ) newlen += len;
+   else newlen += strlen( label );
+
+  if(( skey->label = malloc( newlen )) == NULL ) return ak_error_ok;
+  memset( skey->label, 0, newlen );
+  memcpy( skey->label, label, newlen-1 );
+
  return ak_error_ok;
 }
 

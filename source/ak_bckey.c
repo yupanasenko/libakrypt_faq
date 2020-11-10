@@ -518,6 +518,11 @@
 
   if(( oc < 0 ) || ( oc > 1 )) return ak_error_message( ak_error_wrong_option, __func__,
                                                 "wrong value for \"openssl_compability\" option" );
+
+ /* проверяем, установлен ли ключ */
+  if(( bkey->key.flags&ak_key_flag_set_key ) == 0 ) return ak_error_message( ak_error_key_value,
+                                    __func__, "using secret key context with undefined key value" );
+
  /* проверяем целостность ключа */
   if( bkey->key.check_icode( &bkey->key ) != ak_true )
     return ak_error_message( ak_error_wrong_key_icode, __func__,

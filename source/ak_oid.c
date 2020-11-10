@@ -283,6 +283,8 @@
  static const char *asn1_akcont_n[] =      { "libakrypt-container", NULL };
  static const char *asn1_akcont_i[] =      { "1.2.643.2.52.1.127.1.1", NULL };
 
+ static const char *asn1_nokey_n[] =       { "no-basic-key", NULL };
+ static const char *asn1_nokey_i[] =       { "1.2.643.2.52.1.127.2.0", NULL };
  static const char *asn1_pbkdf2key_n[] =   { "pbkdf2-basic-key", NULL };
  static const char *asn1_pbkdf2key_i[] =   { "1.2.643.2.52.1.127.2.1", NULL };
  static const char *asn1_sdhkey_n[] =      { "static-dh-basic-key", NULL };
@@ -648,6 +650,7 @@ static struct oid libakrypt_oids[] =
 
 /* идентификаторы, используемые при разборе сертификатов и ключевых контейнеров */
  { identifier, descriptor, asn1_akcont_i, asn1_akcont_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_nokey_i, asn1_nokey_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_pbkdf2key_i, asn1_pbkdf2key_n,
                                                            NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_sdhkey_i, asn1_sdhkey_n, NULL, ak_functional_objects_undefined },
@@ -1113,22 +1116,20 @@ static struct oid libakrypt_oids[] =
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param oid Тестируемый на корректность адрес
-    @return Функция возвращает истину, если заданный адрес `oid` дествительности содержится
-    среди предопределенных oid библиотеки.                                                         */
+    @return Функция возвращает истину, если заданный адрес `oid` дествительно содержится
+    среди предопределенных oid библиотеки (является корректно определенным адресом).               */
 /* ----------------------------------------------------------------------------------------------- */
- bool_t ak_oid_check( const ak_oid oid )
+ bool_t ak_oid_check( const ak_pointer ptr )
 {
   size_t i;
   bool_t result = ak_false;
 
   for( i = 0; i < ak_libakrypt_oids_count(); i++ )
-     if( oid == &libakrypt_oids[i] ) result = ak_true;
+     if( ptr == &libakrypt_oids[i] ) result = ak_true;
 
  return result;
 }
 
-/* ----------------------------------------------------------------------------------------------- */
-/*! \example aktool_show.c                                                                         */
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                       ak_oid.c  */
 /* ----------------------------------------------------------------------------------------------- */

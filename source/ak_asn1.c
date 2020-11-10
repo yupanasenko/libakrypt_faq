@@ -2467,8 +2467,7 @@ Validity ::= SEQUENCE {
 
      /* добавляем в дерево составной элемент */
       case CONSTRUCTED:
-        if(( error = ak_asn1_decode( asnew = ak_asn1_new(),
-                                                            pcurr, len, flag )) != ak_error_ok ) {
+        if(( error = ak_asn1_decode( asnew = ak_asn1_new(), pcurr, len, flag )) != ak_error_ok ) {
           ak_asn1_delete( asnew );
           return ak_error_message( error, __func__, "incorrect decoding of asn1 context" );
         }
@@ -2837,6 +2836,36 @@ Validity ::= SEQUENCE {
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \param asn указатель на текущий уровень ASN.1 дерева
+    \param filename имя файла, в который записываются данные
+    \param format формат, в котором сохраняются данные
+    \param content тип сохраняемого контента, используется для формирования заголовков pem-файла.
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_export_to_file( ak_asn1 asn, const char *filename,
+                                                export_format_t format, crypto_content_t content )
+{
+  int error = ak_error_ok;
+
+  switch( format ) {
+    case asn1_der_format:
+      if(( error = ak_asn1_export_to_derfile( asn, filename )) != ak_error_ok )
+        ak_error_message_fmt( error, __func__,
+                               "incorrect export asn1 context to %s (asn1_der_format)", filename );
+      break;
+
+    case asn1_pem_format:
+      if(( error = ak_asn1_export_to_pemfile( asn, filename, content )) != ak_error_ok )
+        ak_error_message_fmt( error, __func__,
+                               "incorrect export asn1 context to %s (asn1_pem_format)", filename );
+      break;
+  }
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция сперва считывает данные из файла `filename` считая, что он содержит чистую
     der-последовательность. После считывания данных производится попытка их декодирования.
 
@@ -2845,7 +2874,7 @@ Validity ::= SEQUENCE {
     может хранится ключевая информация. Происходит повторное считывание информации и
     повторная попытка декодирования считанных данных.
 
-   \param asn уровень ASN.1 в который помещается считываемое значение
+    \param asn уровень ASN.1 в который помещается считываемое значение
     \param filename имя файла, в котором содержится der-последовательность
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
@@ -2864,7 +2893,8 @@ Validity ::= SEQUENCE {
     при этом, поскольку считанная последовательность располагается в стеке, то
     данные дублируются в ASN.1 дереве */
   if(( error = ak_asn1_decode( asn, ptr, size, ak_true )) != ak_error_ok )
-    ak_error_message( error, __func__, "incorrect decoding a der-sequence" );
+    ak_error_message( error, __func__,
+                    "incorrect decoding a der-sequence, trying to decode data as \"pem\" format" );
 
  /* очищаем, при необходимости, выделенную память */
   if( ptr != buffer ) free( ptr );
