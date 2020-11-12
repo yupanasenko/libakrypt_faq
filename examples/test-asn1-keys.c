@@ -29,10 +29,10 @@
   ak_libakrypt_set_password_read_function( get_user_password );
 
  /* тестируем ключи алгоритмов блочного шифрования */
-//  if(( result = bckey_test( ak_oid_find_by_name( "kuznechik" ))) != EXIT_SUCCESS ) goto lab1;
-//  if(( result = bckey_test( ak_oid_find_by_name( "magma" ))) != EXIT_SUCCESS ) goto lab1;
-//  if(( result = hmac_test( ak_oid_find_by_name( "hmac-streebog256" ))) != EXIT_SUCCESS ) goto lab1;
-//  if(( result = hmac_test( ak_oid_find_by_name( "hmac-streebog512" ))) != EXIT_SUCCESS ) goto lab1;
+  if(( result = bckey_test( ak_oid_find_by_name( "kuznechik" ))) != EXIT_SUCCESS ) goto lab1;
+  if(( result = bckey_test( ak_oid_find_by_name( "magma" ))) != EXIT_SUCCESS ) goto lab1;
+  if(( result = hmac_test( ak_oid_find_by_name( "hmac-streebog256" ))) != EXIT_SUCCESS ) goto lab1;
+  if(( result = hmac_test( ak_oid_find_by_name( "hmac-streebog512" ))) != EXIT_SUCCESS ) goto lab1;
 
  /* тестируем ключи алгоритма ЭП для нескольких кривых */
   oid = ak_oid_find_by_mode( wcurve_params );
@@ -253,29 +253,5 @@
 
   lab1:
    ak_signkey_destroy( &lkey );
-
-
-
-
-
-//   if( ak_signkey_context_import_from_file( &skey, filename, &keyname ) == ak_error_ok )
-//     printf("import is Ok\n");
-//   /* для отладки - выводим сформированную структуру в консоль
-//    ak_skey_context_print_to_file( &skey.key, stdout );
-//    printf("\n"); */
-//   if( keyname != NULL ) {
-//    printf("keyname: %s\n", keyname );
-//    free( keyname );
-//   }
-//   printf("secret key number:\t%s\n",
-//                         ak_ptr_to_hexstr( skey.key.number, sizeof( skey.key.number ), ak_false ));
-//   printf("subject key identifier:\t%s\n",
-//             ak_ptr_to_hexstr( skey.verifykey_number, sizeof( skey.verifykey_number ), ak_false ));
-
-
-  /* уничтожаем ключи */
-//   ak_signkey_destroy( &skey );
-//   ak_verifykey_destroy( &vkey );
-
  return result;
 }

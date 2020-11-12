@@ -196,6 +196,7 @@ set( AKTOOL_SOURCES
      aktool/aktool_show.c
      aktool/aktool_test.c
      aktool/aktool_asn1.c
+     aktool/aktool_key.c
    )
 set( AKTOOL_FILES
      aktool/aktool.h
@@ -256,6 +257,7 @@ if( CMAKE_HOST_UNIX )
   install( FILES ${CMAKE_SOURCE_DIR}/libakrypt.conf DESTINATION ${AK_CONFIG_PATH} )
   install( FILES ${MAIN_HEADERS} DESTINATION include )
   install( FILES ${LIBAKRYPT_DOCUMENTATION} DESTINATION share/doc/libakrypt )
+  install( FILES ${CMAKE_SOURCE_DIR}/aktool/aktool.1 DESTINATION share/man/ru/man1 )
 
 endif()
 

@@ -535,10 +535,11 @@
  /* необходимые проверки */
   if( sk == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using null pointer to secret key context" );
-  if( sk->name == NULL )
+  if( sk->name == NULL ) {
     if(( sk->name = ak_tlv_new_sequence()) == NULL )
       return ak_error_message( ak_error_get_value(), __func__,
                                      "incorrect creation of tlv context for owner's common name" );
+  }
 
  return ak_tlv_add_string_to_global_name( sk->name, ni, string );
 }
