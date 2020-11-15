@@ -1226,7 +1226,7 @@
       return ak_error_message( error, __func__, "incorrect cleaning of hmac secret key context" );
     if(( error = ak_hmac_update( authenticationKey, adata, adata_size )) != ak_error_ok )
       return ak_error_message( error, __func__, "incorrect updating of associated data" );
-    if(( error = ak_hmac_finalize( authenticationKey, in, size, icode2, icode_size )) != ak_error_ok )
+    if(( error = ak_hmac_finalize( authenticationKey, out, size, icode2, icode_size )) != ak_error_ok )
       return ak_error_message( error, __func__, "incorrect finalizing of integrity code" );
     if( ak_ptr_is_equal( icode, icode2, icode_size )) error = ak_error_ok;
        else error = ak_error_not_equal_data;
