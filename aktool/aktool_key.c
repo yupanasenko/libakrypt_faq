@@ -493,7 +493,7 @@
   if( skey.name == NULL ) aktool_key_input_name( &skey );
 
  /* экспортируем открытый ключ в сертификат */
-  if(( error = ak_verifykey_export_to_certificate( xxx
+  if(( error = ak_verifykey_export_to_certificate(
                    &vkey,
                    &skey,
                    generator,
