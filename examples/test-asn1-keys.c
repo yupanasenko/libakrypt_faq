@@ -81,7 +81,7 @@
     ak_bckey_destroy( &bkey );
 
    /* импортируем ключ из файла */
-    if(( lkey = key = ak_skey_new_and_set_key_from_file( filename )) == NULL ) return EXIT_FAILURE;
+    if(( lkey = key = ak_skey_load_from_file( filename )) == NULL ) return EXIT_FAILURE;
 
    /* выводим данные о ключе */
     printf("%s: %s (%s)\n", ak_libakrypt_get_engine_name( ((ak_skey)key)->oid->engine ),
@@ -149,7 +149,7 @@
    ak_hmac_destroy( &hctx );
 
   /* импортируем ключ из файла */
-   if( ak_skey_create_and_set_key_from_file( &lctx, hmac_function, filename ) != ak_error_ok )
+   if( ak_skey_import_from_file( &lctx, hmac_function, filename ) != ak_error_ok )
      return EXIT_FAILURE;
 
   /* выводим данные о ключе */
@@ -222,7 +222,7 @@
    ak_signkey_destroy( &skey );
 
   /* считываем ключ */
-   if( ak_skey_create_and_set_key_from_file( &lkey, sign_function, filename ) != ak_error_ok )
+   if( ak_skey_import_from_file( &lkey, sign_function, filename ) != ak_error_ok )
      return EXIT_FAILURE;
 
   /* выводим данные о ключе */

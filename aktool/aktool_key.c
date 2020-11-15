@@ -32,6 +32,7 @@
    export_format_t format;
    ak_oid curve;
    size_t days;
+   struct certificate_opts opts;
    char password[aktool_password_max_length];
    char keylabel[256];
 
@@ -323,7 +324,7 @@
  /* для асимметричных ключей устанавливаем кривую */
   if( ki.algorithm->engine == sign_function ) {
     if(( error = ak_signkey_set_curve( key, ki.curve->data )) != ak_error_ok ) {
-      aktool_error(_("using non applicable elliptic curve"));
+      aktool_error(_("using non applicable elliptic curve (%s)"), ki.curve->name[0] );
       goto lab2;
     }
   }
@@ -366,8 +367,27 @@
 
     if( ki.format == aktool_magic_number ) { /* сохраняем открытый ключ как корневой сертификат */
 
-    } else { /* сохраняем запрос на сертификат */
+     /* для корневого (самоподписанного) сертификата обязательно устанавливаем бит keyCertSign */
+      if(( ki.opts.keyUsageBits&bit_keyCertSign ) == 0 ) {
+        ki.opts.keyUsageBits = ( ki.opts.keyUsageBits&(~bit_keyCertSign ))^bit_keyCertSign;
+      }
 
+      ki.format = asn1_pem_format; /* возвращаем необходимое значение */
+      if( ak_verifykey_export_to_certificate( &vkey, key, generator,  &ki.opts,
+                          ki.op_file, ( strlen( ki.op_file ) > 0 ) ? 0 : sizeof( ki.op_file ),
+                                                                     ki.format ) != ak_error_ok ) {
+        aktool_error(_("wrong export a public key to certificate %s"), ki.op_file );
+        goto lab2;
+      } else printf(_("certificate of public key stored in %s\n"), ki.op_file );
+
+
+    } else { /* сохраняем запрос на сертификат */
+        if( ak_verifykey_export_to_request( &vkey, key, generator, ki.op_file,
+           ( strlen( ki.op_file ) > 0 ) ? 0 : sizeof( ki.op_file ), ki.format ) != ak_error_ok ) {
+          aktool_error(_("wrong export a public key to request %s"), ki.op_file );
+          goto lab2;
+        } else
+            printf(_("public key stored in %s file as certificate's request\n"), ki.op_file );
       }
 
     ak_verifykey_destroy( &vkey );
@@ -434,8 +454,67 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key_certificate( void )
 {
-  aktool_error("certificate generation has not yet been implemented");
-  return EXIT_FAILURE;
+  int error = ak_error_ok;
+  struct verifykey vkey;
+  struct signkey skey;
+  ak_pointer generator = NULL;
+
+  if( strlen( ki.req_file ) == 0 ) {
+    aktool_error(_("use --req option and set the name of file with request"));
+    return EXIT_FAILURE;
+  }
+  if( strlen( ki.key_file ) == 0 ) {
+    aktool_error(_("use --key option and set the name of file with secret key"));
+    return EXIT_FAILURE;
+  }
+
+ /* создаем генератор слечайных чисел */
+  if( ki.name_of_file_for_generator != NULL ) {
+    if(( error = ak_random_create_file( generator = malloc( sizeof( struct random )),
+                                               ki.name_of_file_for_generator )) != ak_error_ok ) {
+      if( generator ) free( generator );
+      return EXIT_FAILURE;
+    }
+  }
+   else
+    if(( generator = ak_oid_new_object( ki.oid_of_generator )) == NULL ) return EXIT_FAILURE;
+
+ /* считываем запрос на сертификат */
+  if(( error = ak_verifykey_import_from_request( &vkey, ki.req_file )) != ak_error_ok ) {
+    aktool_error(_("file %s has incorrect data"), ki.req_file );
+    goto lab1;
+  }
+ /* считываем ключ подписи */
+  if(( error = ak_skey_import_from_file( &skey, sign_function, ki.key_file )) != ak_error_ok ) {
+    aktool_error(_("file %s has incorrect secret key"), ki.key_file );
+    goto lab1;
+  }
+ /* при необходимости указываем личность подписанта */
+  if( skey.name == NULL ) aktool_key_input_name( &skey );
+
+ /* экспортируем открытый ключ в сертификат */
+  if(( error = ak_verifykey_export_to_certificate( xxx
+                   &vkey,
+                   &skey,
+                   generator,
+                   &ki.opts,
+                   ki.op_file, ( strlen( ki.op_file ) > 0 ) ? 0 : sizeof( ki.op_file ),
+                   ki.format
+     )) != ak_error_ok ) {
+    aktool_error(_("wrong export a public key to certificate %s"), ki.op_file );
+  } else printf(_("certificate of public key stored in %s\n"), ki.op_file );
+
+  ak_signkey_destroy( &skey );
+
+ lab1:
+  ak_verifykey_destroy( &vkey );
+  if( ki.name_of_file_for_generator != NULL ) {
+    ak_random_destroy( generator );
+    free( generator );
+  }
+   else ak_oid_delete_object( ki.oid_of_generator, generator );
+
+ return error == ak_error_ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -447,6 +526,9 @@
 
  /* 0. Выводим стандартное пояснение */
   aktool_key_print_disclaimer();
+
+ /* в короткой форме мы можем запросить флаги
+               /co/st/ln/or/ou/sa/cn/su/em/sn */
 
  /* 1. Country Name */
   ak_snprintf( string, len = sizeof( string ), "RU" );
@@ -530,7 +612,7 @@
      "     --curve             set the elliptic curve identifier for public keys\n"
      "     --days              set the days count to expiration date of secret or public key\n"
      "     --key               set the secret key to sign the public key certificate\n"
-     " -l, --label             assign the user-defined label to secret key\n"
+     "     --label             assign the user-defined label to secret key\n"
      " -n, --new               generate a new key or key pair for specified algorithm\n"
      "     --output-public-key set the file name for the new public key request\n"
      " -o, --output-secret-key set the file name for the new secret key\n"

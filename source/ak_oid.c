@@ -306,23 +306,23 @@
  static const char *asn1_pcmd_i[] =        { "1.2.643.2.52.1.127.3.6", NULL };
 
 /* добавляем аттрибуты типов (X.500) и расширенные аттрибуты */
- static const char *asn1_email_n[] =       { "email-address", "email", NULL };
+ static const char *asn1_email_n[] =       { "email-address", "em", "email", NULL };
  static const char *asn1_email_i[] =       { "1.2.840.113549.1.9.1", NULL };
  static const char *asn1_cn_n[] =          { "common-name", "cn", NULL };
  static const char *asn1_cn_i[] =          { "2.5.4.3", NULL };
- static const char *asn1_s_n[] =           { "surname", "s", NULL };
+ static const char *asn1_s_n[] =           { "surname", "su", NULL };
  static const char *asn1_s_i[] =           { "2.5.4.4", NULL };
  static const char *asn1_sn_n[] =          { "serial-number", "sn", NULL };
  static const char *asn1_sn_i[] =          { "2.5.4.5", NULL };
- static const char *asn1_c_n[] =           { "country-name", "c", NULL };
+ static const char *asn1_c_n[] =           { "country-name", "co", NULL };
  static const char *asn1_c_i[] =           { "2.5.4.6", NULL };
- static const char *asn1_l_n[] =           { "locality-name", "l", NULL };
+ static const char *asn1_l_n[] =           { "locality-name", "ln", NULL };
  static const char *asn1_l_i[] =           { "2.5.4.7", NULL };
  static const char *asn1_st_n[] =          { "state-or-province-name", "st", NULL };
  static const char *asn1_st_i[] =          { "2.5.4.8", NULL };
  static const char *asn1_sa_n[] =          { "street-address", "sa", NULL };
  static const char *asn1_sa_i[] =          { "2.5.4.9", NULL };
- static const char *asn1_o_n[] =           { "organization", "o", NULL };
+ static const char *asn1_o_n[] =           { "organization", "or", NULL };
  static const char *asn1_o_i[] =           { "2.5.4.10", NULL };
  static const char *asn1_ou_n[] =          { "organization-unit", "ou", NULL };
  static const char *asn1_ou_i[] =          { "2.5.4.11", NULL };

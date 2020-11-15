@@ -444,7 +444,7 @@ extern "C" {
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup skey-doc Ключи криптографических механизмов
+/** \addtogroup skey-doc Секретные ключи криптографических механизмов
  @{ */
 /*! \brief Указатель на структуру секретного ключа. */
  typedef struct skey *ak_skey;
@@ -1638,7 +1638,12 @@ extern "C" {
  dll_export int ak_signkey_set_key_random( ak_signkey , ak_random );
 /*! \brief Функция добавляет к расширенному имени владельца ключа новую строку. */
  dll_export int ak_signkey_add_name_string( ak_signkey , const char * , const char * );
+/** @} */
 
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup sign-doc Электронная подпись
+ @{ *//** \addtogroup cert-doc Открытые ключи асимметричных алгоритмов и их сертификаты
+ @{ */
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Открытый ключ алгоритма проверки электронной подписи ГОСТ Р 34.10-2012.
 
@@ -1675,6 +1680,44 @@ extern "C" {
 } *ak_verifykey;
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Бит `digitalSignature` расширения `keyUsage`. */
+ #define bit_digitalSignature   (256)
+/*! \brief Бит `contentCommitment` расширения `keyUsage`. */
+ #define bit_contentCommitment  (128)
+/*! \brief Бит `keyEncipherment` расширения `keyUsage`. */
+ #define bit_keyEncipherment     (64)
+/*! \brief Бит `dataEncipherment` расширения `keyUsage`. */
+ #define bit_dataEncipherment    (32)
+/*! \brief Бит `keyAgreement` расширения `keyUsage`. */
+ #define bit_keyAgreement        (16)
+/*! \brief Бит `keyCertSign` расширения `keyUsage`. */
+ #define bit_keyCertSign          (8)
+/*! \brief Бит `cRLSign` расширения `keyUsage`. */
+ #define bit_cRLSign              (4)
+/*! \brief Бит `encipherOnly` расширения `keyUsage`. */
+ #define bit_encipherOnly         (2)
+/*! \brief Бит `decipherOnly` расширения `keyUsage`. */
+ #define bit_decipherOnly         (1)
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Структура, в которой хранятся параметры создаваемого сертификата открытого ключа. */
+  typedef struct certificate_opts
+{
+ /*! \brief флаг того, что самоподписанный сертификат может порождать цепочки сертификации. */
+  bool_t ca;
+ /*! \brief количество промежуточных сертификатов в цепочке сертификации. */
+  ak_uint32 pathlenConstraint;
+ /*! \brief набор бит, описывающих область примеения открытого ключа (расширение `keyUsage`). */
+  ak_uint32 keyUsageBits;
+} *ak_certificate_opts;
+
+/*! \brief параметры сертификата, устанавливаемые по-умолчанию */
+/*! - по-умолчанию, самоподписанный сертификат может порождать цепочки сертификации
+    - длина цепочки равна 1 (ноль - это число промежуточных сертификатов)
+    - флаги применения ключа не установлены */
+ #define certificate_default_options { ak_true, 0, 0 }
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
     в частности, алгоритма ГОСТ Р 34.10-2012. */
  dll_export int ak_verifykey_create( ak_verifykey , const ak_wcurve );
@@ -1696,12 +1739,22 @@ extern "C" {
 /*! \brief Уничтожение контекста открытого ключа. */
  dll_export int ak_verifykey_destroy( ak_verifykey );
 
-/** @} */
+/*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
+    в запрос на получение сертификата окрытого ключа. */
+ dll_export int ak_verifykey_export_to_request( ak_verifykey , ak_signkey , ak_random ,
+                                                         char * , const size_t , export_format_t );
+/*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
+    в сертификат открытого ключа. */
+ dll_export int ak_verifykey_export_to_certificate( ak_verifykey , ak_signkey , ak_random ,
+                                   ak_certificate_opts , char * , const size_t , export_format_t );
+/*! \brief Функция импортирует открытый ключ асимметричного преобразования из запроса
+   на сертификат открытого ключа */
+ dll_export int ak_verifykey_import_from_request( ak_verifykey , const char * );
+/*! \brief Функция импортирует открытый ключ асимметричного преобразования из запроса
+   на сертификат открытого ключа */
+ dll_export ak_pointer ak_verifykey_load_from_request( const char * );
 
-/* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup sign-doc Электронная подпись
- @{ */
-/** \addtogroup signalg-doc Алгоритмы выработки и проверки электроной подписи
+/** @} *//** \addtogroup signalg-doc Алгоритмы выработки и проверки электроной подписи
  @{ */
 /*! \brief Выработка электронной подписи для фиксированного значения случайного числа и вычисленного
     заранее значения хеш-функции. */
@@ -1724,10 +1777,6 @@ extern "C" {
                                                                        const size_t , ak_pointer );
 /*! \brief Проверка электронной подписи для заданного файла. */
  dll_export bool_t ak_verifykey_verify_file( ak_verifykey , const char * , ak_pointer );
-/** @} */
-
-/** \addtogroup cert-doc Сертификаты открытых ключей
- @{ */
 /** @} *//** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1745,13 +1794,13 @@ extern "C" {
  dll_export int ak_skey_create_from_file( ak_pointer , oid_engines_t , const char * );
 /*! \brief Функция инициализирует контекст секретного ключа, импортирует параметры ключа
     из указанного файла, а также присваивает значение секретного ключа. */
- dll_export int ak_skey_create_and_set_key_from_file( ak_pointer , oid_engines_t , const char * );
+ dll_export int ak_skey_import_from_file( ak_pointer , oid_engines_t , const char * );
 /*! \brief Функция создает и инициализирует контекст секретного ключа, после чего импортирует параметры
     ключа из указанного файла. */
  dll_export ak_pointer ak_skey_new_from_file( const char * );
 /*! \brief Функция создает и инициализирует контекст секретного ключа, после чего импортирует
     значение секретного ключа и его параметры из указанного файла. */
- dll_export ak_pointer ak_skey_new_and_set_key_from_file( const char *filename );
+ dll_export ak_pointer ak_skey_load_from_file( const char *filename );
 /** @} */
 
 #ifdef __cplusplus
@@ -1762,3 +1811,9 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                     libakrypt.h */
 /* ----------------------------------------------------------------------------------------------- */
+
+// действия:
+//  create
+//  new = alloc + create
+//  import = crete + set_key
+//  load = alloc + create + set_key
