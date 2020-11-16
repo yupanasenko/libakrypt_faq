@@ -6,6 +6,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_show_help( void );
  void aktool_show_oid( const size_t , ak_oid );
+ int aktool_show_secret_key( const char * );
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_show( int argc, tchar *argv[] )
@@ -14,9 +15,9 @@
   char *value = NULL;
   oid_modes_t mode = algorithm;
   oid_engines_t engine = identifier;
-  int next_option = 0, show_caption = ak_true;
+  int next_option = 0, show_caption = ak_true, result = EXIT_SUCCESS;
   enum { do_nothing, do_alloids, do_oid, do_engines,
-                                                do_modes, do_options, do_curve } work = do_nothing;
+                                        do_modes, do_options, do_curve, do_key } work = do_nothing;
  /* параметры, запрашиваемые пользователем */
   const struct option long_options[] = {
      { "oids",             0, NULL,  254 },
@@ -26,6 +27,7 @@
      { "without-caption",  0, NULL,  250 },
      { "modes",            0, NULL,  249 },
      { "curve",            1, NULL,  220 },
+     { "key",              1, NULL,  'k' },
 
      { "openssl-style",    0, NULL,   5  },
      { "audit",            1, NULL,   4  },
@@ -37,7 +39,7 @@
 
  /* разбираем опции командной строки */
   do {
-       next_option = getopt_long( argc, argv, "", long_options, NULL );
+       next_option = getopt_long( argc, argv, "k:", long_options, NULL );
        switch( next_option )
       {
         case  1  :   return aktool_show_help();
@@ -76,6 +78,9 @@
                      break;
         case 220:  /* выводим параметры заданной эллиптической кривой */
                      work = do_curve; value = optarg;
+                     break;
+        case 'k':  /* выводим информацию о заданном секретном ключе */
+                     work = do_key; value = optarg;
                      break;
         default:   /* обрабатываем ошибочные параметры */
                      if( next_option != -1 ) work = do_nothing;
@@ -177,12 +182,17 @@
          aktool_error(_("try \"aktool s --oid curve\" to list all supported elliptic curves"));
        }
 
+     case do_key:
+       if(( result = aktool_show_secret_key( value )) == EXIT_FAILURE )
+         aktool_error(_("using a file %s that does not contain secret key information"), value );
+       break;
+
      default:  break;
    }
  /* завершаем работу и выходим */
    aktool_destroy_libakrypt();
 
- return EXIT_SUCCESS;
+ return result;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -208,13 +218,73 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ int aktool_show_secret_key( const char *filename )
+{
+ /* создаем контекст ключа (без считывания ключевой информации, только параметры) */
+  ak_pointer key = ak_skey_new_from_file( filename );
+  ak_skey skey = (ak_skey)key;
+
+  if( key == NULL ) return EXIT_FAILURE;
+
+ /* теперь, последовательно, выводим считанную информацию */
+  printf("%13s: %s (%s)\n", ak_libakrypt_get_engine_name( skey->oid->engine ),
+                                                            skey->oid->name[0], skey->oid->id[0] );
+  printf(_("       number: %s\n"), ak_ptr_to_hexstr( skey->number, 32, ak_false ));
+  printf(_("        label: %s\n"), skey->label );
+  printf(_("     resource: %ld (%s)\n"), skey->resource.value.counter,
+                              ak_libakrypt_get_counter_resource_name( skey->resource.value.type ));
+
+  printf(_("   not before: %s"), ctime( &skey->resource.time.not_before ));
+  printf(_("    not after: %s"), ctime( &skey->resource.time.not_after ));
+
+ /* для асимметричных секретных ключей выводим дополнительную информацию */
+  if( skey->oid->engine == sign_function ) {
+    ak_oid curvoid = ak_oid_find_by_data( skey->data );
+    printf("        curve: ");
+    if( curvoid == NULL ) printf(_("undefined\n"));
+      else printf("%s (%s)\n", curvoid->name[0], curvoid->id[0] );
+    printf(_("   verify key: %s\n"),
+                             ak_ptr_to_hexstr(((ak_signkey)key)->verifykey_number, 32, ak_false ));
+   /* выводим расширенное имя
+      для этого нам приходится вручную разбирать последовательность строк типа DistinguishedName */
+    if( ((ak_signkey)key)->name != NULL ) {
+      ak_asn1 asn = ((ak_signkey)key)->name->data.constructed;
+      ak_asn1_first( asn );
+      do{
+        if( DATA_STRUCTURE( asn->current->tag ) == CONSTRUCTED ) {
+          ak_asn1 asn1 = asn->current->data.constructed;
+          if( DATA_STRUCTURE( asn1->current->tag ) == CONSTRUCTED ) {
+            ak_asn1 asn2 = asn1->current->data.constructed;
+            ak_pointer ptr = NULL;
+            ak_oid item = NULL;
+
+            ak_asn1_first( asn2 );
+            ak_tlv_get_oid( asn2->current, &ptr );
+            if(( item = ak_oid_find_by_id( ptr )) != NULL ) printf("%13s: ", item->name[1] );
+            ak_asn1_next( asn2 );
+            ak_tlv_get_utf8_string( asn2->current, &ptr );
+            printf("%s\n", (char *)ptr );
+          }
+        }
+      } while( ak_asn1_next( asn ));
+    } else printf(_("extended name: undefined"));
+
+  }
+  printf(_("         file: %s\n"), filename );
+  ak_oid_delete_object( ((ak_skey)key)->oid, key );
+
+ return EXIT_SUCCESS;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int aktool_show_help( void )
 {
   printf(
-   _("aktool show [options]  - show useful information about libakrypt parameters\n\n"
+   _("aktool show [options]  - show useful information about keys and libakrypt parameters\n\n"
      "available options:\n"
      "     --curve <ni>        show the parameters of elliptic curve with given name or identifier\n"
      "     --engines           show all types of available crypto engines\n"
+     " -k, --key <file>        output the parameters of the secret key (symmetric or asymmetric)\n"
      "     --oid <enim>        show one or more OID's,\n"
      "                         where \"enim\" is an engine, name, identifier or mode of OID\n"
      "     --oids              show the list of all available libakrypt's OIDs\n"

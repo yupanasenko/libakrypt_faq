@@ -314,7 +314,7 @@
  static const char *asn1_s_i[] =           { "2.5.4.4", NULL };
  static const char *asn1_sn_n[] =          { "serial-number", "sn", NULL };
  static const char *asn1_sn_i[] =          { "2.5.4.5", NULL };
- static const char *asn1_c_n[] =           { "country-name", "co", NULL };
+ static const char *asn1_c_n[] =           { "country-name", "ct", NULL };
  static const char *asn1_c_i[] =           { "2.5.4.6", NULL };
  static const char *asn1_l_n[] =           { "locality-name", "ln", NULL };
  static const char *asn1_l_i[] =           { "2.5.4.7", NULL };

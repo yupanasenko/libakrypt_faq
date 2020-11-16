@@ -593,6 +593,8 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Генерация случайного уникального вектора, рассматриваемого как номер ключа. */
  dll_export int ak_libakrypt_generate_unique_number( ak_pointer , const size_t );
+/*! \brief Получение человекочитаемого имени для типа ключевого ресурса. */
+ dll_export const char *ak_libakrypt_get_counter_resource_name( const counter_resource_t );
 /*! \brief Функция выделения памяти для ключевой информации. */
  dll_export int ak_skey_alloc_memory( ak_skey , size_t , memory_allocation_policy_t );
 /*! \brief Функция освобождения выделенной ранее памяти. */
@@ -1628,6 +1630,9 @@ extern "C" {
  dll_export int ak_signkey_set_curve_str( ak_signkey sctx, const char * );
 /*! \brief Функция устанавливает временной интервал действия секретного ключа. */
  dll_export int ak_signkey_set_validity( ak_signkey , time_t , time_t );
+/*! \brief Функция устанавливает ресурс и временной итервал действия ключа. */
+ dll_export int ak_signkey_set_resource_values( ak_signkey , counter_resource_t ,
+                                                                  const char * , time_t , time_t );
 /*! \brief Уничтожение контекста секретного ключа. */
  dll_export int ak_signkey_destroy( ak_signkey );
 /*! \brief Размер области памяти, которую занимает электронная подпись. */

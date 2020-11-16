@@ -69,6 +69,16 @@
      { "random",              1, NULL,  205 },
      { "random-file",         1, NULL,  206 },
 
+    /* флаги использования открытого ключа */
+     { "digital-signature",   0, NULL,  190 },
+     { "content-commitment",  0, NULL,  191 },
+     { "key-encipherment",    0, NULL,  192 },
+     { "data-encipherment",   0, NULL,  193 },
+     { "key-agreement",       0, NULL,  194 },
+     { "key-cert-sign",       0, NULL,  195 },
+     { "crl-sign",            0, NULL,  196 },
+     { "ca",                  1, NULL,  197 },
+     { "path-len",            1, NULL,  198 },
 
    /* это стандартые для всех программ опции */
      { "openssl-style",    0, NULL,   5  },
@@ -87,6 +97,11 @@
   ki.format = asn1_der_format;
   ki.curve = ak_oid_find_by_name( "id-tc26-gost-3410-2012-256-paramSetA" );
   ki.days = 365;
+ /* - по-умолчанию, самоподписанный сертификат может порождать цепочки сертификации
+    - длина цепочки равна 1 (ноль - это число промежуточных сертификатов)
+    - флаги применения ключа не установлены */
+  ki.opts.ca = ak_true;
+  ki.opts.pathlenConstraint = ki.opts.keyUsageBits = 0;
 
  /* разбираем опции командной строки */
   do {
@@ -239,6 +254,38 @@
                              aktool_error(_("%s is not valid format of output data"), optarg );
                              return EXIT_FAILURE;
                           }
+                   break;
+
+     /* устанавливаем биты для keyUsage и другие параметры сертификата */
+        case 190:  ki.opts.keyUsageBits ^= bit_digitalSignature;
+                   break;
+        case 191:  ki.opts.keyUsageBits ^= bit_contentCommitment;
+                   break;
+        case 192:  ki.opts.keyUsageBits ^= bit_keyEncipherment;
+                   break;
+        case 193:  ki.opts.keyUsageBits ^= bit_dataEncipherment;
+                   break;
+        case 194:  ki.opts.keyUsageBits ^= bit_keyAgreement;
+                   break;
+        case 195:  ki.opts.keyUsageBits ^= bit_keyCertSign;
+                   break;
+        case 196:  ki.opts.keyUsageBits ^= bit_cRLSign;
+                   break;
+
+        case 197: /* --ca */
+                   if( strncmp( optarg, "true", 4 ) == 0 ) ki.opts.ca = ak_true;
+                    else
+                     if( strncmp( optarg, "false", 5 ) == 0 ) ki.opts.ca = ak_false;
+                       else {
+                             aktool_error(
+                              _("%s is not valid value of certificate authority option"), optarg );
+                             return EXIT_FAILURE;
+                            }
+                   break;
+
+        case 198: /* --pathlen */
+                   if(( ki.opts.pathlenConstraint = atoi( optarg )) > 100 )
+                     ki.opts.pathlenConstraint = 100;
                    break;
 
         default:  /* обрабатываем ошибочные параметры */

@@ -294,9 +294,9 @@
    sk->name = NULL;
   /* при удалении ключа не нужно освобождать память из под параметров эллиптической кривой  */
    sk->key.flags |= ak_key_flag_data_not_free;
-  /* устанавливаем время жизни ключа по-умолчанию */
-   ak_signkey_set_validity( sk, 0, 0 );
-
+  /* устанавливаем ресурс и время жизни ключа по-умолчанию */
+   ak_signkey_set_resource_values( sk, key_using_resource,
+                                                        "digital_signature_count_resource", 0, 0 );
   /* в заключение определяем указатели на методы */
    sk->key.set_mask = ak_signkey_set_mask_multiplicative;
    sk->key.unmask = ak_signkey_unmask_multiplicative;
@@ -518,6 +518,40 @@
         skey->key.resource.time.not_after = not_after;
        else skey->key.resource.time.not_after = skey->key.resource.time.not_before + 31536000;
     }
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Счетчику ресурса присваивается значение, определенное заданной опцией библиотеки.
+
+    Присвоение времени происходит следующим образом. Если `not_before` равно нулю, то
+    устанавливается текущее время. Если `not_after` равно нулю или меньше, чем `not_before`,
+    то временной интервал действия ключа устанавливается равным 365 дней.
+
+    \param skey Контекст секретного ключа.
+    \param type Тип присваиваемого ресурса.
+    \param option Строка с именем опции, значение которой присваивается.
+    \param not_before Время, начиная с которого ключ действителен. Значение, равное нулю,
+    означает, что будет установлено текущее время.
+    \param not_after Время, начиная с которого ключ недействителен.
+    \return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_signkey_set_resource_values( ak_signkey skey, counter_resource_t type,
+                                         const char *option, time_t not_before, time_t not_after )
+{
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                            "using a null pointer to secret key" );
+  if( option == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                           "using a null pointer to option name" );
+  ak_signkey_set_validity( skey, not_before, not_after );
+  switch( skey->key.resource.value.type = type ) {
+    case block_counter_resource:
+    case key_using_resource:
+      if(( skey->key.resource.value.counter =
+          ak_libakrypt_get_option_by_name( option )) != ak_error_wrong_option ) return ak_error_ok;
+        else return ak_error_wrong_option;
+  }
  return ak_error_ok;
 }
 

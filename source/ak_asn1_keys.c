@@ -1924,7 +1924,7 @@
 /*! Функция последовательно выполняет следующие действия
      - создает объект (аналог действия `new`)
      - инициализирует контекст (аналог действия `create`)
-     - присватвает ключевое значение (аналог действия `set_key`)
+     - присваивает ключевое значение (аналог действия `set_key`)
 
     \param filename Имя файла в котором хранятся данные
     \return Функция возвращает указатель на созданный контекст ключа. В случае ошибки возвращается
@@ -1959,6 +1959,56 @@
                              /* проверку ожидаемого типа механизма не проводим */
                    undefined_engine,  /* и создаем объект в оперативной памяти */
                    basicKey, /* после создания будем присваивать ключ */
+                   content   /* указатель на ключевые данные */
+       )) != ak_error_ok ) {
+        ak_error_message( error, __func__, "incorrect creation of a new secret key");
+     goto lab1;
+   }
+
+   lab1: if( asn != NULL ) ak_asn1_delete( asn );
+ return key;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция последовательно выполняет следующие действия
+     - создает объект (аналог действия `new`)
+     - инициализирует контекст (аналог действия `create`)
+
+    \note Значение ключа в созданный контекст не перемещается.
+
+    \param filename Имя файла в котором хранятся данные
+    \return Функция возвращает указатель на созданный контекст ключа. В случае ошибки возвращается
+    а `NULL`, а код ошибки может быть получен с помощью вызова функции ak_error_get_value().       */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_skey_new_from_file( const char *filename )
+{
+  ak_pointer key = NULL;
+  int error = ak_error_ok;
+  ak_asn1 asn = NULL, basicKey = NULL, content = NULL;
+
+   if( filename == NULL ) {
+     ak_error_message( ak_error_null_pointer, __func__, "using null pointer to filename" );
+     return NULL;
+   }
+  /* считываем ключ и преобразуем его в ASN.1 дерево */
+   if(( error = ak_asn1_import_from_file( asn = ak_asn1_new(), filename )) != ak_error_ok ) {
+     ak_error_message_fmt( error, __func__,
+                                     "incorrect reading of ASN.1 context from %s file", filename );
+     goto lab1;
+   }
+  /* проверяем контейнер на формат хранящихся данных */
+   ak_asn1_first( asn );
+   if( !ak_tlv_check_libakrypt_container( asn->current, &basicKey, &content )) {
+     ak_error_message( error = ak_error_invalid_asn1_content, __func__,
+                                                      "incorrect format of secret key container" );
+     goto lab1;
+   }
+  /* создаем ключ и считываем его значение */
+   if(( error = ak_skey_create_form_asn1_content(
+                   &key,     /* указатель на создаваемый объект */
+                             /* проверку ожидаемого типа механизма не проводим */
+                   undefined_engine,  /* и создаем объект в оперативной памяти */
+                   NULL,     /* после создания ключ присваивать не будем */
                    content   /* указатель на ключевые данные */
        )) != ak_error_ok ) {
         ak_error_message( error, __func__, "incorrect creation of a new secret key");

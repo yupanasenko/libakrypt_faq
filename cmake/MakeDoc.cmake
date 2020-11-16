@@ -12,6 +12,14 @@ if( UNIX )
   set( script ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh )
   file( WRITE ${script} "#/bin/bash\n" )
   
+  if( PANDOC )
+   # определяем команду для генерации man файла
+    file( APPEND ${script} "echo Create documentation for aktool utility\n" )
+    file( APPEND ${script}
+     "pandoc --metadata=date:\"18 July 2021\" --metadata=title:\"aktool\" --metadata=section:1 --metadata=footer:\"Правила пользования\" -s -t man ${CMAKE_SOURCE_DIR}/aktool/Readme.md -o ${CMAKE_SOURCE_DIR}/aktool/aktool.1\n" )
+    file( APPEND ${script} "echo Ok\n" )
+  endif()
+
   # документация для функций библиотеки
   if( DOXYGEN )
     # doxygen найден и документация может быть сгенерирована
@@ -46,17 +54,8 @@ if( UNIX )
     file( APPEND ${script} "cd ${CMAKE_SOURCE_DIR}; etags.emacs source/*.[ch]; cd ${CMAKE_BINARY_DIR}\n" )
   endif()
 
-  if( PANDOC )
-   # определяем команду для генерации man файла
-    file( APPEND ${script} "echo Create documentation for aktool utility\n" )
-    file( APPEND ${script}
-     "pandoc --metadata=date:\"18 July 2021\" --metadata=title:\"aktool\" --metadata=section:1 --metadata=footer:\"Правила пользования\" -s -t man ${CMAKE_SOURCE_DIR}/aktool/Readme.md -o ${CMAKE_SOURCE_DIR}/aktool/aktool.1\n" )
-    file( APPEND ${script} "echo Ok\n" )
-  endif()
-
   execute_process( COMMAND chmod +x ${script} )
   add_custom_target( doc ${script} )
   message("-- Script for documentation is done (now \"make doc\" enabled)")
 endif()
-
 
