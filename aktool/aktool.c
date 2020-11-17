@@ -210,7 +210,7 @@
      "     --audit-file        set the output file for errors and libakrypt audit system messages\n"
      "     --dont-use-colors   do not use the highlighting of output data\n"
      "     --openssl-style     use non-standard variants to some encryption algorithms, as in openssl library\n"
-     " -h, --help              show this information\n\n"));
+     "     --help              show this information\n\n"));
 
  return EXIT_SUCCESS;
 }

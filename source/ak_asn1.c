@@ -1253,6 +1253,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 /* ----------------------------------------------------------------------------------------------- */
  int ak_tlv_get_resource( ak_tlv tlv, ak_resource resource )
 {
+  ak_uint32 cnt = 0;
   ak_asn1 asn = NULL;
   int error = ak_error_ok;
 
@@ -1272,9 +1273,9 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
    ak_asn1_next( asn );
    if(( DATA_STRUCTURE( asn->current->tag ) != PRIMITIVE ) ||
      ( TAG_NUMBER( asn->current->tag ) != TINTEGER )) return ak_error_invalid_asn1_tag;
-   if(( error = ak_tlv_get_uint32( asn->current,
-                                        (ak_uint32 *) &resource->value.counter )) != ak_error_ok )
+   if(( error = ak_tlv_get_uint32( asn->current, &cnt )) != ak_error_ok )
      return ak_error_message( error, __func__, "incorrect reading resource counter" );
+   resource->value.counter = cnt;
 
    ak_asn1_next( asn );
    if(( error = ak_tlv_get_validity( asn->current,
