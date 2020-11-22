@@ -242,7 +242,6 @@
    }
    printf("        curve: %s (%s)\n", oid->id[0], oid->name[0] );
    printf("   verify key: %s\n", ak_ptr_to_hexstr( lkey.verifykey_number, 32, ak_false ));
-   if( lkey.name == NULL ) printf("         name: (null)\n");
 
   /* создаем открытый ключ */
    ak_verifykey_create_from_signkey( &vkey, &lkey );

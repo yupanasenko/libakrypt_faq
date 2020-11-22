@@ -499,7 +499,6 @@
 /* ----------------------------------------------------------------------------------------------- */
 void ak_gf512_mul_pcmulqdq( ak_pointer z, ak_pointer a, ak_pointer b )
 {
-    //TODO не тестировалось
 #ifdef _MSC_VER
      __m128i a1a0, a3a2, a5a4, a7a6, b1b0, b3b2, b5b4, b7b6;
      __m128i a0b0, a1b0, a2b0, a3b0, a4b0, a5b0, a6b0, a7b0;

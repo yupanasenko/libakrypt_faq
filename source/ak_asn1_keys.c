@@ -711,11 +711,7 @@
     else ak_asn1_add_octet_string( symkey,
                                          skey->verifykey_number, sizeof( skey->verifykey_number ));
 
-  /* - 3.7. - помещаем имя владельца ключа (эта информация используется при подписи запросов на сертификат */
-   if( skey->name == NULL ) ak_asn1_add_utf8_string( symkey, NULL );
-    else ak_asn1_add_tlv( symkey, ak_tlv_duplicate_global_name( skey->name ));
-
-  /* - 3.8. - собственно зашифрованный ключ */
+  /* - 3.7. - собственно зашифрованный ключ */
    if(( error = ak_asn1_add_skey_content( symkey, &skey->key, ekey, ikey )) != ak_error_ok ) {
      ak_asn1_delete( symkey );
      ak_error_message( error, __func__, "incorrect creation of secret key's parameters" );
@@ -1059,9 +1055,10 @@
    tlv = ak_tlv_new_constructed( TSEQUENCE^CONSTRUCTED, asn = ak_asn1_new( ));
   /* добавляем ноль */
    ak_asn1_add_uint32( asn, 0 );
-  /* переносим asn1 дерево с расширенным именем в asn1 дерево формируемого запроса */
-   ak_asn1_add_tlv( asn, vk->name );
-   vk->name = NULL;
+  /* копируем asn1 дерево с расширенным именем из структуры открытого ключа
+     в asn1 дерево формируемого запроса */
+   ak_asn1_add_tlv( asn, ak_tlv_duplicate_global_name( vk->name ));
+
   /* помещаем информацию об алгоритме и открытом ключе */
    ak_asn1_add_tlv( asn, pkey = ak_verifykey_export_to_asn1_value( vk ));
    if( pkey == NULL ) {
@@ -1100,14 +1097,14 @@
     и сохраняет созданное дерево в файл, который называется "запросом на сертификат".
 
    \note Контекст секретного ключа `sk` должен соответствовать контексту открытого ключа `vk`.
-   В противном случае нельзя будет проверить электронную подпись под открытым ключом --
+   В противном случае нельзя будет проверить электронную подпись под открытым ключом, поскольку
    запрос на сертификат, по сути, является урезанной версией самоподписанного сертификата.
    Отсюда следует, что нельзя создать запрос на сертификат ключа, который не поддерживает
    определенный библиотекой алгоритм подписи (например ключ на кривой в 640 бит).
    Такие ключи должны сразу помещаться в сертификат.
 
    \param vk Контекст открытого ключа
-   \param sk Контекст секретного ключа
+   \param sk Контекст секретного ключа, соответствующий открытому ключу
    \param generator Генератор псевдослучайных последовательностей, используемый для выработки
     электронной подписи под запросом на сертификат
    \param filename Указатель на строку, содержащую имя файла, в который будет экспортирован ключ;
@@ -1166,15 +1163,13 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция вырабатывает серийный номер сертификата.
+/*! Данный номер (serialNumber) зависит от номера секретного ключа, подписывающего открытый ключ и,
+    тем самым, может принимать различные значения для каждого из подписывающих ключей.
 
-   Данный номер (serialNumber) зависит от номера секретного ключа, подписывающего открытый ключ и,
-   тем самым, может принимать различные значения для каждого из подписывающих ключей.
-
-   Серийный номер сертификата образуют младшие 32 байта результата хеширования
-   последовательной конкатенации номеров открытого и секретного ключей.
-   Для хеширования используется функция, определенная в контексте секретного ключа,
-   т.е.  Стрибог512 для длинной подписи и Стрибог256 для короткой.
+    Серийный номер сертификата образуют младшие 32 байта результата хеширования
+    последовательной конкатенации номеров открытого и секретного ключей.
+    Для хеширования используется функция, определенная в контексте `секретного` ключа,
+    т.е.  Стрибог512 для длинной подписи и Стрибог256 для короткой.
 
    \code
     result[0..31] = Hash( vk->number || sk->number )
@@ -1186,7 +1181,7 @@
    \return Функция возвращает указатель на созданный объект.
    В случае ошибки возвращается NULL.                                                              */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_verifykey_generate_certificate_number( ak_verifykey vk,
+ int ak_verifykey_generate_certificate_number( ak_verifykey vk,
                                                             ak_signkey sk, ak_mpzn256 serialNumber )
 {
   ak_uint8 result[64];
@@ -1203,316 +1198,6 @@
  return ak_error_ok;
 }
 
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Создание tlv узла, содержащего структуру TBSCertificate версии 3 (без расширений)
-    в соответствии с Р 1323565.1.023-2018.
-
-   Структура `tbsCertificate` определяется следующим образом
-
-   \code
-    TBSCertificate  ::=  SEQUENCE  {
-        version         [0]  Version DEFAULT v1,
-        serialNumber         CertificateSerialNumber,
-        signature            AlgorithmIdentifier,
-        issuer               Name,
-        validity             Validity,
-        subject              Name,
-        subjectPublicKeyInfo SubjectPublicKeyInfo,
-        issuerUniqueID  [1]  IMPLICIT UniqueIdentifier OPTIONAL,
-                             -- If present, version MUST be v2 or v3
-        subjectUniqueID [2]  IMPLICIT UniqueIdentifier OPTIONAL,
-                             -- If present, version MUST be v2 or v3
-        extensions      [3]  Extensions OPTIONAL
-                             -- If present, version MUST be v3 --  }
-   \endcode
-
-   \param vk контекст открытого ключа, помещаемого в asn1 дерево сертификата
-   \param sk контекст ключа подписи, содержащий параметры центра сертификации
-   \param opts набор опций, формирующих помещаемые в сертификат расширения
-   \return Функция возвращает указатель на созданный объект.
-   В случае ошибки возвращается NULL.                                                              */
-/* ----------------------------------------------------------------------------------------------- */
- static ak_tlv ak_verifykey_export_to_tbs( ak_verifykey vk,
-                                                          ak_signkey sk, ak_certificate_opts opts )
-{
-  ak_mpzn256 serialNumber;
-  ak_tlv tbs = NULL, tlv = NULL;
-  ak_asn1 asn = NULL, tbasn = NULL;
-
-  if( vk == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to public key" );
-    return NULL;
-  }
-  if(( tbs = ak_tlv_new_sequence()) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
-    return NULL;
-  }
-   else tbasn = tbs->data.constructed;
-
- /* теперь создаем дерево сертификата в соответствии с Р 1323565.1.023-2018
-    version: начинаем с размещения версии сертификата, т.е. ветки следующего вида
-     ┐
-     ├[0]┐
-     │   └INTEGER 2 (величина 2 является максимально возможным значением ) */
-
-  ak_asn1_add_asn1( tbasn, CONTEXT_SPECIFIC^0x00, asn = ak_asn1_new( ));
-  if( asn != NULL ) ak_asn1_add_uint32( asn, 2 );
-    else {
-      ak_error_message( ak_error_get_value(), __func__,
-                                              "incorrect creation of certificate version context");
-      goto labex;
-    }
-
- /* serialNumber: вырабатываем и добавляем номер сертификата */
-  ak_verifykey_generate_certificate_number( vk, sk, serialNumber );
-  ak_asn1_add_mpzn( tbasn, serialNumber, ak_mpzn256_size );
-
- /* signature: указываем алгоритм подписи (это будет повторено еще раз при выработке подписи) */
-  ak_asn1_add_tlv( tbasn, tlv = ak_tlv_new_sequence( ));
-  if( tlv == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                          "incorrect generation of digital signature identifier" );
-    goto labex;
-  }
-  ak_asn1_add_oid( tlv->data.constructed, sk->key.oid->id[0] );
-
- /* issuer: вставляем информацию о расширенном имени лица, подписывающего ключ
-    (эмитента, выдающего сертификат) */
-  ak_asn1_add_tlv( tbasn, ak_tlv_duplicate_global_name( sk->name ));
-
- /* validity: вставляем информацию в времени действия ключа */
-  ak_asn1_add_validity( tbasn, sk->key.resource.time.not_before, sk->key.resource.time.not_after );
-
- /* subject: вставляем информацию о расширенном имени владельца ключа  */
-  ak_asn1_add_tlv( tbasn, ak_tlv_duplicate_global_name( vk->name ));
-
- /* subjectPublicKeyInfo: вставляем информацию об открытом ключе */
-  ak_asn1_add_tlv( tbasn, tlv = ak_verifykey_export_to_asn1_value( vk ));
-  if( tlv == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                               "incorrect generation of subject public key info" );
-    goto labex;
-  }
-
- /* вставляем перечень расширений
-    0x03 это помещаемое в CONTEXT_SPECIFIC значение */
-  ak_asn1_add_asn1( tbasn, CONTEXT_SPECIFIC^0x03, asn = ak_asn1_new( ));
-  if( asn == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                      "incorrect creation of certificate extensions asn1 context");
-    goto labex;
-  }
-  ak_asn1_add_tlv( asn, ak_tlv_new_sequence( ));
-  asn = asn->current->data.constructed;
-
- /* в обязательном порядке добавляем номер открытого ключа */
-  ak_asn1_add_tlv( asn,
-                    tlv = ak_tlv_new_subject_key_identifier( vk->number, sizeof( vk->number )));
-  if( tlv == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                        "incorrect generation of SubjectKeyIdentifier extension" );
-    goto labex;
-  }
-
- /* теперь мы принимаем решение - сертификат самоподписанный или нет
-    выполняются две проверки:
-      - совпадение subjectKeyIdentifier (номера открытого ключа)
-      - совпадение имен. */
-  if( ak_ptr_is_equal( sk->verifykey_number, vk->number, sizeof( vk->number )) == ak_true ) {
-
-    int error = ak_error_ok;
-    ak_uint8 skname[2048], vkname[2048]; /* это искусственное ограничение */
-    size_t sklen = sizeof( skname ), vklen = sizeof( vkname );
-
-   /* совпали идентификаторы, должны совпасть и имена */
-    if(( error = ak_tlv_encode( sk->name, skname, &sklen )) != ak_error_ok ) {
-      ak_error_message( error, __func__, "creation certificate with incorrect name of issuer" );
-      goto labex;
-    }
-    if(( error = ak_tlv_encode( vk->name, vkname, &vklen )) != ak_error_ok ) {
-      ak_error_message( error, __func__, "creation certificate with incorrect name of owner" );
-      goto labex;
-    }
-    if( vklen != sklen ) {
-      ak_error_message( error, __func__,
-                       "creation certificate with different length of names of issuer and owner" );
-      goto labex;
-    }
-    if( ak_ptr_is_equal( skname, vkname, sklen ) != ak_true ) {
-      ak_error_message( error, __func__,
-                                 "creation certificate with different names of issuer and owner" );
-      goto labex;
-    }
-   /* теперь добавляем расширение с флагом, что сертификат является самоподписанным */
-    ak_asn1_add_tlv( asn,
-      tlv = ak_tlv_new_basic_constraints( opts->ca , opts->pathlenConstraint ));
-    if( tlv == NULL ) {
-      ak_error_message( ak_error_get_value(), __func__,
-                                        "incorrect generation of SubjectKeyIdentifier extension" );
-      goto labex;
-    }
-  }
-
- /* если определены флаги keyUsage, то мы добавляем соответствующее расширение */
-  if( opts->keyUsageBits ) {
-    ak_asn1_add_tlv( asn, tlv = ak_tlv_new_key_usage( opts->keyUsageBits ));
-    if( tlv == NULL ) {
-      ak_error_message( ak_error_get_value(), __func__,
-                                        "incorrect generation of SubjectKeyIdentifier extension" );
-      goto labex;
-    }
-  }
-
- return tbs;
-
-  labex: if( tbs != NULL ) tbs = ak_tlv_delete( tbs );
- return NULL;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция создает asn1 дерево, содержащее сертификат открытого ключа.
-
-   \param vk контекст открытого ключа, помещаемого в asn1 дерево сертификата
-   \param sk контекст ключа подписи, содержащий параметры центра сертификации
-   \param generator геератор случайных последовательностей, используемый для подписи сертификата
-   \param opts набор опций, формирующих помещаемые в сертификат расширения
-   \return Функция возвращает указатель на созданный объект.
-   В случае ошибки возвращается NULL.                                                              */
-/* ----------------------------------------------------------------------------------------------- */
- static ak_asn1 ak_verifykey_export_to_asn1_certificate( ak_verifykey vk, ak_signkey sk,
-                                                    ak_random generator, ak_certificate_opts opts )
-{
-  size_t len = 0;
-  struct bit_string bs;
-  int error = ak_error_ok;
-  ak_asn1 certificate = NULL;
-  ak_uint8 encode[4096], out[128];
-  ak_tlv tlv = NULL, ta = NULL, tbs = NULL;
-
- /* создаем контейнер для сертификата */
-  if(( error = ak_asn1_add_tlv( certificate = ak_asn1_new(),
-                                         tlv = ak_tlv_new_sequence( ))) != ak_error_ok ) {
-    ak_error_message( error, __func__, "incorrect addition of tlv context" );
-    goto labex;
-  }
-  if( tlv == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__, "incorrect creation of tlv context" );
-    goto labex;
-  }
-
- /* создаем поле tbsCertificate */
-  if(( tbs = ak_verifykey_export_to_tbs( vk, sk, opts )) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                                  "incorrect creation of tbsCertificate element" );
-    goto labex;
-  }
-
- /* вставляем в основное дерево созданный элемент */
-  ak_asn1_add_tlv( tlv->data.constructed, tbs );
- /* добавляем информацию о алгоритме подписи */
-  ak_asn1_add_tlv( tlv->data.constructed, ta = ak_tlv_new_sequence( ));
-  if( ta == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                          "incorrect generation of digital signature identifier" );
-    goto labex;
-  }
-  ak_asn1_add_oid( ta->data.constructed, sk->key.oid->id[0] );
-
- /* вырабатываем подпись */
-  len = sizeof( encode );
-  if(( error = ak_tlv_encode( tbs, encode, &len )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "incorrect encoding of tbsCertificate element" );
-    goto labex;
-  }
-  if(( error = ak_signkey_sign_ptr( sk, generator,
-                                               encode, len, out, sizeof( out ))) != ak_error_ok ) {
-    ak_error_message( error, __func__, "incorrect generation of digital signature" );
-    goto labex;
-  }
-
- /* добавляем подпись в основное дерево */
-  bs.value = out;
-  bs.len = ak_signkey_get_tag_size( sk );
-  bs.unused = 0;
-  if(( error = ak_asn1_add_bit_string( tlv->data.constructed, &bs )) != ak_error_ok ) {
-     ak_error_message( error, __func__, "incorrect adding a digital signature value" );
-    goto labex;
-  }
-
- return certificate;
-
-  labex: if( certificate != NULL ) certificate = ak_asn1_delete( certificate );
- return NULL;
-}
-
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция помещает информацию об открытом ключе в asn1 дерево, подписывает эту информацию,
-    помещает в это же asn1 дерево информацию о подписывающем лице и правилах применения ключа.
-    После этого сформированное дерево сохраняется в файл в заданном пользователем формате.
-
-   \param vk контекст открытого ключа, который помещается в сертификат; контекст должен содержать
-   информацию о лице (subject), владеющем открытым ключом.
-   \param sk контекст секретного ключа, с помощью которого подписывается создааваемый сертификат;
-   контекст должен содержать информацию о лице (issuer), владеющем секретным ключом.
-   \param generator геератор слечайных последовательностей, используемый для подписи сертификата.
-   \param opts набор опций, формирующих помещаемые в сертификат расширения
-   \param filename указатель на строку, содержащую имя файла, в который будет экспортирован ключ;
-    Если параметр `filename_size` отличен от нуля,
-    то указатель должен указывать на область памяти, в которую будет помещено сформированное имя файла.
-   \param size  размер области памяти, в которую будет помещено имя файла.
-    Если размер области недостаточен, то будет возбуждена ошибка.
-    Данный параметр должен принимать значение 0 (ноль), если указатель `filename` указывает
-    на константную строку.
-   \param format формат, в котором сохраняются данные, допутимые значения
-   \ref asn1_der_format или \ref asn1_pem_format.
-
-   \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
-   возвращается код ошибки.                                                                        */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_verifykey_export_to_certificate( ak_verifykey vk, ak_signkey sk, ak_random generator,
-              ak_certificate_opts opts, char *filename, const size_t size, export_format_t format )
-{
-  ak_mpzn256 serialNumber;
-  int error = ak_error_ok;
-  ak_asn1 certificate = NULL;
-  const char *file_extensions[] = { /* имена параметризуются значениями типа export_format_t */
-   "cer",
-   "crt"
-  };
-
- /* необходимые проверки */
-  if( vk == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                      "using null pointer to public key context" );
-  if( sk == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                      "using null pointer to secret key context" );
- /* вырабатываем asn1 дерево */
-  if(( certificate = ak_verifykey_export_to_asn1_certificate( vk, sk, generator, opts )) == NULL )
-    return ak_error_message( ak_error_get_value(), __func__,
-                                            "incorrect creation of asn1 context for certificate" );
- /* формируем имя файла для хранения ключа
-    (данное имя в точности совпадает с номером ключа) */
-  if( size ) {
-    if( size < ( 5 + 2*sizeof( vk->number )) ) {
-      ak_error_message( error = ak_error_out_of_memory, __func__,
-                                              "insufficent buffer size for certificate filename" );
-      goto labex;
-    }
-    memset( filename, 0, size );
-    ak_verifykey_generate_certificate_number( vk, sk, serialNumber );
-    ak_snprintf( filename, size, "%s.%s",
-          ak_mpzn_to_hexstr( serialNumber, ak_mpzn256_size ), file_extensions[format] );
-  }
-
- /* сохраняем созданное дерево в файл */
-  if(( error = ak_asn1_export_to_file( certificate, filename,
-                                        format, public_key_certificate_content )) != ak_error_ok )
-    ak_error_message_fmt( error, __func__,
-                              "incorrect export asn1 context to file %s in pem format", filename );
-
-  labex: if( certificate != NULL ) certificate = ak_asn1_delete( certificate );
- return error;
-}
 
 /* ----------------------------------------------------------------------------------------------- */
                     /* Функции импорта секретной ключевой информации */
@@ -1872,26 +1557,6 @@
        memcpy( ((ak_signkey)*key)->verifykey_number, ptr, ak_min( 32, len ));
      }
 
-    /* - 3.6 получаем обобщенное имя владельца ключа */
-     ak_asn1_next( asn );
-     if( DATA_STRUCTURE( asn->current->tag ) == PRIMITIVE ) {
-       if( TAG_NUMBER( asn->current->tag ) == TNULL ) ((ak_signkey)*key)->name = NULL;
-       else {
-              ak_error_message( error = ak_error_invalid_asn1_tag, __func__,
-                                 "context has unexpected primitive asn1 type for subject's name" );
-              goto lab1;
-            }
-     } else {
-        if( TAG_NUMBER( asn->current->tag ) == TSEQUENCE )
-          /* здесь мы вынимаем созданный tlv узел
-             и перемещаем его во владение секретного ключа */
-          ((ak_signkey)*key)->name = ak_asn1_exclude( asn );
-         else {
-               ak_error_message( error = ak_error_invalid_asn1_tag, __func__,
-                              "context has unexpected constructed asn1 type for subject's name" );
-              }
-       }
-
   } /* конец  if(  content_type == secret_key_content ) */
 
  /* в завершение всех дел, можно считать значение секретного ключа,
@@ -2031,8 +1696,7 @@
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_skey_import_from_file( ak_pointer ctx,
-                                                      oid_engines_t engine, const char *filename )
+ int ak_skey_import_from_file( ak_pointer ctx, oid_engines_t engine, const char *filename )
 {
   int error = ak_error_ok;
   ak_asn1 asn = NULL, basicKey = NULL, content = NULL;

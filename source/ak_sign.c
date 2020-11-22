@@ -290,8 +290,6 @@
      инициализируется в момент выработки открытого ключа */
   /* сохраняем указатель на параметры эллиптической кривой */
    sk->key.data = wc;
-  /* имя ключа не определено */
-   sk->name = NULL;
   /* при удалении ключа не нужно освобождать память из под параметров эллиптической кривой  */
    sk->key.flags |= ak_key_flag_data_not_free;
   /* устанавливаем ресурс и время жизни ключа по-умолчанию */
@@ -413,7 +411,6 @@
     ak_error_message( error, __func__ , "incorrect destroying of digital signature secret key" );
   if(( error = ak_hash_destroy( &sctx->ctx )) != ak_error_ok )
     ak_error_message( error, __func__ , "incorrect destroying hash function context" );
-  if( sctx->name != NULL ) sctx->name = ak_tlv_delete( sctx->name );
 
  return error;
 }
@@ -553,29 +550,6 @@
         else return ak_error_wrong_option;
   }
  return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param sk контекст секретного ключа электронной подписи
-    @param ni строка, содержащая имя или идентификатор, определяющий тип помещаемых
-    данных (attribute type)
-    @param string строка с данными.
-
-    @return В случае успеха возвращается \ref ak_error_ok. В противном случае
-    возвращается код ошибки.                                                                       */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_signkey_add_name_string( ak_signkey sk, const char *ni, const char *string )
-{
- /* необходимые проверки */
-  if( sk == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                      "using null pointer to secret key context" );
-  if( sk->name == NULL ) {
-    if(( sk->name = ak_tlv_new_sequence()) == NULL )
-      return ak_error_message( ak_error_get_value(), __func__,
-                                     "incorrect creation of tlv context for owner's common name" );
-  }
-
- return ak_tlv_add_string_to_global_name( sk->name, ni, string );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -912,9 +886,8 @@
   pctx->time.not_before = sctx->key.resource.time.not_before;
   pctx->time.not_after = sctx->key.resource.time.not_after;
 
- /* устанавливаем имя ключа, если определено */
-  if( sctx->name != NULL ) pctx->name = ak_tlv_duplicate_global_name( sctx->name );
-    else pctx->name = NULL;
+ /* имя владельца ключа не определено и может быть установлено позднее */
+  pctx->name = NULL;
  /* устанавливаем флаг  */
   pctx->flags = ak_key_flag_set_key;
  /* все параметры установлены => можно вырабатывать номер ключа */

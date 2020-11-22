@@ -8,7 +8,7 @@
  int aktool_key_new( void );
  int aktool_key_certificate( void );
  int aktool_key_new_keypair( bool_t , bool_t );
- int aktool_key_input_name( ak_pointer );
+ int aktool_key_input_name( ak_verifykey );
  int aktool_key_print_disclaimer( void );
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -36,10 +36,11 @@
    char password[aktool_password_max_length];
    char keylabel[256];
 
-   char os_file[FILENAME_MAX]; /* сохраняем секретный ключ */
-   char op_file[FILENAME_MAX];  /* сохраняем открытый ключ */
-   char req_file[FILENAME_MAX];    /* читаем открытый ключ */
-   char key_file[FILENAME_MAX];   /* читаем секретный ключ */
+   char os_file[FILENAME_MAX];   /* сохраняем секретный ключ */
+   char op_file[FILENAME_MAX];    /* сохраняем открытый ключ */
+   char req_file[FILENAME_MAX];      /* читаем открытый ключ */
+   char key_file[FILENAME_MAX];     /* читаем секретный ключ */
+   char pubkey_file[FILENAME_MAX];   /* читаем открытый ключ */
  } ki;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -47,6 +48,7 @@
 {
   char tmp[4];
   size_t i = 0;
+  ak_uint32 value = 0;
   int next_option = 0, exit_status = EXIT_FAILURE;
   enum { do_nothing, do_new, do_cert } work = do_nothing;
 
@@ -55,19 +57,21 @@
    /* сначала уникальные */
      { "algorithm",           1, NULL,  'a' },
      { "cert",                0, NULL,  'c' },
-     { "curve",               1, NULL,  247 },
-     { "days",                1, NULL,  246 },
-     { "key",                 1, NULL,  203 },
-     { "label",               1, NULL,  207 },
      { "new",                 0, NULL,  'n' },
      { "output-secret-key",   1, NULL,  'o' },
+     { "to",                  1, NULL,  250 },
+     { "password",            1, NULL,  248 },
+     { "curve",               1, NULL,  247 },
+     { "days",                1, NULL,  246 },
+
+     { "pubkey",              1, NULL,  208 },
+     { "label",               1, NULL,  207 },
+     { "random-file",         1, NULL,  206 },
+     { "random",              1, NULL,  205 },
+     { "req",                 1, NULL,  204 },
+     { "key",                 1, NULL,  203 },
      { "op",                  1, NULL,  202 },
      { "output-public-key",   1, NULL,  202 },
-     { "password",            1, NULL,  248 },
-     { "req",                 1, NULL,  204 },
-     { "to",                  1, NULL,  250 },
-     { "random",              1, NULL,  205 },
-     { "random-file",         1, NULL,  206 },
 
     /* флаги использования открытого ключа */
      { "digital-signature",   0, NULL,  190 },
@@ -97,11 +101,7 @@
   ki.format = asn1_der_format;
   ki.curve = ak_oid_find_by_name( "id-tc26-gost-3410-2012-256-paramSetA" );
   ki.days = 365;
- /* - по-умолчанию, самоподписанный сертификат может порождать цепочки сертификации
-    - длина цепочки равна 1 (ноль - это число промежуточных сертификатов)
-    - флаги применения ключа не установлены */
-  ki.opts.ca = ak_true;
-  ki.opts.pathlenConstraint = ki.opts.keyUsageBits = 0;
+ /*  ki.opts состоит из одних нулей */
 
  /* разбираем опции командной строки */
   do {
@@ -206,6 +206,14 @@
                   #endif
                     break;
 
+        case 208: /* --pubkey */
+                  #ifdef _WIN32
+                    GetFullPathName( optarg, FILENAME_MAX, ki.pubkey_file, NULL );
+                  #else
+                    realpath( optarg , ki.pubkey_file );
+                  #endif
+                    break;
+
      /* интервал действия ключа */
         case 246: /* --days */
                     ki.days = atoi( optarg );
@@ -273,19 +281,27 @@
                    break;
 
         case 197: /* --ca */
-                   if( strncmp( optarg, "true", 4 ) == 0 ) ki.opts.ca = ak_true;
+                   if( strncmp( optarg, "true", 4 ) == 0 )
+                     ki.opts.ca.is_present = ki.opts.ca.value = ak_true;
                     else
-                     if( strncmp( optarg, "false", 5 ) == 0 ) ki.opts.ca = ak_false;
-                       else {
+                     if( strncmp( optarg, "false", 5 ) == 0 ) {
+                       ki.opts.ca.is_present = ak_true;
+                       ki.opts.ca.value = ak_false;
+                     }
+                      else {
                              aktool_error(
                               _("%s is not valid value of certificate authority option"), optarg );
                              return EXIT_FAILURE;
-                            }
+                           }
                    break;
 
         case 198: /* --pathlen */
-                   if(( ki.opts.pathlenConstraint = atoi( optarg )) > 100 )
-                     ki.opts.pathlenConstraint = 100;
+                   if(( value = atoi( optarg )) == 0 ) {
+                     aktool_error(_("the value of pathlenConstraints must be positive integer"));
+                     return EXIT_FAILURE;
+                   }
+                   ki.opts.ca.is_present = ki.opts.ca.value = ak_true;
+                   ki.opts.ca.pathlenConstraint = ak_min( 100, value );
                    break;
 
         default:  /* обрабатываем ошибочные параметры */
@@ -399,16 +415,15 @@
   if( create_pair ) { /* телодвижения для асимметричных ключей */
     struct verifykey vkey;
 
-    /* создаем обобщенное имя владельца ключей */
-    if( aktool_key_input_name( key ) != ak_error_ok ) {
-      aktool_error(_("incorrect creation of owner's distinguished name"));
-      goto lab2;
-    }
-
-    /* вырабатываем открытый ключ,
-       это позволяет выработать номер открытого ключа, а также присвоить ему имя и ресурс */
+   /* вырабатываем открытый ключ,
+      это позволяет выработать номер открытого ключа, а также присвоить ему имя и ресурс */
     if(( error = ak_verifykey_create_from_signkey( &vkey, key )) != ak_error_ok ) {
       aktool_error(_("incorrect creation of public key"));
+      goto lab2;
+    }
+   /* создаем обобщенное имя владельца ключей */
+    if( aktool_key_input_name( &vkey ) != ak_error_ok ) {
+      aktool_error(_("incorrect creation of owner's distinguished name"));
       goto lab2;
     }
 
@@ -420,22 +435,22 @@
       }
 
       ki.format = asn1_pem_format; /* возвращаем необходимое значение */
-      if( ak_verifykey_export_to_certificate( &vkey, key, generator,  &ki.opts,
-                          ki.op_file, ( strlen( ki.op_file ) > 0 ) ? 0 : sizeof( ki.op_file ),
-                                                                     ki.format ) != ak_error_ok ) {
+//      if( ak_verifykey_export_to_certificate( &vkey, key, &vkey, generator,  &ki.opts,
+//                          ki.op_file, ( strlen( ki.op_file ) > 0 ) ? 0 : sizeof( ki.op_file ),
+//                                                                     ki.format ) != ak_error_ok ) {
         aktool_error(_("wrong export a public key to certificate %s"), ki.op_file );
-        goto lab2;
-      } else printf(_("certificate of public key stored in %s\n"), ki.op_file );
-
-
-    } else { /* сохраняем запрос на сертификат */
+//        goto lab2;
+//      }
+//       else printf(_("certificate of public key stored in %s file\n"), ki.op_file );
+    }
+     else { /* сохраняем запрос на сертификат */
         if( ak_verifykey_export_to_request( &vkey, key, generator, ki.op_file,
            ( strlen( ki.op_file ) > 0 ) ? 0 : sizeof( ki.op_file ), ki.format ) != ak_error_ok ) {
           aktool_error(_("wrong export a public key to request %s"), ki.op_file );
           goto lab2;
         } else
             printf(_("public key stored in %s file as certificate's request\n"), ki.op_file );
-      }
+     }
 
     ak_verifykey_destroy( &vkey );
   } /* конец if( create_pair ) */
@@ -445,7 +460,7 @@
     memset( ki.password, 0, sizeof( ki.password ));
     memset( password2, 0, sizeof( password2 ) );
    /* первый раз */
-    printf(_("input access password for secret key: "));
+    printf(_("\ninput access password for secret key: "));
     if(( error = ak_password_read( ki.password, sizeof( ki.password ))) != ak_error_ok ) {
       aktool_error(_("incorrect password"));
       goto lab2;
@@ -502,71 +517,88 @@
  int aktool_key_certificate( void )
 {
   int error = ak_error_ok;
-  struct verifykey vkey;
-  struct signkey skey;
-  ak_pointer generator = NULL;
+//  struct verifykey request, issuer_vkey;
+//  struct signkey issuer_skey;
+//  ak_pointer generator = NULL;
 
-  if( strlen( ki.req_file ) == 0 ) {
-    aktool_error(_("use --req option and set the name of file with request"));
-    return EXIT_FAILURE;
-  }
-  if( strlen( ki.key_file ) == 0 ) {
-    aktool_error(_("use --key option and set the name of file with secret key"));
-    return EXIT_FAILURE;
-  }
+//  if( strlen( ki.req_file ) == 0 ) {
+//    aktool_error(_("use --req option and set the name of file with certificate's request"));
+//    return EXIT_FAILURE;
+//  }
+//  if( strlen( ki.key_file ) == 0 ) {
+//    aktool_error(_("use --key option and set the name of file with issuer's secret key"));
+//    return EXIT_FAILURE;
+//  }
+//  if( strlen( ki.pubkey_file ) == 0 ) {
+//    aktool_error(_("use --pubkey option and set the name of file with issuer's public key"));
+//    return EXIT_FAILURE;
+//  }
 
- /* создаем генератор слечайных чисел */
-  if( ki.name_of_file_for_generator != NULL ) {
-    if(( error = ak_random_create_file( generator = malloc( sizeof( struct random )),
-                                               ki.name_of_file_for_generator )) != ak_error_ok ) {
-      if( generator ) free( generator );
-      return EXIT_FAILURE;
-    }
-  }
-   else
-    if(( generator = ak_oid_new_object( ki.oid_of_generator )) == NULL ) return EXIT_FAILURE;
+// /* создаем генератор случайных чисел */
+//  if( ki.name_of_file_for_generator != NULL ) {
+//    if(( error = ak_random_create_file( generator = malloc( sizeof( struct random )),
+//                                               ki.name_of_file_for_generator )) != ak_error_ok ) {
+//      if( generator ) free( generator );
+//      return EXIT_FAILURE;
+//    }
+//  }
+//   else
+//    if(( generator = ak_oid_new_object( ki.oid_of_generator )) == NULL ) return EXIT_FAILURE;
 
- /* считываем запрос на сертификат */
-  if(( error = ak_verifykey_import_from_request( &vkey, ki.req_file )) != ak_error_ok ) {
-    aktool_error(_("file %s has incorrect data"), ki.req_file );
-    goto lab1;
-  }
- /* считываем ключ подписи */
-  if(( error = ak_skey_import_from_file( &skey, sign_function, ki.key_file )) != ak_error_ok ) {
-    aktool_error(_("file %s has incorrect secret key"), ki.key_file );
-    goto lab1;
-  }
- /* при необходимости указываем личность подписанта */
-  if( skey.name == NULL ) aktool_key_input_name( &skey );
+// /* считываем запрос на сертификат */
+//  if(( error = ak_verifykey_import_from_request( &request, ki.req_file )) != ak_error_ok ) {
+//    aktool_error(_("file %s has incorrect data"), ki.req_file );
+//    goto lab1;
+//  }
+// /* считываем ключ подписи */
+//  if(( error = ak_skey_import_from_file( &issuer_skey, sign_function,
+//                                                                 ki.key_file )) != ak_error_ok ) {
+//    aktool_error(_("file %s has incorrect secret key"), ki.key_file );
+//    goto lab2;
+//  }
 
- /* экспортируем открытый ключ в сертификат */
-  if( ki.format == aktool_magic_number ) ki.format = asn1_pem_format;
-  if(( error = ak_verifykey_export_to_certificate(
-                   &vkey,
-                   &skey,
-                   generator,
-                   &ki.opts,
-                   ki.op_file, ( strlen( ki.op_file ) > 0 ) ? 0 : sizeof( ki.op_file ),
-                   ki.format
-     )) != ak_error_ok ) {
-    aktool_error(_("wrong export a public key to certificate %s"), ki.op_file );
-  } else printf(_("certificate of public key stored in %s\n"), ki.op_file );
+// здесь затык -|
 
-  ak_signkey_destroy( &skey );
+// /* считываем ключ проверки */
+//  if(( error = ak_verify_import_from_file( &issuer_vkey, sign_function,
+//                                                                 ki.key_file )) != ak_error_ok ) {
+//    aktool_error(_("file %s has incorrect secret key"), ki.key_file );
+//    goto lab2;
+//  }
 
- lab1:
-  ak_verifykey_destroy( &vkey );
-  if( ki.name_of_file_for_generator != NULL ) {
-    ak_random_destroy( generator );
-    free( generator );
-  }
-   else ak_oid_delete_object( ki.oid_of_generator, generator );
+//// /* экспортируем открытый ключ в сертификат */
+////  if( ki.format == aktool_magic_number ) ki.format = asn1_pem_format;
+////  if(( error = ak_verifykey_export_to_certificate(
+////                   &vkey,
+////                   &skey,
+////                   generator,
+////                   &ki.opts,
+////                   ki.op_file, ( strlen( ki.op_file ) > 0 ) ? 0 : sizeof( ki.op_file ),
+////                   ki.format
+////     )) != ak_error_ok ) {
+////    aktool_error(_("wrong export a public key to certificate %s"), ki.op_file );
+////  } else printf(_("certificate of public key stored in %s\n"), ki.op_file );
+
+////  ak_signkey_destroy( &skey );
+
+// lab3:
+//  ak_signkey_destroy( &issuer_skey );
+
+// lab2:
+//  ak_verifykey_destroy( &request );
+
+// lab1:
+//  if( ki.name_of_file_for_generator != NULL ) {
+//    ak_random_destroy( generator );
+//    free( generator );
+//  }
+//   else ak_oid_delete_object( ki.oid_of_generator, generator );
 
  return error == ak_error_ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int aktool_key_input_name( ak_pointer key )
+ int aktool_key_input_name( ak_verifykey key )
 {
   size_t len = 0;
   char string[256];
@@ -576,7 +608,7 @@
   aktool_key_print_disclaimer();
 
  /* в короткой форме мы можем запросить флаги
-               /co/st/ln/or/ou/sa/cn/su/em/sn */
+               /ct/st/ln/or/ou/sa/cn/su/em/sn */
 
  /* 1. Country Name */
   ak_snprintf( string, len = sizeof( string ), "RU" );
@@ -586,43 +618,43 @@
     string[1] = toupper( string[1] );
    #endif
     string[2] = 0;
-    if( len && ( ak_signkey_add_name_string( key,
+    if( len && ( ak_verifykey_add_name_string( key,
                                       "country-name", string ) == ak_error_ok )) noname = ak_false;
   }
  /* 2. State or Province */
   memset( string, 0, len = sizeof( string ));
   if( ak_string_read(_("State or Province"), string, &len ) == ak_error_ok )
-    if( len && ( ak_signkey_add_name_string( key,
+    if( len && ( ak_verifykey_add_name_string( key,
                             "state-or-province-name", string ) == ak_error_ok )) noname = ak_false;
  /* 3. Locality */
   memset( string, 0, len = sizeof( string ));
   if( ak_string_read(_("Locality (eg, city)"), string, &len ) == ak_error_ok )
-    if( len && ( ak_signkey_add_name_string( key,
+    if( len && ( ak_verifykey_add_name_string( key,
                                      "locality-name", string ) == ak_error_ok )) noname = ak_false;
  /* 4. Organization */
   memset( string, 0, len = sizeof( string ));
   if( ak_string_read(_("Organization (eg, company)"), string, &len ) == ak_error_ok )
-    if( len && ( ak_signkey_add_name_string( key,
+    if( len && ( ak_verifykey_add_name_string( key,
                                       "organization", string ) == ak_error_ok )) noname = ak_false;
  /* 5. Organization Unit*/
   memset( string, 0, len = sizeof( string ));
   if( ak_string_read(_("Organization Unit"), string, &len ) == ak_error_ok )
-    if( len && ( ak_signkey_add_name_string( key,
+    if( len && ( ak_verifykey_add_name_string( key,
                                  "organization-unit", string ) == ak_error_ok )) noname = ak_false;
  /* 6. Street Address */
   memset( string, 0, len = sizeof( string ));
   if( ak_string_read(_("Street Address"), string, &len ) == ak_error_ok )
-    if( len && ( ak_signkey_add_name_string( key,
+    if( len && ( ak_verifykey_add_name_string( key,
                                     "street-address", string ) == ak_error_ok )) noname = ak_false;
  /* 7. Common Name */
   memset( string, 0, len = sizeof( string ));
   if( ak_string_read(_("Common Name"), string, &len ) == ak_error_ok )
-    if( len && ( ak_signkey_add_name_string( key,
+    if( len && ( ak_verifykey_add_name_string( key,
                                        "common-name", string ) == ak_error_ok )) noname = ak_false;
  /* 8. email address */
   memset( string, 0, len = sizeof( string ));
   if( ak_string_read(_("Email Address"), string, &len ) == ak_error_ok )
-    if( len && ( ak_signkey_add_name_string( key,
+    if( len && ( ak_verifykey_add_name_string( key,
                                      "email-address", string ) == ak_error_ok )) noname = ak_false;
   if( noname ) {
     aktool_error(
@@ -648,6 +680,8 @@
  return ak_error_ok;
 }
 
+// СДЕЛАТЬ -c <request> с параметром, а опцию --req удалить
+
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key_help( void )
 {
@@ -659,13 +693,14 @@
      " -c, --cert              create a public key certificate from a given request\n"
      "     --curve             set the elliptic curve identifier for public keys\n"
      "     --days              set the days count to expiration date of secret or public key\n"
-     "     --key               set the secret key to sign the public key certificate\n"
+     "     --key               name of the issuer's secret key that will be used to sign the certificate\n"
      "     --label             assign the user-defined label to secret key\n"
      " -n, --new               generate a new key or key pair for specified algorithm\n"
      "     --output-public-key set the file name for the new public key request\n"
      " -o, --output-secret-key set the file name for the new secret key\n"
      "     --op                short form of --output-public-key option\n"
      "     --password          specify the password for storing a secret key directly in command line\n"
+     "     --pubkey            name of the issuer's public key, information from which will be placed in the certificate\n"
      "     --random            set the name or identifier of random sequences generator\n"
      "                         the generator will be used to create a new key [ default value is \"%s\" ]\n"
      "     --random-file       set the name of file with random sequence\n"

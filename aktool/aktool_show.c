@@ -245,30 +245,6 @@
       else printf("%s (%s)\n", curvoid->name[0], curvoid->id[0] );
     printf(_("   verify key: %s\n"),
                              ak_ptr_to_hexstr(((ak_signkey)key)->verifykey_number, 32, ak_false ));
-   /* выводим расширенное имя
-      для этого нам приходится вручную разбирать последовательность строк типа DistinguishedName */
-    if( ((ak_signkey)key)->name != NULL ) {
-      ak_asn1 asn = ((ak_signkey)key)->name->data.constructed;
-      ak_asn1_first( asn );
-      do{
-        if( DATA_STRUCTURE( asn->current->tag ) == CONSTRUCTED ) {
-          ak_asn1 asn1 = asn->current->data.constructed;
-          if( DATA_STRUCTURE( asn1->current->tag ) == CONSTRUCTED ) {
-            ak_asn1 asn2 = asn1->current->data.constructed;
-            ak_pointer ptr = NULL;
-            ak_oid item = NULL;
-
-            ak_asn1_first( asn2 );
-            ak_tlv_get_oid( asn2->current, &ptr );
-            if(( item = ak_oid_find_by_id( ptr )) != NULL ) printf("%13s: ", item->name[1] );
-            ak_asn1_next( asn2 );
-            ak_tlv_get_utf8_string( asn2->current, &ptr );
-            printf("%s\n", (char *)ptr );
-          }
-        }
-      } while( ak_asn1_next( asn ));
-    } else printf(_("extended name: undefined"));
-
   }
   printf(_("         file: %s\n"), filename );
   ak_oid_delete_object( ((ak_skey)key)->oid, key );

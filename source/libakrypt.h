@@ -1483,13 +1483,6 @@ extern "C" {
     строки из заданной последовательности. */
  dll_export ak_tlv ak_tlv_duplicate_global_name( ak_tlv );
 
-/*! \brief Создание расширения, содержащего идентификатор открытого ключа (x509v3: SubjectKeyIdentifier ) */
- dll_export ak_tlv ak_tlv_new_subject_key_identifier( ak_pointer, const size_t );
-/*! \brief Создание расширения, содержащего основные ограничения (x509v3: BasicConstraints ) */
- dll_export ak_tlv ak_tlv_new_basic_constraints( bool_t , const ak_uint32 );
-/*! \brief Создание расширения, содержащего область применения сертификата (x509v3: keyUsage ) */
- dll_export ak_tlv ak_tlv_new_key_usage( const ak_uint32 );
-
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Выделение памяти и создание одного уровня ASN1 дерева. */
  dll_export ak_asn1 ak_asn1_new( void );
@@ -1599,9 +1592,6 @@ extern "C" {
   struct skey key;
  /*! \brief контекст функции хеширования */
   struct hash ctx;
- /*! \brief ASN.1 дерево, содержащее в себе последовательность расширенных имен
-    владельца ключа (согласно ITU-T X.509) */
-  ak_tlv name;
  /*! \brief номер открытого ключа, выработанного из данного секретного ключа. */
   ak_uint8 verifykey_number[32];
 } *ak_signkey;
@@ -1641,8 +1631,6 @@ extern "C" {
  dll_export int ak_signkey_set_key( ak_signkey , const ak_pointer , const size_t );
 /*! \brief Присвоение секретному ключу электронной подписи случайного значения. */
  dll_export int ak_signkey_set_key_random( ak_signkey , ak_random );
-/*! \brief Функция добавляет к расширенному имени владельца ключа новую строку. */
- dll_export int ak_signkey_add_name_string( ak_signkey , const char * , const char * );
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1705,22 +1693,38 @@ extern "C" {
  #define bit_decipherOnly         (1)
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Структура, в которой хранятся параметры создаваемого сертификата открытого ключа. */
+/*! \brief Структура, в которой хранятся параметры сертификата открытого ключа.
+    \details Указанные параметры исопльзуются при создании сертификата, а также при проверке
+    его валидности.                                                                                */
+/* ----------------------------------------------------------------------------------------------- */
   typedef struct certificate_opts
 {
- /*! \brief флаг того, что самоподписанный сертификат может порождать цепочки сертификации. */
-  bool_t ca;
- /*! \brief количество промежуточных сертификатов в цепочке сертификации. */
-  ak_uint32 pathlenConstraint;
- /*! \brief набор бит, описывающих область примеения открытого ключа (расширение `keyUsage`). */
+ /*! \brief расширение Basic Constraints */
+  struct {
+    /*! \brief определено ли данное расширение */
+     bool_t is_present;
+    /*! \brief разрешено ли порождать цепочки сертификации */
+     bool_t value;
+   /*! \brief количество промежуточных сертификатов в цепочке сертификации. */
+     ak_uint32 pathlenConstraint;
+  } ca;
+
+ /*! \brief набор бит, описывающих область применения открытого ключа (расширение `keyUsage`). */
   ak_uint32 keyUsageBits;
+
+ /*! \brief расширение Authority Key Identifier */
+  struct {
+    /*! \brief определено ли данное расширение */
+     bool_t is_present;
+  } authority_key_identifier;
+
 } *ak_certificate_opts;
 
 /*! \brief параметры сертификата, устанавливаемые по-умолчанию */
-/*! - по-умолчанию, самоподписанный сертификат может порождать цепочки сертификации
+/*! - по-умолчанию, самоподписанный сертификат не может порождать цепочки сертификации
     - длина цепочки равна 1 (ноль - это число промежуточных сертификатов)
     - флаги применения ключа не установлены */
- #define certificate_default_options { ak_true, 0, 0 }
+ #define certificate_default_options {{ ak_false, ak_false, 0 }, 0 }
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
@@ -1743,21 +1747,31 @@ extern "C" {
  dll_export int ak_verifykey_add_name_string( ak_verifykey , const char * , const char * );
 /*! \brief Уничтожение контекста открытого ключа. */
  dll_export int ak_verifykey_destroy( ak_verifykey );
-
 /*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
     в запрос на получение сертификата окрытого ключа. */
  dll_export int ak_verifykey_export_to_request( ak_verifykey , ak_signkey , ak_random ,
                                                          char * , const size_t , export_format_t );
-/*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
-    в сертификат открытого ключа. */
- dll_export int ak_verifykey_export_to_certificate( ak_verifykey , ak_signkey , ak_random ,
-                                   ak_certificate_opts , char * , const size_t , export_format_t );
 /*! \brief Функция импортирует открытый ключ асимметричного преобразования из запроса
    на сертификат открытого ключа */
  dll_export int ak_verifykey_import_from_request( ak_verifykey , const char * );
 /*! \brief Функция импортирует открытый ключ асимметричного преобразования из запроса
    на сертификат открытого ключа */
  dll_export ak_pointer ak_verifykey_load_from_request( const char * );
+
+/*! \brief Функция вырабатывает серийный номер сертификата. */
+ dll_export int ak_verifykey_generate_certificate_number( ak_verifykey , ak_signkey , ak_mpzn256 );
+
+
+/*! \brief Создание расширения, содержащего идентификатор открытого ключа
+   (x509v3: SubjectKeyIdentifier ) */
+ dll_export ak_tlv ak_tlv_new_subject_key_identifier( ak_pointer, const size_t );
+/*! \brief Создание расширения, содержащего основные ограничения (x509v3: BasicConstraints ) */
+ dll_export ak_tlv ak_tlv_new_basic_constraints( bool_t , const ak_uint32 );
+/*! \brief Создание расширения, содержащего область применения сертификата (x509v3: keyUsage ) */
+ dll_export ak_tlv ak_tlv_new_key_usage( const ak_uint32 );
+/*! \brief Создание расширения, содержащего информацию о ключе проверки сертификата
+   (x509v3: Authority Key Identifier) */
+ dll_export ak_tlv ak_tlv_new_authority_key_identifier( ak_signkey , ak_verifykey );
 
 /** @} *//** \addtogroup signalg-doc Алгоритмы выработки и проверки электроной подписи
  @{ */
