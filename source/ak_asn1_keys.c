@@ -1175,6 +1175,10 @@
     result[0..31] = Hash( vk->number || sk->number )
    \endcode
 
+    Вычисленное значение не помещается в контекст открытого ключа, а возвращается как
+    большое целое число. Это позволяет использовать данную функцию как при экспорте,
+    так и при импорте сертификатов открытых ключей (в момент разбора цепочек сертификации).
+
    \param vk контекст открытого ключа, помещаемого в asn1 дерево сертификата
    \param sk контекст ключа подписи, содержащий параметры центра сертификации
    \param serialNumber переменная, в которую помещается серийный номер.
@@ -1202,7 +1206,6 @@
 /* ----------------------------------------------------------------------------------------------- */
                     /* Функции импорта секретной ключевой информации */
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция проверяет, что данный узел ASN.1 дерева является контейнером. */
 /*! В случае успешной проверки, функция присваивает двум своим аргументам ссылки на поддеревья,
     содержащие информацию о процедуре выработки производных ключей (basicKey) и собственно
     зашифрованных данных (content).
@@ -1225,7 +1228,7 @@
     \return Функция возвращает истину, если количество ключей в контейнере отлично от нуля.
     В противном случае возвращается ложь.                                                          */
 /* ----------------------------------------------------------------------------------------------- */
- static bool_t ak_tlv_check_libakrypt_container( ak_tlv tlv, ak_asn1 *basicKey, ak_asn1 *content )
+ bool_t ak_tlv_check_libakrypt_container( ak_tlv tlv, ak_asn1 *basicKey, ak_asn1 *content )
 {
   ak_asn1 asn = NULL;
   ak_pointer str = NULL;
@@ -2025,6 +2028,263 @@
   }
 
  return vkey;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_verifykey_import_from_asn1_tbs( ak_verifykey subject_vkey,
+                                                           ak_verifykey *issuer_vkey, ak_tlv tbs )
+{
+  ak_uint32 version = 0;
+  int error = ak_error_ok;
+  ak_asn1 sequence = tbs->data.constructed;
+  ak_tlv subject_name = NULL, issuer_name = NULL;
+
+//  if( *issuer_vkey == NULL ) {
+//    if(( *issuer_vkey = malloc( sizeof( struct verifykey ))) == NULL )
+//      return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
+//  }
+
+ /* 1. получаем версию сертификата */
+   ak_asn1_first( sequence );
+   if(( DATA_STRUCTURE( sequence->current->tag ) != CONSTRUCTED ) ||
+      ( DATA_CLASS( sequence->current->tag ) != ( CONTEXT_SPECIFIC^0x00 ))) {
+     ak_error_message_fmt( error = ak_error_invalid_asn1_tag, __func__,
+                 "incorrect tag value for certificate version (tag: %x)", sequence->current->tag );
+     goto lab1;
+   }
+    else
+     if(( error = ak_tlv_get_uint32(
+                      sequence->current->data.constructed->current, &version )) != ak_error_ok ) {
+       ak_error_message( error, __func__, "incorrect reading of certificate's version" );
+       goto lab1;
+     }
+
+ /* 2. Пропускаем серийный номер сертификата (вырабатывается при подписи сертификата)
+       (данное значение не помещается в контекст) */
+   ak_asn1_next( sequence );
+
+ /* 3. Получаем алгоритм подписи (oid секретного ключа) */
+   ak_asn1_next( sequence );
+
+ /* 4. Получаем имя эмитента (лица подписавшего сертификат)
+       и сравниваем с тем, что у нас есть (если сертификат был создан ранее)
+       иначе просто присваиваем имя в контекст */
+   ak_asn1_next( sequence );
+   if(( DATA_STRUCTURE( sequence->current->tag ) != CONSTRUCTED ) ||
+      ( TAG_NUMBER( sequence->current->tag ) != TSEQUENCE )) {
+     ak_error_message_fmt( error = ak_error_invalid_asn1_tag, __func__,
+                   "unexpected tag value for generalized name of certificate's issuer (tag: %x)",
+                                                                         sequence->current->tag );
+     goto lab1;
+   }
+   issuer_name = sequence->current;
+   if( *issuer_vkey != NULL ) { /* в функцию передан созданный ранее открытый ключ проверки подписи,
+                                   поэтому мы должны проверить совпадение имен, т.е. то,
+                                   что переданный ключ совпадает с тем, что был использован
+                                                                           при подписи сертификата */
+     if( ak_tlv_compare_global_names( issuer_name, (*issuer_vkey)->name ) != ak_error_ok ) {
+       error = ak_error_certificate_not_equal_names;
+       goto lab1;
+     }
+   }
+
+   ak_tlv_print( issuer_name, stdout );
+
+   здесь конец
+
+
+ /* 5. Получаем интервал времени действия */
+   ak_asn1_next( sequence );
+
+ /* 6. Получаем имя владельца импортируемого ключа */
+   ak_asn1_next( sequence );
+
+ /* 7. Получаем информацию о создаваемом открытом ключе */
+   ak_asn1_next( sequence );
+
+ /* 8. Ппропускаем поля второй версии и переходм к расширениям */
+   ak_asn1_last( sequence );
+
+   lab1:
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Считывание открытого ключа из сертификата, представленного в виде ASN.1 дерева.
+
+    \param vkey контекст создаваемого открытого ключа асимметричного криптографического алгоритма,
+    параметры которого считываются из файла `filename`
+    \param issuer_vkey открытый ключ, с помощью которого можно проверить подпись под сертификатом;
+    может принимать значение `NULL`
+    \param filename имя файла, из которого считываются значения параметров открытого ключа
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_verifykey_import_from_asn1_certificate( ak_verifykey subject_vkey,
+                                                           ak_verifykey issuer_vkey, ak_asn1 root )
+{
+  size_t len = 0;
+  ak_asn1 lvs = NULL;
+  ak_tlv tbs = NULL;
+  struct bit_string bs;
+  ak_uint8 buffer[4096];
+  int error = ak_error_ok;
+  ak_verifykey ptrkey = issuer_vkey;
+
+ /* простейшие проверки  */
+  if( root->count != 1 )  {
+    /* здесь мы проверяем, что это сертификат, а не коллекция сертификатов, т.е.
+       asn1 дерево содержит только 1 элемент верхнего уровня */
+    ak_error_message( error = ak_error_invalid_asn1_count, __func__,
+                                         "unexpected count of top level elements (certificates)" );
+    goto lab1;
+  }
+  if(( DATA_STRUCTURE( root->current->tag ) != CONSTRUCTED ) ||
+     ( TAG_NUMBER( root->current->tag ) != TSEQUENCE )) {
+   /* здесь мы проверили, что внутри находится sequence */
+     ak_error_message_fmt( error = ak_error_invalid_asn1_tag, __func__ ,
+                      "unexpected type of certificate's container (tag: %x)", root->current->tag );
+     goto lab1;
+  } else lvs = root->current->data.constructed;
+
+  if( lvs->count != 3 )  {
+   /* здесь мы проверяем, что это последовательность из трех элементов
+      - tbs
+      - параметры подписи
+      - собственно сама подпись */
+    ak_error_message_fmt( error = ak_error_invalid_asn1_count, __func__,
+                      "incorrect count of top level certificate elements (value: %u, must be: 3)",
+                                                                       (unsigned int) lvs->count );
+    goto lab1;
+  }
+
+ /* 1. Выделяем tbs и приступаем к его разбору */
+  ak_asn1_first( lvs );
+  tbs = lvs->current;
+  if(( DATA_STRUCTURE( tbs->tag ) != CONSTRUCTED ) ||
+     ( TAG_NUMBER( tbs->tag ) != TSEQUENCE )) {
+   /* здесь мы проверили, что внутри находится sequence */
+     ak_error_message_fmt( error = ak_error_invalid_asn1_tag, __func__ ,
+                  "unexpected type of TBSCertificate's container (tag: %x)", root->current->tag );
+     goto lab1;
+  }
+
+  if(( error = ak_verifykey_import_from_asn1_tbs( subject_vkey, &ptrkey, tbs )) != ak_error_ok ) {
+     ak_error_message( error, __func__ , "incorrect decoding of TBSCertificate's container" );
+     goto lab1;
+  }
+
+ /* если открытый ключ был создан в ходе работы функции, его надо удалить */
+  if( ptrkey != issuer_vkey ) {
+    ak_verifykey_destroy( ptrkey );
+    free( ptrkey );
+  }
+  lab1:
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция считывает из заданного файла `filename` сертификат открытого ключа,
+    хранящийся в виде asn1 дерева, определяемого Р 1323565.1.023-2018.
+    Собственно asn1 дерево может быть храниться в файле в виде обычной der-последовательности,
+    либо в виде der-последовательности, дополнительно закодированной в `base64` (формат `pem`).
+
+    \note Функция является конструктором контекста `vkey`.
+    После считывания asn1 дерева  функция проверяет подпись под сертификатом открытого ключа и,
+    в случае успешной проверки, создает контекст `vkey` и инициирует его необходимыми значениями.
+
+    Для поиска ключа проверки подписи (открытого ключа электронной подписи), используется
+    следующая последовательность шагов:
+
+    - если указатель `issuer_vkey` отличен от `NULL`, то для проверки используется `issuer_vkey`
+     (если номер сертификата проверки подписи не совпадает с тем, что содержится в issuer_vkey, то
+      возбуждается ошибка)
+    - иначе функция ищет сертифкат с соотвествующим серийным номером в устанавливаемом
+      библиотекой `libakrypt` каталоге; данный каталог указывается при сборке библотеки из
+      исходных текстов в параметре `AK_CA_PATH`; для unix-like систем значением по умолчанию является
+      каталог `\usr\share\ca-certificates\libakrypt`.
+
+    \param vkey контекст создаваемого открытого ключа асимметричного криптографического алгоритма,
+    параметры которого считываются из файла `filename`
+    \param issuer_vkey открытый ключ, с помощью которого можно проверить подпись под сертификатом;
+    может принимать значение `NULL`
+    \param filename имя файла, из которого считываются значения параметров открытого ключа
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_verifykey_import_from_certificate( ak_verifykey subject_vkey,
+                                                   ak_verifykey issuer_vkey, const char *filename )
+{
+  ak_asn1 root = NULL;
+  int error = ak_error_ok;
+
+ /* стандартные проверки */
+  if( subject_vkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using null pointer to secret key context" );
+  if( filename == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                                "using null pointer to filename" );
+ /* считываем ключ и преобразуем его в ASN.1 дерево */
+  if(( error = ak_asn1_import_from_file( root = ak_asn1_new(), filename )) != ak_error_ok ) {
+    ak_error_message_fmt( error, __func__,
+                                     "incorrect reading of ASN.1 context from %s file", filename );
+    goto lab1;
+  }
+
+ /* собственно выполняем считывающее преобразование */
+  if(( error = ak_verifykey_import_from_asn1_certificate( subject_vkey,
+                                                           issuer_vkey, root )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong import of public key from asn.1 context" );
+  }
+
+  lab1: if( root != NULL ) ak_asn1_delete( root );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция предполагает, что в области памяти `ptr` располагается сертификат открытого ключа,
+    записанныей в der-кодировке. Функция пытается разобрать даный сертификат
+    аналогично функции ak_verifykey_import_from_certificate().
+
+    Причина использования даной фукции заключается в расколировании сертификатов,
+    передаваемых в ходе выполнения криптографических протоколов, и считываемых, вместе с
+    другими данными, в оперативную память.
+
+    \param vkey контекст создаваемого открытого ключа асимметричного криптографического алгоритма,
+    параметры которого считываются из файла `filename`
+    \param issuer_vkey открытый ключ, с помощью которого можно проверить подпись под сертификатом;
+    может принимать значение `NULL`
+    \param указатель на область памяти, в которой распологается сертификат открытого ключа
+    \param size размер сертификата (в октетах)
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_verifykey_import_from_ptr_as_certificate( ak_verifykey subject_vkey,
+                                 ak_verifykey issuer_vkey, const ak_pointer ptr, const size_t size )
+{
+  ak_asn1 root = NULL;
+  int error = ak_error_ok;
+
+ /* стандартные проверки */
+  if( subject_vkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using null pointer to secret key context" );
+  if(( ptr == NULL ) || ( size == 0 ))
+    return ak_error_message( ak_error_null_pointer, __func__,
+                                       "using null pointer or zero length data with certificate" );
+
+ /* считываем ключ и преобразуем его в ASN.1 дерево */
+  if(( error = ak_asn1_decode( root = ak_asn1_new(), ptr, size, ak_false )) != ak_error_ok ) {
+    ak_error_message_fmt( error, __func__, "incorrect decoding of ASN.1 context from data buffer");
+    goto lab1;
+  }
+
+ /* собственно выполняем считывающее преобразование */
+  if(( error = ak_verifykey_import_from_asn1_certificate( subject_vkey,
+                                                           issuer_vkey, root )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong import of public key from asn.1 context" );
+  }
+
+  lab1: if( root != NULL ) ak_asn1_delete( root );
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

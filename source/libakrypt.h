@@ -93,6 +93,10 @@ extern "C" {
 /*! \brief Ошибка, возникающая при декодировании ASN1 структуры (перевод из DER-кодировки в ASN1 структуру). */
  #define ak_error_wrong_asn1_decode           (-146)
 
+/*! \brief Ошибка, возникающая при несовпадении расширенных имен проверяющего
+    в проверяемом сертификате открытого и используемом для проверки открытом ключе */
+ #define ak_error_certificate_not_equal_names (-150)
+
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup options-doc Инициализация и настройка параметров библиотеки
  @{ */
@@ -1482,6 +1486,8 @@ extern "C" {
 /*! \brief Функция создает новую последовательность обобщенных имен и копирует в нее типизированные
     строки из заданной последовательности. */
  dll_export ak_tlv ak_tlv_duplicate_global_name( ak_tlv );
+/*! \brief Функция сравнивает две последовательности обобщенных имен. */
+ dll_export int ak_tlv_compare_global_names( ak_tlv , ak_tlv );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Выделение памяти и создание одного уровня ASN1 дерева. */
@@ -1760,8 +1766,16 @@ extern "C" {
 
 /*! \brief Функция вырабатывает серийный номер сертификата. */
  dll_export int ak_verifykey_generate_certificate_number( ak_verifykey , ak_signkey , ak_mpzn256 );
+/*! \brief Функция импортирует открытый ключ асимметричного преобразования из сертификата
+   открытого ключа */
+ dll_export int ak_verifykey_import_from_certificate( ak_verifykey , ak_verifykey , const char * );
+/*! \brief Функция импортирует открытый ключ асимметричного преобразования из сертификата
+   открытого ключа, расположенного в памяти */
+ dll_export int ak_verifykey_import_from_ptr_as_certificate( ak_verifykey ,
+                                                  ak_verifykey , const ak_pointer , const size_t );
 
-
+/*! \brief Функция проверяет, что данный узел ASN.1 дерева является контейнером. */
+ bool_t ak_tlv_check_libakrypt_container( ak_tlv tlv, ak_asn1 * , ak_asn1 * );
 /*! \brief Создание расширения, содержащего идентификатор открытого ключа
    (x509v3: SubjectKeyIdentifier ) */
  dll_export ak_tlv ak_tlv_new_subject_key_identifier( ak_pointer, const size_t );

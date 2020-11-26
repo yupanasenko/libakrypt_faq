@@ -1476,6 +1476,106 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция проводит сравнение построчно (сначала oid, потом его значение)
+    \param right указатель на первую сравниваемую структуру узла ASN1 дерева.
+    \param left указатель на вторую сравниваемую структуру узла ASN1 дерева.
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_compare_global_names( ak_tlv right, ak_tlv left )
+{
+  ak_asn1 asn_left = NULL, asn_right = NULL;
+
+  if(( right == NULL ) || ( left == NULL ))
+    return ak_error_message( ak_error_null_pointer, __func__, "using null pointer" );
+  if(( DATA_STRUCTURE( right->tag ) != CONSTRUCTED ) ||
+     ( DATA_STRUCTURE( left->tag ) != CONSTRUCTED ))
+    return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                                             "using not constructed tlv context" );
+  if(( TAG_NUMBER( right->tag ) != TSEQUENCE ) || ( TAG_NUMBER( left->tag ) != TSEQUENCE ))
+    return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                                      "using tlv context which are not sequence" );
+ /* стравниваем длины обобщенных имен */
+  if( (asn_right = right->data.constructed)->count != (asn_left = left->data.constructed)->count )
+    return ak_error_message( ak_error_not_equal_data, __func__,
+                                          "the given global names has different element's count" );
+ /* теперь поэлементное сравнение */
+  ak_asn1_first( asn_right );
+  ak_asn1_first( asn_left );
+  do{
+      char memory[1025];
+      ak_oid oid_right = NULL, oid_left = NULL;
+      ak_pointer ptr_right = NULL, ptr_left = NULL;
+      ak_asn1 asnset_right = NULL, asnset_left = NULL;
+
+     /* выполняем проверки и спускаемся вниз
+        мы ожидаем set с одним элементом, которым является последовательность пар - oid/строка */
+      if(( DATA_STRUCTURE( asn_right->current->tag ) != CONSTRUCTED ) ||
+         ( TAG_NUMBER( asn_right->current->tag ) != TSET ))
+        return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                        "right source tlv context hasn't set as correct subtree" );
+      if(( DATA_STRUCTURE( asn_left->current->tag ) != CONSTRUCTED ) ||
+         ( TAG_NUMBER( asn_left->current->tag ) != TSET ))
+        return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                         "left source tlv context hasn't set as correct subtree" );
+
+      if(( asnset_right = asn_right->current->data.constructed )->count != 1 )
+        return ak_error_message( ak_error_invalid_asn1_count, __func__,
+                                     "right source tlv context hasn't correct count of subtrees" );
+      if(( asnset_left = asn_left->current->data.constructed )->count != 1 )
+        return ak_error_message( ak_error_invalid_asn1_count, __func__,
+                                      "left source tlv context hasn't correct count of subtrees" );
+
+      if(( DATA_STRUCTURE( asnset_right->current->tag ) != CONSTRUCTED ) ||
+         ( TAG_NUMBER( asnset_right->current->tag ) != TSEQUENCE ))
+        return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                  "nested right asn1 context hasn't sequence as correct subtree" );
+      if(( DATA_STRUCTURE( asnset_left->current->tag ) != CONSTRUCTED ) ||
+         ( TAG_NUMBER( asnset_left->current->tag ) != TSEQUENCE ))
+        return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                   "nested left asn1 context hasn't sequence as correct subtree" );
+
+      if(( asnset_right = asnset_right->current->data.constructed )->count != 2 )
+        return ak_error_message( ak_error_invalid_asn1_count, __func__,
+                                    "nested right asn1 context hasn't correct count of subtrees" );
+      if(( asnset_left = asnset_left->current->data.constructed )->count != 2 )
+        return ak_error_message( ak_error_invalid_asn1_count, __func__,
+                                     "nested left asn1 context hasn't correct count of subtrees" );
+
+     /* только сейчас получаем значения, которые должны сравниваться между собой */
+      ak_asn1_first( asnset_right );
+      ak_asn1_first( asnset_left );
+
+      ak_tlv_get_oid( asnset_right->current, &ptr_right );
+      if(( oid_right = ak_oid_find_by_id( ptr_right )) == NULL )
+        return ak_error_message( ak_error_wrong_oid, __func__,
+                                              "right source tlv contains a wrong attribute type" );
+      ak_tlv_get_oid( asnset_left->current, &ptr_left );
+      if(( oid_left = ak_oid_find_by_id( ptr_left )) == NULL )
+        return ak_error_message( ak_error_wrong_oid, __func__,
+                                               "left source tlv contains a wrong attribute type" );
+      if( strcmp( oid_right->id[0], oid_left->id[0] ) != 0 )
+        return ak_error_message( ak_error_not_equal_data, __func__,
+                                          "the given global names has different attribute types" );
+
+      ak_asn1_next( asnset_right );
+      ak_asn1_next( asnset_left );
+
+      memset( memory, 0 , sizeof( memory ));
+      ak_tlv_get_utf8_string( asnset_right->current, &ptr_right );
+      strncpy( memory, ptr_right, sizeof( memory )-1 );
+
+      ak_tlv_get_utf8_string( asnset_right->current, &ptr_left );
+      if( strcmp( memory, ptr_left ) != 0 )
+        return ak_error_message( ak_error_not_equal_data, __func__,
+                                                  "the given global names has different values" );
+
+  } while(( ak_asn1_next( asn_right ) && ak_asn1_next( asn_left )));
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция создает расширение x509v3 следующего вида.
 
  \code

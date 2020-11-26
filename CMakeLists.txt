@@ -21,7 +21,12 @@ project( libakrypt-${FULL_VERSION} C )
 option( AK_STATIC_LIB "Build the static library" ON )
 option( AK_SHARED_LIB "Build the shared library" ON )
 option( AK_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
-# AK_CONFIG_PATH
+
+# -------------------------------------------------------------------------------------------------- #
+# Перечень опций, которые имеют предустановленнве значения и могут изменяться через командную строку
+# для linux
+#   set( AK_CONFIG_PATH  "/etc" )
+#   set( AK_CA_PATH "/usr/share/ca-certificates" )
 
 # -------------------------------------------------------------------------------------------------- #
 # подключаем модули CMake для тонкой настройки параметров сборки
@@ -103,12 +108,27 @@ endif()
 message("-- Path for libakrypt.conf is ${AK_CONFIG_PATH}")
 
 # -------------------------------------------------------------------------------------------------- #
+# Определяем место хранения доверенных сертификатов библиотеки
+# -------------------------------------------------------------------------------------------------- #
+if( AK_CA_PATH )
+else()
+  if( CMAKE_HOST_UNIX )
+    set( AK_CA_PATH "/usr/share/ca-certificates/libakrypt" )
+  endif()
+  if( WIN32 )
+    set( AK_CA_PATH "C:\\\\Program Files\\\\Akrypt\\\\ca-certificates" )
+  endif()
+endif()
+message("-- Path for ca-certificates is ${AK_CA_PATH}")
+
+# -------------------------------------------------------------------------------------------------- #
 # Определем процедуры сборки библиотек - статической или динамической
 include_directories( "source" )
 add_compile_options( -DLIBAKRYPT_OPTIONS_PATH="${AK_CONFIG_PATH}" )
 add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
 add_compile_options( -DLIBAKRYPT_COMPILER_NAME="${CMAKE_C_COMPILER}" )
 add_compile_options( -DLIBAKRYPT_COMPILER_VERSION="${CMAKE_C_COMPILER_VERSION}" )
+add_compile_options( -DLIBAKRYPT_CA_PATH="${AK_CA_PATH}" )
 
 if( AK_SHARED_LIB )
   add_library( akbase-shared SHARED ${MAIN_HEADERS} ${AKBASE_SOURCES} )
@@ -168,6 +188,7 @@ set ( ARITHMETIC_TESTS_LIST
       asn1-parse
       sign01
       asn1-keys
+      asn1-cert
     )
 
 if( LIBAKRYPT_GMP_TESTS )
@@ -258,6 +279,10 @@ if( CMAKE_HOST_UNIX )
   install( FILES ${MAIN_HEADERS} DESTINATION include )
   install( FILES ${LIBAKRYPT_DOCUMENTATION} DESTINATION share/doc/libakrypt )
   install( FILES ${CMAKE_SOURCE_DIR}/aktool/aktool.1 DESTINATION share/man/ru/man1 )
+  install( FILES ${CMAKE_SOURCE_DIR}/doc/ca-libakrypt.crt DESTINATION ${AK_CA_PATH} )
+
+# деинсталляция
+# sudo xargs rm < install_manifest.txt
 
 endif()
 
