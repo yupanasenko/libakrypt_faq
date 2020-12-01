@@ -13,12 +13,12 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 #if defined(__unix__) || defined(__APPLE__)
-  #define aktool_default_denerator  "dev-random"
+  #define aktool_default_generator "dev-random"
 #else
   #ifdef AK_HAVE_WINDOWS_H
-    #define aktool_default_denerator "winrtl"
+    #define aktool_default_generator "winrtl"
   #else
-    #define aktool_default_denerator "lcg"
+    #define aktool_default_generator "lcg"
   #endif
 #endif
 
@@ -83,6 +83,8 @@
      { "crl-sign",            0, NULL,  196 },
      { "ca",                  1, NULL,  197 },
      { "path-len",            1, NULL,  198 },
+     { "authority-keyid",     0, NULL,  199 },
+     { "authority-name",      0, NULL,  200 },
 
    /* это стандартые для всех программ опции */
      { "openssl-style",    0, NULL,   5  },
@@ -96,7 +98,7 @@
  /* инициализируем множество параметров по-умолчанию */
   memset( &ki, 0, sizeof( struct key_info ));
   ki.algorithm = NULL;
-  ki.oid_of_generator = ak_oid_find_by_name( aktool_default_denerator );
+  ki.oid_of_generator = ak_oid_find_by_name( aktool_default_generator );
   ki.name_of_file_for_generator = NULL;
   ki.format = asn1_der_format;
   ki.curve = ak_oid_find_by_name( "id-tc26-gost-3410-2012-256-paramSetA" );
@@ -265,19 +267,26 @@
                    break;
 
      /* устанавливаем биты для keyUsage и другие параметры сертификата */
-        case 190:  ki.opts.keyUsageBits ^= bit_digitalSignature;
+        case 190:  ki.opts.key_usage.bits ^= bit_digitalSignature;
+                   ki.opts.key_usage.is_present = ak_true;
                    break;
-        case 191:  ki.opts.keyUsageBits ^= bit_contentCommitment;
+        case 191:  ki.opts.key_usage.bits ^= bit_contentCommitment;
+                   ki.opts.key_usage.is_present = ak_true;
                    break;
-        case 192:  ki.opts.keyUsageBits ^= bit_keyEncipherment;
+        case 192:  ki.opts.key_usage.bits ^= bit_keyEncipherment;
+                   ki.opts.key_usage.is_present = ak_true;
                    break;
-        case 193:  ki.opts.keyUsageBits ^= bit_dataEncipherment;
+        case 193:  ki.opts.key_usage.bits ^= bit_dataEncipherment;
+                   ki.opts.key_usage.is_present = ak_true;
                    break;
-        case 194:  ki.opts.keyUsageBits ^= bit_keyAgreement;
+        case 194:  ki.opts.key_usage.bits ^= bit_keyAgreement;
+                   ki.opts.key_usage.is_present = ak_true;
                    break;
-        case 195:  ki.opts.keyUsageBits ^= bit_keyCertSign;
+        case 195:  ki.opts.key_usage.bits ^= bit_keyCertSign;
+                   ki.opts.key_usage.is_present = ak_true;
                    break;
-        case 196:  ki.opts.keyUsageBits ^= bit_cRLSign;
+        case 196:  ki.opts.key_usage.bits ^= bit_cRLSign;
+                   ki.opts.key_usage.is_present = ak_true;
                    break;
 
         case 197: /* --ca */
@@ -302,6 +311,12 @@
                    }
                    ki.opts.ca.is_present = ki.opts.ca.value = ak_true;
                    ki.opts.ca.pathlenConstraint = ak_min( 100, value );
+                   break;
+
+        case 199:  ki.opts.authority_key_identifier.is_present = ak_true;
+                   break;
+        case 200:  ki.opts.authority_key_identifier.is_present = ak_true;
+                   ki.opts.authority_key_identifier.include_name = ak_true;
                    break;
 
         default:  /* обрабатываем ошибочные параметры */
@@ -430,18 +445,19 @@
     if( ki.format == aktool_magic_number ) { /* сохраняем открытый ключ как корневой сертификат */
 
      /* для корневого (самоподписанного) сертификата обязательно устанавливаем бит keyCertSign */
-      if(( ki.opts.keyUsageBits&bit_keyCertSign ) == 0 ) {
-        ki.opts.keyUsageBits = ( ki.opts.keyUsageBits&(~bit_keyCertSign ))^bit_keyCertSign;
+      ki.opts.key_usage.is_present = ak_true;
+      if(( ki.opts.key_usage.bits&bit_keyCertSign ) == 0 ) {
+        ki.opts.key_usage.bits = ( ki.opts.key_usage.bits&(~bit_keyCertSign ))^bit_keyCertSign;
       }
 
       ki.format = asn1_pem_format; /* возвращаем необходимое значение */
-//      if( ak_verifykey_export_to_certificate( &vkey, key, &vkey, generator,  &ki.opts,
-//                          ki.op_file, ( strlen( ki.op_file ) > 0 ) ? 0 : sizeof( ki.op_file ),
-//                                                                     ki.format ) != ak_error_ok ) {
+      if( ak_verifykey_export_to_certificate( &vkey, key, &vkey, generator,  &ki.opts,
+                          ki.op_file, ( strlen( ki.op_file ) > 0 ) ? 0 : sizeof( ki.op_file ),
+                                                                     ki.format ) != ak_error_ok ) {
         aktool_error(_("wrong export a public key to certificate %s"), ki.op_file );
-//        goto lab2;
-//      }
-//       else printf(_("certificate of public key stored in %s file\n"), ki.op_file );
+        goto lab2;
+      }
+       else printf(_("certificate of public key stored in %s file\n"), ki.op_file );
     }
      else { /* сохраняем запрос на сертификат */
         if( ak_verifykey_export_to_request( &vkey, key, generator, ki.op_file,
@@ -696,9 +712,9 @@
      "     --key               name of the issuer's secret key that will be used to sign the certificate\n"
      "     --label             assign the user-defined label to secret key\n"
      " -n, --new               generate a new key or key pair for specified algorithm\n"
+     "     --op                short form of --output-public-key option\n"
      "     --output-public-key set the file name for the new public key request\n"
      " -o, --output-secret-key set the file name for the new secret key\n"
-     "     --op                short form of --output-public-key option\n"
      "     --password          specify the password for storing a secret key directly in command line\n"
      "     --pubkey            name of the issuer's public key, information from which will be placed in the certificate\n"
      "     --random            set the name or identifier of random sequences generator\n"
@@ -707,6 +723,10 @@
      "     --req               set the name of request to certificate which would be signed\n"
      "     --to                set the format of output file [ enabled values : der, pem, certificate ]\n\n"
      "options for customizing a public key's certificate:\n"
+     "     --authority-keyid   add an authority key identifier to certificate being created\n"
+     "                         this option should only be used for self-signed certificates,\n"
+     "                         in other cases it is used by default\n"
+     "     --authority-name    add an issuer's generalized name to the authority key identifier extension\n"
      "     --ca                use as certificate authority [ enabled values: true, false ]\n"
      "     --path-len          set the maximal length of certificate's chain\n"
      "     --digital-signature use for verifying a digital signatures of user data\n"
@@ -717,7 +737,8 @@
      "     --key-cert-sign     use for verifying of public key's certificates\n"
      "     --crl-sign          use for verifying of revocation lists of certificates\n"
   ),
-  aktool_default_denerator );
+  aktool_default_generator
+ );
   aktool_print_common_options();
 
   printf(_("for usage examples try \"man aktool\"\n" ));

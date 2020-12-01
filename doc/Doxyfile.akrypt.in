@@ -868,6 +868,7 @@ INPUT                  = @CMAKE_SOURCE_DIR@/source/libakrypt.h \
                          @CMAKE_SOURCE_DIR@/source/ak_asn1.c \
                          @CMAKE_SOURCE_DIR@/source/ak_sign.c \
                          @CMAKE_SOURCE_DIR@/source/ak_asn1_keys.c \
+                         @CMAKE_SOURCE_DIR@/source/ak_asn1_cert.c \
                          @CMAKE_SOURCE_DIR@/doc/00-introduction.md \
                          @CMAKE_SOURCE_DIR@/doc/01-install-guide.md \
                          @CMAKE_SOURCE_DIR@/aktool/Readme.md

@@ -7,6 +7,7 @@ find_program( DOXYGEN doxygen )
 find_program( XELATEX xelatex )
 find_program( QHELPGENERATOR qhelpgenerator )
 find_program( ETAGS etags )
+find_program( GZIP gzip )
 
 if( UNIX )
   set( script ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh )
@@ -17,6 +18,9 @@ if( UNIX )
     file( APPEND ${script} "echo Create documentation for aktool utility\n" )
     file( APPEND ${script}
      "pandoc --metadata=date:\"18 July 2021\" --metadata=title:\"aktool\" --metadata=section:1 --metadata=footer:\"Правила пользования\" -s -t man ${CMAKE_SOURCE_DIR}/aktool/Readme.md -o ${CMAKE_SOURCE_DIR}/aktool/aktool.1\n" )
+    if( GZIP )
+      file( APPEND ${script} "gzip --force ${CMAKE_SOURCE_DIR}/aktool/aktool.1\n" )
+    endif()
     file( APPEND ${script} "echo Ok\n" )
   endif()
 

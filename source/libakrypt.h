@@ -96,6 +96,8 @@ extern "C" {
 /*! \brief Ошибка, возникающая при несовпадении расширенных имен проверяющего
     в проверяемом сертификате открытого и используемом для проверки открытом ключе */
  #define ak_error_certificate_not_equal_names (-150)
+/*! \brief Ошибка чтения сертификата с неверным итервалом использования. */
+ #define ak_error_certificate_validity        (-151)
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup options-doc Инициализация и настройка параметров библиотеки
@@ -1521,7 +1523,7 @@ extern "C" {
  dll_export int ak_asn1_add_uint32( ak_asn1 , const ak_uint32 );
 /*! \brief Добавление к текущему уровню ASN1 дерева большого целого числа, представимого
     в виде объекта класса \ref ak_mpzn */
- dll_export int ak_asn1_add_mpzn( ak_asn1 , ak_uint64 * , const size_t );
+ dll_export int ak_asn1_add_mpzn( ak_asn1 , ak_uint8 tag, ak_uint64 * , const size_t );
 /*! \brief Добавление к текущему уровню ASN1 дерева узла, содержащего произвольную
     последовательность октетов */
  dll_export int ak_asn1_add_octet_string( ak_asn1 , const ak_pointer , const size_t );
@@ -1705,7 +1707,7 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
   typedef struct certificate_opts
 {
- /*! \brief расширение Basic Constraints */
+ /*! \brief расширение `Basic Constraints` */
   struct {
     /*! \brief определено ли данное расширение */
      bool_t is_present;
@@ -1715,13 +1717,20 @@ extern "C" {
      ak_uint32 pathlenConstraint;
   } ca;
 
- /*! \brief набор бит, описывающих область применения открытого ключа (расширение `keyUsage`). */
-  ak_uint32 keyUsageBits;
+ /*! \brief расширение `keyUsage`. */
+  struct {
+    /*! \brief определено ли данное расширение */
+     bool_t is_present;
+   /*! \brief набор бит, описывающих область применения открытого ключа */
+    ak_uint32 bits;
+  } key_usage;
 
  /*! \brief расширение Authority Key Identifier */
   struct {
     /*! \brief определено ли данное расширение */
      bool_t is_present;
+    /*! \brief надо ли включать расширенное имя в сертификат */
+     bool_t include_name;
   } authority_key_identifier;
 
 } *ak_certificate_opts;
@@ -1753,6 +1762,8 @@ extern "C" {
  dll_export int ak_verifykey_add_name_string( ak_verifykey , const char * , const char * );
 /*! \brief Уничтожение контекста открытого ключа. */
  dll_export int ak_verifykey_destroy( ak_verifykey );
+/** \addtogroup cert-export-doc Функции экспорта и импорта открытых ключей
+ @{ */
 /*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
     в запрос на получение сертификата окрытого ключа. */
  dll_export int ak_verifykey_export_to_request( ak_verifykey , ak_signkey , ak_random ,
@@ -1766,16 +1777,20 @@ extern "C" {
 
 /*! \brief Функция вырабатывает серийный номер сертификата. */
  dll_export int ak_verifykey_generate_certificate_number( ak_verifykey , ak_signkey , ak_mpzn256 );
+/*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
+    в сертификат открытого ключа. */
+ dll_export int ak_verifykey_export_to_certificate( ak_verifykey , ak_signkey , ak_verifykey ,
+                       ak_random , ak_certificate_opts , char * , const size_t , export_format_t );
 /*! \brief Функция импортирует открытый ключ асимметричного преобразования из сертификата
    открытого ключа */
- dll_export int ak_verifykey_import_from_certificate( ak_verifykey , ak_verifykey , const char * );
+ dll_export int ak_verifykey_import_from_certificate( ak_verifykey , ak_verifykey ,
+                                                              const char * , ak_certificate_opts );
 /*! \brief Функция импортирует открытый ключ асимметричного преобразования из сертификата
    открытого ключа, расположенного в памяти */
  dll_export int ak_verifykey_import_from_ptr_as_certificate( ak_verifykey ,
-                                                  ak_verifykey , const ak_pointer , const size_t );
-
-/*! \brief Функция проверяет, что данный узел ASN.1 дерева является контейнером. */
- bool_t ak_tlv_check_libakrypt_container( ak_tlv tlv, ak_asn1 * , ak_asn1 * );
+                            ak_verifykey , const ak_pointer , const size_t , ak_certificate_opts );
+/** @} *//** \addtogroup cert-tlv-doc Функции создания расширений сертификатов открытых ключей
+ @{ */
 /*! \brief Создание расширения, содержащего идентификатор открытого ключа
    (x509v3: SubjectKeyIdentifier ) */
  dll_export ak_tlv ak_tlv_new_subject_key_identifier( ak_pointer, const size_t );
@@ -1785,8 +1800,8 @@ extern "C" {
  dll_export ak_tlv ak_tlv_new_key_usage( const ak_uint32 );
 /*! \brief Создание расширения, содержащего информацию о ключе проверки сертификата
    (x509v3: Authority Key Identifier) */
- dll_export ak_tlv ak_tlv_new_authority_key_identifier( ak_signkey , ak_verifykey );
-
+ dll_export ak_tlv ak_tlv_new_authority_key_identifier( ak_signkey , ak_verifykey , const bool_t );
+/** @} */
 /** @} *//** \addtogroup signalg-doc Алгоритмы выработки и проверки электроной подписи
  @{ */
 /*! \brief Выработка электронной подписи для фиксированного значения случайного числа и вычисленного

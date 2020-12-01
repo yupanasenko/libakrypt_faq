@@ -80,6 +80,7 @@ set( AKRYPT_SOURCES
    source/ak_asn1.c
    source/ak_sign.c
    source/ak_asn1_keys.c
+   source/ak_asn1_cert.c
 )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -278,8 +279,12 @@ if( CMAKE_HOST_UNIX )
   install( FILES ${CMAKE_SOURCE_DIR}/libakrypt.conf DESTINATION ${AK_CONFIG_PATH} )
   install( FILES ${MAIN_HEADERS} DESTINATION include )
   install( FILES ${LIBAKRYPT_DOCUMENTATION} DESTINATION share/doc/libakrypt )
-  install( FILES ${CMAKE_SOURCE_DIR}/aktool/aktool.1 DESTINATION share/man/ru/man1 )
-  install( FILES ${CMAKE_SOURCE_DIR}/doc/ca-libakrypt.crt DESTINATION ${AK_CA_PATH} )
+  if( GZIP )
+    install( FILES ${CMAKE_SOURCE_DIR}/aktool/aktool.1.gz DESTINATION share/man/ru/man1 )
+  else()
+    install( FILES ${CMAKE_SOURCE_DIR}/aktool/aktool.1 DESTINATION share/man/ru/man1 )
+  endif()
+  install( FILES ${CMAKE_SOURCE_DIR}/cert/ca-libakrypt.crt DESTINATION ${AK_CA_PATH} )
 
 # деинсталляция
 # sudo xargs rm < install_manifest.txt
@@ -296,7 +301,7 @@ set( CPACK_PACKAGE_VERSION_MINOR ${MAIN_VERSION} )
 set( CPACK_PACKAGE_VERSION_PATCH ${MINOR_VERSION} )
 
 set( CPACK_DEBIAN_PACKAGE_MAINTAINER "Axel Kenzo") #required
-set( CPACK_PACKAGE_VENDOR "The Company Of Belles Lettres")
+set( CPACK_PACKAGE_VENDOR "Axel Kenzo & The Company Of Belles Lettres")
 set( CPACK_PACKAGE_FILE_NAME ${CMAKE_PROJECT_NAME}-${CMAKE_SYSTEM_PROCESSOR}.${CMAKE_SYSTEM_NAME} )
 set( CPACK_STRIP_FILES TRUE )
 

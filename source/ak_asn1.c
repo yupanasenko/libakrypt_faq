@@ -1629,7 +1629,18 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция создает расширение x509v3 следующего вида.
+/*! Функция создает расширение x509v3, определяемое следующей структурой
+
+  \code
+   id-ce-basicConstraints OBJECT IDENTIFIER ::=  { 2 5 29 19 }
+
+   BasicConstraints ::= SEQUENCE {
+        cA                      BOOLEAN DEFAULT FALSE,
+        pathLenConstraint       INTEGER (0..MAX) OPTIONAL }
+  \endcode
+
+
+  Пример иерархического представления данного расширения выгдядит следующим образом.
 
  \code
    └SEQUENCE┐
@@ -1645,7 +1656,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
  \endcode
 
   RFC5280: Расширение для базовых ограничений (basic constraints) указывает, является ли `субъект`
-  сертификата центром сертификации (certificate authority) и максимальную глубину действительных
+  сертификата центром сертификации (certificate authority), а также максимальную глубину действительных
   сертификационных путей, которые включают данный сертификат. Булевское значение сА указывает,
   принадлежит ли сертифицированный открытый ключ центру сертификации.
   Если булевское значение сА не установлено,
@@ -1653,7 +1664,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   Поле pathLenConstrant имеет смысл, только если булевское значение сА установлено, и в расширении
   использования ключа установлен бит keyCertSign. В этом случае данное поле определяет максимальное
   число несамовыпущенных промежуточных сертификатов, которые *могут* следовать за данным сертификатом
-  в действительном сертификационном пуги.
+  в действительном сертификационном пути.
   Сертификат является самовыпущенным, если номера ключей, которые присутствуют в полях субъекта и
   выпускающего (эмитента), являются одинаковыми и не пустыми. Когда pathLenConstraint не присутствует,
   никаких ограничений не предполагается.
@@ -1764,7 +1775,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
    }
   bs.value = buffer;
 
- /* добавляем закодированный идентификатор (номер) ключа */
+ /* добавляем закодированную последовательность бит */
   if(( os = ak_tlv_new_primitive( TBIT_STRING, bs.len+1, NULL, ak_true )) == NULL ) {
     ak_error_message( ak_error_get_value(), __func__,
                                                    "incorrect creation of temporary tlv context" );
@@ -1800,9 +1811,41 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     }
  \endcode
 
+   Пример данного расширения выглядит следующим образом (взято из сертификата,
+   подписанного корневым сертификатом ГУЦ)
+
+ \code
+└SEQUENCE┐
+         ├[0] 8b983b891851e8ef9c0278b8eac8d420b255c95d
+         ├[1]┐
+         │   └[4]┐
+         │       └SEQUENCE┐
+         │                ├SET┐
+         │                │   └SEQUENCE┐
+         │                │            ├OBJECT IDENTIFIER 1.2.840.113549.1.9.1 (email-address)
+         │                │            └IA5 STRING dit@minsvyaz.ru
+         │                ├SET┐
+         │                │   └SEQUENCE┐
+         │                │            ├OBJECT IDENTIFIER 2.5.4.6 (country-name)
+         │                │            └PRINTABLE STRING RU
+         │                ├SET┐
+         │                │   └SEQUENCE┐
+         │                │            ├OBJECT IDENTIFIER 2.5.4.8 (state-or-province-name)
+         │                │            └UTF8 STRING 77 г. Москва
+         │                └SET┐
+         │                    └SEQUENCE┐
+         │                             ├OBJECT IDENTIFIER 2.5.4.3 (common-name)
+         │                             └UTF8 STRING Головной удостоверяющий центр
+         └[2] 34681e40cb41ef33a9a0b7c876929a29
+ \endcode
+
+   Метке `[0]` соответствует номер ключа подписи (поле verifykey.number),
+   метке `[1]`  - расширенное имя ключа подписи (поле verifykey.name),
+   метке `[2]`  - серийный номер выпущенного сертификата открытого ключа (однозначно вычисляется из
+   номеров секретного ключа и ключа подписи).
 
    RFC 5280: Расширение для идентификатора ключа сертификационного центра предоставляет способ
-   идентификации открытого ютюча, соответствующего закрытому ключу, который использовался для
+   идентификации открытого ключа, соответствующего закрытому ключу, который использовался для
    подписывания сертификата. Данное расширение используется, когда выпускающий имеет несколько ключей
    для подписывания. Идентификация может быть основана либо на идентификаторе ключа
    (идентификатор ключа субъекта в сертификате выпускающего), либо на имени выпускающего и
@@ -1814,14 +1857,27 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
    открытый ключ в форме самоподписанного сертификата, идентификатор ключа уполномоченного органа
    может быть опущен. Подпись для самоподписанного сертификата создается закрытым ключом,
    соответствующим открытому ключу субъекта. ЭТО доказывает, что выпускающий обладает как открытым
-   ключом, так и закрытым.                                                                         */
+   ключом, так и закрытым.
+
+   \param issuer_skey секретный ключ, используемый для подписи сертификата, в который
+   помещается расширение
+   \param issuer_vkey открытый ключ, соответствующий ключу подписи
+   \param name булево значение; если оно истинно, то в расширение помещается глобальное имя владельца
+   указанных ключей
+   \return Функция возвращает указатель на структуру узла. Данная структура должна
+   быть позднее удалена с помощью явного вызова функции ak_tlv_delete() или путем
+   удаления дерева, в который данный узел будет входить.
+   В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
+   функции ak_error_get_value().                                                                   */
 /* ----------------------------------------------------------------------------------------------- */
- ak_tlv ak_tlv_new_authority_key_identifier( ak_signkey issuer_skey, ak_verifykey issuer_vkey )
+ ak_tlv ak_tlv_new_authority_key_identifier( ak_signkey issuer_skey,
+                                                     ak_verifykey issuer_vkey, const bool_t name )
 {
-  ak_asn1 asn = NULL;
-  ak_tlv tlv = NULL, os = NULL;
+  ak_mpzn256 serial;
   ak_uint8 encode[512];  /* массив для кодирования */
   size_t len = sizeof( encode );
+  ak_tlv tlv = NULL, os = NULL;
+  ak_asn1 asn = NULL, asn1 = NULL;
 
   if(( tlv = ak_tlv_new_sequence()) == NULL ) {
     ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
@@ -1831,22 +1887,27 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
  /* добавляем идентификатор расширения */
   ak_asn1_add_oid( tlv->data.constructed, "2.5.29.35" );
 
- /* добавляем закодированный идентификатор (номер) ключа */
+ /* добавляем закодированную последовательность, содержащую перечень имен */
   if(( os = ak_tlv_new_sequence()) == NULL ) {
     ak_error_message( ak_error_get_value(), __func__,
                                                    "incorrect creation of temporary tlv context" );
     return ak_tlv_delete( tlv );
   }
 
-// как сделать -[0] ddd7 ?
-
-//  ak_asn1_add_asn1( os->data.constructed, CONTEXT_SPECIFIC^0x00, asn = ak_asn1_new( ));
-//  if( asn != NULL ) ak_asn1_add_octet_string
-//    else {
-//      ak_error_message( ak_error_get_value(), __func__,
-//                                              "incorrect creation of certificate version context");
-//      goto labex;
-//    }
+ /* добавляем [0] */
+  ak_asn1_add_tlv( os->data.constructed,
+                  ak_tlv_new_primitive( CONTEXT_SPECIFIC^0x00, 32, issuer_vkey->number, ak_true ));
+ /* добавляем [1] */
+  if( name ) {
+    ak_asn1_add_tlv( os->data.constructed,
+                  ak_tlv_new_constructed( CONSTRUCTED^CONTEXT_SPECIFIC^0x01, asn = ak_asn1_new()));
+    ak_asn1_add_tlv( asn,
+                 ak_tlv_new_constructed( CONSTRUCTED^CONTEXT_SPECIFIC^0x04, asn1 = ak_asn1_new()));
+    ak_asn1_add_tlv( asn1, ak_tlv_duplicate_global_name( issuer_vkey->name ));
+  }
+ /* добавляем [2] */
+  ak_verifykey_generate_certificate_number( issuer_vkey, issuer_skey, serial );
+  ak_asn1_add_mpzn( os->data.constructed, CONTEXT_SPECIFIC^0x02, serial, ak_mpzn256_size );
 
   memset( encode, 0, sizeof( encode ));
   if( ak_tlv_encode( os, encode, &len ) != ak_error_ok ) {
@@ -2138,15 +2199,17 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция кодирует значение, которое содержится в переменной типа `mpzn` (большое целое число)
-    и помещает его на текущий уровень ASN1 дерева.
+    и помещает его на текущий уровень ASN1 дерева.    
     \param asn1 указатель на текущий уровень ASN1 дерева.
+    \param tag тип размещаемого элемента; в подавляющем большинстве случаев должен
+     принимать значение \ref TINTEGER
     \param n указатель на большое целое число
     \param size количество элементов массива, составляющего большое целое число; данный аргумент
     должен принимать значения \ref ak_mpzn256_size или \ref ak_mpzn512_size.
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_asn1_add_mpzn( ak_asn1 asn1, ak_uint64 *n, const size_t size )
+ int ak_asn1_add_mpzn( ak_asn1 asn1, ak_uint8 tag, ak_uint64 *n, const size_t size )
 {
   ak_tlv tlv = NULL;
   size_t idx = 0, len = size*sizeof( ak_uint64 ), sz = 0;
@@ -2175,7 +2238,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   sz = ( be[idx]&0x80 ) ? len+1 : len;
 
  /* создаем элемент и выделяем память */
-  if(( tlv = ak_tlv_new_primitive( TINTEGER, sz, NULL, ak_true )) == NULL )
+  if(( tlv = ak_tlv_new_primitive( tag, sz, NULL, ak_true )) == NULL )
     return ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv element" );
 
  /* заполняем выделенную память значениями */
