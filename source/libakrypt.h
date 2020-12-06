@@ -1257,6 +1257,11 @@ extern "C" {
  #define ak_gf256_mul ak_gf256_mul_uint64
  #define ak_gf512_mul ak_gf512_mul_uint64
 #endif
+
+ #define ak_galois64_size               (1)
+ #define ak_galois128_size              (2)
+ #define ak_galois256_size              (4)
+ #define ak_galois512_size              (8)
 /** @} *//** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1850,6 +1855,41 @@ extern "C" {
     значение секретного ключа и его параметры из указанного файла. */
  dll_export ak_pointer ak_skey_load_from_file( const char *filename );
 /** @} */
+
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup skey-doc Cекретные ключи криптографических механизмов
+ @{ */
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Секретный ключ для схемы Блома распределения ключевой информации. */
+ typedef struct blomkey {
+  /*! \brief количество слов, образующих один элемент конечного поля. */
+   ak_uint32 qword_count;
+  /*! \brief величина определяет размер матрицы в \f$ size\times size\f$ элементов */
+   ak_uint32 size;
+  /*! \brief указатель на ключевые данные */
+   ak_uint64 *data;
+  /*! \brief контрольная сумма (хэш-код ключевых данных) */
+   ak_uint8 control[32];
+  /*! \brief тип ключа */
+   enum {
+   /*! \brief мастер-ключ, из которого вырабатываются все производные ключи */
+    blom_matrix_key,
+   /*! \brief секретный ключ клиента, представляющий собой вектор-строку */
+    blom_client_column_key,
+   /*! \brief серкретный ключ сервера, представляющий собой вектор-столбец */
+    blom_server_row_key
+   } type;
+ } *ak_blomkey;
+
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup skey-blom-doc Реализация схемы Блома распределения ключевой информации
+ @{ *//*! \brief Функция создает мастер-ключ для схемы Блома. */
+ int ak_blomkey_create_matrix( ak_blomkey , const ak_uint32 , const ak_uint32 , ak_random );
+/*! \brief Функция возвращает элемент ключа с заданным индексом */
+ ak_uint64 *ak_blomkey_get_element_by_index( ak_blomkey , const ak_uint32 , const ak_uint32 );
+/*! \brief Уничтожение ключа */
+ int ak_blomkey_destroy( ak_blomkey );
+/** @} *//** @} */
 
 #ifdef __cplusplus
 } /* конец extern "C" */

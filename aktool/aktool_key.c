@@ -686,7 +686,7 @@
 {
   printf(_(" -----\n"
    " You are about to be asked to enter information that will be incorporated\n"
-   " into your secret key and certificate request.\n"
+   " into your certificate request.\n"
    " What you are about to enter is what is called a Distinguished Name or a DN.\n"
    " There are quite a few fields but you can leave some blank.\n"
    " For some fields there will be a default value.\n"
@@ -697,6 +697,7 @@
 }
 
 // СДЕЛАТЬ -c <request> с параметром, а опцию --req удалить
+// Сделать -subj = "/cn/su/sn/ct/ln/st/or/ou/em"
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key_help( void )

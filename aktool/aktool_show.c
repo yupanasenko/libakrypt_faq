@@ -181,6 +181,7 @@
          aktool_error(_("using incorrect elliptic curve name or identifier"));
          aktool_error(_("try \"aktool s --oid curve\" to list all supported elliptic curves"));
        }
+       break;
 
      case do_key:
        if(( result = aktool_show_secret_key( value )) == EXIT_FAILURE )

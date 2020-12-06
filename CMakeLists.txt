@@ -81,6 +81,7 @@ set( AKRYPT_SOURCES
    source/ak_sign.c
    source/ak_asn1_keys.c
    source/ak_asn1_cert.c
+   source/ak_blom.c
 )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -190,6 +191,7 @@ set ( ARITHMETIC_TESTS_LIST
       sign01
       asn1-keys
       asn1-cert
+      blom-keys
     )
 
 if( LIBAKRYPT_GMP_TESTS )
