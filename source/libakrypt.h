@@ -1,13 +1,16 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
+/* ----------------------------------------------------------------------------------------------- */
 /*  Copyright (c) 2018 by Mikhail Lavrinovich, mikhail.lavrinovich@netcracker.com                  */
 /*  Copyright (c) 2018 by Petr Mikhalitsyn, myprettycapybara@gmail.com                             */
 /*  Copyright (c) 2019 by Diffractee                                                               */
 /*  Copyright (c) 2019 by kirlit26                                                                 */
 /*  Copyright (c) 2019 by Anton Sakharov                                                           */
 /*                                                                                                 */
+/* ----------------------------------------------------------------------------------------------- */
 /*  Файл libakrypt.h                                                                               */
+/*                                                                                                 */
 /* ----------------------------------------------------------------------------------------------- */
 #ifndef    __LIBAKRYPT_H__
 #define    __LIBAKRYPT_H__
@@ -69,35 +72,37 @@ extern "C" {
  #define ak_error_wrong_key_icode             (-134)
 /*! \brief Ошибка, возникающая при неверном значении длины ключа. */
  #define ak_error_wrong_key_length            (-135)
+/*! \brief Ошибка, возникающая при использовании неверного типа ключа. */
+ #define ak_error_wrong_key_type              (-136)
 /*! \brief Ошибка, возникающая при недостаточном ресурсе ключа. */
- #define ak_error_low_key_resource            (-136)
+ #define ak_error_low_key_resource            (-137)
 /*! \brief Ошибка, возникающая при использовании синхропосылки (инициализационного вектора) неверной длины. */
- #define ak_error_wrong_iv_length             (-137)
+ #define ak_error_wrong_iv_length             (-138)
 /*! \brief Ошибка, возникающая при неправильном использовании функций зашифрования/расшифрования данных. */
- #define ak_error_wrong_block_cipher_function (-138)
+ #define ak_error_wrong_block_cipher_function (-139)
 /*! \brief Ошибка согласования данных. */
- #define ak_error_linked_data                 (-139)
+ #define ak_error_linked_data                 (-140)
 
 /*! \brief Использование неверного значения поля, определяющего тип данных */
- #define ak_error_invalid_asn1_tag            (-140)
+ #define ak_error_invalid_asn1_tag            (-150)
 /*! \brief Использование неверного значения длины данных, размещаемых в узле ASN1 дерева */
- #define ak_error_invalid_asn1_length         (-141)
+ #define ak_error_invalid_asn1_length         (-151)
 /*! \brief Использование неверной функции для чтения отрицательных данных, размещаемых в узле ASN1 дерева */
- #define ak_error_invalid_asn1_significance   (-142)
+ #define ak_error_invalid_asn1_significance   (-152)
 /*! \brief Полученные ASN.1 данные содержат неверный или неожидаемый контент */
- #define ak_error_invalid_asn1_content        (-143)
+ #define ak_error_invalid_asn1_content        (-153)
 /*! \brief Полученные ASN.1 данные содержат неверное количество элементов */
- #define ak_error_invalid_asn1_count          (-144)
+ #define ak_error_invalid_asn1_count          (-154)
 /*! \brief Ошибка, возникающая при кодировании ASN1 структуры (перевод в DER-кодировку). */
- #define ak_error_wrong_asn1_encode           (-145)
+ #define ak_error_wrong_asn1_encode           (-155)
 /*! \brief Ошибка, возникающая при декодировании ASN1 структуры (перевод из DER-кодировки в ASN1 структуру). */
- #define ak_error_wrong_asn1_decode           (-146)
+ #define ak_error_wrong_asn1_decode           (-156)
 
 /*! \brief Ошибка, возникающая при несовпадении расширенных имен проверяющего
     в проверяемом сертификате открытого и используемом для проверки открытом ключе */
- #define ak_error_certificate_not_equal_names (-150)
+ #define ak_error_certificate_not_equal_names (-160)
 /*! \brief Ошибка чтения сертификата с неверным итервалом использования. */
- #define ak_error_certificate_validity        (-151)
+ #define ak_error_certificate_validity        (-161)
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup options-doc Инициализация и настройка параметров библиотеки
@@ -1258,10 +1263,11 @@ extern "C" {
  #define ak_gf512_mul ak_gf512_mul_uint64
 #endif
 
- #define ak_galois64_size               (1)
- #define ak_galois128_size              (2)
- #define ak_galois256_size              (4)
- #define ak_galois512_size              (8)
+/* Размеры конечных полей (в октетах) */
+ #define ak_galois64_size               (8)
+ #define ak_galois128_size             (16)
+ #define ak_galois256_size             (32)
+ #define ak_galois512_size             (64)
 /** @} *//** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1707,7 +1713,7 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура, в которой хранятся параметры сертификата открытого ключа.
-    \details Указанные параметры исопльзуются при создании сертификата, а также при проверке
+    \details Указанные параметры используются при создании сертификата, а также при проверке
     его валидности.                                                                                */
 /* ----------------------------------------------------------------------------------------------- */
   typedef struct certificate_opts
@@ -1861,34 +1867,43 @@ extern "C" {
  @{ */
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Секретный ключ для схемы Блома распределения ключевой информации. */
+/*! Подробное описание механизмов выработки ключей содержится в разделе \ref skey-blom-doc. */
  typedef struct blomkey {
-  /*! \brief количество слов, образующих один элемент конечного поля. */
-   ak_uint32 qword_count;
+  /*! \brief количество октетов, образующих один элемент конечного поля. */
+   ak_uint32 count;
   /*! \brief величина определяет размер матрицы в \f$ size\times size\f$ элементов */
    ak_uint32 size;
   /*! \brief указатель на ключевые данные */
-   ak_uint64 *data;
+   ak_uint8 *data;
   /*! \brief контрольная сумма (хэш-код ключевых данных) */
-   ak_uint8 control[32];
+   ak_uint8 icode[32];
+  /*! \brief контекст алгоритма бесключевого хеширования */
+   struct hash ctx;
   /*! \brief тип ключа */
    enum {
-   /*! \brief мастер-ключ, из которого вырабатываются все производные ключи */
-    blom_matrix_key,
-   /*! \brief секретный ключ клиента, представляющий собой вектор-строку */
-    blom_client_column_key,
-   /*! \brief серкретный ключ сервера, представляющий собой вектор-столбец */
-    blom_server_row_key
+    /*! \brief мастер-ключ, из которого вырабатываются все производные ключи */
+     blom_matrix_key,
+    /*! \brief секретный ключ клиента, представляющий собой вектор-строку */
+     blom_abonent_key
    } type;
  } *ak_blomkey;
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup skey-blom-doc Реализация схемы Блома распределения ключевой информации
  @{ *//*! \brief Функция создает мастер-ключ для схемы Блома. */
- int ak_blomkey_create_matrix( ak_blomkey , const ak_uint32 , const ak_uint32 , ak_random );
+ dll_export int ak_blomkey_create_matrix( ak_blomkey , const ak_uint32 ,
+                                                                     const ak_uint32 , ak_random );
+/*! \brief Функция создает ключ абонента для схемы Блома. */
+ dll_export int ak_blomkey_create_abonent_key( ak_blomkey , ak_blomkey ,
+                                                                       ak_pointer , const size_t );
+/*! \brief Функция создает ключ парной связи */
+ dll_export int ak_blomkey_create_pairwise_key( ak_blomkey , ak_pointer ,
+                                                              const size_t , ak_pointer , ak_oid );
 /*! \brief Функция возвращает элемент ключа с заданным индексом */
- ak_uint64 *ak_blomkey_get_element_by_index( ak_blomkey , const ak_uint32 , const ak_uint32 );
+ dll_export ak_uint8 *ak_blomkey_get_element_by_index( ak_blomkey ,
+                                                               const ak_uint32 , const ak_uint32 );
 /*! \brief Уничтожение ключа */
- int ak_blomkey_destroy( ak_blomkey );
+ dll_export int ak_blomkey_destroy( ak_blomkey );
 /** @} *//** @} */
 
 #ifdef __cplusplus
