@@ -218,7 +218,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция вырабатывает общий для двух абонентов секретный вектор и
     помещает его в контекст секретного ключа парной связи с заданным oid
-    (функция релизует действие `import = create + set_key`.
+    (функция релизует действие `import = create + set_key`).
 
     \param bkey указатель на контекст ключа абонента
     \param id указатель на идентификатор абонента, с которым вырабатывается ключ парной связи
@@ -233,24 +233,13 @@
  int ak_blomkey_create_pairwise_key( ak_blomkey bkey, ak_pointer id, const size_t idsize,
                                                                       ak_pointer skey, ak_oid oid )
 {
-  ak_uint32 i = 0;
-  ak_int32 row = 0;
+  ak_uint8 sum[64];
   struct random generator;
   int error = ak_error_ok;
-  ak_uint8 sum[64], value[64];
-
-  if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                           "using null pointer to abonent's key" );
-  if(( id == NULL ) || ( !idsize )) return ak_error_message( ak_error_undefined_value, __func__,
-                                                          "using undefined abonent's identifier" );
-  if( bkey->type != blom_abonent_key ) return ak_error_message( ak_error_wrong_key_type,
-                                                   __func__, "incorrect type of blom secret key" );
-  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                            "using null pointer to pairwise key" );
-  if( !ak_blomkey_check_icode( bkey))
-    return ak_error_message( ak_error_get_value(), __func__, "using wrong blom master key" );
 
  /* проверяем, что заданый oid корректно определяет секретный ключ */
+  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to pairwise key" );
   if( oid == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                  "using null pointer to pairwise key identifier" );
   if( oid->mode != algorithm ) return ak_error_message( ak_error_oid_mode, __func__,
@@ -258,17 +247,9 @@
   if(( oid->engine != block_cipher ) && ( oid->engine != hmac_function ))
     return ak_error_message( ak_error_oid_engine, __func__,
                                                  "using wrong engine to pairwise key identifier" );
- /* формируем хэш от идентификатора */
-  if(( error = ak_hash_ptr( &bkey->ctx, id, idsize, value, bkey->count )) != ak_error_ok )
-    return ak_error_message( error, __func__, "incorrect evauation of initial hash value" );
-
-  memset( sum, 0, bkey->count );
-  for( row = bkey->size - 1; row >= 0; row-- ) {
-        ak_uint8 *key = ak_blomkey_get_element_by_index( bkey, row, 0 );
-        if( bkey->count == ak_galois256_size ) ak_gf256_mul( sum, sum, value );
-         else ak_gf512_mul( sum, sum, value );
-        for( i = 0; i < ( bkey->count >> 3 ); i++ ) ((ak_uint64 *)sum)[i] ^= ((ak_uint64 *)key)[i];
-     }
+  if(( error = ak_blomkey_create_pairwise_key_as_ptr( bkey, id,
+                                                     idsize, sum, sizeof( sum ))) != ak_error_ok )
+    return ak_error_message( error, __func__, "wrong generation of pairwise key" );
 
  /* формируем ключ парной связи для заданного пользователем алгоритма */
   if(( error = oid->func.first.create( skey )) != ak_error_ok ) {
@@ -289,7 +270,56 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \param bkey указатель на контекст мастер-ключа или ключа-строки (ключа-столбца)
+/*! Функция вырабатывает общий для двух абонентов секретный вектор и
+    помещает его в заданную область памяти.
+
+    \param bkey указатель на контекст ключа абонента
+    \param id указатель на идентификатор абонента, с которым вырабатывается ключ парной связи
+    \param size длина идентификатора (в октетах)
+    \param key указатель на область памяти, в которую помещается ключ парной связи
+    \param keysize размер доступной области памяти (в октетах); данное значение должно быть
+     не менее, чем размер ключа парной связи (см. поле `bkey->count`)
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха,
+    в противном случае возвращается код ошибки.                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_blomkey_create_pairwise_key_as_ptr( ak_blomkey bkey,
+                               ak_pointer id, const size_t idsize, ak_pointer key, size_t keysize )
+{
+  ak_uint32 i = 0;
+  ak_int32 row = 0;
+  ak_uint8 value[64];
+  int error = ak_error_ok;
+
+  if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                           "using null pointer to abonent's key" );
+  if(( id == NULL ) || ( !idsize )) return ak_error_message( ak_error_undefined_value, __func__,
+                                                          "using undefined abonent's identifier" );
+  if( bkey->type != blom_abonent_key ) return ak_error_message( ak_error_wrong_key_type,
+                                                   __func__, "incorrect type of blom secret key" );
+  if( key == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to pairwise key" );
+  if( keysize < bkey->count ) return ak_error_message( ak_error_null_pointer, __func__,
+                                           "insufficient memory size for storing a pairwise key" );
+  if( !ak_blomkey_check_icode( bkey ))
+    return ak_error_message( ak_error_get_value(), __func__, "using wrong blom master key" );
+
+ /* формируем хэш от идентификатора */
+  if(( error = ak_hash_ptr( &bkey->ctx, id, idsize, value, bkey->count )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect evauation of initial hash value" );
+
+  memset( key, 0, bkey->count );
+  for( row = bkey->size - 1; row >= 0; row-- ) {
+     ak_uint8 *element = ak_blomkey_get_element_by_index( bkey, row, 0 );
+     if( bkey->count == ak_galois256_size ) ak_gf256_mul( key, key, value );
+       else ak_gf512_mul( key, key, value );
+     for( i = 0; i < ( bkey->count >> 3 ); i++ ) ((ak_uint64 *)key)[i] ^= ((ak_uint64 *)element)[i];
+  }
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param bkey указатель на контекст мастер-ключа или ключа абонента
     \param row номер строки
     \param column номер столбца; для ключей абонентов данное значение не учитывается.
     \return В случае успеха, функция возвращает указатель на область памяти, содержащей
@@ -338,6 +368,24 @@
   memset( bkey, 0, sizeof( struct blomkey ));
 
  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Для сохранения ключа используется преобразование KExp15, регламентируемое
+    рекомендациями по стадартизации Р 1323565.1.017-2018.
+
+  \param bkey указатель на контекст мастер-ключа или ключа-абонента
+  \param password пароль, из которого вырабатывается ключ шифрования ключа
+  \param pass_size длина пароля (в октетах)
+  \param filename имя файла, в который сохраняется ключ
+  \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха,
+  в противном случае возвращается код ошибки.                                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_blomkey_export_to_file_with_password( ak_blomkey bkey, const char *password,
+                                                           const size_t pass_size, char *filename )
+{
+
+ return ak_error_undefined_function;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

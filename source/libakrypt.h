@@ -1896,7 +1896,10 @@ extern "C" {
 /*! \brief Функция создает ключ абонента для схемы Блома. */
  dll_export int ak_blomkey_create_abonent_key( ak_blomkey , ak_blomkey ,
                                                                        ak_pointer , const size_t );
-/*! \brief Функция создает ключ парной связи */
+/*! \brief Функция создает ключ парной связи (в виде последовательности октетов) */
+ dll_export int ak_blomkey_create_pairwise_key_as_ptr( ak_blomkey ,
+                                                 ak_pointer , const size_t , ak_pointer , size_t );
+/*! \brief Функция создает ключ парной связи и помещает его в контекст секретного ключа */
  dll_export int ak_blomkey_create_pairwise_key( ak_blomkey , ak_pointer ,
                                                               const size_t , ak_pointer , ak_oid );
 /*! \brief Функция возвращает элемент ключа с заданным индексом */
@@ -1904,6 +1907,9 @@ extern "C" {
                                                                const ak_uint32 , const ak_uint32 );
 /*! \brief Уничтожение ключа */
  dll_export int ak_blomkey_destroy( ak_blomkey );
+/*! \brief Экспорт ключа в заданный файл */
+ dll_export int ak_blomkey_export_to_file_with_password( ak_blomkey ,
+                                                            const char * , const size_t , char * );
 /** @} *//** @} */
 
 #ifdef __cplusplus
