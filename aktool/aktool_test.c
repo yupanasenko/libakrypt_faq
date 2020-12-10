@@ -165,11 +165,11 @@
 
  /* 1. Проверяем доступность режима */
   switch( oid->mode ) {
-    case encrypt:
+    case encrypt_mode:
     case mac:
     case acpkm:
     case algorithm:
-    case encrypt2k:
+    case encrypt2k_mode:
     case aead:
       break;
     default: printf(_("block cipher mode \"%s\" is not supported yet for testing, sorry ... \n"),
@@ -187,7 +187,7 @@
     goto exit;
   }
   switch( oid->mode ) {
-    case encrypt2k: /* схемы с двумя ключами */
+    case encrypt2k_mode: /* схемы с двумя ключами */
     case aead:
 
       if(( authenticationKey = ak_oid_new_second_object( oid )) == NULL ) {
@@ -227,7 +227,7 @@
         timea = clock() - timea;
         break;
 
-      case encrypt: /* базовый режим с одним ключом и синхропосылкой */
+      case encrypt_mode: /* базовый режим с одним ключом и синхропосылкой */
         timea = clock();
         error = oid->func.direct(
            encryptionKey,     /* ключ шифрования */
@@ -271,7 +271,7 @@
         timea = clock() - timea;
         break;
 
-      case encrypt2k: /* шифрование с двумя ключами */
+      case encrypt2k_mode: /* шифрование с двумя ключами */
         timea = clock();
         error = oid->func.direct(
            encryptionKey,     /* ключ шифрования */
