@@ -93,6 +93,7 @@
     printf("  not before: %s", ctime( &((ak_skey)key)->resource.time.not_before ));
     printf("   not after: %s", ctime( &((ak_skey)key)->resource.time.not_after ));
     printf("       flags: %016llx\n", ((ak_skey)key)->flags );
+    printf("      buffer: %s\n", ak_ptr_to_hexstr( ((ak_skey)key)->key, 2*((ak_skey)key)->key_size, ak_false ));
 
    /* шифруем тестируемые данные еще раз*/
     if( ak_bckey_ctr( lkey, testdata, out2, sizeof( testdata ),

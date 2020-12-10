@@ -36,6 +36,65 @@
 /* ----------------------------------------------------------------------------------------------- */
                   /* Функции выработки и сохранения производных ключей */
 /* ----------------------------------------------------------------------------------------------- */
+/*! \param ekey контекст создаваемого ключа шифрования
+    \param ikey контекст создаваемого ключа имитозащиты
+    \param oid идентификатор алгоритма блочного шифрования, для которого создается ключевая пара
+    \param password пароль
+    \param pass_size длина пароля (в октетах)
+    \param salt последовательность случайных чисел
+    \param salt_size длина последовательности случайных чисел (в октетах)
+    \param iter количество итераций алгоритма pbkdf2
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ int bckey_create_key_pair_from_password( ak_bckey ekey, ak_bckey ikey, ak_oid oid,
+                                      const char *password, const size_t pass_size,
+                                        ak_uint8 *salt, const size_t salt_size, const size_t iter )
+{
+  int error = ak_error_ok;
+  ak_uint8 derived_key[64]; /* вырабатываемый из пароля ключевой материал,
+                               из которого формируются производные ключи шифрования и имитозащиты */
+
+  if( salt == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                               "using null pointer to salt value");
+  if( !salt_size ) return ak_error_message( ak_error_zero_length, __func__,
+                                                             "using zero length for salt buffer" );
+
+  /* 1. вырабатываем случайное значение и производный ключевой материал */
+   if(( error = ak_hmac_pbkdf2_streebog512(
+                (ak_pointer) password,                      /* пароль */
+                 pass_size,                          /* размер пароля */
+                 salt,                    /* инициализационный вектор */
+                 sizeof( salt ), /* размер инициализационного вектора */
+                 iter,               /* количество итераций алгоритма */
+                 64,                  /* размер вырабатываемого ключа */
+                 derived_key            /* массив для хранения данных */
+     )) != ak_error_ok )
+      return ak_error_message( error, __func__, "incorrect creation of derived key" );
+
+ /* 2. инициализируем контексты ключа шифрования контента и ключа имитозащиты */
+   if(( error = ak_bckey_create_oid( ekey, oid )) != ak_error_ok )
+     return ak_error_message( error, __func__, "incorrect creation of encryption cipher key" );
+   if(( error = ak_bckey_set_key( ekey, derived_key, 32 )) != ak_error_ok ) {
+     ak_bckey_destroy( ekey );
+     return ak_error_message( error, __func__, "incorrect assigning a value to encryption key" );
+   }
+   if(( error = ak_bckey_create_oid( ikey, oid )) != ak_error_ok ) {
+     ak_bckey_destroy( ekey );
+     return ak_error_message( error, __func__, "incorrect creation of integrity key" );
+   }
+   if(( error = ak_bckey_set_key( ikey, derived_key+32, 32 )) != ak_error_ok ) {
+     ak_bckey_destroy( ikey );
+     ak_bckey_destroy( ekey );
+     return ak_error_message( error, __func__, "incorrect assigning a value to integrity key" );
+   }
+  /* очищаем использованную память */
+   ak_ptr_wipe( derived_key, sizeof( derived_key ), &ikey->key.generator );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция вырабатывает производные ключи шифрования и имитозащиты контента из пароля и
     экспортирует в ASN.1 дерево параметры ключа, необходимые для восстановления.
     \details Функция вычисляет последовательность октетов `basicKey` длиной 64 октета
@@ -103,51 +162,26 @@
  \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
   возвращается код ошибки.                                                                         */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_asn1_add_derived_keys_from_password( ak_asn1 root, ak_oid oid , ak_bckey ekey,
-                                       ak_bckey ikey, const char *password, const size_t pass_size )
+ static int ak_asn1_add_derived_keys_from_password( ak_asn1 root, ak_bckey ekey, ak_bckey ikey,
+                                        ak_oid oid, const char *password, const size_t pass_size )
 {
   ak_uint8 salt[32]; /* случайное значение для генерации ключа шифрования контента */
-  ak_uint8 derived_key[64]; /* вырабатываемый из пароля ключевой материал,
-                               из которого формируются производные ключи шифрования и имитозащиты */
+  struct random generator; /* генератор ПДСЧ */
   int error = ak_error_ok;
   ak_asn1 asn1 = NULL, asn2 = NULL, asn3 = NULL;
 
- /* 1. вырабатываем случайное значение и производный ключевой материал */
-   if(( error = ak_bckey_create_oid( ekey, oid )) != ak_error_ok )
-     return ak_error_message( error, __func__, "incorrect creation of encryption cipher key" );
+  if(( error = ak_random_create_lcg(  &generator )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect creation of random generator");
 
-   ak_random_ptr( &ekey->key.generator, salt, sizeof( salt ));
-   if(( error = ak_hmac_pbkdf2_streebog512(
-                (ak_pointer) password,                             /* пароль */
-                 pass_size,                                 /* размер пароля */
-                 salt,                           /* инициализационный вектор */
-                 sizeof( salt ),        /* размер инициализационного вектора */
-                 (size_t) ak_libakrypt_get_option_by_name( "pbkdf2_iteration_count" ),
-                 64,                         /* размер вырабатываемого ключа */
-                 derived_key                   /* массив для хранения данных */
-     )) != ak_error_ok ) {
-      ak_bckey_destroy( ekey );
-      return ak_error_message( error, __func__, "incorrect creation of derived key" );
-   }
+  memset( salt, 0, sizeof( salt ));
+  ak_random_ptr( &generator, salt, sizeof( salt ));
 
- /* 2. инициализируем контексты ключа шифрования контента и ключа имитозащиты */
-   if(( error = ak_bckey_set_key( ekey, derived_key, 32 )) != ak_error_ok ) {
-     ak_bckey_destroy( ekey );
-     return ak_error_message( error, __func__, "incorrect assigning a value to encryption key" );
-   }
-   if(( error = ak_bckey_create_oid( ikey, oid )) != ak_error_ok ) {
-     ak_bckey_destroy( ekey );
-     return ak_error_message( error, __func__, "incorrect creation of integrity key" );
-   }
-   if(( error = ak_bckey_set_key( ikey, derived_key+32, 32 )) != ak_error_ok ) {
-     ak_bckey_destroy( ikey );
-     ak_bckey_destroy( ekey );
-     return ak_error_message( error, __func__, "incorrect assigning a value to integrity key" );
-   }
-  /* очищаем использованную память */
-   ak_ptr_wipe( derived_key, sizeof( derived_key ), &ikey->key.generator );
+  if(( error = bckey_create_key_pair_from_password( ekey, ikey, oid, password, pass_size,
+      salt, sizeof( salt ), (size_t) ak_libakrypt_get_option_by_name( "pbkdf2_iteration_count" )))
+                                                                                  != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect creation of derived key pairs");
 
- /* 3. собираем ASN.1 дерево - снизу вверх */
+ /* собираем ASN.1 дерево - снизу вверх */
    if(( ak_asn1_create( asn3 = malloc( sizeof( struct asn1 )))) != ak_error_ok ) {
      ak_bckey_destroy( ikey );
      ak_bckey_destroy( ekey );
@@ -205,8 +239,6 @@
   char password[256];
   ak_pointer ptr = NULL;
   int error = ak_error_ok;
-  ak_uint8 derived_key[64]; /* вырабатываемый из пароля ключевой материал,
-                               из которого формируются производные ключи шифрования и имитозащиты */
   ak_oid eoid = NULL, oid = NULL;
 
  /* получаем структуру с параметрами, необходимыми для восстановления ключа */
@@ -273,35 +305,9 @@
    if( error != ak_error_ok ) return error;
 
  /* 1. получаем пользовательский пароль и вырабатываем производную ключевую информацию */
-   error = ak_hmac_pbkdf2_streebog512( (ak_pointer) password, strlen( password ),
-                                                                 ptr, size, u32, 64, derived_key );
+   error = bckey_create_key_pair_from_password( ekey, ikey, eoid,
+                                                password, strlen( password ), ptr, size, u32 );
    memset( password, 0, sizeof( password ));
-   if( error != ak_error_ok ) return error;
-
- /* 2. инициализируем контексты ключа шифрования контента и ключа имитозащиты */
-   if(( error = ak_bckey_create_oid( ekey, eoid )) != ak_error_ok ) {
-     memset( derived_key, 0, sizeof( derived_key ));
-     return ak_error_message( error, __func__, "incorrect creation of encryption cipher key" );
-   }
-   if(( error = ak_bckey_set_key( ekey, derived_key, 32 )) != ak_error_ok ) {
-     ak_ptr_wipe( derived_key, sizeof( derived_key ), &ekey->key.generator );
-     ak_bckey_destroy( ekey );
-     return ak_error_message( error, __func__, "incorrect assigning a value to encryption key" );
-   }
-
-   if(( error = ak_bckey_create_oid( ikey, eoid )) != ak_error_ok ) {
-     ak_ptr_wipe( derived_key, sizeof( derived_key ), &ekey->key.generator );
-     ak_bckey_destroy( ekey );
-     return ak_error_message( error, __func__, "incorrect creation of integrity key" );
-   }
-   if(( error = ak_bckey_set_key( ikey, derived_key+32, 32 )) != ak_error_ok ) {
-     ak_ptr_wipe( derived_key, sizeof( derived_key ), &ekey->key.generator );
-     ak_bckey_destroy( ikey );
-     ak_bckey_destroy( ekey );
-     return ak_error_message( error, __func__, "incorrect assigning a value to integrity key" );
-   }
-  /* очищаем использованную память */
-   ak_ptr_wipe( derived_key, sizeof( derived_key ), &ikey->key.generator );
 
  return error;
 }
@@ -785,7 +791,7 @@
  /* 2. добавляем структуру для восстановления информации и вырабатываем два производных ключа,
        в данном случае производные ключи вырабатываются из пароля */
    if(( error = ak_asn1_add_derived_keys_from_password( asn,
-        ak_oid_find_by_name( "kuznechik" ), &ekey, &ikey, password, pass_size )) != ak_error_ok ) {
+        &ekey, &ikey, ak_oid_find_by_name( "kuznechik" ), password, pass_size )) != ak_error_ok ) {
      ak_asn1_delete( asn );
      return ak_error_message( error, __func__, "incorrect creation of derived secret keys" );
    }

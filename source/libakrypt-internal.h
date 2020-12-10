@@ -28,6 +28,12 @@
  int ak_bckey_next_acpkm_key( ak_bckey );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция вырабатывает пару ключей алгоритма блочного шифрования из заданного
+   пользователем пароля. */
+ int bckey_create_key_pair_from_password( ak_bckey , ak_bckey , ak_oid ,
+                            const char * , const size_t , ak_uint8 *, const size_t, const size_t );
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Выработка матрицы, соответствующей 16 тактам работы линейного региста сдвига. */
  void ak_bckey_kuznechik_generate_matrix( const linear_register , linear_matrix );
 /*! \brief Обращение сопровождающей матрицы. */

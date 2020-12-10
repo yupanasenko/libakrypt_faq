@@ -384,6 +384,42 @@
  int ak_blomkey_export_to_file_with_password( ak_blomkey bkey, const char *password,
                                                            const size_t pass_size, char *filename )
 {
+  ak_uint8 iv[16];
+  int error = ak_error_ok;
+  struct random generator;
+  size_t iter = ak_libakrypt_get_option_by_name( "pbkdf2_iteration_count" );
+
+ /* в контейнер необходимо поместить
+     - количество октетов в одном элементе матрицы (bkey->count)
+     - размер матрицы (bkey->size)
+     - тип ключа (bkey->type)
+     - собственно ключевые данные
+     - контрольную сумму (от данных и параметров ключа)
+
+     все перечисленное помещается в контейнер в зашифрованном виде
+     для шифрования
+      - синхропосылка (для режима гаммирования Кузнечиком (8 байт)
+      - salt (6 байт)
+      - количество итераций в pbkdf2 (2 байта, для восстановления ключей шифрования) */
+
+ /* определяем синхропосылку:
+    - первые 8 октетов - значение синхропосылки для режима гаммирования
+    - два октета - значение числа итераций в алгоритме pbkdf
+    - последние шесть октетов - случайное значение для генерации ключевой пары */
+  if(( error = ak_random_create_lcg( &generator )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect creation of random number generator");
+  ak_random_ptr( &generator, iv, sizeof( iv ));
+  iv[8] = (iter >> 8)&0xFF;
+  iv[9] = iter&0xFF; /* помещаем число итераций в big-endian formate */
+  ak_random_destroy( &generator );
+
+// + потестить функцию генерации ключей !! (есть сомнения)
+
+// + для ak_bckey_cmac_update + ak_bckey_cmac_finalize()
+
+//  bckey_create_key_pair_from_password( ak_bckey , ak_bckey , ak_oid ,
+//                            const char * , const size_t , ak_uint8 *, const size_t, const size_t );
+
 
  return ak_error_undefined_function;
 }
