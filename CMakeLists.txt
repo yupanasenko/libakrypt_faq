@@ -23,13 +23,13 @@ option( AK_SHARED_LIB "Build the shared library" ON )
 option( AK_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
 
 # -------------------------------------------------------------------------------------------------- #
-# Перечень опций, которые имеют предустановленнве значения и могут изменяться через командную строку
+# Перечень опций, которые имеют предустановленные значения и могут изменяться через командную строку
 # для linux
 #   set( AK_CONFIG_PATH  "/etc" )
 #   set( AK_CA_PATH "/usr/share/ca-certificates" )
 
 # -------------------------------------------------------------------------------------------------- #
-# подключаем модули CMake для тонкой настройки параметров сборки
+# Подключаем модули CMake для тонкой настройки параметров сборки
 set( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
 include( DetectFlags )
 include( DetectHeaders )
@@ -37,7 +37,7 @@ include( DetectIntrinsics )
 include( DetectLibraries )
 
 # -------------------------------------------------------------------------------------------------- #
-# вырабатываем заголовочный файл
+# Вырабатываем заголовочный файл
 configure_file( ${CMAKE_SOURCE_DIR}/source/libakrypt-base.h.in ${CMAKE_SOURCE_DIR}/source/libakrypt-base.h @ONLY )
 message("-- Generation of libakrypt-base.h is done")
 
@@ -85,7 +85,7 @@ set( AKRYPT_SOURCES
 )
 
 # -------------------------------------------------------------------------------------------------- #
-# проверка архитектуры
+# Проверка архитектуры
 include( TestBigEndian )
 TEST_BIG_ENDIAN( IS_BIG_ENDIAN )
 if( IS_BIG_ENDIAN )

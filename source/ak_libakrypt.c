@@ -199,23 +199,11 @@
     ak_error_message( ak_error_get_value(), __func__, "incorrect testing of pbkdf2 function" );
     return ak_false;
   }
-
-//  /* тестируем механизм итерационного сжатия для ключевых и бесключевых функций хеширования */
-//  if( ak_mac_test_hash_functions() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__,
-//                                  "incorrect testing mac algorithms based on hash functions" );
-//    return ak_false;
-//  }
-//  if( ak_mac_test_hmac_functions() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__, "incorrect testing hmac algorithms" );
-//    return ak_false;
-//  }
-
-//  if( ak_mac_test_omac_functions() != ak_true ) {
-//    ak_error_message( ak_error_get_value(), __func__,
-//                                   "incorrect testing mac algorithms based on block ciphers" );
-//    return ak_false
-//  }
+ /* тестирование различых реализаци cmac на совпадение */
+  if( ak_libakrypt_test_cmac() != ak_true ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect testing different kinds of cmac" );
+    return ak_false;
+  }
 
   if( audit >= ak_log_maximum )
    ak_error_message( ak_error_ok, __func__ , "testing mac algorithms ended successfully" );

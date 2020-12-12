@@ -164,11 +164,13 @@ extern "C" {
 /*! \brief Тестирование алгоритма PBKDF2, регламентируемого Р 50.1.113-2016. */
  dll_export bool_t ak_libakrypt_test_pbkdf2( void );
 /*! \brief Функция тестирует корректность реализации блочных шифрова и режимов их использования. */
- dll_export bool_t ak_libakrypt_test_block_ciphers( void );
+ dll_export bool_t ak_libakrypt_test_block_ciphers( void ); 
 /*! \brief Тестирование корректной работы алгоритма блочного шифрования Магма (ГОСТ Р 34.12-2015). */
  dll_export bool_t ak_libakrypt_test_magma( void );
 /*! \brief Тестирование корректной работы алгоритма блочного шифрования Кузнечик (ГОСТ Р 34.12-2015). */
  dll_export bool_t ak_libakrypt_test_kuznechik( void );
+/*! \brief Функция тестирует корректность реаличных реализаций алгоритма cmac. */
+ dll_export bool_t ak_libakrypt_test_cmac( void );
 /*! \brief Тестирование корректной работы режима блочного шифрования с одновременной
     выработкой имитовставки. */
  dll_export bool_t ak_libakrypt_test_mgm( void );
@@ -758,7 +760,14 @@ extern "C" {
  @{ */ 
 /*! \brief Вычисление имитовставки согласно ГОСТ Р 34.13-2015. */
  dll_export int ak_bckey_cmac( ak_bckey , ak_pointer , const size_t , ak_pointer , const size_t );
-
+/*! \brief Очистка внутреннего состояния секретного ключа. */
+ dll_export int ak_bckey_cmac_clean( ak_bckey );
+/*! \brief Обновление внутреннего состояния секретного ключа при вычислении имитовставки
+    согласно ГОСТ Р 34.13-2015. */
+ dll_export int ak_bckey_cmac_update( ak_bckey , const ak_pointer , const size_t );
+/*! \brief Завершение вычисления имитовставки согласно ГОСТ Р 34.13-2015. */
+ dll_export int ak_bckey_cmac_finalize( ak_bckey , const ak_pointer , const size_t ,
+                                                                       ak_pointer , const size_t );
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция очистки контекста хеширования. */
  typedef int ( ak_function_clean )( ak_pointer );
