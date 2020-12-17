@@ -209,6 +209,7 @@
     memset( temp, 0, 16 );
     memcpy( temp+absize-tail, aptr, (size_t)tail );
     astep128( temp );
+
   /* закрываем добавление ассоциированных данных */
     ak_aead_set_bit( ctx->flags, ak_aead_assosiated_data_bit );
     ctx->abitlen += ( tail << 3 );

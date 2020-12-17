@@ -62,7 +62,8 @@
 
  /* инициализируем библиотеку */
   if( !ak_libakrypt_create( ak_function_log_stderr )) return ak_libakrypt_destroy();
-
+  ak_libakrypt_set_openssl_compability( ak_false );
+                             /* контрольный пример расчитан для несовместимого режима */
  /* формируем фрейм */
   memcpy( frame, associated, sizeof ( associated ));        /* ассоциированные данные */
   memcpy( frame + sizeof( associated ), plain, sizeof( plain ));  /* шифруемые данные */
@@ -93,7 +94,11 @@
  /* выводим результат и проверяем полученное значение */
   printf("encrypted frame: %s [", ak_ptr_to_hexstr( frame, sizeof( frame ), ak_false ));
   if( memcmp( frame + sizeof( associated ) + sizeof( plain ), icodeOne, 16 )) {
+
     printf(" Wrong]\n");
+    printf("frame: %s\n",
+                 ak_ptr_to_hexstr( frame + sizeof( associated ) + sizeof( plain ), 16, ak_false ));
+    printf("icode: %s\n", ak_ptr_to_hexstr( icodeOne, 16, ak_false ));
     ak_libakrypt_destroy();
     return EXIT_FAILURE;
   } else printf(" Ok]\n\n");

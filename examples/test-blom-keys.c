@@ -38,7 +38,6 @@
 
   if(( error = user_test( 128, ak_galois512_size )) != EXIT_SUCCESS ) goto labex;
   if(( error = user_test( 512, ak_galois512_size )) != EXIT_SUCCESS ) goto labex;
-  if(( error = user_test( 5, ak_galois512_size )) != EXIT_SUCCESS ) goto labex;
 
 /* также, при желании, можно потестировать большие значения параметра безопасности
 
@@ -46,6 +45,7 @@
   if(( error = user_test( 4096, ak_galois256_size )) != EXIT_SUCCESS ) goto labex;
   if(( error = user_test( 1024, ak_galois512_size )) != EXIT_SUCCESS ) goto labex;
                                                                                     */
+  if(( error = user_test( 5, ak_galois256_size )) != EXIT_SUCCESS ) goto labex;
   labex: ak_libakrypt_destroy();
 
  return EXIT_SUCCESS;
