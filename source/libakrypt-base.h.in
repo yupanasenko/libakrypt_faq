@@ -89,6 +89,11 @@ extern "C" {
  #include <time.h>
 #endif
 
+#cmakedefine AK_HAVE_SYSMMAN_H
+#ifdef AK_HAVE_SYSMMAN_H
+ #include <sys/mman.h>
+#endif
+
 #cmakedefine AK_HAVE_ERRNO_H
 #cmakedefine AK_HAVE_SYSTYPES_H
 #cmakedefine AK_HAVE_STRINGS_H
@@ -98,7 +103,6 @@ extern "C" {
 #cmakedefine AK_HAVE_UNISTD_H
 #cmakedefine AK_HAVE_FCNTL_H
 #cmakedefine AK_HAVE_LIMITS_H
-#cmakedefine AK_HAVE_SYSMMAN_H
 #cmakedefine AK_HAVE_SYSSTAT_H
 #cmakedefine AK_HAVE_SYSSOCKET_H
 #cmakedefine AK_HAVE_SYSUN_H
@@ -363,6 +367,34 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup file Платформонезависимые функции для работы с файлами
   @{ */
+/*! \brief Определение функции для выполнения действий с заданным файлом */
+ typedef int ( ak_function_find )( const tchar * , ak_pointer );
+/*! \brief Определение функции, передаваемой в качестве аргумента в функцию построчного чтения файлов. */
+ typedef int ( ak_file_read_function ) ( const char * , ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
+#ifdef AK_HAVE_DIRENT_H
+ #include <dirent.h>
+#endif
+#ifdef _MSC_VER
+ #define	S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
+ #define	S_ISREG(mode)  (((mode) & S_IFMT) == S_IFREG)
+#endif
+#ifndef DT_DIR
+ #define DT_DIR (4)
+#endif
+#ifndef DT_REG
+ #define DT_REG (8)
+#endif
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Возможные режимы доступа к файлам и отображения файлов в память */
+  typedef enum{
+    readonly,    //!< доступ предоставляется только для чтения
+    writeonly,   //!< доступ предоставляется только для записи
+    readwrite,   //!< доступ предоставляется для чтения и записи
+  } filestate_t;
+
 /*! \brief Структура данных для хранения дескриптора и параметров файла. */
  typedef struct file {
 #ifdef AK_HAVE_WINDOWS_H
@@ -391,27 +423,10 @@ extern "C" {
  dll_export ssize_t ak_file_write( ak_file , ak_const_pointer , size_t );
 /*! \brief Функция записывает в файл строку символов. */
  dll_export ssize_t ak_file_printf( ak_file , const char * , ... );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Определение функции для выполнения действий с заданным файлом */
- typedef int ( ak_function_find )( const tchar * , ak_pointer );
-/*! \brief Определение функции, передаваемой в качестве аргумента в функцию построчного чтения файлов. */
- typedef int ( ak_file_read_function ) ( const char * , ak_pointer );
-
-/* ----------------------------------------------------------------------------------------------- */
-#ifdef AK_HAVE_DIRENT_H
- #include <dirent.h>
-#endif
-#ifdef _MSC_VER
- #define	S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
- #define	S_ISREG(mode)  (((mode) & S_IFMT) == S_IFREG)
-#endif
-#ifndef DT_DIR
- #define DT_DIR (4)
-#endif
-#ifndef DT_REG
- #define DT_REG (8)
-#endif
+/*! \brief Отображение заданного файла в память. */
+ dll_export ak_pointer ak_file_mmap( ak_file , const char * , const filestate_t , const size_t );
+/*! \brief Закрытие файла, отбраженног в память. */
+ dll_export int ak_file_unmap( ak_file , ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Проверка, является ли заданное имя обычным файлом или каталогом. */

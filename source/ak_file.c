@@ -357,7 +357,7 @@
   BOOL bErrorFlag = ReadFile( file->hFile, buffer, ( DWORD )size,  &dwBytesReaden, NULL );
   if( bErrorFlag == FALSE ) {
     ak_error_message( ak_error_read_data, __func__, "unable to read from file");
-    return 0;
+    return -1;
   } else return ( ssize_t ) dwBytesReaden;
  #else
   return read( file->fd, buffer, size );
@@ -408,6 +408,24 @@
  /* выводим ее в файл как последовательность байт */
   result = ak_file_write( outfile, static_buffer, strlen( static_buffer ));
  return result;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
+                   /* Отображение файлов в память (обертка вокруг mmap) */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_pointer ak_file_mmap( ak_file file, const char *filename,
+                                                     const filestate_t state, const size_t offset )
+{
+ /* в ситуациях, когда mmap не определена, сразу выходим */
+#ifndef AK_HAVE_WINDOWS_H
+ #ifndef AK_HAVE_SYSMMAN_H
+   return ak_error_undefined_function;
+ #endif
+#endif
+
+ ak_error_message( ak_error_undefined_function, __func__, "this function is'nt well developed" );
+ return NULL;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

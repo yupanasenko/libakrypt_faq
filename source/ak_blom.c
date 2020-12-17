@@ -32,10 +32,10 @@
   \f\[ f(x,y)= \sum_{i=0}^{m-1} \sum_{j=0}^{m-1} a_{i,j}x^i y^j,\quad f(x,y) \in GF(2^{n})[x,y], \f\]
   удволетворяющий равенству \f$ f(x,y) = f(y,x) \f$.
 
-  Пусть абоненты a и b имеют идентификаторы IDa и IDb, тогда ключ парной связи между
+  Пусть абоненты `a` и `b` имеют идентификаторы IDa и IDb, тогда ключ парной связи между
   указанными абонентами определяется равенством
 
-  \f\[ Kab = f( \texttt{Streebog}_n(IDa), \texttt{Streebog}_nh(IDb) ). \f\]
+  \f\[ Kab = f( \texttt{Streebog}_n(IDa), \texttt{Streebog}_n(IDb) ). \f\]
 
   Для возможности вступать в связь с несколькими абонентами,
   каждый абонент `a` может выработать из мастер-ключа свой уникальный ключ, представляющий собой
@@ -56,11 +56,15 @@
   абоненту `a` достаточно вычислить ключ парной связи, определяемый равенством
   \f\[ Kab = f_a\left( \texttt{Streebog}_n(IDb) \right). \f\]
 
-  Создание ключа абонента может быть выполнено с помощью функции ak_blomkey_create_abonent_key().
-  Создание ключа парной связи - с помощью функции ak_blomkey_create_pairwise_key().
+  Создание ключа абонента \f$ Ka \f$ может быть выполнено с помощью функции ak_blomkey_create_abonent_key().
+
+  Создание ключа парной связи \f$ Kab \f$ - с помощью функции ak_blomkey_create_pairwise_key().
+
   Удаление созданных ключей выполняется с помощью функции ak_blomkey_destroy().
-  Экспорт и импорт абонентских ключей и мастер-ключа из файлов осуществляется с помощью функций
-  ak_blomkey_export_to_file() и ak_blomkey_import_from_file().
+
+  Экспорт и импорт абонентских ключей и мастер-ключа из файловых контейнеров осуществляется
+  с помощью функций
+  ak_blomkey_export_to_file_with_password() и ak_blomkey_import_from_file_with_password().
 
   Отметим, что неприводимые многочлены, используемые для реализации элементарных операций
   в конечном поле \f$ GF(2^n)\f$, определены в файле ak_gf2n.c                                  @} */
@@ -90,8 +94,6 @@
  return ak_true;
 }
 
-
-
 /* ----------------------------------------------------------------------------------------------- */
 /*! В ходе своего выполнения функция вырабатывает симметричную матрицу,
     состоящую из (`size`)x(`size`) элементов конечного поля \f$ GF(2^n)\f$, где `n` это количество
@@ -114,9 +116,9 @@
   size_t memsize = size*size*count;
 
   if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                             "using null pointer to blom matrix" );
+                                                      "using null pointer to secret key context" );
   if( size > 4096 ) return ak_error_message( ak_error_wrong_length, __func__,
-                                                          "using very huge size for blom matrix" );
+                                                        "using very huge size for secret matrix" );
   if( !size ) return ak_error_message( ak_error_zero_length, __func__, "using zero field size" );
   if(( count != ak_galois256_size ) && ( count != ak_galois512_size ))
    return ak_error_message( ak_error_undefined_value, __func__,
@@ -124,10 +126,10 @@
   bkey->type = blom_matrix_key;
   bkey->count = count;
   bkey->size = size;
-  if(( bkey->data = malloc( memsize )) == NULL )
+  if(( bkey->data = malloc( memsize + 16 )) == NULL ) /* 16 это размер имитовставки */
     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
 
-  memset( bkey->data, 0, memsize );
+  memset( bkey->data, 0, memsize + 16 );
   for( column = 0; column < size; column++ ) {
     /* копируем созданное ранее */
      for( row = 0; row < column; row++ ) memcpy( bkey->data + column*count*size+row*count,
@@ -135,6 +137,7 @@
     /* создаем новое */
      ak_random_ptr( generator, bkey->data+column*count*(size+1),( size - column )*count );
   }
+  
   switch( bkey->count ) {
     case ak_galois256_size: error = ak_hash_create_streebog256( &bkey->ctx );
                             break;
@@ -195,10 +198,10 @@
     return ak_error_message( error, __func__, "incorrect evauation of initial hash value" );
 
  /* формируем ключевые данные */
-  if(( bkey->data = malloc(( memsize = bkey->size*matrix->count ))) == NULL )
+  if(( bkey->data = malloc( ( memsize = bkey->size*matrix->count ) + 16 )) == NULL )
     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
 
-  memset( bkey->data, 0, memsize );
+  memset( bkey->data, 0, memsize + 16 );
   for( row = 0; row < bkey->size; row++ ) { /* схема Горнера для вычисления значений многочлена */
      ak_uint8 *sum = bkey->data + row*bkey->count;
      memset( sum, 0, bkey->count );
@@ -374,54 +377,380 @@
 /*! Для сохранения ключа используется преобразование KExp15, регламентируемое
     рекомендациями по стадартизации Р 1323565.1.017-2018.
 
-  \param bkey указатель на контекст мастер-ключа или ключа-абонента
-  \param password пароль, из которого вырабатывается ключ шифрования ключа
-  \param pass_size длина пароля (в октетах)
-  \param filename имя файла, в который сохраняется ключ
-  \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха,
-  в противном случае возвращается код ошибки.                                                      */
+    Формат хранения данных определяется следующим образом.
+
+   \code
+      IV || CTR( eKey, Key || CMAC( iKey, IV || Key ))
+   \endcode
+
+    Ключи шифрования `eKey` и имитозащиты `iKey` вырабатываются из пароля
+    с помощью преобразования pbkdf2, см. функцию ak_bckey_create_key_pair_from_password().
+
+    Вектор IV формируется следующим образом:
+
+    - первые 8 октетов - значение синхропосылки для режима гаммирования,
+    - два октета - значение числа итераций в алгоритме pbkdf2,
+    - один октет - тип ключа (bkey->type),
+    - один октет - размер элемента поля (bkey->count),
+    - четыре октета - размерность матрицы (bkey->size).
+
+    Если имя файла для сохранения ключа не определено,
+    то функция формирует его самостоятельно.
+
+    \param bkey указатель на контекст мастер-ключа или ключа-абонента
+    \param password пароль, из которого вырабатывается ключ шифрования ключа
+    \param pass_size длина пароля (в октетах)
+    \param filename указатель на строку, содержащую имя файла, в который будет экспортирован ключ;
+    Если параметр `fsize` отличен от нуля,
+    то указатель должен указывать на область памяти, в которую будет помещено сформированное имя файла.
+    \param fsize  размер области памяти, в которую будет помещено имя файла.
+    Если размер области недостаточен, то будет возбуждена ошибка.
+    Данный параметр должен принимать значение 0 (ноль), если указатель `filename` указывает
+    на константную строку.
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха,
+    в противном случае возвращается код ошибки.                                                    */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_blomkey_export_to_file_with_password( ak_blomkey bkey, const char *password,
-                                                           const size_t pass_size, char *filename )
+                                      const size_t pass_size, char *filename, const size_t fsize )
 {
-  ak_uint8 iv[16];
+  struct file fs;
   int error = ak_error_ok;
   struct random generator;
-  size_t iter = ak_libakrypt_get_option_by_name( "pbkdf2_iteration_count" );
+  size_t memsize, iter = ak_libakrypt_get_option_by_name( "pbkdf2_iteration_count" );
+  struct bckey ekey, ikey;
+  size_t i, j, blocks, lblocks, ltail;
+  ak_uint8 iv[16], buffer[1024], *ptr = NULL;
 
- /* в контейнер необходимо поместить
-     - количество октетов в одном элементе матрицы (bkey->count)
-     - размер матрицы (bkey->size)
-     - тип ключа (bkey->type)
-     - собственно ключевые данные
-     - контрольную сумму (от данных и параметров ключа)
-
-     все перечисленное помещается в контейнер в зашифрованном виде
-     для шифрования
-      - синхропосылка (для режима гаммирования Кузнечиком (8 байт)
-      - salt (6 байт)
-      - количество итераций в pbkdf2 (2 байта, для восстановления ключей шифрования) */
-
- /* определяем синхропосылку:
+  if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using null pointer to secret key context" );
+ /* определяем заголовок:
     - первые 8 октетов - значение синхропосылки для режима гаммирования
     - два октета - значение числа итераций в алгоритме pbkdf
-    - последние шесть октетов - случайное значение для генерации ключевой пары */
+    - один октет - тип ключа (bkey->type)
+    - один октет - размер элемента поля (bkey->count)
+    - четыре октета - размерность матрицы (bkey->size) */
+
   if(( error = ak_random_create_lcg( &generator )) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect creation of random number generator");
   ak_random_ptr( &generator, iv, sizeof( iv ));
-  iv[8] = (iter >> 8)&0xFF;
-  iv[9] = iter&0xFF; /* помещаем число итераций в big-endian formate */
+  iv[8]  = (iter >> 8)&0xFF;
+  iv[9]  = iter&0xFF; /* помещаем число итераций в big-endian формате */
+  iv[10] = (ak_uint8) bkey->type;    /* сохраняем тип ключа */
+  iv[11] = bkey->count; /* количество октетов в одном элементе */
+  iv[12] = ( bkey->size >> 24)&0xFF; /* сохраняем значение size */
+  iv[13] = ( bkey->size >> 16)&0xFF;
+  iv[14] = ( bkey->size >>  8)&0xFF;
+  iv[15] = bkey->size&0xFF;
   ak_random_destroy( &generator );
 
-// + потестить функцию генерации ключей !! (есть сомнения)
+ /* вычисляем размер ключевых данных */
+  if( bkey->type == blom_matrix_key ) memsize = (bkey->size)*(bkey->size)*(bkey->count);
+   else memsize = (bkey->size)*(bkey->count);
+  if( memsize%16 != 0 ) return ak_error_message( ak_error_wrong_key_length, __func__,
+                                                               "unexpected length of secret key" );
+  if(( blocks = memsize/16 ) == 0 )
+    return ak_error_message( ak_error_wrong_key_length, __func__, "using short secret key" );
 
-// + для ak_bckey_cmac_update + ak_bckey_cmac_finalize()
+ /* создаем ключи */
+  if(( error = ak_bckey_create_key_pair_from_password( &ekey, &ikey,
+       ak_oid_find_by_name( "kuznechik" ), password, pass_size, iv, 16, iter )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect creation of key pair" );
 
-//  bckey_create_key_pair_from_password( ak_bckey , ak_bckey , ak_oid ,
-//                            const char * , const size_t , ak_uint8 *, const size_t, const size_t );
+ /* вычисляем контрольную сумму, которая будет сохранена в файл */
+  ikey.key.resource.value.counter = blocks + 1;
+  ak_bckey_cmac_clean( &ikey );
+  ak_bckey_cmac_update( &ikey, iv, 16 );
+  if( blocks > 1 ) ak_bckey_cmac_update( &ikey, bkey->data, memsize - 16 );
+  ak_bckey_cmac_finalize( &ikey, bkey->data + memsize - 16, 16, bkey->data + memsize, 16 );
 
+ /* создаем имя файла и сохраняем данные */
+  if(( error = ak_skey_generate_file_name_from_buffer( iv, 8,
+                                            filename, fsize, asn1_der_format )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect creation of secret key filename" );
+    goto labex;
+  }
 
- return ak_error_undefined_function;
+ /* открытие и запись */
+  if(( error = ak_file_create_to_write( &fs, filename )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect file creation" );
+    goto labex;
+  }
+  if( ak_file_write( &fs, iv, 16 ) < 0 ) {
+    ak_error_message( error, __func__, "incorrect writing a file header" );
+    goto labex2;
+  }
+
+ /* сохраняем данные в оптимальном виде */
+  ekey.key.resource.value.counter = blocks + 1;
+  switch( bkey->type ) {
+   case blom_matrix_key:                   /* сохраняем только существенные данные, т.е. */
+    /* фактически, мы сохраняем верхнетреугольную матрицу, отбрасывая симметричную часть */
+     for( i = 0; i < bkey->size; i++ ) {
+        memsize = ( bkey->size - i )*bkey->count;
+        if( i == ( bkey->size - 1 )) memsize += 16; /* добавляем контрольную сумму */
+
+        ltail = ( memsize )%sizeof( buffer );
+        lblocks = ( memsize - ltail )/sizeof( buffer );
+        ptr = bkey->data + i*bkey->count*(bkey->size + 1);
+
+        for( j = 0; j < lblocks; j++ ) {
+           ak_bckey_ctr( &ekey, ptr, buffer, sizeof( buffer ), j == 0 ? iv : NULL, 8 );
+           ptr += sizeof( buffer );
+           if( ak_file_write( &fs, buffer, sizeof( buffer )) < 0 ) {
+             ak_error_message( error = ak_error_write_data, __func__,
+                                                              "incorrect writing encrypted data" );
+             goto labex2;
+           }
+        }
+        if( ltail ) {
+          ak_bckey_ctr( &ekey, ptr, buffer, ltail, NULL, 0 );
+          if( ak_file_write( &fs, buffer, ltail ) < 0 ) {
+            ak_error_message( error = ak_error_write_data, __func__,
+                                                              "incorrect writing encrypted tail" );
+            goto labex2;
+          }
+        }
+     }
+     break;
+
+   case blom_abonent_key: /* в этом случае сохраняем все данные, без выбросов */
+     ptr = bkey->data;
+     ltail = ( memsize + 16 )%sizeof( buffer );
+     lblocks = ( memsize + 16 - ltail )/sizeof( buffer );
+
+     for( i = 0; i < lblocks; i++ ) {
+        ak_bckey_ctr( &ekey, ptr, buffer, sizeof( buffer ), i == 0 ? iv : NULL, 8 );
+        ptr += sizeof( buffer );
+        if( ak_file_write( &fs, buffer, sizeof( buffer )) < 0 ) {
+          ak_error_message( error = ak_error_write_data, __func__,
+                                                              "incorrect writing encrypted data" );
+          goto labex2;
+        }
+     }
+     if( ltail ) {
+       ak_bckey_ctr( &ekey, ptr, buffer, ltail, NULL, 0 );
+       if( ak_file_write( &fs, buffer, ltail ) < 0 ) {
+         ak_error_message( error = ak_error_write_data, __func__,
+                                                              "incorrect writing encrypted tail" );
+         goto labex2;
+       }
+     }
+     break;
+
+   default: ak_error_message( error = ak_error_wrong_key_type, __func__,
+                                                          "using secret key with incorrect type" );
+     goto labex;
+  }
+
+  labex2:
+    ak_file_close( &fs );
+  labex:
+   ak_bckey_destroy( &ekey );
+   ak_bckey_destroy( &ikey );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция последовательно реализует действия `create` и `set_key`, считывая данные, сохраненные
+    ранее функцией ak_blomkey_export_to_file_with_password()
+
+    \param bkey указатель на контекст создаваемого мастер-ключа или ключа-абонента
+    \param filename указатель на строку, содержащую имя файла с ключевой информацией
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха,
+    в противном случае возвращается код ошибки.                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_blomkey_import_from_file_with_password( ak_blomkey bkey, char *filename )
+{
+  struct file fs;
+  ssize_t len = 0;
+  char password[256];
+  int error = ak_error_ok;
+  struct bckey ekey, ikey;
+  ak_uint8 iv[16], buffer[1024], *ptr = NULL;
+  size_t i, j, blocks, memsize, iter, lblocks, ltail;
+
+  if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using null pointer to secret key context" );
+  if( filename == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                               "using null pointer to file name" );
+
+  if(( error = ak_file_open_to_read( &fs, filename )) != ak_error_ok )
+    return ak_error_message_fmt( error, __func__, "incorrect opening a file \"%s\"", filename );
+
+  if( ak_file_read( &fs, iv, 16 ) != 16 ) {
+    ak_error_message( error = ak_error_read_data, __func__, "incorrect reading a file header" );
+    goto labex;
+  }
+
+  memset( bkey, 0, sizeof( struct blomkey ));
+  bkey->size = iv[12];
+  bkey->size = ( bkey-> size << 8 ) + iv[13];
+  bkey->size = ( bkey-> size << 8 ) + iv[14];
+  bkey->size = ( bkey-> size << 8 ) + iv[15];
+  if( bkey->size > 4096 ) {
+    ak_error_message( error = ak_error_wrong_length, __func__,
+                                                          "using very huge size for blom matrix" );
+    goto labex;
+  }
+  if( !bkey->size ) {
+    ak_error_message( error = ak_error_zero_length, __func__, "using zero field size" );
+    goto labex;
+  }
+  bkey->count = iv[11];
+  if(( bkey->count != ak_galois256_size ) && ( bkey->count != ak_galois512_size )) {
+    ak_error_message( error = ak_error_undefined_value, __func__,
+                                       "this function accepts only 256 or 512 bit galois fields" );
+    goto labex;
+  }
+  bkey->type = iv[10];
+  if(( bkey->type != blom_matrix_key ) && ( bkey->type != blom_abonent_key )) {
+    ak_error_message( error = ak_error_wrong_key_type, __func__, "incorrect type of secret key" );
+    goto labex;
+  }
+
+ /* вычисляем размер ключевых данных */
+  if( bkey->type == blom_matrix_key ) memsize = (bkey->size)*(bkey->size)*(bkey->count);
+   else memsize = (bkey->size)*(bkey->count);
+  if( memsize%16 != 0 ) {
+    ak_error_message( error = ak_error_wrong_key_length, __func__,
+                                                               "unexpected length of secret key" );
+    goto labex;
+  }
+  if(( blocks = memsize/16 ) == 0 ) {
+    ak_error_message( error = ak_error_wrong_key_length, __func__, "using short secret key" );
+    goto labex;
+  }
+  if(( bkey->data = malloc( memsize + 16 )) == NULL ) { /* 16 это размер имитовставки */
+    ak_error_message( error = ak_error_out_of_memory, __func__, "incorrect memory allocation" );
+    goto labex;
+  }
+  memset( bkey->data, 0, memsize + 16 );
+
+ /* получаем пароль */
+  if(( error = ak_function_default_password_read( password, sizeof( password ))) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect password reading" );
+    goto labex;
+  }
+
+ /* вычисляем ключи */
+  iter = ( iv[8] << 8 ) + iv[9];
+  if(( error = ak_bckey_create_key_pair_from_password( &ekey, &ikey,
+                          ak_oid_find_by_name( "kuznechik" ), password,
+                                             strlen( password ), iv, 16, iter )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect creation of key pair" );
+    goto labex;
+  }
+
+ /* считываем данные */
+  ekey.key.resource.value.counter = blocks + 1;
+  switch( bkey->type ) {
+   case blom_matrix_key: /* считываем верхнетреугольную матрицу и разворачиваем ее */
+     for( i = 0; i < bkey->size; i++ ) {
+       /* копируем созданное ранее */
+        for( j = 0; j < i; j++ ) memcpy( bkey->data + i*bkey->count*bkey->size+j*bkey->count,
+                                      ak_blomkey_get_element_by_index( bkey, j, i ), bkey->count );
+       /* создаем новое */
+        iter = ( bkey->size - i )*bkey->count;
+        if( i == ( bkey->size - 1 )) iter += 16; /* добавляем контрольную сумму */
+
+        ptr = bkey->data + i*bkey->count*(bkey->size + 1);
+        ltail = iter%sizeof( buffer );
+        lblocks = ( iter - ltail )/sizeof( buffer );
+
+        for( j = 0; j < lblocks; j++ ) {
+           if(( len = ak_file_read( &fs, buffer, sizeof( buffer ))) != sizeof( buffer )) {
+             ak_error_message( error = ak_error_read_data, __func__,
+                                                              "incorrect reading encrypted data" );
+             goto labex1;
+           }
+           ak_bckey_ctr( &ekey, buffer, ptr, sizeof( buffer ), j == 0 ? iv : NULL, 8 );
+           ptr += sizeof( buffer );
+        }
+        if( ltail ) {
+          if(( len = ak_file_read( &fs, buffer, ltail )) != (ssize_t)ltail ) {
+            ak_error_message( error = ak_error_read_data, __func__,
+                                                              "incorrect reading encrypted tail" );
+            goto labex1;
+          }
+          ak_bckey_ctr( &ekey, buffer, ptr, ltail, NULL, 8 );
+        }
+     }
+     break;
+
+   case blom_abonent_key: /* считываем ключевой массив без каких либо изменений */
+     ptr = bkey->data;
+     ltail = ( memsize + 16 )%sizeof( buffer );
+     lblocks = ( memsize + 16 - ltail )/sizeof( buffer );
+
+     for( i = 0; i < lblocks; i++ ) {
+        if(( len = ak_file_read( &fs, buffer, sizeof( buffer ))) != sizeof( buffer )) {
+          ak_error_message( error = ak_error_read_data, __func__,
+                                                              "incorrect reading encrypted data" );
+          goto labex1;
+        }
+        ak_bckey_ctr( &ekey, buffer, ptr, sizeof( buffer ), i == 0 ? iv : NULL, 8 );
+        ptr += sizeof( buffer );
+     }
+     if( ltail ) {
+       if(( len = ak_file_read( &fs, buffer, ltail )) != (ssize_t)ltail ) {
+          ak_error_message( error = ak_error_read_data, __func__,
+                                                              "incorrect reading encrypted tail" );
+          goto labex1;
+        }
+        ak_bckey_ctr( &ekey, buffer, ptr, ltail, NULL, 8 );
+     }
+     break;
+
+   default: ak_error_message( error = ak_error_wrong_key_type, __func__,
+                                                          "using secret key with incorrect type" );
+     goto labex;
+  }
+
+ /* вычисляем и проверяем значение имитовставки  */
+  ikey.key.resource.value.counter = blocks + 1;
+  ak_bckey_cmac_clean( &ikey );
+  ak_bckey_cmac_update( &ikey, iv, 16 );
+  if( blocks > 1 ) ak_bckey_cmac_update( &ikey, bkey->data, memsize - 16 );
+  ak_bckey_cmac_finalize( &ikey, bkey->data + memsize - 16, 16, iv, 16 );
+
+  if( !ak_ptr_is_equal( bkey->data + memsize, iv, 16 )) {
+    ak_error_message( error = ak_error_not_equal_data, __func__,
+                                    "incorrect value of control sum, may be wrong password ... " );
+    goto labex1;
+  }
+
+ /* данные корректно считаны, завершаем создание контекста и
+                    определяем бесключевую контрольную сумму */
+  switch( bkey->count ) {
+    case ak_galois256_size: error = ak_hash_create_streebog256( &bkey->ctx );
+                            break;
+    case ak_galois512_size: error = ak_hash_create_streebog512( &bkey->ctx );
+                            break;
+    default: ak_error_message( error = ak_error_undefined_value, __func__,
+                                       "this function accepts only 256 or 512 bit galois fields" );
+  }
+  if( error != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect creation of hash function context" );
+    goto labex1;
+  }
+  if(( error = ak_hash_ptr( &bkey->ctx, bkey->data, memsize, bkey->icode, 32 )) != ak_error_ok ) {
+    ak_error_message( error,  __func__ , "incorrect calculation of control sum" );
+    ak_hash_destroy( &bkey->ctx );
+  }
+
+  labex1:
+    ak_bckey_destroy( &ekey );
+    ak_bckey_destroy( &ikey );
+
+  labex:
+    memset( password, 0, sizeof( password ));
+    ak_file_close( &fs );
+    if( error != ak_error_ok ) {
+      if( bkey->data != NULL ) free( bkey->data );
+    }
+
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

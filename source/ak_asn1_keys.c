@@ -16,8 +16,7 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Указатель на функцию чтения пароля */
- static ak_function_password_read *ak_function_default_password_read = NULL;
+ ak_function_password_read *ak_function_default_password_read = ak_password_read_from_terminal;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \note Функция экспортируется.
@@ -34,6 +33,17 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ int ak_password_read_from_terminal( char *password, const size_t pass_size )
+{
+  int error = ak_error_ok;
+
+  fprintf( stdout, "password: "); fflush( stdout );
+  error = ak_password_read( password, pass_size );
+  fprintf( stdout, "\n" );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
                   /* Функции выработки и сохранения производных ключей */
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param ekey контекст создаваемого ключа шифрования
@@ -47,7 +57,7 @@
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- int bckey_create_key_pair_from_password( ak_bckey ekey, ak_bckey ikey, ak_oid oid,
+ int ak_bckey_create_key_pair_from_password( ak_bckey ekey, ak_bckey ikey, ak_oid oid,
                                       const char *password, const size_t pass_size,
                                         ak_uint8 *salt, const size_t salt_size, const size_t iter )
 {
@@ -176,7 +186,7 @@
   memset( salt, 0, sizeof( salt ));
   ak_random_ptr( &generator, salt, sizeof( salt ));
 
-  if(( error = bckey_create_key_pair_from_password( ekey, ikey, oid, password, pass_size,
+  if(( error = ak_bckey_create_key_pair_from_password( ekey, ikey, oid, password, pass_size,
       salt, sizeof( salt ), (size_t) ak_libakrypt_get_option_by_name( "pbkdf2_iteration_count" )))
                                                                                   != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect creation of derived key pairs");
@@ -297,15 +307,11 @@
   ak_tlv_get_uint32( asn->current, &u32 ); /* число циклов */
 
  /* вырабатываем производную ключевую информацию */
-   if( ak_function_default_password_read == NULL ) {
-     fprintf( stdout, "password: "); fflush( stdout );
-     error = ak_password_read( password, sizeof( password ));
-     fprintf( stdout, "\n" );
-   } else error = ak_function_default_password_read( password, sizeof( password ));
-   if( error != ak_error_ok ) return error;
+  if(( error = ak_function_default_password_read( password, sizeof( password ))) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect password reading" );
 
  /* 1. получаем пользовательский пароль и вырабатываем производную ключевую информацию */
-   error = bckey_create_key_pair_from_password( ekey, ikey, eoid,
+   error = ak_bckey_create_key_pair_from_password( ekey, ikey, eoid,
                                                 password, strlen( password ), ptr, size, u32 );
    memset( password, 0, sizeof( password ));
 
@@ -315,9 +321,7 @@
 /* ----------------------------------------------------------------------------------------------- */
                          /* Функции экспорта ключевой информации */
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Формирование имени файла, в который будет помещаться секретный или открытый ключ.
-
-     - если `fsize` равен нулю, а указатель `filename` отличен от `NULL`, то функция
+/*!  - если `fsize` равен нулю, а указатель `filename` отличен от `NULL`, то функция
        предполагает, что `filename` уже содержит имя файла и ничего не вырабатывает.
      - если `fsize` отличен от нуля, а указатель `filename` отличен от `NULL`, то функция
        предполагает, что `filename` является указателем на область памяти, в которую будем
@@ -336,7 +340,7 @@
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_skey_generate_file_name_from_buffer( ak_uint8 *buffer, const size_t bufsize,
+ int ak_skey_generate_file_name_from_buffer( ak_uint8 *buffer, const size_t bufsize,
                                        char *filename, const size_t fsize, export_format_t format )
 {
   const char *file_extensions[] = { /* имена параметризуются значениями типа export_format_t */

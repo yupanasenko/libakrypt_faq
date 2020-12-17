@@ -1870,7 +1870,7 @@ extern "C" {
    ak_uint8 *data;
   /*! \brief контрольная сумма (хэш-код ключевых данных) */
    ak_uint8 icode[32];
-  /*! \brief контекст алгоритма бесключевого хеширования */
+  /*! \brief контекст алгоритма выработки имитовставки */
    struct hash ctx;
   /*! \brief тип ключа */
    enum {
@@ -1902,7 +1902,9 @@ extern "C" {
  dll_export int ak_blomkey_destroy( ak_blomkey );
 /*! \brief Экспорт ключа в заданный файл */
  dll_export int ak_blomkey_export_to_file_with_password( ak_blomkey ,
-                                                            const char * , const size_t , char * );
+                                             const char * , const size_t , char * , const size_t );
+/*! \brief Импорт ключа из заданного файла */
+ dll_export int ak_blomkey_import_from_file_with_password( ak_blomkey , char * );
 /** @} *//** @} */
 
 #ifdef __cplusplus
