@@ -15,22 +15,12 @@
  static char *IDtwo = "J. Knot";
 
 /* ----------------------------------------------------------------------------------------------- */
- int user_function_for_reading_password( char *password, const size_t size )
-{
-  if( size < 6 ) return ak_error_wrong_length;
-    memset( password, 0, size );
-    memcpy( password, "hello", 5 );
- return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
  int main( void )
 {
   int error = EXIT_FAILURE;
 
  /* инициализируем библиотеку и устанавливаем функцию получения пароля */
   ak_libakrypt_create( ak_function_log_stderr );
-  ak_libakrypt_set_password_read_function( user_function_for_reading_password );
 
   if(( error = user_test( 128, ak_galois256_size )) != EXIT_SUCCESS ) goto labex;
   if(( error = user_test( 512, ak_galois256_size )) != EXIT_SUCCESS ) goto labex;
@@ -181,7 +171,7 @@
                                                                ak_uint8 *check, bool_t check_flag )
 {
   ak_oid oid = NULL;
-  struct hmac oneKey, twoKey;
+  ak_pointer oneKey, twoKey;
   ak_uint8 onehmac[64], twohmac[64];
   int exitcode = EXIT_FAILURE;
 
@@ -193,20 +183,18 @@
   }
 
  /* вычисляем ключи парной связи и проверяем, что они совпадают */
-  if( ak_blomkey_create_pairwise_key( abonent_one, IDtwo, strlen( IDtwo ),
-                                                                 &oneKey, oid ) == ak_error_ok ) {
+  if(( oneKey = ak_blomkey_new_pairwise_key( abonent_one, IDtwo, strlen( IDtwo ), oid )) != NULL ) {
     printf("%s - creation of %s pairwise key for \"%s\" is Ok\n", __func__, oid->name[0], IDone );
-    ak_hmac_ptr( &oneKey, "make love not war", 16, onehmac, ak_hmac_get_tag_size( &oneKey ));
+    ak_hmac_ptr( oneKey, "make love not war", 16, onehmac, ak_hmac_get_tag_size( oneKey ));
   }
    else {
     printf("%s - creation of %s pairwise key for \"%s\" is wrong\n", __func__, oid->name[0], IDone );
     return EXIT_FAILURE;
    }
 
-  if( ak_blomkey_create_pairwise_key( abonent_two, IDone, strlen( IDone ),
-                                                                 &twoKey, oid ) == ak_error_ok ) {
+  if(( twoKey = ak_blomkey_new_pairwise_key( abonent_two, IDone, strlen( IDone ), oid )) != NULL ) {
     printf("%s - creation of %s pairwise key for \"%s\" is Ok\n", __func__, oid->name[0], IDtwo );
-    ak_hmac_ptr( &twoKey, "make love not war", 16, twohmac, ak_hmac_get_tag_size( &twoKey ));
+    ak_hmac_ptr( twoKey, "make love not war", 16, twohmac, ak_hmac_get_tag_size( twoKey ));
   }
    else {
     printf("%s - creation of %s pairwise key for \"%s\" is wrong\n", __func__, oid->name[0], IDtwo );
@@ -214,7 +202,7 @@
    }
 
  /* сравниваем полученные значения */
-  if( ak_ptr_is_equal( onehmac, twohmac, ak_hmac_get_tag_size( &oneKey )))
+  if( ak_ptr_is_equal( onehmac, twohmac, ak_hmac_get_tag_size( oneKey )))
     printf("%s - all keys Ok\n", __func__ );
    else {
      printf("%s - something wrong with generated keys.... \n", __func__ );
@@ -222,27 +210,26 @@
    }
 
   if( check_flag ) {
-    if( ak_ptr_is_equal( onehmac, check, ak_hmac_get_tag_size( &oneKey ))) {
+    if( ak_ptr_is_equal( onehmac, check, ak_hmac_get_tag_size( oneKey ))) {
       printf("%s - checked value is Ok\n", __func__ );
-      printf("check: %s\n", ak_ptr_to_hexstr( check, ak_hmac_get_tag_size( &oneKey ), ak_false ));
+      printf("check: %s\n", ak_ptr_to_hexstr( check, ak_hmac_get_tag_size( oneKey ), ak_false ));
       exitcode = EXIT_SUCCESS;
     }
      else {
       printf("%s - checked value is Wrong\n", __func__ );
-      printf("value: %s\n", ak_ptr_to_hexstr( onehmac, ak_hmac_get_tag_size( &oneKey ), ak_false ));
-      printf("check: %s\n", ak_ptr_to_hexstr( check, ak_hmac_get_tag_size( &oneKey ), ak_false ));
+      printf("value: %s\n", ak_ptr_to_hexstr( onehmac, ak_hmac_get_tag_size( oneKey ), ak_false ));
+      printf("check: %s\n", ak_ptr_to_hexstr( check, ak_hmac_get_tag_size( oneKey ), ak_false ));
      }
   } else {
-      memcpy( check, onehmac, ak_hmac_get_tag_size( &oneKey ));
-      printf("check: %s\n", ak_ptr_to_hexstr( check, ak_hmac_get_tag_size( &oneKey ), ak_false ));
+      memcpy( check, onehmac, ak_hmac_get_tag_size( oneKey ));
+      printf("check: %s\n", ak_ptr_to_hexstr( check, ak_hmac_get_tag_size( oneKey ), ak_false ));
       exitcode = EXIT_SUCCESS;
   }
 
  labex2:
-   ak_hmac_destroy( &twoKey );
-
+   ak_oid_delete_object( oid, twoKey );
  labex1:
-   ak_hmac_destroy( &oneKey );
+   ak_oid_delete_object( oid, oneKey );
 
  return exitcode;
 }
@@ -255,7 +242,7 @@
   int exitcode = EXIT_FAILURE;
 
  /* считываем мастер-ключ */
-  if( ak_blomkey_import_from_file_with_password( &master, "master.key" ) == ak_error_ok )
+  if( ak_blomkey_import_from_file_with_password( &master, "hello", 5, "master.key" ) == ak_error_ok )
     printf("%s - import of initial matrix is Ok\n", __func__ );
    else return exitcode;
 
@@ -284,14 +271,16 @@
   int exitcode = EXIT_FAILURE;
   struct blomkey abonent_one, abonent_two;
 
-  if( ak_blomkey_import_from_file_with_password( &abonent_one, "client-one.key" ) == ak_error_ok )
+  if( ak_blomkey_import_from_file_with_password( &abonent_one, "hello", 5,
+                                                               "client-one.key" ) == ak_error_ok )
     printf("%s - import a secret key for \"%s\" is Ok\n", __func__, IDone );
    else {
      printf("%s - incorrect import of secret key for \"%s\"\n", __func__, IDone );
      return exitcode;
    }
 
-  if( ak_blomkey_import_from_file_with_password( &abonent_two, "client-two.key" ) == ak_error_ok )
+  if( ak_blomkey_import_from_file_with_password( &abonent_two, "hello", 5,
+                                                               "client-two.key" ) == ak_error_ok )
     printf("%s - import a secret key for \"%s\" is Ok\n", __func__, IDtwo );
    else {
      printf("%s - incorrect import of secret key for \"%s\"\n", __func__, IDtwo );

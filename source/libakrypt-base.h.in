@@ -511,6 +511,8 @@ extern "C" {
  dll_export int ak_string_read( const char * , char * , size_t * );
 /*! \brief Чтение пароля из консоли. */
  dll_export int ak_password_read( char * , const size_t );
+/*! \brief Чтение пароля из консоли с выводом уведомления (устанавливается по-умолчанию) */
+ dll_export int ak_password_read_from_terminal( char * , const size_t );
 /** @} */
 
 #ifdef __cplusplus

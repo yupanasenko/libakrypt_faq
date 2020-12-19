@@ -272,6 +272,12 @@ extern "C" {
      random_generator,
    /*! \brief механизм идентификаторов криптографических алгоритмов */
      oid_engine,
+   /*! \brief алгоритм выработки мастер ключа для схемы Блома распределения симметричных ключей */
+     blom_master,
+   /*! \brief алгоритм выработки ключа абонента для схемы Блома распределения симметричных ключей */
+     blom_abonent,
+   /*! \brief алгоритм выработки ключа парной связи */
+    blom_pairwise,
    /*! \brief неопределенный механизм, может возвращаться как ошибка */
      undefined_engine
 } oid_engines_t;
@@ -1392,7 +1398,7 @@ extern "C" {
   /*! \brief хранение asn1 дерева в виде der-последовательности. */
    asn1_der_format,
   /*! \brief хранение asn1 дерева в виде der-последовательнсти, закодированной в base64. */
-   asn1_pem_format
+   asn1_pem_format,
 } export_format_t;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1893,8 +1899,8 @@ extern "C" {
  dll_export int ak_blomkey_create_pairwise_key_as_ptr( ak_blomkey ,
                                                  ak_pointer , const size_t , ak_pointer , size_t );
 /*! \brief Функция создает ключ парной связи и помещает его в контекст секретного ключа */
- dll_export int ak_blomkey_create_pairwise_key( ak_blomkey , ak_pointer ,
-                                                              const size_t , ak_pointer , ak_oid );
+ dll_export ak_pointer ak_blomkey_new_pairwise_key( ak_blomkey , ak_pointer ,
+                                                                           const size_t , ak_oid );
 /*! \brief Функция возвращает элемент ключа с заданным индексом */
  dll_export ak_uint8 *ak_blomkey_get_element_by_index( ak_blomkey ,
                                                                const ak_uint32 , const ak_uint32 );
@@ -1904,7 +1910,8 @@ extern "C" {
  dll_export int ak_blomkey_export_to_file_with_password( ak_blomkey ,
                                              const char * , const size_t , char * , const size_t );
 /*! \brief Импорт ключа из заданного файла */
- dll_export int ak_blomkey_import_from_file_with_password( ak_blomkey , char * );
+ dll_export int ak_blomkey_import_from_file_with_password( ak_blomkey ,
+                                                            const char * , const size_t , char * );
 /** @} *//** @} */
 
 #ifdef __cplusplus

@@ -1,3 +1,4 @@
+/* ----------------------------------------------------------------------------------------------- */
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
@@ -8,8 +9,11 @@
  int aktool_key_new( void );
  int aktool_key_certificate( void );
  int aktool_key_new_keypair( bool_t , bool_t );
+ int aktool_key_new_blom( void );
  int aktool_key_input_name( ak_verifykey );
  int aktool_key_print_disclaimer( void );
+ int aktool_key_load_user_password_twice( void );
+ int aktool_key_load_user_password( char * , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 #if defined(__unix__) || defined(__APPLE__)
@@ -32,9 +36,15 @@
    export_format_t format;
    ak_oid curve;
    size_t days;
+   ak_uint32 field, size;
+   int verbose;
    struct certificate_opts opts;
    char password[aktool_password_max_length];
+   size_t lenpass, lenuser;
+   bool_t hexload;
    char keylabel[256];
+   char user_id[256]; /* идентификатор пользователя ключа */
+   char target[32]; /* целевой алгоритм для создаваемого ключа */
 
    char os_file[FILENAME_MAX];   /* сохраняем секретный ключ */
    char op_file[FILENAME_MAX];    /* сохраняем открытый ключ */
@@ -60,6 +70,7 @@
      { "new",                 0, NULL,  'n' },
      { "output-secret-key",   1, NULL,  'o' },
      { "to",                  1, NULL,  250 },
+     { "hexpass",             1, NULL,  249 },
      { "password",            1, NULL,  248 },
      { "curve",               1, NULL,  247 },
      { "days",                1, NULL,  246 },
@@ -82,17 +93,25 @@
      { "key-cert-sign",       0, NULL,  195 },
      { "crl-sign",            0, NULL,  196 },
      { "ca",                  1, NULL,  197 },
-     { "path-len",            1, NULL,  198 },
+     { "pathlen",             1, NULL,  198 },
      { "authority-keyid",     0, NULL,  199 },
      { "authority-name",      0, NULL,  200 },
 
+   /* флаги для генерации ключей схемы Блома */
+     { "hexload",             0, NULL,  179 },
+     { "field",               1, NULL,  180 },
+     { "size",                1, NULL,  181 },
+     { "id",                  1, NULL,  182 },
+     { "hexid",               1, NULL,  183 },
+     { "target",              1, NULL,  184 },
+
    /* это стандартые для всех программ опции */
-     { "openssl-style",    0, NULL,   5  },
-     { "audit",            1, NULL,   4  },
-     { "dont-use-colors",  0, NULL,   3  },
-     { "audit-file",       1, NULL,   2  },
-     { "help",             0, NULL,   1  },
-     { NULL,               0, NULL,   0  },
+     { "openssl-style",       0, NULL,   5  },
+     { "audit",               1, NULL,   4  },
+     { "dont-use-colors",     0, NULL,   3  },
+     { "audit-file",          1, NULL,   2  },
+     { "help",                0, NULL,   1  },
+     { NULL,                  0, NULL,   0  },
   };
 
  /* инициализируем множество параметров по-умолчанию */
@@ -103,7 +122,12 @@
   ki.format = asn1_der_format;
   ki.curve = ak_oid_find_by_name( "id-tc26-gost-3410-2012-256-paramSetA" );
   ki.days = 365;
- /*  ki.opts состоит из одних нулей */
+ /* параметры секретного ключа для схемы Блома */
+  ki.field = ak_galois256_size;
+  ki.size = 512;
+  ki.verbose = ak_true;
+  ki.hexload = ak_false;
+ /*  далее ki.opts состоит из одних нулей */
 
  /* разбираем опции командной строки */
   do {
@@ -244,6 +268,17 @@
         case 248: /* --password */
                    memset( ki.password, 0, sizeof( ki.password ));
                    strncpy( ki.password, optarg, sizeof( ki.password ) -1 );
+                   ki.lenpass = strlen( ki.password );
+                   break;
+
+        case 249: /* --hexpass */
+                   memset( ki.password, 0, sizeof( ki.password ));
+                   if( ak_hexstr_to_ptr( optarg, ki.password,
+                                              sizeof( ki.password ), ak_false ) == ak_error_ok ) {
+                     ki.lenpass = ak_min(( strlen( optarg )%2 ) + ( strlen( optarg ) >> 1 ),
+                                                                            sizeof( ki.password ));
+                   }
+                    else ki.lenpass = 0;
                    break;
 
      /* определяем формат выходных данных */
@@ -252,6 +287,7 @@
                    strncpy( tmp, optarg, 3 );
                    for( i = 0; i < sizeof( tmp )-1; i ++ ) tmp[i] = toupper( tmp[i] );
 
+                   ki.format = -1;
                    if( strncmp( tmp, "DER", 3 ) == 0 )
                      ki.format = asn1_der_format;
                     else
@@ -306,7 +342,7 @@
 
         case 198: /* --pathlen */
                    if(( value = atoi( optarg )) == 0 ) {
-                     aktool_error(_("the value of pathlenConstraints must be positive integer"));
+                     aktool_error(_("the value of \"pathlenConstraints\" must be positive integer"));
                      return EXIT_FAILURE;
                    }
                    ki.opts.ca.is_present = ki.opts.ca.value = ak_true;
@@ -319,6 +355,50 @@
                    ki.opts.authority_key_identifier.include_name = ak_true;
                    break;
 
+        case 179: /* --hexload */
+                   ki.hexload = ak_true;
+                   break;
+
+        case 180: /* --field */
+                   ki.field = atoi( optarg );
+                   if(( ki.field != ak_galois256_size ) && ( ki.field != ak_galois512_size )) {
+                     if( ki.field == 256 ) ki.field >>= 3;
+                       else
+                        if( ki.field == 512 ) ki.field >>= 3;
+                          else {
+                            aktool_error(_("incorrect value of field size,"
+                                           " use \"--field 256\" or \"--field 512\" option"));
+                            return EXIT_FAILURE;
+                          }
+                   }
+                   break;
+
+        case 181: /* --size */
+                   if(( ki.size = atoi( optarg )) == 0 ) ki.size = 512;
+                   if( ki.size > 4096 ) ki.size = 4096; /* ограничение по реализации */
+                   break;
+
+        case 182: /* --id */
+                   memset( ki.user_id, 0, sizeof( ki.user_id ));
+                   strncpy( ki.user_id, optarg, sizeof( ki.user_id ) -1 );
+                   ki.lenuser = strlen( ki.user_id );
+                   break;
+
+        case 183: /* --hexid */
+                   memset( ki.user_id, 0, sizeof( ki.user_id ));
+                   if( ak_hexstr_to_ptr( optarg, ki.user_id,
+                                              sizeof( ki.user_id ), ak_false ) == ak_error_ok ) {
+                      ki.lenuser = ak_min(( strlen( optarg )%2 ) + ( strlen( optarg ) >> 1 ),
+                                                                             sizeof( ki.user_id ));
+                   }
+                    else ki.lenuser = 0;
+                   break;
+
+        case 184: /* --target */
+                   memset( ki.target, 0, sizeof( ki.target ));
+                   strncpy( ki.target, optarg, sizeof( ki.target ) -1 );
+                   break;
+
         default:  /* обрабатываем ошибочные параметры */
                    if( next_option != -1 ) work = do_nothing;
                    break;
@@ -326,22 +406,27 @@
    } while( next_option != -1 );
    if( work == do_nothing ) return aktool_key_help();
 
+ /* начинаем работу с криптографическими примитивами */
+   if( !aktool_create_libakrypt( )) return EXIT_FAILURE;
+   ak_libakrypt_set_password_read_function( aktool_key_load_user_password );
+
  /* теперь вызов соответствующей функции */
-  switch( work ) {
-  case do_new:
-    exit_status = aktool_key_new();
-    break;
+   switch( work ) {
+     case do_new:
+       exit_status = aktool_key_new();
+       break;
 
-  case do_cert:
-    exit_status = aktool_key_certificate();
-    break;
+     case do_cert:
+       exit_status = aktool_key_certificate();
+       break;
 
-  default:
-    exit_status = EXIT_FAILURE;
-  }
+     default:
+       exit_status = EXIT_FAILURE;
+   }
 
- /* завершаем криптографическую библиотеку */
-  ak_libakrypt_destroy();
+ /* завершаем работу и выходим */
+   aktool_destroy_libakrypt();
+
  return exit_status;
 }
 
@@ -364,14 +449,406 @@
     case sign_function: /* создаем пару ключей */
       return aktool_key_new_keypair( ak_true, ak_true );
 
+    case blom_master:
+    case blom_abonent:
+    case blom_pairwise:
+      return aktool_key_new_blom();
+
    default:
-      aktool_error(_("the algorithm %s (%s) is a %s and does not use a secret or public keys"),
+      aktool_error(_("the string %s (%s) is an identifier of %s wich does not use a cryptographic key"),
                                        ki.algorithm->name[0], ki.algorithm->id[0],
                                              ak_libakrypt_get_engine_name( ki.algorithm->engine ));
       return EXIT_FAILURE;
    }
 
  return EXIT_SUCCESS;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Эта функция используется при импорте ключа (однократное чтение пароля) */
+ int aktool_key_load_user_password( char *password, const size_t pass_size )
+{
+  char *buffer = NULL;
+  int error = ak_error_ok, bufsize = 1 + ( pass_size << 1 );
+
+  if(( buffer = malloc( bufsize )) == NULL ) {
+    aktool_error(_("out of memory"));
+    return ak_error_out_of_memory;
+  }
+
+  fprintf( stdout, _("password"));
+   if( ki.hexload ) fprintf( stdout, _(" [as hexademal string]"));
+  fprintf( stdout, ": "); fflush( stdout );
+  error = ak_password_read( buffer, bufsize );
+  fprintf( stdout, "\n" );
+
+  memset( password, 0, pass_size );
+  if( ki.hexload ) {
+    error = ak_hexstr_to_ptr( buffer, password, pass_size, ak_false );
+  }
+   else memcpy( password, buffer, ak_min( pass_size - 1, strlen( buffer )));
+
+  if( buffer ) free( buffer );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Эта функция используется перед экспортом ключа */
+ int aktool_key_load_user_password_twice( void )
+{
+  char *buffer = NULL;
+  int error = ak_error_ok, bufsize = 1 + ( sizeof( ki.password ) << 1 );
+
+  if(( buffer = malloc( bufsize )) == NULL ) {
+    aktool_error(_("out of memory"));
+    return ak_error_out_of_memory;
+  }
+
+ /* считываем первое значение */
+  fprintf( stdout, _("password"));
+   if( ki.hexload ) fprintf( stdout, _(" [as hexademal string]"));
+  fprintf( stdout, ": "); fflush( stdout );
+  error = ak_password_read( buffer, bufsize );
+  fprintf( stdout, "\n" );
+
+  memset( ki.password, 0, sizeof( ki.password ));
+  if( ki.hexload ) {
+    error = ak_hexstr_to_ptr( buffer, ki.password, sizeof( ki.password ), ak_false );
+    ki.lenpass = strlen( buffer )%2 + ( strlen( buffer ) >> 1 );
+  }
+   else memcpy( ki.password, buffer, ak_min( sizeof( ki.password ) - 1, strlen( buffer )));
+
+ /* теперь считываем пароль второй раз и проверяем совпадение */
+  printf(_("retype password"));
+   if( ki.hexload) fprintf( stdout, _(" [as hexademal string]"));
+  fprintf( stdout, ": "); fflush( stdout );
+
+  if( ak_password_read( buffer, bufsize ) != ak_error_ok ) {
+    aktool_error(_("incorrect password"));
+    error = ak_error_read_data;
+    goto labex;
+  } else printf("\n");
+
+  if( ki.hexload ) {
+    char password2[aktool_password_max_length];
+      error = ak_hexstr_to_ptr( buffer, password2, sizeof( password2 ), ak_false );
+      if( !ak_ptr_is_equal( ki.password, password2, ki.lenpass )) {
+        aktool_error(_("the passwords don't match"));
+        error = ak_error_not_equal_data;
+        goto labex;
+      }
+  }
+   else {
+    if(( strlen( ki.password ) != strlen( buffer )) ||
+       ( !ak_ptr_is_equal( ki.password, buffer, strlen( ki.password )))) {
+      aktool_error(_("the passwords don't match"));
+      error = ak_error_not_equal_data;
+      goto labex;
+    }
+    ki.lenpass = strlen( ki.password );
+  }
+  labex: if( buffer ) free( buffer );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int aktool_key_new_blom_master( void )
+{
+  struct blomkey master;
+  int exitcode = EXIT_FAILURE;
+  ak_pointer generator = NULL;
+
+ /* формируем генератор случайных чисел */
+  if( ki.name_of_file_for_generator != NULL ) {
+    if( ak_random_create_file( generator = malloc( sizeof( struct random )),
+                                                ki.name_of_file_for_generator ) != ak_error_ok ) {
+      if( generator ) free( generator );
+      return exitcode;
+    }
+  }
+   else
+    if(( generator = ak_oid_new_object( ki.oid_of_generator )) == NULL ) return exitcode;
+
+  if( ki.verbose ) {
+    printf(_("      field: GF(2^%u)\n"), ki.field << 3 );
+    printf(_("matrix size: %ux%u\n generation: "), ki.size, ki.size );
+    fflush( stdout );
+  }
+
+ /* вырабатываем ключ заданного размера */
+  if( ak_blomkey_create_matrix( &master, ki.size, ki.field, generator ) != ak_error_ok ) {
+    aktool_error(_("incorrect master key generation"));
+    goto labex;
+  }
+  if( ki.verbose ) { printf(_("Ok\n")); }
+
+ /* запрашиваем пароль */
+  if( aktool_key_load_user_password_twice() != ak_error_ok ) goto labex1;
+ /* сохраняем созданный ключ в файле */
+  if( ak_blomkey_export_to_file_with_password(
+          &master,
+          ki.password,
+          ki.lenpass,
+          ki.os_file,      /* если имя не задано,
+                     то получаем новое имя файла */
+          ( strlen( ki.os_file ) > 0 ) ? 0 : sizeof( ki.os_file )
+    ) != ak_error_ok )
+      aktool_error(_("wrong export a secret key to file %s"), ki.os_file );
+     else {
+       printf(_("secret key stored in %s\n"), ki.os_file );
+       exitcode = EXIT_SUCCESS;
+     }
+
+ labex1:
+  ak_blomkey_destroy( &master );
+
+ labex:
+  if( ki.name_of_file_for_generator != NULL ) {
+    ak_random_destroy( generator );
+    free( generator );
+  }
+   else ak_oid_delete_object( ki.oid_of_generator, generator );
+
+ return exitcode;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int aktool_key_new_blom_abonent( void )
+{
+  int exitcode = EXIT_FAILURE;
+  struct blomkey master, abonent;
+
+ /* проверяем наличие имени пользователя */
+  if( ki.lenuser == 0 ) {
+    aktool_error(_("user or abonent's name is undefined, use \"--id\" option" ));
+    return exitcode;
+  }
+  if( strlen( ki.key_file ) == 0 ) {
+    aktool_error(_("the file with master key is undefined, use \"--key\" option" ));
+    return exitcode;
+  }
+ /* запрашиваем пароль для доступа к мастер ключу (однократно, без дублирования) */
+  if( ki.verbose ) printf(_("master key: %s\n"), ki.key_file );
+  if( ki.lenpass == 0 ) {
+    if( aktool_key_load_user_password( ki.password, sizeof( ki.password )) == ak_error_ok )
+      ki.lenpass = strlen( ki.password );
+     else {
+       aktool_error(_("incorrect password reading"));
+       return exitcode;
+     }
+  }
+
+ /* считываем ключ из заданного файла
+    если пароль определен в командой строке, то используем именно его */
+  if( ak_blomkey_import_from_file_with_password( &master,
+                                         ki.password, ki.lenpass, ki.key_file ) != ak_error_ok ) {
+    aktool_error(_("incorrect loading a master key from %s file\n"), ki.key_file );
+    return exitcode;
+  }
+ /* создаем ключ абонента */
+  if( ki.verbose ) {
+    if( strlen( ki.user_id ) == ki.lenuser )
+      printf(_("generation a %s key for %s: "), ki.algorithm->name[0], ki.user_id );
+     else printf(_("generation a %s key for %s: "), ki.algorithm->name[0],
+                                             ak_ptr_to_hexstr( ki.user_id, ki.lenuser, ak_false ));
+    fflush( stdout );
+  }
+  if( ak_blomkey_create_abonent_key( &abonent, &master, ki.user_id, ki.lenuser ) != ak_error_ok ) {
+    aktool_error(_("incorrect creation of the abonent's key"));
+    goto labex1;
+  }
+  if( ki.verbose ) { printf(_("Ok\n")); }
+
+ /* запрашиваем пароль для сохранения ключа абонента */
+  ki.lenpass = 0;
+  memset( ki.password, 0, sizeof( ki.password ));
+  if( aktool_key_load_user_password_twice() != ak_error_ok ) goto labex2;
+
+ /* сохраняем созданный ключ в файле */
+  if( ak_blomkey_export_to_file_with_password(
+          &abonent,
+          ki.password,
+          ki.lenpass,
+          ki.os_file,      /* если имя не задано,
+                     то получаем новое имя файла */
+          ( strlen( ki.os_file ) > 0 ) ? 0 : sizeof( ki.os_file )
+    ) != ak_error_ok )
+      aktool_error(_("wrong export a secret key to file %s"), ki.os_file );
+     else {
+       printf(_("secret key stored in %s\n"), ki.os_file );
+       exitcode = EXIT_SUCCESS;
+     }
+
+ labex2:
+   ak_blomkey_destroy( &abonent );
+ labex1:
+   ak_blomkey_destroy( &master );
+
+ return exitcode;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int aktool_key_new_blom_pairwise( void )
+{
+  ak_oid oid = NULL;
+  struct blomkey abonent;
+  int exitcode = EXIT_FAILURE;
+
+ /* проверяем наличие имени пользователя */
+  if( ki.lenuser == 0 ) {
+    aktool_error(_("user or abonent's name is undefined, use \"--id\" option" ));
+    return exitcode;
+  }
+  if( strlen( ki.key_file ) == 0 ) {
+    aktool_error(_("the file with abonent's key is undefined, use \"--key\" option" ));
+    return exitcode;
+  }
+  if( strlen( ki.target ) == 0 ) {
+    aktool_error(_("the algorithm for the pairwise key must be specified, use \"--target\" option" ));
+    return exitcode;
+  }
+  if( strncmp( ki.target, "undefined", 9 ) != 0 ) {
+    if(( oid = ak_oid_find_by_ni( ki.target )) == NULL ) {
+      aktool_error(_("wrong name or identifier for the pairwise key's algorithm (%s)" ),
+                                                                                       ki.target );
+      return exitcode;
+    }
+    if( oid->mode != algorithm ) {
+      aktool_error(_("a name or identifier that is not an algorithm is used (%s)" ),
+                                                          ak_libakrypt_get_mode_name( oid->mode ));
+      return exitcode;
+    }
+    switch( oid->engine ) {
+      case block_cipher:
+      case hmac_function:
+      case sign_function:
+        break;
+
+      default:
+        aktool_error(_("an engine of the given algorithm is not supported (%s)" ),
+                                                      ak_libakrypt_get_engine_name( oid->engine ));
+        return exitcode;
+    }
+  }
+
+ /* запрашиваем пароль для доступа к ключу абонента (однократно, без дублирования) */
+  if( ki.verbose ) printf(_("abonent key: %s\n"), ki.key_file );
+  if( ki.lenpass == 0 ) {
+    if( aktool_key_load_user_password( ki.password, sizeof( ki.password )) == ak_error_ok )
+      ki.lenpass = strlen( ki.password );
+     else {
+       aktool_error(_("incorrect password reading"));
+       return exitcode;
+     }
+  }
+ /* считываем ключ из заданного файла
+    если пароль определен в командой строке, то используем именно его */
+  if( ak_blomkey_import_from_file_with_password( &abonent,
+                                         ki.password, ki.lenpass, ki.key_file ) != ak_error_ok ) {
+    aktool_error(_("incorrect loading an abonent key from %s file\n"), ki.key_file );
+    return exitcode;
+  }
+ /* создаем ключ парной связи */
+  if( ki.verbose ) {
+    if( strlen( ki.user_id ) == ki.lenuser )
+      printf(_("generation a pairwise key for %s: "), ki.user_id );
+     else printf(_("generation a pairwise key for %s: "),
+                                             ak_ptr_to_hexstr( ki.user_id, ki.lenuser, ak_false ));
+    fflush( stdout );
+  }
+  if( !oid ) { /* вырабатываем незашированный вектор */
+    time_t atime;
+    struct file fs;
+    struct hash ctx;
+    ak_uint8 key[64], buffer[64];
+
+    if( ak_blomkey_create_pairwise_key_as_ptr( &abonent,
+                                   ki.user_id, ki.lenuser, key, abonent.count ) != ak_error_ok ) {
+      aktool_error(_("wrong pairwise key generation"));
+      goto labex1;
+    }
+    if( ki.verbose ) { printf(_("Ok\n")); }
+    if( strlen( ki.os_file ) == 0 ) {
+      /* вырабатываем случайное имя файла */
+      memset( buffer, 0, sizeof( buffer ));
+      memcpy( buffer, ki.user_id, ak_min( ki.lenuser, sizeof( buffer )));
+      atime = time( NULL );
+      memcpy( buffer + ( sizeof( buffer ) - sizeof( time_t )), &atime, sizeof( time_t ));
+      ak_hash_create_streebog512( &ctx );
+      ak_hash_ptr( &ctx, buffer, sizeof( buffer ), buffer, sizeof( buffer ));
+      ak_hash_destroy( &ctx );
+      ak_snprintf( ki.os_file, sizeof( ki.os_file ),
+                                       "%s-pairwise.key", ak_ptr_to_hexstr( buffer, 8, ak_false ));
+    }
+    if( ak_file_create_to_write( &fs, ki.os_file ) != ak_error_ok ) {
+      aktool_error(_("incorrect key file creation"));
+      goto labex1;
+    }
+    if( ak_file_write( &fs, key, abonent.count ) != abonent.count ) {
+      aktool_error(_("incorrect write to key file"));
+    }
+     else {
+       printf(_("secret key stored in %s file\n"), ki.os_file );
+       exitcode = EXIT_SUCCESS;
+     }
+    ak_file_close( &fs );
+  } /* конец генерации undefined key */
+
+   else { /* вырабатываем секретный ключ для заданного опцией --target алгоритма */
+     ak_pointer key = NULL;
+     if(( key = ak_blomkey_new_pairwise_key( &abonent, ki.user_id, ki.lenuser, oid )) == NULL ) {
+      aktool_error(_("wrong pairwise key generation"));
+      goto labex1;
+     }
+     if( ki.verbose ) { printf(_("Ok\n")); }
+
+    /* вот еще что надо бы не забыть */
+     if( strlen( ki.keylabel ) != 0 ) {
+       if( ki.verbose ) printf(_("key label: %s\n"), ki.keylabel );
+       ak_skey_set_label( (ak_skey)key, ki.keylabel, 0 );
+     }
+
+    /* запрашиваем пароль для сохранения ключа абонента */
+     ki.lenpass = 0;
+     memset( ki.password, 0, sizeof( ki.password ));
+     if( aktool_key_load_user_password_twice() != ak_error_ok ) goto labex2;
+   /* теперь экпортируем ключ */
+     if( ak_skey_export_to_file_with_password(
+          key,
+          ki.password,
+          ki.lenpass,
+          ki.os_file,      /* если имя не задано,
+                     то получаем новое имя файла */
+         ( strlen( ki.os_file ) > 0 ) ? 0 : sizeof( ki.os_file ),
+          ki.format
+       ) != ak_error_ok ) aktool_error(_("wrong export a secret key to file %s"), ki.os_file );
+     else {
+       printf(_("secret key stored in %s\n"), ki.os_file );
+       exitcode = EXIT_SUCCESS;
+     }
+     labex2: ak_oid_delete_object( oid, key );
+  }
+
+ labex1:
+   ak_blomkey_destroy( &abonent );
+
+ return exitcode;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_key_new_blom( void )
+{
+  switch( ki.algorithm->engine ) {
+    case blom_master: return aktool_key_new_blom_master();
+    case blom_abonent: return aktool_key_new_blom_abonent();
+    case blom_pairwise: return aktool_key_new_blom_pairwise();
+
+    default:
+      aktool_error(_("the string %s (%s) cannot be used in blom scheme secret keys generation"),
+                                                      ki.algorithm->name[0], ki.algorithm->id[0] );
+  }
+ return EXIT_FAILURE;
 }
 
 /* ----------------------------------------------------------------------------------------------- *
@@ -472,33 +949,13 @@
   } /* конец if( create_pair ) */
 
  /* мастерим пароль для сохранения секретного ключа */
-  if( strlen( ki.password ) == 0 ) {
-    memset( ki.password, 0, sizeof( ki.password ));
-    memset( password2, 0, sizeof( password2 ) );
-   /* первый раз */
-    printf(_("\ninput access password for secret key: "));
-    if(( error = ak_password_read( ki.password, sizeof( ki.password ))) != ak_error_ok ) {
-      aktool_error(_("incorrect password"));
-      goto lab2;
-    } else printf("\n");
-   /* дублируем */
-    printf(_("retype password: "));
-    if(( error = ak_password_read( password2, sizeof( password2 ))) != ak_error_ok ) {
-      aktool_error(_("incorrect password"));
-      goto lab2;
-    } else printf("\n");
-    if((strlen( ki.password ) != strlen( password2 )) ||
-       ( !ak_ptr_is_equal( ki.password, password2, strlen( ki.password )))) {
-      aktool_error(_("the passwords don't match"));
-      goto lab2;
-    }
-  }
+  if( aktool_key_load_user_password_twice() != ak_error_ok ) goto lab2;
 
  /* сохраняем созданный ключ в файле */
   if( ak_skey_export_to_file_with_password(
-          key,                           /* ключ */
-          ki.password,                 /* пароль */
-          strlen( ki.password ), /* длина пароля */
+          key,             /* ключ */
+          ki.password,     /* пароль */
+          ki.lenpass,      /* длина пароля */
           ki.os_file,      /* если имя не задано,
                      то получаем новое имя файла */
           ( strlen( ki.os_file ) > 0 ) ? 0 : sizeof( ki.os_file ),
@@ -532,85 +989,8 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key_certificate( void )
 {
-  int error = ak_error_ok;
-//  struct verifykey request, issuer_vkey;
-//  struct signkey issuer_skey;
-//  ak_pointer generator = NULL;
-
-//  if( strlen( ki.req_file ) == 0 ) {
-//    aktool_error(_("use --req option and set the name of file with certificate's request"));
-//    return EXIT_FAILURE;
-//  }
-//  if( strlen( ki.key_file ) == 0 ) {
-//    aktool_error(_("use --key option and set the name of file with issuer's secret key"));
-//    return EXIT_FAILURE;
-//  }
-//  if( strlen( ki.pubkey_file ) == 0 ) {
-//    aktool_error(_("use --pubkey option and set the name of file with issuer's public key"));
-//    return EXIT_FAILURE;
-//  }
-
-// /* создаем генератор случайных чисел */
-//  if( ki.name_of_file_for_generator != NULL ) {
-//    if(( error = ak_random_create_file( generator = malloc( sizeof( struct random )),
-//                                               ki.name_of_file_for_generator )) != ak_error_ok ) {
-//      if( generator ) free( generator );
-//      return EXIT_FAILURE;
-//    }
-//  }
-//   else
-//    if(( generator = ak_oid_new_object( ki.oid_of_generator )) == NULL ) return EXIT_FAILURE;
-
-// /* считываем запрос на сертификат */
-//  if(( error = ak_verifykey_import_from_request( &request, ki.req_file )) != ak_error_ok ) {
-//    aktool_error(_("file %s has incorrect data"), ki.req_file );
-//    goto lab1;
-//  }
-// /* считываем ключ подписи */
-//  if(( error = ak_skey_import_from_file( &issuer_skey, sign_function,
-//                                                                 ki.key_file )) != ak_error_ok ) {
-//    aktool_error(_("file %s has incorrect secret key"), ki.key_file );
-//    goto lab2;
-//  }
-
-// здесь затык -|
-
-// /* считываем ключ проверки */
-//  if(( error = ak_verify_import_from_file( &issuer_vkey, sign_function,
-//                                                                 ki.key_file )) != ak_error_ok ) {
-//    aktool_error(_("file %s has incorrect secret key"), ki.key_file );
-//    goto lab2;
-//  }
-
-//// /* экспортируем открытый ключ в сертификат */
-////  if( ki.format == aktool_magic_number ) ki.format = asn1_pem_format;
-////  if(( error = ak_verifykey_export_to_certificate(
-////                   &vkey,
-////                   &skey,
-////                   generator,
-////                   &ki.opts,
-////                   ki.op_file, ( strlen( ki.op_file ) > 0 ) ? 0 : sizeof( ki.op_file ),
-////                   ki.format
-////     )) != ak_error_ok ) {
-////    aktool_error(_("wrong export a public key to certificate %s"), ki.op_file );
-////  } else printf(_("certificate of public key stored in %s\n"), ki.op_file );
-
-////  ak_signkey_destroy( &skey );
-
-// lab3:
-//  ak_signkey_destroy( &issuer_skey );
-
-// lab2:
-//  ak_verifykey_destroy( &request );
-
-// lab1:
-//  if( ki.name_of_file_for_generator != NULL ) {
-//    ak_random_destroy( generator );
-//    free( generator );
-//  }
-//   else ak_oid_delete_object( ki.oid_of_generator, generator );
-
- return error == ak_error_ok ? EXIT_SUCCESS : EXIT_FAILURE;
+  aktool_error(_("this feature is not implemented yet"));
+ return EXIT_FAILURE;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -710,7 +1090,13 @@
      " -c, --cert              create a public key certificate from a given request\n"
      "     --curve             set the elliptic curve identifier for public keys\n"
      "     --days              set the days count to expiration date of secret or public key\n"
-     "     --key               name of the issuer's secret key that will be used to sign the certificate\n"
+     "     --field             bit length which used to define the galois field [ enabled values: 256, 512 ]\n"
+     "     --hexid             user or abonent's identifier as hexademal string\n"
+     "     --hexload           input the password from console as hexademal string\n"
+     "     --hexpass           specify the password directly in command line as hexademal string\n"
+     "     --id                user or abonent's identifier\n"
+     "     --key               specify the name of file with the secret key\n"
+     "                         (this can be a master key or issuer's key which is used to sign a certificate)\n"
      "     --label             assign the user-defined label to secret key\n"
      " -n, --new               generate a new key or key pair for specified algorithm\n"
      "     --op                short form of --output-public-key option\n"
@@ -719,17 +1105,20 @@
      "     --password          specify the password for storing a secret key directly in command line\n"
      "     --pubkey            name of the issuer's public key, information from which will be placed in the certificate\n"
      "     --random            set the name or identifier of random sequences generator\n"
-     "                         the generator will be used to create a new key [ default value is \"%s\" ]\n"
+     "                         the generator will be used to create a new key [ default value: \"%s\" ]\n"
      "     --random-file       set the name of file with random sequence\n"
      "     --req               set the name of request to certificate which would be signed\n"
-     "     --to                set the format of output file [ enabled values : der, pem, certificate ]\n\n"
-     "options for customizing a public key's certificate:\n"
+     "     --size              set the dimension of secret master key in blom scheme [ maximal value: 4096 ]\n"
+     "     --target            specify target algorithm for generated pairwise key\n"
+     "                         one can use \"undefined\" value for generation plain unecrypted key\n"
+     "     --to                set the format of output file [ enabled values: der, pem, certificate ]\n\n"
+     "options used for customizing a public key's certificate:\n"
      "     --authority-keyid   add an authority key identifier to certificate being created\n"
      "                         this option should only be used for self-signed certificates,\n"
      "                         in other cases it is used by default\n"
      "     --authority-name    add an issuer's generalized name to the authority key identifier extension\n"
      "     --ca                use as certificate authority [ enabled values: true, false ]\n"
-     "     --path-len          set the maximal length of certificate's chain\n"
+     "     --pathlen           set the maximal length of certificate's chain\n"
      "     --digital-signature use for verifying a digital signatures of user data\n"
      "     --content-commitment\n"
      "     --key-encipherment  use for encipherment of secret keys\n"
@@ -746,3 +1135,7 @@
 
  return EXIT_SUCCESS;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                                                                                   aktool_key.c  */
+/* ----------------------------------------------------------------------------------------------- */

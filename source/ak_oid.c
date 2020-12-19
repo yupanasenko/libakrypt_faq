@@ -24,6 +24,9 @@
     "verify function",
     "random generator",
     "oid engine",
+    "master key",
+    "abonent key",
+    "pairwise key",
     "undefined engine",
 };
 
@@ -92,6 +95,7 @@
   - `1.2.643.2.52.1.11` алгоритмы проверки электронной подписи,
   - `1.2.643.2.52.1.12` параметры эллиптических кривых
 
+  - `1.2.643.2.52.1.181` алгоритмы генерации ключевой информации для схемы Блома
   - `1.2.643.2.52.1.127` контейнеры библиотеки
 
   Техническая реализация класса \ref oid представляет собой структуру,
@@ -271,6 +275,13 @@
  static const char *asn1_w512_psb_i[] =    { "1.2.643.7.1.2.1.2.2", NULL };
  static const char *asn1_w512_psc_n[] =    { "id-tc26-gost-3410-2012-512-paramSetC", NULL };
  static const char *asn1_w512_psc_i[] =    { "1.2.643.7.1.2.1.2.3", NULL };
+
+ static const char *asn1_blom_m_n[] =      { "blom-master", "blom-matrix", NULL };
+ static const char *asn1_blom_m_i[] =      { "1.2.643.2.52.1.181.1", NULL };
+ static const char *asn1_blom_a_n[] =      { "blom-abonent", "blom-user", NULL };
+ static const char *asn1_blom_a_i[] =      { "1.2.643.2.52.1.181.2", NULL };
+ static const char *asn1_blom_p_n[] =      { "blom-pairwise", NULL };
+ static const char *asn1_blom_p_i[] =      { "1.2.643.2.52.1.181.3", NULL };
 
  static const char *asn1_akcont_n[] =      { "libakrypt-container", NULL };
  static const char *asn1_akcont_i[] =      { "1.2.643.2.52.1.127.1.1", NULL };
@@ -639,6 +650,11 @@ static struct oid libakrypt_oids[] =
              (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetB, ak_functional_objects_undefined },
  { identifier, wcurve_params, asn1_w512_psc_i, asn1_w512_psc_n,
              (ak_pointer) &id_tc26_gost_3410_2012_512_paramSetC, ak_functional_objects_undefined },
+
+/* идентификаторы, используемые при реализации схемы Блома */
+ { blom_master, algorithm, asn1_blom_m_i, asn1_blom_m_n, NULL, ak_functional_objects_undefined },
+ { blom_abonent, algorithm, asn1_blom_a_i, asn1_blom_a_n, NULL, ak_functional_objects_undefined },
+ { blom_pairwise, algorithm, asn1_blom_p_i, asn1_blom_p_n, NULL, ak_functional_objects_undefined },
 
 /* идентификаторы, используемые при разборе сертификатов и ключевых контейнеров */
  { identifier, descriptor, asn1_akcont_i, asn1_akcont_n, NULL, ak_functional_objects_undefined },

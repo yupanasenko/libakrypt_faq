@@ -21,8 +21,6 @@
  @{ */
 /*! \brief Указатель на функцию чтения пароля */
  extern ak_function_password_read *ak_function_default_password_read;
-/*! \brief Консольная функция чтения пароля (устанавливается по-умолчанию) */
- int ak_password_read_from_terminal( char * , const size_t );
 /*! \brief Формирование имени файла, в который будет помещаться секретный или открытый ключ. */
  int ak_skey_generate_file_name_from_buffer( ak_uint8 * , const size_t ,
                                                          char * , const size_t , export_format_t );

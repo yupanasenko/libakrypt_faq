@@ -221,7 +221,7 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция вырабатывает общий для двух абонентов секретный вектор и
     помещает его в контекст секретного ключа парной связи с заданным oid
-    (функция релизует действие `import = create + set_key`).
+    (функция релизует действия `new` и `set_key`).
 
     \param bkey указатель на контекст ключа абонента
     \param id указатель на идентификатор абонента, с которым вырабатывается ключ парной связи
@@ -230,46 +230,56 @@
     \param oid идентификатор алгоритма, для которого предназначен ключ парной связи
     (в настоящее время  поддерживаются только секретные ключи блочных алгоритмов шифрования
      и ключи алгоритмов HMAC).
-    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха,
-    в противном случае возвращается код ошибки.                                                    */
+    \return Функция возвращает указатель на созданный контекст секретного ключа.
+    В случае возникновения ошибки возвращается `NULL`. Код ошибки может быть получен с помощью
+    вызова функции ak_error_get_value().                                                           */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_blomkey_create_pairwise_key( ak_blomkey bkey, ak_pointer id, const size_t idsize,
-                                                                      ak_pointer skey, ak_oid oid )
+ ak_pointer ak_blomkey_new_pairwise_key( ak_blomkey bkey,
+                                                   ak_pointer id, const size_t idsize, ak_oid oid )
 {
   ak_uint8 sum[64];
+  ak_pointer key = NULL;
   struct random generator;
   int error = ak_error_ok;
 
  /* проверяем, что заданый oid корректно определяет секретный ключ */
-  if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                            "using null pointer to pairwise key" );
-  if( oid == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+  if( oid == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__,
                                                  "using null pointer to pairwise key identifier" );
-  if( oid->mode != algorithm ) return ak_error_message( ak_error_oid_mode, __func__,
-                                                   "using wrong mode to pairwise key identifier" );
-  if(( oid->engine != block_cipher ) && ( oid->engine != hmac_function ))
-    return ak_error_message( ak_error_oid_engine, __func__,
+    return NULL;
+  }
+  if( oid->mode != algorithm ) {
+    ak_error_message( ak_error_oid_mode, __func__, "using wrong mode to pairwise key identifier" );
+    return  NULL;
+  }
+  if(( oid->engine != block_cipher ) && ( oid->engine != hmac_function )) {
+    ak_error_message( ak_error_oid_engine, __func__,
                                                  "using wrong engine to pairwise key identifier" );
+  }
   if(( error = ak_blomkey_create_pairwise_key_as_ptr( bkey, id,
-                                                     idsize, sum, sizeof( sum ))) != ak_error_ok )
-    return ak_error_message( error, __func__, "wrong generation of pairwise key" );
+                                                   idsize, sum, sizeof( sum ))) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong generation of pairwise key" );
+    return NULL;
+  }
 
  /* формируем ключ парной связи для заданного пользователем алгоритма */
-  if(( error = oid->func.first.create( skey )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "incorrect creation of pairwise key" );
-    goto lab1;
+  if(( key = ak_oid_new_object( oid )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "wrong generation of pairwise key" );
+    return NULL;
   }
-  if(( error = oid->func.first.set_key( skey, sum, bkey->count )) != ak_error_ok ) {
+  if(( error = oid->func.first.set_key( key, sum,
+                              ak_min( bkey->count, ((ak_skey)key)->key_size ))) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect assigning of pairwise key value" );
-    goto lab1;
+    ak_oid_delete_object( oid, key );
+    key = NULL;
   }
 
-  lab1:
-    if( ak_random_create_lcg( &generator ) == ak_error_ok ) {
-      ak_ptr_wipe( sum, 64, &generator );
-      ak_random_destroy( &generator );
-    }
- return error;
+  if( ak_random_create_lcg( &generator ) == ak_error_ok ) {
+    ak_ptr_wipe( sum, 64, &generator );
+    ak_random_destroy( &generator );
+  }
+
+ return key;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -556,15 +566,17 @@
     ранее функцией ak_blomkey_export_to_file_with_password()
 
     \param bkey указатель на контекст создаваемого мастер-ключа или ключа-абонента
+    \param password пароль, из которого вырабатывается ключ шифрования ключа
+    \param pass_size длина пароля (в октетах)
     \param filename указатель на строку, содержащую имя файла с ключевой информацией
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха,
     в противном случае возвращается код ошибки.                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_blomkey_import_from_file_with_password( ak_blomkey bkey, char *filename )
+ int ak_blomkey_import_from_file_with_password( ak_blomkey bkey,
+                                    const char *password, const size_t pass_size, char *filename )
 {
   struct file fs;
   ssize_t len = 0;
-  char password[256];
   int error = ak_error_ok;
   struct bckey ekey, ikey;
   ak_uint8 iv[16], buffer[1024], *ptr = NULL;
@@ -627,17 +639,10 @@
   }
   memset( bkey->data, 0, memsize + 16 );
 
- /* получаем пароль */
-  if(( error = ak_function_default_password_read( password, sizeof( password ))) != ak_error_ok ) {
-    ak_error_message( error, __func__, "incorrect password reading" );
-    goto labex;
-  }
-
  /* вычисляем ключи */
   iter = ( iv[8] << 8 ) + iv[9];
   if(( error = ak_bckey_create_key_pair_from_password( &ekey, &ikey,
-                          ak_oid_find_by_name( "kuznechik" ), password,
-                                             strlen( password ), iv, 16, iter )) != ak_error_ok ) {
+        ak_oid_find_by_name( "kuznechik" ), password, pass_size, iv, 16, iter )) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect creation of key pair" );
     goto labex;
   }
@@ -744,7 +749,6 @@
     ak_bckey_destroy( &ikey );
 
   labex:
-    memset( password, 0, sizeof( password ));
     ak_file_close( &fs );
     if( error != ak_error_ok ) {
       if( bkey->data != NULL ) free( bkey->data );

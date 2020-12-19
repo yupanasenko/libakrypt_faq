@@ -232,7 +232,7 @@
                                                             skey->oid->name[0], skey->oid->id[0] );
   printf(_("       number: %s\n"), ak_ptr_to_hexstr( skey->number, 32, ak_false ));
   printf(_("        label: %s\n"), skey->label );
-  printf(_("     resource: %ld (%s)\n"), skey->resource.value.counter,
+  printf(_("     resource: %ld (%s)\n"), (long int)( skey->resource.value.counter ),
                               ak_libakrypt_get_counter_resource_name( skey->resource.value.type ));
 
   printf(_("   not before: %s"), ctime( &skey->resource.time.not_before ));
