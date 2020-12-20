@@ -259,9 +259,12 @@ endif()
  set( LIBAKRYPT_DOCUMENTATION
       ${CMAKE_SOURCE_DIR}/LICENSE
       ${CMAKE_SOURCE_DIR}/Changelog.md
-      ${CMAKE_BINARY_DIR}/libakrypt-base-doc-${FULL_VERSION}.pdf
-      ${CMAKE_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.pdf
-    )
+ )
+ # теперь файлы с документацией не включаются в перечень инсталлируемых файлов по-умолчанию
+ # set( LIBAKRYPT_GENERATED_DOCUMENTATION
+ #    ${CMAKE_BINARY_DIR}/libakrypt-base-doc-${FULL_VERSION}.pdf
+ #    ${CMAKE_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.pdf
+ #   )
 
 # -------------------------------------------------------------------------------------------------- #
 # инсталляция библиотеки (только для UNIX)

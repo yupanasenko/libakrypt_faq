@@ -81,7 +81,11 @@
  14. Алгоритмы генерации запросов на сертификат открытого ключа, а также алгоритмы генерации
      сертификатов открытых ключей в формате рекомендаций [ITU X.509](https://www.itu.int/rec/T-REC-X.509/en) 
      с поддержкой дополнительных указаний, содержащихся в рекомендациях по стандартизации 
-     [Р 1323565.1.023-2018](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-023-2018-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-ispolzovanie-algoritmov-gost-r-34-10-2012-gost-r-34-11-2012-v-sertifikate-spiske-annulirovannykh-sertifikatov-crl-i-zaprose-na-sertifikat-pkcs-10-infrastruktury-o.html).
+     [Р 1323565.1.023-2018](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-023-2018-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-ispolzovanie-algoritmov-gost-r-34-10-2012-gost-r-34-11-2012-v-sertifikate-spiske-annulirovannykh-sertifikatov-crl-i-zaprose-na-sertifikat-pkcs-10-infrastruktury-o.html);
+
+ 15. Схема Блома распределения ключевой информации и выработки ключей парной связи 
+     (общих симметричных ключей) в соответствии с рекомендациями по стандартизации 
+     [Р 1323565.1.028-2019](https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-028-2019-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-kriptograficheskie-mekhanizmy-zashchishchennogo-vzaimodeystviya-kontrolnykh-i-izmeritelnykh-ustroystv.html).
 
 Вместе с библиотекой собирается и инсталлируется консольная утилита `aktool`,
 предоставляющая пользователю возможности по управлению криптографическими ключами,
