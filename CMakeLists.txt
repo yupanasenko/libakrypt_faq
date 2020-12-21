@@ -8,7 +8,7 @@ cmake_minimum_required( VERSION 3.2 FATAL_ERROR )
 # -------------------------------------------------------------------------------------------------- #
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 9 )
-set( MINOR_VERSION 3 )
+set( MINOR_VERSION 4 )
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 
@@ -221,6 +221,7 @@ set( AKTOOL_SOURCES
      aktool/aktool_test.c
      aktool/aktool_asn1.c
      aktool/aktool_key.c
+     aktool/aktool_icode.c
    )
 set( AKTOOL_FILES
      aktool/aktool.h

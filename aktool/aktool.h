@@ -31,6 +31,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  extern int aktool_log_level;
  extern bool_t aktool_openssl_compability;
+ extern char audit_filename[1024];
 
 /* ----------------------------------------------------------------------------------------------- */
 /* вывод очень короткой справки о программе */
@@ -60,6 +61,7 @@
  int aktool_test( int argc, tchar *argv[] );
  int aktool_asn1( int argc, tchar *argv[] );
  int aktool_key( int argc, tchar *argv[] );
+ int aktool_icode( int argc, tchar *argv[] );
 
  #endif
 /* ----------------------------------------------------------------------------------------------- */

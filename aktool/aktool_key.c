@@ -98,7 +98,7 @@
      { "authority-name",      0, NULL,  200 },
 
    /* флаги для генерации ключей схемы Блома */
-     { "hexload",             0, NULL,  179 },
+     { "hex-input",           0, NULL,  179 },
      { "field",               1, NULL,  180 },
      { "size",                1, NULL,  181 },
      { "id",                  1, NULL,  182 },
@@ -158,7 +158,7 @@
      /* устанавливаем имя криптографического алгоритма*/
         case 'a' :  if(( ki.algorithm = ak_oid_find_by_ni( optarg )) == NULL ) {
                       aktool_error(
-                        _("using unsupported name or identifier \"%s\" for elliptic curve"),
+                        _("using unsupported name or identifier \"%s\" for crypto algorithm"),
                                                                                           optarg );
                       printf(
                      _("try \"aktool s --oid algorithm\" for list of all available algorithms\n"));
@@ -355,7 +355,7 @@
                    ki.opts.authority_key_identifier.include_name = ak_true;
                    break;
 
-        case 179: /* --hexload */
+        case 179: /* --hex-input */
                    ki.hexload = ak_true;
                    break;
 
@@ -1092,7 +1092,7 @@
      "     --days              set the days count to expiration date of secret or public key\n"
      "     --field             bit length which used to define the galois field [ enabled values: 256, 512 ]\n"
      "     --hexid             user or abonent's identifier as hexademal string\n"
-     "     --hexload           input the password from console as hexademal string\n"
+     "     --hex-input         input the password from console as hexademal string\n"
      "     --hexpass           specify the password directly in command line as hexademal string\n"
      "     --id                user or abonent's identifier\n"
      "     --key               specify the name of file with the secret key\n"

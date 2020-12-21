@@ -13,9 +13,6 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_asn1( int argc, tchar *argv[] )
 {
-#ifdef _WIN32
-  unsigned int cp = 0;
-#endif
   char *outname = NULL;
   int next_option = 0, exitcode = EXIT_SUCCESS;
   enum { do_print, do_convert, do_split, do_join } work = do_print;
@@ -122,12 +119,6 @@
  /* если параметры определены некорректно, то выходим  */
   if( argc < 3 ) return aktool_asn1_help();
 
-#ifdef _WIN32
-  cp = GetConsoleCP();
-  SetConsoleCP( 65001 );
-  SetConsoleOutputCP( 65001 );
-#endif
-
  /* начинаем работу с криптографическими примитивами */
  /* начинаем работу с криптографическими примитивами */
    if( !aktool_create_libakrypt( )) return EXIT_FAILURE;
@@ -148,12 +139,7 @@
   }
 
  /* завершаем работы с библиотекой */
-  ak_libakrypt_destroy();
-
-#ifdef _WIN32
-  SetConsoleCP( cp );
-  SetConsoleOutputCP( cp );
-#endif
+  aktool_destroy_libakrypt();
 
   if( exitcode ) {
     fprintf( stdout,

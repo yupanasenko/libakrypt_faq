@@ -79,11 +79,8 @@
   if( aktool_check_command( "test", argv[1] )) return aktool_test( argc, argv );
   if( aktool_check_command( "k", argv[1] )) return aktool_key( argc, argv );
   if( aktool_check_command( "key", argv[1] )) return aktool_key( argc, argv );
-
-/*
-    if( aktool_check_command( "i", argv[1] )) return aktool_icode( argc, argv );
-    if( aktool_check_command( "icode", argv[1] )) return aktool_icode( argc, argv );
- */
+  if( aktool_check_command( "i", argv[1] )) return aktool_icode( argc, argv );
+  if( aktool_check_command( "icode", argv[1] )) return aktool_icode( argc, argv );
 
  /* ничего не подошло, выводим сообщение об ошибке */
   ak_log_set_function( ak_function_log_stderr );
@@ -160,6 +157,9 @@
  bool_t aktool_create_libakrypt( void )
 {
   ak_int64 number;
+#ifdef _WIN32
+  unsigned int cp = 0;
+#endif
 
  /* инициализируем библиотеку */
   if( ak_libakrypt_create( audit ) != ak_true ) {
@@ -175,11 +175,25 @@
   if(( number != ak_error_wrong_option ) && ( aktool_openssl_compability != number ))
     ak_libakrypt_set_openssl_compability( aktool_openssl_compability );
 
+#ifdef _WIN32
+  cp = GetConsoleCP();
+  SetConsoleCP( 1251 );
+  SetConsoleOutputCP( 1251 );
+#endif
+
  return ak_true;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int aktool_destroy_libakrypt( void ) { return ak_libakrypt_destroy(); }
+ int aktool_destroy_libakrypt( void )
+{
+ #ifdef _WIN32
+  unsigned int cp = 0;
+  SetConsoleCP( cp );
+  SetConsoleOutputCP( cp );
+ #endif
+ return ak_libakrypt_destroy();
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                 реализация вывода справки                                       */
