@@ -25,7 +25,7 @@
     "random generator",
     "oid engine",
     "master key",
-    "abonent key",
+    "subscriber's key",
     "pairwise key",
     "undefined engine",
 };
@@ -278,7 +278,7 @@
 
  static const char *asn1_blom_m_n[] =      { "blom-master", "blom-matrix", NULL };
  static const char *asn1_blom_m_i[] =      { "1.2.643.2.52.1.181.1", NULL };
- static const char *asn1_blom_a_n[] =      { "blom-abonent", "blom-user", NULL };
+ static const char *asn1_blom_a_n[] =      { "blom-user", "blom-subscriber", "blom-abonent", NULL };
  static const char *asn1_blom_a_i[] =      { "1.2.643.2.52.1.181.2", NULL };
  static const char *asn1_blom_p_n[] =      { "blom-pairwise", NULL };
  static const char *asn1_blom_p_i[] =      { "1.2.643.2.52.1.181.3", NULL };
@@ -653,7 +653,7 @@ static struct oid libakrypt_oids[] =
 
 /* идентификаторы, используемые при реализации схемы Блома */
  { blom_master, algorithm, asn1_blom_m_i, asn1_blom_m_n, NULL, ak_functional_objects_undefined },
- { blom_abonent, algorithm, asn1_blom_a_i, asn1_blom_a_n, NULL, ak_functional_objects_undefined },
+ { blom_subscriber, algorithm, asn1_blom_a_i, asn1_blom_a_n, NULL, ak_functional_objects_undefined },
  { blom_pairwise, algorithm, asn1_blom_p_i, asn1_blom_p_n, NULL, ak_functional_objects_undefined },
 
 /* идентификаторы, используемые при разборе сертификатов и ключевых контейнеров */

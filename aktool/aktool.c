@@ -243,7 +243,7 @@
   char buffer[1 + ( aktool_password_max_length << 1 )], password2[ aktool_password_max_length ];
 
  /* формируем пароль с первой попытки */
-  fprintf( stdout, _("password"));
+  fprintf( stdout, _("input password"));
    if( aktool_hex_password_input ) fprintf( stdout, _(" [as hexademal string]"));
   fprintf( stdout, ": "); fflush( stdout );
   memset( buffer, 0, sizeof( buffer ));
@@ -329,6 +329,7 @@
      "     --audit             set the audit level [ enabled values : 0 (none), 1 (standard), 2 (max) ]\n"
      "     --audit-file        set the output file for errors and libakrypt audit system messages\n"
      "     --dont-use-colors   do not use the highlighting of output data\n"
+     "     --hex-tty-input     read characters from terminal or console as hexademal numbers\n"
      "     --openssl-style     use non-standard variants to some encryption algorithms, as in openssl library\n"
      "     --help              show this information\n\n"));
 

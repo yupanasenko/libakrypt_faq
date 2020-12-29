@@ -83,6 +83,34 @@
  typedef enum { do_nothing, do_encrypt, do_decrypt } encrypt_t;
  int aktool_encrypt( int argc, tchar *argv[], encrypt_t work );
 
+/* ----------------------------------------------------------------------------------------------- */
+/* это стандартные для всех программ опции */
+ #define aktool_common_functions_definition { "help",                0, NULL,  'h' },\
+                                            { "audit-file",          1, NULL,   2  },\
+                                            { "dont-use-colors",     0, NULL,   3  },\
+                                            { "audit",               1, NULL,   4  },\
+                                            { "openssl-style",       0, NULL,   5  },\
+                                            { "hex-tty-input",       0, NULL,   6  }
+
+ #define aktool_common_functions_run( help_function )   \
+     case 'h' :   return help_function();\
+     case  2  : /* получили от пользователя имя файла для вывода аудита */\
+        aktool_set_audit( optarg );\
+        break;\
+     case  3  : /* установка флага запрета вывода символов смены цветовой палитры */\
+        ak_error_set_color_output( ak_false );\
+        ak_libakrypt_set_option( "use_color_output", 0 );\
+        break;\
+     case  4  : /* устанавливаем уровень аудита */\
+        aktool_log_level = atoi( optarg );\
+        break;\
+     case  5  : /* переходим к стилю openssl */\
+        aktool_openssl_compability = ak_true;\
+        break;\
+     case  6  : /* обрабатываем --hex-tty-input */\
+        aktool_hex_password_input = ak_true;\
+        break;\
+
  #endif
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                       aktool.h  */
