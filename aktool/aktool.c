@@ -20,6 +20,7 @@
 #endif
  int aktool_log_level = ak_log_none;
  bool_t aktool_openssl_compability = ak_false;
+ bool_t aktool_hex_password_input = ak_false;
 
 /* ----------------------------------------------------------------------------------------------- */
  int main( int argc, tchar *argv[] )
@@ -81,6 +82,10 @@
   if( aktool_check_command( "key", argv[1] )) return aktool_key( argc, argv );
   if( aktool_check_command( "i", argv[1] )) return aktool_icode( argc, argv );
   if( aktool_check_command( "icode", argv[1] )) return aktool_icode( argc, argv );
+  if( aktool_check_command( "e", argv[1] )) return aktool_encrypt( argc, argv, do_encrypt );
+  if( aktool_check_command( "encrypt", argv[1] )) return aktool_encrypt( argc, argv, do_encrypt );
+  if( aktool_check_command( "d", argv[1] )) return aktool_encrypt( argc, argv, do_decrypt );
+  if( aktool_check_command( "decrypt", argv[1] )) return aktool_encrypt( argc, argv, do_decrypt );
 
  /* ничего не подошло, выводим сообщение об ошибке */
   ak_log_set_function( ak_function_log_stderr );
@@ -177,8 +182,10 @@
 
 #ifdef _WIN32
   cp = GetConsoleCP();
-  SetConsoleCP( 1251 );
-  SetConsoleOutputCP( 1251 );
+/*  SetConsoleCP( 1251 ); SetConsoleOutputCP( 1251 ); */
+  SetConsoleCP( 65001 );
+  SetConsoleOutputCP( 65001 );
+
 #endif
 
  return ak_true;
@@ -193,6 +200,105 @@
   SetConsoleOutputCP( cp );
  #endif
  return ak_libakrypt_destroy();
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Эта функция используется при импорте ключа (однократное чтение пароля) */
+ ssize_t aktool_key_load_user_password( char *password, const size_t pass_size )
+{
+  ssize_t passlen = 0;
+  int error = ak_error_ok;
+  char buffer[1 + ( aktool_password_max_length << 1 )];
+
+  fprintf( stdout, _("password"));
+   if( aktool_hex_password_input ) fprintf( stdout, _(" [as hexademal string]"));
+  fprintf( stdout, ": "); fflush( stdout );
+  memset( buffer, 0, sizeof( buffer ));
+  passlen = ak_password_read( buffer, sizeof( buffer ));
+  fprintf( stdout, "\n" );
+  if( passlen < 1 ) {
+    aktool_error(_("password has zero length"));
+    return ak_error_wrong_length;
+  }
+
+  memset( password, 0, pass_size );
+  if( aktool_hex_password_input ) {
+    if(( error = ak_hexstr_to_ptr( buffer, password, pass_size -1, ak_false )) == ak_error_ok )
+      passlen = ak_min( pass_size -1, strlen( buffer )%2 + ( strlen( buffer ) >> 1 ));
+     else passlen = 0;
+    /* как минимум один последний октет password будет равен нулю */
+  }
+   else memcpy( password, buffer, passlen = ak_min( pass_size -1, strlen( buffer )));
+
+  memset( buffer, 0, sizeof( buffer ));
+ return passlen;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Эта функция используется перед экспортом ключа */
+ ssize_t aktool_key_load_user_password_twice( char *password, const size_t pass_size )
+{
+  int error = ak_error_ok;
+  ssize_t passlen = 0, passlen2 = 0;
+  char buffer[1 + ( aktool_password_max_length << 1 )], password2[ aktool_password_max_length ];
+
+ /* формируем пароль с первой попытки */
+  fprintf( stdout, _("password"));
+   if( aktool_hex_password_input ) fprintf( stdout, _(" [as hexademal string]"));
+  fprintf( stdout, ": "); fflush( stdout );
+  memset( buffer, 0, sizeof( buffer ));
+  passlen = ak_password_read( buffer, sizeof( buffer ));
+  fprintf( stdout, "\n" );
+  if( passlen < 1 ) {
+    aktool_error(_("password zero length"));
+    return ak_error_wrong_length;
+  }
+
+  memset( password, 0, pass_size );
+  if( aktool_hex_password_input ) {
+    if(( error = ak_hexstr_to_ptr( buffer, password, pass_size -1, ak_false )) == ak_error_ok )
+      passlen = ak_min( pass_size -1, strlen( buffer )%2 + ( strlen( buffer ) >> 1 ));
+     else passlen = 0;
+    /* как минимум один последний октет password будет равен нулю */
+  }
+   else memcpy( password, buffer, passlen = ak_min( pass_size -1, strlen( buffer )));
+
+  if( !passlen ) {
+    aktool_error(_("password has zero length"));
+    return passlen;
+  }
+
+ /* теперь считываем пароль второй раз и проверяем совпадение */
+  printf(_("retype password"));
+   if( aktool_hex_password_input ) fprintf( stdout, _(" [as hexademal string]"));
+  fprintf( stdout, ": "); fflush( stdout );
+  memset( buffer, 0, sizeof( buffer ));
+  passlen2 = ak_password_read( buffer, sizeof( buffer ));
+  fprintf( stdout, "\n" );
+  if( passlen < 1 ) {
+    aktool_error(_("password zero length"));
+    return ak_error_wrong_length;
+  }
+
+  memset( password2, 0, pass_size );
+  if( aktool_hex_password_input ) {
+    if(( error = ak_hexstr_to_ptr( buffer, password2, pass_size -1, ak_false )) == ak_error_ok )
+      passlen2 = ak_min( pass_size -1, strlen( buffer )%2 + ( strlen( buffer ) >> 1 ));
+     else passlen2 = 0;
+    /* как минимум один последний октет password будет равен нулю */
+  }
+   else memcpy( password2, buffer, passlen2 = ak_min( pass_size -1, strlen( buffer )));
+
+  if(( passlen != passlen2 ) ||
+     ( !ak_ptr_is_equal( password, password2, passlen ))) {
+      aktool_error(_("the passwords don't match"));
+      passlen = ak_error_not_equal_data;
+    }
+
+  memset( buffer, 0, sizeof( buffer ));
+  memset( password2, 0, sizeof( password2 ));
+
+ return passlen;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

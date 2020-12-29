@@ -438,13 +438,14 @@
   ak_asn1_first( root );
   tlv = root->current;
   if( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) {
-    ak_error_message( ak_error_invalid_asn1_tag, __func__, "incorrect structure of asn1 context" );
+    ak_error_message( error = ak_error_invalid_asn1_tag,
+                                                 __func__, "incorrect structure of asn1 context" );
     goto lab1;
   }
 
  /* проверяем количество узлов */
   if(( asn = tlv->data.constructed )->count != 3 ) {
-    ak_error_message_fmt( ak_error_invalid_asn1_count, __func__,
+    ak_error_message_fmt( error = ak_error_invalid_asn1_count, __func__,
                                           "root asn1 context contains incorrect count of leaves" );
     goto lab1;
   }
@@ -454,12 +455,14 @@
     открытого ключа и проверяем, что ключ принадлежит указанной кривой ) */
   ak_asn1_first( asn );
   if( DATA_STRUCTURE( asn->current->tag ) != CONSTRUCTED ) {
-    ak_error_message( ak_error_invalid_asn1_tag, __func__, "incorrect structure of asn1 context" );
+    ak_error_message( error = ak_error_invalid_asn1_tag, __func__,
+                                                           "incorrect structure of asn1 context" );
     goto lab1;
   }
   if(( error = ak_verifykey_import_from_asn1_request( vkey,
                                      asnkey = asn->current->data.constructed )) != ak_error_ok ) {
-    ak_error_message( ak_error_invalid_asn1_tag, __func__, "incorrect structure of request" );
+    ak_error_message( error = ak_error_invalid_asn1_tag, __func__,
+                                                                "incorrect structure of request" );
     goto lab1;
   }
 

@@ -9,7 +9,7 @@
  int signkey_test( ak_oid );
 
 /* определяем функцию, которая будет имитировать чтение пароля пользователя */
- int get_user_password( char *password, size_t psize )
+ ssize_t get_user_password( char *password, size_t psize )
 {
   memset( password, 0, psize );
   ak_snprintf( password, psize, "password" );

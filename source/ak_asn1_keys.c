@@ -33,9 +33,9 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_password_read_from_terminal( char *password, const size_t pass_size )
+ ssize_t ak_password_read_from_terminal( char *password, const size_t pass_size )
 {
-  int error = ak_error_ok;
+   ssize_t error = ak_error_ok;
 
   fprintf( stdout, "password: "); fflush( stdout );
   error = ak_password_read( password, pass_size );
@@ -247,6 +247,7 @@
   ak_uint32 u32 = 0;
   ak_asn1 asn = NULL;
   char password[256];
+  ssize_t passlen = 0;
   ak_pointer ptr = NULL;
   int error = ak_error_ok;
   ak_oid eoid = NULL, oid = NULL;
@@ -307,12 +308,12 @@
   ak_tlv_get_uint32( asn->current, &u32 ); /* число циклов */
 
  /* вырабатываем производную ключевую информацию */
-  if(( error = ak_function_default_password_read( password, sizeof( password ))) != ak_error_ok )
+  if(( passlen = ak_function_default_password_read( password, sizeof( password ))) < ak_error_ok )
     return ak_error_message( error, __func__, "incorrect password reading" );
 
  /* 1. получаем пользовательский пароль и вырабатываем производную ключевую информацию */
    error = ak_bckey_create_key_pair_from_password( ekey, ikey, eoid,
-                                                password, strlen( password ), ptr, size, u32 );
+                                                               password, passlen, ptr, size, u32 );
    memset( password, 0, sizeof( password ));
 
  return error;

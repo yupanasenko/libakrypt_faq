@@ -222,6 +222,7 @@ set( AKTOOL_SOURCES
      aktool/aktool_asn1.c
      aktool/aktool_key.c
      aktool/aktool_icode.c
+     aktool/aktool_encrypt.c
    )
 set( AKTOOL_FILES
      aktool/aktool.h

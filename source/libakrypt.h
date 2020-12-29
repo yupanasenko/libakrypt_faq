@@ -690,6 +690,12 @@ extern "C" {
 /*! \brief Присвоение ключу алгоритма блочного шифрования значения, выработанного из пароля. */
  dll_export int ak_bckey_set_key_from_password( ak_bckey ,
                                 const ak_pointer , const size_t , const ak_pointer , const size_t );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция вырабатывает пару ключей алгоритма блочного шифрования из заданного
+   пользователем пароля. */
+ int ak_bckey_create_key_pair_from_password( ak_bckey , ak_bckey , ak_oid ,
+                            const char * , const size_t , ak_uint8 *, const size_t, const size_t );
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1841,7 +1847,9 @@ extern "C" {
 /*! \addtogroup skey-doc
  @{ */
 /*! \brief Тип функции, предназначенной для считывания пароля.  */
- typedef int ( ak_function_password_read ) ( char *, const size_t );
+ typedef ssize_t ( ak_function_password_read ) ( char *, const size_t );
+/*! \brief Чтение пароля из консоли с выводом уведомления (устанавливается по-умолчанию) */
+ dll_export ssize_t ak_password_read_from_terminal( char * , const size_t );
 /*! \brief Функция устанавливает обработчик - функцию чтения пользовательского пароля. */
  dll_export int ak_libakrypt_set_password_read_function( ak_function_password_read * );
 /*! \brief Функция экспортирует секретный ключ в указанный файл. */

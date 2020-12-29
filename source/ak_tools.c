@@ -736,12 +736,12 @@
     \b Внимание. В случае ввода пароля нулевой длины функция возвращает ошибку с кодом
     \ref ak_error_terminal.
 
-    @return В случае успеха функция возвращает значение \ref ak_error_ok. В случае возникновения
-    ошибки возвращается ее код.                                                                    */
+    @return В случае успеха функция возвращает количество считанных символов.
+    В случае возникновения ошибки возвращается ее код.                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_password_read( char *pass, const size_t psize )
+ ssize_t ak_password_read( char *pass, const size_t psize )
 {
-   size_t len = 0;
+   ssize_t len = 0;
    int error = ak_error_ok;
 
  #ifndef AK_HAVE_TERMIOS_H
@@ -764,7 +764,7 @@
    SetConsoleMode( ih, mode );
    if(( len = strlen( pass )) < 1 )
      return ak_error_message( ak_error_zero_length, __func__ , "input a very short password");
-   return error;
+   return len-1;
 
   #endif
    return ak_error_undefined_function;
@@ -799,7 +799,7 @@
 
   /* убираем за собой и восстанавливаем настройки */
    lab_exit: tcsetattr( STDIN_FILENO, TCSANOW, &ots );
-   return error;
+   return len-1;
  #endif
 
  /* некорректный путь компиляции исходного текста функции */

@@ -12,19 +12,6 @@
  int aktool_key_new_blom( void );
  int aktool_key_input_name( ak_verifykey );
  int aktool_key_print_disclaimer( void );
- int aktool_key_load_user_password_twice( void );
- int aktool_key_load_user_password( char * , const size_t );
-
-/* ----------------------------------------------------------------------------------------------- */
-#if defined(__unix__) || defined(__APPLE__)
-  #define aktool_default_generator "dev-random"
-#else
-  #ifdef AK_HAVE_WINDOWS_H
-    #define aktool_default_generator "winrtl"
-  #else
-    #define aktool_default_generator "lcg"
-  #endif
-#endif
 
 #define aktool_magic_number (113)
 
@@ -40,8 +27,7 @@
    int verbose;
    struct certificate_opts opts;
    char password[aktool_password_max_length];
-   size_t lenpass, lenuser;
-   bool_t hexload;
+   ssize_t lenpass, lenuser;
    char keylabel[256];
    char user_id[256]; /* идентификатор пользователя ключа */
    char target[32]; /* целевой алгоритм для создаваемого ключа */
@@ -126,7 +112,6 @@
   ki.field = ak_galois256_size;
   ki.size = 512;
   ki.verbose = ak_true;
-  ki.hexload = ak_false;
  /*  далее ki.opts состоит из одних нулей */
 
  /* разбираем опции командной строки */
@@ -356,7 +341,7 @@
                    break;
 
         case 179: /* --hex-input */
-                   ki.hexload = ak_true;
+                   aktool_hex_password_input = ak_true;
                    break;
 
         case 180: /* --field */
@@ -465,94 +450,6 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Эта функция используется при импорте ключа (однократное чтение пароля) */
- int aktool_key_load_user_password( char *password, const size_t pass_size )
-{
-  char *buffer = NULL;
-  int error = ak_error_ok, bufsize = 1 + ( pass_size << 1 );
-
-  if(( buffer = malloc( bufsize )) == NULL ) {
-    aktool_error(_("out of memory"));
-    return ak_error_out_of_memory;
-  }
-
-  fprintf( stdout, _("password"));
-   if( ki.hexload ) fprintf( stdout, _(" [as hexademal string]"));
-  fprintf( stdout, ": "); fflush( stdout );
-  error = ak_password_read( buffer, bufsize );
-  fprintf( stdout, "\n" );
-
-  memset( password, 0, pass_size );
-  if( ki.hexload ) {
-    error = ak_hexstr_to_ptr( buffer, password, pass_size, ak_false );
-  }
-   else memcpy( password, buffer, ak_min( pass_size - 1, strlen( buffer )));
-
-  if( buffer ) free( buffer );
- return error;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Эта функция используется перед экспортом ключа */
- int aktool_key_load_user_password_twice( void )
-{
-  char *buffer = NULL;
-  int error = ak_error_ok, bufsize = 1 + ( sizeof( ki.password ) << 1 );
-
-  if(( buffer = malloc( bufsize )) == NULL ) {
-    aktool_error(_("out of memory"));
-    return ak_error_out_of_memory;
-  }
-
- /* считываем первое значение */
-  fprintf( stdout, _("password"));
-   if( ki.hexload ) fprintf( stdout, _(" [as hexademal string]"));
-  fprintf( stdout, ": "); fflush( stdout );
-  error = ak_password_read( buffer, bufsize );
-  fprintf( stdout, "\n" );
-
-  memset( ki.password, 0, sizeof( ki.password ));
-  if( ki.hexload ) {
-    error = ak_hexstr_to_ptr( buffer, ki.password, sizeof( ki.password ), ak_false );
-    ki.lenpass = strlen( buffer )%2 + ( strlen( buffer ) >> 1 );
-  }
-   else memcpy( ki.password, buffer, ak_min( sizeof( ki.password ) - 1, strlen( buffer )));
-
- /* теперь считываем пароль второй раз и проверяем совпадение */
-  printf(_("retype password"));
-   if( ki.hexload) fprintf( stdout, _(" [as hexademal string]"));
-  fprintf( stdout, ": "); fflush( stdout );
-
-  if( ak_password_read( buffer, bufsize ) != ak_error_ok ) {
-    aktool_error(_("incorrect password"));
-    error = ak_error_read_data;
-    goto labex;
-  } else printf("\n");
-
-  if( ki.hexload ) {
-    char password2[aktool_password_max_length];
-      error = ak_hexstr_to_ptr( buffer, password2, sizeof( password2 ), ak_false );
-      if( !ak_ptr_is_equal( ki.password, password2, ki.lenpass )) {
-        aktool_error(_("the passwords don't match"));
-        error = ak_error_not_equal_data;
-        goto labex;
-      }
-  }
-   else {
-    if(( strlen( ki.password ) != strlen( buffer )) ||
-       ( !ak_ptr_is_equal( ki.password, buffer, strlen( ki.password )))) {
-      aktool_error(_("the passwords don't match"));
-      error = ak_error_not_equal_data;
-      goto labex;
-    }
-    ki.lenpass = strlen( ki.password );
-  }
-  labex: if( buffer ) free( buffer );
-
- return error;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
  static int aktool_key_new_blom_master( void )
 {
   struct blomkey master;
@@ -584,7 +481,9 @@
   if( ki.verbose ) { printf(_("Ok\n")); }
 
  /* запрашиваем пароль */
-  if( aktool_key_load_user_password_twice() != ak_error_ok ) goto labex1;
+  if(( ki.lenpass = aktool_key_load_user_password_twice( ki.password, sizeof( ki.password ))) < 1 )
+    goto labex1;
+
  /* сохраняем созданный ключ в файле */
   if( ak_blomkey_export_to_file_with_password(
           &master,
@@ -631,12 +530,10 @@
  /* запрашиваем пароль для доступа к мастер ключу (однократно, без дублирования) */
   if( ki.verbose ) printf(_("master key: %s\n"), ki.key_file );
   if( ki.lenpass == 0 ) {
-    if( aktool_key_load_user_password( ki.password, sizeof( ki.password )) == ak_error_ok )
-      ki.lenpass = strlen( ki.password );
-     else {
+    if(( ki.lenpass = aktool_key_load_user_password( ki.password, sizeof( ki.password ))) < 1 ) {
        aktool_error(_("incorrect password reading"));
        return exitcode;
-     }
+    }
   }
 
  /* считываем ключ из заданного файла
@@ -663,7 +560,8 @@
  /* запрашиваем пароль для сохранения ключа абонента */
   ki.lenpass = 0;
   memset( ki.password, 0, sizeof( ki.password ));
-  if( aktool_key_load_user_password_twice() != ak_error_ok ) goto labex2;
+  if(( ki.lenpass = aktool_key_load_user_password_twice( ki.password, sizeof( ki.password ))) < 1 )
+    goto labex2;
 
  /* сохраняем созданный ключ в файле */
   if( ak_blomkey_export_to_file_with_password(
@@ -735,12 +633,10 @@
  /* запрашиваем пароль для доступа к ключу абонента (однократно, без дублирования) */
   if( ki.verbose ) printf(_("abonent key: %s\n"), ki.key_file );
   if( ki.lenpass == 0 ) {
-    if( aktool_key_load_user_password( ki.password, sizeof( ki.password )) == ak_error_ok )
-      ki.lenpass = strlen( ki.password );
-     else {
+    if(( ki.lenpass = aktool_key_load_user_password( ki.password, sizeof( ki.password ))) < 1 ) {
        aktool_error(_("incorrect password reading"));
        return exitcode;
-     }
+    }
   }
  /* считываем ключ из заданного файла
     если пароль определен в командой строке, то используем именно его */
@@ -812,7 +708,8 @@
     /* запрашиваем пароль для сохранения ключа абонента */
      ki.lenpass = 0;
      memset( ki.password, 0, sizeof( ki.password ));
-     if( aktool_key_load_user_password_twice() != ak_error_ok ) goto labex2;
+     if(( ki.lenpass = aktool_key_load_user_password_twice( ki.password, sizeof( ki.password ))) < 1 )
+       goto labex2;
    /* теперь экпортируем ключ */
      if( ak_skey_export_to_file_with_password(
           key,
@@ -859,7 +756,6 @@
 {
   int error = ak_error_ok;
   time_t now = time( NULL );
-  char password2[ aktool_password_max_length ];
   ak_pointer key = NULL, generator = NULL;
 
   if( !create_secret ) return EXIT_FAILURE;
@@ -949,8 +845,8 @@
   } /* конец if( create_pair ) */
 
  /* мастерим пароль для сохранения секретного ключа */
-  if( aktool_key_load_user_password_twice() != ak_error_ok ) goto lab2;
-
+ if(( ki.lenpass = aktool_key_load_user_password_twice( ki.password, sizeof( ki.password ))) < 1 )
+   goto lab2;
  /* сохраняем созданный ключ в файле */
   if( ak_skey_export_to_file_with_password(
           key,             /* ключ */
@@ -980,7 +876,6 @@
     else ak_oid_delete_object( ki.oid_of_generator, generator );
 
  /* очищаем память */
-  memset( password2, 0, sizeof( password2 ));
   memset( &ki, 0, sizeof( struct key_info ));
 
  return ( error == ak_error_ok ) ? EXIT_SUCCESS : EXIT_FAILURE;
