@@ -21,6 +21,7 @@
  int aktool_log_level = ak_log_none;
  bool_t aktool_openssl_compability = ak_false;
  bool_t aktool_hex_password_input = ak_false;
+ bool_t aktool_verbose = ak_false;
 
 /* ----------------------------------------------------------------------------------------------- */
  int main( int argc, tchar *argv[] )
@@ -329,9 +330,10 @@
      "     --audit             set the audit level [ enabled values : 0 (none), 1 (standard), 2 (max) ]\n"
      "     --audit-file        set the output file for errors and libakrypt audit system messages\n"
      "     --dont-use-colors   do not use the highlighting of output data\n"
+     "     --help              show this information\n"
      "     --hex-tty-input     read characters from terminal or console as hexademal numbers\n"
      "     --openssl-style     use non-standard variants to some encryption algorithms, as in openssl library\n"
-     "     --help              show this information\n\n"));
+     "     --verbose           show the additional information\n\n"));
 
  return EXIT_SUCCESS;
 }

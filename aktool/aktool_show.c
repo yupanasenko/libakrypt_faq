@@ -29,11 +29,7 @@
      { "curve",            1, NULL,  220 },
      { "key",              1, NULL,  'k' },
 
-     { "openssl-style",    0, NULL,   5  },
-     { "audit",            1, NULL,   4  },
-     { "dont-use-colors",  0, NULL,   3  },
-     { "audit-file",       1, NULL,   2  },
-     { "help",             0, NULL,   1  },
+      aktool_common_functions_definition,
      { NULL,               0, NULL,   0  },
   };
 
@@ -42,21 +38,7 @@
        next_option = getopt_long( argc, argv, "k:", long_options, NULL );
        switch( next_option )
       {
-        case  1  :   return aktool_show_help();
-        case  2  : /* получили от пользователя имя файла для вывода аудита */
-                     aktool_set_audit( optarg );
-                     break;                     
-        case  3  : /* установка флага запрета вывода символов смены цветовой палитры */
-                     ak_error_set_color_output( ak_false );
-                     ak_libakrypt_set_option( "use_color_output", 0 );
-                     break;                     
-        case  4  : /* устанавливаем уровень аудита */
-                     aktool_log_level = atoi( optarg );
-                     break;
-        case  5  : /* переходим к стилю openssl */
-                     aktool_openssl_compability = ak_true;
-                     break;
-
+        aktool_common_functions_run( aktool_show_help );
 
         case 254 : /* выводим список всех доступных oid */
                      work = do_alloids;

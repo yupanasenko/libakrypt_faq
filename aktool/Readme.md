@@ -104,7 +104,7 @@ aktool **команда** \[ опции \] \[ файл или каталог \] 
 Для выработки ключа абонента с идентификатором `IDa` необходимо выполнить команду
 
 
-    aktool k -na blom-abonent --key master.key -o IDa.key --id IDa
+    aktool k -na blom-user --key master.key -o IDa.key --id IDa
 
 
 Выработанный ключ будет помещен в файл `IDa.key`.
@@ -147,7 +147,7 @@ aktool **команда** \[ опции \] \[ файл или каталог \] 
 связанным с идентификатором `IDa`.
 
 
-    aktool k -na blom-abonent --key master.key -o IDb.key --id IDb
+    aktool k -na blom-user --key master.key -o IDb.key --id IDb
     aktool k -na blom-pairwise --key IDb.key --id IDa -o pairwise-ba.plain --target undefined 
 
 В результате для абонента с идентификатором `IDb` будет получен ключ парной связи `pairwise-ba.plain` 

@@ -44,6 +44,7 @@
  extern bool_t aktool_openssl_compability;
  extern char audit_filename[1024];
  extern bool_t aktool_hex_password_input;
+ extern bool_t aktool_verbose;
 
 /* ----------------------------------------------------------------------------------------------- */
 /* вывод очень короткой справки о программе */
@@ -90,7 +91,8 @@
                                             { "dont-use-colors",     0, NULL,   3  },\
                                             { "audit",               1, NULL,   4  },\
                                             { "openssl-style",       0, NULL,   5  },\
-                                            { "hex-tty-input",       0, NULL,   6  }
+                                            { "hex-tty-input",       0, NULL,   6  },\
+                                            { "verbose",             0, NULL,   7  }
 
  #define aktool_common_functions_run( help_function )   \
      case 'h' :   return help_function();\
@@ -109,6 +111,9 @@
         break;\
      case  6  : /* обрабатываем --hex-tty-input */\
         aktool_hex_password_input = ak_true;\
+        break;\
+     case  7  : /* обрабатываем --verbose */\
+        aktool_verbose = ak_true;\
         break;\
 
  #endif

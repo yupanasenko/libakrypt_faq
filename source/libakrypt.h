@@ -1411,19 +1411,19 @@ extern "C" {
 /*! \brief Тип контента, помещаемого в контейнер. */
  typedef enum {
   /*! \brief Не заданный или не определенный контент. */
-   undefined_content,
+   undefined_content = 0x0,
   /*! \brief Секретный ключ симметричного криптографического алгоритма. */
-   symmetric_key_content,
+   symmetric_key_content = 0x1,
   /*! \brief Секретный ключ асимметричного криптографического алгоритма. */
-   secret_key_content,
+   secret_key_content = 0x2,
   /*! \brief Открытый ключ асимметричного криптографического алгоритма. */
-   public_key_certificate_content,
+   public_key_certificate_content = 0x3,
   /*! \brief Запрос на получение открытого ключа асимметричного криптографического алгоритма. */
-   public_key_request_content,
+   public_key_request_content = 0x3,
   /*! \brief Зашифрованные, не ключевые данные. */
-   encrypted_content,
+   encrypted_content = 0x4,
   /*! \brief Незашифрованные, не ключевые данные. */
-   plain_content
+   plain_content = 0x05
 } crypto_content_t;
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -13,7 +13,7 @@
 {
   memset( password, 0, psize );
   ak_snprintf( password, psize, "password" );
- return ak_error_ok;
+ return strlen( password );
 }
 
 /* --------------------------------------------------------------------------------------------- */

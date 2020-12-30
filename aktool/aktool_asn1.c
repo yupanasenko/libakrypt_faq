@@ -29,11 +29,7 @@
      { "output",           1, NULL, 'o' },
 
     /* потом общие */
-     { "openssl-style",    0, NULL,   5  },
-     { "audit",            1, NULL,   4  },
-     { "dont-use-colors",  0, NULL,   3  },
-     { "audit-file",       1, NULL,   2  },
-     { "help",             0, NULL,   1  },
+      aktool_common_functions_definition,
      { NULL,               0, NULL,   0  },
   };
 
@@ -43,20 +39,7 @@
        switch( next_option )
       {
        /* сначала обработка стандартных опций */
-        case  1  :   return aktool_asn1_help();
-        case  2  : /* получили от пользователя имя файла для вывода аудита */
-                     aktool_set_audit( optarg );
-                     break;
-        case  3  : /* установка флага запрета вывода символов смены цветовой палитры */
-                     ak_error_set_color_output( ak_false );
-                     ak_libakrypt_set_option( "use_color_output", 0 );
-                     break;
-        case  4  : /* устанавливаем уровень аудита */
-                     aktool_log_level = atoi( optarg );
-                     break;
-        case  5  : /* переходим к стилю openssl */
-                     aktool_openssl_compability = ak_true;
-                     break;
+        aktool_common_functions_run( aktool_asn1_help );
 
        /* теперь опции, уникальные для asn1parse */
          case 255 :  work = do_convert;

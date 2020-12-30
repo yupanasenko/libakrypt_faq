@@ -1176,7 +1176,7 @@
     return ak_error_message( ak_error_wrong_oid, __func__,
                                                          "incorrect value of content identifier" );
  /* определяем тип контента ( нас интересует только хранение секретных ключей ) */
-  switch( content_type = (crypto_content_t) oid->data ) {
+  switch(( content_type = ((ak_uint64) oid->data )&0xFF )) {
     case symmetric_key_content:
     case secret_key_content:
       break;
