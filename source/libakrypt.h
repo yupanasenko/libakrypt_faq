@@ -1419,11 +1419,11 @@ extern "C" {
   /*! \brief Открытый ключ асимметричного криптографического алгоритма. */
    public_key_certificate_content = 0x3,
   /*! \brief Запрос на получение открытого ключа асимметричного криптографического алгоритма. */
-   public_key_request_content = 0x3,
+   public_key_request_content = 0x4,
   /*! \brief Зашифрованные, не ключевые данные. */
-   encrypted_content = 0x4,
+   encrypted_content = 0x5,
   /*! \brief Незашифрованные, не ключевые данные. */
-   plain_content = 0x05
+   plain_content = 0x06
 } crypto_content_t;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1506,6 +1506,8 @@ extern "C" {
  dll_export ak_tlv ak_tlv_duplicate_global_name( ak_tlv );
 /*! \brief Функция сравнивает две последовательности обобщенных имен. */
  dll_export int ak_tlv_compare_global_names( ak_tlv , ak_tlv );
+/*! \brief Вывод информации о расширенном имени в заданный файл. */
+ dll_export int ak_tlv_print_global_name( ak_tlv , FILE * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Выделение памяти и создание одного уровня ASN1 дерева. */

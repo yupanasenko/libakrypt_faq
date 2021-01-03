@@ -263,17 +263,20 @@
  static const char *asn1_w256_psd_i[] =    { "1.2.643.7.1.2.1.1.4",
                                              "1.2.643.2.2.35.3", NULL };
  static const char *asn1_w256_axel_n[] =   { "id-axel-gost-3410-2012-256-paramSetN0",
-                                             "axel-n0", NULL };
+                                             "axeln0", NULL };
  static const char *asn1_w256_axel_i[] =   { "1.2.643.2.52.1.12.1.1", NULL };
 
 /* теперь кривые длиной 512 бит */
  static const char *asn1_w512_pst_n[] =    { "id-tc26-gost-3410-2012-512-paramSetTest", NULL };
  static const char *asn1_w512_pst_i[] =    { "1.2.643.7.1.2.1.2.0", NULL };
- static const char *asn1_w512_psa_n[] =    { "id-tc26-gost-3410-2012-512-paramSetA", NULL };
+ static const char *asn1_w512_psa_n[] =    { "id-tc26-gost-3410-2012-512-paramSetA",
+                                             "ec512a", NULL };
  static const char *asn1_w512_psa_i[] =    { "1.2.643.7.1.2.1.2.1", NULL };
- static const char *asn1_w512_psb_n[] =    { "id-tc26-gost-3410-2012-512-paramSetB", NULL };
+ static const char *asn1_w512_psb_n[] =    { "id-tc26-gost-3410-2012-512-paramSetB",
+                                             "ec512b", NULL };
  static const char *asn1_w512_psb_i[] =    { "1.2.643.7.1.2.1.2.2", NULL };
- static const char *asn1_w512_psc_n[] =    { "id-tc26-gost-3410-2012-512-paramSetC", NULL };
+ static const char *asn1_w512_psc_n[] =    { "id-tc26-gost-3410-2012-512-paramSetC",
+                                             "ec512c", NULL };
  static const char *asn1_w512_psc_i[] =    { "1.2.643.7.1.2.1.2.3", NULL };
 
  static const char *asn1_blom_m_n[] =      { "blom-master", "blom-matrix", NULL };

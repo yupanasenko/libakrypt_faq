@@ -1476,6 +1476,74 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_print_global_name( ak_tlv tlv, FILE *fp )
+{
+  ak_asn1 asn = NULL;
+  int error = ak_error_ok;
+
+ /* проверяем свойства узла */
+  if( tlv == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                             "using null pointer to tlv context" );
+  if( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED )
+    return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                                             "using not constructed tlv context" );
+  if( TAG_NUMBER( tlv->tag ) != TSEQUENCE )
+    return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                                      "using tlv context which are not sequence" );
+ /* исключаем частные случаи */
+  if(( asn = tlv->data.constructed ) == NULL ) return ak_error_ok;
+  if( asn->count == 0 ) return ak_error_ok;
+
+ /* теперь перебор узлов
+    в случае возникновения ошибки - сообщаем, устанавливаем код, но работу не прекращаем */
+  ak_asn1_first( asn );
+  do{
+      ak_oid oid = NULL;
+      ak_pointer ptr = NULL;
+      ak_asn1 asnset = NULL, asnseq = NULL;
+
+      if(( DATA_STRUCTURE( asn->current->tag ) != CONSTRUCTED ) ||
+         ( TAG_NUMBER( asn->current->tag ) != TSET )) {
+        ak_error_message( error = ak_error_invalid_asn1_tag, __func__,
+                                              "source tlv context hasn't set as correct subtree" );
+        continue;
+      }
+      if(( asnset = asn->current->data.constructed )->count != 1 ) {
+        ak_error_message( error = ak_error_invalid_asn1_count, __func__,
+                                           "source tlv context hasn't correct count of subtrees" );
+        continue;
+      }
+      if(( DATA_STRUCTURE( asnset->current->tag ) != CONSTRUCTED ) ||
+         ( TAG_NUMBER( asnset->current->tag ) != TSEQUENCE )) {
+        ak_error_message( error = ak_error_invalid_asn1_tag, __func__,
+                                        "nested asn1 context hasn't sequence as correct subtree" );
+        continue;
+      }
+      if(( asnseq = asnset->current->data.constructed )->count != 2 ) {
+        ak_error_message( error = ak_error_invalid_asn1_count, __func__,
+                                          "nested asn1 context hasn't correct count of subtrees" );
+        continue;
+      }
+
+     /* только сейчас, на исходе ночи )), получаем значения, которые должны быть скопированы */
+      ak_asn1_first( asnseq );
+      ak_tlv_get_oid( asnseq->current, &ptr );
+      if(( oid = ak_oid_find_by_id( ptr )) == NULL ) {
+        ak_error_message( error = ak_error_invalid_asn1_count, __func__,
+                                                    "source tlv contains a wrong attribute type" );
+        continue;
+      }
+      ak_asn1_next( asnseq );
+      if( ak_tlv_get_utf8_string( asnseq->current, &ptr ) == ak_error_ok ) {
+        fprintf( fp, " %s: %s", oid->name[1], (char *)ptr );
+        if( asn->current->next != NULL ) fprintf( fp, "," );
+      }
+  } while( ak_asn1_next( asn ));
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция проводит сравнение построчно (сначала oid, потом его значение)
     \param right указатель на первую сравниваемую структуру узла ASN1 дерева.
     \param left указатель на вторую сравниваемую структуру узла ASN1 дерева.

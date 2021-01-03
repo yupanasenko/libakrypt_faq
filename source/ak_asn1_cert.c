@@ -465,6 +465,12 @@
                                                                 "incorrect structure of request" );
     goto lab1;
   }
+ /* 4. На основе считанных данных формируем номер ключа */
+  if(( error = ak_verifykey_set_number( vkey )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect creation on public key number" );
+    goto lab1;
+  }
+
 
  /* второй узел, в нашей терминологии, содержит идентификатор секретного ключа
     и бесполезен, поскольку вся информация об открытом ключе проверки подписи,
@@ -495,14 +501,8 @@
 
  /* 3. Только сейчас проверяем подпись под данными */
   if( ak_verifykey_verify_ptr( vkey, buffer, size, bs.value ) != ak_true ) {
-    ak_error_message( error = ak_error_get_value(), __func__, "digital signature isn't valid" );
-    goto lab1;
-  }
-
- /* 4. На основе считанных данных формируем номер ключа */
-  if(( error = ak_verifykey_set_number( vkey )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "incorrect creation on public key number" );
-    goto lab1;
+     ak_error_message( error = ak_error_not_equal_data, __func__, "digital signature isn't valid" );
+     goto lab1;
   }
 
  /* 5. В самом конце, после проверки подписи,
@@ -529,10 +529,8 @@
                                                                     filename )) != ak_error_ok ) {
     ak_error_message_fmt( error, __func__,
                                          "incorrect loading a public key from %s file", filename );
-    if( vkey != NULL ) {
-      ak_verifykey_destroy( vkey );
-      free( vkey );
-    }
+    free( vkey );
+    vkey = NULL;
   }
 
  return vkey;
