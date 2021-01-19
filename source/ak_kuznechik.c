@@ -172,7 +172,7 @@
 {
   int i = 0, j = 0;
   for( j = 0; j < 16; j++ ) {
-     ak_uint8 z = w[0];
+     ak_uint8 z = ak_bckey_context_kuznechik_mul_gf256( w[0], kuznechik_parameters.reg[0] );
      for( i = 1; i < 16; i++ ) {
         w[i-1] = w[i];
         z ^= ak_bckey_context_kuznechik_mul_gf256( w[i], kuznechik_parameters.reg[i] );
