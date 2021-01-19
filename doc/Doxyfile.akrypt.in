@@ -872,6 +872,8 @@ INPUT                  = @CMAKE_SOURCE_DIR@/source/libakrypt.h \
                          @CMAKE_SOURCE_DIR@/source/ak_blom.c \
                          @CMAKE_SOURCE_DIR@/doc/00-introduction.md \
                          @CMAKE_SOURCE_DIR@/doc/01-install-guide.md \
+                         @CMAKE_SOURCE_DIR@/doc/02-use-instruction.md \
+                         @CMAKE_SOURCE_DIR@/doc/03-principles.md \
                          @CMAKE_SOURCE_DIR@/aktool/Readme.md
 
 # This tag can be used to specify the character encoding of the source files

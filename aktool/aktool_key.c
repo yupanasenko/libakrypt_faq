@@ -119,6 +119,7 @@
  /* параметры секретного ключа для схемы Блома */
   ki.field = ak_galois256_size;
   ki.size = 512;
+  ak_certificate_opts_create( &ki.opts );
  /*  далее ki состоит из одних нулей */
 
  /* разбираем опции командной строки */
@@ -395,8 +396,8 @@
 
      case do_show:
        if(( exit_status = aktool_key_show_key( )) == EXIT_FAILURE )
-         aktool_error(_("the file %s that does not contain correct "
-                                       "secret or public key information was used"), ki.key_file );
+         aktool_error(_("using the file %s that does not contain correct "
+                                                "secret or public key information"), ki.key_file );
        break;
 
      default:
@@ -1081,40 +1082,38 @@
   ak_skey skey = (ak_skey)key;
   if( key == NULL ) return EXIT_FAILURE;
 
- /* теперь, последовательно, выводим считанную информацию */
-  if( skey->oid->engine == sign_function )
-    printf(_("      type: asymmetric secret key\n"));
-   else printf(_("      type: symmetric secret key\n"));
-  printf(_(" algorithm: %s (%s, %s)\n"), ak_libakrypt_get_engine_name( skey->oid->engine ),
+  printf(_("type:\n    "));
+  if( skey->oid->engine == sign_function ) printf(_("asymmetric secret key\n"));
+   else printf(_("symmetric secret key\n"));
+  printf(_("algorithm:\n    %s (%s, %s)\n"), ak_libakrypt_get_engine_name( skey->oid->engine ),
                                                             skey->oid->name[0], skey->oid->id[0] );
-  printf(_("    number: %s\n"), ak_ptr_to_hexstr( skey->number, 32, ak_false ));
-  printf(_("     label: "));
-  if( skey->label != NULL ) printf("%s\n", skey->label );
-   else printf(_("( undefined )\n"));
-  printf(_("  resource: %ld (%s)\n"), (long int)( skey->resource.value.counter ),
-                              ak_libakrypt_get_counter_resource_name( skey->resource.value.type ));
-
-  printf(_("not before: %s"), ctime( &skey->resource.time.not_before ));
-  printf(_(" not after: %s"), ctime( &skey->resource.time.not_after ));
+  printf(_("number:\n    %s\n"), ak_ptr_to_hexstr( skey->number, 32, ak_false ));
+  printf(_("resource:\n    %s: %ld\n"),
+                               ak_libakrypt_get_counter_resource_name( skey->resource.value.type ),
+                                                       (long int)( skey->resource.value.counter ));
+  printf(_("    not before: %s"), ctime( &skey->resource.time.not_before ));
+  printf(_("    not after:  %s"), ctime( &skey->resource.time.not_after ));
 
  /* для асимметричных секретных ключей выводим дополнительную информацию */
   if( skey->oid->engine == sign_function ) {
     ak_uint8 zerobuf[32];
     ak_oid curvoid = ak_oid_find_by_data( skey->data );
 
-    printf(_("     curve: "));
-    if( curvoid == NULL ) printf(_("( undefined )\n"));
-      else printf("%s (%s)\n", curvoid->name[0], curvoid->id[0] );
-
-    printf(_("verify key: "));
+    printf(_("public key number:\n"));
     memset( zerobuf, 0, sizeof( zerobuf ));
     if( memcmp( zerobuf, ((ak_signkey)key)->verifykey_number, 32 ) == 0 )
       printf(_("( undefined )\n"));
-     else printf(_("%s\n"), ak_ptr_to_hexstr(((ak_signkey)key)->verifykey_number, 32, ak_false ));
-  }
-  printf(_("      file: %s\n"), ki.key_file );
-  ak_oid_delete_object( ((ak_skey)key)->oid, key );
+     else printf("    %s\n", ak_ptr_to_hexstr(((ak_signkey)key)->verifykey_number, 32, ak_false ));
 
+    printf(_("elliptic curve:\n"));
+    if( curvoid == NULL ) printf(_("( undefined )\n"));
+      else printf("    %s (%s)\n", curvoid->name[0], curvoid->id[0] );
+  }
+
+  if( skey->label != NULL ) printf(_("label:\n    %s\n"), skey->label );
+  printf(_("file:\n    %s\n"), ki.key_file );
+
+  ak_oid_delete_object( ((ak_skey)key)->oid, key );
  return EXIT_SUCCESS;
 }
 
@@ -1127,7 +1126,7 @@
 
  /* сначала тестируем запрос на сертификат */
   if(( vkey = ak_verifykey_load_from_request( ki.key_file )) != NULL ) {
-    printf(_("      type: public key, certificate's request\n"));
+    printf(_("     type: public key, certificate's request\n"));
     content = public_key_request_content;
     exitcode = EXIT_SUCCESS;
     goto labex;
@@ -1153,15 +1152,13 @@
     ak_oid curvoid = ak_oid_find_by_data( vkey->wc );
     printf(_(" algorithm: %s (%s, %s)\n"), ak_libakrypt_get_engine_name( vkey->oid->engine ),
                                                             vkey->oid->name[0], vkey->oid->id[0] );
+    printf("    key.px: %s\n", ak_mpzn_to_hexstr( vkey->qpoint.x, vkey->wc->size ));
+    printf("    key.py: %s\n", ak_mpzn_to_hexstr( vkey->qpoint.y, vkey->wc->size ));
     printf(_("    number: %s\n"), ak_ptr_to_hexstr( vkey->number, 32, ak_false ));
     printf(_("     curve: "));
-    if( curvoid == NULL ) printf(_("( undefined )\n"));
-      else {
-       printf("%s (%s)\n", curvoid->name[0], curvoid->id[0] );
-       printf(_("     point:\n"));
-         printf("        px: %s\n", ak_mpzn_to_hexstr( vkey->wc->point.x, vkey->wc->size ));
-         printf("        py: %s\n", ak_mpzn_to_hexstr( vkey->wc->point.y, vkey->wc->size ));
-      }
+    if( curvoid ) printf("%s (%s)\n", curvoid->name[0], curvoid->id[0] );
+      else printf(_("( undefined )\n"));
+
    /* вывод информации о владельце ключа */
     printf(_("     owner:"));
     if( vkey->name == NULL ) printf(_("( undefined )\n"));

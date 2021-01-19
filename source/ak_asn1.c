@@ -775,7 +775,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 {
   if( tlv == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                              "using null pointer to tlv element" );
-  if(( DATA_CLASS( tlv->tag) == UNIVERSAL ) && ( TAG_NUMBER( tlv->tag ) == TBOOLEAN )) {
+  if(( DATA_CLASS( tlv->tag ) == UNIVERSAL ) && ( TAG_NUMBER( tlv->tag ) == TBOOLEAN )) {
     if( *tlv->data.primitive == 0x00 ) *bool = ak_false;
      else *bool = ak_true;
    return ak_error_ok;
@@ -1286,6 +1286,53 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \param tlv указатель на структуру узла ASN1 дерева.
+    \param algorithm указатель на oid алгоритма
+    \param parameters указатель на oid параметров алгоритма, может присваиваться значение NULL
+
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль).
+    В противном случае, возвращается код ошибки.                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_tlv_get_algorithm_identifier( ak_tlv tlv, ak_oid *algorithm, ak_oid *parameters )
+{
+  ak_asn1 asn = NULL;
+  ak_pointer ptr = NULL;
+  int error = ak_error_ok;
+
+ /* проерка элемента */
+  if(( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) ||
+     ( TAG_NUMBER( tlv->tag ) != TSEQUENCE )) return ak_error_invalid_asn1_tag;
+   else asn = tlv->data.constructed;
+
+ /* получение данных */
+  ak_asn1_first( asn );
+  if(( DATA_STRUCTURE( asn->current->tag ) != PRIMITIVE ) ||
+       ( TAG_NUMBER( asn->current->tag ) != TOBJECT_IDENTIFIER )) return ak_error_invalid_asn1_tag;
+  if(( error = ak_tlv_get_oid( asn->current, &ptr )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect reading algorithm object identifier" );
+
+  if(( *algorithm = ak_oid_find_by_id( ptr )) == NULL )
+    return ak_error_message( error = ak_error_oid_id, __func__,
+                                                   "reading an unsupported algorithm identifier" );
+ /* проверяем параметры */
+  *parameters = NULL;
+  if( ak_asn1_next( asn ) == ak_true ) {
+    if(( DATA_STRUCTURE( asn->current->tag ) != PRIMITIVE ) ||
+       ( TAG_NUMBER( asn->current->tag ) != TOBJECT_IDENTIFIER )) {
+
+      *parameters = NULL;
+      return error;
+     }
+
+    ak_tlv_get_oid( asn->current, &ptr );
+    if(( *parameters = ak_oid_find_by_id( ptr )) == NULL )
+      return ak_error_message( error = ak_error_oid_id, __func__,
+                                                  "reading an unsupported parameters identifier" );
+  }
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Функция предназначена для работы с обобщенными (глобальными) именами x.509.
 
     Предполагается что узел `tlv` еть составной узел, владеющий последовательностью элементов
@@ -1535,8 +1582,9 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
       }
       ak_asn1_next( asnseq );
       if( ak_tlv_get_utf8_string( asnseq->current, &ptr ) == ak_error_ok ) {
-        fprintf( fp, " %s: %s", oid->name[1], (char *)ptr );
-        if( asn->current->next != NULL ) fprintf( fp, "," );
+        fprintf( fp, "%s: %s", oid->name[1], (char *)ptr );
+        if( asn->current->next != NULL ) fprintf( fp, ", " );
+         else fprintf( fp, " " );
       }
   } while( ak_asn1_next( asn ));
 
@@ -1974,7 +2022,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     ak_asn1_add_tlv( asn1, ak_tlv_duplicate_global_name( issuer_vkey->name ));
   }
  /* добавляем [2] */
-  ak_verifykey_generate_certificate_number( issuer_vkey, issuer_skey, serial );
+  ak_verifykey_generate_certificate_serial_number( issuer_vkey, issuer_skey, serial );
   ak_asn1_add_mpzn( os->data.constructed, CONTEXT_SPECIFIC^0x02, serial, ak_mpzn256_size );
 
   memset( encode, 0, sizeof( encode ));
@@ -2692,6 +2740,54 @@ Validity ::= SEQUENCE {
  /* вставляем изготовленную последовательность и выходим */
  return ak_asn1_add_asn1( root, TSEQUENCE, params );
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает `SEQUENCE`, которая содержит два примитивных элемента -
+    идентификатор алгоритма и один идентификатор его параметров.
+
+    В RFC 5280 этот  тип данных определяется следующим образом
+
+\code
+AlgorithmIdentifier  ::=  SEQUENCE  {
+        algorithm               OBJECT IDENTIFIER,
+        parameters              ANY DEFINED BY algorithm OPTIONAL
+}
+\endcode
+
+   Мы используем в качестве параметров либо явно заданный идентификатор,
+   либо значение NULL. После создания структура добавляется в текущий уровень asn1 дерева.
+
+   \param asn1 указатель на текущий уровень ASN.1 дерева.
+   \param algorithm идентификатор криптографического алгоритма
+   \param parameters идентификатор параметров алгоритма, если идентификатор равен NULL,
+   то в asn1 структуру ни чего не помещается.
+   \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_add_algorithm_identifier( ak_asn1 asn1, ak_oid algorithm, ak_oid parameters )
+{
+  ak_asn1 params = NULL;
+  int error = ak_error_ok;
+
+  if( algorithm == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                    "using null pointer to algorithm identifier" );
+  if(( params = ak_asn1_new( )) == NULL ) return ak_error_message( ak_error_get_value(),
+                                                  __func__, "incorrect creation of asn1 context" );
+  if(( error = ak_asn1_add_oid( params, algorithm->id[0] )) != ak_error_ok ) {
+    ak_asn1_delete( params );
+    return ak_error_message( error, __func__, "incorrect addition of algorithm identifier" );
+  }
+  if( parameters != NULL ) { /* добавляем только ненулевое значение */
+    if(( error = ak_asn1_add_oid( params, parameters->id[0] )) != ak_error_ok ) {
+      ak_asn1_delete( params );
+      return ak_error_message( error, __func__, "incorrect addition of algorithm parameters" );
+    }
+  }
+
+ /* вставляем изготовленную последовательность и выходим */
+ return ak_asn1_add_asn1( asn1, TSEQUENCE, params );
+}
+
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_asn1_add_asn1( ak_asn1 asn1, ak_uint8 tag, ak_asn1 down )

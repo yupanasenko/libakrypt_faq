@@ -101,8 +101,12 @@ extern "C" {
 /*! \brief Ошибка, возникающая при несовпадении расширенных имен проверяющего
     в проверяемом сертификате открытого и используемом для проверки открытом ключе */
  #define ak_error_certificate_not_equal_names (-160)
-/*! \brief Ошибка чтения сертификата с неверным итервалом использования. */
+/*! \brief Ошибка чтения сертификата с неверным интервалом использования. */
  #define ak_error_certificate_validity        (-161)
+/*! \brief Ошибка использования ключа проверки с некорректным алгоритмом подписи. */
+ #define ak_error_certificate_verify_engine   (-162)
+/*! \brief Ошибка импорта сертификата с некорректным ключом проверки подписи сертификата. */
+ #define ak_error_certificate_verify_key      (-163)
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup options-doc Инициализация и настройка параметров библиотеки
@@ -1497,7 +1501,8 @@ extern "C" {
  dll_export int ak_tlv_get_validity( ak_tlv , time_t * , time_t * );
 /*! \brief Получение структуры, содержащей ресурс (структуру struct resource). */
  dll_export int ak_tlv_get_resource( ak_tlv , ak_resource );
-
+/*! \brief Получение идентификаторов криптографического алгоритма. */
+ dll_export int ak_tlv_get_algorithm_identifier( ak_tlv, ak_oid * , ak_oid * );
 /*! \brief Добавление типизированной строки в последовательность обобщенных имен,
     которой владеет текущий узел. */
  dll_export int ak_tlv_add_string_to_global_name( ak_tlv , const char * , const char * );
@@ -1571,6 +1576,8 @@ extern "C" {
  dll_export int ak_asn1_add_validity( ak_asn1 , time_t , time_t );
 /*! \brief Функция добавляет в ASN.1 структуру, содержащую ресурс (структуру struct resource). */
  dll_export int ak_asn1_add_resource( ak_asn1 root, ak_resource );
+/*! \brief Функция добавляет в ASN.1 структуру, содержащую идентификатор алгоритма. */
+ dll_export int ak_asn1_add_algorithm_identifier( ak_asn1 , ak_oid , ak_oid );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Вывод информации о текущем уровне ASN1 дерева. */
@@ -1721,7 +1728,7 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура, в которой хранятся параметры сертификата открытого ключа.
     \details Указанные параметры используются при создании сертификата, а также при проверке
-    его валидности.                                                                                */
+    его валидности. В структуру включены параметры, которые не входят в struct verifykey           */
 /* ----------------------------------------------------------------------------------------------- */
   typedef struct certificate_opts
 {
@@ -1731,7 +1738,7 @@ extern "C" {
      bool_t is_present;
     /*! \brief разрешено ли порождать цепочки сертификации */
      bool_t value;
-   /*! \brief количество промежуточных сертификатов в цепочке сертификации. */
+    /*! \brief количество промежуточных сертификатов в цепочке сертификации. */
      ak_uint32 pathlenConstraint;
   } ca;
 
@@ -1739,9 +1746,17 @@ extern "C" {
   struct {
     /*! \brief определено ли данное расширение */
      bool_t is_present;
-   /*! \brief набор бит, описывающих область применения открытого ключа */
-    ak_uint32 bits;
+    /*! \brief набор бит, описывающих область применения открытого ключа */
+     ak_uint32 bits;
   } key_usage;
+
+ /*! \brief расширение Subject Key Identifier */
+  struct {
+    /*! \brief определено ли данное расширение */
+     bool_t is_present;
+    /*! \brief длина идентификатора ключа (в октетах) */
+     size_t length;
+  } subjkey;
 
  /*! \brief расширение Authority Key Identifier */
   struct {
@@ -1749,15 +1764,41 @@ extern "C" {
      bool_t is_present;
     /*! \brief надо ли включать расширенное имя в сертификат */
      bool_t include_name;
-  } authority_key_identifier;
+    /* [0] */
+    /*! \brief длина идентификатора ключа эмитента (в октетах) */
+     size_t issuer_subjkeylen;
+    /*! \brief собственно идентификатор ключа эмитента */
+     ak_uint8 issuer_subjkey[32];
+    /* [1] */
+    /*! \brief Расширенное имя эмитента (лица выдавшего сертиикат). */
+     ak_tlv issuer_name;
+    /* [2] */
+    /*! \brief длина серийного номера ключа эмитента */
+     size_t serialnumlen;
+    /*! \brief собственно серийный номер сертификата ключа эмитента */
+     ak_uint8 serialnum[32];
+  } authoritykey;
+
+ /*! \brief Версия сертификата (по-умолчанию, мы всегда работаем с v3) */
+  ak_uint32 version;
+ /*! \brief Флаг того, создан ли сертификат, используется только при импорте сертификатов */
+  bool_t created;
+ /*! \brief Флаг того, проверен ли сертификат, устанавливается только при импорте сертификатов */
+  bool_t verified;
+ /*! \brief длина серийного номера */
+  size_t serialnumlen;
+ /*! \brief собственно серийный номер сертификата */
+ /*! \details при экспорте данное значение вырабатывается в процессе выработки сертификата,
+     при импорте - считывается из asn1 дерева */
+  ak_uint8 serialnum[32];
 
 } *ak_certificate_opts;
 
-/*! \brief параметры сертификата, устанавливаемые по-умолчанию */
-/*! - по-умолчанию, самоподписанный сертификат не может порождать цепочки сертификации
-    - длина цепочки равна 1 (ноль - это число промежуточных сертификатов)
-    - флаги применения ключа не установлены */
- #define certificate_default_options {{ ak_false, ak_false, 0 }, 0 }
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция присваивает значения по-умолчанию для опций сертификата. */
+ dll_export int ak_certificate_opts_create( ak_certificate_opts );
+/*! \brief Функция уничтожает динамически размещенные данные, полученные в ходе импорта сертификата. */
+ dll_export int ak_certificate_opts_destroy( ak_certificate_opts );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
@@ -1792,13 +1833,14 @@ extern "C" {
 /*! \brief Функция импортирует открытый ключ асимметричного преобразования из запроса
    на сертификат открытого ключа */
  dll_export ak_pointer ak_verifykey_load_from_request( const char * );
-
 /*! \brief Функция вырабатывает серийный номер сертификата. */
- dll_export int ak_verifykey_generate_certificate_number( ak_verifykey , ak_signkey , ak_mpzn256 );
+ dll_export int ak_verifykey_generate_certificate_serial_number( ak_verifykey ,
+                                                                         ak_signkey , ak_mpzn256 );
 /*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
     в сертификат открытого ключа. */
  dll_export int ak_verifykey_export_to_certificate( ak_verifykey , ak_signkey , ak_verifykey ,
                        ak_random , ak_certificate_opts , char * , const size_t , export_format_t );
+
 /*! \brief Функция импортирует открытый ключ асимметричного преобразования из сертификата
    открытого ключа */
  dll_export int ak_verifykey_import_from_certificate( ak_verifykey , ak_verifykey ,
@@ -1807,6 +1849,7 @@ extern "C" {
    открытого ключа, расположенного в памяти */
  dll_export int ak_verifykey_import_from_ptr_as_certificate( ak_verifykey ,
                             ak_verifykey , const ak_pointer , const size_t , ak_certificate_opts );
+
 /** @} *//** \addtogroup cert-tlv-doc Функции создания расширений сертификатов открытых ключей
  @{ */
 /*! \brief Создание расширения, содержащего идентификатор открытого ключа
