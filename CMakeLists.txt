@@ -37,13 +37,13 @@ include( DetectIntrinsics )
 include( DetectLibraries )
 
 # -------------------------------------------------------------------------------------------------- #
-# Вырабатываем заголовочный файл
-configure_file( ${CMAKE_SOURCE_DIR}/source/libakrypt-base.h.in ${CMAKE_SOURCE_DIR}/source/libakrypt-base.h @ONLY )
+# Вырабатываем заголовочный файл (в каталоге сборки)
+configure_file( ${CMAKE_SOURCE_DIR}/source/libakrypt-base.h.in ${CMAKE_BINARY_DIR}/libakrypt-base.h @ONLY )
 message("-- Generation of libakrypt-base.h is done")
 
 # -------------------------------------------------------------------------------------------------- #
 # Определяем базовое множество исходных текстов библиотеки
-set( MAIN_HEADERS source/libakrypt-base.h source/libakrypt.h )
+set( MAIN_HEADERS ${CMAKE_BINARY_DIR}/libakrypt-base.h source/libakrypt.h )
 
 # -------------------------------------------------------------------------------------------------- #
 set( AKBASE_SOURCES
@@ -126,6 +126,7 @@ message("-- Path for ca-certificates is ${AK_CA_PATH}")
 # -------------------------------------------------------------------------------------------------- #
 # Определем процедуры сборки библиотек - статической или динамической
 include_directories( "source" )
+include_directories( ${CMAKE_BINARY_DIR} )
 add_compile_options( -DLIBAKRYPT_OPTIONS_PATH="${AK_CONFIG_PATH}" )
 add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
 add_compile_options( -DLIBAKRYPT_COMPILER_NAME="${CMAKE_C_COMPILER}" )
