@@ -399,7 +399,7 @@
 {
   int error = ak_error_get_value();
   if( error != ak_error_ok )
-    ak_error_message( error, __func__ , "before destroing library holds an error" );
+    ak_error_message( error, __func__ , "before destroing library holds an error(s)" );
 
 #ifdef AK_HAVE_WINDOWS_H
   #ifdef LIBAKRYPT_NETWORK

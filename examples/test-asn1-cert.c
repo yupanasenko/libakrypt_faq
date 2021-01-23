@@ -3,17 +3,31 @@
  #include <string.h>
  #include <libakrypt.h>
 
+/* функция для вывода информации о полях сертификата */
+ int certificate_out( const char *message ) {
+   fprintf( stdout, "%s", message );
+  return ak_error_ok;
+ }
+
  int main( int argc, char *argv[] )
 {
-  int error = ak_error_ok;
   struct certificate_opts opts;
   struct verifykey subject_key;
+  char *filename = "openssl512_ca.crt";
 
   ak_libakrypt_create( ak_function_log_stderr );
 
-  ak_certificate_opts_create( &opts );
-  error = ak_verifykey_import_from_certificate( &subject_key, NULL,
-                                                                "openssl_certificate.pem", &opts );
+  if( argc > 1 ) filename = argv[1];
+  ak_verifykey_import_from_certificate( &subject_key, NULL, filename, &opts, certificate_out );
+
+ /* освобождаем память */
+  if( opts.created ) {
+    ak_verifykey_destroy( &subject_key );
+  }
+  ak_certificate_opts_destroy( &opts );
+
+
+
 //  if( opts.created )
 //    ak_libakrypt_print_certificate( )
 

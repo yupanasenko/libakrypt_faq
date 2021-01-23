@@ -24,6 +24,12 @@
  int aktool_key_show_public_key( void );
  int aktool_key_input_name( ak_verifykey );
  int aktool_key_input_name_from_console( ak_verifykey );
+/* функция для вывода информации о полях сертификата */
+ int aktool_certificate_out( const char *message ) {
+   fprintf( stdout, "%s", message );
+  return ak_error_ok;
+ }
+
 
 /* ----------------------------------------------------------------------------------------------- */
 #define aktool_magic_number (113)
@@ -1120,64 +1126,64 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key_show_public_key( void )
 {
-  ak_verifykey vkey;
-  int exitcode = EXIT_FAILURE;
-  crypto_content_t content = undefined_content;
+  struct verifykey vkey;
+  int error = ak_error_ok, exitcode = EXIT_FAILURE;
 
  /* сначала тестируем запрос на сертификат */
-  if(( vkey = ak_verifykey_load_from_request( ki.key_file )) != NULL ) {
-    printf(_("     type: public key, certificate's request\n"));
-    content = public_key_request_content;
+  if(( error = ak_verifykey_import_from_request( &vkey,
+                                          ki.key_file, aktool_certificate_out )) == ak_error_ok ) {
+    ak_verifykey_destroy( &vkey );
     exitcode = EXIT_SUCCESS;
     goto labex;
   }
- /* проверяем, что ошибка не в контроле целостности */
-  if( ak_error_get_value() == ak_error_not_equal_data ) {
-    aktool_error(_("wrong verification of request's signature"));
-    goto labex2;
-  }
- /* и тестируем собственно сертификат открытого ключа */
+
+// /* проверяем, что ошибка не в контроле целостности */
+//  if( ak_error_get_value() == ak_error_not_equal_data ) {
+//    aktool_error(_("wrong verification of request's signature"));
+//    goto labex2;
+//  }
+// /* и тестируем собственно сертификат открытого ключа */
 
 
-//     // printf(_("      type: public key's certificate\n"));
-//     // content = public_key_certificate_content;
+////     // printf(_("      type: public key's certificate\n"));
+////     // content = public_key_certificate_content;
 
-//    printf("%d\n", ak_error_get_value());
+////    printf("%d\n", ak_error_get_value());
 
+////  }
+
+//  labex:
+// /* теперь выводим информацию о считанном открытом ключе */
+//  if( exitcode == EXIT_SUCCESS ) {
+//    ak_oid curvoid = ak_oid_find_by_data( vkey->wc );
+//    printf(_(" algorithm: %s (%s, %s)\n"), ak_libakrypt_get_engine_name( vkey->oid->engine ),
+//                                                            vkey->oid->name[0], vkey->oid->id[0] );
+//    printf("    key.px: %s\n", ak_mpzn_to_hexstr( vkey->qpoint.x, vkey->wc->size ));
+//    printf("    key.py: %s\n", ak_mpzn_to_hexstr( vkey->qpoint.y, vkey->wc->size ));
+//    printf(_("    number: %s\n"), ak_ptr_to_hexstr( vkey->number, 32, ak_false ));
+//    printf(_("     curve: "));
+//    if( curvoid ) printf("%s (%s)\n", curvoid->name[0], curvoid->id[0] );
+//      else printf(_("( undefined )\n"));
+
+//   /* вывод информации о владельце ключа */
+//    printf(_("     owner:"));
+//    if( vkey->name == NULL ) printf(_("( undefined )\n"));
+//     else {
+//      ak_tlv_print_global_name( vkey->name, stdout );
+//      printf("\n");
+//     }
+//   /* срок действия оределяется в момент создания сертификата */
+//    if( content == public_key_certificate_content ) {
+//      printf(_("not before: %s"), ctime( &vkey->time.not_before ));
+//      printf(_(" not after: %s"), ctime( &vkey->time.not_after ));
+//    }
+//    printf(_("    verify: Ok\n"));
+//    printf(_("      file: %s\n"), ki.key_file );
+//    ak_verifykey_destroy( vkey );
+//    free( vkey );
 //  }
 
   labex:
- /* теперь выводим информацию о считанном открытом ключе */
-  if( exitcode == EXIT_SUCCESS ) {
-    ak_oid curvoid = ak_oid_find_by_data( vkey->wc );
-    printf(_(" algorithm: %s (%s, %s)\n"), ak_libakrypt_get_engine_name( vkey->oid->engine ),
-                                                            vkey->oid->name[0], vkey->oid->id[0] );
-    printf("    key.px: %s\n", ak_mpzn_to_hexstr( vkey->qpoint.x, vkey->wc->size ));
-    printf("    key.py: %s\n", ak_mpzn_to_hexstr( vkey->qpoint.y, vkey->wc->size ));
-    printf(_("    number: %s\n"), ak_ptr_to_hexstr( vkey->number, 32, ak_false ));
-    printf(_("     curve: "));
-    if( curvoid ) printf("%s (%s)\n", curvoid->name[0], curvoid->id[0] );
-      else printf(_("( undefined )\n"));
-
-   /* вывод информации о владельце ключа */
-    printf(_("     owner:"));
-    if( vkey->name == NULL ) printf(_("( undefined )\n"));
-     else {
-      ak_tlv_print_global_name( vkey->name, stdout );
-      printf("\n");
-     }
-   /* срок действия оределяется в момент создания сертификата */
-    if( content == public_key_certificate_content ) {
-      printf(_("not before: %s"), ctime( &vkey->time.not_before ));
-      printf(_(" not after: %s"), ctime( &vkey->time.not_after ));
-    }
-    printf(_("    verify: Ok\n"));
-    printf(_("      file: %s\n"), ki.key_file );
-    ak_verifykey_destroy( vkey );
-    free( vkey );
-  }
-
-  labex2:
  return exitcode;
 }
 

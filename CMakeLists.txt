@@ -20,7 +20,7 @@ project( libakrypt-${FULL_VERSION} C )
 # Перечень доступных опций для сборки библиотеки
 option( AK_STATIC_LIB "Build the static library" ON )
 option( AK_SHARED_LIB "Build the shared library" ON )
-option( AK_GMP_TESTS "Build comparison tests for gmp and libakrypt" OFF )
+option( AK_TESTS_GMP "Build comparison tests for gmp and libakrypt" OFF )
 
 # -------------------------------------------------------------------------------------------------- #
 # Перечень опций, которые имеют предустановленные значения и могут изменяться через командную строку
@@ -195,7 +195,7 @@ set ( ARITHMETIC_TESTS_LIST
       blom-keys
     )
 
-if( LIBAKRYPT_GMP_TESTS )
+if( AK_TESTS_GMP )
   set( ARITHMETIC_TESTS_LIST ${ARITHMETIC_TESTS_LIST}
        mpzn-arithmetic
        mpzn-convert
@@ -303,6 +303,17 @@ endif()
 # настройка пакета для дистрибуции
 set( CPACK_GENERATOR "DEB" )
 set( CPACK_SOURCE_GENERATOR "TBZ2")
+set( CPACK_SOURCE_IGNORE_FILES
+  \\.git/
+  .gitignore
+  TAGS
+  libakrypt.rc
+  "CMakeLists.txt.user*"
+  "scratch*"
+)
+
+# в зависимостях можно указать в явном виде стандартную библиотеку языка Си,
+# но она и так входит в перечень
 set( CPACK_DEBIAN_PACKAGE_DEPENDS "libc-bin" )
 set( CPACK_PACKAGE_VERSION_MAJOR ${HEAD_VERSION} )
 set( CPACK_PACKAGE_VERSION_MINOR ${MAIN_VERSION} )
@@ -311,11 +322,12 @@ set( CPACK_PACKAGE_VERSION_PATCH ${MINOR_VERSION} )
 set( CPACK_DEBIAN_PACKAGE_MAINTAINER "Axel Kenzo") #required
 set( CPACK_PACKAGE_VENDOR "Axel Kenzo & The Company Of Belles Lettres")
 set( CPACK_PACKAGE_FILE_NAME ${CMAKE_PROJECT_NAME}-${CMAKE_SYSTEM_PROCESSOR} )
+set( CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}" )
 set( CPACK_STRIP_FILES TRUE )
-
 set( CPACK_PACKAGE_DESCRIPTION
      "Библиотека, реализующая российские криптографические механизмы в пространстве пользователя" )
-
+set(CPACK_VERBATIM_VARIABLES YES)
+   
 include( CPack )
 
 # -------------------------------------------------------------------------------------------------- #

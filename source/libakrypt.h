@@ -98,15 +98,20 @@ extern "C" {
 /*! \brief Ошибка, возникающая при декодировании ASN1 структуры (перевод из DER-кодировки в ASN1 структуру). */
  #define ak_error_wrong_asn1_decode           (-156)
 
-/*! \brief Ошибка, возникающая при несовпадении расширенных имен проверяющего
-    в проверяемом сертификате открытого и используемом для проверки открытом ключе */
- #define ak_error_certificate_not_equal_names (-160)
-/*! \brief Ошибка чтения сертификата с неверным интервалом использования. */
- #define ak_error_certificate_validity        (-161)
-/*! \brief Ошибка использования ключа проверки с некорректным алгоритмом подписи. */
- #define ak_error_certificate_verify_engine   (-162)
-/*! \brief Ошибка импорта сертификата с некорректным ключом проверки подписи сертификата. */
- #define ak_error_certificate_verify_key      (-163)
+/*! \brief Ошибка использования для проверки сертификата ключа 
+  с некорректным или не поддерживаемым алгоритмом электронной подписи. */
+ #define ak_error_certificate_verify_engine   (-160)
+/*! \brief Ошибка использования для проверки сертификата ключа, 
+  расширенное имя владельца которого не совпадает с именем эмитента в проверяемом сертификате. */
+ #define ak_error_certificate_verify_names    (-161)
+/*! \brief Ошибка при импорте сертификата:
+  срок действия сертификата не актуален (истек или еще не начался) */
+ #define ak_error_certificate_validity        (-167)
+/*! \brief Ошибка при импорте сертификата:
+    сертификат предназначен для некорректного или неподдерживаемого алгоритма электронной подписиа. */
+ #define ak_error_certificate_engine          (-168)
+/*! \brief Ошибка при импорте сертификата: электроннная подпись под сертификатом не верна. */
+ #define ak_error_certificate_signature       (-169)
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup options-doc Инициализация и настройка параметров библиотеки
@@ -506,7 +511,6 @@ extern "C" {
  typedef enum {
   /*! \brief Ключ шифрования контента, вырабатываемый из пароля пользователя */
    password_based_encryption_key,
-
 } kek_t;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -741,11 +745,11 @@ extern "C" {
  /*! \brief Зашифрование данных в режиме простой замены с зацеплением из ГОСТ Р 34.13-2015
     (cipher block chaining, cbc). */
  dll_export int ak_bckey_encrypt_cbc( ak_bckey , ak_pointer , ak_pointer , size_t ,
-                                                                             ak_pointer , size_t );
+                                                                            ak_pointer , size_t );
  /*! \brief Расшифрование данных в режиме простой замены с зацеплением из ГОСТ Р 34.13-2015
     (cipher block chaining, cbc). */
  dll_export int ak_bckey_decrypt_cbc( ak_bckey , ak_pointer , ak_pointer , size_t ,
-                                                                             ak_pointer , size_t );
+                                                                            ak_pointer , size_t );
 /*! \brief Шифрование данных в режиме гаммирования из ГОСТ Р 34.13-2015
    (counter mode, ctr). */
  dll_export int ak_bckey_ctr( ak_bckey , ak_pointer , ak_pointer , size_t , ak_pointer , size_t );
@@ -1513,6 +1517,8 @@ extern "C" {
  dll_export int ak_tlv_compare_global_names( ak_tlv , ak_tlv );
 /*! \brief Вывод информации о расширенном имени в заданный файл. */
  dll_export int ak_tlv_print_global_name( ak_tlv , FILE * );
+/*! \brief Вывод информации о расширенном имени в заданную строку. */
+ dll_export int ak_tlv_snprintf_global_name( ak_tlv , char * , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Выделение памяти и создание одного уровня ASN1 дерева. */
@@ -1770,7 +1776,7 @@ extern "C" {
     /*! \brief собственно идентификатор ключа эмитента */
      ak_uint8 issuer_subjkey[32];
     /* [1] */
-    /*! \brief Расширенное имя эмитента (лица выдавшего сертиикат). */
+    /*! \brief Расширенное имя эмитента (лица выдавшего сертификат). */
      ak_tlv issuer_name;
     /* [2] */
     /*! \brief длина серийного номера ключа эмитента */
@@ -1829,10 +1835,8 @@ extern "C" {
                                                          char * , const size_t , export_format_t );
 /*! \brief Функция импортирует открытый ключ асимметричного преобразования из запроса
    на сертификат открытого ключа */
- dll_export int ak_verifykey_import_from_request( ak_verifykey , const char * );
-/*! \brief Функция импортирует открытый ключ асимметричного преобразования из запроса
-   на сертификат открытого ключа */
- dll_export ak_pointer ak_verifykey_load_from_request( const char * );
+ dll_export int ak_verifykey_import_from_request( ak_verifykey , const char * ,
+                                                                         ak_function_file_output );
 /*! \brief Функция вырабатывает серийный номер сертификата. */
  dll_export int ak_verifykey_generate_certificate_serial_number( ak_verifykey ,
                                                                          ak_signkey , ak_mpzn256 );
@@ -1844,11 +1848,11 @@ extern "C" {
 /*! \brief Функция импортирует открытый ключ асимметричного преобразования из сертификата
    открытого ключа */
  dll_export int ak_verifykey_import_from_certificate( ak_verifykey , ak_verifykey ,
-                                                              const char * , ak_certificate_opts );
+                                    const char * , ak_certificate_opts , ak_function_file_output );
 /*! \brief Функция импортирует открытый ключ асимметричного преобразования из сертификата
    открытого ключа, расположенного в памяти */
  dll_export int ak_verifykey_import_from_ptr_as_certificate( ak_verifykey ,
-                            ak_verifykey , const ak_pointer , const size_t , ak_certificate_opts );
+  ak_verifykey , const ak_pointer , const size_t , ak_certificate_opts , ak_function_file_output );
 
 /** @} *//** \addtogroup cert-tlv-doc Функции создания расширений сертификатов открытых ключей
  @{ */
@@ -1976,8 +1980,3 @@ extern "C" {
 /*                                                                                     libakrypt.h */
 /* ----------------------------------------------------------------------------------------------- */
 
-// действия:
-//  create
-//  new = alloc + create
-//  import = crete + set_key
-//  load = alloc + create + set_key

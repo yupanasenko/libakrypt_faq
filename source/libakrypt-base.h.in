@@ -371,6 +371,8 @@ extern "C" {
  typedef int ( ak_function_find )( const tchar * , ak_pointer );
 /*! \brief Определение функции, передаваемой в качестве аргумента в функцию построчного чтения файлов. */
  typedef int ( ak_file_read_function ) ( const char * , ak_pointer );
+/*! \brief Определение функции, передаваемой в качестве аргумента в функции вывода информации. */
+ typedef int ( ak_function_file_output ) ( const char * );
 
 /* ----------------------------------------------------------------------------------------------- */
 #ifdef AK_HAVE_DIRENT_H
