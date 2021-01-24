@@ -50,6 +50,13 @@ echo ""
 if [[ $? -ne 0 ]]
 then echo "aktool can't create of self-signed certificate"; exit;
 fi
+# проверяем его самостоятельно
+echo ""
+./aktool k -s akrypt512_ca.crt
+if [[ $? -ne 0 ]]
+then echo "aktool can't verify a self-signed certificate"; exit;
+fi
+# потом проверяем его через openssl
 echo ""
 openssl verify -CAfile akrypt512_ca.crt akrypt512_ca.crt
 if [[ $? -ne 0 ]]
