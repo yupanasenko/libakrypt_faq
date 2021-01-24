@@ -414,7 +414,7 @@
     этот элемент должен быть позднее перенесен в контекст открытого ключа */
   ak_asn1_next( asn );
   if( verbose ) {
-    verbose(" Subject:\n    ");
+    verbose(" Subject:\n");
     ak_tlv_snprintf_global_name( asn->current, message, sizeof( message ));
     verbose( message ); verbose( "\n" );
   }
@@ -554,13 +554,6 @@
   vkey->name = ak_asn1_exclude( asn );
 
   lab1: if( root != NULL ) ak_asn1_delete( root );
-  if( error != ak_error_ok ) {
-    if( verbose ) {
-      ak_snprintf( (char *)buffer, sizeof( buffer ), " Verified: No (code: %d)\n", error );
-      verbose( (char *)buffer );
-    }
-  }
-
  return error;
 }
 
@@ -796,7 +789,7 @@
 
  return tbs;
 
-  labex: if( tbs != NULL ) tbs = ak_tlv_delete( tbs );
+  labex: if( tbs != NULL ) ak_tlv_delete( tbs );
  return NULL;
 }
 
@@ -1306,9 +1299,21 @@
                    ak_ptr_to_hexstr( lasn->current->data.primitive, lasn->current->len, ak_false ));
                   verbose( message );
                 }
+                if( *issuer_vkey == NULL ) {
+              /* в данной ситуации ключ проверки подписи не известен.
+                 поскольку мы можем считывать из файла и искать только ключи по серийным номерам,
+                 то использовать данный номер мы можем только для проверки того, что сертификат
+                 является самоподписанным  т.е. subject_key.number =?  lasn->current->data.primitive */
+                 if( memcmp( lasn->current->data.primitive,
+                                               subject_vkey->number, lasn->current->len ) == 0 ) {
+                   *issuer_vkey = subject_vkey; /* ключ проверки совпадает с ключом в сертификате */
+                 }
+                }
                 break;
+
               case 0x01:
                 break;
+
               case 0x02:
                 if( verbose ) {
                   ak_snprintf( message, sizeof( message ), "\t%s (serial number)\n",
@@ -1351,9 +1356,9 @@
     return ak_error_message( error, __func__, "incorrect loading a base part of certificate" );
   }
 
- /* 8. Пропускаем поля второй версии и переходим к третьей версии, а именно, к расширениям.
-       Поля расширений должны нам разъяснить, является ли данный ключ самоподписанным или нет.
-       если нет, и issuer_vkey не определен, то мы должны считать его с диска */
+ /* пропускаем поля второй версии и переходим к третьей версии, а именно, к расширениям.
+    поля расширений должны нам разъяснить, является ли данный ключ самоподписанным или нет.
+    если нет, и issuer_vkey не определен, то мы должны считать его с диска */
   ak_asn1_last( sequence );
   if( opts->version != 2 ) return error; /* нам достался сертификат версии один или два */
 
@@ -1392,10 +1397,15 @@
                                  ak_verifykey issuer_vkey, ak_asn1 root, ak_certificate_opts opts,
                                                                    ak_function_file_output verbose )
 {
+  size_t size = 0;
   ak_tlv tbs = NULL;
   ak_asn1 lvs = NULL;
+  struct bit_string bs;
+  ak_uint8 buffer[4096];
   int error = ak_error_ok;
+  time_t now = time( NULL );
   ak_verifykey vkey = issuer_vkey;
+
 
   if( subject_vkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using null pointer to secret key context" );
@@ -1454,6 +1464,50 @@
   }
 
  /* 3. проверяем валидность сертификата */
+ /* 3.1 - наличие ключа проверки */
+  if( vkey == NULL ) {
+    ak_error_message( error = ak_error_certificate_verify_key, __func__,
+                                   "using an undefined public key to verify a given certificate" );
+    goto lab1;
+  }
+ /* 3.2 - проверяем срок действия сертификата */
+  if(( subject_vkey->time.not_before > now ) || ( subject_vkey->time.not_after < now )) {
+    ak_error_message( ak_error_certificate_validity, __func__,
+             "the certificate has expired (the current time is not within the specified bounds)" );
+    goto lab1;
+  }
+
+ /* 3.3 - теперь ничего не остается, как проверять подпись под сертификатом
+    3.3.1 - начинаем с того, что готовим данные, под которыми должна быть проверена подпись */
+  memset( buffer, 0, size = sizeof( buffer ));
+  ak_asn1_first( lvs );
+  if(( error = ak_tlv_encode( lvs->current, buffer, &size )) != ak_error_ok ) {
+    ak_error_message_fmt( error, __func__,
+                 "incorrect encoding of tlv context contains of %u octets", (unsigned int) size );
+    goto lab1;
+  }
+
+ /* 3.3.2 - теперь получаем значение подписи из asn1 дерева и сравниваем его с вычисленным значением */
+  ak_asn1_last( lvs );
+  if(( DATA_STRUCTURE( lvs->current->tag ) != PRIMITIVE ) ||
+     ( TAG_NUMBER( lvs->current->tag ) != TBIT_STRING )) {
+    ak_error_message( error = ak_error_invalid_asn1_tag, __func__ ,
+                                 "the second element of child asn1 context must be a bit string" );
+    goto lab1;
+  }
+  if(( error = ak_tlv_get_bit_string( lvs->current, &bs )) != ak_error_ok ) {
+    ak_error_message( error , __func__ , "incorrect value of bit string in root asn1 context" );
+    goto lab1;
+  }
+
+ /* 3.3.3  - только сейчас проверяем подпись под данными */
+  if( ak_verifykey_verify_ptr( vkey, buffer, size, bs.value ) != ak_true ) {
+     ak_error_message( error = ak_error_not_equal_data, __func__, "digital signature isn't valid" );
+     goto lab1;
+  }
+  if( verbose ) {
+    verbose(" Verified: Ok\n");
+  }
 
  /* 4. если открытый ключ проверки подписи был создан в ходе работы функции, его надо удалить */
   lab1:

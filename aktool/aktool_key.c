@@ -866,6 +866,7 @@
       if(( ki.opts.key_usage.bits&bit_keyCertSign ) == 0 ) {
         ki.opts.key_usage.bits = ( ki.opts.key_usage.bits&(~bit_keyCertSign ))^bit_keyCertSign;
       }
+      ki.opts.authoritykey.is_present = ak_true;
 
       ki.format = asn1_pem_format; /* возвращаем необходимое значение */
       if( ak_verifykey_export_to_certificate( &vkey, key, &vkey, generator,  &ki.opts,
@@ -875,8 +876,11 @@
                               ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
         goto labex2;
       }
-       else printf(_("certificate of public key stored in %s%s%s file\n\n"),
+       else {
+         printf(_("certificate of public key stored in %s%s%s file\n\n"),
                               ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
+         exitcode = EXIT_SUCCESS;
+       }
     }
      else { /* сохраняем запрос на сертификат */
         if( ak_verifykey_export_to_request( &vkey, key, generator, ki.op_file,
@@ -884,9 +888,11 @@
           aktool_error(_("wrong export a public key to request %s%s%s"),
                               ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
           goto labex2;
-        } else
+        } else {
             printf(_("public key stored in %s%s%s file as certificate's request\n\n"),
                               ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
+            exitcode = EXIT_SUCCESS;
+          }
      }
 
     ak_verifykey_destroy( &vkey );
@@ -894,8 +900,11 @@
 
  /* мастерим пароль для сохранения секретного ключа */
   if( ki.lenpass == 0 ) {
-    if(( ki.lenpass = aktool_key_load_user_password_twice( ki.password, sizeof( ki.password ))) < 1 )
-    goto labex2;
+    if(( ki.lenpass = aktool_key_load_user_password_twice( ki.password,
+                                                                   sizeof( ki.password ))) < 1 ) {
+      exitcode = EXIT_FAILURE;
+      goto labex2;
+    }
   }
 
  /* сохраняем созданный ключ в файле */
@@ -910,11 +919,13 @@
      ) != ak_error_ok ) {
      aktool_error(_("wrong export a secret key to file %s%s%s"),
                               ak_error_get_start_string(), ki.os_file, ak_error_get_end_string( ));
+     exitcode = EXIT_FAILURE;
      goto labex2;
   } else {
-     /* секретный ключ хорошо хранить в хранилище */
+     /* секретный ключ хорошо хранить в хранилище, а не в файле */
      printf(_("secret key stored in %s%s%s file\n"),
                               ak_error_get_start_string(), ki.os_file, ak_error_get_end_string( ));
+     exitcode = EXIT_SUCCESS;
     }
 
  /* удаляем память */
@@ -932,7 +943,6 @@
   memset( &ki, 0, sizeof( struct key_info ));
  return exitcode;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
  static int aktool_key_input_name_from_console_line( ak_verifykey key,
@@ -1126,62 +1136,36 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key_show_public_key( void )
 {
+  char buffer[256];
   struct verifykey vkey;
+  struct certificate_opts opts;
   int error = ak_error_ok, exitcode = EXIT_FAILURE;
 
  /* сначала тестируем запрос на сертификат */
-  if(( error = ak_verifykey_import_from_request( &vkey,
-                                          ki.key_file, aktool_certificate_out )) == ak_error_ok ) {
+  if( ak_verifykey_import_from_request( &vkey,
+                                           ki.key_file, aktool_certificate_out ) == ak_error_ok ) {
+    ak_verifykey_destroy( &vkey );
+    exitcode = EXIT_SUCCESS;
+    goto labex;
+  }
+  if(( error = ak_verifykey_import_from_certificate ( &vkey, NULL, ki.key_file, &opts,
+                                                       aktool_certificate_out )) == ak_error_ok ) {
     ak_verifykey_destroy( &vkey );
     exitcode = EXIT_SUCCESS;
     goto labex;
   }
 
-// /* проверяем, что ошибка не в контроле целостности */
-//  if( ak_error_get_value() == ak_error_not_equal_data ) {
-//    aktool_error(_("wrong verification of request's signature"));
-//    goto labex2;
-//  }
-// /* и тестируем собственно сертификат открытого ключа */
-
-
-////     // printf(_("      type: public key's certificate\n"));
-////     // content = public_key_certificate_content;
-
-////    printf("%d\n", ak_error_get_value());
-
-////  }
-
-//  labex:
-// /* теперь выводим информацию о считанном открытом ключе */
-//  if( exitcode == EXIT_SUCCESS ) {
-//    ak_oid curvoid = ak_oid_find_by_data( vkey->wc );
-//    printf(_(" algorithm: %s (%s, %s)\n"), ak_libakrypt_get_engine_name( vkey->oid->engine ),
-//                                                            vkey->oid->name[0], vkey->oid->id[0] );
-//    printf("    key.px: %s\n", ak_mpzn_to_hexstr( vkey->qpoint.x, vkey->wc->size ));
-//    printf("    key.py: %s\n", ak_mpzn_to_hexstr( vkey->qpoint.y, vkey->wc->size ));
-//    printf(_("    number: %s\n"), ak_ptr_to_hexstr( vkey->number, 32, ak_false ));
-//    printf(_("     curve: "));
-//    if( curvoid ) printf("%s (%s)\n", curvoid->name[0], curvoid->id[0] );
-//      else printf(_("( undefined )\n"));
-
-//   /* вывод информации о владельце ключа */
-//    printf(_("     owner:"));
-//    if( vkey->name == NULL ) printf(_("( undefined )\n"));
-//     else {
-//      ak_tlv_print_global_name( vkey->name, stdout );
-//      printf("\n");
-//     }
-//   /* срок действия оределяется в момент создания сертификата */
-//    if( content == public_key_certificate_content ) {
-//      printf(_("not before: %s"), ctime( &vkey->time.not_before ));
-//      printf(_(" not after: %s"), ctime( &vkey->time.not_after ));
-//    }
-//    printf(_("    verify: Ok\n"));
-//    printf(_("      file: %s\n"), ki.key_file );
-//    ak_verifykey_destroy( vkey );
-//    free( vkey );
-//  }
+  if( error != ak_error_ok ) {
+    char *errstr = NULL;
+    switch( error ) {
+      case ak_error_certificate_verify_key:
+        errstr = "the public key for certificate validation is not defined"; break;
+      default:
+        errstr = "usupported format of input asn.1 data";
+    }
+    ak_snprintf( buffer, sizeof( buffer ), " Verified: No (%s, code %d)\n", errstr, error );
+    aktool_certificate_out( buffer );
+  }
 
   labex:
  return exitcode;

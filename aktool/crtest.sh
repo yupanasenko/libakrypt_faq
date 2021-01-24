@@ -45,10 +45,20 @@ echo ""
 # ------------------------------------------------------------------------------------------------- #
 # 3. Проверяем возможность создания и взаимной проверки самоподписанных сертификатов
 # ------------------------------------------------------------------------------------------------- #
+# сперва, создаем самоподписанный сертификат с помощью aktool
+./aktool k -nt sign512 --curve ec512b -o akrypt512.key --password 321!azO --op akrypt512_ca.crt --to certificate --id "/ctRU/stSomewhere/ltLies/orThe Truth/ou/With Overall Gladness/ememail@somewhere.lies/cnBut Where?"
+if [[ $? -ne 0 ]]
+then echo "aktool can't create of self-signed certificate"; exit;
+fi
+echo ""
+openssl verify -CAfile akrypt512_ca.crt akrypt512_ca.crt
+if [[ $? -ne 0 ]]
+then echo "openssl can't verified a self-signed certificate"; exit;
+fi
 # создаем самоподписанный сертификат
 openssl req -x509 -newkey gost2012_512 -pkeyopt paramset:A -out openssl512_ca.crt -keyout openssl512.key -passout pass:321!azO -subj "/C=RU/ST=Somewhere/L=Lies/O=The Truth/OU=But Where? Part II"
 if [[ $? -ne 0 ]]
-then echo "openssl can't create of selfsigned certificate"; exit;
+then echo "openssl can't create of self-signed certificate"; exit;
 fi
 # и мы пытаемся это прочесть и верифицировать
 ./aktool k -s openssl512_ca.crt
