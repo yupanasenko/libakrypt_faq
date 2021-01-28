@@ -1091,7 +1091,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   memset( output_buffer, 0, sizeof( output_buffer ));
   #ifdef AK_HAVE_WINDOWS_H
    ak_snprintf( output_buffer, sizeof( output_buffer ), "%s", ctime( &time ));
-   output_buffer[strlen( output_buffer)-1] = ' '; /* уничтожаем символ возврата каретки */
+   output_buffer[strlen( output_buffer )-1] = ' '; /* уничтожаем символ возврата каретки */
   #else
    strftime( output_buffer, sizeof( output_buffer ), /* локализованный вывод */
                                                   "%e %b %Y %H:%M:%S (%A) %Z", localtime( &time ));

@@ -208,7 +208,6 @@
  ssize_t aktool_key_load_user_password( char *password, const size_t pass_size )
 {
   ssize_t passlen = 0;
-  int error = ak_error_ok;
   char buffer[1 + ( aktool_password_max_length << 1 )];
 
   fprintf( stdout, _("password"));
@@ -224,7 +223,7 @@
 
   memset( password, 0, pass_size );
   if( aktool_hex_password_input ) {
-    if(( error = ak_hexstr_to_ptr( buffer, password, pass_size -1, ak_false )) == ak_error_ok )
+    if( ak_hexstr_to_ptr( buffer, password, pass_size -1, ak_false ) == ak_error_ok )
       passlen = ak_min( pass_size -1, strlen( buffer )%2 + ( strlen( buffer ) >> 1 ));
      else passlen = 0;
     /* как минимум один последний октет password будет равен нулю */
@@ -303,6 +302,13 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ int aktool_print_message( const char *message )
+{
+  if( message ) fprintf( stdout, "%s", message );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                 реализация вывода справки                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_litehelp( void )
@@ -331,7 +337,7 @@
      "     --audit-file        set the output file for errors and libakrypt audit system messages\n"
      "     --dont-use-colors   do not use the highlighting of output data\n"
      "     --help              show this information\n"
-     "     --hex-tty-input     read characters from terminal or console as hexademal numbers\n"
+     "     --hex-input         read characters from terminal or console as hexademal numbers\n"
      "     --openssl-style     use non-standard variants to some encryption algorithms, as in openssl library\n"
      "     --verbose           show the additional information\n\n"));
 

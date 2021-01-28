@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2021 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Файл ak_options.с                                                                              */
 /*  - содержит реализацию функций для работы с опциями библиотеки                                  */
@@ -31,8 +31,6 @@
 /*! Константные значения опций (значения по-умолчанию) */
  static struct option options[] = {
      { "log_level", ak_log_standard, 0, 2 },
-     { "context_manager_size", 32, 32, 65536 },
-     { "context_manager_max_size", 4096, 4096, 2147483648 },
      { "pbkdf2_iteration_count", 2000, 1000, 65536 },
      { "hmac_key_count_resource", 65536, 1024, 2147483648 },
      { "digital_signature_count_resource", 65536, 1024, 2147483648 },
@@ -385,9 +383,10 @@
   memset( message, 0, sizeof( message ));
   ak_snprintf( message, sizeof( message )-1, " [%s]\n  %s = %s", section, name, valstr );
   ak_log_set_message( message );
+  ak_error_set_value( ak_error_ok );
 
  /* нулевое значение - неуспешное завершение обработчика */
- return 0;
+ return 1;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -67,6 +67,8 @@
  bool_t aktool_create_libakrypt( void );
 /* общий для всех подпрограмм запуск процедуры остановки билиотеки */
  int aktool_destroy_libakrypt( void );
+/* функция вывода заданного сообщения в консоль */
+ int aktool_print_message( const char *message );
 
 /* функция однократного чтения пароля из консоли */
  ssize_t aktool_key_load_user_password( char * , const size_t );
@@ -91,7 +93,7 @@
                                             { "dont-use-colors",     0, NULL,   3  },\
                                             { "audit",               1, NULL,   4  },\
                                             { "openssl-style",       0, NULL,   5  },\
-                                            { "hex-tty-input",       0, NULL,   6  },\
+                                            { "hex-input",           0, NULL,   6  },\
                                             { "verbose",             0, NULL,   7  }
 
  #define aktool_common_functions_run( help_function )   \
@@ -109,7 +111,7 @@
      case  5  : /* переходим к стилю openssl */\
         aktool_openssl_compability = ak_true;\
         break;\
-     case  6  : /* обрабатываем --hex-tty-input */\
+     case  6  : /* обрабатываем --hex-input */\
         aktool_hex_password_input = ak_true;\
         break;\
      case  7  : /* обрабатываем --verbose */\

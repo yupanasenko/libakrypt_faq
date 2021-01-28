@@ -629,7 +629,6 @@
 {
   if( opts == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                 "destroying null pointer to certificate options" );
-  if( opts->authoritykey.issuer_name != NULL ) ak_tlv_delete( opts->authoritykey.issuer_name );
   memset( opts, 0, sizeof( struct certificate_opts ));
 
  return ak_error_ok;
@@ -727,12 +726,7 @@
     opts->ca.is_present = ak_true;
     opts->ca.value = ak_true;
     if( !(opts->key_usage.bits&bit_keyCertSign )) opts->key_usage.bits ^= bit_keyCertSign;
-
-   /* для самоподписанных сертификатов расширение authority_key_identifier будет добавляться
-      только по запросу пользователя (т.е. в случае установки флага)
-      для прочих сертификатов - расширение добавляется всегда */
   }
-   else opts->authoritykey.is_present = ak_true;
 
  /* далее мы реализуем возможности сертификатов третьей версии, а именно
     вставляем перечень расширений
@@ -776,15 +770,14 @@
     }
   }
 
- /* 4. Добавляем имена для поиска ключа проверки подписи (Authority Key Identifier) */
-  if( opts->authoritykey.is_present ) {
-    ak_asn1_add_tlv( asn, tlv = ak_tlv_new_authority_key_identifier( issuer_skey,
+ /* 4. Добавляем имена для поиска ключа проверки подписи (Authority Key Identifier)
+                                                       данное расширение будет добавляться всегда */
+  ak_asn1_add_tlv( asn, tlv = ak_tlv_new_authority_key_identifier( issuer_skey,
                                                    issuer_vkey, opts->authoritykey.include_name ));
-    if( tlv == NULL ) {
-      ak_error_message( ak_error_get_value(), __func__,
+  if( tlv == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
                                     "incorrect generation of Authority Key Identifier extension" );
-      goto labex;
-    }
+    goto labex;
   }
 
  return tbs;
@@ -1066,9 +1059,22 @@
     goto lab1;
   }
   if( verbose ) {
-    ak_snprintf( message, sizeof( message ), " Validity:\n    From: %s      To: %s",
-                                                        ctime( &not_before ), ctime( &not_after ));
+   #ifdef AK_HAVE_WINDOWS_H
+    ak_snprintf( message, sizeof( message ), " Validity:\n    from: %s\n", ctime( &not_before ));
     verbose( message );
+    ak_snprintf( message, sizeof( message ), "      to: %s\n", ctime( &not_after ));
+    verbose( message );
+   #else
+    char output_buffer[128];
+    strftime( output_buffer, sizeof( output_buffer ), /* локализованный вывод */
+                                            "%e %b %Y %H:%M:%S (%A) %Z", localtime( &not_before ));
+    ak_snprintf( message, sizeof( message ), " Validity:\n    from: %s\n", output_buffer );
+    verbose( message );
+    strftime( output_buffer, sizeof( output_buffer ), /* локализованный вывод */
+                                             "%e %b %Y %H:%M:%S (%A) %Z", localtime( &not_after ));
+    ak_snprintf( message, sizeof( message ), "      to: %s\n", output_buffer );
+    verbose( message );
+   #endif
   }
 
  /* 6. Получаем имя владельца импортируемого ключа */
@@ -1165,7 +1171,7 @@
       memcpy( subject_vkey->number, ((ak_uint8 *)ptr)+2,
                                                     opts->subjkey.length = ak_min( 32, size-2 ));
       if( verbose ) {
-        ak_snprintf( message, sizeof( message ), "    x509v3 Subject Key Identifier:\n\t%s\n",
+        ak_snprintf( message, sizeof( message ), " x509v3 Subject Key Identifier:\n    %s\n",
                        ak_ptr_to_hexstr( subject_vkey->number, opts->subjkey.length, ak_false ));
         verbose( message );
       }
@@ -1199,7 +1205,7 @@
 
         if( verbose ) {
           ak_snprintf( message, sizeof( message ),
-            "    x509v3 Basic Constraints:\n\tca: %s\n\tpathlen: %d\n",
+            " x509v3 Basic Constraints:\n    ca: %s, pathlen: %d\n",
                             ( opts->ca.value ? "true" : "false" ), opts->ca.pathlenConstraint );
           verbose( message );
         }
@@ -1230,15 +1236,15 @@
           }
         }
         if( verbose ) {
-          verbose("    x509v3 Basic Usage: " );
-          if( opts->key_usage.bits&bit_decipherOnly) verbose( "Decipher, " );
-          if( opts->key_usage.bits&bit_encipherOnly) verbose("Encipher, ");
-          if( opts->key_usage.bits&bit_cRLSign) verbose("CRL sign, ");
+          verbose(" x509v3 Basic Usage:\n    " );
+          if( opts->key_usage.bits&bit_decipherOnly) verbose( "Decipher " );
+          if( opts->key_usage.bits&bit_encipherOnly) verbose("Encipher ");
+          if( opts->key_usage.bits&bit_cRLSign) verbose("CRL sign ");
           if( opts->key_usage.bits&bit_keyCertSign) verbose("Certificate sign, ");
-          if( opts->key_usage.bits&bit_keyAgreement) verbose("Key agreement, ");
-          if( opts->key_usage.bits&bit_dataEncipherment) verbose("Data encipherment, ");
-          if( opts->key_usage.bits&bit_keyEncipherment) verbose("Key encipherment, ");
-          if( opts->key_usage.bits&bit_contentCommitment) verbose("Content commitment, ");
+          if( opts->key_usage.bits&bit_keyAgreement) verbose("Key agreement ");
+          if( opts->key_usage.bits&bit_dataEncipherment) verbose("Data encipherment ");
+          if( opts->key_usage.bits&bit_keyEncipherment) verbose("Key encipherment ");
+          if( opts->key_usage.bits&bit_contentCommitment) verbose("Content commitment ");
           if( opts->key_usage.bits&bit_digitalSignature) verbose("Digital signature");
           verbose("\n");
         }
@@ -1286,7 +1292,7 @@
 
         lasn = vasn->current->data.constructed;
         opts->authoritykey.is_present = ak_true;
-        if( verbose ) verbose("    x509v3 Authority Key Identifier:\n" );
+        if( verbose ) verbose(" x509v3 Authority Key Identifier:\n" );
 
         ak_asn1_first( lasn );
         do{
@@ -1295,7 +1301,7 @@
             switch( TAG_NUMBER( lasn->current->tag )) {
               case 0x00:
                 if( verbose ) {
-                  ak_snprintf( message, sizeof( message ), "\t%s (unique key number)\n",
+                  ak_snprintf( message, sizeof( message ), "    %s (unique key number)\n",
                    ak_ptr_to_hexstr( lasn->current->data.primitive, lasn->current->len, ak_false ));
                   verbose( message );
                 }
@@ -1316,7 +1322,7 @@
 
               case 0x02:
                 if( verbose ) {
-                  ak_snprintf( message, sizeof( message ), "\t%s (serial number)\n",
+                  ak_snprintf( message, sizeof( message ), "    %s (serial number)\n",
                    ak_ptr_to_hexstr( lasn->current->data.primitive, lasn->current->len, ak_false ));
                   verbose( message );
                 }
