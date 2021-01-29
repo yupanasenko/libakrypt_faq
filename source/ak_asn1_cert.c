@@ -539,9 +539,6 @@
      ak_error_message( error = ak_error_not_equal_data, __func__, "digital signature isn't valid" );
      goto lab1;
   }
-  if( verbose ) {
-    verbose(" Verified: Ok\n");
-  }
 
  /* 5. В самом конце, после проверки подписи,
     изымаем узел, содержащий имя владельца открытого ключа -- далее этот узел будет перемещен
@@ -1192,15 +1189,18 @@
            ( TAG_NUMBER( vasn->current->tag ) != TSEQUENCE )) {
 
            ak_asn1 vasn2 = vasn->current->data.constructed;
-           ak_asn1_first( vasn2 );
-           if(( DATA_STRUCTURE( vasn2->current->tag ) == PRIMITIVE ) &&
-              ( TAG_NUMBER( vasn2->current->tag ) == TBOOLEAN )) {
-                ak_tlv_get_bool( vasn2->current, &opts->ca.value );
-                ak_asn1_next( vasn2 );
+           if( vasn2->current != NULL ) {
+             ak_asn1_first( vasn2 );
+             if(( DATA_STRUCTURE( vasn2->current->tag ) == PRIMITIVE ) &&
+                ( TAG_NUMBER( vasn2->current->tag ) == TBOOLEAN )) {
+                  ak_tlv_get_bool( vasn2->current, &opts->ca.value );
+             }
+             if( ak_asn1_next( vasn2 ) ) {
+               if(( DATA_STRUCTURE( vasn2->current->tag ) != PRIMITIVE ) &&
+                  ( TAG_NUMBER( vasn2->current->tag ) != TINTEGER ))
+                    ak_tlv_get_uint32( vasn2->current, &opts->ca.pathlenConstraint );
+             }
            }
-           if(( DATA_STRUCTURE( vasn2->current->tag ) != PRIMITIVE ) &&
-              ( TAG_NUMBER( vasn2->current->tag ) != TINTEGER ))
-                ak_tlv_get_uint32( vasn2->current, &opts->ca.pathlenConstraint );
         }
 
         if( verbose ) {
@@ -1510,9 +1510,6 @@
   if( ak_verifykey_verify_ptr( vkey, buffer, size, bs.value ) != ak_true ) {
      ak_error_message( error = ak_error_not_equal_data, __func__, "digital signature isn't valid" );
      goto lab1;
-  }
-  if( verbose ) {
-    verbose(" Verified: Ok\n");
   }
 
  /* 4. если открытый ключ проверки подписи был создан в ходе работы функции, его надо удалить */

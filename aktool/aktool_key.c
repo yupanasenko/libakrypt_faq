@@ -20,6 +20,7 @@
  int aktool_key_new_blom_pairwise( void );
  int aktool_key_new_keypair( bool_t , bool_t );
  int aktool_key_show_key( void );
+ int aktool_key_verify_key( void );
  int aktool_key_show_secret_key( void );
  int aktool_key_show_public_key( void );
  int aktool_key_input_name( ak_verifykey );
@@ -52,6 +53,7 @@
    char op_file[1024];  /* сохраняем, открытый ключ */
    char key_file[1024];   /* читаем, секретный ключ */
    char pubkey_file[1024]; /* читаем, открытый ключ */
+   char capubkey_file[1024]; /* читаем второй (дополнительный) открытый ключ */
  } ki;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -60,7 +62,7 @@
   char tmp[4];
   size_t i = 0;
   int next_option = 0, exit_status = EXIT_FAILURE;
-  enum { do_nothing, do_new, do_show } work = do_nothing;
+  enum { do_nothing, do_new, do_show, do_verify } work = do_nothing;
 
  /* параметры, запрашиваемые пользователем */
   const struct option long_options[] = {
@@ -69,6 +71,7 @@
      { "new",                 0, NULL,  'n' },
      { "show",                1, NULL,  's' },
      { "output-secret-key",   1, NULL,  'o' },
+     { "verify",              1, NULL,  'v' },
      { "to",                  1, NULL,  250 },
      { "format",              1, NULL,  250 },
      { "outpass-hex",         1, NULL,  249 },
@@ -79,7 +82,7 @@
      { "days",                1, NULL,  246 },
 
      { "target",              1, NULL,  't' },
-     { "pubkey",              1, NULL,  208 },
+     { "cakey",               1, NULL,  208 },
      { "label",               1, NULL,  207 },
      { "random-file",         1, NULL,  206 },
      { "random",              1, NULL,  205 },
@@ -126,13 +129,15 @@
 
  /* разбираем опции командной строки */
   do {
-       next_option = getopt_long( argc, argv, "hns:a:o:t:", long_options, NULL );
+       next_option = getopt_long( argc, argv, "hns:a:o:t:v:", long_options, NULL );
        switch( next_option )
       {
         aktool_common_functions_run( aktool_key_help );
 
       /* управляющие команды */
-        case 's' :  work = do_show; /* присваиваем имя key_file */
+        case 's' :  work = do_show; /* присваиваем имя key_file,
+                                       для открых ключей, идейно, нужно было бы
+                                       использовать pubkey_file, но это излишество ))  */
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                   #else
@@ -143,6 +148,16 @@
         case 'n' : /* --new */
                    work = do_new;
                    break;
+
+        case 'v' : /* --verify */
+                   work = do_verify;
+                  #ifdef _WIN32
+                    GetFullPathName( optarg, FILENAME_MAX, ki.pubkey_file, NULL );
+                  #else
+                    realpath( optarg , ki.pubkey_file );
+                  #endif
+                   break;
+
 
         case 't' : /* --target */
                    if( strncmp( optarg, "undefined", 9 ) == 0 ) {
@@ -351,11 +366,11 @@
                   #endif
                     break;
 
-        case 208: /* --pubkey */
+        case 208: /* --cakey */
                   #ifdef _WIN32
-                    GetFullPathName( optarg, FILENAME_MAX, ki.pubkey_file, NULL );
+                    GetFullPathName( optarg, FILENAME_MAX, ki.capubkey_file, NULL );
                   #else
-                    realpath( optarg , ki.pubkey_file );
+                    realpath( optarg , ki.capubkey_file );
                   #endif
                     break;
 
@@ -402,9 +417,11 @@
       break;
 
     case do_show:
-      if(( exit_status = aktool_key_show_key( )) == EXIT_FAILURE )
-        aktool_error(_("using the file %s that does not contain correct "
-                                                "secret or public key information"), ki.key_file );
+      exit_status = aktool_key_show_key();
+      break;
+
+    case do_verify:
+      exit_status = aktool_key_verify_key();
       break;
 
     default:
@@ -1082,17 +1099,31 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                                   вывод информации о ключах                                     */
 /* ----------------------------------------------------------------------------------------------- */
+ static char* aktool_key_get_error_str( int error )
+{
+  switch( error ) {
+    case ak_error_open_file:
+        return _("the file reading error, maybe it just doesn't exist");
+    case ak_error_oid_id:
+        return _("the public key uses unsupported signing algorithms");
+    case ak_error_certificate_verify_key:
+        return _("the public key for certificate validation is not defined"); break;
+      default:
+        return _("usupported format of input asn.1 data");
+  }
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int aktool_key_show_key( void )
 {
-  char *errstr = NULL;
   ak_skey skey = NULL;
   ak_pointer key = NULL;
   struct verifykey vkey;
-  int error = ak_error_ok;
   struct certificate_opts opts;
  #ifndef AK_HAVE_WINDOWS_H
   char output_buffer[256];
  #endif
+  int error = ak_error_ok, exitcode = EXIT_FAILURE;
 
  /* 1. начинаем разбор с секретных ключей
        создаем контекст ключа (без считывания ключевой информации, только параметры) */
@@ -1146,6 +1177,8 @@
      ak_verifykey_destroy( &vkey );
      return EXIT_SUCCESS;
   }
+
+  ak_certificate_opts_create( &opts );
   if(( error = ak_verifykey_import_from_certificate( &vkey, NULL, ki.key_file, &opts,
                                                         aktool_print_message )) == ak_error_ok ) {
     ak_verifykey_destroy( &vkey );
@@ -1153,15 +1186,80 @@
   }
 
  /* 3. Выводим сообщение об ошибке */
-  switch( error ) {
-    case ak_error_certificate_verify_key:
-        errstr = "the public key for certificate validation is not defined"; break;
-      default:
-        errstr = "usupported format of input asn.1 data";
-  }
-  fprintf( stdout, " Verified: No (%s, code %d)\n", errstr, error );
+  fprintf( stdout, _(" Verified: No (%s, code %d)\n"), aktool_key_get_error_str( error ), error );
+  if( opts.created ) ak_verifykey_destroy( &vkey );
+  ak_certificate_opts_destroy( &opts );
 
- return EXIT_FAILURE;
+ return exitcode;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                        проверка подписи под запросами и сертификатами                           */
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_key_verify_key( void )
+{
+  struct verifykey vkey, issuer_vkey;
+  struct certificate_opts iopts, opts;
+  int error = ak_error_ok, exitcode = EXIT_SUCCESS;
+  ak_function_file_output *fptr = aktool_verbose ? aktool_print_message : NULL;
+
+  if(( error = ak_verifykey_import_from_request( &vkey, ki.pubkey_file, fptr )) == ak_error_ok ) {
+     ak_verifykey_destroy( &vkey );
+    /* если вывод отключен, то выводим сообщение об успехе предприятия */
+     fprintf( stdout, _(" Verified: Ok\n"));
+     return EXIT_SUCCESS;
+  }
+
+ /* если задан, то мы загружаем ключ проверки подписи */
+  ak_certificate_opts_create( &iopts );
+  if( strlen( ki.capubkey_file ) > 0 ) {
+    if( aktool_verbose ) fprintf( stdout, _("1. Authority public key:\n" ));
+    if(( error = ak_verifykey_import_from_certificate( &issuer_vkey, NULL,
+                                              ki.capubkey_file, &iopts, fptr )) != ak_error_ok ) {
+      aktool_error(_("error while loading a certificate authoruty public key (%s, code %d)"),
+                                                        aktool_key_get_error_str( error ), error );
+      goto labex1;
+    }
+   /* проверки выполняются только для сертификатов третьей версии */
+    if( iopts.version < 2 ) goto lab2;
+   /* флаг того, что сертификат может подписывать/проверять сертификаты */
+    if( !iopts.ca.is_present ) {
+      aktool_error(_( "the CA certificate does not contain a basic constraints extension" ));
+      goto labex1;
+    }
+   /* RFC5280 дополнительно требует установки флага в расширении keyUsage */
+    if(( !iopts.key_usage.is_present ) || ( !( iopts.key_usage.bits&bit_keyCertSign ))) {
+      aktool_error(
+             _("the CA certificate does not contain a key usage extension with keyCertSign flag"));
+      goto labex1;
+    }
+    goto lab2;
+    labex1:
+      if( iopts.created ) ak_verifykey_destroy( &issuer_vkey );
+      ak_certificate_opts_destroy( &iopts );
+
+    return EXIT_FAILURE;
+  }
+
+ /* теперь проверка сертификата */
+ lab2:
+  ak_certificate_opts_create( &opts );
+  if( aktool_verbose ) fprintf( stdout, _("2. Public key:\n" ));
+  if(( error = ak_verifykey_import_from_certificate( &vkey,
+               iopts.created ? &issuer_vkey : NULL, ki.pubkey_file, &opts, fptr )) == ak_error_ok )
+     fprintf( stdout, _(" Verified: Ok\n"));
+   else
+    fprintf( stdout, _(" Verified: No (%s, code %d)\n"), aktool_key_get_error_str( error ), error );
+
+ /* удаляем ключ владельца */
+  if( opts.created ) ak_verifykey_destroy( &vkey );
+  ak_certificate_opts_destroy( &opts );
+
+ /* удаляем ключ эмитента */
+  if( iopts.created ) ak_verifykey_destroy( &issuer_vkey );
+  ak_certificate_opts_destroy( &iopts );
+
+ return exitcode;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1191,13 +1289,15 @@
 
    ak_error_message_fmt( ak_error_ok, __func__, "user\t: %s (len: %d, maxlen: %d)",
                                                            ki.user, ki.lenuser, sizeof( ki.user ));
-   ak_error_message_fmt( ak_error_ok, __func__, "key\t: %s (len: %d, maxlen: %d)",
+   ak_error_message_fmt( ak_error_ok, __func__, "in key\t: %s (len: %d, maxlen: %d)",
                                           ki.key_file, strlen(ki.key_file), sizeof( ki.key_file ));
-   ak_error_message_fmt( ak_error_ok, __func__, "public\t: %s (len: %d, maxlen: %d)",
+   ak_error_message_fmt( ak_error_ok, __func__, "in pub\t: %s (len: %d, maxlen: %d)",
                                  ki.pubkey_file, strlen(ki.pubkey_file), sizeof( ki.pubkey_file ));
-   ak_error_message_fmt( ak_error_ok, __func__, "osecret\t: %s (len: %d, maxlen: %d)",
+   ak_error_message_fmt( ak_error_ok, __func__, "in ca\t: %s (len: %d, maxlen: %d)",
+                           ki.capubkey_file, strlen(ki.capubkey_file), sizeof( ki.capubkey_file ));
+   ak_error_message_fmt( ak_error_ok, __func__, "out key\t: %s (len: %d, maxlen: %d)",
                                              ki.os_file, strlen(ki.os_file), sizeof( ki.os_file ));
-   ak_error_message_fmt( ak_error_ok, __func__, "opublic\t: %s (len: %d, maxlen: %d)",
+   ak_error_message_fmt( ak_error_ok, __func__, "out pub\t: %s (len: %d, maxlen: %d)",
                                              ki.op_file, strlen(ki.op_file), sizeof( ki.op_file ));
   }
 
@@ -1212,6 +1312,7 @@
      "available options:\n"
      " -a, --algorithm         specify the method or the cryptographic algorithm for key generation\n"
      "                         this option needs to be used in some key generation schemes, e.g. in Blom scheme\n"
+     "     --cakey             name of the issuer's public key, information from which will be placed in the certificate\n"
      "     --curve             set the elliptic curve name or identifier for asymmetric keys\n"
      "     --days              set the days count to expiration date of secret or public key\n"
      "     --field             bit length which used to define the galois field [ enabled values: 256, 512 ]\n"
@@ -1231,7 +1332,6 @@
      "     --outpass-hex       set the password for the secret key to be stored directly on the command line as hexademal string\n"
      "     --output-public-key set the file name for the new public key request\n"
      " -o, --output-secret-key set the file name for the new secret key\n"
-     "     --pubkey            name of the issuer's public key, information from which will be placed in the certificate\n"
      "     --random            set the name or identifier of random sequences generator\n"
      "                         the generator will be used to create a new key [ default value: \"%s\" ]\n"
      "     --random-file       set the name of file with random sequence\n"
@@ -1240,7 +1340,8 @@
      " -t, --target            specify the name of the cryptographic algorithm for the new generated key\n"
      "                         one can use any supported names or identifiers of algorithm,\n"
      "                         or \"undefined\" value for generation the plain unecrypted key unrelated to any algorithm\n"
-     "     --to                another form of --format option\n\n"
+     "     --to                another form of --format option\n"
+     " -v, --verify            verify the public key's request or certificate\n\n"
      "options used for customizing a public key's certificate:\n"
      "     --authority-name    add an issuer's generalized name to the authority key identifier extension\n"
      "     --ca                use as certificate authority [ enabled values: true, false ]\n"

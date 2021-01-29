@@ -304,7 +304,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_print_message( const char *message )
 {
-  if( message ) fprintf( stdout, "%s", message );
+  if( message ) fprintf( stdout, "%s", _( message ));
  return ak_error_ok;
 }
 

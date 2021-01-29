@@ -387,6 +387,13 @@
  static const char *asn1_class_ka1_n[] =   { "digital-signature-module, class ka", "ka", NULL };
  static const char *asn1_class_ka1_i[] =   { "1.2.643.100.113.6", NULL };
 
+
+/* ----------------------------------------------------------------------------------------------- */
+/* внутренности openssl */
+/* ----------------------------------------------------------------------------------------------- */
+ static const char *asn1_netsmsg_n[] =       { "netscape-certificate-comment", NULL };
+ static const char *asn1_netsmsg_i[] =       { "2.16.840.1.113730.1.13", NULL };
+
 /* ----------------------------------------------------------------------------------------------- */
 /* вот что приходится разбирать в сертификатах от КриптоПро */
 /*   Microsoft OID...................................1.3.6.1.4.1.311  */
@@ -726,6 +733,7 @@ static struct oid libakrypt_oids[] =
  { identifier, descriptor, asn1_class_ka1_i, asn1_class_ka1_n,
                                                            NULL, ak_functional_objects_undefined },
 
+ { identifier, descriptor, asn1_netsmsg_i, asn1_netsmsg_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_mscav_i, asn1_mscav_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_mspsh_i, asn1_mspsh_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_mstndc_i, asn1_mstndc_n, NULL, ak_functional_objects_undefined },
