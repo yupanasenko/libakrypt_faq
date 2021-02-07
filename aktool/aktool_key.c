@@ -63,7 +63,7 @@
 {
   char tmp[4];
   size_t i = 0;
-  int next_option = 0, exit_status = EXIT_FAILURE;
+  int value = 0, next_option = 0, exit_status = EXIT_FAILURE;
   enum { do_nothing, do_new, do_show, do_verify, do_cert } work = do_nothing;
 
  /* параметры, запрашиваемые пользователем */
@@ -108,7 +108,7 @@
      { "key-agreement",       0, NULL,  194 },
      { "key-cert-sign",       0, NULL,  195 },
      { "crl-sign",            0, NULL,  196 },
-     { "ca",                  1, NULL,  197 },
+     { "ca-ext",              1, NULL,  197 },
      { "pathlen",             1, NULL,  198 },
      { "authority-name",      0, NULL,  200 },
 
@@ -407,6 +407,57 @@
                           }
                    break;
 
+      /* определяем опции сертификатов */
+        case 190:  ki.opts.key_usage.bits ^= bit_digitalSignature;
+                   ki.opts.key_usage.is_present = ak_true;
+                   break;
+        case 191:  ki.opts.key_usage.bits ^= bit_contentCommitment;
+                   ki.opts.key_usage.is_present = ak_true;
+                   break;
+        case 192:  ki.opts.key_usage.bits ^= bit_keyEncipherment;
+                   ki.opts.key_usage.is_present = ak_true;
+                   break;
+        case 193:  ki.opts.key_usage.bits ^= bit_dataEncipherment;
+                   ki.opts.key_usage.is_present = ak_true;
+                   break;
+        case 194:  ki.opts.key_usage.bits ^= bit_keyAgreement;
+                   ki.opts.key_usage.is_present = ak_true;
+                   break;
+        case 195:  ki.opts.key_usage.bits ^= bit_keyCertSign;
+                   ki.opts.key_usage.is_present = ak_true;
+                   break;
+        case 196:  ki.opts.key_usage.bits ^= bit_cRLSign;
+                   ki.opts.key_usage.is_present = ak_true;
+                   break;
+
+        case 197: /* --ca-ext */
+                   if( strncmp( optarg, "true", 4 ) == 0 )
+                     ki.opts.ca.is_present = ki.opts.ca.value = ak_true;
+                    else
+                     if( strncmp( optarg, "false", 5 ) == 0 ) {
+                       ki.opts.ca.is_present = ak_true;
+                       ki.opts.ca.value = ak_false;
+                     }
+                      else {
+                             aktool_error(
+                              _("%s is not valid value of certificate authority option"), optarg );
+                             return EXIT_FAILURE;
+                           }
+                   break;
+
+        case 198: /* --pathlen */
+                   if(( value = atoi( optarg )) < 0 ) {
+                     aktool_error(_("the value of pathlenConstraints must be non negative integer"));
+                     return EXIT_FAILURE;
+                   }
+                   ki.opts.ca.is_present = ki.opts.ca.value = ak_true;
+                   ki.opts.ca.pathlenConstraint = ak_min( 100, value );
+                   break;
+
+        case 200: /* --authority-name */
+                   ki.opts.authoritykey.is_present =
+                      ki.opts.authoritykey.include_name = ak_true;
+                   break;
 
         default:  /* обрабатываем ошибочные параметры */
                    if( next_option != -1 ) work = do_nothing;
@@ -1460,7 +1511,7 @@
      " -v, --verify            verify the public key's request or certificate\n\n"
      "options used for customizing a public key's certificate:\n"
      "     --authority-name    add an issuer's generalized name to the authority key identifier extension\n"
-     "     --ca                use as certificate authority [ enabled values: true, false ]\n"
+     "     --ca-ext            use as certificate authority [ enabled values: true, false ]\n"
      "     --pathlen           set the maximal length of certificate's chain\n"
      "     --digital-signature use for verifying a digital signatures of user data\n"
      "     --content-commitment\n"
