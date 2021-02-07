@@ -1315,9 +1315,10 @@
 
    /* получаем производные ключи шифрования и имитозащиты */
     if(( error = ak_asn1_get_derived_keys( basicKey, &ekey, &ikey )) != ak_error_ok ) {
-      ak_error_message( error, __func__, "incorrect creation of derived keys" );
+      ak_error_message( error, __func__, "incorrect creation of derived keys" );            
       goto lab1;
     }
+
     if(( error = ak_asn1_get_skey_content( content, *key, &ekey, &ikey )) != ak_error_ok )
       ak_error_message( error, __func__, "incorrect assigning a seсret key value");
 
@@ -1328,8 +1329,11 @@
  /* удаляем память, если нужно и выходим */
   lab1:
    if( error != ak_error_ok ) {
+     oid = ((ak_skey)*key)->oid;
+
     /* удаляем объект */
-     if( engine == undefined_engine ) ak_oid_delete_object( ((ak_skey)*key)->oid, *key );
+     if( engine == undefined_engine ) ak_oid_delete_object( oid, *key );
+      else oid->func.first.destroy( *key );
    }
 
  return error;
@@ -1468,14 +1472,15 @@
                                                       "incorrect format of secret key container" );
      goto lab1;
    }
+
   /* создаем ключ и считываем его значение */
    if(( error = ak_skey_create_form_asn1_content(
                    &ctx,     /* указатель на инициализируемый объект */
                    engine,   /* ожидаем объект заданного типа */
                    basicKey, /* после инициализации будем присваивать ключ */
-                   content   /* указатель на ключевые данные */
-       )) != ak_error_ok ) {
-        ak_error_message( error, __func__, "incorrect creation of a new secret key");
+                             /* указатель на ключевые данные */
+                   content )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect creation of a new secret key");
      goto lab1;
    }
 

@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------------------------- #
-# Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru
+# Copyright (c) 2014 - 2021 by Axel Kenzo, axelkenzo@mail.ru
 #
 # CMakeLists.txt
 # -------------------------------------------------------------------------------------------------- #
@@ -14,7 +14,7 @@ set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 
 # -------------------------------------------------------------------------------------------------- #
 # Формируем название проекта
-project( libakrypt-${FULL_VERSION} C )
+project( libakrypt C )
 
 # -------------------------------------------------------------------------------------------------- #
 # Перечень доступных опций для сборки библиотеки
@@ -321,8 +321,8 @@ set( CPACK_PACKAGE_VERSION_PATCH ${MINOR_VERSION} )
 
 set( CPACK_DEBIAN_PACKAGE_MAINTAINER "Axel Kenzo") #required
 set( CPACK_PACKAGE_VENDOR "Axel Kenzo & The Company Of Belles Lettres")
-set( CPACK_PACKAGE_FILE_NAME ${CMAKE_PROJECT_NAME}-${CMAKE_SYSTEM_PROCESSOR} )
-set( CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}" )
+set( CPACK_PACKAGE_FILE_NAME ${CMAKE_PROJECT_NAME}-${FULL_VERSION}-${CMAKE_SYSTEM_PROCESSOR} )
+set( CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${FULL_VERSION}" )
 set( CPACK_STRIP_FILES TRUE )
 set( CPACK_PACKAGE_DESCRIPTION
      "Библиотека, реализующая российские криптографические механизмы в пространстве пользователя" )

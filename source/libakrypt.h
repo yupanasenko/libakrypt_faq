@@ -108,7 +108,13 @@ extern "C" {
  #define ak_error_certificate_verify_names    (-162)
 /*! \brief Ошибка при импорте сертификата:
   срок действия сертификата не актуален (истек или еще не начался) */
- #define ak_error_certificate_validity        (-167)
+ #define ak_error_certificate_validity        (-165)
+/*! \brief Ошибка при импорте сертификата:
+    сертификат не является сертификатом центра сертификации. */
+ #define ak_error_certificate_ca              (-166)
+/*! \brief Ошибка при импорте сертификата:
+    сертификат не содержит установленный бит в расширении keyUsage. */
+ #define ak_error_certificate_key_usage       (-167)
 /*! \brief Ошибка при импорте сертификата:
     сертификат предназначен для некорректного или неподдерживаемого алгоритма электронной подписи. */
  #define ak_error_certificate_engine          (-168)

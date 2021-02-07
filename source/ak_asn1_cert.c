@@ -722,6 +722,7 @@
   if( ak_ptr_is_equal( subject_vkey->number, issuer_vkey->number, 32 )) {
     opts->ca.is_present = ak_true;
     opts->ca.value = ak_true;
+    if( !opts->key_usage.is_present ) opts->key_usage.is_present = ak_true;
     if( !(opts->key_usage.bits&bit_keyCertSign )) opts->key_usage.bits ^= bit_keyCertSign;
   }
 

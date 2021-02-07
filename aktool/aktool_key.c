@@ -21,11 +21,13 @@
  int aktool_key_new_keypair( bool_t , bool_t );
  int aktool_key_show_key( void );
  int aktool_key_verify_key( void );
+ int aktool_key_new_certificate( void );
  int aktool_key_show_secret_key( void );
  int aktool_key_show_public_key( void );
  int aktool_key_input_name( ak_verifykey );
  int aktool_key_input_name_from_console( ak_verifykey );
  int aktool_key_print_variables( void );
+
  ak_random aktool_key_new_generator( void );
  void aktool_key_delete_generator( ak_random );
 
@@ -62,7 +64,7 @@
   char tmp[4];
   size_t i = 0;
   int next_option = 0, exit_status = EXIT_FAILURE;
-  enum { do_nothing, do_new, do_show, do_verify } work = do_nothing;
+  enum { do_nothing, do_new, do_show, do_verify, do_cert } work = do_nothing;
 
  /* параметры, запрашиваемые пользователем */
   const struct option long_options[] = {
@@ -72,6 +74,7 @@
      { "show",                1, NULL,  's' },
      { "output-secret-key",   1, NULL,  'o' },
      { "verify",              1, NULL,  'v' },
+     { "cert",                1, NULL,  'c' },
      { "to",                  1, NULL,  250 },
      { "format",              1, NULL,  250 },
      { "outpass-hex",         1, NULL,  249 },
@@ -82,11 +85,12 @@
      { "days",                1, NULL,  246 },
 
      { "target",              1, NULL,  't' },
-     { "cakey",               1, NULL,  208 },
+     { "ca-cert",             1, NULL,  208 },
      { "label",               1, NULL,  207 },
      { "random-file",         1, NULL,  206 },
      { "random",              1, NULL,  205 },
      { "key",                 1, NULL,  203 },
+     { "ca-key",              1, NULL,  203 },
      { "op",                  1, NULL,  202 },
      { "output-public-key",   1, NULL,  202 },
 
@@ -129,7 +133,7 @@
 
  /* разбираем опции командной строки */
   do {
-       next_option = getopt_long( argc, argv, "hns:a:o:t:v:", long_options, NULL );
+       next_option = getopt_long( argc, argv, "hns:a:o:t:v:c:", long_options, NULL );
        switch( next_option )
       {
         aktool_common_functions_run( aktool_key_help );
@@ -158,6 +162,14 @@
                   #endif
                    break;
 
+        case 'c' : /* --cert */
+                   work = do_cert;
+                  #ifdef _WIN32
+                    GetFullPathName( optarg, FILENAME_MAX, ki.pubkey_file, NULL );
+                  #else
+                    realpath( optarg , ki.pubkey_file );
+                  #endif
+                   break;
 
         case 't' : /* --target */
                    if( strncmp( optarg, "undefined", 9 ) == 0 ) {
@@ -358,7 +370,7 @@
                   #endif
                     break;
 
-        case 203: /* --key */
+        case 203: /* --key, --ca-key */
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                   #else
@@ -366,7 +378,7 @@
                   #endif
                     break;
 
-        case 208: /* --cakey */
+        case 208: /* --ca-cert */
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.capubkey_file, NULL );
                   #else
@@ -422,6 +434,10 @@
 
     case do_verify:
       exit_status = aktool_key_verify_key();
+      break;
+
+    case do_cert:
+      exit_status = aktool_key_new_certificate();
       break;
 
     default:
@@ -662,7 +678,7 @@
   int error = ak_error_not_ready;
 
   if(( ptr = strstr( ki.user, sh )) != NULL ) {
-    ptr+=3;
+    ptr+=4; /* мы предполагаем, что на вход подается /xx= */
     len = 0;
     while( len < strlen( ptr )) {
       if( ptr[len]   == '/') break;
@@ -670,7 +686,7 @@
     }
     if( len > 0 ) {
       memset( string, 0, sizeof( string ));
-      memcpy( string, ptr, len );
+      memcpy( string, ptr, ak_min( len, sizeof( string ) -1));
       error = ak_verifykey_add_name_string( key, lg, string );
     }
   }
@@ -686,25 +702,25 @@
   int error = ak_error_ok, found = ak_false;
 
   if( aktool_key_input_name_from_console_line( key,
-                                         "/em", "email-address" ) == ak_error_ok ) found = ak_true;
+                                        "/em=", "email-address" ) == ak_error_ok ) found = ak_true;
   if( aktool_key_input_name_from_console_line( key,
-                                           "/cn", "common-name" ) == ak_error_ok ) found = ak_true;
+                                          "/cn=", "common-name" ) == ak_error_ok ) found = ak_true;
   if( aktool_key_input_name_from_console_line( key,
-                                               "/su", "surname" ) == ak_error_ok ) found = ak_true;
+                                              "/su=", "surname" ) == ak_error_ok ) found = ak_true;
   if( aktool_key_input_name_from_console_line( key,
-                                         "/sn", "serial-number" ) == ak_error_ok ) found = ak_true;
+                                        "/sn=", "serial-number" ) == ak_error_ok ) found = ak_true;
   if( aktool_key_input_name_from_console_line( key,
-                                          "/ct", "country-name" ) == ak_error_ok ) found = ak_true;
+                                         "/ct=", "country-name" ) == ak_error_ok ) found = ak_true;
   if( aktool_key_input_name_from_console_line( key,
-                                         "/lt", "locality-name" ) == ak_error_ok ) found = ak_true;
+                                        "/lt=", "locality-name" ) == ak_error_ok ) found = ak_true;
   if( aktool_key_input_name_from_console_line( key,
-                                "/st", "state-or-province-name" ) == ak_error_ok ) found = ak_true;
+                               "/st=", "state-or-province-name" ) == ak_error_ok ) found = ak_true;
   if( aktool_key_input_name_from_console_line( key,
-                                        "/sa", "street-address" ) == ak_error_ok ) found = ak_true;
+                                       "/sa=", "street-address" ) == ak_error_ok ) found = ak_true;
   if( aktool_key_input_name_from_console_line( key,
-                                          "/or", "organization" ) == ak_error_ok ) found = ak_true;
+                                         "/or=", "organization" ) == ak_error_ok ) found = ak_true;
   if( aktool_key_input_name_from_console_line( key,
-                                     "/ou", "organization-unit" ) == ak_error_ok ) found = ak_true;
+                                    "/ou=", "organization-unit" ) == ak_error_ok ) found = ak_true;
   if( !found ) {
     error = ak_verifykey_add_name_string( key, "common-name", ki.user );
   }
@@ -1196,14 +1212,35 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                        проверка подписи под запросами и сертификатами                           */
 /* ----------------------------------------------------------------------------------------------- */
+ static int aktool_key_verify_cakey( ak_certificate_opts iopts )
+{
+ /* проверки выполняются только для сертификатов третьей версии */
+  if( iopts->version < 2 ) return ak_error_ok;
+
+ /* флаг того, что сертификат может подписывать/проверять сертификаты */
+  if( !iopts->ca.is_present ) {
+    aktool_error(_( "the CA certificate does not contain a basic constraints extension" ));
+    return ak_error_certificate_ca;
+  }
+
+ /* RFC5280 дополнительно требует установки флага в расширении keyUsage */
+  if(( !iopts->key_usage.is_present ) || ( !( iopts->key_usage.bits&bit_keyCertSign ))) {
+    aktool_error(
+             _("the CA certificate does not contain a key usage extension with keyCertSign flag"));
+    return ak_error_certificate_key_usage;
+  }
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int aktool_key_verify_key( void )
 {
+  struct certificate_opts iopts;
   struct verifykey vkey, issuer_vkey;
-  struct certificate_opts iopts, opts;
   int error = ak_error_ok, exitcode = EXIT_SUCCESS;
   ak_function_file_output *fptr = aktool_verbose ? aktool_print_message : NULL;
 
-  if(( error = ak_verifykey_import_from_request( &vkey, ki.pubkey_file, fptr )) == ak_error_ok ) {
+  if( ak_verifykey_import_from_request( &vkey, ki.pubkey_file, fptr ) == ak_error_ok ) {
      ak_verifykey_destroy( &vkey );
     /* если вывод отключен, то выводим сообщение об успехе предприятия */
      fprintf( stdout, _(" Verified: Ok\n"));
@@ -1220,21 +1257,10 @@
                                                         aktool_key_get_error_str( error ), error );
       goto labex1;
     }
-   /* проверки выполняются только для сертификатов третьей версии */
-    if( iopts.version < 2 ) goto lab2;
-   /* флаг того, что сертификат может подписывать/проверять сертификаты */
-    if( !iopts.ca.is_present ) {
-      aktool_error(_( "the CA certificate does not contain a basic constraints extension" ));
-      goto labex1;
-    }
-   /* RFC5280 дополнительно требует установки флага в расширении keyUsage */
-    if(( !iopts.key_usage.is_present ) || ( !( iopts.key_usage.bits&bit_keyCertSign ))) {
-      aktool_error(
-             _("the CA certificate does not contain a key usage extension with keyCertSign flag"));
-      goto labex1;
-    }
-    goto lab2;
+    if(( error = aktool_key_verify_cakey( &iopts )) == ak_error_ok ) goto lab2;
+
     labex1:
+      ak_error_message_fmt( error, __func__, "certificate is not valid");
       if( iopts.created ) ak_verifykey_destroy( &issuer_vkey );
       ak_certificate_opts_destroy( &iopts );
 
@@ -1243,21 +1269,109 @@
 
  /* теперь проверка сертификата */
  lab2:
-  ak_certificate_opts_create( &opts );
+  ak_certificate_opts_create( &ki.opts );
   if( aktool_verbose ) fprintf( stdout, _("2. Public key:\n" ));
   if(( error = ak_verifykey_import_from_certificate( &vkey,
-               iopts.created ? &issuer_vkey : NULL, ki.pubkey_file, &opts, fptr )) == ak_error_ok )
+               iopts.created ? &issuer_vkey : NULL, ki.pubkey_file, &ki.opts, fptr )) == ak_error_ok )
      fprintf( stdout, _(" Verified: Ok\n"));
    else
     fprintf( stdout, _(" Verified: No (%s, code %d)\n"), aktool_key_get_error_str( error ), error );
 
  /* удаляем ключ владельца */
-  if( opts.created ) ak_verifykey_destroy( &vkey );
-  ak_certificate_opts_destroy( &opts );
+  if( ki.opts.created ) ak_verifykey_destroy( &vkey );
+  ak_certificate_opts_destroy( &ki.opts );
 
  /* удаляем ключ эмитента */
   if( iopts.created ) ak_verifykey_destroy( &issuer_vkey );
   ak_certificate_opts_destroy( &iopts );
+
+ return exitcode;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                               подпись запроса на сертификат                                     */
+/* ----------------------------------------------------------------------------------------------- */
+ ssize_t aktool_rp( char *pass, const size_t size )
+{
+  if( ki.leninpass > 0 ) {
+    memset( pass, 0, size );
+    memcpy( pass, ki.inpass, ak_min( (size_t)ki.leninpass, size ));
+    return ki.leninpass;
+  }
+   else return aktool_key_load_user_password( pass, size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_key_new_certificate( void )
+{
+  ak_random generator = NULL;
+  struct signkey issuer_skey;
+  struct certificate_opts iopts;
+  struct verifykey vkey, issuer_vkey;
+  int error = ak_error_ok, exitcode = EXIT_FAILURE;
+  ak_function_file_output *fptr = aktool_verbose ? aktool_print_message : NULL;
+
+ /* выполняем проверки перед стартом */
+  if( strlen( ki.key_file ) == 0 ) {
+    aktool_error(_("the authority's secret key is not defined"));
+    return EXIT_FAILURE;
+  }
+  if( strlen( ki.capubkey_file ) == 0 ) {
+    aktool_error(_("the authority's public key is not defined"));
+    return EXIT_FAILURE;
+  }
+
+ /* считываем секретный ключ центра сертификации */
+  ak_libakrypt_set_password_read_function( aktool_rp );
+  if(( ak_skey_import_from_file( &issuer_skey, sign_function, ki.key_file )) != ak_error_ok ) {
+    aktool_error(_("incorrect loading ot the authority's secret key"));
+    return EXIT_FAILURE;
+  }
+
+ /* считываем открытый ключ центра сертификации */
+  ak_certificate_opts_create( &iopts );
+  if( aktool_verbose ) fprintf( stdout, _("Authority public key:\n" ));
+  if(( error = ak_verifykey_import_from_certificate( &issuer_vkey, NULL,
+                                             ki.capubkey_file, &iopts, fptr )) != ak_error_ok ) {
+    aktool_error(_("error while loading a certificate authoruty public key (%s, code %d)"),
+                                                       aktool_key_get_error_str( error ), error );
+    goto lab1;
+  }
+  if( aktool_key_verify_cakey( &iopts ) != ak_error_ok ) goto lab1;
+
+ /* запускаем процедуру импорта запроса на сертификат */
+  if( ak_verifykey_import_from_request( &vkey, ki.pubkey_file, fptr ) != ak_error_ok ) {
+    aktool_error(_("incorrect reading a certificate's request"));
+    goto lab1;
+  }
+  fprintf( stdout, _("Certificate request: Ok\n"));
+
+ /* теперь формируем сертификат */
+  if(( generator = aktool_key_new_generator()) == NULL ) {
+    aktool_error(_("incorrect creation of random sequences generator"));
+    goto lab2;
+  }
+
+  if( ak_verifykey_export_to_certificate( &vkey, &issuer_skey, &issuer_vkey, generator,
+                &ki.opts, ki.op_file, ( strlen( ki.op_file ) > 0 ) ? 0 : sizeof( ki.op_file ),
+                                                                     ki.format ) != ak_error_ok ) {
+        aktool_error(_("wrong export a public key to certificate %s%s%s"),
+                              ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
+      }
+       else {
+         printf(_("certificate of public key stored in %s%s%s file\n\n"),
+                              ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
+       }
+
+  aktool_key_delete_generator( generator );
+
+  lab2:
+    ak_verifykey_destroy( &vkey );
+
+  lab1:
+    if( iopts.created ) ak_verifykey_destroy( &issuer_vkey );
+    ak_certificate_opts_destroy( &iopts );
+  ak_signkey_destroy( &issuer_skey );
 
  return exitcode;
 }
@@ -1312,7 +1426,9 @@
      "available options:\n"
      " -a, --algorithm         specify the method or the cryptographic algorithm for key generation\n"
      "                         this option needs to be used in some key generation schemes, e.g. in Blom scheme\n"
-     "     --cakey             name of the issuer's public key, information from which will be placed in the certificate\n"
+     "     --ca-cert           set the name of the certificate authorithy's public key\n"
+     "     --ca-key            another form of --key option used to sign the certificate\n"
+     " -c, --cert              sign the request and generate the certificate of public key\n"
      "     --curve             set the elliptic curve name or identifier for asymmetric keys\n"
      "     --days              set the days count to expiration date of secret or public key\n"
      "     --field             bit length which used to define the galois field [ enabled values: 256, 512 ]\n"
@@ -1324,7 +1440,7 @@
      "     --inpass            set the password for the secret key to be read directly in command line\n"
      "     --inpass-hex        set the password for the secret key to be read directly in command line as hexademal string\n"
      "     --key               specify the name of file with the secret key\n"
-     "                         this can be a master key or issuer's key which is used to sign a certificate\n"
+     "                         this can be a master key or certificate authority's secret key which is used to sign a certificate\n"
      "     --label             assign the user-defined label to secret key\n"
      " -n, --new               generate a new key or key pair for specified target\n"
      "     --op                short form of --output-public-key option\n"
