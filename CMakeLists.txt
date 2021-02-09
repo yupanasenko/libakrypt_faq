@@ -210,8 +210,7 @@ foreach( programm ${ARITHMETIC_TESTS_LIST} )
   target_link_libraries( test-${programm} akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
   add_test( NAME test-${programm} COMMAND test-${programm} )
 endforeach()
-message("-- Added tests (now \"make test\" enabled)")
-message("   -- ${ARITHMETIC_TESTS_LIST}" )
+message("-- Added tests (now \"make test\" enabled): [ ${ARITHMETIC_TESTS_LIST} ]" )
 
 # -------------------------------------------------------------------------------------------------- #
 # Сборка большого примера для функций криптобиблиотеки -- утилиты aktool
@@ -236,8 +235,7 @@ if( AK_HAVE_GETOPT_H )
 else()
   set( AKTOOL_SOURCES ${AKTOOL_SOURCES} aktool/getopt.c )
 endif()
-message("-- Sources for aktool" )
-message("   -- ${AKTOOL_SOURCES}" )
+message("-- Sources for aktool: [ ${AKTOOL_SOURCES} ]" )
 
 find_path( AK_HAVE_LIBINTL_H NAMES libintl.h )
 if( AK_HAVE_LIBINTL_H )
@@ -250,11 +248,17 @@ target_include_directories( aktool PUBLIC "aktool" )
 
 find_library( LIBINTL_LIB intl )
 if( LIBINTL_LIB )
-  message("-- Additional library for aktool is ${LIBINTL_LIB}")
-  target_link_libraries( aktool akrypt-static akbase-static ${LIBINTL_LIB} ${LIBAKRYPT_LIBS} )
- else()
-  target_link_libraries( aktool akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
+  set( LIBAKRYPT_LIBS ${LIBAKRYPT_LIBS} ${LIBINTL_LIB} )
 endif()
+find_library( LIBICONV_LIB iconv )
+if( LIBICONV_LIB )
+  set( LIBAKRYPT_LIBS ${LIBAKRYPT_LIBS} ${LIBICONV_LIB} )
+endif()
+
+if( LIBAKRYPT_LIBS )
+  message("-- Additional libraries for aktool is ${LIBAKRYPT_LIBS}")
+endif()
+target_link_libraries( aktool akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
 
 # -------------------------------------------------------------------------------------------------- #
 # Сборка документации и завершающие настройки
@@ -307,7 +311,6 @@ set( CPACK_SOURCE_IGNORE_FILES
   \\.git/
   .gitignore
   TAGS
-  libakrypt.rc
   "CMakeLists.txt.user*"
   "scratch*"
 )

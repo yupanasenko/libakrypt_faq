@@ -742,7 +742,6 @@
  ssize_t ak_password_read( char *pass, const size_t psize )
 {
    ssize_t len = 0;
-   int error = ak_error_ok;
 
  #ifndef AK_HAVE_TERMIOS_H
   #ifdef _WIN32
@@ -770,6 +769,8 @@
    return ak_error_undefined_function;
 
  #else
+   int error = ak_error_ok;
+
   /* обрабатываем терминал */
    struct termios ts, ots;
 

@@ -23,6 +23,10 @@
  bool_t aktool_hex_password_input = ak_false;
  bool_t aktool_verbose = ak_false;
 
+#ifdef _WIN32
+ unsigned int aktool_console_page = 0;
+#endif
+
 /* ----------------------------------------------------------------------------------------------- */
  int main( int argc, tchar *argv[] )
 {
@@ -163,9 +167,6 @@
  bool_t aktool_create_libakrypt( void )
 {
   ak_int64 number;
-#ifdef _WIN32
-  unsigned int cp = 0;
-#endif
 
  /* инициализируем библиотеку */
   if( ak_libakrypt_create( audit ) != ak_true ) {
@@ -182,11 +183,10 @@
     ak_libakrypt_set_openssl_compability( aktool_openssl_compability );
 
 #ifdef _WIN32
-  cp = GetConsoleCP();
+  aktool_console_page = GetConsoleCP();
 /*  SetConsoleCP( 1251 ); SetConsoleOutputCP( 1251 ); */
   SetConsoleCP( 65001 );
   SetConsoleOutputCP( 65001 );
-
 #endif
 
  return ak_true;
@@ -196,9 +196,8 @@
  int aktool_destroy_libakrypt( void )
 {
  #ifdef _WIN32
-  unsigned int cp = 0;
-  SetConsoleCP( cp );
-  SetConsoleOutputCP( cp );
+  SetConsoleCP( aktool_console_page );
+  SetConsoleOutputCP( aktool_console_page );
  #endif
  return ak_libakrypt_destroy();
 }
