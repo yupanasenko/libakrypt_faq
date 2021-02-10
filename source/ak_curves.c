@@ -124,7 +124,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_wcurve_is_ok( ak_wcurve ec )
 {
-  ak_mpzn512 temp;
+  ak_mpznmax temp;
   struct wpoint wp;
   const char *str = NULL;
   int error = ak_error_ok;
