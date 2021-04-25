@@ -488,6 +488,8 @@
  int ak_ptr_wipe( ak_pointer ptr, size_t size, ak_random rnd )
 {
   size_t idx = 0;
+  int error = ak_error_ok;
+
   if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                 "using null pointer to random generator context" );
   if( rnd->random == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
@@ -498,11 +500,11 @@
 
   if( rnd->random( rnd, ptr, (ssize_t) size ) != ak_error_ok ) {
     memset( ptr, 0, size );
-    return ak_error_message( ak_error_write_data, __func__, "incorrect memory wiping" );
+    ak_error_message( error = ak_error_write_data, __func__, "incorrect memory wiping" );
   }
  /* запись в память при чтении => необходим вызов функции чтения данных из ptr */
   for( idx = 0; idx < size; idx++ ) ((ak_uint8 *)ptr)[idx] += ((ak_uint8 *)ptr)[size - 1 - idx];
- return ak_error_ok;
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
