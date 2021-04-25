@@ -360,7 +360,14 @@
  static const char *asn1_kpep_n[] =        { "email-protection", NULL };
  static const char *asn1_kpep_i[] =        { "1.3.6.1.5.5.7.3.4", NULL };
 
-/* это добро из Приказа ФСБ N 795 */
+/* дополнительные расширения из RFC 2459 */
+ static const char *asn1_pkix_exaIA_n[] =  { "pkix-authority-info-access", NULL };
+ static const char *asn1_pkix_exaIA_i[] =  { "1.3.6.1.5.5.7.1.1", NULL };
+
+ static const char *asn1_pkix_exAD_n[] =   { "pkix-access-descriptor-caIssuers", NULL };
+ static const char *asn1_pkix_exAD_i[] =   { "1.3.6.1.5.5.7.48.2", NULL };
+
+/* следующее добро из Приказа ФСБ N 795 */
  static const char *asn1_ogrn_n[] =        { "ogrn", NULL };
  static const char *asn1_ogrn_i[] =        { "1.2.643.100.1", NULL };
  static const char *asn1_snils_n[] =       { "snils", NULL };
@@ -710,6 +717,8 @@ static struct oid libakrypt_oids[] =
  { identifier, descriptor, asn1_kpca_i, asn1_kpca_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_kpcs_i, asn1_kpcs_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_kpep_i, asn1_kpep_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_pkix_exaIA_i, asn1_pkix_exaIA_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_pkix_exAD_i, asn1_pkix_exAD_n, NULL, ak_functional_objects_undefined },
 
  { identifier, descriptor, asn1_ogrn_i, asn1_ogrn_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_snils_i, asn1_snils_n, NULL, ak_functional_objects_undefined },

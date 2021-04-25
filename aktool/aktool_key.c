@@ -1298,7 +1298,11 @@
      return EXIT_SUCCESS;
   }
 
- /* если задан, то мы загружаем ключ проверки подписи */
+ /* начинаем "снова, здорова", поэтому
+        полагаем код ошибки равным нулю */
+  ak_error_set_value( ak_error_ok );
+
+ /* если корневой сертификат задан, то мы радостно загружаем ключ проверки подписи */
   ak_certificate_opts_create( &iopts );
   if( strlen( ki.capubkey_file ) > 0 ) {
     if( aktool_verbose ) fprintf( stdout, _("1. Authority public key:\n" ));

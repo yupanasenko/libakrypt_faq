@@ -3,7 +3,10 @@
 
 ## Изменения в версии 0.9.5
 
- - Уточнена реализация функции ak_wipe_ptr()
+ - Уточнена реализация следующих функций 
+    - ak_wipe_ptr()
+    - ak_verifykey_verify_ptr()
+    - ak_verifykey_import_from_asn1_extensions()
 
 
 ## Изменения в версии 0.9.4

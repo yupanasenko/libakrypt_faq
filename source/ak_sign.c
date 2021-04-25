@@ -1069,8 +1069,7 @@
 
  /* вычисляем значение хеш-кода, а после подписываем его */
   memset( hash, 0, 64 );
-  ak_hash_ptr( &pctx->ctx, in, size, hash, sizeof( hash ));
-  if(( error = ak_error_get_value()) != ak_error_ok ) {
+  if(( error = ak_hash_ptr( &pctx->ctx, in, size, hash, sizeof( hash ))) != ak_error_ok ) {
     ak_error_message( error, __func__, "wrong calculation of hash value" );
     return ak_false;
   }
