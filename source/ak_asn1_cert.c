@@ -1135,6 +1135,9 @@
   ak_oid oid = NULL;
   ak_pointer ptr = NULL;
   int error = ak_error_ok;
+  char certname[512];
+  const char *sptr = NULL;
+  struct certificate_opts vopts;
 
   if(( DATA_STRUCTURE( sequence->current->tag ) != CONSTRUCTED ) ||
      ( TAG_NUMBER( sequence->current->tag ) != TSEQUENCE ))
@@ -1322,12 +1325,38 @@
                 break;
 
               case 0x02:
+                sptr = ak_ptr_to_hexstr( lasn->current->data.primitive, lasn->current->len, ak_false );
                 if( verbose ) {
-                  ak_snprintf( message, sizeof( message ), "    %s (serial number)\n",
-                   ak_ptr_to_hexstr( lasn->current->data.primitive, lasn->current->len, ak_false ));
+                  ak_snprintf( message, sizeof( message ), "    %s (serial number)\n", sptr );
                   verbose( message );
                 }
+
+               /* теперь надо найти в каталоге с сертификатами нужный с заданым серийным номером */
+                ak_snprintf( certname, sizeof( certname ), "%s/%s.cer", LIBAKRYPT_CA_PATH, sptr );
+                if( *issuer_vkey == NULL ) {
+                  /* у нас есть номер сертификата, пытаемся в случае необходимости считать ключ */
+                  if( ak_file_or_directory( certname ) == DT_REG ) {
+                    ak_certificate_opts_create( &vopts );
+
+                    printf("import: %d\n", error =
+                      ak_verifykey_import_from_certificate( *issuer_vkey, NULL,
+                                                                    certname, &vopts, verbose ));
+                    ak_certificate_opts_destroy( &vopts );
+                    if( verbose ) {
+                      ak_snprintf( message, sizeof( message ),
+                                                    "    load a certificate %s\n", certname );
+                      verbose( message );
+                    }
+                  }
+                   else
+                    if( verbose ) {
+                      ak_snprintf( message, sizeof( message ),
+                                                    "    [root certificate %s not found]\n", certname );
+                      verbose( message );
+                    }
+                }
                 break;
+
               default:
                 break;
             }
@@ -1344,7 +1373,7 @@
 
   /* для самоподписанных сертификатов может быть не установлено расширение 2.5.29.35,
      в этом случае, все-равно необходимо попробовать проверить подпись. */
-  if(( *issuer_vkey == NULL ) && (opts->created )) {
+  if(( *issuer_vkey == NULL ) && ( opts->created )) {
     if( opts->ca.is_present ) *issuer_vkey = subject_vkey; /* ключ проверки совпадает с ключом в сертификате */
   }
 
