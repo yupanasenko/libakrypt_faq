@@ -793,20 +793,22 @@
 
    memset( pass, 0, psize );
    fgets( pass, psize, stdin );
-   if(( len = strlen( pass )) < 2 )
+   if(( len = strlen( pass )) < 2 ) {
      ak_error_message( error = ak_error_zero_length, __func__ , "input a very short password");
+     goto lab_exit;
+   }
    if( len > 0 ) pass[len-1] = 0;
     else pass[0] = 0;
 
   /* убираем за собой и восстанавливаем настройки */
    lab_exit: tcsetattr( STDIN_FILENO, TCSANOW, &ots );
-   return len-1;
+   if( error == ak_error_ok ) return len-1;
+    else return error;
  #endif
 
  /* некорректный путь компиляции исходного текста функции */
  return ak_error_undefined_function;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция выводит предложение `message` в консоль, а после пытается считать строку и поместить
