@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2020 by Axel Kenzo, axelkenzo@mail.ru                                            */
+/*  Copyright (c) 2020 - 2021 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Файл ak_asn1_keys.c                                                                            */
 /*  - содержит реализацию функций, предназначенных для экспорта/импорта секретной                  */
@@ -1094,7 +1094,7 @@
    ak_mpzn_set_little_endian( (ak_uint64 *)(skey->key),
                                               (skey->key_size >>2), ptr+ivsize, keysize, ak_true );
   /* меняем значение флага */
-   skey->flags |= ak_key_flag_set_mask;
+   skey->flags |= key_flag_set_mask;
 
   /* вычисляем контрольную сумму */
    if(( error = skey->set_icode( skey )) != ak_error_ok ) return ak_error_message( error,
@@ -1104,7 +1104,7 @@
                                                            __func__ , "wrong secret key masking" );
   /* устанавливаем флаг того, что ключевое значение определено.
     теперь ключ можно использовать в криптографических алгоритмах */
-   skey->flags |= ak_key_flag_set_key;
+   skey->flags |= key_flag_set_key;
 
   /* для ключей блочного шифрования выполняем развертку раундовых ключей */
    if( skey->oid->engine == block_cipher ) {

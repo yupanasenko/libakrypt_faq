@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2017 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2017 - 2021 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Файл ak_mgm.c                                                                                  */
 /*  - содержит функции, реализующие аутентифицированное шифрование
@@ -101,7 +101,7 @@
  if( authenticationKey->bsize > 16 ) return ak_error_message( ak_error_wrong_length,
                                                  __func__, "using key with very large block size" );
  /* инициализация значением и ресурс */
- if(( authenticationKey->key.flags&ak_key_flag_set_key ) == 0 )
+ if(( authenticationKey->key.flags&key_flag_set_key ) == 0 )
    return ak_error_message( ak_error_key_value, __func__,
                                          "using block cipher key context with undefined key value");
  if( authenticationKey->key.resource.value.counter <= 0 )
@@ -324,7 +324,7 @@
  if( encryptionKey->bsize > 16 ) return ak_error_message( ak_error_wrong_length,
                                                       __func__, "using key with large block size" );
  /* инициализация значением и ресурс */
- if(( encryptionKey->key.flags&ak_key_flag_set_key ) == 0 )
+ if(( encryptionKey->key.flags&key_flag_set_key ) == 0 )
            return ak_error_message( ak_error_key_value, __func__,
                                                "using secret key context with undefined key value");
  if( encryptionKey->key.resource.value.counter <= 0 )

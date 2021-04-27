@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2021 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Файл ak_sign.h                                                                                 */
 /*  - содержит реализацию функций для работы с электронной подписью.                               */
@@ -56,7 +56,7 @@
   mask = ( ak_uint64 *)( skey->key + skey->key_size );
 
  /* проверяем, установлена ли маска ранее */
-  if((( skey->flags)&ak_key_flag_set_mask ) == 0 ) {
+  if((( skey->flags)&key_flag_set_mask ) == 0 ) {
     /* создаем маску */
      if(( error = ak_random_ptr( &skey->generator, mask, skey->key_size )) != ak_error_ok )
        return ak_error_message( error, __func__ , "wrong mask generation for key buffer" );
@@ -85,7 +85,7 @@
      ak_mpzn_modpow_montgomery( mask, // m <- m^{q-2} (mod q)
                                     mask, u, wc->q, wc->nq, wc->size );
     /* меняем значение флага */
-     skey->flags |= ak_key_flag_set_mask;
+     skey->flags |= key_flag_set_mask;
 
   } else { /* если маска уже установлена, то мы сменяем ее на новую */
 
@@ -140,7 +140,7 @@
     return ak_error_message( ak_error_null_pointer, __func__ ,
                                                  "using internal null pointer to elliptic curve" );
  /* проверяем, установлена ли маска ранее */
-  if( (( skey->flags)&ak_key_flag_set_mask ) == 0 ) return ak_error_ok;
+  if( (( skey->flags)&key_flag_set_mask ) == 0 ) return ak_error_ok;
 
   key = ( ak_uint64 *)skey->key;
   mask = ( ak_uint64 *)( skey->key + skey->key_size );
@@ -153,7 +153,7 @@
   for( i = 0; i < wc->size; i++ ) key[i] = bswap_64( key[i] );
 #endif
  /* меняем значение флага */
-  skey->flags ^= ak_key_flag_set_mask;
+  skey->flags ^= key_flag_set_mask;
 
  return ak_error_ok;
 }
@@ -291,7 +291,7 @@
   /* сохраняем указатель на параметры эллиптической кривой */
    sk->key.data = wc;
   /* при удалении ключа не нужно освобождать память из под параметров эллиптической кривой  */
-   sk->key.flags |= ak_key_flag_data_not_free;
+   sk->key.flags |= key_flag_data_not_free;
   /* устанавливаем ресурс и время жизни ключа по-умолчанию */
    ak_signkey_set_resource_values( sk, key_using_resource,
                                                         "digital_signature_count_resource", 0, 0 );
@@ -836,7 +836,7 @@
  /* устанавливаем эллиптическую кривую */
   pctx->wc = wc;
  /* устанавливаем флаг отсутствия ключевого значения */
-  pctx->flags = ak_key_flag_undefined;
+  pctx->flags = key_flag_undefined;
  /* инициализируем ресурс открытого ключа */
   pctx->time.not_before = pctx->time.not_after = 0;
  /* обобщенное имя владельца ключа, по умолчанию, не определено */
@@ -889,7 +889,7 @@
  /* имя владельца ключа не определено и может быть установлено позднее */
   pctx->name = NULL;
  /* устанавливаем флаг  */
-  pctx->flags = ak_key_flag_set_key;
+  pctx->flags = key_flag_set_key;
  /* все параметры установлены => можно вырабатывать номер ключа */
   ak_verifykey_set_number( pctx );
  /* копируем выработанный номер в контекст секретного ключа */

@@ -351,7 +351,7 @@
   }
 
  /* устанавливаем флаг */
-  vkey->flags = ak_key_flag_set_key;
+  vkey->flags = key_flag_set_key;
 
  /* выводим считанное */
   if( verbose ) {
