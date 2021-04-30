@@ -9,8 +9,11 @@
  int signkey_test( ak_oid );
 
 /* определяем функцию, которая будет имитировать чтение пароля пользователя */
- ssize_t get_user_password( char *password, size_t psize )
+ ssize_t get_user_password( const char *prompt, char *password, size_t psize, password_t flag )
 {
+  (void)prompt;
+  (void)flag;
+
   memset( password, 0, psize );
   ak_snprintf( password, psize, "password" );
  return strlen( password );
@@ -42,7 +45,8 @@
    }
   lab1:
 
- return ak_libakrypt_destroy();
+  ak_libakrypt_destroy();
+ return result;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -82,6 +86,12 @@
 
    /* импортируем ключ из файла */
     if(( lkey = key = ak_skey_load_from_file( filename )) == NULL ) return EXIT_FAILURE;
+   /* дополнительно проверяем код возврата функции,
+      однако в случае ошибки, эта часть кода не должна выполняться */
+    if( ak_error_get_value() != ak_error_ok ) {
+      printf("Exit on error value! Pointer is'nt equal to NULL\n");
+      return EXIT_FAILURE;
+    }
 
    /* выводим данные о ключе */
     printf("%s: %s (%s)\n", ak_libakrypt_get_engine_name( ((ak_skey)key)->oid->engine ),
@@ -112,9 +122,10 @@
       else { printf("cmac: Wrong\n\n"); goto lab1; }
 
     result = EXIT_SUCCESS;
+
    /* самоуничтожение */
     lab1:
-     ak_oid_delete_object(((ak_skey)key)->oid, key );
+     ak_oid_delete_object( lkey->key.oid, key ); // или так ((ak_skey)key)->oid, key );
 
  return result;
 }

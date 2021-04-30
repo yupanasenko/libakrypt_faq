@@ -761,7 +761,7 @@
 
    /* восстанавливаем настройки консоли */
    SetConsoleMode( ih, mode );
-   if(( len = strlen( pass )) < 1 )
+   if(( len = strlen( pass )) < 2 )
      return ak_error_message( ak_error_zero_length, __func__ , "input a very short password");
    return len-1;
 

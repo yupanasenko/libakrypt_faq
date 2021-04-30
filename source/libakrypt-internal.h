@@ -21,6 +21,11 @@
  @{ */
 /*! \brief Указатель на функцию чтения пароля */
  extern ak_function_password_read *ak_function_default_password_read;
+/*! \brief Указатель на приглашение к вводу пароля */
+ extern char *ak_default_password_prompt;
+/*! \brief Способ интерпретации данных, вводимых с клавиатуры */
+ extern password_t ak_default_password_interpretation;
+
 /*! \brief Формирование имени файла, в который будет помещаться секретный или открытый ключ. */
  int ak_skey_generate_file_name_from_buffer( ak_uint8 * , const size_t ,
                                                          char * , const size_t , export_format_t );

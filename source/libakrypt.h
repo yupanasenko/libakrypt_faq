@@ -1883,12 +1883,27 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 /*! \addtogroup skey-doc
  @{ */
+/*! \brief Перечисление, определяющее способ интерпретации данных, введенных с клавиатуры. */
+ typedef enum {
+ /*! \brief Последовательность интерпретируется как последовательность символов */
+  symbolic_pass,
+ /*! \brief Последовательность интерпретируется как последовательность шестнадцатеричных символов.
+     \details Данный способ ввода позволяет вводить произвольные двоичные данные. */
+  hexademal_pass
+ } password_t;
+
 /*! \brief Тип функции, предназначенной для считывания пароля.  */
- typedef ssize_t ( ak_function_password_read ) ( char *, const size_t );
+ typedef ssize_t ( ak_function_password_read ) ( const char *, char *, const size_t , password_t );
+
 /*! \brief Чтение пароля из консоли с выводом уведомления (устанавливается по-умолчанию) */
- dll_export ssize_t ak_password_read_from_terminal( char * , const size_t );
+ dll_export ssize_t ak_password_read_from_terminal( const char * , char * , const size_t , password_t );
 /*! \brief Функция устанавливает обработчик - функцию чтения пользовательского пароля. */
  dll_export int ak_libakrypt_set_password_read_function( ak_function_password_read * );
+/*! \brief Функция устанавливает приглашение к вводу пароля. */
+ dll_export int ak_libakrypt_set_password_read_prompt( const char * );
+/*! \brief Функция устанавливает флаг интерпретации вводимогом пароля. */
+ dll_export int ak_libakrypt_set_password_read_method( password_t );
+
 /*! \brief Функция экспортирует секретный ключ в указанный файл. */
  dll_export int ak_skey_export_to_file_with_password( ak_pointer ,
                             const char *, const size_t , char * , const size_t , export_format_t );
