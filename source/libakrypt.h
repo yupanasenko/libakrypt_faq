@@ -1881,7 +1881,7 @@ extern "C" {
 /** @} *//** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \addtogroup skey-doc
+/*! \addtogroup skey-export-doc
  @{ */
 /*! \brief Перечисление, определяющее способ интерпретации данных, введенных с клавиатуры. */
  typedef enum {
@@ -1966,13 +1966,15 @@ extern "C" {
                                                                const ak_uint32 , const ak_uint32 );
 /*! \brief Уничтожение ключа */
  dll_export int ak_blomkey_destroy( ak_blomkey );
-/*! \brief Экспорт ключа в заданный файл */
+
+/** @} *//** \addtogroup skey-export-doc Функции экспорта и импорта секретных ключей
+ @{ *//*! \brief Экспорт ключа схемы Блома в заданный файл */
  dll_export int ak_blomkey_export_to_file_with_password( ak_blomkey ,
                                              const char * , const size_t , char * , const size_t );
-/*! \brief Импорт ключа из заданного файла */
+/*! \brief Импорт ключа схемы Блома из заданного файла */
  dll_export int ak_blomkey_import_from_file_with_password( ak_blomkey ,
                                                             const char * , const size_t , char * );
-/** @} *//** @} */
+ /** @} */
 
 #ifdef __cplusplus
 } /* конец extern "C" */

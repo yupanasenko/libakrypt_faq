@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2021 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Файл aktool.h                                                                                  */
 /*  - содержит объявления служебных функций консольного клиента                                    */
@@ -40,11 +40,17 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
- extern int aktool_log_level;
- extern bool_t aktool_openssl_compability;
- extern char audit_filename[1024];
- extern bool_t aktool_hex_password_input;
- extern bool_t aktool_verbose;
+/* структура с глобальными опциями программы */
+ typedef struct {
+   int aktool_log_level;
+   bool_t aktool_openssl_compability;
+   bool_t aktool_hex_password_input;
+   bool_t aktool_verbose;
+   char audit_filename[512];
+ } aktool_ki_t;
+
+/* собственно глобальная переменная с опциями */
+ extern aktool_ki_t ki;
 
 /* ----------------------------------------------------------------------------------------------- */
 /* вывод очень короткой справки о программе */
@@ -55,6 +61,8 @@
  int aktool_help( void );
 /* вывод информации об ощих опциях */
  int aktool_print_common_options();
+/* вывод произвольного сообщения через gettext() */
+ int aktool_print_gettext( const char * );
 /* проверка корректности заданной пользователем команды */
  bool_t aktool_check_command( const char *, tchar * );
 /* вывод сообщений в заданный пользователем файл, а также в стандартный демон вывода сообщений */
@@ -67,13 +75,6 @@
  bool_t aktool_create_libakrypt( void );
 /* общий для всех подпрограмм запуск процедуры остановки билиотеки */
  int aktool_destroy_libakrypt( void );
-/* функция вывода заданного сообщения в консоль */
- int aktool_print_message( const char *message );
-
-/* функция однократного чтения пароля из консоли */
- ssize_t aktool_key_load_user_password( char * , const size_t );
-/* функция двукратного чтения пароля из консоли */
- ssize_t aktool_key_load_user_password_twice( char * , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /* реализации пользовательских команд */

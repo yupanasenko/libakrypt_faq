@@ -9,6 +9,7 @@
     - ak_skey_load_from_file() [теперь возвращается NULL в случае ошибки]
     - ak_verifykey_verify_ptr()
     - ak_verifykey_import_from_asn1_extensions()
+ - Возвращена русификация утилиты aktool
 
 
 ## Изменения в версии 0.9.4

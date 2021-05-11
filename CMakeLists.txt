@@ -217,12 +217,12 @@ message("-- Added tests (now \"make test\" enabled): [ ${ARITHMETIC_TESTS_LIST} 
 # -------------------------------------------------------------------------------------------------- #
 set( AKTOOL_SOURCES
      aktool/aktool.c
-     aktool/aktool_show.c
-     aktool/aktool_test.c
-     aktool/aktool_asn1.c
-     aktool/aktool_key.c
-     aktool/aktool_icode.c
-     aktool/aktool_encrypt.c
+#     aktool/aktool_show.c
+#     aktool/aktool_test.c
+#     aktool/aktool_asn1.c
+#     aktool/aktool_key.c
+#     aktool/aktool_icode.c
+#     aktool/aktool_encrypt.c
    )
 set( AKTOOL_FILES
      aktool/aktool.h
@@ -275,6 +275,8 @@ target_link_libraries( aktool akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
 
 # -------------------------------------------------------------------------------------------------- #
 # инсталляция библиотеки (только для UNIX)
+find_file( MSGFMT msgfmt )
+
 if( CMAKE_HOST_UNIX )
   if( AK_STATIC_LIB )
     install( TARGETS akbase-static LIBRARY DESTINATION lib ARCHIVE DESTINATION lib )
@@ -286,8 +288,19 @@ if( CMAKE_HOST_UNIX )
     install( TARGETS akrypt-shared LIBRARY DESTINATION lib ARCHIVE DESTINATION lib )
   endif()
 
+ # компилируем и инсталлируем файлы с рускоязычным переводом утилиты aktool
+  install( CODE "execute_process( COMMAND strip -s ${CMAKE_BINARY_DIR}/aktool )" )
   install( TARGETS aktool DESTINATION bin )
+  if( MSGFMT )
+    install( CODE "execute_process( COMMAND msgfmt ${CMAKE_SOURCE_DIR}/aktool/aktool.po -o ${CMAKE_BINARY_DIR}/aktool.mo )" )
+    if( BSD )
+      install( FILES ${CMAKE_BINARY_DIR}/aktool.mo DESTINATION /usr/local/share/locale/ru/LC_MESSAGES )
+    else()
+      install( FILES ${CMAKE_BINARY_DIR}/aktool.mo DESTINATION /usr/share/locale/ru/LC_MESSAGES )
+    endif()
+  endif()
 
+ # инсталлируем документацию к библиотеке
   install( FILES ${CMAKE_SOURCE_DIR}/libakrypt.conf DESTINATION ${AK_CONFIG_PATH} )
   install( FILES ${MAIN_HEADERS} DESTINATION include )
   install( FILES ${LIBAKRYPT_DOCUMENTATION} DESTINATION share/doc/libakrypt )

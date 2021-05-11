@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2021 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Файл akrypt.c                                                                                  */
 /*  - содержит реализацию консольной утилиты, иллюстрирующей возможности библиотеки libakrypt      */
@@ -10,7 +10,15 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
- char audit_filename[1024];
+ aktool_ki_t ki = {
+   ak_log_none, /* аудит не выполняется */
+   ak_false,    /* совместимость с openssl не предусматривается */
+   ak_false,    /* пароли вводятся как символы текста */
+   ak_false,    /* вывод подробной информации/справки  */
+   ""
+ };
+
+/* ----------------------------------------------------------------------------------------------- */
 /* функция, реализующая аудит */
  ak_function_log *audit =
 #ifdef _WIN32
@@ -18,10 +26,6 @@
 #else
  ak_function_log_syslog;
 #endif
- int aktool_log_level = ak_log_none;
- bool_t aktool_openssl_compability = ak_false;
- bool_t aktool_hex_password_input = ak_false;
- bool_t aktool_verbose = ak_false;
 
 #ifdef _WIN32
  unsigned int aktool_console_page = 0;
@@ -30,7 +34,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int main( int argc, tchar *argv[] )
 {
- /* определение переменных, используемых ддя указания времени старта программы */
+ /* определение переменных, используемых для указания времени старта программы */
  #ifdef _WIN32
   time_t ptime;
   TCHAR homepath[FILENAME_MAX]
@@ -42,7 +46,8 @@
  /* попытка русификации программы для unix-like операционных систем */
  #ifdef AK_HAVE_LIBINTL_H
  /* обрабатываем настройки локали
-    при инсталляции файл aktool.mo должен помещаться в /usr/share/locale/ru/LC_MESSAGES */
+    при инсталляции файл aktool.mo должен помещаться в /usr/share/locale/ru/LC_MESSAGES
+    (однако, при использовании bsd-like адрес может быть другим) */
   #ifdef AK_HAVE_LOCALE_H
    setlocale( LC_ALL, "" );
   #endif
@@ -115,7 +120,7 @@
 /* вывод сообщений в заданный пользователем файл, а также в стандартный демон вывода сообщений */
  int aktool_audit_function( const char *message )
 {
-  FILE *fp = fopen( audit_filename, "a+" );
+  FILE *fp = fopen( ki.audit_filename, "a+" );
    /* функция выводит сообщения в заданный файл */
     if( !fp ) return ak_error_open_file;
     fprintf( fp, "%s\n", message );
@@ -133,8 +138,8 @@
        audit = ak_function_log_stderr; /* если задан stderr, то используем готовую функцию */
   } else {
             if( strlen( message ) > 0 ) {
-              memset( audit_filename, 0, 1024 );
-              strncpy( audit_filename, message, 1022 );
+              memset( ki.audit_filename, 0, sizeof( ki.audit_filename ));
+              strncpy( ki.audit_filename, message, sizeof( ki.audit_filename )-1 );
               audit = aktool_audit_function;
             }
          }
@@ -175,18 +180,17 @@
     return ak_false;
   }
  /* устанавливаем уровень аудита */
-  ak_log_set_level( aktool_log_level );
+  ak_log_set_level( ki.aktool_log_level );
 
  /* применяем флаг совместимости с openssl */
   number = ak_libakrypt_get_option_by_name( "openssl_compability ");
-  if(( number != ak_error_wrong_option ) && ( aktool_openssl_compability != number ))
-    ak_libakrypt_set_openssl_compability( aktool_openssl_compability );
+  if(( number != ak_error_wrong_option ) && ( ki.aktool_openssl_compability != number ))
+    ak_libakrypt_set_openssl_compability( ki.aktool_openssl_compability );
 
 #ifdef _WIN32
   aktool_console_page = GetConsoleCP();
-/*  SetConsoleCP( 1251 ); SetConsoleOutputCP( 1251 ); */
   SetConsoleCP( 65001 );
-  SetConsoleOutputCP( 65001 );
+  SetConsoleOutputCP( 65001 ); /*  SetConsoleCP( 1251 ); SetConsoleOutputCP( 1251 ); */
 #endif
 
  return ak_true;
@@ -202,106 +206,9 @@
  return ak_libakrypt_destroy();
 }
 
-/* ----------------------------------------------------------------------------------------------- */
-/*! Эта функция используется при импорте ключа (однократное чтение пароля) */
- ssize_t aktool_key_load_user_password( char *password, const size_t pass_size )
-{
-  ssize_t passlen = 0;
-  char buffer[1 + ( aktool_password_max_length << 1 )];
-
-  fprintf( stdout, _("password"));
-   if( aktool_hex_password_input ) fprintf( stdout, _(" [as hexademal string]"));
-  fprintf( stdout, ": "); fflush( stdout );
-  memset( buffer, 0, sizeof( buffer ));
-  passlen = ak_password_read( buffer, sizeof( buffer ));
-  fprintf( stdout, "\n" );
-  if( passlen < 1 ) {
-    aktool_error(_("password has zero length"));
-    return ak_error_wrong_length;
-  }
-
-  memset( password, 0, pass_size );
-  if( aktool_hex_password_input ) {
-    if( ak_hexstr_to_ptr( buffer, password, pass_size -1, ak_false ) == ak_error_ok )
-      passlen = ak_min( pass_size -1, strlen( buffer )%2 + ( strlen( buffer ) >> 1 ));
-     else passlen = 0;
-    /* как минимум один последний октет password будет равен нулю */
-  }
-   else memcpy( password, buffer, passlen = ak_min( pass_size -1, strlen( buffer )));
-
-  memset( buffer, 0, sizeof( buffer ));
- return passlen;
-}
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Эта функция используется перед экспортом ключа */
- ssize_t aktool_key_load_user_password_twice( char *password, const size_t pass_size )
-{
-  int error = ak_error_ok;
-  ssize_t passlen = 0, passlen2 = 0;
-  char buffer[1 + ( aktool_password_max_length << 1 )], password2[ aktool_password_max_length ];
-
- /* формируем пароль с первой попытки */
-  fprintf( stdout, _("input password"));
-   if( aktool_hex_password_input ) fprintf( stdout, _(" [as hexademal string]"));
-  fprintf( stdout, ": "); fflush( stdout );
-  memset( buffer, 0, sizeof( buffer ));
-  passlen = ak_password_read( buffer, sizeof( buffer ));
-  fprintf( stdout, "\n" );
-  if( passlen < 1 ) {
-    aktool_error(_("password zero length"));
-    return ak_error_wrong_length;
-  }
-
-  memset( password, 0, pass_size );
-  if( aktool_hex_password_input ) {
-    if(( error = ak_hexstr_to_ptr( buffer, password, pass_size -1, ak_false )) == ak_error_ok )
-      passlen = ak_min( pass_size -1, strlen( buffer )%2 + ( strlen( buffer ) >> 1 ));
-     else passlen = 0;
-    /* как минимум один последний октет password будет равен нулю */
-  }
-   else memcpy( password, buffer, passlen = ak_min( pass_size -1, strlen( buffer )));
-
-  if( !passlen ) {
-    aktool_error(_("password has zero length"));
-    return passlen;
-  }
-
- /* теперь считываем пароль второй раз и проверяем совпадение */
-  printf(_("retype password"));
-   if( aktool_hex_password_input ) fprintf( stdout, _(" [as hexademal string]"));
-  fprintf( stdout, ": "); fflush( stdout );
-  memset( buffer, 0, sizeof( buffer ));
-  passlen2 = ak_password_read( buffer, sizeof( buffer ));
-  fprintf( stdout, "\n" );
-  if( passlen < 1 ) {
-    aktool_error(_("password zero length"));
-    return ak_error_wrong_length;
-  }
-
-  memset( password2, 0, pass_size );
-  if( aktool_hex_password_input ) {
-    if(( error = ak_hexstr_to_ptr( buffer, password2, pass_size -1, ak_false )) == ak_error_ok )
-      passlen2 = ak_min( pass_size -1, strlen( buffer )%2 + ( strlen( buffer ) >> 1 ));
-     else passlen2 = 0;
-    /* как минимум один последний октет password будет равен нулю */
-  }
-   else memcpy( password2, buffer, passlen2 = ak_min( pass_size -1, strlen( buffer )));
-
-  if(( passlen != passlen2 ) ||
-     ( !ak_ptr_is_equal( password, password2, passlen ))) {
-      aktool_error(_("the passwords don't match"));
-      passlen = ak_error_not_equal_data;
-    }
-
-  memset( buffer, 0, sizeof( buffer ));
-  memset( password2, 0, sizeof( password2 ));
-
- return passlen;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
- int aktool_print_message( const char *message )
+ int aktool_print_gettext( const char *message )
 {
   if( message ) fprintf( stdout, "%s", _( message ));
  return ak_error_ok;
@@ -337,7 +244,7 @@
      "     --dont-use-colors   do not use the highlighting of output data\n"
      "     --help              show this information\n"
      "     --hex-input         read characters from terminal or console as hexademal numbers\n"
-     "     --openssl-style     use non-standard variants to some encryption algorithms, as in openssl library\n"
+     "     --openssl-style     use non-standard variants of some crypto algorithms, as in openssl library\n"
      "     --verbose           show the additional information\n\n"));
 
  return EXIT_SUCCESS;
@@ -364,6 +271,15 @@
                                          LIBAKRYPT_COMPILER_NAME, __VERSION__, __DATE__, __TIME__ );
  return EXIT_SUCCESS;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+/* заглушки */
+ int aktool_show( int argc, tchar *argv[] ) { return EXIT_FAILURE; }
+ int aktool_test( int argc, tchar *argv[] ) { return EXIT_FAILURE; }
+ int aktool_asn1( int argc, tchar *argv[] ) { return EXIT_FAILURE; }
+ int aktool_key( int argc, tchar *argv[] ) { return EXIT_FAILURE; }
+ int aktool_icode( int argc, tchar *argv[] ) { return EXIT_FAILURE; }
+ int aktool_encrypt( int argc, tchar *argv[], encrypt_t work ) { return EXIT_FAILURE; }
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                       akrypt.c  */
