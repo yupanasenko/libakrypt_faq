@@ -237,6 +237,8 @@ else()
 endif()
 message("-- Sources for aktool: [ ${AKTOOL_SOURCES} ]" )
 
+# -------------------------------------------------------------------------------------------------- #
+include( FindGettext )
 find_path( AK_HAVE_LIBINTL_H NAMES libintl.h )
 if( AK_HAVE_LIBINTL_H )
   include_directories( ${AK_HAVE_LIBINTL_H} )
@@ -275,8 +277,6 @@ target_link_libraries( aktool akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
 
 # -------------------------------------------------------------------------------------------------- #
 # инсталляция библиотеки (только для UNIX)
-find_file( MSGFMT msgfmt )
-
 if( CMAKE_HOST_UNIX )
   if( AK_STATIC_LIB )
     install( TARGETS akbase-static LIBRARY DESTINATION lib ARCHIVE DESTINATION lib )
@@ -291,13 +291,10 @@ if( CMAKE_HOST_UNIX )
  # компилируем и инсталлируем файлы с рускоязычным переводом утилиты aktool
   install( CODE "execute_process( COMMAND strip -s ${CMAKE_BINARY_DIR}/aktool )" )
   install( TARGETS aktool DESTINATION bin )
-  if( MSGFMT )
-    install( CODE "execute_process( COMMAND msgfmt ${CMAKE_SOURCE_DIR}/aktool/aktool.po -o ${CMAKE_BINARY_DIR}/aktool.mo )" )
-    if( BSD )
-      install( FILES ${CMAKE_BINARY_DIR}/aktool.mo DESTINATION /usr/local/share/locale/ru/LC_MESSAGES )
-    else()
-      install( FILES ${CMAKE_BINARY_DIR}/aktool.mo DESTINATION /usr/share/locale/ru/LC_MESSAGES )
-    endif()
+
+  if( GETTEXT_FOUND )
+    install( CODE "execute_process( COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} ${CMAKE_SOURCE_DIR}/aktool/aktool.po -o ${CMAKE_BINARY_DIR}/aktool.mo )" )
+    install( FILES ${CMAKE_BINARY_DIR}/aktool.mo DESTINATION ${CMAKE_INSTALL_PREFIX}/share/locale/ru/LC_MESSAGES )
   endif()
 
  # инсталлируем документацию к библиотеке
@@ -305,9 +302,9 @@ if( CMAKE_HOST_UNIX )
   install( FILES ${MAIN_HEADERS} DESTINATION include )
   install( FILES ${LIBAKRYPT_DOCUMENTATION} DESTINATION share/doc/libakrypt )
   if( GZIP )
-    install( FILES ${CMAKE_SOURCE_DIR}/aktool/aktool.1.gz DESTINATION share/man/ru/man1 )
+    install( FILES ${CMAKE_BINARY_DIR}/aktool.1.gz DESTINATION share/man/ru/man1 )
   else()
-    install( FILES ${CMAKE_SOURCE_DIR}/aktool/aktool.1 DESTINATION share/man/ru/man1 )
+    install( FILES ${CMAKE_BINARY_DIR}/aktool.1 DESTINATION share/man/ru/man1 )
   endif()
   install( FILES ${CMAKE_SOURCE_DIR}/cert/ca-libakrypt.crt DESTINATION ${AK_CA_PATH} )
 

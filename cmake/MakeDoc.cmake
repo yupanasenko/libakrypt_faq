@@ -9,22 +9,25 @@ find_program( QHELPGENERATOR qhelpgenerator )
 find_program( ETAGS etags )
 find_program( GZIP gzip )
 
+# -----------------------------------------------------------------------------------
+# определяем команду для генерации man файла
+if( PANDOC )
+  set( AKTOOL_DATE "18 июля 2021" )
+  set( AKTOOL_FOOTER "Правила пользования" )
+  execute_process( COMMAND pandoc --metadata=date:${AKTOOL_DATE} --metadata=title:aktool --metadata=section:1 --metadata=footer:{AKTOOL_FOOTER} -s -t man ${CMAKE_SOURCE_DIR}/aktool/Readme.md -o ${CMAKE_BINARY_DIR}/aktool.1 )
+  if( GZIP )
+    execute_process( COMMAND  gzip --force ${CMAKE_BINARY_DIR}/aktool.1 )
+  endif()
+  message("-- Create documentation for aktool utility" )
+endif()
+
+# -----------------------------------------------------------------------------------
+# скрипты для генерации документации
 if( UNIX )
   set( script ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh )
   set( pdf-script ${CMAKE_BINARY_DIR}/make-pdfdoc-${FULL_VERSION}.sh )
   file( WRITE ${script} "#/bin/bash\n" )
   
-  if( PANDOC )
-   # определяем команду для генерации man файла
-    file( APPEND ${script} "echo Create documentation for aktool utility\n" )
-    file( APPEND ${script}
-     "pandoc --metadata=date:\"18 July 2021\" --metadata=title:\"aktool\" --metadata=section:1 --metadata=footer:\"Правила пользования\" -s -t man ${CMAKE_SOURCE_DIR}/aktool/Readme.md -o ${CMAKE_SOURCE_DIR}/aktool/aktool.1\n" )
-    if( GZIP )
-      file( APPEND ${script} "gzip --force ${CMAKE_SOURCE_DIR}/aktool/aktool.1\n" )
-    endif()
-    file( APPEND ${script} "echo Ok\n" )
-  endif()
-
   # документация для функций библиотеки
   if( DOXYGEN )
     # doxygen найден и документация может быть сгенерирована
@@ -56,9 +59,19 @@ if( UNIX )
       message("-- doxygen not found")
   endif()
 
+  file( APPEND ${script} "cd ${CMAKE_SOURCE_DIR}\n" )
   if( ETAGS )
-    file( APPEND ${script} "cd ${CMAKE_SOURCE_DIR}; etags.emacs source/*.[ch]; cd ${CMAKE_BINARY_DIR}\n" )
+    file( APPEND ${script} "etags.emacs source/*.[ch]\n" )
   endif()
+  if( GETTEXT_FOUND )
+    find_program( XGETTEXT xgettext )
+    if( XGETTEXT )
+      file( APPEND ${script} "cd aktool\n" )
+      file( APPEND ${script} "${XGETTEXT} aktool*.c -a -j --from-code utf-8 -o aktool.po\n" )
+    endif()
+  endif()
+
+  file( APPEND ${script} "cd ${CMAKE_BINARY_DIR}\n" )
 
   execute_process( COMMAND chmod +x ${script} )
   execute_process( COMMAND chmod +x ${pdf-script} )
