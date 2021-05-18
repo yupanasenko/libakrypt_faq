@@ -42,12 +42,57 @@
 /* ----------------------------------------------------------------------------------------------- */
 /* структура с глобальными опциями программы */
  typedef struct {
+  /* уровень аудита */
    int aktool_log_level;
+  /* флаг совместимости с форматамаи библиотеки openssl */
    bool_t aktool_openssl_compability;
+  /* флаг ввода пароля в шестнадцатеричной системе счисления */
    bool_t aktool_hex_password_input;
+  /* расширенный вывод сообщений */
    bool_t aktool_verbose;
+  /* идентификатор используемого (криптографического) метода */
+   ak_oid method;
+  /* идентификатор алгоритма генерации случайных значений */
+   ak_oid oid_of_generator;
+  /* имя файла со случайными последовательностями (как правило, специальное блочное устройство) */
+   char *name_of_file_for_generator;
+  /* идентификатор цели выполнения программы */
+   ak_oid oid_of_target;
+  /* формат цели выполнения программы */
+   export_format_t format;
+  /* использование неопределеного типа цели */
+   bool_t target_undefined;
+  /* идентификатор эллиптической кривой */
+   ak_oid curve;
+  /* срок действия (в сутках) */
+   size_t days;
+  /* размер конечного поля характеристики два */
+   ak_uint32 field;
+  /* количество элементов поля */
+   ak_uint32 size;
+  /* метка ключа */
+   char *keylabel;
+  /* длина имени пользователя */
+   ssize_t lenuser;
+  /* длина пароля для входного файла */
+   ssize_t leninpass;
+  /* длина пароля для выходного файла */
+   ssize_t lenoutpass;
+  /* идентификатор пользователя (владельца) ключа  */
+   char userid[256];
+  /* пароль для входного файла */
+   char inpass[aktool_password_max_length];
+  /* пароль для создаваемого файла */
+   char outpass[aktool_password_max_length];
+  /* имя файла аудита */
    char audit_filename[512];
- } aktool_ki_t;
+   char os_file[1024]; /* сохраняем, секретный ключ */
+   char op_file[1024];  /* сохраняем, открытый ключ */
+   char key_file[1024];   /* читаем, секретный ключ */
+   char pubkey_file[1024]; /* читаем, открытый ключ */
+   char capubkey_file[1024]; /* читаем второй (дополнительный) открытый ключ */
+
+} aktool_ki_t;
 
 /* собственно глобальная переменная с опциями */
  extern aktool_ki_t ki;
@@ -107,16 +152,16 @@
         ak_libakrypt_set_option( "use_color_output", 0 );\
         break;\
      case  4  : /* устанавливаем уровень аудита */\
-        aktool_log_level = atoi( optarg );\
+        ki.aktool_log_level = atoi( optarg );\
         break;\
      case  5  : /* переходим к стилю openssl */\
-        aktool_openssl_compability = ak_true;\
+        ki.aktool_openssl_compability = ak_true;\
         break;\
      case  6  : /* обрабатываем --hex-input */\
-        aktool_hex_password_input = ak_true;\
+        ki.aktool_hex_password_input = ak_true;\
         break;\
      case  7  : /* обрабатываем --verbose */\
-        aktool_verbose = ak_true;\
+        ki.aktool_verbose = ak_true;\
         break;\
 
  #endif

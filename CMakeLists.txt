@@ -217,10 +217,11 @@ message("-- Added tests (now \"make test\" enabled): [ ${ARITHMETIC_TESTS_LIST} 
 # -------------------------------------------------------------------------------------------------- #
 set( AKTOOL_SOURCES
      aktool/aktool.c
+
+#     aktool/aktool_key.c
 #     aktool/aktool_show.c
 #     aktool/aktool_test.c
-#     aktool/aktool_asn1.c
-#     aktool/aktool_key.c
+     aktool/aktool_asn1.c
 #     aktool/aktool_icode.c
 #     aktool/aktool_encrypt.c
    )

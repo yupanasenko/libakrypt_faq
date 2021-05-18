@@ -224,6 +224,8 @@ extern "C" {
 /*! \brief Ошибка доступа за пределы массива. */
  #define ak_error_wrong_index                 (-12)
 
+/*! \brief Неопределеное имя файла. */
+ #define ak_error_undefined_file              (-14)
 /*! \brief Ошибка создания файла. */
  #define ak_error_create_file                 (-15)
 /*! \brief Ошибка доступа к файлу (устройству). */

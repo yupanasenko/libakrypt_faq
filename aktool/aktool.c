@@ -15,6 +15,28 @@
    ak_false,    /* совместимость с openssl не предусматривается */
    ak_false,    /* пароли вводятся как символы текста */
    ak_false,    /* вывод подробной информации/справки  */
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   asn1_der_format,
+   ak_false,
+   NULL,
+   365,
+   ak_galois256_size,
+   512,
+   NULL,
+   0,
+   0,
+   0,
+   "",
+   "",
+   "",
+   "",           /* имя файла аудита не определено */
+   "",
+   "",
+   "",
+   "",
    ""
  };
 
@@ -276,7 +298,6 @@
 /* заглушки */
  int aktool_show( int argc, tchar *argv[] ) { return EXIT_FAILURE; }
  int aktool_test( int argc, tchar *argv[] ) { return EXIT_FAILURE; }
- int aktool_asn1( int argc, tchar *argv[] ) { return EXIT_FAILURE; }
  int aktool_key( int argc, tchar *argv[] ) { return EXIT_FAILURE; }
  int aktool_icode( int argc, tchar *argv[] ) { return EXIT_FAILURE; }
  int aktool_encrypt( int argc, tchar *argv[], encrypt_t work ) { return EXIT_FAILURE; }
