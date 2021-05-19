@@ -13,7 +13,7 @@ if( UNIX )
   set( script ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh )
   set( pdf-script ${CMAKE_BINARY_DIR}/make-pdfdoc-${FULL_VERSION}.sh )
   file( WRITE ${script} "#/bin/bash\n" )
-  
+
   if( PANDOC )
    # определяем команду для генерации man файла
     file( APPEND ${script} "echo Create documentation for aktool utility\n" )
@@ -61,9 +61,13 @@ if( UNIX )
   endif()
 
   execute_process( COMMAND chmod +x ${script} )
-  execute_process( COMMAND chmod +x ${pdf-script} )
   add_custom_target( doc ${script} )
-  add_custom_target( pdf ${pdf-script} )
-  message("-- Script for documentation is done (now \"make doc\" and \"make pdf\" enabled)")
-endif()
+  message("-- Script for documentation is done (now \"make doc\" enabled)")
 
+  if( XELATEX )
+    execute_process( COMMAND chmod +x ${pdf-script} )
+    add_custom_target( pdf ${pdf-script} )
+    message("-- xeLaTeX support added (now \"make pdf\" enabled)")
+  endif()
+
+endif()
