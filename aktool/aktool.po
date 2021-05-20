@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-05-19 00:19+0300\n"
+"POT-Creation-Date: 2021-05-19 22:03+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -360,30 +360,30 @@ msgstr ""
 msgid "aktool found %d error(s), rerun aktool with \"--audit stderr\" option\n"
 msgstr ""
 
-#: aktool_asn1.c:151 aktool_asn1.c:210
+#: aktool_asn1.c:151 aktool_asn1.c:210 aktool_asn1.c:219
 #, c-format
 msgid "file %s is wrong\n"
 msgstr ""
 
-#: aktool_asn1.c:177
+#: aktool_asn1.c:177 aktool_asn1.c:187
 msgid ".der"
 msgstr ""
 
-#: aktool_asn1.c:178
+#: aktool_asn1.c:178 aktool_asn1.c:188
 msgid ".pem"
 msgstr ""
 
-#: aktool_asn1.c:186 aktool_asn1.c:192
+#: aktool_asn1.c:186 aktool_asn1.c:192 aktool_asn1.c:195 aktool_asn1.c:201
 #, c-format
 msgid "convertation of %s is wrong\n"
 msgstr ""
 
-#: aktool_asn1.c:190
+#: aktool_asn1.c:190 aktool_asn1.c:199
 #, c-format
 msgid "convertation of %s to %s is Ok\n"
 msgstr ""
 
-#: aktool_asn1.c:224
+#: aktool_asn1.c:224 aktool_asn1.c:233
 #, c-format
 msgid ""
 "aktool asn1parse [options] [files] - decode and print ASN.1 data\n"
@@ -400,4 +400,29 @@ msgid ""
 "     --split             split ASN.1 tree into separate leaves\n"
 "     --to <format>       set the format of output file [ enabled values : "
 "der, pem ]\n"
+msgstr ""
+
+#: aktool_asn1.c:66
+#, c-format
+msgid "%s is not valid format of output data"
+msgstr ""
+
+#: aktool_asn1.c:135
+#, c-format
+msgid "aktool found %d error(s), rerun aktool with \"--audit stderr\" option"
+msgstr ""
+
+#: aktool_asn1.c:153
+#, c-format
+msgid "file %s is wrong"
+msgstr ""
+
+#: aktool_asn1.c:157
+#, c-format
+msgid "incorrect filename %s"
+msgstr ""
+
+#: aktool_asn1.c:161
+msgid ""
+"file with asn1 content is not specified as the last argument of the program"
 msgstr ""
