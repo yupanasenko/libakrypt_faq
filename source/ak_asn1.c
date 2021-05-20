@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*  Copyright (c) 2019 by Anton Sakharov                                                           */
-/*  Copyright (c) 2020 by Axel Kenzo, axelkenzo@mail.ru                                            */
+/*  Copyright (c) 2020 - 2021 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Файл ak_asn1.c                                                                                 */
 /*  - содержит реализацию функций,                                                                 */

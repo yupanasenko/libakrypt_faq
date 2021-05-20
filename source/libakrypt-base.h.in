@@ -510,6 +510,8 @@ extern "C" {
  dll_export void ak_base64_encodeblock( ak_uint8 *, ak_uint8 *, int );
 /*! \brief Обобщенная реализация функции snprintf для различных компиляторов. */
  dll_export int ak_snprintf( char *str, size_t size, const char *format, ... );
+/*! \brief Форматированный вывод (аналогичный printf) через пользовательскую функцию. */
+ dll_export int ak_printf( ak_function_log *function, const char *format, ... );
 /*! \brief Чтение строки из консоли. */
  dll_export int ak_string_read( const char * , char * , size_t * );
 /*! \brief Чтение пароля из консоли. */

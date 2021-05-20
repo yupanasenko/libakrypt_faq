@@ -298,15 +298,22 @@ if( CMAKE_HOST_UNIX )
     install( FILES ${CMAKE_BINARY_DIR}/aktool.mo DESTINATION ${CMAKE_INSTALL_PREFIX}/share/locale/ru/LC_MESSAGES )
   endif()
 
- # инсталлируем документацию к библиотеке
-  install( FILES ${CMAKE_SOURCE_DIR}/libakrypt.conf DESTINATION ${AK_CONFIG_PATH} )
+ # инсталлируем заголовочные файлы и документацию к библиотеке
   install( FILES ${MAIN_HEADERS} DESTINATION include )
+  install( FILES ${CMAKE_SOURCE_DIR}/libakrypt.conf DESTINATION ${AK_CONFIG_PATH} )
   install( FILES ${LIBAKRYPT_DOCUMENTATION} DESTINATION share/doc/libakrypt )
-  if( GZIP )
+
+  find_file( AKTOOL_MAN ${CMAKE_BINARY_DIR}/aktool.1.gz )
+  if( AKTOOL_MAN )
     install( FILES ${CMAKE_BINARY_DIR}/aktool.1.gz DESTINATION share/man/ru/man1 )
   else()
-    install( FILES ${CMAKE_BINARY_DIR}/aktool.1 DESTINATION share/man/ru/man1 )
+    find_file( AKTOOL_SMAN ${CMAKE_SOURCE_DIR}/aktool/aktool.1.gz )
+    if( AKTOOL_SMAN )
+      install( FILES ${CMAKE_SOURCE_DIR}/aktool/aktool.1.gz DESTINATION share/man/ru/man1 )
+    endif()
   endif()
+
+ # инсталлируем корневой сертификат библиотеки
   install( FILES ${CMAKE_SOURCE_DIR}/cert/ca-libakrypt.crt DESTINATION ${AK_CA_PATH} )
 
 # деинсталляция
@@ -343,6 +350,10 @@ set( CPACK_PACKAGE_DESCRIPTION
 set(CPACK_VERBATIM_VARIABLES YES)
    
 include( CPack )
+
+# запуск
+#   make package
+#   make package_source
 
 # -------------------------------------------------------------------------------------------------- #
 #                                                                                    CMakeLists.txt

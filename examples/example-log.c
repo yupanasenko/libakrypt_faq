@@ -1,4 +1,5 @@
  #include <stdio.h>
+ #include <stdlib.h>
  #include <libakrypt-base.h>
 
 /* определим пользовательскую функцию аудита
@@ -36,5 +37,12 @@
    ak_error_message_fmt( ak_error_access_file, __func__,
                         "third message with parameters: %s & %x", "weight", 32 );
 
- return 0;
+ /* в заключение, демонстрируем вызов функции ak_printf,
+    которая также может быть использована для аудита выполнения программы */
+   ak_printf( ak_function_log_stderr,
+                   "user's message number %u from %s() function", 11, __func__ );
+   ak_printf( ak_function_log_user,
+                   "user's message number %u from %s() function", 12, __func__ );
+
+ return EXIT_SUCCESS;
 }
