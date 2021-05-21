@@ -1447,6 +1447,10 @@ extern "C" {
  dll_export int ak_asn1_get_tag_from_der( ak_uint8** , ak_uint8 * );
 /*! \brief Получение из DER-последовательности длины текущего узла ASN1 дерева. */
  dll_export int ak_asn1_get_length_from_der( ak_uint8** , size_t * );
+/*! \brief Установка функции вывода (печать), используемой при выводе ASN1 деревьев. */
+ dll_export int ak_asn1_set_print_function( ak_function_log * );
+/*! \brief Установка функции вывода ASN.1 по умолчанию (используется стандартный файловый вывод) */   
+ dll_export int ak_asn1_unset_print_function( void );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание примитивного узла ASN1 дерева. */
@@ -1464,9 +1468,9 @@ extern "C" {
 /*! \brief Уничтожение примитивного узла ASN1 дерева и освобождение памяти. */
  dll_export ak_pointer ak_tlv_delete( ak_pointer );
 /*! \brief Вывод информации о заданном узле ASN1 дерева. */
- dll_export int ak_tlv_print( ak_tlv , FILE * );
+ dll_export int ak_tlv_print( ak_tlv );
 /*! \brief Вывод информации о примитивном узле ASN1 дерева. */
- dll_export int ak_tlv_print_primitive( ak_tlv, FILE * );
+ dll_export int ak_tlv_print_primitive( ak_tlv );
 /*! \brief Функция вычисляет размер, занимаемый данным уровнем ASN.1 дерева */
  dll_export int ak_tlv_evaluate_length( ak_tlv , size_t * );
 /*! \brief Кодирование одного узла ASN1 дерева в DER-последовательность октетов. */
@@ -1518,7 +1522,7 @@ extern "C" {
 /*! \brief Функция сравнивает две последовательности обобщенных имен. */
  dll_export int ak_tlv_compare_global_names( ak_tlv , ak_tlv );
 /*! \brief Вывод информации о расширенном имени в заданный файл. */
- dll_export int ak_tlv_print_global_name( ak_tlv , FILE * );
+ dll_export int ak_tlv_print_global_name( ak_tlv );
 /*! \brief Вывод информации о расширенном имени в заданную строку. */
  dll_export int ak_tlv_snprintf_global_name( ak_tlv , char * , const size_t );
 
@@ -1589,7 +1593,7 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Вывод информации о текущем уровне ASN1 дерева. */
- dll_export int ak_asn1_print( ak_asn1 , FILE * );
+ dll_export int ak_asn1_print( ak_asn1 );
 /*! \brief Функция вычисляет размер, занимаемый данным уровнем ASN.1 дерева */
  dll_export int ak_asn1_evaluate_length( ak_asn1 , size_t * );
 /*! \brief Кодирование ASN1 дерева в DER-последовательность октетов. */
@@ -1609,7 +1613,7 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция выводит в заданный файл закодированное ASN.1 дерево. */
- dll_export int ak_libakrypt_print_asn1( const char * , FILE *);
+ dll_export int ak_libakrypt_print_asn1( const char * );
 /*! \brief Конвертирование asn1 дерева из der формата в pem и обратно. */
  dll_export int ak_libakrypt_convert_asn1( const char * , const char * ,
                                                               export_format_t , crypto_content_t );

@@ -68,7 +68,36 @@
  static char output_buffer[1024] = "";
 
 /* ----------------------------------------------------------------------------------------------- */
+ static int ak_asn1_print_to_stdout( const char *message )
+{
+  if( message ) printf( "%s", message );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static ak_function_log *asn1_print_function = ak_asn1_print_to_stdout;
+
+/* ----------------------------------------------------------------------------------------------- */
                                       /*  служебные функции */
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param new_function Функция, используемая для вывода сообщений                                 */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_set_print_function( ak_function_log *new_function )
+{
+  if( new_function == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__, "using null pointer to new function" );
+
+  asn1_print_function = new_function;
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_unset_print_function( void )
+{
+  asn1_print_function = ak_asn1_print_to_stdout;
+ return ak_error_ok; 
+}
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param len длина данных
     \return Кол-во байтов, необходимое для хранения закодированной длины.                          */
@@ -489,13 +518,14 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \param tlv указатель на структуру узла ASN1 дерева.
-    \param fp Файловый дескриптор, в  который выводится информация об узле ASN1 дерева; дескриптор
-    должен быть предварительно связан с файлом.
+/*! Для вывода используется функция fprintf( stdout, ... )
+    (может быть изменена с помощью вызова ak_asn1_set_print_function() )
+
+    \param tlv указатель на структуру узла ASN1 дерева.
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_tlv_print( ak_tlv tlv, FILE *fp )
+ int ak_tlv_print( ak_tlv tlv )
 {
   const char *dp = NULL;
   char tmp[ sizeof(prefix) ];
@@ -514,7 +544,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     if(( plen == 0 ) && ( tlv->prev == NULL )) corner = LT_CORNER;
 
    /* выводим префикс и тег */
-    fprintf( fp, "%s%s%s%s\n", prefix, corner, dp, RT_CORNER );
+    ak_printf( asn1_print_function, "%s%s%s%s\n", prefix, corner, dp, RT_CORNER );
 
     memset( tmp, 0, sizeof( tmp ));
     memcpy( tmp, prefix, ak_min( sizeof(tmp)-1, strlen( prefix )));
@@ -522,25 +552,26 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
       ak_snprintf( prefix, sizeof( prefix ), "%s%s%*s", tmp, " ", strlen(dp), " " );
      else ak_snprintf( prefix, sizeof( prefix ), "%s%s%*s", tmp, VER_LINE, strlen(dp), " " );
 
-    ak_asn1_print( tlv->data.constructed, fp );
+    ak_asn1_print( tlv->data.constructed );
     prefix[plen] = 0;
   }
    else {
         /* выводим префикс и тег */
-         if( tlv->next == NULL ) fprintf( fp, "%s%s%s ", prefix, LB_CORNER, dp );
-          else fprintf( fp, "%s%s%s ", prefix, LTB_CORNERS, dp );
+         if( tlv->next == NULL ) ak_printf( asn1_print_function, "%s%s%s ", prefix, LB_CORNER, dp );
+          else ak_printf( asn1_print_function, "%s%s%s ", prefix, LTB_CORNERS, dp );
 
         /* теперь собственно данные */
          if( DATA_CLASS( tlv->tag ) == UNIVERSAL )
-           ak_tlv_print_primitive( tlv, fp );
+           ak_tlv_print_primitive( tlv );
           else {
             if( DATA_CLASS( tlv->tag ) == CONTEXT_SPECIFIC ) {
               if( tlv->data.primitive != NULL )
-                fprintf( fp, "%s\n", ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ));
-               else  fprintf( fp, "%s(null)%s",
-                                          ak_error_get_start_string(), ak_error_get_end_string());
+                ak_printf( asn1_print_function, "%s\n",
+                                      ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ));
+               else ak_printf( asn1_print_function, "%s(null)%s",
+                                           ak_error_get_start_string(), ak_error_get_end_string());
             }
-             else fprintf( fp, "%sUnknown data%s\n",
+             else ak_printf( asn1_print_function, "%sUnknown data%s\n",
                                            ak_error_get_start_string(), ak_error_get_end_string());
           } /* конец else UNIVERSAL */
    }
@@ -549,7 +580,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_tlv_print_primitive( ak_tlv tlv, FILE *fp )
+ int ak_tlv_print_primitive( ak_tlv tlv )
 {
   size_t len = 0;
   ak_uint32 u32 = 0;
@@ -563,17 +594,17 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   switch( TAG_NUMBER( tlv->tag )) {
 
     case TNULL:
-      fprintf( fp, "\n" );
+      ak_printf( asn1_print_function, "\n" );
       break;
 
     case TBOOLEAN:
-      if( *tlv->data.primitive == 0x00 ) fprintf( fp, "FALSE\n" );
-        else fprintf( fp, "TRUE\n");
+      if( *tlv->data.primitive == 0x00 ) ak_printf( asn1_print_function, "FALSE\n" );
+        else ak_printf( asn1_print_function, "TRUE\n");
       break;
 
     case TINTEGER:
       if(( error = ak_tlv_get_uint32( tlv, &u32 )) == ak_error_ok )
-        fprintf( fp, "0x%x\n", (unsigned int)u32 );
+        ak_printf( asn1_print_function, "0x%x\n", (unsigned int)u32 );
        else { /* обрабатываем большие целые числа */
          switch( error ) {
            case ak_error_invalid_asn1_length:
@@ -581,10 +612,10 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
              if( tlv->data.primitive[0] > 127 ) dp = ak_true;
               else {
                  if( tlv->data.primitive[0] == 0 )
-                   fprintf( fp, "0x%s [%u bits]\n",
+                   ak_printf( asn1_print_function, "0x%s [%u bits]\n",
                          ak_ptr_to_hexstr( tlv->data.primitive+1, tlv->len-1, ak_false ),
                                                                   (unsigned int)( 8*(tlv->len-1)));
-                  else fprintf( fp, "0x%s [%u bits]\n",
+                  else ak_printf( asn1_print_function, "0x%s [%u bits]\n",
                          ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ),
                                                                       (unsigned int)(8*tlv->len ));
               }
@@ -605,17 +636,17 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
        /*  в начале, обычный шестнадцатеричный вывод
            это все вместо простого fprintf( fp, "%s\n", ak_ptr_to_hexstr( ptr, len, ak_false )); */
-        fprintf( fp, "\n" ); /* здесь надо выводить длину в случае, когда данные распарсиваются */
+        ak_printf( asn1_print_function, "\n" ); /* здесь надо выводить длину в случае, когда данные распарсиваются */
         if( tlv->next == NULL ) fsym = " ";
         for( i = 0; i < row; i++ ) {
-           fprintf( fp, "%s%s ", prefix, fsym );
-           for( j = 0; j < 16; j++ ) fprintf( fp, " %02X", ((ak_uint8 *)ptr)[16*i+j] );
-           fprintf( fp, "\n");
+           ak_printf( asn1_print_function, "%s%s ", prefix, fsym );
+           for( j = 0; j < 16; j++ ) ak_printf( asn1_print_function, " %02X", ((ak_uint8 *)ptr)[16*i+j] );
+           ak_printf( asn1_print_function, "\n");
         }
         if( tail ) {
-           fprintf( fp, "%s%s ", prefix, fsym );
-           for( j = 0; j < tail; j++ ) fprintf( fp, " %02X", ((ak_uint8 *)ptr)[16*i+j] );
-           fprintf( fp, "\n");
+           ak_printf( asn1_print_function, "%s%s ", prefix, fsym );
+           for( j = 0; j < tail; j++ ) ak_printf( asn1_print_function, " %02X", ((ak_uint8 *)ptr)[16*i+j] );
+           ak_printf( asn1_print_function, "\n");
         }
 
        /* теперь мы пытаемся распарсить данные (в ряде случаев, это удается сделать) */
@@ -623,10 +654,10 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
         if( ak_asn1_decode( &asn, ptr, len, ak_false ) == ak_error_ok ) {
           size_t dlen = strlen( prefix );
           strcat( prefix, "   " );
-          fprintf( fp, "%s%s%s encoded (%u octets)%s\n", prefix,
-                                ak_error_get_start_string(), LTB_CORNERS, (unsigned int)len,
+          ak_printf( asn1_print_function, "%s%s%s (decoded %u octets)%s\n", prefix,
+                                ak_error_get_start_string(), LT_CORNER, (unsigned int)len, // LTB_CORNERS
                                                                        ak_error_get_end_string( ));
-          ak_asn1_print( &asn, fp );
+          ak_asn1_print( &asn );
           prefix[dlen] = 0;
         }
         ak_asn1_destroy( &asn) ;
@@ -643,20 +674,20 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
         char *fsym = VER_LINE;
 
        /*  как и ранее, обычный шестнадцатеричный вывод */
-        fprintf( fp, "\n" ); /* здесь надо выводить длину в случае, когда данные распарсиваются */
+        ak_printf( asn1_print_function, "\n" ); /* здесь надо выводить длину в случае, когда данные распарсиваются */
         if( tlv->next == NULL ) fsym = " ";
         for( i = 0; i < row; i++ ) {
-           fprintf( fp, "%s%s ", prefix, fsym );
-           for( j = 0; j < 16; j++ ) fprintf( fp, " %02X", bs.value[16*i+j] );
+           ak_printf( asn1_print_function, "%s%s ", prefix, fsym );
+           for( j = 0; j < 16; j++ ) ak_printf( asn1_print_function, " %02X", bs.value[16*i+j] );
            if(( i == row-1 ) && ( !tail ) && ( bs.unused >0 ))
-             fprintf( fp, " (%u bits unused)\n", bs.unused );
-            else fprintf( fp, "\n");
+             ak_printf( asn1_print_function, " (%u bits unused)\n", bs.unused );
+            else ak_printf( asn1_print_function, "\n");
         }
         if( tail ) {
-           fprintf( fp, "%s%s ", prefix, fsym );
-           for( j = 0; j < tail; j++ ) fprintf( fp, " %02X", bs.value[16*i+j] );
-           if( bs.unused > 0 ) fprintf( fp, " (%u bits unused)\n", bs.unused );
-            else fprintf( fp, "\n");
+           ak_printf( asn1_print_function, "%s%s ", prefix, fsym );
+           for( j = 0; j < tail; j++ ) ak_printf( asn1_print_function, " %02X", bs.value[16*i+j] );
+           if( bs.unused > 0 ) ak_printf( asn1_print_function, " (%u bits unused)\n", bs.unused );
+            else ak_printf( asn1_print_function, "\n");
         }
 
         /* в ряде случаев можно декодировать и битовые строки,
@@ -667,51 +698,51 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
     case TUTF8_STRING:
       if(( error = ak_tlv_get_utf8_string( tlv, &ptr )) == ak_error_ok ) {
-        fprintf( fp, "%s\n", (char *)ptr );
+        ak_printf( asn1_print_function, "%s\n", (char *)ptr );
       }
        else dp = ak_true;
       break;
 
     case TIA5_STRING:
       if(( error = ak_tlv_get_ia5_string( tlv, &ptr )) == ak_error_ok )
-        fprintf( fp, "%s\n", (char *)ptr );
+        ak_printf( asn1_print_function, "%s\n", (char *)ptr );
        else dp = ak_true;
       break;
 
     case TPRINTABLE_STRING:
       if(( error = ak_tlv_get_printable_string( tlv, &ptr )) == ak_error_ok )
-        fprintf( fp, "%s\n", (char *)ptr );
+        ak_printf( asn1_print_function, "%s\n", (char *)ptr );
        else dp = ak_true;
       break;
 
     case TNUMERIC_STRING:
       if(( error = ak_tlv_get_numeric_string( tlv, &ptr )) == ak_error_ok )
-        fprintf( fp, "%s\n", (char *)ptr );
+        ak_printf( asn1_print_function, "%s\n", (char *)ptr );
        else dp = ak_true;
       break;
 
     case TUTCTIME:
       if(( error = ak_tlv_get_utc_time_string( tlv, &ptr )) == ak_error_ok )
-        fprintf( fp, "%s\n", (char *)ptr );
+        ak_printf( asn1_print_function, "%s\n", (char *)ptr );
        else dp = ak_true;
       break;
 
     case TGENERALIZED_TIME:
       if(( error = ak_tlv_get_generalized_time_string( tlv, &ptr )) == ak_error_ok )
-        fprintf( fp, "%s\n", (char *)ptr );
+        ak_printf( asn1_print_function, "%s\n", (char *)ptr );
        else dp = ak_true;
       break;
 
     case TOBJECT_IDENTIFIER:
       if(( error = ak_tlv_get_oid( tlv, &ptr )) == ak_error_ok ) {
-        fprintf( fp, "%s", (char *)ptr );
+        ak_printf( asn1_print_function, "%s", (char *)ptr );
 
        /* ищем значение в базе oid'ов */
         if(( oid = ak_oid_find_by_ni( ptr )) != NULL ) {
-          fprintf( fp, " (%s)\n", oid->name[0] );
+          ak_printf( asn1_print_function, " (%s)\n", oid->name[0] );
          }
           else {
-           fprintf( fp, "\n");
+           ak_printf( asn1_print_function, "\n");
            ak_error_set_value( ak_error_ok ); /* убираем ошибку поиска oid */
          }
       }
@@ -724,9 +755,9 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
  /* случай, когда предопределенное преобразование неизвестно или выполнено с ошибкой */
   if( dp ) {
-    if( tlv->data.primitive != NULL ) fprintf( fp, " [len: %u, data: 0x%s]\n",
+    if( tlv->data.primitive != NULL ) ak_printf( asn1_print_function, " [len: %u, data: 0x%s]\n",
              (unsigned int) tlv->len, ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ));
-      else fprintf( fp, " [len: %u, data: %s(null)%s]\n", (unsigned int) tlv->len,
+      else ak_printf( asn1_print_function, " [len: %u, data: %s(null)%s]\n", (unsigned int) tlv->len,
                                          ak_error_get_start_string( ), ak_error_get_end_string( ));
   }
  return ak_error_ok;
@@ -1523,7 +1554,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_tlv_print_global_name( ak_tlv tlv, FILE *fp )
+ int ak_tlv_print_global_name( ak_tlv tlv )
 {
   ak_asn1 asn = NULL;
   int error = ak_error_ok;
@@ -1582,9 +1613,9 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
       }
       ak_asn1_next( asnseq );
       if( ak_tlv_get_utf8_string( asnseq->current, &ptr ) == ak_error_ok ) {
-        fprintf( fp, "%s: %s", oid->name[1], (char *)ptr );
-        if( asn->current->next != NULL ) fprintf( fp, ", " );
-         else fprintf( fp, " " );
+        ak_printf( asn1_print_function, "%s: %s", oid->name[1], (char *)ptr );
+        if( asn->current->next != NULL ) ak_printf( asn1_print_function, ", " );
+         else ak_printf( asn1_print_function, " " );
       }
   } while( ak_asn1_next( asn ));
 
@@ -2897,29 +2928,29 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \param asn1 указатель на текущий уровень ASN.1 дерева.
-    \param fp файловый дескриптор, в который выводится информация;
+/*!  Для вывода используется функция fprintf( stdout, ... )
+    (может быть изменена с помощью вызова ak_asn1_set_print_function() )
+
+    \param asn1 указатель на текущий уровень ASN.1 дерева.
     файл должен быть преварительно открыт на запись.
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_asn1_print( ak_asn1 asn1, FILE *fp )
+ int ak_asn1_print( ak_asn1 asn1 )
 {
   ak_tlv x = NULL;
 
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                             "using null pointer to asn1 element" );
-  if( fp == NULL )  return ak_error_message( ak_error_null_pointer, __func__,
-                                                            "using null pointer to file context" );
  /* перебираем все узлы текущего слоя, начиная с первого */
   x = asn1->current;
   ak_asn1_first( asn1 );
   if( asn1->current == NULL ) /* это некорректная ситуация, поэтому сообщение выделяется красным */
-    fprintf( fp, "%s%s (null)%s\n", prefix,
+    ak_printf( asn1_print_function, "%s%s (null)%s\n", prefix,
                                           ak_error_get_start_string(), ak_error_get_end_string( ));
    else { /* перебор всех доступных узлов */
     do{
-      ak_tlv_print( asn1->current, fp );
+      ak_tlv_print( asn1->current );
     } while( ak_asn1_next( asn1 ));
   }
 
@@ -3444,12 +3475,11 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
       закодирована в кодировке base64 (формат PEM для сертификатов и секретных ключей).
 
    \param filename файл, содержащий закодированное ASN.1 дерево.
-   \param fp файловый дескриптор, который связан с файлом, в который выводится информация;
     перед вызовом функции десткриптор должен быть открыт; может принимать значения stdout и stderr.
    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_print_asn1( const char *filename , FILE *fp )
+ int ak_libakrypt_print_asn1( const char *filename )
 {
   struct asn1 asn;
   int error = ak_error_ok;
@@ -3460,7 +3490,7 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
 
  /* считываем данные и выводм в консоль */
   if(( error = ak_asn1_import_from_file( &asn, filename )) == ak_error_ok ) {
-    ak_asn1_print( &asn, fp );
+    ak_asn1_print( &asn );
   }
   ak_asn1_destroy( &asn );
  return error;

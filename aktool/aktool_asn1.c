@@ -149,7 +149,7 @@
     while( optind < argc ) {
         char *value = argv[optind++]; /* получаем указатель на запрашиваемое имя файла */
         if( ak_file_or_directory( value ) == DT_REG ) {
-          if( ak_libakrypt_print_asn1( value, stdout ) != ak_error_ok ) {
+          if( ak_libakrypt_print_asn1( value ) != ak_error_ok ) {
             aktool_error(_("file %s is wrong"), value );
             ecount++;
           }
@@ -195,7 +195,7 @@
           aktool_error(_("convertation of %s is wrong\n"), argv[idx] );
           ecount++;
         } else {
-            if( ak_libakrypt_print_asn1( name, stdout ) == ak_error_ok )
+            if( ak_libakrypt_print_asn1( name ) == ak_error_ok )
               fprintf( stdout, _("convertation of %s to %s is Ok\n"), argv[idx], name );
              else {
                aktool_error(_("convertation of %s is wrong\n"), argv[idx] );

@@ -9,9 +9,12 @@
     - ak_skey_load_from_file() [теперь возвращается NULL в случае ошибки]
     - ak_verifykey_verify_ptr()
     - ak_verifykey_import_from_asn1_extensions()
- - Исправлена ошибка при интерпретации случайных данных в качестве asn1
-   функция ak_ptr_load_from_base64_file()
+    - ak_ptr_load_from_base64_file()
+ - Добавлена функция ak_printf()
  - Возвращена русификация утилиты aktool
+ - Исправлены ошибки:
+    - при интерпретации случайных данных в качестве asn1
+    - в CMakeLists.txt при сборке документации (обработка отсутствующих программ)
 
 
 ## Изменения в версии 0.9.4

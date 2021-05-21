@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-05-19 22:03+0300\n"
+"POT-Creation-Date: 2021-05-21 12:57+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -69,8 +69,8 @@ msgid ""
 "\n"
 msgstr ""
 "\n"
-"общии опции программы:\n"
-"     --audit             установить уровень аудита [ допустимые значения: 0 "
+"общие опции программы:\n"
+"     --audit             установить уровень аудита [ варианты: 0 "
 "(отсутствует), 1 (стандартный), 2 (максимальный) ]\n"
 "     --audit-file        указать имя файла для вывода сообщений об ошиках и "
 "системы аудита библиотеки libakrypt\n"
@@ -79,8 +79,8 @@ msgstr ""
 "     --help              показать эту справку\n"
 "     --hex-input         считывать символы с консоли как шестнадцатеричные "
 "символы\n"
-"     --openssl-style     использовать нестандартные варианты некоторых "
-"криптографических алгоритмов (для совместимости с библиотекой openssl)\n"
+"     --openssl-style     для совместимости с библиотекой openssl\n"
+"                         использовать нестандартные варианты некоторых криптографических алгоритмов\n"
 "     --verbose           показывать дополнительную информацю в ходе работы "
 "программы\n"
 "\n"
@@ -173,215 +173,20 @@ msgstr ""
 msgid "aktool compiled by %s, version: %s (%s at %s)\n"
 msgstr "программа aktool скомпилирована %s, версии: %s (%s в %s)\n"
 
-#: aktool.c:54 aktool.c:55 aktool.c:76 aktool.c:77
-msgid "aktool"
-msgstr ""
-
-#: aktool.c:54 aktool.c:76
-msgid "/usr/share/locale/"
-msgstr ""
-
-#: aktool.c:62 aktool.c:84
-msgid "-h"
-msgstr ""
-
-#: aktool.c:63 aktool.c:85
-msgid "--help"
-msgstr ""
-
-#: aktool.c:64 aktool.c:86
-msgid "/?"
-msgstr ""
-
-#: aktool.c:65 aktool.c:87
-msgid "--version"
-msgstr ""
-
-#: aktool.c:69 aktool.c:91
-#, c-format
-msgid "%s\\.config\\libakrypt\\aktool.log"
-msgstr ""
-
 #: aktool.c:76 aktool.c:79 aktool.c:98 aktool.c:101
 #, c-format
 msgid "%s started at %s"
-msgstr ""
-
-#: aktool.c:86 aktool.c:108
-msgid "s"
-msgstr ""
-
-#: aktool.c:87 aktool.c:109
-msgid "show"
-msgstr ""
-
-#: aktool.c:88 aktool.c:110
-msgid "a"
-msgstr ""
-
-#: aktool.c:89 aktool.c:111
-msgid "asn1parse"
-msgstr ""
-
-#: aktool.c:90 aktool.c:112
-msgid "test"
-msgstr ""
-
-#: aktool.c:91 aktool.c:113
-msgid "k"
-msgstr ""
-
-#: aktool.c:92 aktool.c:114
-msgid "key"
-msgstr ""
-
-#: aktool.c:93 aktool.c:115
-msgid "i"
-msgstr ""
-
-#: aktool.c:94 aktool.c:116
-msgid "icode"
-msgstr ""
-
-#: aktool.c:95 aktool.c:117
-msgid "e"
-msgstr ""
-
-#: aktool.c:96 aktool.c:118
-msgid "encrypt"
-msgstr ""
-
-#: aktool.c:97 aktool.c:119
-msgid "d"
-msgstr ""
-
-#: aktool.c:98 aktool.c:120
-msgid "decrypt"
-msgstr ""
-
-#: aktool.c:123 aktool.c:145
-msgid "a+"
-msgstr ""
-
-#: aktool.c:126 aktool.c:148
-#, c-format
-msgid "%s\n"
-msgstr ""
-
-#: aktool.c:137 aktool.c:159
-msgid "stderr"
-msgstr ""
-
-#: aktool.c:167 aktool.c:189
-#, c-format
-msgid "%serror%s: %s\n"
-msgstr ""
-
-#: aktool.c:186 aktool.c:208
-msgid "openssl_compability "
-msgstr ""
-
-#: aktool.c:213 aktool.c:235
-#, c-format
-msgid "%s"
-msgstr ""
-
-#: aktool_asn1.c:31
-msgid "convert"
-msgstr ""
-
-#: aktool_asn1.c:32
-msgid "split"
-msgstr ""
-
-#: aktool_asn1.c:33
-msgid "join"
-msgstr ""
-
-#: aktool_asn1.c:34
-msgid "to"
-msgstr ""
-
-#: aktool_asn1.c:35 aktool_asn1.c:63
-msgid "pem"
-msgstr ""
-
-#: aktool_asn1.c:36
-msgid "output"
-msgstr ""
-
-#: aktool_asn1.c:45
-msgid "o:"
-msgstr ""
-
-#: aktool_asn1.c:60
-msgid "der"
-msgstr ""
-
-#: aktool_asn1.c:60
-msgid "DER"
-msgstr ""
-
-#: aktool_asn1.c:63
-msgid "PEM"
-msgstr ""
-
-#: aktool_asn1.c:66
-#, c-format
-msgid "error:\t%s is not valid format of output data\n"
-msgstr ""
-
-#: aktool_asn1.c:72
-msgid "certificate"
-msgstr ""
-
-#: aktool_asn1.c:76
-msgid "request"
-msgstr ""
-
-#: aktool_asn1.c:80
-msgid "symkey"
-msgstr ""
-
-#: aktool_asn1.c:84
-msgid "secretkey"
-msgstr ""
-
-#: aktool_asn1.c:88
-msgid "encrypted"
-msgstr ""
-
-#: aktool_asn1.c:92
-msgid "plain"
-msgstr ""
-
-#: aktool_asn1.c:136
-#, c-format
-msgid "aktool found %d error(s), rerun aktool with \"--audit stderr\" option\n"
-msgstr ""
-
-#: aktool_asn1.c:151 aktool_asn1.c:210 aktool_asn1.c:219
-#, c-format
-msgid "file %s is wrong\n"
-msgstr ""
-
-#: aktool_asn1.c:177 aktool_asn1.c:187
-msgid ".der"
-msgstr ""
-
-#: aktool_asn1.c:178 aktool_asn1.c:188
-msgid ".pem"
-msgstr ""
+msgstr "запуск %s произведен в %s"
 
 #: aktool_asn1.c:186 aktool_asn1.c:192 aktool_asn1.c:195 aktool_asn1.c:201
 #, c-format
 msgid "convertation of %s is wrong\n"
-msgstr ""
+msgstr "преобразование файла %s не выполнена\n"
 
 #: aktool_asn1.c:190 aktool_asn1.c:199
 #, c-format
 msgid "convertation of %s to %s is Ok\n"
-msgstr ""
+msgstr "преобразование файла %s в файл %s выполнена успешно\n"
 
 #: aktool_asn1.c:224 aktool_asn1.c:233
 #, c-format
@@ -401,28 +206,40 @@ msgid ""
 "     --to <format>       set the format of output file [ enabled values : "
 "der, pem ]\n"
 msgstr ""
+"aktool asn1parse [опции] [файлы] - декодировать и вывести в консоль asn1 данные\n"
+"использование:\n"
+"  aktool a file - вывод в консоль asn1 данных, сохраненных в форматах der или pem\n"
+"\n"
+"доступные опции:\n"
+"     --convert           преобразовать файл в заданный формат (der или pem)\n"
+" -o, --output <file>     указать имя выходного файла\n"
+"     --pem <content>     явно указать тип данных, сохраняемых в файл формата pem\n"
+"                         [ варианты: certificate, request, symkey, "
+"secretkey, encrypted, plain ]\n"
+"     --split             разделить asn1 дерево на несколько листьев\n"
+"     --to <format>       указать формат выходного файла [ варианты: der, pem ]\n"
 
 #: aktool_asn1.c:66
 #, c-format
 msgid "%s is not valid format of output data"
-msgstr ""
+msgstr "%s не является допустимым форматом для выходного файла"
 
 #: aktool_asn1.c:135
 #, c-format
 msgid "aktool found %d error(s), rerun aktool with \"--audit stderr\" option"
-msgstr ""
+msgstr "найдены ошибки (%d), для вывода информации в консоль перезапусти программу с опцией \"--audit stderr\""
 
 #: aktool_asn1.c:153
 #, c-format
 msgid "file %s is wrong"
-msgstr ""
+msgstr "файл %s ошибочен"
 
 #: aktool_asn1.c:157
 #, c-format
 msgid "incorrect filename %s"
-msgstr ""
+msgstr "неверное имя файла %s"
 
 #: aktool_asn1.c:161
 msgid ""
 "file with asn1 content is not specified as the last argument of the program"
-msgstr ""
+msgstr "файл, содержащий asn1 данные, не указан в качестве аргументов программы"

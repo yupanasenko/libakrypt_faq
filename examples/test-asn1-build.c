@@ -108,7 +108,7 @@
 
  /* выводим сформированное дерево */
   fprintf( stdout, "\n" );
-  ak_asn1_print( &root, stdout );
+  ak_asn1_print( &root );
 
  /* кодируем сформированное дерево */
   len = sizeof( array );

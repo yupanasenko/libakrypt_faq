@@ -100,12 +100,12 @@
 
  /* если файл задан, то ОК */
   if( argc > 1 )
-    ak_libakrypt_print_asn1( argv[1], stdout );
+    ak_libakrypt_print_asn1( argv[1] );
    else
     { /* иначе декодируем константные данные */
        ak_asn1_decode( asn = ak_asn1_new( ),
                                 test_data, sizeof( test_data ), ak_false );
-       ak_asn1_print( asn, stdout );
+       ak_asn1_print( asn );
        ak_asn1_delete( asn );
     }
 
