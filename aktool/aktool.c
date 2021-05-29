@@ -15,6 +15,7 @@
    ak_false,    /* совместимость с openssl не предусматривается */
    ak_false,    /* пароли вводятся как символы текста */
    ak_false,    /* вывод подробной информации/справки  */
+   ak_false,
    NULL,
    NULL,
    NULL,
@@ -186,8 +187,8 @@
  #endif
   va_end( args );
 
- if( result >= 0 ) printf( "%serror%s: %s\n",
-                                  ak_error_get_start_string(), ak_error_get_end_string(), string );
+ if(( result >= 0 ) && ( !ki.quiet )) /* выводим сообщение только, если нет режима тишины */
+   printf(_("%serror%s: %s\n"), ak_error_get_start_string(), ak_error_get_end_string(), string );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -267,6 +268,7 @@
      "     --help              show this information\n"
      "     --hex-input         read characters from terminal or console as hexademal numbers\n"
      "     --openssl-style     use non-standard variants of some crypto algorithms, as in openssl library\n"
+     "     --quiet             not to display any information and use only the return code\n"
      "     --verbose           show the additional information\n\n"));
 
  return EXIT_SUCCESS;
@@ -298,7 +300,6 @@
 /* заглушки */
  int aktool_show( int argc, tchar *argv[] ) { return EXIT_FAILURE; }
  int aktool_test( int argc, tchar *argv[] ) { return EXIT_FAILURE; }
- int aktool_key( int argc, tchar *argv[] ) { return EXIT_FAILURE; }
  int aktool_icode( int argc, tchar *argv[] ) { return EXIT_FAILURE; }
  int aktool_encrypt( int argc, tchar *argv[], encrypt_t work ) { return EXIT_FAILURE; }
 

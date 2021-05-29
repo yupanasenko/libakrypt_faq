@@ -3,14 +3,14 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#: aktool.c:32 aktool.c:33 aktool.c:34 aktool.c:35 aktool.c:36 aktool.c:37
-#: aktool.c:38 aktool.c:39 aktool.c:40 aktool.c:74
+#: aktool.c:33 aktool.c:34 aktool.c:35 aktool.c:36 aktool.c:37 aktool.c:38
+#: aktool.c:39 aktool.c:40 aktool.c:41 aktool.c:75
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-05-21 20:17+0300\n"
+"POT-Creation-Date: 2021-05-29 03:58+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,16 +19,58 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: aktool.c:103 aktool.c:125
+msgid "email-address"
+msgstr "электронная почта"
+
+msgid "common-name"
+msgstr "имя"
+
+msgid "surname"
+msgstr "фамилия"
+
+msgid "serial-number"
+msgstr "серийный номер"
+
+msgid "country-name"
+msgstr "страна"
+
+msgid "locality-name"
+msgstr "местность"
+
+msgid "state-or-province-name"
+msgstr "область"
+
+msgid "street-address"
+msgstr "адрес"
+
+msgid "organization"
+msgstr "организация"
+
+msgid "organization-unit"
+msgstr "подразделение"
+
+msgid "ogrn"
+msgstr "ОГРН"
+
+msgid "snils"
+msgstr "СНИЛС"
+
+msgid "ogrnip"
+msgstr "ОГРНИП"
+
+msgid "inn"
+msgstr "ИНН"
+
+#: aktool.c:103 aktool.c:125 aktool.c:126
 #, c-format
 msgid "undefined command \"%s\""
 msgstr "неожиданная команда \"%s\""
 
-#: aktool.c:179 aktool.c:201
+#: aktool.c:179 aktool.c:201 aktool.c:202
 msgid "incorrect initialization of libakrypt library"
 msgstr "ошибка инициализации библиотеки libakrypt"
 
-#: aktool.c:222 aktool.c:244
+#: aktool.c:222 aktool.c:244 aktool.c:245
 #, c-format
 msgid ""
 "aktool - crypto utility based on libakrypt library (version: %s)\n"
@@ -38,67 +80,31 @@ msgstr ""
 "libakrypt (версия: %s)\n"
 "\n"
 
-#: aktool.c:224 aktool.c:246
+#: aktool.c:224 aktool.c:246 aktool.c:247
 #, c-format
 msgid "try \"aktool --help\" to get more information\n"
 msgstr "попробуй \"aktool --help\" для получения более подробной информации\n"
 
-#: aktool.c:232 aktool.c:254
+#: aktool.c:232 aktool.c:254 aktool.c:255
 #, c-format
 msgid "version: %s [compiled by %s, version: %s, date: %s at %s]\n"
 msgstr ""
 "версия: %s [скомпилирована %s, версия компилятора: %s, дата компиляции: %s "
 "at %s]\n"
 
-#: aktool.c:241 aktool.c:263
-#, c-format
-msgid ""
-"\n"
-"common aktool options:\n"
-"     --audit             set the audit level [ enabled values : 0 (none), 1 "
-"(standard), 2 (max) ]\n"
-"     --audit-file        set the output file for errors and libakrypt audit "
-"system messages\n"
-"     --dont-use-colors   do not use the highlighting of output data\n"
-"     --help              show this information\n"
-"     --hex-input         read characters from terminal or console as "
-"hexademal numbers\n"
-"     --openssl-style     use non-standard variants of some crypto "
-"algorithms, as in openssl library\n"
-"     --verbose           show the additional information\n"
-"\n"
-msgstr ""
-"\n"
-"общие опции программы:\n"
-"     --audit             установить уровень аудита [ варианты: 0 "
-"(отсутствует), 1 (стандартный), 2 (максимальный) ]\n"
-"     --audit-file        указать имя файла для вывода сообщений об ошиках и "
-"системы аудита библиотеки libakrypt\n"
-"     --dont-use-colors   не использовать выделение цветом при выводе в "
-"консоль\n"
-"     --help              показать эту справку\n"
-"     --hex-input         считывать символы с консоли как шестнадцатеричные "
-"символы\n"
-"     --openssl-style     для совместимости с библиотекой openssl\n"
-"                         использовать нестандартные варианты некоторых "
-"криптографических алгоритмов\n"
-"     --verbose           показывать дополнительную информацю в ходе работы "
-"программы\n"
-"\n"
-
-#: aktool.c:256 aktool.c:278
+#: aktool.c:256 aktool.c:278 aktool.c:279 aktool.c:280
 #, c-format
 msgid "aktool - crypto utility based on libakrypt library (version: %s)\n"
 msgstr ""
 "aktool - криптографическая утилита, использующая функции бибилиотеки "
 "libakrypt (версия: %s)\n"
 
-#: aktool.c:258 aktool.c:280
+#: aktool.c:258 aktool.c:280 aktool.c:281 aktool.c:282
 #, c-format
 msgid "usage:\n"
 msgstr "использование:\n"
 
-#: aktool.c:259 aktool.c:281
+#: aktool.c:259 aktool.c:281 aktool.c:282 aktool.c:283
 #, c-format
 msgid ""
 "  aktool command [options] [files]\n"
@@ -107,32 +113,32 @@ msgstr ""
 "  aktool команда [опции] [файлы]\n"
 "\n"
 
-#: aktool.c:260 aktool.c:282
+#: aktool.c:260 aktool.c:282 aktool.c:283 aktool.c:284
 #, c-format
 msgid "available commands (in short and long forms):\n"
 msgstr "доступные каманды (в короткой и полной формах):\n"
 
-#: aktool.c:261 aktool.c:283
+#: aktool.c:261 aktool.c:283 aktool.c:284 aktool.c:285
 #, c-format
 msgid "  a, asn1parse  -  decode and print the ASN.1 data\n"
 msgstr "  a, asn1parse  -  декодировать и вывести в консоль ASN.1 данные\n"
 
-#: aktool.c:262 aktool.c:284
+#: aktool.c:262 aktool.c:284 aktool.c:285 aktool.c:286
 #, c-format
 msgid "  i, icode      -  calculate or check integrity codes\n"
 msgstr "  i, icode      -  выработать или проверить код целостности\n"
 
-#: aktool.c:263 aktool.c:285
+#: aktool.c:263 aktool.c:285 aktool.c:286 aktool.c:287
 #, c-format
 msgid "  k, key        -  key generation and management functions\n"
 msgstr "  k, key        -  функции выработки и управления ключами\n"
 
-#: aktool.c:264 aktool.c:286
+#: aktool.c:264 aktool.c:286 aktool.c:287 aktool.c:288
 #, c-format
 msgid "  s, show       -  show useful information\n"
 msgstr "  s, show       -  вывод служебной или справочной информации\n"
 
-#: aktool.c:265 aktool.c:287
+#: aktool.c:265 aktool.c:287 aktool.c:288 aktool.c:289
 #, c-format
 msgid ""
 "     test       -  run performance and correct operation tests\n"
@@ -142,24 +148,24 @@ msgstr ""
 "криптографических механизмов\n"
 "\n"
 
-#: aktool.c:266 aktool.c:288
+#: aktool.c:266 aktool.c:288 aktool.c:289 aktool.c:290
 #, c-format
 msgid "also try:\n"
 msgstr "также попробуй:\n"
 
-#: aktool.c:267 aktool.c:289
+#: aktool.c:267 aktool.c:289 aktool.c:290 aktool.c:291
 #, c-format
 msgid "  \"aktool command --help\" to get information about command options\n"
 msgstr ""
 "  \"aktool команда --help\" для получения подробной справки для указанной "
 "команды\n"
 
-#: aktool.c:268 aktool.c:290
+#: aktool.c:268 aktool.c:290 aktool.c:291 aktool.c:292
 #, c-format
 msgid "  \"aktool --version\" to get version of aktool\n"
 msgstr "  \"aktool --version\" для получения версии программы\n"
 
-#: aktool.c:269 aktool.c:291
+#: aktool.c:269 aktool.c:291 aktool.c:292 aktool.c:293
 #, c-format
 msgid ""
 "  \"man aktool\" to get more information about aktool and useful examples\n"
@@ -169,12 +175,12 @@ msgstr ""
 "использования программы\n"
 "\n"
 
-#: aktool.c:270 aktool.c:292
+#: aktool.c:270 aktool.c:292 aktool.c:293 aktool.c:294
 #, c-format
 msgid "aktool compiled by %s, version: %s (%s at %s)\n"
 msgstr "программа aktool скомпилирована %s, версии: %s (%s в %s)\n"
 
-#: aktool.c:76 aktool.c:79 aktool.c:98 aktool.c:101
+#: aktool.c:76 aktool.c:79 aktool.c:98 aktool.c:101 aktool.c:99 aktool.c:102
 #, c-format
 msgid "%s started at %s"
 msgstr "запуск %s произведен в %s"
@@ -182,12 +188,12 @@ msgstr "запуск %s произведен в %s"
 #: aktool_asn1.c:186 aktool_asn1.c:192 aktool_asn1.c:195 aktool_asn1.c:201
 #, c-format
 msgid "convertation of %s is wrong\n"
-msgstr "преобразование файла %s не выполнена\n"
+msgstr "преобразование файла %s не выполнено\n"
 
 #: aktool_asn1.c:190 aktool_asn1.c:199
 #, c-format
 msgid "convertation of %s to %s is Ok\n"
-msgstr "преобразование файла %s в файл %s выполнена успешно\n"
+msgstr "преобразование файла %s в файл %s выполнено успешно\n"
 
 #: aktool_asn1.c:224 aktool_asn1.c:233
 #, c-format
@@ -210,8 +216,8 @@ msgstr ""
 "aktool asn1parse [опции] [файлы] - декодировать и вывести в консоль asn1 "
 "данные\n"
 "использование:\n"
-"  aktool a file - вывод в консоль asn1 данных, сохраненных в форматах der "
-"или pem\n"
+"  aktool a file - вывод в консоль asn1 данных, содержащихся в file в формате "
+"der или pem\n"
 "\n"
 "доступные опции:\n"
 "     --convert           преобразовать файл в заданный формат (der или pem)\n"
@@ -236,203 +242,250 @@ msgstr ""
 "найдены ошибки (%d), для вывода информации в консоль перезапусти программу с "
 "опцией \"--audit stderr\""
 
-#: aktool_asn1.c:153
-#, c-format
-msgid "file %s is wrong"
-msgstr "файл %s ошибочен"
-
-#: aktool_asn1.c:157
-#, c-format
-msgid "incorrect filename %s"
-msgstr "неверное имя файла %s"
-
 #: aktool_asn1.c:161
 msgid ""
 "file with asn1 content is not specified as the last argument of the program"
 msgstr ""
 "файл, содержащий asn1 данные, не указан в качестве аргументов программы"
 
-#: aktool.c:76 aktool.c:77
-msgid "aktool"
-msgstr ""
-
-#: aktool.c:76
-msgid "/usr/share/locale/"
-msgstr ""
-
-#: aktool.c:84
-msgid "-h"
-msgstr ""
-
-#: aktool.c:85
-msgid "--help"
-msgstr ""
-
-#: aktool.c:86
-msgid "/?"
-msgstr ""
-
-#: aktool.c:87
-msgid "--version"
-msgstr ""
-
-#: aktool.c:91
-#, c-format
-msgid "%s\\.config\\libakrypt\\aktool.log"
-msgstr ""
-
-#: aktool.c:108
-msgid "s"
-msgstr ""
-
-#: aktool.c:109
-msgid "show"
-msgstr ""
-
-#: aktool.c:110
-msgid "a"
-msgstr ""
-
-#: aktool.c:111
-msgid "asn1parse"
-msgstr ""
-
-#: aktool.c:112
-msgid "test"
-msgstr ""
-
-#: aktool.c:113
-msgid "k"
-msgstr ""
-
-#: aktool.c:114
-msgid "key"
-msgstr ""
-
-#: aktool.c:115
-msgid "i"
-msgstr ""
-
-#: aktool.c:116
-msgid "icode"
-msgstr ""
-
-#: aktool.c:117
-msgid "e"
-msgstr ""
-
-#: aktool.c:118
-msgid "encrypt"
-msgstr ""
-
-#: aktool.c:119
-msgid "d"
-msgstr ""
-
-#: aktool.c:120
-msgid "decrypt"
-msgstr ""
-
-#: aktool.c:145
-msgid "a+"
-msgstr ""
-
-#: aktool.c:148
-#, c-format
-msgid "%s\n"
-msgstr ""
-
-#: aktool.c:159
-msgid "stderr"
-msgstr ""
-
-#: aktool.c:189
+#: aktool.c:189 aktool.c:191
 #, c-format
 msgid "%serror%s: %s\n"
-msgstr ""
+msgstr "%sошибка%s: %s\n"
 
-#: aktool.c:208
-msgid "openssl_compability "
-msgstr ""
-
-#: aktool.c:235
+#: aktool_asn1.c:135 aktool_key.c:211 aktool_key.c:210 aktool_key.c:230
 #, c-format
-msgid "%s"
+msgid ""
+"aktool found %d error(s), rerun aktool with \"--audit stderr\" option or see "
+"syslog messages"
 msgstr ""
+"aktool нашел %d ошибок, перезапусти aktool с опцией \"--audit stderr\" или "
+"смотри сообщения syslog"
 
-#: aktool_asn1.c:31
-msgid "convert"
-msgstr ""
-
-#: aktool_asn1.c:32
-msgid "split"
-msgstr ""
-
-#: aktool_asn1.c:33
-msgid "join"
-msgstr ""
-
-#: aktool_asn1.c:34
-msgid "to"
-msgstr ""
-
-#: aktool_asn1.c:35 aktool_asn1.c:63
-msgid "pem"
-msgstr ""
-
-#: aktool_asn1.c:36
-msgid "output"
-msgstr ""
-
-#: aktool_asn1.c:45
-msgid "o:"
-msgstr ""
-
-#: aktool_asn1.c:60
-msgid "der"
-msgstr ""
-
-#: aktool_asn1.c:60
-msgid "DER"
-msgstr ""
-
-#: aktool_asn1.c:63
-msgid "PEM"
-msgstr ""
-
-#: aktool_asn1.c:72
-msgid "certificate"
-msgstr ""
-
-#: aktool_asn1.c:76
-msgid "request"
-msgstr ""
-
-#: aktool_asn1.c:80
-msgid "symkey"
-msgstr ""
-
-#: aktool_asn1.c:84
-msgid "secretkey"
-msgstr ""
-
-#: aktool_asn1.c:88
-msgid "encrypted"
-msgstr ""
-
-#: aktool_asn1.c:92
-msgid "plain"
-msgstr ""
-
-#: aktool_asn1.c:187
-msgid ".der"
-msgstr ""
-
-#: aktool_asn1.c:188
-msgid ".pem"
-msgstr ""
-
-#: aktool_asn1.c:219
+#: aktool_key.c:130 aktool_key.c:129
 #, c-format
-msgid "file %s is wrong\n"
+msgid "Certificate's request\n"
+msgstr "Запрос сертификата\n"
+
+#: aktool_key.c:131 aktool_key.c:130
+#, c-format
+msgid "  subject: %s\n"
+msgstr "  владелец: %s\n"
+
+#: aktool_key.c:132 aktool_key.c:131
+#, c-format
+msgid "  global name:\n"
+msgstr "  расширенное имя:\n"
+
+#: aktool_key.c:154 aktool_key.c:167
+#, c-format
+msgid "  algorithm: %s\n"
+msgstr "  алгоритм: %s\n"
+
+#: aktool_key.c:155 aktool_key.c:168
+#, c-format
+msgid "  signature:\n"
+msgstr "  значение подписи:\n"
+
+#: aktool_key.c:190 aktool_key.c:189 aktool_key.c:201
+#, c-format
+msgid "verified: Ok\n"
+msgstr "проверен: Да\n"
+
+#: aktool_key.c:205
+#, c-format
+msgid "verified: No\n"
+msgstr "проверен: Нет\n"
+
+#: aktool_key.c:205 aktool_key.c:204 aktool_key.c:224
+msgid ""
+"certificate ot certificate's request is not specified as the last argument "
+"of the program"
 msgstr ""
+"сертификат или запрос сертификата не указан в качестве аргумента опции --"
+"verify"
+
+#: aktool_key.c:225 aktool_key.c:224 aktool_key.c:244
+#, c-format
+msgid ""
+"aktool key [options]  - key generation and management functions\n"
+"\n"
+"available options:\n"
+" -a, --algorithm         specify the method or the cryptographic algorithm "
+"for key generation\n"
+"                         this option needs to be used in some key generation "
+"schemes, e.g. in Blom scheme\n"
+"     --ca-cert           set the name of the certificate authorithy's public "
+"key\n"
+"     --ca-key            another form of --key option used to sign the "
+"certificate\n"
+" -c, --cert              sign the request and generate the certificate of "
+"public key\n"
+"     --curve             set the elliptic curve name or identifier for "
+"asymmetric keys\n"
+"     --days              set the days count to expiration date of secret or "
+"public key\n"
+"     --field             bit length which used to define the galois field "
+"[ enabled values: 256, 512 ]\n"
+"     --format            set the format of output file [ enabled values: "
+"der, pem, certificate ]\n"
+"     --id                set a generalized name or identifier for the user, "
+"subscriber or key owner\n"
+"                         if the identifier contains control commands, it is "
+"interpreted as a set of names\n"
+"     --id-hex            set a user or suscriber's identifier as hexademal "
+"string\n"
+"                         this option does not apply to public keys\n"
+"     --inpass            set the password for the secret key to be read "
+"directly in command line\n"
+"     --inpass-hex        set the password for the secret key to be read "
+"directly in command line as hexademal string\n"
+"     --key               specify the name of file with the secret key\n"
+"                         this can be a master key or certificate authority's "
+"secret key which is used to sign a certificate\n"
+"     --label             assign the user-defined label to secret key\n"
+" -n, --new               generate a new key or key pair for specified "
+"target\n"
+"     --op                short form of --output-public-key option\n"
+"     --outpass           set the password for the secret key to be stored "
+"directly on the command line\n"
+"     --outpass-hex       set the password for the secret key to be stored "
+"directly on the command line as hexademal string\n"
+"     --output-public-key set the file name for the new public key request\n"
+" -o, --output-secret-key set the file name for the new secret key\n"
+"     --random            set the name or identifier of random sequences "
+"generator\n"
+"                         the generator will be used to create a new key "
+"[ default value: \"%s\" ]\n"
+"     --random-file       set the name of file with random sequence\n"
+" -s, --show              output the parameters of the secret key or public "
+"key's request or certificate\n"
+"     --size              set the dimension of secret master key, in "
+"particular, for blom scheme [ maximal value: 4096 ]\n"
+" -t, --target            specify the name of the cryptographic algorithm for "
+"the new generated key\n"
+"                         one can use any supported names or identifiers of "
+"algorithm,\n"
+"                         or \"undefined\" value for generation the plain "
+"unecrypted key unrelated to any algorithm\n"
+"     --to                another form of --format option\n"
+" -v, --verify            verify the public key's request or certificate\n"
+"\n"
+"options used for customizing a public key's certificate:\n"
+"     --authority-name    add an issuer's generalized name to the authority "
+"key identifier extension\n"
+"     --ca-ext            use as certificate authority [ enabled values: "
+"true, false ]\n"
+"     --pathlen           set the maximal length of certificate's chain\n"
+"     --digital-signature use for verifying a digital signatures of user "
+"data\n"
+"     --content-commitment\n"
+"     --key-encipherment  use for encipherment of secret keys\n"
+"     --data-encipherment use for encipherment of user data (is not usally "
+"used)\n"
+"     --key-agreement     use in key agreement protocols for subject's "
+"authentication\n"
+"     --key-cert-sign     use for verifying of public key's certificates\n"
+"     --crl-sign          use for verifying of revocation lists of "
+"certificates\n"
+msgstr ""
+
+#: aktool_key.c:277 aktool_key.c:276 aktool_key.c:296
+#, c-format
+msgid "for usage examples try \"man aktool\"\n"
+msgstr ""
+"используй \"man aktool\" для изучения примеров использования программы\n"
+
+#: aktool.c:263 aktool.c:264
+#, c-format
+msgid ""
+"\n"
+"common aktool options:\n"
+"     --audit             set the audit level [ enabled values : 0 (none), 1 "
+"(standard), 2 (max) ]\n"
+"     --audit-file        set the output file for errors and libakrypt audit "
+"system messages\n"
+"     --dont-use-colors   do not use the highlighting of output data\n"
+"     --help              show this information\n"
+"     --hex-input         read characters from terminal or console as "
+"hexademal numbers\n"
+"     --openssl-style     use non-standard variants of some crypto "
+"algorithms, as in openssl library\n"
+"     --quiet             not to display any information and use only the "
+"return code\n"
+"     --verbose           show the additional information\n"
+"\n"
+msgstr ""
+"\n"
+"общие опции программы:\n"
+"     --audit             установить уровень аудита [ варианты: 0 "
+"(отсутствует), 1 (стандартный), 2 (максимальный) ]\n"
+"     --audit-file        указать имя файла для вывода сообщений об ошиках\n"
+"     --dont-use-colors   не использовать выделение цветом при выводе в "
+"консоль\n"
+"     --help              показать эту справку\n"
+"     --hex-input         считывать символы с консоли как шестнадцатеричные "
+"значения\n"
+"     --openssl-style     для совместимости с библиотекой openssl\n"
+"                         использовать нестандартные варианты некоторых "
+"криптографических алгоритмов\n"
+"     --quiet             не выводить ни какой информации и использовать код "
+"возврата\n"
+"     --verbose           показывать дополнительную информацию в ходе работы "
+"программы\n"
+"\n"
+
+#: aktool_asn1.c:153
+#, c-format
+msgid "file %s is wrong"
+msgstr "файл %s ошибочен"
+
+#: aktool_key.c:152
+#, c-format
+msgid ""
+"  public key:\n"
+"    x:  "
+msgstr ""
+"  открытый ключ:\n"
+"    x:  "
+
+#: aktool_key.c:155 aktool_key.c:160
+#, c-format
+msgid ""
+"\n"
+"\t"
+msgstr ""
+
+#: aktool_key.c:157
+#, c-format
+msgid ""
+"\n"
+"    y:  "
+msgstr ""
+
+#: aktool_key.c:162
+#, c-format
+msgid ""
+"\n"
+"    elliptic curve:\n"
+"\t%s (%u bits)\n"
+msgstr ""
+"\n"
+"    кривая:\n"
+"\t%s (%u бит)\n"
+
+#: aktool_key.c:165
+#, c-format
+msgid ""
+"  request:\n"
+"    type: PKCS#10 (P 1323565.1.023-2018)\n"
+"    version: %d\n"
+msgstr ""
+"  запрос:\n"
+"    тип: PKCS#10 (Р 1323565.1.023-2018)\n"
+"    версия: %d\n"
+
+#: aktool_key.c:218
+#, c-format
+msgid "unsupported file %s"
+msgstr "неподдерживаемый формат файла %s"

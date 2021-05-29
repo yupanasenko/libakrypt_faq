@@ -1525,6 +1525,8 @@ extern "C" {
  dll_export int ak_tlv_print_global_name( ak_tlv );
 /*! \brief Вывод информации о расширенном имени в заданную строку. */
  dll_export int ak_tlv_snprintf_global_name( ak_tlv , char * , const size_t );
+/*! \brief Получение данных, содержащихся в заданной строке глобального имени. */
+ dll_export ak_uint8 *ak_tlv_get_string_from_global_name( ak_tlv , const char * , size_t * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Выделение памяти и создание одного уровня ASN1 дерева. */
@@ -1718,6 +1720,17 @@ extern "C" {
 } *ak_verifykey;
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Параметры запроса на сертификат */
+ typedef struct request_opts {
+  /*! \brief Версия запроса на сертификат,
+      значение 1 соотвествует PKCS#10 в варианте, изложенным в рекомендациях Р 1323565.1.023-2018,
+      другие значения не поддерживаются */
+   ak_uint32 version;
+  /*! \brief Значение электронной подписи, считанное из сохданного ранее запроса */
+   ak_uint8 signature[128];
+} *ak_request_opts;
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Бит `digitalSignature` расширения `keyUsage`. */
  #define bit_digitalSignature   (256)
 /*! \brief Бит `contentCommitment` расширения `keyUsage`. */
@@ -1819,16 +1832,20 @@ extern "C" {
  dll_export int ak_verifykey_add_name_string( ak_verifykey , const char * , const char * );
 /*! \brief Уничтожение контекста открытого ключа. */
  dll_export int ak_verifykey_destroy( ak_verifykey );
+
 /** \addtogroup cert-export-doc Функции экспорта и импорта открытых ключей
  @{ */
+/*! \brief Функция формирует asn1 дерево с запросом на сертификат открытого ключа. */
+ dll_export int ak_verifykey_export_to_asn1_request( ak_verifykey , ak_signkey ,
+                                                                             ak_random , ak_asn1 );
 /*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
     в запрос на получение сертификата окрытого ключа. */
  dll_export int ak_verifykey_export_to_request( ak_verifykey , ak_signkey , ak_random ,
                                                          char * , const size_t , export_format_t );
 /*! \brief Функция импортирует открытый ключ асимметричного преобразования из запроса
    на сертификат открытого ключа */
- dll_export int ak_verifykey_import_from_request( ak_verifykey , const char * ,
-                                                                         ak_function_file_output );
+ dll_export int ak_verifykey_import_from_request( ak_verifykey , const char * , ak_request_opts );
+
 /*! \brief Функция вырабатывает серийный номер сертификата. */
  dll_export int ak_verifykey_generate_certificate_serial_number( ak_verifykey ,
                                                                          ak_signkey , ak_mpzn256 );

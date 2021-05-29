@@ -784,8 +784,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
      break;
 
    case CONSTRUCTED:
-     if(( error = ak_asn1_evaluate_length(
-                                              tlv->data.constructed, &subtotal )) != ak_error_ok )
+     if(( error = ak_asn1_evaluate_length( tlv->data.constructed, &subtotal )) != ak_error_ok )
        return ak_error_message( error, __func__, "incorrect length evaluation of tlv element");
       else *length = 1 + ak_asn1_get_length_size(subtotal) + ( tlv->len = subtotal );
      break;
@@ -1813,350 +1812,45 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция создает расширение x509v3 следующего вида.
-
- \code
-   ├SEQUENCE┐
-            ├OBJECT IDENTIFIER 2.5.29.14 (SubjectKey Identifier)
-            └OCTET STRING
-               04 14 9B 85 5E FB 81 DC 4D 59 07 51 63 CF BE DF
-               DA 2C 7F C9 44 3C
-               ├ encoded (22 octets)
-               └OCTET STRING
-                  9B 85 5E FB 81 DC 4D 59 07 51 63 CF BE DF DA 2C  // данные, на которые
-                  7F C9 44 3C                                      // указывает ptr
- \endcode
-
- \param ptr указатель на область памяти, содержащую идентификатор ключа
- \param size размер области памяти
- \return Функция возвращает указатель на структуру узла. Данная структура должна
-  быть позднее удалена с помощью явного вызова функции ak_tlv_delete() или путем
-  удаления дерева, в который данный узел будет входить.
-  В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
-  функции ak_error_get_value().                                                                    */
+/*!
+    \param name Обобщенное имя, должно быть предварительно создано.
+    \param idx Строка (идентификатор), которым отмечены данные.
+    \param size Размер найденных данных
+    \return Функция возвращает указатель строку символов (данные не копируются и хранятся
+            в asn1 дереве). В случае ошибки возвращается NULL и устанавливается код ошибки,
+            который можно получить с помощью вызова ak_error_get_value().                          */
 /* ----------------------------------------------------------------------------------------------- */
- ak_tlv ak_tlv_new_subject_key_identifier( ak_pointer ptr, const size_t size )
+ ak_uint8 *ak_tlv_get_string_from_global_name( ak_tlv name, const char *idx, size_t *size )
 {
-  ak_uint8 encode[256]; /* очень длинные идентификаторы это плохо */
-  ak_tlv tlv = NULL, os = NULL;
-  size_t len = sizeof( encode );
+  ak_asn1 lst = NULL;
 
-  if(( tlv = ak_tlv_new_sequence()) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
+  if( name == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to global name" );
     return NULL;
   }
- /* добавляем идентификатор расширения */
-  ak_asn1_add_oid( tlv->data.constructed, "2.5.29.14" );
- /* добавляем закодированный идентификатор (номер) ключа */
-  memset( encode, 0, sizeof( encode ));
-  if(( os = ak_tlv_new_primitive( TOCTET_STRING, size, ptr, ak_false )) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                                   "incorrect creation of temporary tlv context" );
-    return ak_tlv_delete( tlv );
-  }
-  if( ak_tlv_encode( os, encode, &len ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                                    "incorrect encoding a temporary tlv context" );
-    return ak_tlv_delete( tlv );
-  }
-  ak_tlv_delete( os );
- /* собственно вставка в asn1 дерево */
-  ak_asn1_add_octet_string( tlv->data.constructed, encode, len );
- return tlv;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция создает расширение x509v3, определяемое следующей структурой
-
-  \code
-   id-ce-basicConstraints OBJECT IDENTIFIER ::=  { 2 5 29 19 }
-
-   BasicConstraints ::= SEQUENCE {
-        cA                      BOOLEAN DEFAULT FALSE,
-        pathLenConstraint       INTEGER (0..MAX) OPTIONAL }
-  \endcode
-
-
-  Пример иерархического представления данного расширения выгдядит следующим образом.
-
- \code
-   └SEQUENCE┐
-            ├OBJECT IDENTIFIER 2.5.29.19 (Basic Constraints)
-            ├BOOLEAN TRUE                 // расширение является критичным
-            └OCTET STRING
-               30 06 01 01 FF 02 01 00
-               ├ encoded (8 octets)
-               └SEQUENCE┐
-                        ├BOOLEAN TRUE     //  сертификат может создавать цепочки сертификации (cA)
-                        └INTEGER 0x0      //  длина цепочки равна 1
-                                          // (количество промежуточных сертификатов равно ноль)
- \endcode
-
-  RFC5280: Расширение для базовых ограничений (basic constraints) указывает, является ли `субъект`
-  сертификата центром сертификации (certificate authority), а также максимальную глубину действительных
-  сертификационных путей, которые включают данный сертификат. Булевское значение сА указывает,
-  принадлежит ли сертифицированный открытый ключ центру сертификации.
-  Если булевское значение сА не установлено,
-  то бит keyCertSign в расширении использования ключа (keyUsage) не должен быть установлен.
-  Поле pathLenConstrant имеет смысл, только если булевское значение сА установлено, и в расширении
-  использования ключа установлен бит keyCertSign. В этом случае данное поле определяет максимальное
-  число несамовыпущенных промежуточных сертификатов, которые *могут* следовать за данным сертификатом
-  в действительном сертификационном пути.
-  Сертификат является самовыпущенным (самоподписаным), если номера ключей,
-  которые присутствуют в полях субъекта и выпускающего (эмитента), являются одинаковыми и не пустыми.
-  Когда pathLenConstraint не присутствует, никаких ограничений не предполагается.
-
- \note Данное расширение должно присутствовать как критичное во всех сертификатах центра сертификации,
- которые содержат открытые ключи, используемые для проверки цифровых подписей в сертификатах.
- Данное расширение *может* присутствовать как критичное или некритичное расширение в сертификатах
- центра сертификации, которые содержат открытые ключи, используемые для целей, отличных от проверки
- цифровых подписей в сертификатах. Такие сертификаты содержат открытые ключи, используемые
- исключительно для проверки цифровых подписей в CRLs,
- и сертификатами, которые содержат открытые ключи для управления ключом, используемым в протоколах
- регистрации сертификатов.
-
- \param ca флаг возможности создавать цепочки сертификации
- \param pathLen длина цепочки сертифкации
- \return Функция возвращает указатель на структуру узла. Данная структура должна
-  быть позднее удалена с помощью явного вызова функции ak_tlv_delete() или путем
-  удаления дерева, в который данный узел будет входить.
-  В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
-  функции ak_error_get_value().                                                                    */
-/* ----------------------------------------------------------------------------------------------- */
- ak_tlv ak_tlv_new_basic_constraints( bool_t ca, const ak_uint32 pathLen )
-{
-  ak_uint8 encode[256]; /* очень длинные идентификаторы это плохо */
-  ak_tlv tlv = NULL, os = NULL;
-  size_t len = sizeof( encode );
-
-  if(( tlv = ak_tlv_new_sequence()) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
-    return NULL;
-  }
- /* добавляем идентификатор расширения */
-  ak_asn1_add_oid( tlv->data.constructed, "2.5.29.19" );
-  ak_asn1_add_bool( tlv->data.constructed, ak_true ); /* расширение всегда критическое */
-
- /* добавляем закодированный идентификатор (номер) ключа */
-  if(( os = ak_tlv_new_sequence()) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                                   "incorrect creation of temporary tlv context" );
-    return ak_tlv_delete( tlv );
-  }
-
-  ak_asn1_add_bool( os->data.constructed, ca );
-  if( ca ) ak_asn1_add_uint32( os->data.constructed, pathLen );
-
-  memset( encode, 0, sizeof( encode ));
-  if( ak_tlv_encode( os, encode, &len ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                                    "incorrect encoding a temporary tlv context" );
-    return ak_tlv_delete( tlv );
-  }
-  ak_tlv_delete( os );
-
- /* собственно вставка в asn1 дерево */
-  ak_asn1_add_octet_string( tlv->data.constructed, encode, len );
- return tlv;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция создает расширение x509v3 следующего вида.
-
- \code
-    └SEQUENCE┐
-             ├OBJECT IDENTIFIER 2.5.29.15 (Key Usage)
-             └OCTET STRING
-                03 02 00 84
-                ├ encoded (4 octets)
-                └BIT STRING
-                   84
- \endcode
-
- \param bits набор флагов
- \return Функция возвращает указатель на структуру узла. Данная структура должна
-  быть позднее удалена с помощью явного вызова функции ak_tlv_delete() или путем
-  удаления дерева, в который данный узел будет входить.
-  В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
-  функции ak_error_get_value().                                                                    */
-/* ----------------------------------------------------------------------------------------------- */
- ak_tlv ak_tlv_new_key_usage( const ak_uint32 bits )
-{
-  ak_uint8 buffer[2], /* значащими битами являются младшие 9,
-            поэтому нам хватит двух байт для хранения флагов */
-           encode[16];  /* массив для кодирования битовой строки */
-  struct bit_string bs;
-  ak_tlv tlv = NULL, os = NULL;
-  size_t len = sizeof( encode );
-
-  if( !bits ) {
-    ak_error_message( ak_error_zero_length, __func__, "using undefined set of keyUsage flags" );
-    return NULL;
-  }
-  if(( tlv = ak_tlv_new_sequence()) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
-    return NULL;
-  }
- /* добавляем идентификатор расширения */
-  ak_asn1_add_oid( tlv->data.constructed, "2.5.29.15" );
-
-  buffer[0] = ( bits >> 1 )&0xFF;
-  if( bits&0x01 ) { /* определен бит decipherOnly */
-    buffer[1] = 0x80;
-    bs.unused = 7;
-    bs.len = 2;
-  } else {
-      buffer[1] = 0;
-      bs.unused = 0;
-      bs.len = 1;
-   }
-  bs.value = buffer;
-
- /* добавляем закодированную последовательность бит */
-  if(( os = ak_tlv_new_primitive( TBIT_STRING, bs.len+1, NULL, ak_true )) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                                   "incorrect creation of temporary tlv context" );
-    return ak_tlv_delete( tlv );
-  }
-  os->data.primitive[0] = bs.unused;
-  memcpy( os->data.primitive+1, bs.value, bs.len );
-
-  memset( encode, 0, sizeof( encode ));
-  if( ak_tlv_encode( os, encode, &len ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                                    "incorrect encoding a temporary tlv context" );
-    return ak_tlv_delete( tlv );
-  }
-  ak_tlv_delete( os );
-
- /* собственно вставка в asn1 дерево */
-  ak_asn1_add_octet_string( tlv->data.constructed, encode, len );
- return tlv;
-}
-
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция создает расширение x509v3 определяемое следующей структурой
-
- \code
-    KeyIdentifier ::= ОСТЕТ SТRING
-
-    AuthorityKeyIdentifier ::= SEQUENCE {
-       keyIdentifier       [О] KeyIdentifier OPTIONAL,
-       authorityCertIssuer [1] GeneralNames OPTIONAL,
-       authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL
-    }
- \endcode
-
-   Пример данного расширения выглядит следующим образом (взято из сертификата,
-   подписанного корневым сертификатом ГУЦ)
-
- \code
-└SEQUENCE┐
-         ├[0] 8b983b891851e8ef9c0278b8eac8d420b255c95d
-         ├[1]┐
-         │   └[4]┐
-         │       └SEQUENCE┐
-         │                ├SET┐
-         │                │   └SEQUENCE┐
-         │                │            ├OBJECT IDENTIFIER 1.2.840.113549.1.9.1 (email-address)
-         │                │            └IA5 STRING dit@minsvyaz.ru
-         │                ├SET┐
-         │                │   └SEQUENCE┐
-         │                │            ├OBJECT IDENTIFIER 2.5.4.6 (country-name)
-         │                │            └PRINTABLE STRING RU
-         │                ├SET┐
-         │                │   └SEQUENCE┐
-         │                │            ├OBJECT IDENTIFIER 2.5.4.8 (state-or-province-name)
-         │                │            └UTF8 STRING 77 г. Москва
-         │                └SET┐
-         │                    └SEQUENCE┐
-         │                             ├OBJECT IDENTIFIER 2.5.4.3 (common-name)
-         │                             └UTF8 STRING Головной удостоверяющий центр
-         └[2] 34681e40cb41ef33a9a0b7c876929a29
- \endcode
-
-   Метке `[0]` соответствует номер ключа подписи (поле verifykey.number),
-   метке `[1]`  - расширенное имя ключа подписи (поле verifykey.name),
-   метке `[2]`  - серийный номер выпущенного сертификата открытого ключа (однозначно вычисляется из
-   номеров секретного ключа и ключа подписи).
-
-   RFC 5280: Расширение для идентификатора ключа сертификационного центра предоставляет способ
-   идентификации открытого ключа, соответствующего закрытому ключу, который использовался для
-   подписывания сертификата. Данное расширение используется, когда выпускающий имеет несколько ключей
-   для подписывания. Идентификация может быть основана либо на идентификаторе ключа
-   (идентификатор ключа субъекта в сертификате выпускающего), либо на имени выпускающего и
-   серийном номере сертификата.
-
-   \note Поле `keyIdentifier` расширения authorityKeyIdentifier должно быть включено во все
-   сертификаты, выпущенные цетром сертификации для обеспечения возможности создания
-   сертификационного пути. Существует одно исключение: когда центр сертификации распространяет свой
-   открытый ключ в форме самоподписанного сертификата, идентификатор ключа уполномоченного органа
-   может быть опущен. Подпись для самоподписанного сертификата создается закрытым ключом,
-   соответствующим открытому ключу субъекта. ЭТО доказывает, что выпускающий обладает как открытым
-   ключом, так и закрытым.
-
-   \param issuer_skey секретный ключ, используемый для подписи сертификата, в который
-   помещается расширение
-   \param issuer_vkey открытый ключ, соответствующий ключу подписи
-   \param name булево значение; если оно истинно, то в расширение помещается глобальное имя владельца
-   указанных ключей
-   \return Функция возвращает указатель на структуру узла. Данная структура должна
-   быть позднее удалена с помощью явного вызова функции ak_tlv_delete() или путем
-   удаления дерева, в который данный узел будет входить.
-   В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
-   функции ak_error_get_value().                                                                   */
-/* ----------------------------------------------------------------------------------------------- */
- ak_tlv ak_tlv_new_authority_key_identifier( ak_signkey issuer_skey,
-                                                     ak_verifykey issuer_vkey, const bool_t name )
-{
-  ak_mpzn256 serial;
-  ak_uint8 encode[512];  /* массив для кодирования */
-  size_t len = sizeof( encode );
-  ak_tlv tlv = NULL, os = NULL;
-  ak_asn1 asn = NULL, asn1 = NULL;
-
-  if(( tlv = ak_tlv_new_sequence()) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
+  if( idx == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to object identifier" );
     return NULL;
   }
 
- /* добавляем идентификатор расширения */
-  ak_asn1_add_oid( tlv->data.constructed, "2.5.29.35" );
+ /* начинаем перебор всех элементов */
+  if(( lst = name->data.constructed ) != NULL ) {
+    ak_asn1_first( lst );
+    do{
+        ak_pointer ptr = NULL;
+        ak_asn1 sq = lst->current->data.constructed;
 
- /* добавляем закодированную последовательность, содержащую перечень имен */
-  if(( os = ak_tlv_new_sequence()) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                                   "incorrect creation of temporary tlv context" );
-    return ak_tlv_delete( tlv );
+        ak_asn1_first( sq = sq->current->data.constructed );
+        ak_tlv_get_oid( sq->current, &ptr );
+        if( strncmp( idx, ptr, strlen( idx )) == 0 ) {
+          ak_asn1_next( sq );
+          if( size != NULL ) *size = sq->current->len; /* получаем длину строки */
+          return sq->current->data.primitive;
+        }
+    } while( ak_asn1_next( lst ));
   }
 
- /* добавляем [0] */
-  ak_asn1_add_tlv( os->data.constructed,
-                  ak_tlv_new_primitive( CONTEXT_SPECIFIC^0x00, 32, issuer_vkey->number, ak_true ));
- /* добавляем [1] */
-  if( name ) {
-    ak_asn1_add_tlv( os->data.constructed,
-                  ak_tlv_new_constructed( CONSTRUCTED^CONTEXT_SPECIFIC^0x01, asn = ak_asn1_new()));
-    ak_asn1_add_tlv( asn,
-                 ak_tlv_new_constructed( CONSTRUCTED^CONTEXT_SPECIFIC^0x04, asn1 = ak_asn1_new()));
-    ak_asn1_add_tlv( asn1, ak_tlv_duplicate_global_name( issuer_vkey->name ));
-  }
- /* добавляем [2] */
-  ak_verifykey_generate_certificate_serial_number( issuer_vkey, issuer_skey, serial );
-  ak_asn1_add_mpzn( os->data.constructed, CONTEXT_SPECIFIC^0x02, serial, ak_mpzn256_size );
-
-  memset( encode, 0, sizeof( encode ));
-  if( ak_tlv_encode( os, encode, &len ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                                    "incorrect encoding a temporary tlv context" );
-    return ak_tlv_delete( tlv );
-  }
-  ak_tlv_delete( os );
-
- /* собственно вставка в asn1 дерево */
-  ak_asn1_add_octet_string( tlv->data.constructed, encode, len );
- return tlv;
+ return NULL;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

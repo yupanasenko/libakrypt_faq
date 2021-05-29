@@ -191,7 +191,7 @@ set ( ARITHMETIC_TESTS_LIST
       asn1-parse
       sign01
       asn1-keys
-      asn1-cert
+ #     asn1-cert
       blom-keys
     )
 
@@ -217,11 +217,10 @@ message("-- Added tests (now \"make test\" enabled): [ ${ARITHMETIC_TESTS_LIST} 
 # -------------------------------------------------------------------------------------------------- #
 set( AKTOOL_SOURCES
      aktool/aktool.c
-
-#     aktool/aktool_key.c
+     aktool/aktool_asn1.c
+     aktool/aktool_key.c
 #     aktool/aktool_show.c
 #     aktool/aktool_test.c
-     aktool/aktool_asn1.c
 #     aktool/aktool_icode.c
 #     aktool/aktool_encrypt.c
    )
@@ -303,13 +302,12 @@ if( CMAKE_HOST_UNIX )
   install( FILES ${CMAKE_SOURCE_DIR}/libakrypt.conf DESTINATION ${AK_CONFIG_PATH} )
   install( FILES ${LIBAKRYPT_DOCUMENTATION} DESTINATION share/doc/libakrypt )
 
-  find_file( AKTOOL_MAN ${CMAKE_BINARY_DIR}/aktool.1.gz )
-  if( AKTOOL_MAN )
-    install( FILES ${CMAKE_BINARY_DIR}/aktool.1.gz DESTINATION share/man/ru/man1 )
-  else()
-    find_file( AKTOOL_SMAN ${CMAKE_SOURCE_DIR}/aktool/aktool.1.gz )
-    if( AKTOOL_SMAN )
-      install( FILES ${CMAKE_SOURCE_DIR}/aktool/aktool.1.gz DESTINATION share/man/ru/man1 )
+ # инсталлируем мануал для aktool
+  if( PANDOC )
+    if( GZIP )
+      install( FILES ${CMAKE_BINARY_DIR}/aktool.1.gz DESTINATION share/man/ru/man1 )
+    else()
+      install( FILES ${CMAKE_BINARY_DIR}/aktool/aktool.1 DESTINATION share/man/ru/man1 )
     endif()
   endif()
 

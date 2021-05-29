@@ -10,7 +10,10 @@
     - ak_verifykey_verify_ptr()
     - ak_verifykey_import_from_asn1_extensions()
     - ak_ptr_load_from_base64_file()
+    - ak_verifykey_import_from_request() [выделяется буффер в случае нехватки памяти]
  - Добавлена функция ak_printf()
+ - Функции экспортируются:
+    - ak_verifykey_export_to_asn1_request()
  - Возвращена русификация утилиты aktool
  - Исправлены ошибки:
     - при интерпретации случайных данных в качестве asn1

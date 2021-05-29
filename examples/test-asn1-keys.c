@@ -99,11 +99,12 @@
     printf("      number: %s\n", ak_ptr_to_hexstr( ((ak_skey)key)->number, 32, ak_false ));
     printf("       label: %s\n", ((ak_skey)key)->label );
     printf("    resource: [type: %u, value: %ld]\n",
-                     ((ak_skey)key)->resource.value.type, ((ak_skey)key)->resource.value.counter );
+           ((ak_skey)key)->resource.value.type, (long int)((ak_skey)key)->resource.value.counter );
     printf("  not before: %s", ctime( &((ak_skey)key)->resource.time.not_before ));
     printf("   not after: %s", ctime( &((ak_skey)key)->resource.time.not_after ));
     printf("       flags: %016llx\n", ((ak_skey)key)->flags );
-    printf("      buffer: %s\n", ak_ptr_to_hexstr( ((ak_skey)key)->key, 2*((ak_skey)key)->key_size, ak_false ));
+    printf("      buffer: %s\n", ak_ptr_to_hexstr( ((ak_skey)key)->key,
+                                                           2*((ak_skey)key)->key_size, ak_false ));
 
    /* шифруем тестируемые данные еще раз*/
     if( ak_bckey_ctr( lkey, testdata, out2, sizeof( testdata ),
@@ -170,7 +171,7 @@
    printf("      number: %s\n", ak_ptr_to_hexstr( lctx.key.number, 32, ak_false ));
    printf("       label: %s\n", lctx.key.label );
    printf("    resource: [type: %u, value: %ld]\n",
-                                   lctx.key.resource.value.type, lctx.key.resource.value.counter );
+                         lctx.key.resource.value.type, (long int)lctx.key.resource.value.counter );
    printf("  not before: %s", ctime( &lctx.key.resource.time.not_before ));
    printf("   not after: %s", ctime( &lctx.key.resource.time.not_after ));
    printf("       flags: %016llx\n", lctx.key.flags );
@@ -243,7 +244,7 @@
    printf("       number: %s\n", ak_ptr_to_hexstr( lkey.key.number, 32, ak_false ));
    printf("        label: %s\n", lkey.key.label );
    printf("     resource: [type: %u, value: %ld]\n",
-                                   lkey.key.resource.value.type, lkey.key.resource.value.counter );
+                         lkey.key.resource.value.type, (long int)lkey.key.resource.value.counter );
    printf("   not before: %s", ctime( &lkey.key.resource.time.not_before ));
    printf("    not after: %s", ctime( &lkey.key.resource.time.not_after ));
    printf("        flags: %016llx\n", lkey.key.flags );

@@ -49,7 +49,9 @@
   /* флаг ввода пароля в шестнадцатеричной системе счисления */
    bool_t aktool_hex_password_input;
   /* расширенный вывод сообщений */
-   bool_t aktool_verbose;
+   bool_t verbose;
+  /* режим тишины (ни чего не выводим, используем код возврата) */
+   bool_t quiet;
   /* идентификатор используемого (криптографического) метода */
    ak_oid method;
   /* идентификатор алгоритма генерации случайных значений */
@@ -140,7 +142,8 @@
                                             { "audit",               1, NULL,   4  },\
                                             { "openssl-style",       0, NULL,   5  },\
                                             { "hex-input",           0, NULL,   6  },\
-                                            { "verbose",             0, NULL,   7  }
+                                            { "verbose",             0, NULL,   7  },\
+                                            { "quiet",               0, NULL,   8  }
 
  #define aktool_common_functions_run( help_function )   \
      case 'h' :   return help_function();\
@@ -161,7 +164,12 @@
         ki.aktool_hex_password_input = ak_true;\
         break;\
      case  7  : /* обрабатываем --verbose */\
-        ki.aktool_verbose = ak_true;\
+        ki.verbose = ak_true;\
+        ki.quiet = ak_false;\
+        break;\
+     case  8  : /* обрабатываем --quiet */\
+        ki.quiet = ak_true;\
+        ki.verbose = ak_false;\
         break;\
 
  #endif

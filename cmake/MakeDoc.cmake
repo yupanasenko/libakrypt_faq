@@ -70,7 +70,7 @@ if( UNIX )
   if( PANDOC )
     set( AKTOOL_DATE "18 июля 2021" )
     set( AKTOOL_FOOTER "Правила пользования" )
-    execute_process( COMMAND pandoc --metadata=date:${AKTOOL_DATE} --metadata=title:aktool --metadata=section:1 --metadata=footer:{AKTOOL_FOOTER} -s -t man ${CMAKE_SOURCE_DIR}/aktool/Readme.md -o ${CMAKE_BINARY_DIR}/aktool.1 )
+    execute_process( COMMAND pandoc --metadata=date:${AKTOOL_DATE} --metadata=title:aktool --metadata=section:1 --metadata=footer:${AKTOOL_FOOTER} -s -t man ${CMAKE_SOURCE_DIR}/aktool/Readme.md -o ${CMAKE_BINARY_DIR}/aktool.1 )
     if( GZIP )
       execute_process( COMMAND  gzip --force ${CMAKE_BINARY_DIR}/aktool.1 )
     endif()
@@ -88,6 +88,15 @@ if( UNIX )
 
     file( APPEND ${script} "doxygen Doxyfile.akbase\n" )
     file( APPEND ${script} "doxygen Doxyfile.akrypt\n" )
+
+    # добавляем генерацию мануалов
+    if( PANDOC )
+      file( APPEND ${script}
+        "pandoc --metadata=date:\"${AKTOOL_DATE}\" --metadata=title:aktool --metadata=section:1 --metadata=footer:\"${AKTOOL_FOOTER}\" -s -t man ${CMAKE_SOURCE_DIR}/aktool/Readme.md -o ${CMAKE_BINARY_DIR}/aktool.1\n" )
+      if( GZIP )
+        file( APPEND ${script} "gzip --force ${CMAKE_BINARY_DIR}/aktool.1\n" )
+      endif()
+    endif()
 
     if( XELATEX )
       file( WRITE ${pdf-script} "#/bin/bash\n" )
