@@ -443,10 +443,10 @@ msgstr "файл %s ошибочен"
 #: aktool_key.c:152
 #, c-format
 msgid ""
-"  public key:\n"
+"  public key (%s ... )\n"
 "    x:  "
 msgstr ""
-"  открытый ключ:\n"
+"  открытый ключ (%s ... )\n"
 "    x:  "
 
 #: aktool_key.c:155 aktool_key.c:160

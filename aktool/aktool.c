@@ -11,34 +11,35 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  aktool_ki_t ki = {
-   ak_log_none, /* аудит не выполняется */
-   ak_false,    /* совместимость с openssl не предусматривается */
-   ak_false,    /* пароли вводятся как символы текста */
-   ak_false,    /* вывод подробной информации/справки  */
-   ak_false,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   asn1_der_format,
-   ak_false,
-   NULL,
-   365,
-   ak_galois256_size,
-   512,
-   NULL,
-   0,
-   0,
-   0,
-   "",
-   "",
-   "",
-   "",           /* имя файла аудита не определено */
-   "",
-   "",
-   "",
-   "",
-   ""
+   .aktool_log_level = ak_log_none, /* аудит не выполняется */
+   .aktool_openssl_compability = ak_false,    /* совместимость с openssl не предусматривается */
+   .aktool_hex_password_input = ak_false,    /* пароли вводятся как символы текста */
+   .verbose = ak_false,    /* вывод подробной информации/справки  */
+   .quiet = ak_false,
+   .method = NULL,
+   .oid_of_generator = NULL,
+   .name_of_file_for_generator = NULL,
+   .generator = NULL,
+   .oid_of_target = NULL,
+   .format = asn1_der_format,
+   .target_undefined = ak_false,
+   .curve = NULL,
+   .days = 365, /* срок действия ключа (в сутках) */
+   .field = ak_galois256_size,
+   .size = 512,
+   .keylabel = NULL, /* указатель на внешнюю область памяти */
+   .lenuser = 0,
+   .leninpass = 0,
+   .lenoutpass = 0,
+   .userid = "",
+   .inpass = "",
+   .outpass = "",
+   .audit_filename = "", /* имя файла аудита не определено */
+   .os_file = "", /* выход, открытый ключ */
+   .op_file = "", /* выход, секретный ключ */
+   .key_file = "", /* вход, секретный ключ */
+   .pubkey_file = "", /* вход, открытый ключ */
+   .capubkey_file = "" /* вход, открырый ключ УЦ */
  };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -89,8 +90,9 @@
 
  #ifdef _WIN32
   if( ak_libakrypt_get_home_path( homepath, FILENAME_MAX ) == ak_error_ok ) {
-    ak_snprintf( audit_filename, FILENAME_MAX, "%s\\.config\\libakrypt\\aktool.log", homepath );
-    remove( audit_filename );
+    ak_snprintf( ki.audit_filename, sizeof( ki.audit_filename ),
+                                                  "%s\\.config\\libakrypt\\aktool.log", homepath );
+    remove( ki.audit_filename );
     ak_log_set_function( audit = aktool_audit_function );
 
    #ifdef _MSC_VER
@@ -238,6 +240,113 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*                            функции генерации ключевой информации                                */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_random aktool_key_new_generator( void )
+{
+  ak_random generator = NULL;
+
+  if( ki.name_of_file_for_generator != NULL ) {
+    if( ak_random_create_file( generator = malloc( sizeof( struct random )),
+                                                ki.name_of_file_for_generator ) != ak_error_ok ) {
+      if( generator ) free( generator );
+      return NULL;
+    }
+    if( ki.verbose ) printf(_("used a file with random data: %s\n"),
+                                                                  ki.name_of_file_for_generator );
+  }
+   else {
+    if(( generator = ak_oid_new_object( ki.oid_of_generator )) == NULL ) return NULL;
+    if( ki.verbose ) printf(_("used a random number generator: %s\n"),
+                                                                    ki.oid_of_generator->name[0] );
+   }
+
+ return generator;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ void aktool_key_delete_generator( ak_random generator )
+{
+   if( ki.name_of_file_for_generator != NULL ) {
+     ak_random_destroy( generator );
+     free( generator );
+   }
+    else ak_oid_delete_object( ki.oid_of_generator, generator );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                                    Функции ввода ключей                                         */
+/* ----------------------------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Эта функция используется перед экспортом ключа */
+ ssize_t aktool_key_load_user_password_twice( char *password, const size_t pass_size )
+{
+  int error = ak_error_ok;
+  ssize_t passlen = 0, passlen2 = 0;
+  char buffer[1 + ( aktool_password_max_length << 1 )], password2[ aktool_password_max_length ];
+
+ /* формируем пароль с первой попытки */
+  fprintf( stdout, _("input password"));
+   if( ki.aktool_hex_password_input ) fprintf( stdout, _(" [as hexademal string]"));
+  fprintf( stdout, ": "); fflush( stdout );
+  memset( buffer, 0, sizeof( buffer ));
+  passlen = ak_password_read( buffer, sizeof( buffer ));
+  fprintf( stdout, "\n" );
+  if( passlen < 1 ) {
+    aktool_error(_("password zero length"));
+    return ak_error_wrong_length;
+  }
+
+  memset( password, 0, pass_size );
+  if( ki.aktool_hex_password_input ) {
+    if(( error = ak_hexstr_to_ptr( buffer, password, pass_size -1, ak_false )) == ak_error_ok )
+      passlen = ak_min( pass_size -1, strlen( buffer )%2 + ( strlen( buffer ) >> 1 ));
+     else passlen = 0;
+    /* как минимум один последний октет password будет равен нулю */
+  }
+   else memcpy( password, buffer, passlen = ak_min( pass_size -1, strlen( buffer )));
+
+  if( !passlen ) {
+    aktool_error(_("password has zero length"));
+    return passlen;
+  }
+
+ /* теперь считываем пароль второй раз и проверяем совпадение */
+  printf(_("retype password"));
+   if( ki.aktool_hex_password_input ) fprintf( stdout, _(" [as hexademal string]"));
+  fprintf( stdout, ": "); fflush( stdout );
+  memset( buffer, 0, sizeof( buffer ));
+  passlen2 = ak_password_read( buffer, sizeof( buffer ));
+  fprintf( stdout, "\n" );
+  if( passlen < 1 ) {
+    aktool_error(_("password zero length"));
+    return ak_error_wrong_length;
+  }
+
+  memset( password2, 0, pass_size );
+  if( ki.aktool_hex_password_input ) {
+    if(( error = ak_hexstr_to_ptr( buffer, password2, pass_size -1, ak_false )) == ak_error_ok )
+      passlen2 = ak_min( pass_size -1, strlen( buffer )%2 + ( strlen( buffer ) >> 1 ));
+     else passlen2 = 0;
+    /* как минимум один последний октет password будет равен нулю */
+  }
+   else memcpy( password2, buffer, passlen2 = ak_min( pass_size -1, strlen( buffer )));
+
+  if(( passlen != passlen2 ) ||
+     ( !ak_ptr_is_equal( password, password2, passlen ))) {
+      aktool_error(_("the passwords don't match"));
+      passlen = ak_error_not_equal_data;
+    }
+
+  memset( buffer, 0, sizeof( buffer ));
+  memset( password2, 0, sizeof( password2 ));
+
+ return passlen;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                 реализация вывода справки                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_litehelp( void )
@@ -298,8 +407,6 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /* заглушки */
- int aktool_show( int argc, tchar *argv[] ) { return EXIT_FAILURE; }
- int aktool_test( int argc, tchar *argv[] ) { return EXIT_FAILURE; }
  int aktool_icode( int argc, tchar *argv[] ) { return EXIT_FAILURE; }
  int aktool_encrypt( int argc, tchar *argv[], encrypt_t work ) { return EXIT_FAILURE; }
 

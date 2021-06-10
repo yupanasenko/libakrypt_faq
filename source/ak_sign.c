@@ -841,7 +841,8 @@
   pctx->time.not_before = pctx->time.not_after = 0;
  /* обобщенное имя владельца ключа, по умолчанию, не определено */
   pctx->name = NULL;
-
+ /* устанавливаем максимальный размер номера ключа */
+  pctx->numlen = sizeof( pctx->number );
  return error;
 }
 
@@ -1202,7 +1203,7 @@
     goto labex;
   }
    else ak_hash_finalize( &hctx, buffer, vk->wc->size*sizeof( ak_uint64 ),
-                                                                 vk->number, sizeof( vk->number ));
+                                                    vk->number, vk->numlen = sizeof( vk->number ));
   labex: ak_hash_destroy( &hctx );
  return error;
 }

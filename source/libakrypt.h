@@ -1703,6 +1703,9 @@ extern "C" {
   struct hash ctx;
  /*! \brief уникальный номер открытого ключа (значение SubjectKeyIdentifier в RFC 5280) */
   ak_uint8 number[32];
+ /*! \brief длина номера (в октетах)
+     \details для ключей, созданных другим ПО модет быть меньше, чем sizeof( number ) */
+  ak_uint32 numlen;
  /*! \brief контекст эллиптической кривой */
   ak_wcurve wc;
  /*! \brief OID алгоритма, для которого используется ключ;

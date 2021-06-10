@@ -58,6 +58,8 @@
    ak_oid oid_of_generator;
   /* имя файла со случайными последовательностями (как правило, специальное блочное устройство) */
    char *name_of_file_for_generator;
+  /* указатель на генератор */
+   ak_random generator;
   /* идентификатор цели выполнения программы */
    ak_oid oid_of_target;
   /* формат цели выполнения программы */
@@ -122,6 +124,13 @@
  bool_t aktool_create_libakrypt( void );
 /* общий для всех подпрограмм запуск процедуры остановки билиотеки */
  int aktool_destroy_libakrypt( void );
+/* функция создает новый генератор псевдослучайных чисел */
+ ak_random aktool_key_new_generator( void );
+/* функция удаляет генератор псевдослучайных чисел */
+ void aktool_key_delete_generator( ak_random );
+
+/* функция двукратного чтения ключа */
+ ssize_t aktool_key_load_user_password_twice( char * , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /* реализации пользовательских команд */
@@ -136,6 +145,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /* это стандартные для всех программ опции */
+ #define aktool_common_letters_definition "h"
  #define aktool_common_functions_definition { "help",                0, NULL,  'h' },\
                                             { "audit-file",          1, NULL,   2  },\
                                             { "dont-use-colors",     0, NULL,   3  },\

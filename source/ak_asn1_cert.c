@@ -552,10 +552,11 @@
     в сертификат открытого ключа.
     Все проверки пройдены ранее и нам точно известна структура asn1 дерева. */
   ak_asn1_first( asn );
-  asn = asn->current->data.constructed;
-  ak_asn1_first( asn );
-  ak_asn1_next( asn ); /* нужен второй узел */
-  vkey->name = ak_asn1_exclude( asn );
+  if(( asn = asn->current->data.constructed ) != NULL ) {
+   ak_asn1_first( asn );
+   ak_asn1_next( asn ); /* нужен второй узел */
+   vkey->name = ak_asn1_exclude( asn );
+  }
 
  lab1:
   if( root != NULL ) ak_asn1_delete( root );

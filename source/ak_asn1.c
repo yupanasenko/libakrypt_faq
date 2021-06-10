@@ -1845,7 +1845,10 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
         if( strncmp( idx, ptr, strlen( idx )) == 0 ) {
           ak_asn1_next( sq );
           if( size != NULL ) *size = sq->current->len; /* получаем длину строки */
-          return sq->current->data.primitive;
+
+          memcpy( output_buffer, sq->current->data.primitive, sq->current->len );
+          output_buffer[sq->current->len] = 0;
+          return (ak_uint8 *)output_buffer;
         }
     } while( ak_asn1_next( lst ));
   }
