@@ -28,7 +28,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key( int argc, char *argv[] )
 {
-  int next_option = 0, exit_status = EXIT_FAILURE;
+  int value, next_option = 0, exit_status = EXIT_FAILURE;
   enum { do_nothing, do_new, do_show, do_verify, do_cert } work = do_nothing;
 
  /* параметры, которые устанавливаются по умолчанию */
@@ -302,6 +302,58 @@
                   }
                    break;
 
+      /* определяем опции сертификатов */
+        case 190:  ki.certops.key_usage.bits ^= bit_digitalSignature;
+                   ki.certops.key_usage.is_present = ak_true;
+                   break;
+        case 191:  ki.certops.key_usage.bits ^= bit_contentCommitment;
+                   ki.certops.key_usage.is_present = ak_true;
+                   break;
+        case 192:  ki.certops.key_usage.bits ^= bit_keyEncipherment;
+                   ki.certops.key_usage.is_present = ak_true;
+                   break;
+        case 193:  ki.certops.key_usage.bits ^= bit_dataEncipherment;
+                   ki.certops.key_usage.is_present = ak_true;
+                   break;
+        case 194:  ki.certops.key_usage.bits ^= bit_keyAgreement;
+                   ki.certops.key_usage.is_present = ak_true;
+                   break;
+        case 195:  ki.certops.key_usage.bits ^= bit_keyCertSign;
+                   ki.certops.key_usage.is_present = ak_true;
+                   break;
+        case 196:  ki.certops.key_usage.bits ^= bit_cRLSign;
+                   ki.certops.key_usage.is_present = ak_true;
+                   break;
+
+        case 197: /* --ca-ext */
+                   if( strncmp( optarg, "true", 4 ) == 0 )
+                     ki.certops.ca.is_present = ki.certops.ca.value = ak_true;
+                    else
+                     if( strncmp( optarg, "false", 5 ) == 0 ) {
+                       ki.certops.ca.is_present = ak_true;
+                       ki.certops.ca.value = ak_false;
+                     }
+                      else {
+                             aktool_error(
+                              _("%s is not valid value of certificate authority option"), optarg );
+                             return EXIT_FAILURE;
+                           }
+                   break;
+
+        case 198: /* --pathlen */
+                   if(( value = atoi( optarg )) < 0 ) {
+                     aktool_error(_("the value of pathlenConstraints must be non negative integer"));
+                     return EXIT_FAILURE;
+                   }
+                   ki.certops.ca.is_present = ki.certops.ca.value = ak_true;
+                   ki.certops.ca.pathlenConstraint = ak_min( 100, value );
+                   break;
+
+        case 200: /* --authority-name */
+                   ki.certops.authoritykey.is_present =
+                      ki.certops.authoritykey.include_name = ak_true;
+                   break;
+
         default:  /* обрабатываем ошибочные параметры */
                    if( next_option != -1 ) work = do_nothing;
                    break;
@@ -445,9 +497,19 @@
     }
 
     if( ki.format == aktool_magic_number ) { /* сохраняем открытый ключ как корневой сертификат */
-      aktool_error( "мы не сохраняем самоподписаные сертификаты" );
 
-
+      ki.format = asn1_pem_format; /* возвращаем необходимое значение */
+      if( ak_verifykey_export_to_certificate( &vkey, key, &vkey, ki.generator,  &ki.certops,
+                          ki.op_file, ( strlen( ki.op_file ) > 0 ) ? 0 : sizeof( ki.op_file ),
+                                                                     ki.format ) != ak_error_ok ) {
+        aktool_error(_("wrong export a public key to certificate %s%s%s"),
+                              ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
+        goto labex2;
+      }
+       else {
+         printf(_("certificate of public key stored in %s%s%s file\n\n"),
+                              ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
+       }
     }
      else { /* сохраняем запрос на сертификат */
         if( ak_verifykey_export_to_request( &vkey, key, ki.generator, ki.op_file,
@@ -640,16 +702,10 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                        проверка подписи под запросами и сертификатами                           */
 /* ----------------------------------------------------------------------------------------------- */
- static int aktool_key_verify_print_request( ak_verifykey vkey, ak_request_opts reqopt )
-{  
-  ak_asn1 lst = NULL;
-  size_t i = 0, ts = ak_hash_get_tag_size( &vkey->ctx );
-
-  printf(_("Certificate's request\n"));
-  printf(_("  subject: %s\n"), ak_tlv_get_string_from_global_name( vkey->name, "2.5.4.3", NULL ));
-
+ static void aktool_key_verify_print_global_name( ak_asn1 lst )
+{
  /* начинаем перебор всех элементов */
-  if(( lst = vkey->name->data.constructed ) != NULL ) {
+  if( lst != NULL ) {
     ak_asn1_first( lst );
     do{
         ak_oid oid = NULL;
@@ -671,7 +727,17 @@
         }
     } while( ak_asn1_next( lst ));
   }
+}
 
+/* ----------------------------------------------------------------------------------------------- */
+ static int aktool_key_verify_print_request( ak_verifykey vkey, ak_request_opts reqopt )
+{  
+  size_t i = 0, ts = ak_hash_get_tag_size( &vkey->ctx );
+
+  printf(_("Certificate's request\n"));
+  printf(_("  subject: %s\n"), ak_tlv_get_string_from_global_name( vkey->name, "2.5.4.3", NULL ));
+ /* начинаем перебор всех элементов */
+  aktool_key_verify_print_global_name( vkey->name->data.constructed );
  /* информация о ключе */
   printf(_("  public key (%s ... %u bytes)\n    x:  "),
                          ak_ptr_to_hexstr( vkey->number, ak_min( 10, vkey->numlen ), ak_false ),
@@ -701,11 +767,71 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ static int aktool_key_verify_print_certificate( ak_verifykey vkey, ak_certificate_opts opts )
+{
+  size_t i = 0, ts = 0;
+  char output_buffer[256];
+
+  printf(_("Public key certificate\n"));
+  printf(_("  subject: %s\n"), ak_tlv_get_string_from_global_name( vkey->name, "2.5.4.3", NULL ));
+  aktool_key_verify_print_global_name( vkey->name->data.constructed );
+
+  printf(_("  issuer: %s\n"),
+                         ak_tlv_get_string_from_global_name( opts->issuer_name, "2.5.4.3", NULL ));
+  aktool_key_verify_print_global_name( opts->issuer_name->data.constructed );
+
+ /* информация о файле и его содержимом */
+  printf(_("  certificate:\n    type: x509 (P 1323565.1.023-2018)\n    version: %d\n"),
+                                                                                opts->version +1 );
+  printf(_("    serial number:\n"));
+  for( i = 0; i < opts->serialnumlen; i++ ) {
+    if( i%16 == 0 ) printf("\t");
+    printf("%02X ", opts->serialnum[i] );
+    if(i%16 == 15) printf("\n");
+  }
+  if( opts->serialnumlen%16 != 0 ) printf("\n");
+  #ifdef AK_HAVE_WINDOWS_H
+   ak_snprintf( output_buffer, sizeof( output_buffer ), "%s", ctime( &vkey->time.not_before ));
+   output_buffer[strlen( output_buffer )-1] = ' '; /* уничтожаем символ возврата каретки */
+  #else
+   strftime( output_buffer, sizeof( output_buffer ), /* локализованный вывод */
+                                 "%e %b %Y %H:%M:%S (%A) %Z", localtime( &vkey->time.not_before ));
+  #endif
+  printf(_("    nof before: %s\n"), output_buffer );
+
+  #ifdef AK_HAVE_WINDOWS_H
+   ak_snprintf( output_buffer, sizeof( output_buffer ), "%s", ctime( &vkey->time.not_after ));
+   output_buffer[strlen( output_buffer )-1] = ' '; /* уничтожаем символ возврата каретки */
+  #else
+   strftime( output_buffer, sizeof( output_buffer ), /* локализованный вывод */
+                                 "%e %b %Y %H:%M:%S (%A) %Z", localtime( &vkey->time.not_after ));
+  #endif
+  printf(_("    nof after:  %s\n"), output_buffer );
+
+  if( vkey->oid->engine != sign_function ) {
+    printf(_("  algorithm: %s (not supported)\n"), vkey->oid->name[0] );
+    return ak_error_ok;
+  }
+   else printf(_("  algorithm: %s\n"), vkey->oid->name[0] );
+
+/* выводим значение подписи для поддерживаемых алгоритмов */
+  ts = ak_hash_get_tag_size( &vkey->ctx );
+  printf(_("  signature:\n"));
+  for( i = 0; i < 2*ts; i++ ) {
+     if( i%16 == 0 ) printf("\t");
+     printf("%02X ", opts->signature[i] );
+     if(i%16 == 15) printf("\n");
+  }
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int aktool_key_verify_key( int argc , char *argv[] )
 {
   struct verifykey vkey;
   struct request_opts reqopt;
-  int errcount = 0, exitcode = EXIT_SUCCESS;
+  int errcount = 0, error = ak_error_ok, exitcode = EXIT_SUCCESS;
 
   ++optind; /* пропускаем набор управляющих команд (k -v или key --verify) */
   if( optind < argc ) {
@@ -729,20 +855,30 @@
                  continue;
               case ak_error_not_equal_data:
                  if( !ki.quiet ) printf(_("Verified: No\n"));
-                 errcount++;
                  continue;
               default:
                  break;
             }
 
-           /* опробуем файл как сертификат открытого ключа
+           /* опробуем файл как сертификат открытого ключа */
+            ak_certificate_opts_create( &ki.certops );
+            error = ak_verifykey_import_from_certificate( &vkey, NULL, ki.pubkey_file, &ki.certops );
+            if( ki.certops.created ) {
+              if( ki.verbose ) aktool_key_verify_print_certificate( &vkey, &ki.certops );
+              ak_verifykey_destroy( &vkey );
 
-              ...
-
-           */
-
-            aktool_error(_("unsupported file %s"), value );
-            errcount++;
+              if( error == ak_error_ok ) {
+                if( !ki.quiet ) printf(_("Verified: Ok\n"));
+              }
+               else {
+                 if( !ki.quiet ) printf(_("Verified: No\n"));
+               }
+            }
+             else {
+               if( !ki.quiet ) aktool_error(_("unsupported format of file %s"), value );
+               errcount++;
+             }
+            ak_certificate_opts_destroy( &ki.certops );
         }
    }
   }
@@ -753,7 +889,7 @@
     }
 
   if( errcount ) {
-    aktool_error(_("aktool found %d error(s), "
+    if( !ki.quiet ) aktool_error(_("aktool found %d error(s), "
                  "rerun aktool with \"--audit stderr\" option or see syslog messages"), errcount );
     exitcode = EXIT_FAILURE;
   }

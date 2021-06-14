@@ -1723,13 +1723,37 @@ extern "C" {
 } *ak_verifykey;
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
+    в частности, алгоритма ГОСТ Р 34.10-2012. */
+ dll_export int ak_verifykey_create( ak_verifykey , const ak_wcurve );
+ /*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
+    c фиксированной кривой размера 256 бит. */
+ dll_export int ak_verifykey_create_streebog256( ak_verifykey );
+ /*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
+    c фиксированной кривой размера 512 бит. */
+ dll_export int ak_verifykey_create_streebog512( ak_verifykey );
+/*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
+    в частности, алгоритма ГОСТ Р 34.10-2012. */
+ dll_export int ak_verifykey_create_from_signkey( ak_verifykey , ak_signkey );
+/*! \brief Функция устанавливает временной интервал действия открытого ключа. */
+ dll_export int ak_verifykey_set_validity( ak_verifykey , time_t , time_t );
+/*! \brief Функция вырабатывает номер открытого ключа. */
+ dll_export int ak_verifykey_set_number( ak_verifykey );
+/*! \brief Функция добавляет к расширенному имени владельца ключа новую строку. */
+ dll_export int ak_verifykey_add_name_string( ak_verifykey , const char * , const char * );
+/*! \brief Уничтожение контекста открытого ключа. */
+ dll_export int ak_verifykey_destroy( ak_verifykey );
+
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup cert-export-doc Функции экспорта и импорта открытых ключей
+ @{ */
 /*! \brief Параметры запроса на сертификат */
  typedef struct request_opts {
   /*! \brief Версия запроса на сертификат,
       значение 1 соотвествует PKCS#10 в варианте, изложенным в рекомендациях Р 1323565.1.023-2018,
       другие значения не поддерживаются */
    ak_uint32 version;
-  /*! \brief Значение электронной подписи, считанное из сохданного ранее запроса */
+  /*! \brief Значение электронной подписи, считанное из созданного ранее запроса */
    ak_uint8 signature[128];
 } *ak_request_opts;
 
@@ -1783,8 +1807,6 @@ extern "C" {
   struct {
     /*! \brief определено ли данное расширение */
      bool_t is_present;
-    /*! \brief длина идентификатора ключа (в октетах) */
-     size_t length;
   } subjkey;
 
  /*! \brief расширение Authority Key Identifier (oid: 2.5.29.35) */
@@ -1799,12 +1821,16 @@ extern "C" {
   ak_uint32 version;
  /*! \brief Флаг того, создан ли сертификат, используется только при импорте сертификатов */
   bool_t created;
+ /*! \brif Обобщенное имя эмитента (лица, выдавшего сертификат) */
+  ak_tlv issuer_name;
  /*! \brief длина серийного номера */
   size_t serialnumlen;
  /*! \brief собственно серийный номер сертификата */
  /*! \details при экспорте данное значение вырабатывается в процессе выработки сертификата,
      при импорте - считывается из asn1 дерева */
   ak_uint8 serialnum[32];
+ /*! \brief Значение электронной подписи, считанное из созданного ранее сертификата */
+  ak_uint8 signature[128];
 
 } *ak_certificate_opts;
 
@@ -1813,31 +1839,6 @@ extern "C" {
  dll_export int ak_certificate_opts_create( ak_certificate_opts );
 /*! \brief Функция уничтожает динамически размещенные данные, полученные в ходе импорта сертификата. */
  dll_export int ak_certificate_opts_destroy( ak_certificate_opts );
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
-    в частности, алгоритма ГОСТ Р 34.10-2012. */
- dll_export int ak_verifykey_create( ak_verifykey , const ak_wcurve );
- /*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
-    c фиксированной кривой размера 256 бит. */
- dll_export int ak_verifykey_create_streebog256( ak_verifykey );
- /*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
-    c фиксированной кривой размера 512 бит. */
- dll_export int ak_verifykey_create_streebog512( ak_verifykey );
-/*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
-    в частности, алгоритма ГОСТ Р 34.10-2012. */
- dll_export int ak_verifykey_create_from_signkey( ak_verifykey , ak_signkey );
-/*! \brief Функция устанавливает временной интервал действия открытого ключа. */
- dll_export int ak_verifykey_set_validity( ak_verifykey , time_t , time_t );
-/*! \brief Функция вырабатывает номер открытого ключа. */
- dll_export int ak_verifykey_set_number( ak_verifykey );
-/*! \brief Функция добавляет к расширенному имени владельца ключа новую строку. */
- dll_export int ak_verifykey_add_name_string( ak_verifykey , const char * , const char * );
-/*! \brief Уничтожение контекста открытого ключа. */
- dll_export int ak_verifykey_destroy( ak_verifykey );
-
-/** \addtogroup cert-export-doc Функции экспорта и импорта открытых ключей
- @{ */
 /*! \brief Функция формирует asn1 дерево с запросом на сертификат открытого ключа. */
  dll_export int ak_verifykey_export_to_asn1_request( ak_verifykey , ak_signkey ,
                                                                              ak_random , ak_asn1 );
@@ -1852,20 +1853,27 @@ extern "C" {
 /*! \brief Функция вырабатывает серийный номер сертификата. */
  dll_export int ak_verifykey_generate_certificate_serial_number( ak_verifykey ,
                                                                          ak_signkey , ak_mpzn256 );
+/*! \brief Функция создает asn1 дерево, содержащее сертификат открытого ключа. */
+ dll_export ak_asn1 ak_verifykey_export_to_asn1_certificate( ak_verifykey ,
+                                     ak_signkey , ak_verifykey , ak_random , ak_certificate_opts );
 /*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
     в сертификат открытого ключа. */
  dll_export int ak_verifykey_export_to_certificate( ak_verifykey , ak_signkey , ak_verifykey ,
                        ak_random , ak_certificate_opts , char * , const size_t , export_format_t );
-
 /*! \brief Функция импортирует открытый ключ асимметричного преобразования из сертификата
    открытого ключа */
  dll_export int ak_verifykey_import_from_certificate( ak_verifykey , ak_verifykey ,
-                                    const char * , ak_certificate_opts , ak_function_file_output );
+                                                              const char * , ak_certificate_opts );
 /*! \brief Функция импортирует открытый ключ асимметричного преобразования из сертификата
    открытого ключа, расположенного в памяти */
  dll_export int ak_verifykey_import_from_ptr_as_certificate( ak_verifykey ,
-  ak_verifykey , const ak_pointer , const size_t , ak_certificate_opts , ak_function_file_output );
-
+                            ak_verifykey , const ak_pointer , const size_t , ak_certificate_opts );
+/*! \brief Функция импортирует открытый ключ асимметричного преобразования из хранилища */
+ dll_export int ak_verifykey_import_from_repository_ptr( ak_verifykey , ak_uint8 * , size_t ,
+                                                                             ak_certificate_opts );
+/*! \brief Функция импортирует открытый ключ асимметричного преобразования из хранилища */
+ dll_export int ak_verifykey_import_from_repository_file( ak_verifykey , const char * ,
+                                                                             ak_certificate_opts );
 /** @} *//** \addtogroup cert-tlv-doc Функции создания расширений сертификатов открытых ключей
  @{ */
 /*! \brief Создание расширения, содержащего идентификатор открытого ключа
