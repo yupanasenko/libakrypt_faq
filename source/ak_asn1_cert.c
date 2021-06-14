@@ -1602,7 +1602,7 @@
   }
  /* 3.2 - проверяем срок действия сертификата */
   if(( vptr->subject->time.not_before > now ) || ( vptr->subject->time.not_after < now )) {
-    ak_error_message( ak_error_certificate_validity, __func__,
+    ak_error_message( error = ak_error_certificate_validity, __func__,
              "the certificate has expired (the current time is not within the specified bounds)" );
     goto lab1;
   }
@@ -1981,11 +1981,16 @@
             (( DATA_CLASS( lasn->current->tag )) == CONTEXT_SPECIFIC )) {
             switch( TAG_NUMBER( lasn->current->tag )) {
               case 0x00:
+               /* сохраняем номер ключа */
+                vptr->certops->casubjlen = ak_min( lasn->current->len ,
+                                                               sizeof( vptr->certops->casubjnum ));
+                memcpy( vptr->certops->casubjnum, lasn->current->data.primitive,
+                                                                        vptr->certops->casubjlen );
                 if( vptr->issuer == NULL ) {
-              /* в данной ситуации ключ проверки подписи не известен.
-                 поскольку мы можем считывать из файла и искать только ключи по серийным номерам,
-                 то использовать данный номер мы можем только для проверки того, что сертификат
-                 является самоподписанным  т.е. subject_key.number =?  lasn->current->data.primitive */
+               /* в данной ситуации ключ проверки подписи не известен.
+                  поскольку мы можем считывать из файла и искать только ключи по серийным номерам,
+                  то использовать данный номер мы можем только для проверки того, что сертификат
+                  является самоподписанным  т.е. subject_key.number =?  lasn->current->data.primitive */
                  if( memcmp( lasn->current->data.primitive,
                                                vptr->subject->number, lasn->current->len ) == 0 ) {
                    vptr->issuer = vptr->subject; /* ключ проверки совпадает с ключом в сертификате */
@@ -2000,6 +2005,12 @@
                 break;
 
               case 0x02: /* поиск сертификата по его серийному номеру */
+               /* сохраняем номер ключа */
+                vptr->certops->casertnumlen  = ak_min( lasn->current->len ,
+                                                               sizeof( vptr->certops->casertnum ));
+                memcpy( vptr->certops->casertnum, lasn->current->data.primitive,
+                                                                     vptr->certops->casertnumlen );
+               /* пытаемся считать ключ проверки из хранилища сертификатов */
                 if( vptr->issuer == NULL ) {
                   if( ak_verifykey_import_from_repository_ptr( &vptr->real_issuer,
                                              lasn->current->data.primitive, lasn->current->len,

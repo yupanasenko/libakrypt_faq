@@ -368,17 +368,17 @@
  static const char *asn1_pkix_exAD_i[] =   { "1.3.6.1.5.5.7.48.2", NULL };
 
 /* следующее добро из Приказа ФСБ N 795 */
- static const char *asn1_ogrn_n[] =        { "ogrn", NULL };
+ static const char *asn1_ogrn_n[] =        { "ogrn", "og", NULL };
  static const char *asn1_ogrn_i[] =        { "1.2.643.100.1", NULL };
- static const char *asn1_snils_n[] =       { "snils", NULL };
+ static const char *asn1_snils_n[] =       { "snils", "si", NULL };
  static const char *asn1_snils_i[] =       { "1.2.643.100.3", NULL };
- static const char *asn1_ogrnip_n[] =      { "ogrnip", NULL };
+ static const char *asn1_ogrnip_n[] =      { "ogrnip", "oi", NULL };
  static const char *asn1_ogrnip_i[] =      { "1.2.643.100.5", NULL };
  static const char *asn1_owner_mod_n[] =   { "subject-crypto-module", NULL };
  static const char *asn1_owner_mod_i[] =   { "1.2.643.100.111", NULL };
  static const char *asn1_issuer_mod_n[] =  { "issuer-crypto-module", NULL };
  static const char *asn1_issuer_mod_i[] =  { "1.2.643.100.112", NULL };
- static const char *asn1_inn_n[] =         { "inn", NULL };
+ static const char *asn1_inn_n[] =         { "inn", "in", NULL };
  static const char *asn1_inn_i[] =         { "1.2.643.3.131.1.1", NULL };
 
  static const char *asn1_class_kc1_n[] =   { "digital-signature-module, class kc1", "kc1", NULL };
