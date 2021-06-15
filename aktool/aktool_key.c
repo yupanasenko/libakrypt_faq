@@ -914,11 +914,11 @@
                 case ak_error_ok:
                   /* выводим ключ и переходим к следующему файлу */
                    if( ki.verbose ) aktool_key_verify_print_request( &vkey, &reqopt );
-                   if( !ki.quiet ) printf(_("Verified: Ok\n"));
+                   if( !ki.quiet ) printf(_("Verified (%s): Ok\n"), value );
                    ak_verifykey_destroy( &vkey ); /* не забыть убрать за собой */
                    continue;
                 case ak_error_not_equal_data:
-                   if( !ki.quiet ) printf(_("Verified: No\n"));
+                   if( !ki.quiet ) printf(_("Verified (%s): No\n"), value );
                    continue;
                 default:
                    break;
@@ -926,15 +926,18 @@
             }
 
            /* опробуем файл как сертификат открытого ключа */
+            captr = NULL;
             if( strlen( ki.capubkey_file ) > 0 ) {
               error = ak_verifykey_import_from_certificate( &cakey, NULL, ki.capubkey_file, &caopts );
               if( error == ak_error_ok ) {
                 captr = &cakey;
               }
-               else captr = NULL;
+               else {
+                captr = NULL;
+                if( caopts.created == ak_true ) ak_verifykey_destroy( &cakey );
+               }
               ak_certificate_opts_destroy( &caopts );
             }
-             else captr = NULL;
 
             error = ak_verifykey_import_from_certificate( &vkey, captr, ki.pubkey_file, &ki.certops );
             if( captr != NULL ) ak_verifykey_destroy( &cakey );
@@ -944,10 +947,10 @@
               ak_verifykey_destroy( &vkey );
 
               if( error == ak_error_ok ) {
-                if( !ki.quiet ) printf(_("Verified: Ok\n"));
+                if( !ki.quiet ) printf(_("Verified (%s): Ok\n"), value );
               }
                else {
-                 if( !ki.quiet ) printf(_("Verified: No\n"));
+                 if( !ki.quiet ) printf(_("Verified (%s): No\n"), value );
                  errcount++;
                }
             }

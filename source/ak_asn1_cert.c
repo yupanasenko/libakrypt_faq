@@ -451,6 +451,12 @@
                                      "incorrect reading of ASN.1 context from %s file", filename );
     goto lab1;
   }
+ /* проверяем, что данные содержат хоть какое-то значение */
+  if(( root->count == 0 ) || ( root->current == NULL )) {
+    ak_error_message_fmt( error = ak_error_null_pointer, __func__,
+                                           "reading a zero ASN.1 context from %s file", filename );
+    goto lab1;
+  }
 
  /* здесь мы считали asn1, декодировали и должны убедиться, что это то самое дерево */
   ak_asn1_first( root );
@@ -1485,7 +1491,8 @@
     ak_certificate_opts_create( opts );
     if(( error = ak_verifykey_import_from_certificate(
                                         subject_vkey, NULL, filename, opts )) != ak_error_ok )
-      ak_error_message( error, __func__, "incorrect import a certificate from repository" );
+      ak_error_message_fmt( error, __func__,
+                                   "incorrect import a certificate %s from repository", filename );
     ak_certificate_opts_destroy( opts );
   }
    else ak_error_message_fmt( error = ak_error_undefined_file, __func__,
@@ -2015,15 +2022,11 @@
                   if( ak_verifykey_import_from_repository_ptr( &vptr->real_issuer,
                                              lasn->current->data.primitive, lasn->current->len,
                                                           &vptr->real_certops ) != ak_error_ok ) {
-                    if( vptr->certops->created ) {
-                      ak_verifykey_destroy( &vptr->real_issuer );
-                    }
                     vptr->issuer = NULL;
                   }
                    else { /* нам сопутствовала удача и сертификат успешно считан */
                      vptr->issuer = &vptr->real_issuer;
                    }
-                  ak_certificate_opts_destroy( &vptr->real_certops );
                 }
                 break;
 

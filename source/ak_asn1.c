@@ -1733,8 +1733,10 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
                                                       "using tlv context which are not sequence" );
  /* стравниваем длины обобщенных имен */
   if( (asn_right = right->data.constructed)->count != (asn_left = left->data.constructed)->count )
-    return ak_error_message( ak_error_not_equal_data, __func__,
+    {
+      return ak_error_message( ak_error_not_equal_data, __func__,
                                           "the given global names has different element's count" );
+    }
  /* теперь поэлементное сравнение */
   ak_asn1_first( asn_right );
   ak_asn1_first( asn_left );
