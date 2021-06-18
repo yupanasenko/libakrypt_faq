@@ -2160,6 +2160,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   if( size > ak_mpznmax_size ) return ak_error_message( ak_error_wrong_length, __func__,
                                                          "using mpzn number with very large size" );
  /* получаем массив байт в правильной кодировке */
+  memset( be, 0, sizeof( be ));
   ak_mpzn_to_little_endian( n, size, be, sizeof( be ), ak_true );
 
  /* ищем первый ненулевой октет, одновременно определяем длину копируемых данных */
@@ -2171,7 +2172,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
    else len -= idx;
 
  /* проверяем старший октет */
-  sz = ( be[idx]&0x80 ) ? len+1 : len;
+  sz = len; //sz = ( be[idx]&0x80 ) ? len+1 : len;
 
  /* создаем элемент и выделяем память */
   if(( tlv = ak_tlv_new_primitive( tag, sz, NULL, ak_true )) == NULL )
@@ -2986,7 +2987,7 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
 
   /* сохраняем */
    if(( error = ak_file_create_to_write( &fp, filename )) != ak_error_ok ) {
-     ak_error_message( error, __func__, "incorrect creation a file for secret key" );
+     ak_error_message_fmt( error, __func__, "incorrect creation a file %s", filename );
      goto lab2;
    }
    do{

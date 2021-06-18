@@ -52,6 +52,8 @@
    bool_t verbose;
   /* режим тишины (ни чего не выводим, используем код возврата) */
    bool_t quiet;
+  /* показывать ли заголовки в выводимых таблицах */
+   int show_caption;
   /* идентификатор используемого (криптографического) метода */
    ak_oid method;
   /* идентификатор алгоритма генерации случайных значений */
@@ -129,8 +131,10 @@
 /* функция удаляет генератор псевдослучайных чисел */
  void aktool_key_delete_generator( ak_random );
 
+/* функция однократного чтения ключа */
+ ssize_t aktool_load_user_password( const char *, char *, const size_t , password_t );
 /* функция двукратного чтения ключа */
- ssize_t aktool_key_load_user_password_twice( char * , const size_t );
+ ssize_t aktool_load_user_password_twice( char * , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /* реализации пользовательских команд */

@@ -11,12 +11,18 @@
     - ak_verifykey_import_from_asn1_extensions()
     - ak_ptr_load_from_base64_file()
     - ak_verifykey_import_from_request() [выделяется буффер в случае нехватки памяти]
- - Добавлена функция ak_printf()
+    - ak_asn1_add_mpzn() [убрана поддержка отрицательных чисел]
+ - Добавлены функции 
+    - ak_printf()
+    - ak_verifykey_import_from_repository_file()
+    - ak_verifykey_import_from_repository_ptr()    
  - Функции экспортируются:
     - ak_verifykey_export_to_asn1_request()
  - Возвращена русификация утилиты aktool
+ - В aktool добавлены функции для работы с базой сертификатов УЦ
  - Исправлены ошибки:
     - при интерпретации случайных данных в качестве asn1
+    - при чтении запросов на сертификат нулевой длины
     - в CMakeLists.txt при сборке документации (обработка отсутствующих программ)
 
 

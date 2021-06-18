@@ -16,6 +16,7 @@
    .aktool_hex_password_input = ak_false,    /* пароли вводятся как символы текста */
    .verbose = ak_false,    /* вывод подробной информации/справки  */
    .quiet = ak_false,
+   .show_caption = ak_true,
    .method = NULL,
    .oid_of_generator = NULL,
    .name_of_file_for_generator = NULL,
@@ -277,74 +278,70 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                                    Функции ввода ключей                                         */
 /* ----------------------------------------------------------------------------------------------- */
+/*! Эта функция используется перед импортом ключа */
+ ssize_t aktool_load_user_password( const char *pts, char *password,
+                                                        const size_t pass_size , password_t type )
+{
+  (void)pts;
+  (void)type;
+
+ /* копируем пароль, если он уже был установлен */
+  memset( password, 0, pass_size );
+  if( ki.leninpass > 0 ) {
+    memcpy( password, ki.inpass, ak_min( (size_t)ki.leninpass, pass_size ));
+    return ki.leninpass;
+  }
+
+  if( ki.aktool_hex_password_input ) {
+    return ak_password_read_from_terminal(_("input password [as hexademal string]: "),
+                                                             password, pass_size, hexademal_pass );
+  }
+ return ak_password_read_from_terminal(_("input password: "), password, pass_size, symbolic_pass );
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Эта функция используется перед экспортом ключа */
- ssize_t aktool_key_load_user_password_twice( char *password, const size_t pass_size )
+ ssize_t aktool_load_user_password_twice( char *password, const size_t pass_size )
 {
-  int error = ak_error_ok;
-  ssize_t passlen = 0, passlen2 = 0;
-  char buffer[1 + ( aktool_password_max_length << 1 )], password2[ aktool_password_max_length ];
+  ssize_t buflen1, buflen2;
+  char buf1[aktool_password_max_length], buf2[aktool_password_max_length];
 
- /* формируем пароль с первой попытки */
-  fprintf( stdout, _("input password"));
-   if( ki.aktool_hex_password_input ) fprintf( stdout, _(" [as hexademal string]"));
-  fprintf( stdout, ": "); fflush( stdout );
-  memset( buffer, 0, sizeof( buffer ));
-  passlen = ak_password_read( buffer, sizeof( buffer ));
-  fprintf( stdout, "\n" );
-  if( passlen < 1 ) {
-    aktool_error(_("password zero length"));
-    return ak_error_wrong_length;
-  }
-
-  memset( password, 0, pass_size );
+ /* считываем первый раз */
   if( ki.aktool_hex_password_input ) {
-    if(( error = ak_hexstr_to_ptr( buffer, password, pass_size -1, ak_false )) == ak_error_ok )
-      passlen = ak_min( pass_size -1, strlen( buffer )%2 + ( strlen( buffer ) >> 1 ));
-     else passlen = 0;
-    /* как минимум один последний октет password будет равен нулю */
+    buflen1 = ak_password_read_from_terminal(_("input password [as hexademal string]: "),
+                                                              buf1, sizeof(buf1), hexademal_pass );
   }
-   else memcpy( password, buffer, passlen = ak_min( pass_size -1, strlen( buffer )));
-
-  if( !passlen ) {
+   else buflen1 = ak_password_read_from_terminal(_("input password: "),
+                                                               buf1, sizeof(buf1), symbolic_pass );
+  if( buflen1 < 1 ) {
     aktool_error(_("password has zero length"));
-    return passlen;
+    return buflen1;
   }
 
- /* теперь считываем пароль второй раз и проверяем совпадение */
-  printf(_("retype password"));
-   if( ki.aktool_hex_password_input ) fprintf( stdout, _(" [as hexademal string]"));
-  fprintf( stdout, ": "); fflush( stdout );
-  memset( buffer, 0, sizeof( buffer ));
-  passlen2 = ak_password_read( buffer, sizeof( buffer ));
-  fprintf( stdout, "\n" );
-  if( passlen < 1 ) {
-    aktool_error(_("password zero length"));
-    return ak_error_wrong_length;
-  }
-
-  memset( password2, 0, pass_size );
+ /* считываем второй раз */
   if( ki.aktool_hex_password_input ) {
-    if(( error = ak_hexstr_to_ptr( buffer, password2, pass_size -1, ak_false )) == ak_error_ok )
-      passlen2 = ak_min( pass_size -1, strlen( buffer )%2 + ( strlen( buffer ) >> 1 ));
-     else passlen2 = 0;
-    /* как минимум один последний октет password будет равен нулю */
+    buflen2 = ak_password_read_from_terminal(_("retype password [as hexademal string]: "),
+                                                              buf2, sizeof(buf2), hexademal_pass );
   }
-   else memcpy( password2, buffer, passlen2 = ak_min( pass_size -1, strlen( buffer )));
+   else buflen2 = ak_password_read_from_terminal(_("retype password: "),
+                                                               buf2, sizeof(buf2), symbolic_pass );
 
-  if(( passlen != passlen2 ) ||
-     ( !ak_ptr_is_equal( password, password2, passlen ))) {
+  if(( buflen1 != buflen2 ) || ( !ak_ptr_is_equal( buf1, buf2, buflen1 ))) {
       aktool_error(_("the passwords don't match"));
-      passlen = ak_error_not_equal_data;
-    }
+      buflen1 = ak_error_not_equal_data;
+  }
+   else {
+           memset( password, 0, pass_size );
+           memcpy( password, buf1, buflen1 = ak_min(( size_t )buflen1, pass_size ));
+        }
 
-  memset( buffer, 0, sizeof( buffer ));
-  memset( password2, 0, sizeof( password2 ));
+  if( ki.generator != NULL ) {
+    ak_ptr_wipe( buf1, sizeof( buf1 ), ki.generator );
+    ak_ptr_wipe( buf2, sizeof( buf2 ), ki.generator );
+  }
 
- return passlen;
+ return buflen1;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                 реализация вывода справки                                       */
