@@ -3,14 +3,14 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#: aktool.c:34 aktool.c:35 aktool.c:36 aktool.c:37 aktool.c:38 aktool.c:39
-#: aktool.c:40 aktool.c:41 aktool.c:42 aktool.c:76 aktool_show.c:45
+#: aktool.c:35 aktool.c:36 aktool.c:37 aktool.c:38 aktool.c:39 aktool.c:40
+#: aktool.c:41 aktool.c:42 aktool.c:43 aktool.c:77 aktool_show.c:45
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-06-12 00:07+0300\n"
+"POT-Creation-Date: 2021-06-30 22:27+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,68 +19,73 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: aktool_key.c:537 aktool_key.c:630
+#: aktool_key.c:537 aktool_key.c:630 aktool_key.c:657 aktool_key.c:759
 msgid "email-address"
 msgstr "электронная почта"
 
-#: aktool_key.c:539 aktool_key.c:557 aktool_key.c:625
+#: aktool_key.c:539 aktool_key.c:557 aktool_key.c:625 aktool_key.c:659
+#: aktool_key.c:686 aktool_key.c:754
 msgid "common-name"
 msgstr "имя"
 
-#: aktool_key.c:541
+#: aktool_key.c:541 aktool_key.c:661
 msgid "surname"
 msgstr "фамилия"
 
-#: aktool_key.c:543
+#: aktool_key.c:543 aktool_key.c:663
 msgid "serial-number"
 msgstr "серийный номер"
 
-#: aktool_key.c:545 aktool_key.c:594
+#: aktool_key.c:545 aktool_key.c:594 aktool_key.c:665 aktool_key.c:723
 msgid "country-name"
 msgstr "страна"
 
-#: aktool_key.c:547 aktool_key.c:605
+#: aktool_key.c:547 aktool_key.c:605 aktool_key.c:667 aktool_key.c:734
 msgid "locality-name"
 msgstr "местность"
 
-#: aktool_key.c:549 aktool_key.c:600
+#: aktool_key.c:549 aktool_key.c:600 aktool_key.c:669 aktool_key.c:729
 msgid "state-or-province-name"
 msgstr "область"
 
-#: aktool_key.c:551 aktool_key.c:620
+#: aktool_key.c:551 aktool_key.c:620 aktool_key.c:671 aktool_key.c:749
 msgid "street-address"
 msgstr "адрес"
 
-#: aktool_key.c:553 aktool_key.c:610
+#: aktool_key.c:553 aktool_key.c:610 aktool_key.c:673 aktool_key.c:739
 msgid "organization"
 msgstr "организация"
 
-#: aktool_key.c:555 aktool_key.c:615
+#: aktool_key.c:555 aktool_key.c:615 aktool_key.c:675 aktool_key.c:744
 msgid "organization-unit"
 msgstr "подразделение"
 
+#: aktool_key.c:678
 msgid "ogrn"
 msgstr "ОГРН"
 
+#: aktool_key.c:682
 msgid "snils"
 msgstr "СНИЛС"
 
+#: aktool_key.c:680
 msgid "ogrnip"
 msgstr "ОГРНИП"
 
+#: aktool_key.c:684
 msgid "inn"
 msgstr "ИНН"
 
-#: aktool.c:103 aktool.c:125 aktool.c:126 aktool.c:128
+#: aktool.c:103 aktool.c:125 aktool.c:126 aktool.c:128 aktool.c:129
 #, c-format
 msgid "undefined command \"%s\""
 msgstr "неожиданная команда \"%s\""
 
-#: aktool.c:179 aktool.c:201 aktool.c:202 aktool.c:204
+#: aktool.c:179 aktool.c:201 aktool.c:202 aktool.c:204 aktool.c:205
 msgid "incorrect initialization of libakrypt library"
 msgstr "ошибка инициализации библиотеки libakrypt"
 
-#: aktool.c:222 aktool.c:244 aktool.c:245 aktool.c:354
+#: aktool.c:222 aktool.c:244 aktool.c:245 aktool.c:354 aktool.c:351
 #, c-format
 msgid ""
 "aktool - crypto utility based on libakrypt library (version: %s)\n"
@@ -90,12 +95,12 @@ msgstr ""
 "libakrypt (версия: %s)\n"
 "\n"
 
-#: aktool.c:224 aktool.c:246 aktool.c:247 aktool.c:356
+#: aktool.c:224 aktool.c:246 aktool.c:247 aktool.c:356 aktool.c:353
 #, c-format
 msgid "try \"aktool --help\" to get more information\n"
 msgstr "попробуй \"aktool --help\" для получения более подробной информации\n"
 
-#: aktool.c:232 aktool.c:254 aktool.c:255 aktool.c:364
+#: aktool.c:232 aktool.c:254 aktool.c:255 aktool.c:364 aktool.c:361
 #, c-format
 msgid "version: %s [compiled by %s, version: %s, date: %s at %s]\n"
 msgstr ""
@@ -103,6 +108,7 @@ msgstr ""
 "at %s]\n"
 
 #: aktool.c:256 aktool.c:278 aktool.c:279 aktool.c:280 aktool.c:389
+#: aktool.c:386
 #, c-format
 msgid "aktool - crypto utility based on libakrypt library (version: %s)\n"
 msgstr ""
@@ -110,11 +116,13 @@ msgstr ""
 "libakrypt (версия: %s)\n"
 
 #: aktool.c:258 aktool.c:280 aktool.c:281 aktool.c:282 aktool.c:391
+#: aktool.c:388
 #, c-format
 msgid "usage:\n"
 msgstr "использование:\n"
 
 #: aktool.c:259 aktool.c:281 aktool.c:282 aktool.c:283 aktool.c:392
+#: aktool.c:389
 #, c-format
 msgid ""
 "  aktool command [options] [files]\n"
@@ -124,31 +132,37 @@ msgstr ""
 "\n"
 
 #: aktool.c:260 aktool.c:282 aktool.c:283 aktool.c:284 aktool.c:393
+#: aktool.c:390
 #, c-format
 msgid "available commands (in short and long forms):\n"
 msgstr "доступные каманды (в короткой и полной формах):\n"
 
 #: aktool.c:261 aktool.c:283 aktool.c:284 aktool.c:285 aktool.c:394
+#: aktool.c:391
 #, c-format
 msgid "  a, asn1parse  -  decode and print the ASN.1 data\n"
 msgstr "  a, asn1parse  -  декодировать и вывести в консоль ASN.1 данные\n"
 
 #: aktool.c:262 aktool.c:284 aktool.c:285 aktool.c:286 aktool.c:395
+#: aktool.c:392
 #, c-format
 msgid "  i, icode      -  calculate or check integrity codes\n"
 msgstr "  i, icode      -  выработать или проверить код целостности\n"
 
 #: aktool.c:263 aktool.c:285 aktool.c:286 aktool.c:287 aktool.c:396
+#: aktool.c:393
 #, c-format
 msgid "  k, key        -  key generation and management functions\n"
 msgstr "  k, key        -  функции выработки и управления ключами\n"
 
 #: aktool.c:264 aktool.c:286 aktool.c:287 aktool.c:288 aktool.c:397
+#: aktool.c:394
 #, c-format
 msgid "  s, show       -  show useful information\n"
 msgstr "  s, show       -  вывод служебной или справочной информации\n"
 
 #: aktool.c:265 aktool.c:287 aktool.c:288 aktool.c:289 aktool.c:398
+#: aktool.c:395
 #, c-format
 msgid ""
 "     test       -  run performance and correct operation tests\n"
@@ -159,11 +173,13 @@ msgstr ""
 "\n"
 
 #: aktool.c:266 aktool.c:288 aktool.c:289 aktool.c:290 aktool.c:399
+#: aktool.c:396
 #, c-format
 msgid "also try:\n"
 msgstr "также попробуй:\n"
 
 #: aktool.c:267 aktool.c:289 aktool.c:290 aktool.c:291 aktool.c:400
+#: aktool.c:397
 #, c-format
 msgid "  \"aktool command --help\" to get information about command options\n"
 msgstr ""
@@ -171,11 +187,13 @@ msgstr ""
 "команды\n"
 
 #: aktool.c:268 aktool.c:290 aktool.c:291 aktool.c:292 aktool.c:401
+#: aktool.c:398
 #, c-format
 msgid "  \"aktool --version\" to get version of aktool\n"
 msgstr "  \"aktool --version\" для получения версии программы\n"
 
 #: aktool.c:269 aktool.c:291 aktool.c:292 aktool.c:293 aktool.c:402
+#: aktool.c:399
 #, c-format
 msgid ""
 "  \"man aktool\" to get more information about aktool and useful examples\n"
@@ -186,12 +204,13 @@ msgstr ""
 "\n"
 
 #: aktool.c:270 aktool.c:292 aktool.c:293 aktool.c:294 aktool.c:403
+#: aktool.c:400
 #, c-format
 msgid "aktool compiled by %s, version: %s (%s at %s)\n"
 msgstr "программа aktool скомпилирована %s, версии: %s (%s в %s)\n"
 
 #: aktool.c:76 aktool.c:79 aktool.c:98 aktool.c:101 aktool.c:99 aktool.c:102
-#: aktool.c:104
+#: aktool.c:104 aktool.c:105
 #, c-format
 msgid "%s started at %s"
 msgstr "запуск %s произведен в %s"
@@ -241,7 +260,7 @@ msgstr ""
 "     --to <format>       указать формат выходного файла [ варианты: der, "
 "pem ]\n"
 
-#: aktool_asn1.c:66 aktool_key.c:299
+#: aktool_asn1.c:66 aktool_key.c:299 aktool_key.c:322
 #, c-format
 msgid "%s is not valid format of output data"
 msgstr "%s не является допустимым форматом для выходного файла"
@@ -259,7 +278,7 @@ msgid ""
 msgstr ""
 "файл, содержащий asn1 данные, не указан в качестве аргументов программы"
 
-#: aktool.c:189 aktool.c:191 aktool.c:193
+#: aktool.c:189 aktool.c:191 aktool.c:193 aktool.c:194
 #, c-format
 msgid "%serror%s: %s\n"
 msgstr "%sошибка%s: %s\n"
@@ -274,12 +293,13 @@ msgstr ""
 "aktool нашел %d ошибок, перезапусти aktool с опцией \"--audit stderr\" или "
 "смотри сообщения syslog"
 
-#: aktool_key.c:130 aktool_key.c:129 aktool_key.c:648
+#: aktool_key.c:130 aktool_key.c:129 aktool_key.c:648 aktool_key.c:816
 #, c-format
 msgid "Certificate's request\n"
 msgstr "Запрос сертификата\n"
 
-#: aktool_key.c:131 aktool_key.c:130 aktool_key.c:649
+#: aktool_key.c:131 aktool_key.c:130 aktool_key.c:649 aktool_key.c:817
+#: aktool_key.c:850
 #, c-format
 msgid "  subject: %s\n"
 msgstr "  владелец: %s\n"
@@ -289,12 +309,14 @@ msgstr "  владелец: %s\n"
 msgid "  global name:\n"
 msgstr "  расширенное имя:\n"
 
-#: aktool_key.c:154 aktool_key.c:167 aktool_key.c:693
+#: aktool_key.c:154 aktool_key.c:167 aktool_key.c:693 aktool_key.c:836
+#: aktool_key.c:902
 #, c-format
 msgid "  algorithm: %s\n"
 msgstr "  алгоритм: %s\n"
 
-#: aktool_key.c:155 aktool_key.c:168 aktool_key.c:694
+#: aktool_key.c:155 aktool_key.c:168 aktool_key.c:694 aktool_key.c:837
+#: aktool_key.c:905
 #, c-format
 msgid "  signature:\n"
 msgstr "  значение подписи:\n"
@@ -403,12 +425,13 @@ msgid ""
 msgstr ""
 
 #: aktool_key.c:277 aktool_key.c:276 aktool_key.c:296 aktool_key.c:822
+#: aktool_key.c:1381
 #, c-format
 msgid "for usage examples try \"man aktool\"\n"
 msgstr ""
 "используй \"man aktool\" для изучения примеров использования программы\n"
 
-#: aktool.c:263 aktool.c:264 aktool.c:373
+#: aktool.c:263 aktool.c:264 aktool.c:373 aktool.c:370
 #, c-format
 msgid ""
 "\n"
@@ -462,20 +485,21 @@ msgstr ""
 "    x:  "
 
 #: aktool_key.c:155 aktool_key.c:160 aktool_key.c:681 aktool_key.c:686
+#: aktool_key.c:824 aktool_key.c:829 aktool_key.c:863 aktool_key.c:868
 #, c-format
 msgid ""
 "\n"
 "\t"
 msgstr ""
 
-#: aktool_key.c:157 aktool_key.c:683
+#: aktool_key.c:157 aktool_key.c:683 aktool_key.c:826 aktool_key.c:865
 #, c-format
 msgid ""
 "\n"
 "    y:  "
 msgstr ""
 
-#: aktool_key.c:162 aktool_key.c:688
+#: aktool_key.c:162 aktool_key.c:688 aktool_key.c:831 aktool_key.c:870
 #, c-format
 msgid ""
 "\n"
@@ -486,7 +510,7 @@ msgstr ""
 "    кривая:\n"
 "\t%s (%u бит)\n"
 
-#: aktool_key.c:165 aktool_key.c:691
+#: aktool_key.c:165 aktool_key.c:691 aktool_key.c:834
 #, c-format
 msgid ""
 "  request:\n"
@@ -502,115 +526,116 @@ msgstr ""
 msgid "unsupported file %s"
 msgstr "неподдерживаемый формат файла %s"
 
-#: aktool.c:78 aktool.c:79
+#: aktool.c:78 aktool.c:79 aktool.c:80
 msgid "aktool"
 msgstr ""
 
-#: aktool.c:78
+#: aktool.c:78 aktool.c:79
 msgid "/usr/share/locale/"
 msgstr ""
 
-#: aktool.c:86
+#: aktool.c:86 aktool.c:87
 msgid "-h"
 msgstr ""
 
-#: aktool.c:87
+#: aktool.c:87 aktool.c:88
 msgid "--help"
 msgstr ""
 
-#: aktool.c:88
+#: aktool.c:88 aktool.c:89
 msgid "/?"
 msgstr ""
 
-#: aktool.c:89
+#: aktool.c:89 aktool.c:90
 msgid "--version"
 msgstr ""
 
-#: aktool.c:94
+#: aktool.c:94 aktool.c:95
 #, c-format
 msgid "%s\\.config\\libakrypt\\aktool.log"
 msgstr ""
 
-#: aktool.c:111
+#: aktool.c:111 aktool.c:112
 msgid "s"
 msgstr ""
 
-#: aktool.c:112 aktool_key.c:42
+#: aktool.c:112 aktool_key.c:42 aktool.c:113 aktool_key.c:53
 msgid "show"
 msgstr ""
 
-#: aktool.c:113
+#: aktool.c:113 aktool.c:114
 msgid "a"
 msgstr ""
 
-#: aktool.c:114
+#: aktool.c:114 aktool.c:115
 msgid "asn1parse"
 msgstr ""
 
-#: aktool.c:115
+#: aktool.c:115 aktool.c:116
 msgid "test"
 msgstr ""
 
-#: aktool.c:116
+#: aktool.c:116 aktool.c:117
 msgid "k"
 msgstr ""
 
-#: aktool.c:117 aktool_key.c:60
+#: aktool.c:117 aktool_key.c:60 aktool.c:118 aktool_key.c:71
 msgid "key"
 msgstr ""
 
-#: aktool.c:118
+#: aktool.c:118 aktool.c:119
 msgid "i"
 msgstr ""
 
-#: aktool.c:119
+#: aktool.c:119 aktool.c:120
 msgid "icode"
 msgstr ""
 
-#: aktool.c:120
+#: aktool.c:120 aktool.c:121
 msgid "e"
 msgstr ""
 
-#: aktool.c:121
+#: aktool.c:121 aktool.c:122
 msgid "encrypt"
 msgstr ""
 
-#: aktool.c:122
+#: aktool.c:122 aktool.c:123
 msgid "d"
 msgstr ""
 
-#: aktool.c:123
+#: aktool.c:123 aktool.c:124
 msgid "decrypt"
 msgstr ""
 
-#: aktool.c:148
+#: aktool.c:148 aktool.c:149
 msgid "a+"
 msgstr ""
 
-#: aktool.c:151 aktool_show.c:197 aktool_show.c:198
+#: aktool.c:151 aktool_show.c:197 aktool_show.c:198 aktool.c:152
 #, c-format
 msgid "%s\n"
 msgstr ""
 
-#: aktool.c:162
+#: aktool.c:162 aktool.c:163
 msgid "stderr"
 msgstr ""
 
-#: aktool.c:211
+#: aktool.c:211 aktool.c:212
 msgid "openssl_compability "
 msgstr ""
 
-#: aktool.c:238
+#: aktool.c:238 aktool.c:239 aktool_key.c:881 aktool_key.c:890
+#: aktool_key.c:1158
 #, c-format
 msgid "%s"
 msgstr ""
 
-#: aktool.c:255
+#: aktool.c:255 aktool.c:256
 #, c-format
 msgid "used a file with random data: %s\n"
 msgstr ""
 
-#: aktool.c:260
+#: aktool.c:260 aktool.c:261
 #, c-format
 msgid "used a random number generator: %s\n"
 msgstr ""
@@ -631,6 +656,7 @@ msgid ": "
 msgstr ""
 
 #: aktool.c:295 aktool.c:321 aktool_key.c:698 aktool_test.c:417
+#: aktool_key.c:806 aktool_key.c:808
 #, c-format
 msgid "\n"
 msgstr ""
@@ -639,7 +665,7 @@ msgstr ""
 msgid "password zero length"
 msgstr ""
 
-#: aktool.c:311
+#: aktool.c:311 aktool.c:317
 msgid "password has zero length"
 msgstr ""
 
@@ -648,7 +674,7 @@ msgstr ""
 msgid "retype password"
 msgstr ""
 
-#: aktool.c:338
+#: aktool.c:338 aktool.c:330
 msgid "the passwords don't match"
 msgstr ""
 
@@ -664,7 +690,7 @@ msgstr ""
 msgid "join"
 msgstr ""
 
-#: aktool_asn1.c:34 aktool_key.c:46
+#: aktool_asn1.c:34 aktool_key.c:46 aktool_key.c:57
 msgid "to"
 msgstr ""
 
@@ -684,11 +710,11 @@ msgstr ""
 msgid "der"
 msgstr ""
 
-#: aktool_asn1.c:60 aktool_key.c:290
+#: aktool_asn1.c:60 aktool_key.c:290 aktool_key.c:313
 msgid "DER"
 msgstr ""
 
-#: aktool_asn1.c:63 aktool_key.c:293
+#: aktool_asn1.c:63 aktool_key.c:293 aktool_key.c:316
 msgid "PEM"
 msgstr ""
 
@@ -734,139 +760,139 @@ msgstr ""
 msgid "file %s is wrong\n"
 msgstr ""
 
-#: aktool_key.c:40
+#: aktool_key.c:40 aktool_key.c:51
 msgid "algorithm"
 msgstr ""
 
-#: aktool_key.c:41
+#: aktool_key.c:41 aktool_key.c:52
 msgid "new"
 msgstr ""
 
-#: aktool_key.c:43
+#: aktool_key.c:43 aktool_key.c:54
 msgid "verify"
 msgstr ""
 
-#: aktool_key.c:44
+#: aktool_key.c:44 aktool_key.c:55
 msgid "cert"
 msgstr ""
 
-#: aktool_key.c:45
+#: aktool_key.c:45 aktool_key.c:56
 msgid "output-secret-key"
 msgstr ""
 
-#: aktool_key.c:47
+#: aktool_key.c:47 aktool_key.c:58
 msgid "format"
 msgstr ""
 
-#: aktool_key.c:48
+#: aktool_key.c:48 aktool_key.c:59
 msgid "outpass-hex"
 msgstr ""
 
-#: aktool_key.c:49
+#: aktool_key.c:49 aktool_key.c:60
 msgid "outpass"
 msgstr ""
 
-#: aktool_key.c:50
+#: aktool_key.c:50 aktool_key.c:61
 msgid "inpass-hex"
 msgstr ""
 
-#: aktool_key.c:51
+#: aktool_key.c:51 aktool_key.c:62
 msgid "inpass"
 msgstr ""
 
-#: aktool_key.c:52 aktool_show.c:37
+#: aktool_key.c:52 aktool_show.c:37 aktool_key.c:63
 msgid "curve"
 msgstr ""
 
-#: aktool_key.c:53
+#: aktool_key.c:53 aktool_key.c:64
 msgid "days"
 msgstr ""
 
-#: aktool_key.c:54
+#: aktool_key.c:54 aktool_key.c:65
 msgid "target"
 msgstr ""
 
-#: aktool_key.c:55
+#: aktool_key.c:55 aktool_key.c:66
 msgid "ca-cert"
 msgstr ""
 
-#: aktool_key.c:56
+#: aktool_key.c:56 aktool_key.c:67
 msgid "label"
 msgstr ""
 
-#: aktool_key.c:57
+#: aktool_key.c:57 aktool_key.c:68
 msgid "random-file"
 msgstr ""
 
-#: aktool_key.c:58
+#: aktool_key.c:58 aktool_key.c:69
 msgid "random"
 msgstr ""
 
-#: aktool_key.c:61
+#: aktool_key.c:61 aktool_key.c:72
 msgid "ca-key"
 msgstr ""
 
-#: aktool_key.c:62
+#: aktool_key.c:62 aktool_key.c:73
 msgid "op"
 msgstr ""
 
-#: aktool_key.c:63
+#: aktool_key.c:63 aktool_key.c:74
 msgid "output-public-key"
 msgstr ""
 
-#: aktool_key.c:66
+#: aktool_key.c:66 aktool_key.c:89
 msgid "field"
 msgstr ""
 
-#: aktool_key.c:67
+#: aktool_key.c:67 aktool_key.c:90
 msgid "size"
 msgstr ""
 
-#: aktool_key.c:68
+#: aktool_key.c:68 aktool_key.c:91
 msgid "id"
 msgstr ""
 
-#: aktool_key.c:69
+#: aktool_key.c:69 aktool_key.c:92
 msgid "id-hex"
 msgstr ""
 
-#: aktool_key.c:72
+#: aktool_key.c:72 aktool_key.c:77
 msgid "digital-signature"
 msgstr ""
 
-#: aktool_key.c:73
+#: aktool_key.c:73 aktool_key.c:78
 msgid "content-commitment"
 msgstr ""
 
-#: aktool_key.c:74
+#: aktool_key.c:74 aktool_key.c:79
 msgid "key-encipherment"
 msgstr ""
 
-#: aktool_key.c:75
+#: aktool_key.c:75 aktool_key.c:80
 msgid "data-encipherment"
 msgstr ""
 
-#: aktool_key.c:76
+#: aktool_key.c:76 aktool_key.c:81
 msgid "key-agreement"
 msgstr ""
 
-#: aktool_key.c:77
+#: aktool_key.c:77 aktool_key.c:82
 msgid "key-cert-sign"
 msgstr ""
 
-#: aktool_key.c:78
+#: aktool_key.c:78 aktool_key.c:83
 msgid "crl-sign"
 msgstr ""
 
-#: aktool_key.c:79
+#: aktool_key.c:79 aktool_key.c:84
 msgid "ca-ext"
 msgstr ""
 
-#: aktool_key.c:80
+#: aktool_key.c:80 aktool_key.c:85
 msgid "pathlen"
 msgstr ""
 
-#: aktool_key.c:81
+#: aktool_key.c:81 aktool_key.c:86
 msgid "authority-name"
 msgstr ""
 
@@ -874,122 +900,122 @@ msgstr ""
 msgid "ns:a:o:t:vc:"
 msgstr ""
 
-#: aktool_key.c:103
+#: aktool_key.c:103 aktool_key.c:125
 msgid "undefined"
 msgstr ""
 
-#: aktool_key.c:110
+#: aktool_key.c:110 aktool_key.c:132
 #, c-format
 msgid "using unsupported name or identifier (%s) "
 msgstr ""
 
-#: aktool_key.c:111
+#: aktool_key.c:111 aktool_key.c:133
 #, c-format
 msgid "try \"aktool s --oids\" for list of all available identifiers\n"
 msgstr ""
 
-#: aktool_key.c:115
+#: aktool_key.c:115 aktool_key.c:137
 #, c-format
 msgid "%s (%s) is not valid identifier for algorithm"
 msgstr ""
 
-#: aktool_key.c:118
+#: aktool_key.c:118 aktool_key.c:140
 #, c-format
 msgid "try \"aktool s --oid algorithm\" for list of all available algorithms\n"
 msgstr ""
 
-#: aktool_key.c:131
+#: aktool_key.c:131 aktool_key.c:153
 msgid ""
 "incorrect value of field size, use \"--field 256\" or \"--field 512\" option"
 msgstr ""
 
-#: aktool_key.c:160
+#: aktool_key.c:160 aktool_key.c:182
 #, c-format
 msgid ""
 "user identifier cannot be of zero length, maybe input error, check option --"
 "hexid %s%s%s"
 msgstr ""
 
-#: aktool_key.c:172 aktool_key.c:181
+#: aktool_key.c:172 aktool_key.c:181 aktool_key.c:194 aktool_key.c:203
 msgid "the password cannot be zero length"
 msgstr ""
 
-#: aktool_key.c:196
+#: aktool_key.c:196 aktool_key.c:218
 #, c-format
 msgid ""
 "the password cannot be zero length, maybe input error, see --outpass-hex %s%s"
 "%s"
 msgstr ""
 
-#: aktool_key.c:212
+#: aktool_key.c:212 aktool_key.c:234
 #, c-format
 msgid ""
 "the password cannot be zero length, maybe input error, see --inpass-hex %s%s"
 "%s"
 msgstr ""
 
-#: aktool_key.c:233
+#: aktool_key.c:233 aktool_key.c:256
 #, c-format
 msgid "using unsupported name or identifier \"%s\" for elliptic curve"
 msgstr ""
 
-#: aktool_key.c:236 aktool_key.c:242
+#: aktool_key.c:236 aktool_key.c:242 aktool_key.c:259 aktool_key.c:265
 #, c-format
 msgid "try \"aktool s --oid curve\" for list of all available identifiers\n"
 msgstr ""
 
-#: aktool_key.c:240
+#: aktool_key.c:240 aktool_key.c:263
 #, c-format
 msgid "%s is not valid identifier for elliptic curve"
 msgstr ""
 
-#: aktool_key.c:296
+#: aktool_key.c:296 aktool_key.c:319
 msgid "CER"
 msgstr ""
 
-#: aktool_key.c:319
+#: aktool_key.c:319 aktool_key.c:410 aktool_key.c:429
 msgid "incorrect creation of random sequences generator"
 msgstr ""
 
-#: aktool_key.c:361
+#: aktool_key.c:361 aktool_key.c:469
 msgid ""
 "use --target option and set the name or identifier of cryptographic "
 "algorithm for a new key"
 msgstr ""
 
-#: aktool_key.c:375
+#: aktool_key.c:375 aktool_key.c:483
 #, c-format
 msgid ""
 "the string %s (%s) is an identifier of %s which does not use a cryptographic "
 "key"
 msgstr ""
 
-#: aktool_key.c:402
+#: aktool_key.c:402 aktool_key.c:510
 msgid "cspa"
 msgstr ""
 
-#: aktool_key.c:404
+#: aktool_key.c:404 aktool_key.c:512
 #, c-format
 msgid "using non applicable elliptic curve (%s)"
 msgstr ""
 
-#: aktool_key.c:411
+#: aktool_key.c:411 aktool_key.c:519
 msgid "incorrect creation of a random secret key value"
 msgstr ""
 
-#: aktool_key.c:417
+#: aktool_key.c:417 aktool_key.c:525
 msgid "incorrect assigning the validity of secret key"
 msgstr ""
 
-#: aktool_key.c:424
+#: aktool_key.c:424 aktool_key.c:532
 msgid "incorrect assigning the label of secret key"
 msgstr ""
 
-#: aktool_key.c:438
+#: aktool_key.c:438 aktool_key.c:546
 msgid "incorrect creation of public key"
 msgstr ""
 
-#: aktool_key.c:443
+#: aktool_key.c:443 aktool_key.c:551
 msgid "incorrect creation of owner's distinguished name"
 msgstr ""
 
@@ -997,7 +1023,7 @@ msgstr ""
 msgid "мы не сохраняем самоподписаные сертификаты"
 msgstr ""
 
-#: aktool_key.c:455
+#: aktool_key.c:455 aktool_key.c:573
 #, c-format
 msgid "wrong export a public key to request %s%s%s"
 msgstr ""
@@ -1009,57 +1035,57 @@ msgid ""
 "\n"
 msgstr ""
 
-#: aktool_key.c:486
+#: aktool_key.c:486 aktool_key.c:605
 #, c-format
 msgid "wrong export a secret key to file %s%s%s"
 msgstr ""
 
-#: aktool_key.c:492
+#: aktool_key.c:492 aktool_key.c:611
 #, c-format
 msgid "secret key stored in %s%s%s file\n"
 msgstr ""
 
-#: aktool_key.c:537
+#: aktool_key.c:537 aktool_key.c:657
 msgid "/em="
 msgstr ""
 
-#: aktool_key.c:539
+#: aktool_key.c:539 aktool_key.c:659
 msgid "/cn="
 msgstr ""
 
-#: aktool_key.c:541
+#: aktool_key.c:541 aktool_key.c:661
 msgid "/su="
 msgstr ""
 
-#: aktool_key.c:543
+#: aktool_key.c:543 aktool_key.c:663
 msgid "/sn="
 msgstr ""
 
-#: aktool_key.c:545
+#: aktool_key.c:545 aktool_key.c:665
 msgid "/ct="
 msgstr ""
 
-#: aktool_key.c:547
+#: aktool_key.c:547 aktool_key.c:667
 msgid "/lt="
 msgstr ""
 
-#: aktool_key.c:549
+#: aktool_key.c:549 aktool_key.c:669
 msgid "/st="
 msgstr ""
 
-#: aktool_key.c:551
+#: aktool_key.c:551 aktool_key.c:671
 msgid "/sa="
 msgstr ""
 
-#: aktool_key.c:553
+#: aktool_key.c:553 aktool_key.c:673
 msgid "/or="
 msgstr ""
 
-#: aktool_key.c:555
+#: aktool_key.c:555 aktool_key.c:675
 msgid "/ou="
 msgstr ""
 
-#: aktool_key.c:574
+#: aktool_key.c:574 aktool_key.c:703
 #, c-format
 msgid ""
 " -----\n"
@@ -1074,53 +1100,54 @@ msgid ""
 " -----\n"
 msgstr ""
 
-#: aktool_key.c:586
+#: aktool_key.c:586 aktool_key.c:715
 msgid "RU"
 msgstr ""
 
-#: aktool_key.c:587
+#: aktool_key.c:587 aktool_key.c:716
 msgid "Country Name (2 letter code)"
 msgstr ""
 
-#: aktool_key.c:598
+#: aktool_key.c:598 aktool_key.c:727
 msgid "State or Province"
 msgstr ""
 
-#: aktool_key.c:603
+#: aktool_key.c:603 aktool_key.c:732
 msgid "Locality (eg, city)"
 msgstr ""
 
-#: aktool_key.c:608
+#: aktool_key.c:608 aktool_key.c:737
 msgid "Organization (eg, company)"
 msgstr ""
 
-#: aktool_key.c:613
+#: aktool_key.c:613 aktool_key.c:742
 msgid "Organization Unit"
 msgstr ""
 
-#: aktool_key.c:618
+#: aktool_key.c:618 aktool_key.c:747
 msgid "Street Address"
 msgstr ""
 
-#: aktool_key.c:623
+#: aktool_key.c:623 aktool_key.c:752
 msgid "Common Name"
 msgstr ""
 
-#: aktool_key.c:628
+#: aktool_key.c:628 aktool_key.c:757
 msgid "Email Address"
 msgstr ""
 
-#: aktool_key.c:633
+#: aktool_key.c:633 aktool_key.c:762
 msgid ""
 "generation of a secret or public keys without any information about owner "
 "are not allowed"
 msgstr ""
 
-#: aktool_key.c:649
+#: aktool_key.c:649 aktool_key.c:817 aktool_key.c:850 aktool_key.c:854
+#: aktool_key.c:1154
 msgid "2.5.4.3"
 msgstr ""
 
-#: aktool_key.c:670
+#: aktool_key.c:670 aktool_key.c:793
 #, c-format
 msgid "    %s (%s): %s\n"
 msgstr ""
@@ -1132,12 +1159,13 @@ msgid ""
 "    x:  "
 msgstr ""
 
-#: aktool_key.c:680 aktool_key.c:685 aktool_key.c:697
+#: aktool_key.c:680 aktool_key.c:685 aktool_key.c:697 aktool_key.c:805
+#: aktool_key.c:823 aktool_key.c:828 aktool_key.c:862 aktool_key.c:867
 #, c-format
 msgid "%02X "
 msgstr ""
 
-#: aktool_key.c:696
+#: aktool_key.c:696 aktool_key.c:804
 #, c-format
 msgid "\t"
 msgstr ""
@@ -1168,7 +1196,7 @@ msgstr ""
 msgid "options"
 msgstr ""
 
-#: aktool_show.c:35
+#: aktool_show.c:35 aktool_key.c:99
 msgid "without-caption"
 msgstr ""
 
@@ -1451,4 +1479,475 @@ msgstr ""
 
 #: aktool_test.c:462
 msgid "incorrect creation of secret key context"
+msgstr ""
+
+#: aktool.c:296 aktool.c:311
+msgid "input password [as hexademal string]: "
+msgstr ""
+
+#: aktool.c:299 aktool.c:314
+msgid "input password: "
+msgstr ""
+
+#: aktool.c:323
+msgid "retype password [as hexademal string]: "
+msgstr ""
+
+#: aktool.c:326
+msgid "retype password: "
+msgstr ""
+
+#: aktool_key.c:95
+msgid "repo-add"
+msgstr ""
+
+#: aktool_key.c:96
+msgid "repo-check"
+msgstr ""
+
+#: aktool_key.c:97
+msgid "repo-rm"
+msgstr ""
+
+#: aktool_key.c:98
+msgid "repo-show"
+msgstr ""
+
+#: aktool_key.c:107
+msgid "hns:a:o:t:vc"
+msgstr ""
+
+#: aktool_key.c:352 aktool_key.c:911
+msgid "true"
+msgstr ""
+
+#: aktool_key.c:355 aktool_key.c:911
+msgid "false"
+msgstr ""
+
+#: aktool_key.c:361
+#, c-format
+msgid "%s is not valid value of certificate authority option"
+msgstr ""
+
+#: aktool_key.c:368
+msgid "the value of pathlenConstraints must be non negative integer"
+msgstr ""
+
+#: aktool_key.c:561 aktool_key.c:1100
+#, c-format
+msgid "wrong export a public key to certificate %s%s%s"
+msgstr ""
+
+#: aktool_key.c:566
+#, c-format
+msgid "certificate of public key stored in %s%s%s file\n"
+msgstr ""
+
+#: aktool_key.c:578
+#, c-format
+msgid "public key stored in %s%s%s file as certificate's request\n"
+msgstr ""
+
+#: aktool_key.c:678
+msgid "/og="
+msgstr ""
+
+#: aktool_key.c:680
+msgid "/oi="
+msgstr ""
+
+#: aktool_key.c:682
+msgid "/si="
+msgstr ""
+
+#: aktool_key.c:684
+msgid "/in="
+msgstr ""
+
+#: aktool_key.c:821 aktool_key.c:860
+#, c-format
+msgid ""
+"  public key:\n"
+"    x:  "
+msgstr ""
+
+#: aktool_key.c:849
+#, c-format
+msgid "Public key certificate\n"
+msgstr ""
+
+#: aktool_key.c:853
+#, c-format
+msgid "  issuer: %s\n"
+msgstr ""
+
+#: aktool_key.c:874
+#, c-format
+msgid ""
+"  certificate:\n"
+"    type: x509 (P 1323565.1.023-2018)\n"
+"    version: %d\n"
+msgstr ""
+
+#: aktool_key.c:876 aktool_key.c:939
+#, c-format
+msgid "    serial number:\n"
+msgstr ""
+
+#: aktool_key.c:885 aktool_key.c:894
+msgid "%e %b %Y %H:%M:%S (%A) %Z"
+msgstr ""
+
+#: aktool_key.c:887
+#, c-format
+msgid "    nof before: %s\n"
+msgstr ""
+
+#: aktool_key.c:896
+#, c-format
+msgid "    nof after:  %s\n"
+msgstr ""
+
+#: aktool_key.c:899
+#, c-format
+msgid "  algorithm: %s (not supported)\n"
+msgstr ""
+
+#: aktool_key.c:910
+#, c-format
+msgid ""
+"  basic constraints:\n"
+"    ca: %s\n"
+"    pathlen: %u\n"
+msgstr ""
+
+#: aktool_key.c:915
+#, c-format
+msgid "  basic key usage:\n"
+msgstr ""
+
+#: aktool_key.c:916
+#, c-format
+msgid "\tdecipher\n"
+msgstr ""
+
+#: aktool_key.c:917
+#, c-format
+msgid "\tencipher\n"
+msgstr ""
+
+#: aktool_key.c:918
+#, c-format
+msgid "\tCRL sign\n"
+msgstr ""
+
+#: aktool_key.c:919
+#, c-format
+msgid "\tcertificate sign\n"
+msgstr ""
+
+#: aktool_key.c:920
+#, c-format
+msgid "\tkey agreement\n"
+msgstr ""
+
+#: aktool_key.c:921
+#, c-format
+msgid "\tdata encipherment\n"
+msgstr ""
+
+#: aktool_key.c:922
+#, c-format
+msgid "\tkey encipherment\n"
+msgstr ""
+
+#: aktool_key.c:923
+#, c-format
+msgid "\tcontent commitment\n"
+msgstr ""
+
+#: aktool_key.c:924
+#, c-format
+msgid "\tdigital signature\n"
+msgstr ""
+
+#: aktool_key.c:928
+#, c-format
+msgid "  subjectkey:\n"
+msgstr ""
+
+#: aktool_key.c:933
+#, c-format
+msgid "  authority key:\n"
+msgstr ""
+
+#: aktool_key.c:935
+#, c-format
+msgid "    subject key:\n"
+msgstr ""
+
+#: aktool_key.c:974 aktool_key.c:1007
+#, c-format
+msgid "Verified (%s): Ok\n"
+msgstr ""
+
+#: aktool_key.c:978 aktool_key.c:1010
+#, c-format
+msgid "Verified (%s): No\n"
+msgstr ""
+
+#: aktool_key.c:1015
+#, c-format
+msgid "unsupported format of file %s"
+msgstr ""
+
+#: aktool_key.c:1021 aktool_key.c:1116
+#, c-format
+msgid "%s is not a regular file"
+msgstr ""
+
+#: aktool_key.c:1027
+msgid ""
+"certificate or certificate's request is not specified as the argument of the "
+"program"
+msgstr ""
+
+#: aktool_key.c:1033 aktool_key.c:1122 aktool_key.c:1310
+#, c-format
+msgid ""
+"aktool found %d error(s), rerun aktool with \"--audit-file stderr\" option "
+"or see syslog messages"
+msgstr ""
+
+#: aktool_key.c:1051 aktool_key.c:1266
+msgid "certificate's request is not specified as the argument of the program"
+msgstr ""
+
+#: aktool_key.c:1057
+msgid "the authority's secret key is not defined, use --ca-key option"
+msgstr ""
+
+#: aktool_key.c:1061
+msgid "the authority's public key is not defined, use --ca-cert option"
+msgstr ""
+
+#: aktool_key.c:1068
+msgid "incorrect loading of the authority's secret key"
+msgstr ""
+
+#: aktool_key.c:1071
+#, c-format
+msgid "secret key loaded from file %s\n"
+msgstr ""
+
+#: aktool_key.c:1076
+#, c-format
+msgid "incorrect loading the authority's public key from %s"
+msgstr ""
+
+#: aktool_key.c:1080
+#, c-format
+msgid "public key loaded from %s\n"
+msgstr ""
+
+#: aktool_key.c:1091
+#, c-format
+msgid "incorrect reading a certificate's request from %s"
+msgstr ""
+
+#: aktool_key.c:1094
+#, c-format
+msgid "request loaded from %s\n"
+msgstr ""
+
+#: aktool_key.c:1104
+#, c-format
+msgid ""
+"certificate of public key stored in %s%s%s file\n"
+"\n"
+msgstr ""
+
+#: aktool_key.c:1148
+#, c-format
+msgid "found not valid certificate %s"
+msgstr ""
+
+#: aktool_key.c:1162
+msgid "%e %b %Y"
+msgstr ""
+
+#: aktool_key.c:1164 aktool_key.c:1182
+#, c-format
+msgid " %-64s %-18s %s\n"
+msgstr ""
+
+#: aktool_key.c:1182
+msgid "serial number"
+msgstr ""
+
+#: aktool_key.c:1182
+msgid "subject"
+msgstr ""
+
+#: aktool_key.c:1182
+msgid "not after"
+msgstr ""
+
+#: aktool_key.c:1183 aktool_key.c:1194
+#, c-format
+msgid "-------------------------------------------------------------------------------------------------\n"
+msgstr ""
+
+#: aktool_key.c:1188 aktool_key.c:1249
+msgid "*.**"
+msgstr ""
+
+#: aktool_key.c:1198
+#, c-format
+msgid " found %d not valid certificates, use --repo-check option\n"
+msgstr ""
+
+#: aktool_key.c:1218
+#, c-format
+msgid "%s is not valid, (remove error: %s)\n"
+msgstr ""
+
+#: aktool_key.c:1221
+#, c-format
+msgid "%s deleted\n"
+msgstr ""
+
+#: aktool_key.c:1228 aktool_key.c:1283
+#, c-format
+msgid "%s/%s.cer"
+msgstr ""
+
+#: aktool_key.c:1231
+#, c-format
+msgid "%s is not valid name, (rename error: %s)\n"
+msgstr ""
+
+#: aktool_key.c:1234
+#, c-format
+msgid "%s renamed\n"
+msgstr ""
+
+#: aktool_key.c:1276
+#, c-format
+msgid "certificate %s is not valid"
+msgstr ""
+
+#: aktool_key.c:1287
+#, c-format
+msgid "error loading a %s file"
+msgstr ""
+
+#: aktool_key.c:1292
+#, c-format
+msgid "wrong export of %s"
+msgstr ""
+
+#: aktool_key.c:1299
+#, c-format
+msgid "%s added\n"
+msgstr ""
+
+#: aktool_key.c:1324
+#, c-format
+msgid ""
+"aktool key [options]  - key generation and management functions\n"
+"\n"
+"available options:\n"
+" -a, --algorithm         specify the method or the cryptographic algorithm "
+"for key generation\n"
+"                         this option needs to be used in some key generation "
+"schemes, e.g. in Blom scheme\n"
+"     --ca-cert           set the name of the certificate authorithy's public "
+"key\n"
+"     --ca-key            another form of --key option used to sign the "
+"certificate\n"
+" -c, --cert              sign the request and generate the certificate of "
+"public key\n"
+"     --curve             set the elliptic curve name or identifier for "
+"asymmetric keys\n"
+"     --days              set the days count to expiration date of secret or "
+"public key\n"
+"     --field             bit length which used to define the galois field "
+"[ enabled values: 256, 512 ]\n"
+"     --format            set the format of output file [ enabled values: "
+"der, pem, certificate ]\n"
+"     --id                set a generalized name or identifier for the user, "
+"subscriber or key owner\n"
+"                         if the identifier contains control commands, it is "
+"interpreted as a set of names\n"
+"     --id-hex            set a user or suscriber's identifier as hexademal "
+"string\n"
+"                         this option does not apply to public keys\n"
+"     --inpass            set the password for the secret key to be read "
+"directly in command line\n"
+"     --inpass-hex        set the password for the secret key to be read "
+"directly in command line as hexademal string\n"
+"     --key               specify the name of file with the secret key\n"
+"                         this can be a master key or certificate authority's "
+"secret key which is used to sign a certificate\n"
+"     --label             assign the user-defined label to secret key\n"
+" -n, --new               generate a new key or key pair for specified "
+"target\n"
+"     --op                short form of --output-public-key option\n"
+"     --outpass           set the password for the secret key to be stored "
+"directly on the command line\n"
+"     --outpass-hex       set the password for the secret key to be stored "
+"directly on the command line as hexademal string\n"
+"     --output-public-key set the file name for the new public key request\n"
+" -o, --output-secret-key set the file name for the new secret key\n"
+"     --random            set the name or identifier of random sequences "
+"generator\n"
+"                         the generator will be used to create a new key "
+"[ default value: \"%s\" ]\n"
+"     --random-file       set the name of file with random sequence\n"
+"     --repo-add          add the authority's public key to certificate's "
+"repository\n"
+"     --repo-check        check all public keys in the certificate's "
+"repository\n"
+"     --repo-rm           remove public key from the certificate's "
+"repository\n"
+"     --repo-show         swow all public keys in the certificate's "
+"repository\n"
+" -s, --show              output the parameters of the secret key or public "
+"key's request or certificate\n"
+"     --size              set the dimension of secret master key, in "
+"particular, for blom scheme [ maximal value: 4096 ]\n"
+" -t, --target            specify the name of the cryptographic algorithm for "
+"the new generated key\n"
+"                         one can use any supported names or identifiers of "
+"algorithm,\n"
+"                         or \"undefined\" value for generation the plain "
+"unecrypted key unrelated to any algorithm\n"
+"     --to                another form of --format option\n"
+" -v, --verify            verify the public key's request or certificate\n"
+"     --without-caption   don't show a caption for displayed values\n"
+"\n"
+msgstr ""
+
+#: aktool_key.c:1367
+#, c-format
+msgid ""
+"options used for customizing a public key's certificate:\n"
+"     --authority-name    add an issuer's generalized name to the authority "
+"key identifier extension\n"
+"     --ca-ext            use as certificate authority [ enabled values: "
+"true, false ]\n"
+"     --pathlen           set the maximal length of certificate's chain\n"
+"     --digital-signature use for verifying a digital signatures of user "
+"data\n"
+"     --content-commitment\n"
+"     --key-encipherment  use for encipherment of secret keys\n"
+"     --data-encipherment use for encipherment of user data (is not usally "
+"used)\n"
+"     --key-agreement     use in key agreement protocols for subject's "
+"authentication\n"
+"     --key-cert-sign     use for verifying of public key's certificates\n"
+"     --crl-sign          use for verifying of revocation lists of "
+"certificates\n"
 msgstr ""

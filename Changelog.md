@@ -1,10 +1,15 @@
 # Перечень изменений
 
 
+## Изменения в версии 0.9.6
+
+
+
+
 ## Изменения в версии 0.9.5
 
  - Флаги состояний ключа внесены в одно перечисление key_flag_values_t
- - Уточнена реализация следующих функций 
+ - Уточнена реализация следующих функций
     - ak_wipe_ptr()
     - ak_skey_load_from_file() [теперь возвращается NULL в случае ошибки]
     - ak_verifykey_verify_ptr()
@@ -12,10 +17,10 @@
     - ak_ptr_load_from_base64_file()
     - ak_verifykey_import_from_request() [выделяется буффер в случае нехватки памяти]
     - ak_asn1_add_mpzn() [убрана поддержка отрицательных чисел]
- - Добавлены функции 
+ - Добавлены функции
     - ak_printf()
     - ak_verifykey_import_from_repository_file()
-    - ak_verifykey_import_from_repository_ptr()    
+    - ak_verifykey_import_from_repository_ptr()
  - Функции экспортируются:
     - ak_verifykey_export_to_asn1_request()
  - Возвращена русификация утилиты aktool
