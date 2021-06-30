@@ -563,7 +563,7 @@
         goto labex2;
       }
        else {
-         if( !ki.quiet ) printf(_("certificate of public key stored in %s%s%s file\n\n"),
+         if( !ki.quiet ) printf(_("certificate of public key stored in %s%s%s file\n"),
                               ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
        }
     }
@@ -575,7 +575,7 @@
           goto labex2;
         } else {
             if( !ki.quiet )
-              printf(_("public key stored in %s%s%s file as certificate's request\n\n"),
+              printf(_("public key stored in %s%s%s file as certificate's request\n"),
                               ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
           }
      }
@@ -1308,7 +1308,7 @@
 
   if( errcount ) {
     aktool_error(_("aktool found %d error(s), "
-                 "rerun aktool with \"--audit-file stderr\" option or see syslog messages"), errcount );
+            "rerun aktool with \"--audit-file stderr\" option or see syslog messages"), errcount );
     return EXIT_FAILURE;
   }
 

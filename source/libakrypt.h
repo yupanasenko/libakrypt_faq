@@ -1704,7 +1704,7 @@ extern "C" {
  /*! \brief уникальный номер открытого ключа (значение SubjectKeyIdentifier в RFC 5280) */
   ak_uint8 number[32];
  /*! \brief длина номера (в октетах)
-     \details для ключей, созданных другим ПО модет быть меньше, чем sizeof( number ) */
+     \details для ключей, созданных другим ПО может быть меньше, чем sizeof( number ) */
   ak_uint32 numlen;
  /*! \brief контекст эллиптической кривой */
   ak_wcurve wc;
@@ -1894,7 +1894,8 @@ extern "C" {
  dll_export ak_tlv ak_tlv_new_key_usage( const ak_uint32 );
 /*! \brief Создание расширения, содержащего информацию о ключе проверки сертификата
    (x509v3: Authority Key Identifier) */
- dll_export ak_tlv ak_tlv_new_authority_key_identifier( ak_signkey , ak_verifykey , const bool_t );
+ dll_export ak_tlv ak_tlv_new_authority_key_identifier( ak_signkey ,
+                                                              ak_verifykey , ak_certificate_opts );
 /** @} */
 /** @} *//** \addtogroup signalg-doc Алгоритмы выработки и проверки электроной подписи
  @{ */

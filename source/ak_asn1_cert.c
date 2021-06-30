@@ -797,8 +797,7 @@
 
  /* 4. Добавляем имена для поиска ключа проверки подписи (Authority Key Identifier)
                                                        данное расширение будет добавляться всегда */
-  ak_asn1_add_tlv( asn, tlv = ak_tlv_new_authority_key_identifier( issuer_skey,
-                                                   issuer_vkey, opts->authoritykey.include_name ));
+  ak_asn1_add_tlv( asn, tlv = ak_tlv_new_authority_key_identifier( issuer_skey, issuer_vkey, opts ));
   if( tlv == NULL ) {
     ak_error_message( ak_error_get_value(), __func__,
                                     "incorrect generation of Authority Key Identifier extension" );
@@ -1265,7 +1264,7 @@
    функции ak_error_get_value().                                                                   */
 /* ----------------------------------------------------------------------------------------------- */
  ak_tlv ak_tlv_new_authority_key_identifier( ak_signkey issuer_skey,
-                                                     ak_verifykey issuer_vkey, const bool_t name )
+                                                ak_verifykey issuer_vkey, ak_certificate_opts opts )
 {
   ak_mpzn256 serial;
   ak_uint8 encode[512];  /* массив для кодирования */
@@ -1292,7 +1291,7 @@
   ak_asn1_add_tlv( os->data.constructed,
                   ak_tlv_new_primitive( CONTEXT_SPECIFIC^0x00, 32, issuer_vkey->number, ak_true ));
  /* добавляем [1] */
-  if( name ) {
+  if( opts->authoritykey.include_name ) {
     ak_asn1_add_tlv( os->data.constructed,
                   ak_tlv_new_constructed( CONSTRUCTED^CONTEXT_SPECIFIC^0x01, asn = ak_asn1_new()));
     ak_asn1_add_tlv( asn,
@@ -1300,8 +1299,19 @@
     ak_asn1_add_tlv( asn1, ak_tlv_duplicate_global_name( issuer_vkey->name ));
   }
  /* добавляем [2] */
-  ak_verifykey_generate_certificate_serial_number( issuer_vkey, issuer_skey, serial );
-  ak_asn1_add_mpzn( os->data.constructed, CONTEXT_SPECIFIC^0x02, serial, ak_mpzn256_size );
+  if( opts->serialnumlen ) {
+  printf("\n ------------------------- %s \n", ak_ptr_to_hexstr( opts->serialnum, opts->serialnumlen, ak_false ));
+
+//    ak_asn1_add_tlv( os->data.constructed,
+//                  ak_tlv_new_constructed( CONSTRUCTED^CONTEXT_SPECIFIC^0x02, asn = ak_asn1_new()));
+    ak_asn1_add_octet_string( os->data.constructed, opts->serialnum, opts->serialnumlen );
+
+  }
+   else {
+    ak_verifykey_generate_certificate_serial_number( issuer_vkey, issuer_skey, serial );
+    ak_asn1_add_mpzn( os->data.constructed, CONTEXT_SPECIFIC^0x02, serial, ak_mpzn256_size );
+  }
+
 
   memset( encode, 0, sizeof( encode ));
   if( ak_tlv_encode( os, encode, &len ) != ak_error_ok ) {
