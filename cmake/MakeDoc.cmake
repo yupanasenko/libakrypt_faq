@@ -74,7 +74,7 @@ if( UNIX )
     if( GZIP )
       execute_process( COMMAND  gzip --force ${CMAKE_BINARY_DIR}/aktool.1 )
     endif()
-    message("-- Create manual documentation for aktool utility" )
+    message("-- Manual documentation for aktool utility created" )
   endif()
 
 # -----------------------------------------------------------------------------------

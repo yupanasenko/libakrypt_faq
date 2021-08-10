@@ -8,7 +8,7 @@ cmake_minimum_required( VERSION 3.2 FATAL_ERROR )
 # -------------------------------------------------------------------------------------------------- #
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 9 )
-set( MINOR_VERSION 5 )
+set( MINOR_VERSION 6 )
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 
@@ -80,7 +80,7 @@ set( AKRYPT_SOURCES
    source/ak_asn1.c
    source/ak_sign.c
    source/ak_asn1_keys.c
-   source/ak_asn1_cert.c
+ #  source/ak_asn1_cert.c
    source/ak_blom.c
 )
 
@@ -345,7 +345,7 @@ set( CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${FULL_VERSION}" )
 set( CPACK_STRIP_FILES TRUE )
 set( CPACK_PACKAGE_DESCRIPTION
      "Библиотека, реализующая российские криптографические механизмы в пространстве пользователя" )
-set(CPACK_VERBATIM_VARIABLES YES)
+set( CPACK_VERBATIM_VARIABLES YES )
    
 include( CPack )
 

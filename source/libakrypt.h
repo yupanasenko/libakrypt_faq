@@ -1683,7 +1683,7 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup sign-doc Электронная подпись
- @{ *//** \addtogroup cert-doc Открытые ключи асимметричных алгоритмов и их сертификаты
+ @{ *//** \addtogroup cert-doc Открытые ключи асимметричных алгоритмов
  @{ */
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Открытый ключ алгоритма проверки электронной подписи ГОСТ Р 34.10-2012.
@@ -1706,7 +1706,7 @@ extern "C" {
   ak_uint8 number[32];
  /*! \brief длина номера (в октетах)
      \details для ключей, созданных другим ПО может быть меньше, чем sizeof( number ) */
-  ak_uint32 numlen;
+  ak_uint32 number_length;
  /*! \brief контекст эллиптической кривой */
   ak_wcurve wc;
  /*! \brief OID алгоритма, для которого используется ключ;
@@ -1714,14 +1714,106 @@ extern "C" {
   ak_oid oid;
  /*! \brief точка кривой, являющаяся открытым ключом электронной подписи */
   struct wpoint qpoint;
- /*! \brief временной интервал использования ключа  */
-  struct time_interval time;
- /*! \brief ASN.1 дерево, содержащее в себе последовательность расширенных имен
-    владельца ключа (согласно ITU-T X.509) */
-  ak_tlv name;
  /*! \brief флаги состояния ключа */
   ak_uint64 flags;
 } *ak_verifykey;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Параметры запроса на сертификат открытого ключа */
+ typedef struct request_opts {
+  /*! \brief Версия запроса на сертификат,
+      значение 1 соответствует PKCS#10 в варианте, изложенным в рекомендациях Р 1323565.1.023-2018,
+      другие значения не поддерживаются */
+   ak_uint32 version;
+  /*! \brief ASN.1 дерево, содержащее в себе последовательность расширенных имен
+    владельца ключа (согласно ITU-T X.509) */
+   ak_tlv subject;
+  /*! \brief Значение электронной подписи, считанное из созданного ранее запроса */
+   ak_uint8 signature[128];
+} *ak_request_opts;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Запрос на сертификат открытого ключа */
+ typedef struct request {
+  /*! \brief Открытый ключ */
+   struct verifykey vkey;
+  /*! \brief Параметры запроса на сертификат */
+   struct request_opts opts;
+} *ak_request;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Параметры сертификата открытого ключа */
+ typedef struct certificate_opts {
+  /*! \brief Версия сертификата (по-умолчанию, мы всегда работаем с v3, значение 2 ) */
+   ak_uint32 version;
+  /*! \brief Флаг того, создан ли сертификат, используется только при импорте сертификатов */
+   bool_t created;
+  /*! \brief Обобщенное имя владельца сертификата */
+   ak_tlv subject;
+  /*! \brief Обобщенное имя эмитента (центра сертификации, выдавшего сертификат) */
+   ak_tlv issuer;
+  /*! \brief Временной интервал действия сертификата */
+   struct time_interval time;
+  /*! \brief Серийный номер сертификата */
+  /*! \details при экспорте данное значение вырабатывается в процессе выработки сертификата,
+     при импорте - считывается из asn1 дерева */
+   ak_uint8 serialnum[32];
+  /*! \brief длина серийного номера */
+   ak_uint32 serialnum_length;
+  /*! \brief Номер ключа эмитента (центра сертификации, выдавшего сертификат) */
+   ak_uint8 issuer_number[32];
+  /*! \brief Длина ключа эмитента */
+   ak_uint32 issuer_number_length;
+  /*! \brief Серийный номер эмитента (центра сертификации, выдавшего сертификат) */
+   ak_uint8 issuer_serialnum[32];
+  /*! \brief Длина серийного номера сертификата эмитента */
+   ak_uint32 issuer_serialnum_length;
+  /*! \brief Значение электронной подписи, считанное из созданного ранее сертификата */
+   ak_uint8 signature[128];
+
+  /*! \brief расширение `Basic Constraints` (oid: 2.5.29.19) */
+   struct {
+    /*! \brief определено ли данное расширение */
+     bool_t is_present;
+    /*! \brief разрешено ли порождать цепочки сертификации */
+     bool_t value;
+    /*! \brief количество промежуточных сертификатов в цепочке сертификации. */
+     ak_uint32 pathlenConstraint;
+   } ext_ca;
+
+  /*! \brief расширение `Key Usage` (oid: 2.5.29.15) */
+   struct {
+    /*! \brief определено ли данное расширение */
+     bool_t is_present;
+    /*! \brief набор бит, описывающих область применения открытого ключа */
+     ak_uint32 bits;
+   } ext_key_usage;
+
+  /*! \brief расширение Subject Key Identifier (oid: 2.5.29.14)
+      \details Значение номера ключа хранится в поле number структуры verifykey */
+   struct {
+    /*! \brief определено ли данное расширение */
+     bool_t is_present;
+   } ext_subjkey;
+
+  /*! \brief расширение Authority Key Identifier (oid: 2.5.29.35) */
+   struct {
+    /*! \brief определено ли данное расширение */
+     bool_t is_present;
+    /*! \brief надо ли включать расширенное имя эмитента в сертификат */
+     bool_t include_name;
+   } ext_authoritykey;
+
+} *ak_certificate_opts;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Сертификат открытого ключа */
+ typedef struct certificate {
+  /*! \brief Открытый ключ */
+   struct verifykey vkey;
+  /*! \brief Параметры сертификата */
+   struct certificate_opts opts;
+} *ak_certificate;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
@@ -1736,168 +1828,11 @@ extern "C" {
 /*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
     в частности, алгоритма ГОСТ Р 34.10-2012. */
  dll_export int ak_verifykey_create_from_signkey( ak_verifykey , ak_signkey );
-/*! \brief Функция устанавливает временной интервал действия открытого ключа. */
- dll_export int ak_verifykey_set_validity( ak_verifykey , time_t , time_t );
 /*! \brief Функция вырабатывает номер открытого ключа. */
  dll_export int ak_verifykey_set_number( ak_verifykey );
-/*! \brief Функция добавляет к расширенному имени владельца ключа новую строку. */
- dll_export int ak_verifykey_add_name_string( ak_verifykey , const char * , const char * );
 /*! \brief Уничтожение контекста открытого ключа. */
  dll_export int ak_verifykey_destroy( ak_verifykey );
 
-/* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup cert-export-doc Функции экспорта и импорта открытых ключей
- @{ */
-/*! \brief Параметры запроса на сертификат */
- typedef struct request_opts {
-  /*! \brief Версия запроса на сертификат,
-      значение 1 соотвествует PKCS#10 в варианте, изложенным в рекомендациях Р 1323565.1.023-2018,
-      другие значения не поддерживаются */
-   ak_uint32 version;
-  /*! \brief Значение электронной подписи, считанное из созданного ранее запроса */
-   ak_uint8 signature[128];
-} *ak_request_opts;
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Бит `digitalSignature` расширения `keyUsage`. */
- #define bit_digitalSignature   (256)
-/*! \brief Бит `contentCommitment` расширения `keyUsage`. */
- #define bit_contentCommitment  (128)
-/*! \brief Бит `keyEncipherment` расширения `keyUsage`. */
- #define bit_keyEncipherment     (64)
-/*! \brief Бит `dataEncipherment` расширения `keyUsage`. */
- #define bit_dataEncipherment    (32)
-/*! \brief Бит `keyAgreement` расширения `keyUsage`. */
- #define bit_keyAgreement        (16)
-/*! \brief Бит `keyCertSign` расширения `keyUsage`. */
- #define bit_keyCertSign          (8)
-/*! \brief Бит `cRLSign` расширения `keyUsage`. */
- #define bit_cRLSign              (4)
-/*! \brief Бит `encipherOnly` расширения `keyUsage`. */
- #define bit_encipherOnly         (2)
-/*! \brief Бит `decipherOnly` расширения `keyUsage`. */
- #define bit_decipherOnly         (1)
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Структура, в которой хранятся параметры сертификата открытого ключа.
-    \details Указанные параметры используются при создании сертификата, а также при проверке
-    его валидности. В структуру включены параметры, которые не входят в struct verifykey           */
-/* ----------------------------------------------------------------------------------------------- */
-  typedef struct certificate_opts
-{
- /*! \brief расширение `Basic Constraints` (oid: 2.5.29.19) */
-  struct {
-    /*! \brief определено ли данное расширение */
-     bool_t is_present;
-    /*! \brief разрешено ли порождать цепочки сертификации */
-     bool_t value;
-    /*! \brief количество промежуточных сертификатов в цепочке сертификации. */
-     ak_uint32 pathlenConstraint;
-  } ca;
-
- /*! \brief расширение `keyUsage` (oid: 2.5.29.15) */
-  struct {
-    /*! \brief определено ли данное расширение */
-     bool_t is_present;
-    /*! \brief набор бит, описывающих область применения открытого ключа */
-     ak_uint32 bits;
-  } key_usage;
-
- /*! \brief расширение Subject Key Identifier (oid: 2.5.29.14)
-     \details значение идентификатора хранится в поле number структуры verifykey */
-  struct {
-    /*! \brief определено ли данное расширение */
-     bool_t is_present;
-  } subjkey;
-
- /*! \brief расширение Authority Key Identifier (oid: 2.5.29.35) */
-  struct {
-    /*! \brief определено ли данное расширение */
-     bool_t is_present;
-    /*! \brief надо ли включать расширенное имя эмитента в сертификат */
-     bool_t include_name;
-  } authoritykey;
-
- /*! \brief Версия сертификата (по-умолчанию, мы всегда работаем с v3) */
-  ak_uint32 version;
- /*! \brief Флаг того, создан ли сертификат, используется только при импорте сертификатов */
-  bool_t created;
- /*! \brif Обобщенное имя эмитента (центра сертификации, выдавшего сертификат) */
-  ak_tlv issuer_name;
- /*! \brief длина серийного номера */
-  size_t serialnumlen;
- /*! \brief собственно серийный номер сертификата */
- /*! \details при экспорте данное значение вырабатывается в процессе выработки сертификата,
-     при импорте - считывается из asn1 дерева */
-  ak_uint8 serialnum[32];
- /*! \brief Значение электронной подписи, считанное из созданного ранее сертификата */
-  ak_uint8 signature[128];
-
- /*! \brief Длина ключа эмитента */
-  size_t casubjlen;
- /*! \brief Номер ключа эмитента (центра сертификации, выдавшего сертификат) */
-  ak_uint8 casubjnum[32];
- /*! \brief Длина серийного номера сертификата эмитента */
-  size_t casertnumlen;
- /*! \brief Серийный номер эмитента (центра сертификации, выдавшего сертификат) */
-  ak_uint8 casertnum[32];
-
-} *ak_certificate_opts;
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция присваивает значения по-умолчанию для опций сертификата. */
- dll_export int ak_certificate_opts_create( ak_certificate_opts );
-/*! \brief Функция уничтожает динамически размещенные данные, полученные в ходе импорта сертификата. */
- dll_export int ak_certificate_opts_destroy( ak_certificate_opts );
-/*! \brief Функция формирует asn1 дерево с запросом на сертификат открытого ключа. */
- dll_export int ak_verifykey_export_to_asn1_request( ak_verifykey , ak_signkey ,
-                                                                             ak_random , ak_asn1 );
-/*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
-    в запрос на получение сертификата окрытого ключа. */
- dll_export int ak_verifykey_export_to_request( ak_verifykey , ak_signkey , ak_random ,
-                                                         char * , const size_t , export_format_t );
-/*! \brief Функция импортирует открытый ключ асимметричного преобразования из запроса
-   на сертификат открытого ключа */
- dll_export int ak_verifykey_import_from_request( ak_verifykey , const char * , ak_request_opts );
-
-/*! \brief Функция вырабатывает серийный номер сертификата. */
- dll_export int ak_verifykey_generate_certificate_serial_number( ak_verifykey ,
-                                                                         ak_signkey , ak_mpzn256 );
-/*! \brief Функция создает asn1 дерево, содержащее сертификат открытого ключа. */
- dll_export ak_asn1 ak_verifykey_export_to_asn1_certificate( ak_verifykey ,
-                                     ak_signkey , ak_verifykey , ak_random , ak_certificate_opts );
-/*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
-    в сертификат открытого ключа. */
- dll_export int ak_verifykey_export_to_certificate( ak_verifykey , ak_signkey , ak_verifykey ,
-                       ak_random , ak_certificate_opts , char * , const size_t , export_format_t );
-/*! \brief Функция импортирует открытый ключ асимметричного преобразования из сертификата
-   открытого ключа */
- dll_export int ak_verifykey_import_from_certificate( ak_verifykey , ak_verifykey ,
-                                                              const char * , ak_certificate_opts );
-/*! \brief Функция импортирует открытый ключ асимметричного преобразования из сертификата
-   открытого ключа, расположенного в памяти */
- dll_export int ak_verifykey_import_from_ptr_as_certificate( ak_verifykey ,
-                            ak_verifykey , const ak_pointer , const size_t , ak_certificate_opts );
-/*! \brief Функция импортирует открытый ключ асимметричного преобразования из хранилища */
- dll_export int ak_verifykey_import_from_repository_ptr( ak_verifykey , ak_uint8 * , size_t ,
-                                                                             ak_certificate_opts );
-/*! \brief Функция импортирует открытый ключ асимметричного преобразования из хранилища */
- dll_export int ak_verifykey_import_from_repository_file( ak_verifykey , const char * ,
-                                                                             ak_certificate_opts );
-/** @} *//** \addtogroup cert-tlv-doc Функции создания расширений сертификатов открытых ключей
- @{ */
-/*! \brief Создание расширения, содержащего идентификатор открытого ключа
-   (x509v3: SubjectKeyIdentifier ) */
- dll_export ak_tlv ak_tlv_new_subject_key_identifier( ak_pointer, const size_t );
-/*! \brief Создание расширения, содержащего основные ограничения (x509v3: BasicConstraints ) */
- dll_export ak_tlv ak_tlv_new_basic_constraints( bool_t , const ak_uint32 );
-/*! \brief Создание расширения, содержащего область применения сертификата (x509v3: keyUsage ) */
- dll_export ak_tlv ak_tlv_new_key_usage( const ak_uint32 );
-/*! \brief Создание расширения, содержащего информацию о ключе проверки сертификата
-   (x509v3: Authority Key Identifier) */
- dll_export ak_tlv ak_tlv_new_authority_key_identifier( ak_signkey ,
-                                                              ak_verifykey , ak_certificate_opts );
-/** @} */
 /** @} *//** \addtogroup signalg-doc Алгоритмы выработки и проверки электроной подписи
  @{ */
 /*! \brief Выработка электронной подписи для фиксированного значения случайного числа и вычисленного
@@ -1921,6 +1856,13 @@ extern "C" {
                                                                        const size_t , ak_pointer );
 /*! \brief Проверка электронной подписи для заданного файла. */
  dll_export bool_t ak_verifykey_verify_file( ak_verifykey , const char * , ak_pointer );
+
+/** @} */
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup cert-export-doc Функции экспорта и импорта открытых ключей
+ @{ */
+
+
 /** @} *//** @} */
 
 /* ----------------------------------------------------------------------------------------------- */

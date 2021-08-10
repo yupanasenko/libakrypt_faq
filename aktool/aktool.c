@@ -40,7 +40,7 @@
    .op_file = "", /* выход, секретный ключ */
    .key_file = "", /* вход, секретный ключ */
    .pubkey_file = "", /* вход, открытый ключ */
-   .capubkey_file = "" /* вход, открырый ключ УЦ */
+   .capubkey_file = "" /* вход, открытый ключ УЦ */
  };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -253,12 +253,12 @@
       if( generator ) free( generator );
       return NULL;
     }
-    if( ki.verbose ) printf(_("used a file with random data: %s\n"),
+    if( ki.verbose ) printf(_("using file with random data: %s\n"),
                                                                   ki.name_of_file_for_generator );
   }
    else {
     if(( generator = ak_oid_new_object( ki.oid_of_generator )) == NULL ) return NULL;
-    if( ki.verbose ) printf(_("used a random number generator: %s\n"),
+    if( ki.verbose ) printf(_("using random number generator: %s\n"),
                                                                     ki.oid_of_generator->name[0] );
    }
 

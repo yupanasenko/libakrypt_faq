@@ -837,12 +837,8 @@
   pctx->wc = wc;
  /* устанавливаем флаг отсутствия ключевого значения */
   pctx->flags = key_flag_undefined;
- /* инициализируем ресурс открытого ключа */
-  pctx->time.not_before = pctx->time.not_after = 0;
- /* обобщенное имя владельца ключа, по умолчанию, не определено */
-  pctx->name = NULL;
  /* устанавливаем максимальный размер номера ключа */
-  pctx->numlen = sizeof( pctx->number );
+  pctx->number_length = sizeof( pctx->number );
  return error;
 }
 
@@ -883,12 +879,6 @@
   ak_wpoint_pow( &pctx->qpoint, &pctx->qpoint, k, pctx->wc->size, pctx->wc );
   ak_wpoint_reduce( &pctx->qpoint, pctx->wc );
 
- /* разбираемся с ресурсом */
-  pctx->time.not_before = sctx->key.resource.time.not_before;
-  pctx->time.not_after = sctx->key.resource.time.not_after;
-
- /* имя владельца ключа не определено и может быть установлено позднее */
-  pctx->name = NULL;
  /* устанавливаем флаг  */
   pctx->flags = key_flag_set_key;
  /* все параметры установлены => можно вырабатывать номер ключа */
@@ -903,37 +893,6 @@
  return ak_error_ok;
 }
 
-/* ----------------------------------------------------------------------------------------------- */
-/*! Присвоение времени происходит следующим образом. Если `not_before` равно нулю, то
-    устанавливается текущее время. Если `not_after` равно нулю или меньше, чем `not_before`,
-    то временной интервал действия ключа устанавливается равным 365 дней.
-
-    \param vkey Контекст открытого ключа.
-    \param not_before Время, начиная с которого ключ действителен. Значение, равное нулю,
-    означает, что будет установлено текущее время.
-    \param not_after Время, начиная с которого ключ недействителен.
-    \return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
-    возвращается код ошибки.                                                                       */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_verifykey_set_validity( ak_verifykey vkey, time_t not_before, time_t not_after )
-{
-  if( vkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                            "using a null pointer to public key" );
- /* устанавливаем временной интервал */
-  if( not_before == 0 )
- #ifdef AK_HAVE_TIME_H
-  vkey->time.not_before = time( NULL );
- #else
-  vkey->time.not_before = 0;
- #endif
-    else vkey->time.not_before = not_before;
-  if( not_after == 0 ) vkey->time.not_after = vkey->time.not_before + 31536000;
-    else {
-      if( not_after > vkey->time.not_before ) vkey->time.not_after = not_after;
-        else vkey->time.not_after = vkey->time.not_before + 31536000;
-    }
- return ak_error_ok;
-}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param pctx контекст открытого ключа алгоритма электронной подписи.
@@ -947,9 +906,6 @@
                                                       "using null pointer to public key context" );
   if(( error = ak_hash_destroy( &pctx->ctx )) != ak_error_ok )
     ak_error_message( error, __func__ , "incorrect destroying hash function context" );
-
- /* если обобщенное имя владельца было определено, то удаляем его */
-  if( pctx->name != NULL ) pctx->name = ak_tlv_delete( pctx->name );
 
   memset( pctx, 0, sizeof( struct verifykey ));
  return error;
@@ -1117,28 +1073,6 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param vk контекст открытого ключа электронной подписи
-    @param ni строка, содержащая имя или идентификатор, определяющий тип помещаемых
-    данных (attribute type)
-    @param string строка с данными.
-
-    @return В случае успеха возвращается \ref ak_error_ok. В противном случае
-    возвращается код ошибки.                                                                       */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_verifykey_add_name_string( ak_verifykey vk, const char *ni, const char *string )
-{
- /* необходимые проверки */
-  if( vk == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                      "using null pointer to secret key context" );
-  if( vk->name == NULL )
-    if(( vk->name = ak_tlv_new_sequence()) == NULL )
-      return ak_error_message( ak_error_get_value(), __func__,
-                                     "incorrect creation of tlv context for owner's common name" );
-
- return ak_tlv_add_string_to_global_name( vk->name, ni, string );
-}
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! В отличие от номеров секретных ключей, номера открытых ключей не являются случайными.
     Согласно рекомендациям RFC 5280 номер открытого ключа вырабатывается из
 
@@ -1203,7 +1137,7 @@
     goto labex;
   }
    else ak_hash_finalize( &hctx, buffer, vk->wc->size*sizeof( ak_uint64 ),
-                                                    vk->number, vk->numlen = sizeof( vk->number ));
+                                             vk->number, vk->number_length = sizeof( vk->number ));
   labex: ak_hash_destroy( &hctx );
  return error;
 }
