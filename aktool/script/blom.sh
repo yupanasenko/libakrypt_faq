@@ -1,5 +1,5 @@
-#!/bin/bash
-# Testing a Blom jey generation scheme
+#!/bin/bas
+# Testing a Blom key generation scheme
 export AKTOOL=aktool;
 #
 #

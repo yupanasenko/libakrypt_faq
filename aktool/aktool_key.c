@@ -25,6 +25,7 @@
  int aktool_key_new_blom_subscriber( void );
  int aktool_key_new_blom_pairwise( void );
  int aktool_key_new_keypair( bool_t );
+ int aktool_key_show_key( char * );
  int aktool_key_verify_key( int argc , char *argv[] );
  int aktool_key_new_certificate( int argc , char *argv[] );
  int aktool_key_input_name( ak_verifykey );
@@ -38,7 +39,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key( int argc, char *argv[] )
 {
-  int value, next_option = 0, exit_status = EXIT_FAILURE;
+  int next_option = 0, exit_status = EXIT_FAILURE;
   enum { do_nothing, do_new, do_show, do_verify, do_cert,
                          do_repo_add, do_repo_del, do_repo_check, do_repo_show } work = do_nothing;
 
@@ -104,7 +105,7 @@
 
  /* разбираем опции командной строки */
   do {
-       next_option = getopt_long( argc, argv, aktool_common_letters_definition"hns:a:o:t:vc", long_options, NULL );
+       next_option = getopt_long( argc, argv, aktool_common_letters_definition"hns:a:o:t:vcs:", long_options, NULL );
        switch( next_option )
       {
         aktool_common_functions_run( aktool_key_help );
@@ -119,6 +120,15 @@
 
         case 'c': /* --cert */
                    work = do_cert;
+                   break;
+
+        case 's': /* --show */
+                   work = do_show;
+                   #ifdef _WIN32
+                     GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
+                   #else
+                     realpath( optarg , ki.key_file );
+                   #endif
                    break;
 
         case 'a': /* --algorithm  устанавливаем имя криптографического алгоритма генерации ключей */
@@ -392,6 +402,10 @@
             }
       break;
 
+    case do_show: /* выводим информацию о секретном ключе */
+      exit_status = aktool_key_show_key( ki.key_file );
+      break;
+
     default:
       exit_status = EXIT_FAILURE;
   }
@@ -489,7 +503,7 @@
       aktool_error(_("wrong export a secret key to file %s%s%s"),
                               ak_error_get_start_string(), ki.os_file, ak_error_get_end_string( ));
      else {
-       printf(_("secret key stored in %s%s%s file\n"),
+       if( !ki.quiet ) printf(_("secret key stored in %s%s%s file\n"),
                               ak_error_get_start_string(), ki.os_file, ak_error_get_end_string( ));
        exitcode = EXIT_SUCCESS;
      }
@@ -548,7 +562,7 @@
     aktool_error(_("incorrect creation of the abonent's key"));
     goto labex1;
   }
-  printf(_("Ok\n\n"));
+  if( !ki.quiet ) printf(_("Ok\n\n"));
 
  /* запрашиваем пароль для сохранения ключа абонента */
   if( !ki.lenoutpass  ) {
@@ -568,7 +582,7 @@
       aktool_error(_("wrong export a secret key to file %s%s%s"),
                               ak_error_get_start_string(), ki.os_file, ak_error_get_end_string( ));
      else {
-       printf(_("secret key stored in %s%s%s file\n"),
+       if( !ki.quiet ) printf(_("secret key stored in %s%s%s file\n"),
                               ak_error_get_start_string(), ki.os_file, ak_error_get_end_string( ));
        exitcode = EXIT_SUCCESS;
      }
@@ -641,7 +655,7 @@
   }
 
  /* запрашиваем пароль для доступа к ключу абонента (однократно, без дублирования) */
-  printf(_("loading subscriber's key: %s\n"), ki.key_file );
+  if( !ki.quiet ) printf(_("loading subscriber's key: %s\n"), ki.key_file );
   if( ki.leninpass == 0 ) {
     if(( ki.leninpass = aktool_load_user_password( NULL, ki.inpass, sizeof( ki.inpass ), 0 )) < 1 )
     {
@@ -673,7 +687,7 @@
       aktool_error(_("wrong pairwise key generation"));
       goto labex1;
     }
-    printf(_("Ok\n\n"));
+    if( !ki.quiet ) printf(_("Ok\n\n"));
     if( strlen( ki.os_file ) == 0 ) aktool_key_new_blom_pairwise_keyname();
     if( ak_file_create_to_write( &fs, ki.os_file ) != ak_error_ok ) {
       aktool_error(_("incorrect key file creation"));
@@ -684,7 +698,7 @@
                               ak_error_get_start_string(), ki.os_file, ak_error_get_end_string( ));
     }
      else {
-       printf(_("secret key stored in %s%s%s file\n"),
+       if( !ki.quiet ) printf(_("secret key stored in %s%s%s file\n"),
                               ak_error_get_start_string(), ki.os_file, ak_error_get_end_string( ));
        exitcode = EXIT_SUCCESS;
      }
@@ -699,9 +713,8 @@
       aktool_error(_("wrong pairwise key generation"));
       goto labex1;
      }
-     printf(_("Ok\n\n"));
-
-    if( ki.verbose ) printf(_("new key information:\n"));
+     if( !ki.quiet ) printf(_("Ok\n\n"));
+     if( ki.verbose ) printf(_("new key information:\n"));
 
     /* вот еще что надо бы не забыть - метку */
      if( ki.keylabel != NULL ) {
@@ -740,7 +753,7 @@
        ) != ak_error_ok ) aktool_error(_("wrong export a secret key to file %s%s%s"),
                               ak_error_get_start_string(), ki.os_file, ak_error_get_end_string( ));
      else {
-       printf(_("secret key stored in %s%s%s file\n"),
+       if( !ki.quiet ) printf(_("secret key stored in %s%s%s file\n"),
                               ak_error_get_start_string(), ki.os_file, ak_error_get_end_string( ));
        exitcode = EXIT_SUCCESS;
      }
@@ -761,8 +774,144 @@
  * ----------------------------------------------------------------------------------------------- */
  int aktool_key_new_keypair( bool_t create_pair )
 {
-  aktool_error("this function is'nt available now");
- return EXIT_FAILURE;
+  ak_pointer key = NULL;
+  time_t now = time( NULL );
+  int exitcode = EXIT_FAILURE;
+
+ /* создаем ключ */
+  if(( key = ak_oid_new_object( ki.oid_of_target )) == NULL ) return exitcode;
+
+ /* для асимметричных ключей устанавливаем кривую */
+  if( ki.oid_of_target->engine == sign_function ) {
+    if( ki.curve == NULL ) ki.curve = ak_oid_find_by_name( "cspa" );
+    if( ak_signkey_set_curve( key, ki.curve->data ) != ak_error_ok ) {
+      aktool_error(_("using non applicable elliptic curve (%s)"), ki.curve->name[0] );
+      goto labex2;
+    }
+  }
+
+ /* вырабатываем случайный секретный ключ */
+  if( ki.oid_of_target->func.first.set_key_random( key, ki.generator ) != ak_error_ok ) {
+    aktool_error(_("incorrect creation of a random secret key value"));
+    goto labex2;
+  }
+
+ /* устанавливаем срок действия, в сутках, начиная с текущего момента */
+  if( ak_skey_set_validity( key, now, now + ki.days*86400 ) != ak_error_ok ) {
+    aktool_error(_("incorrect assigning the validity of secret key"));
+    goto labex2;
+  }
+
+ /* устанавливаем метку */
+  if( ki.keylabel != NULL ) {
+    if( ak_skey_set_label( key, ki.keylabel, strlen( ki.keylabel )) != ak_error_ok ) {
+      aktool_error(_("incorrect assigning the label of secret key"));
+      goto labex2;
+    }
+  }
+
+ /* !!! переходим к открытому ключу !!! */
+  if( create_pair ) {
+
+  }
+
+ /* мастерим пароль для сохранения секретного ключа */
+  if( ki.lenoutpass == 0 ) {
+    if(( ki.lenoutpass =
+                       aktool_load_user_password_twice( ki.outpass, sizeof( ki.outpass ))) < 1 ) {
+      exitcode = EXIT_FAILURE;
+      goto labex2;
+    }
+  }
+
+ /* сохраняем созданный ключ в файле */
+  if( ak_skey_export_to_file_with_password(
+          key,            /* ключ */
+          ki.outpass,     /* пароль */
+          ki.lenoutpass,  /* длина пароля */
+          ki.os_file,     /* если имя не задано,
+                     то получаем новое имя файла */
+          ( strlen( ki.os_file ) > 0 ) ? 0 : sizeof( ki.os_file ),
+          ki.format
+     ) != ak_error_ok ) {
+     aktool_error(_("wrong export a secret key to file %s%s%s"),
+                              ak_error_get_start_string(), ki.os_file, ak_error_get_end_string( ));
+     exitcode = EXIT_FAILURE;
+     goto labex2;
+  } else {
+     /* секретный ключ хорошо хранить в хранилище, а не в файле */
+     if( !ki.quiet ) printf(_("secret key stored in %s%s%s file\n"),
+                              ak_error_get_start_string(), ki.os_file, ak_error_get_end_string( ));
+     /* выводим информацию о созданном ключе */
+     if( ki.verbose ) {
+       printf("\n");
+       aktool_key_show_key( ki.os_file );
+     }
+     exitcode = EXIT_SUCCESS;
+    }
+
+  labex2:
+   ak_oid_delete_object( ki.oid_of_target, key );
+
+ return exitcode;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_key_show_key( char *filename )
+{
+  ak_skey skey = NULL;
+  ak_pointer key = NULL;
+ #ifndef AK_HAVE_WINDOWS_H
+  char output_buffer[256];
+ #endif
+
+ /* 1. создаем контекст ключа (без считывания ключевой информации, только параметры) */
+  if(( key = ak_skey_new_from_file( filename )) == NULL ) {
+    aktool_error(_("wrong reading a key from %s file\n"), filename );
+    return EXIT_FAILURE;
+  }
+
+  skey = (ak_skey)key;
+  printf(_("Type:\n"));
+  if( skey->oid->engine == sign_function ) printf(_("    Asymmetric secret key\n"));
+    else printf(_("    Symmetric secret key\n"));
+  printf(_("Algorithm:\n    %s (%s, %s)\n"), ak_libakrypt_get_engine_name( skey->oid->engine ),
+                                                            skey->oid->name[0], skey->oid->id[0] );
+  printf(_("Number:\n    %s\n"), ak_ptr_to_hexstr( skey->number, 32, ak_false ));
+  printf(_("Resource: %ld (%s)\n"), (long int)( skey->resource.value.counter ),
+                              ak_libakrypt_get_counter_resource_name( skey->resource.value.type ));
+
+ #ifdef AK_HAVE_WINDOWS_H
+  printf(_(" from: %s"), ctime( &skey->resource.time.not_before ));
+  printf(_("   to: %s"), ctime( &skey->resource.time.not_after ));
+ #else
+  strftime( output_buffer, sizeof( output_buffer ), /* локализованный вывод */
+                        "%e %b %Y %H:%M:%S (%A) %Z", localtime( &skey->resource.time.not_before ));
+  printf(_(" from: %s\n"), output_buffer );
+  strftime( output_buffer, sizeof( output_buffer ), /* локализованный вывод */
+                        "%e %b %Y %H:%M:%S (%A) %Z", localtime( &skey->resource.time.not_after ));
+  printf(_("   to: %s\n"), output_buffer );
+ #endif
+
+ /* для асимметричных секретных ключей выводим дополнительную информацию */
+  if( skey->oid->engine == sign_function ) {
+    ak_uint8 zerobuf[32];
+    ak_oid curvoid = ak_oid_find_by_data( skey->data );
+
+    printf(_("Public key number:\n    "));
+    memset( zerobuf, 0, sizeof( zerobuf ));
+    if( memcmp( zerobuf, ((ak_signkey)skey)->verifykey_number, 32 ) == 0 )
+      printf(_("( undefined )\n"));
+     else printf("%s\n", ak_ptr_to_hexstr(((ak_signkey)skey)->verifykey_number, 32, ak_false ));
+
+    printf(_("Curve:\n    "));
+    if( curvoid == NULL ) printf(_("( undefined )\n"));
+      else printf("%s (%s)\n", curvoid->name[0], curvoid->id[0] );
+  }
+  if( skey->label != NULL ) printf(_("Label:\n    %s\n"), skey->label );
+  ak_oid_delete_object( ((ak_skey)key)->oid, key );
+
+ return EXIT_SUCCESS;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
