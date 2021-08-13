@@ -28,7 +28,7 @@
  int aktool_key_show_key( char * );
  int aktool_key_verify_key( int argc , char *argv[] );
  int aktool_key_new_certificate( int argc , char *argv[] );
- int aktool_key_input_name( ak_verifykey );
+ ak_tlv aktool_key_input_name( void );
  int aktool_key_repo_show( void );
  int aktool_key_repo_check( void );
  int aktool_key_repo_add( int argc , char *argv[] );
@@ -404,6 +404,10 @@
 
     case do_show: /* выводим информацию о секретном ключе */
       exit_status = aktool_key_show_key( ki.key_file );
+      break;
+
+    case do_verify: /* проверяем сертификаты и запросы на сертификат */
+      exit_status = aktool_key_verify_key( argc, argv );
       break;
 
     default:
@@ -810,10 +814,44 @@
     }
   }
 
- /* !!! переходим к открытому ключу !!! */
+ /* переходим к открытому ключу */
   if( create_pair ) {
+    union { /* объединение для хранения открытого ключа */
+      struct request req;
+      struct certificate cert;
+    } public;
+    memset( &public, 0, sizeof( public ));
 
-  }
+   /* вырабатываем открытый ключ,
+      это позволяет выработать номер открытого ключа, а также присвоить ему имя и ресурс */
+    if( ak_verifykey_create_from_signkey( &public.cert.vkey, key ) != ak_error_ok ) {
+      aktool_error(_("incorrect creation of public key"));
+      goto labex2;
+    }
+
+   /* создаем обобщенное имя владельца ключей */
+    public.cert.opts.subject = aktool_key_input_name();
+
+    if( ki.format == aktool_magic_number ) { /* сохраняем открытый ключ как корневой сертификат */
+
+      /*  ...  */
+
+    }
+     else { /* сохраняем запрос на сертификат */
+       if( ak_request_export_to_file( &public.req, key, ki.generator, ki.op_file,
+          ( strlen( ki.op_file ) > 0 ) ? 0 : sizeof( ki.op_file ), ki.format ) != ak_error_ok ) {
+          aktool_error(_("wrong export a public key to request %s%s%s"),
+                              ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
+          goto labex2;
+        } else {
+            if( !ki.quiet )
+              printf(_("public key stored in %s%s%s file as certificate's request\n"),
+                              ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
+          }
+
+       ak_request_destroy( &public.req );
+     }
+  } /* конец create_pair */
 
  /* мастерим пароль для сохранения секретного ключа */
   if( ki.lenoutpass == 0 ) {
@@ -854,6 +892,164 @@
    ak_oid_delete_object( ki.oid_of_target, key );
 
  return exitcode;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int aktool_key_input_name_from_console_line( ak_tlv tlv, const char *sh, const char *lg  )
+{
+  size_t len = 0;
+  char string[256];
+  char *ptr = NULL;
+  int error = ak_error_not_ready;
+
+  if(( ptr = strstr( ki.userid, sh )) != NULL ) {
+    ptr+=4; /* мы предполагаем, что на вход подается /xx= */
+    len = 0;
+    while( len < strlen( ptr )) {
+      if( ptr[len]   == '/') break;
+      ++len;
+    }
+    if( len > 0 ) {
+      memset( string, 0, sizeof( string ));
+      memcpy( string, ptr, ak_min( len, sizeof( string ) -1));
+      error = ak_tlv_add_string_to_global_name( tlv, lg, string );
+    }
+  }
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/* в короткой форме мы поддерживаем флаги /cn/su/sn/ct/ln/st/or/ou/em, а также /og/oi/si/in
+   (передается через --id)                                                                         */
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_key_input_name_from_console( ak_tlv subject )
+{
+  int error = ak_error_ok, found = ak_false;
+
+  if( aktool_key_input_name_from_console_line( subject,
+                                        "/em=", "email-address" ) == ak_error_ok ) found = ak_true;
+  if( aktool_key_input_name_from_console_line( subject,
+                                          "/cn=", "common-name" ) == ak_error_ok ) found = ak_true;
+  if( aktool_key_input_name_from_console_line( subject,
+                                              "/su=", "surname" ) == ak_error_ok ) found = ak_true;
+  if( aktool_key_input_name_from_console_line( subject,
+                                        "/sn=", "serial-number" ) == ak_error_ok ) found = ak_true;
+  if( aktool_key_input_name_from_console_line( subject,
+                                         "/ct=", "country-name" ) == ak_error_ok ) found = ak_true;
+  if( aktool_key_input_name_from_console_line( subject,
+                                        "/lt=", "locality-name" ) == ak_error_ok ) found = ak_true;
+  if( aktool_key_input_name_from_console_line( subject,
+                               "/st=", "state-or-province-name" ) == ak_error_ok ) found = ak_true;
+  if( aktool_key_input_name_from_console_line( subject,
+                                       "/sa=", "street-address" ) == ak_error_ok ) found = ak_true;
+  if( aktool_key_input_name_from_console_line( subject,
+                                         "/or=", "organization" ) == ak_error_ok ) found = ak_true;
+  if( aktool_key_input_name_from_console_line( subject,
+                                    "/ou=", "organization-unit" ) == ak_error_ok ) found = ak_true;
+/* свое, родное ))) */
+  if( aktool_key_input_name_from_console_line( subject,
+                                    "/og=", "ogrn" ) == ak_error_ok ) found = ak_true;
+  if( aktool_key_input_name_from_console_line( subject,
+                                    "/oi=", "ogrnip" ) == ak_error_ok ) found = ak_true;
+  if( aktool_key_input_name_from_console_line( subject,
+                                    "/si=", "snils" ) == ak_error_ok ) found = ak_true;
+  if( aktool_key_input_name_from_console_line( subject,
+                                    "/in=", "inn" ) == ak_error_ok ) found = ak_true;
+  if( !found ) {
+    error = ak_tlv_add_string_to_global_name( subject, "common-name", ki. userid );
+  }
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_tlv aktool_key_input_name( void )
+{
+  size_t len = 0;
+  ak_tlv subject;
+  char string[256];
+  bool_t noname = ak_true;
+
+ /* a. При необходимости, создаем subject */
+  if(( subject = ak_tlv_new_sequence()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                     "incorrect creation of tlv context for owner's common name" );
+    return NULL;
+  }
+
+ /* b. Проверяем, задана ли строка с расширенным именем владельца */
+  if( ki.lenuser > 0 ) {
+    if( aktool_key_input_name_from_console( subject ) != ak_error_ok )
+      ak_error_message_fmt( ak_error_get_value(), __func__,
+                                              "value of --id=%s option is'nt correct", ki.userid );
+    return subject;
+  }
+
+ /* c. Выводим стандартное пояснение */
+  printf(_(" -----\n"
+   " You are about to be asked to enter information that will be incorporated\n"
+   " into your certificate request.\n"
+   " What you are about to enter is what is called a Distinguished Name or a DN.\n"
+   " There are quite a few fields but you can leave some blank.\n"
+   " For some fields there will be a default value.\n"
+   " If you do not want to provide information just enter a string of one or more spaces.\n"
+   " -----\n"));
+
+ /* Вводим расширенное имя с клавиатуры
+    1. Country Name */
+
+  ak_snprintf( string, len = sizeof( string ), "RU" );
+  if( ak_string_read(_("Country Name (2 letter code)"), string, &len ) == ak_error_ok ) {
+   #ifdef AK_HAVE_CTYPE_H
+    string[0] = toupper( string[0] );
+    string[1] = toupper( string[1] );
+   #endif
+    string[2] = 0;
+    if( len && ( ak_tlv_add_string_to_global_name( subject,
+                                      "country-name", string ) == ak_error_ok )) noname = ak_false;
+  }
+ /* 2. State or Province */
+  memset( string, 0, len = sizeof( string ));
+  if( ak_string_read(_("State or Province"), string, &len ) == ak_error_ok )
+    if( len && ( ak_tlv_add_string_to_global_name( subject,
+                            "state-or-province-name", string ) == ak_error_ok )) noname = ak_false;
+ /* 3. Locality */
+  memset( string, 0, len = sizeof( string ));
+  if( ak_string_read(_("Locality (eg, city)"), string, &len ) == ak_error_ok )
+    if( len && ( ak_tlv_add_string_to_global_name( subject,
+                                     "locality-name", string ) == ak_error_ok )) noname = ak_false;
+ /* 4. Organization */
+  memset( string, 0, len = sizeof( string ));
+  if( ak_string_read(_("Organization (eg, company)"), string, &len ) == ak_error_ok )
+    if( len && ( ak_tlv_add_string_to_global_name( subject,
+                                      "organization", string ) == ak_error_ok )) noname = ak_false;
+ /* 5. Organization Unit*/
+  memset( string, 0, len = sizeof( string ));
+  if( ak_string_read(_("Organization Unit"), string, &len ) == ak_error_ok )
+    if( len && ( ak_tlv_add_string_to_global_name( subject,
+                                 "organization-unit", string ) == ak_error_ok )) noname = ak_false;
+ /* 6. Street Address */
+  memset( string, 0, len = sizeof( string ));
+  if( ak_string_read(_("Street Address"), string, &len ) == ak_error_ok )
+    if( len && ( ak_tlv_add_string_to_global_name( subject,
+                                    "street-address", string ) == ak_error_ok )) noname = ak_false;
+ /* 7. Common Name */
+  memset( string, 0, len = sizeof( string ));
+  if( ak_string_read(_("Common Name"), string, &len ) == ak_error_ok )
+    if( len && ( ak_tlv_add_string_to_global_name( subject,
+                                       "common-name", string ) == ak_error_ok )) noname = ak_false;
+ /* 8. email address */
+  memset( string, 0, len = sizeof( string ));
+  if( ak_string_read(_("Email Address"), string, &len ) == ak_error_ok )
+    if( len && ( ak_tlv_add_string_to_global_name( subject,
+                                     "email-address", string ) == ak_error_ok )) noname = ak_false;
+  if( noname ) {
+    aktool_error(
+   _("generation of a secret or public keys without any information about owner are not allowed"));
+  }
+
+ return subject;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -913,6 +1109,148 @@
 
  return EXIT_SUCCESS;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+ static void aktool_print_buffer( ak_uint8 *buffer, size_t size )
+{
+  size_t i;
+  for( i = 0; i < size; i++ ) {
+    if( i%16 == 0 ) printf("\t");
+    printf("%02X ", buffer[i] );
+    if(i%16 == 15) printf("\n");
+  }
+  if( size%16 != 0 ) printf("\n");
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static void aktool_key_verify_print_global_name( ak_asn1 lst )
+{
+ /* начинаем перебор всех элементов */
+  if( lst != NULL ) {
+    ak_asn1_first( lst );
+    do{
+        ak_oid oid = NULL;
+        ak_pointer ptr = NULL;
+        ak_asn1 sq = lst->current->data.constructed;
+
+        ak_asn1_first( sq = sq->current->data.constructed );
+        ak_tlv_get_oid( sq->current, &ptr );
+        if(( oid = ak_oid_find_by_id( ptr )) != NULL ) {
+          char buff[128];
+          ak_uint32 sz = 0;
+          ak_asn1_next( sq );
+         /* мы копируем данные во временный буффер перед выводом, это спасает printf от чтения
+                                                          последнего ненулевого байта в данных */
+          sz = ak_min( sizeof( buff ) -1, sq->current->len );
+          memcpy( buff, sq->current->data.primitive, sz );
+          buff[sz] = 0;
+          printf("    %s (%s): %s\n", oid->name[1], _( oid->name[0] ), buff );
+        }
+    } while( ak_asn1_next( lst ));
+  }
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int aktool_key_print_request( ak_request req )
+{
+  size_t i = 0, ts = ak_hash_get_tag_size( &req->vkey.ctx );
+
+  printf(_("Certificate's request\n"));
+  printf(_("  subject: %s\n"),
+                         ak_tlv_get_string_from_global_name( req->opts.subject, "2.5.4.3", NULL ));
+ /* начинаем перебор всех элементов */
+  aktool_key_verify_print_global_name( req->opts.subject->data.constructed );
+ /* информация о ключе */
+  printf(_("  public key:\n    x:  "));
+  for( i = 0; i < ts; i++ ) {
+    printf("%02X ", ((ak_uint8 *)req->vkey.qpoint.x)[i] );
+    if(( i%16 == 15) && ( i != ts-1 )) printf("\n\t");
+  }
+  printf("\n    y:  ");
+  for( i = 0; i < ts; i++ ) {
+    printf("%02X ", ((ak_uint8 *)req->vkey.qpoint.y)[i] );
+    if(( i%16 == 15) && ( i != ts-1 )) printf("\n\t");
+  }
+  printf(_("\n    elliptic curve:\n\t%s (%u bits)\n"),
+                        ak_oid_find_by_data( req->vkey.wc )->name[0], ( req->vkey.wc->size << 6 ));
+ /* информация о файле и его содержимом */
+  printf(_("  request:\n    type: PKCS#10 (P 1323565.1.023-2018)\n    version: %d\n"),
+                                                                               req->opts.version );
+  printf(_("  algorithm: %s\n"), req->vkey.oid->name[0] );
+  printf(_("  signature:\n"));
+  aktool_print_buffer( req->opts.signature, 2*ts );
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_key_verify_key( int argc , char *argv[] )
+{
+//  struct request_opts reqopt;
+//  struct certificate_opts caopts;
+//  struct verifykey vkey, cakey, *captr = NULL;
+  int errcount = 0, error = ak_error_ok, exitcode = EXIT_SUCCESS;
+
+  ++optind; /* пропускаем набор управляющих команд (k -v или key --verify) */
+  if( optind < argc ) {
+    while( optind < argc ) {
+        char *value = argv[optind++]; /* получаем указатель на запрашиваемое имя файла */
+        if( ak_file_or_directory( value ) == DT_REG ) {
+         /* только здесь начинается процесс обработки запроса или сертификата
+            сначала формируем полное имя файла, потом опробуем содержимое */
+          #ifdef _WIN32
+            GetFullPathName( value, FILENAME_MAX, ki.pubkey_file, NULL );
+          #else
+            realpath( value , ki.pubkey_file );
+          #endif
+
+         /* опробуем содержимое файла как запрос на сертификат,
+            если пользователь определил сертификат УЦ, то это явно не запрос на сертификат */
+            if( strlen( ki.capubkey_file ) == 0 ) {
+              struct request req;
+              switch( ak_request_import_from_file( &req, ki.pubkey_file )) {
+                case ak_error_ok:
+                  /* выводим ключ и переходим к следующему файлу */
+                   if( ki.verbose ) aktool_key_print_request( &req );
+                   if( !ki.quiet ) printf(_("Verified (%s): Ok\n"), value );
+                   ak_request_destroy( &req ); /* не забыть убрать за собой */
+                   continue;
+
+                case ak_error_not_equal_data:
+                   if( !ki.quiet ) printf(_("Verified (%s): No\n"), value );
+                   continue;
+
+                default:
+                   break;
+              }
+            } /* конец if( strlen( ki.capubkey )) */
+
+           /* опробуем файл как сертификат открытого ключа */
+
+           /* ... */
+
+        }
+         else {
+          aktool_error(_("%s is not a regular file"), value );
+          errcount++;
+         }
+   }
+  }
+   else {
+     aktool_error(_("certificate or certificate's request is not "
+                                                      "specified as the argument of the program"));
+     exitcode = EXIT_FAILURE;
+    }
+
+  if( errcount ) {
+    aktool_error(_("aktool found %d error(s), "
+            "rerun aktool with \"--audit-file stderr\" option or see syslog messages"), errcount );
+    exitcode = EXIT_FAILURE;
+  }
+
+ return exitcode;
+}
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                 вывод справочной информации                                     */

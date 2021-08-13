@@ -9,6 +9,18 @@ export AKTOOL=aktool;
 export SSLCONF=/etc/ssl/openssl.cnf;
 #
 # ------------------------------------------------------------------------------------------------- #
+crt_exit() {
+rm -f openssl256_request.csr openssl256.key
+rm -f aktool256_request.csr aktool256.key
+rm -f openssl512_ca.crt openssl512.key
+rm -f aktool512.key aktool512_ca.crt
+rm -f openssl256_certificate.crt aktool256_certificate.crt
+rm -f openssl256_aktool_certificate.crt aktool256_aktool_certificate.crt
+rm -f openssl512_ca.srl
+exit
+}
+#
+# ------------------------------------------------------------------------------------------------- #
 echo "1. Проверяем наличие тестируемых программ"; echo;
 # ------------------------------------------------------------------------------------------------- #
 openssl engine gost -c -vvvv
@@ -40,6 +52,7 @@ echo "запрос openssl256_request.csr верифицирован";
 # выводим asn1 дерево запроса
 ${AKTOOL} a openssl256.key
 echo "представлена структура секретного ключа openssl";
+echo "";
 #
 # теперь сами создаем запрос на сертификат и проверяем его с помощью openssl
 ${AKTOOL} k -nt sign256 -o aktool256.key --outpass 321azO --op aktool256_request.csr --to pem --id "/ct=RU/st=Somewhere/lt=Lies/or=The Truth/ou=With Overall Gladness/ln=But Where?/em=email@somewhere.lies/cn=Aktool Team (256)"
@@ -48,10 +61,9 @@ openssl req -verify -in aktool256_request.csr -text -noout
 if [[ $? -ne 0 ]]
 then echo "openssl не может верифицировать aktool_request.csr"; exit;
 fi
-echo "запрос aktool256_request.csr верифицирован";
+echo "запрос aktool256_request.csr верифицирован";echo;
 #
-echo ""
-#
+crt_exit;
 # ------------------------------------------------------------------------------------------------- #
 echo; echo "3. Проверяем возможность создания и взаимной проверки самоподписанных сертификатов"; echo;
 # ------------------------------------------------------------------------------------------------- #
@@ -142,10 +154,4 @@ fi
 # ------------------------------------------------------------------------------------------------- #
 echo; echo "5. Очищаем за собой пространство"; echo;
 # ------------------------------------------------------------------------------------------------- #
-rm -f openssl256_request.csr openssl256.key
-rm -f aktool256_request.csr aktool256.key
-rm -f openssl512_ca.crt openssl512.key
-rm -f aktool512.key aktool512_ca.crt
-rm -f openssl256_certificate.crt aktool256_certificate.crt
-rm -f openssl256_aktool_certificate.crt aktool256_aktool_certificate.crt
-rm -f openssl512_ca.srl
+crt_exit;

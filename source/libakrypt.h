@@ -1719,6 +1719,52 @@ extern "C" {
 } *ak_verifykey;
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
+    в частности, алгоритма ГОСТ Р 34.10-2012. */
+ dll_export int ak_verifykey_create( ak_verifykey , const ak_wcurve );
+ /*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
+    c фиксированной кривой размера 256 бит. */
+ dll_export int ak_verifykey_create_streebog256( ak_verifykey );
+ /*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
+    c фиксированной кривой размера 512 бит. */
+ dll_export int ak_verifykey_create_streebog512( ak_verifykey );
+/*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
+    в частности, алгоритма ГОСТ Р 34.10-2012. */
+ dll_export int ak_verifykey_create_from_signkey( ak_verifykey , ak_signkey );
+/*! \brief Функция вырабатывает номер открытого ключа. */
+ dll_export int ak_verifykey_set_number( ak_verifykey );
+/*! \brief Уничтожение контекста открытого ключа. */
+ dll_export int ak_verifykey_destroy( ak_verifykey );
+
+/* ----------------------------------------------------------------------------------------------- */
+/** @} *//** \addtogroup signalg-doc Алгоритмы выработки и проверки электроной подписи
+ @{ */
+/*! \brief Выработка электронной подписи для фиксированного значения случайного числа и вычисленного
+    заранее значения хеш-функции. */
+ dll_export void ak_signkey_sign_const_values( ak_signkey , ak_uint64 * ,
+                                                                        ak_uint64 * , ak_pointer );
+/*! \brief Выработка электронной подписи для вычисленного заранее значения хеш-функции. */
+ dll_export int ak_signkey_sign_hash( ak_signkey , ak_random , ak_pointer , size_t ,
+                                                                             ak_pointer , size_t );
+/*! \brief Выработка электронной подписи для заданной области памяти. */
+ dll_export int ak_signkey_sign_ptr( ak_signkey , ak_random , const ak_pointer ,
+                                                              const size_t , ak_pointer , size_t );
+/*! \brief Выработка электронной подписи для заданного файла. */
+ dll_export int ak_signkey_sign_file( ak_signkey , ak_random ,
+                                                              const char * , ak_pointer , size_t );
+/*! \brief Проверка электронной подписи для вычисленного заранее значения хеш-функции. */
+ dll_export bool_t ak_verifykey_verify_hash( ak_verifykey , const ak_pointer ,
+                                                                       const size_t , ak_pointer );
+/*! \brief Проверка электронной подписи для заданной области памяти. */
+ dll_export bool_t ak_verifykey_verify_ptr( ak_verifykey , const ak_pointer ,
+                                                                       const size_t , ak_pointer );
+/*! \brief Проверка электронной подписи для заданного файла. */
+ dll_export bool_t ak_verifykey_verify_file( ak_verifykey , const char * , ak_pointer );
+
+/* ----------------------------------------------------------------------------------------------- */
+/** @} *//** \addtogroup cert-export-doc Функции экспорта и импорта открытых ключей
+@{ */
+
 /*! \brief Параметры запроса на сертификат открытого ключа */
  typedef struct request_opts {
   /*! \brief Версия запроса на сертификат,
@@ -1728,7 +1774,8 @@ extern "C" {
   /*! \brief ASN.1 дерево, содержащее в себе последовательность расширенных имен
     владельца ключа (согласно ITU-T X.509) */
    ak_tlv subject;
-  /*! \brief Значение электронной подписи, считанное из созданного ранее запроса */
+  /*! \brief Значение электронной подписи
+      \details Данное поле используется только при чтении созданного ранее запроса */
    ak_uint8 signature[128];
 } *ak_request_opts;
 
@@ -1742,12 +1789,23 @@ extern "C" {
 } *ak_request;
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция формирует asn1 дерево с запросом на сертификат открытого ключа. */
+ dll_export int ak_request_export_to_asn1( ak_request , ak_signkey , ak_random , ak_asn1 );
+/*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
+    в запрос на получение сертификата окрытого ключа. */
+ dll_export int ak_request_export_to_file( ak_request , ak_signkey , ak_random ,
+                                                         char * , const size_t , export_format_t );
+/*! \brief Функция импортирует открытый ключ асимметричного преобразования из запроса
+   на сертификат открытого ключа */
+ dll_export int ak_request_import_from_file( ak_request , const char * );
+/*! \brief Функция освобождает контекст запроса на сертификат. */
+ dll_export int ak_request_destroy( ak_request );
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Параметры сертификата открытого ключа */
  typedef struct certificate_opts {
   /*! \brief Версия сертификата (по-умолчанию, мы всегда работаем с v3, значение 2 ) */
    ak_uint32 version;
-  /*! \brief Флаг того, создан ли сертификат, используется только при импорте сертификатов */
-   bool_t created;
   /*! \brief Обобщенное имя владельца сертификата */
    ak_tlv subject;
   /*! \brief Обобщенное имя эмитента (центра сертификации, выдавшего сертификат) */
@@ -1768,7 +1826,10 @@ extern "C" {
    ak_uint8 issuer_serialnum[32];
   /*! \brief Длина серийного номера сертификата эмитента */
    ak_uint32 issuer_serialnum_length;
-  /*! \brief Значение электронной подписи, считанное из созданного ранее сертификата */
+  /*! \brief Флаг того, создан ли сертификат, используется только при импорте сертификатов */
+   bool_t created;
+  /*! \brief Значение электронной подписи
+      \details Данное поле используется только при чтении созданного ранее сертификата */
    ak_uint8 signature[128];
 
   /*! \brief расширение `Basic Constraints` (oid: 2.5.29.19) */
@@ -1816,55 +1877,10 @@ extern "C" {
 } *ak_certificate;
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
-    в частности, алгоритма ГОСТ Р 34.10-2012. */
- dll_export int ak_verifykey_create( ak_verifykey , const ak_wcurve );
- /*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
-    c фиксированной кривой размера 256 бит. */
- dll_export int ak_verifykey_create_streebog256( ak_verifykey );
- /*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
-    c фиксированной кривой размера 512 бит. */
- dll_export int ak_verifykey_create_streebog512( ak_verifykey );
-/*! \brief Инициализация контекста открытого ключа асимметричного криптографического алгоритма,
-    в частности, алгоритма ГОСТ Р 34.10-2012. */
- dll_export int ak_verifykey_create_from_signkey( ak_verifykey , ak_signkey );
-/*! \brief Функция вырабатывает номер открытого ключа. */
- dll_export int ak_verifykey_set_number( ak_verifykey );
-/*! \brief Уничтожение контекста открытого ключа. */
- dll_export int ak_verifykey_destroy( ak_verifykey );
 
-/** @} *//** \addtogroup signalg-doc Алгоритмы выработки и проверки электроной подписи
- @{ */
-/*! \brief Выработка электронной подписи для фиксированного значения случайного числа и вычисленного
-    заранее значения хеш-функции. */
- dll_export void ak_signkey_sign_const_values( ak_signkey , ak_uint64 * ,
-                                                                        ak_uint64 * , ak_pointer );
-/*! \brief Выработка электронной подписи для вычисленного заранее значения хеш-функции. */
- dll_export int ak_signkey_sign_hash( ak_signkey , ak_random , ak_pointer , size_t ,
-                                                                             ak_pointer , size_t );
-/*! \brief Выработка электронной подписи для заданной области памяти. */
- dll_export int ak_signkey_sign_ptr( ak_signkey , ak_random , const ak_pointer ,
-                                                              const size_t , ak_pointer , size_t );
-/*! \brief Выработка электронной подписи для заданного файла. */
- dll_export int ak_signkey_sign_file( ak_signkey , ak_random ,
-                                                              const char * , ak_pointer , size_t );
-/*! \brief Проверка электронной подписи для вычисленного заранее значения хеш-функции. */
- dll_export bool_t ak_verifykey_verify_hash( ak_verifykey , const ak_pointer ,
-                                                                       const size_t , ak_pointer );
-/*! \brief Проверка электронной подписи для заданной области памяти. */
- dll_export bool_t ak_verifykey_verify_ptr( ak_verifykey , const ak_pointer ,
-                                                                       const size_t , ak_pointer );
-/*! \brief Проверка электронной подписи для заданного файла. */
- dll_export bool_t ak_verifykey_verify_file( ak_verifykey , const char * , ak_pointer );
-
-/** @} */
-/* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup cert-export-doc Функции экспорта и импорта открытых ключей
- @{ */
 
 
 /** @} *//** @} */
-
 /* ----------------------------------------------------------------------------------------------- */
 /*! \addtogroup skey-export-doc
  @{ */
