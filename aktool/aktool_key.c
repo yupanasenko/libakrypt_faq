@@ -934,8 +934,6 @@
   if( aktool_key_input_name_from_console_line( subject,
                                               "/su=", "surname" ) == ak_error_ok ) found = ak_true;
   if( aktool_key_input_name_from_console_line( subject,
-                                        "/sn=", "serial-number" ) == ak_error_ok ) found = ak_true;
-  if( aktool_key_input_name_from_console_line( subject,
                                          "/ct=", "country-name" ) == ak_error_ok ) found = ak_true;
   if( aktool_key_input_name_from_console_line( subject,
                                         "/lt=", "locality-name" ) == ak_error_ok ) found = ak_true;
@@ -947,6 +945,8 @@
                                          "/or=", "organization" ) == ak_error_ok ) found = ak_true;
   if( aktool_key_input_name_from_console_line( subject,
                                     "/ou=", "organization-unit" ) == ak_error_ok ) found = ak_true;
+  if( aktool_key_input_name_from_console_line( subject,
+                                        "/sn=", "serial-number" ) == ak_error_ok ) found = ak_true;
 /* свое, родное ))) */
   if( aktool_key_input_name_from_console_line( subject,
                                     "/og=", "ogrn" ) == ak_error_ok ) found = ak_true;

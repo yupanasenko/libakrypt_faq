@@ -20,9 +20,6 @@
  int aktool_test_speed_sign_function( ak_oid );
 
 /* ----------------------------------------------------------------------------------------------- */
-  bool_t aktool_test_verbose = ak_false;
-
-/* ----------------------------------------------------------------------------------------------- */
  int aktool_test( int argc, tchar *argv[] )
 {
   ak_oid oid = NULL;
@@ -34,7 +31,6 @@
   const struct option long_options[] = {
      { "crypto",           0, NULL, 255 },
      { "speed",            1, NULL, 254 },
-     { "verbose",          0, NULL, 'v' },
 
      aktool_common_functions_definition,
      { NULL,               0, NULL,   0 }
@@ -46,10 +42,6 @@
        switch( next_option )
       {
         aktool_common_functions_run( aktool_test_help );
-
-        case 'v' : /* расширенный вывод иформации о происходящем */
-                     aktool_test_verbose = ak_true;
-                     break;
 
         case 255 : /* тест скорости функций хеширования */
                      work = do_dynamic;
@@ -126,7 +118,6 @@
      "     --crypto            complete test of cryptographic algorithms\n"
      "                         run all available algorithms on test values taken from standards and recommendations\n"
      "     --speed <ni>        measuring the speed of the crypto algorithm with a given name or identifier\n"
-     " -v, --verbose           detailed information output\n"
      "\n"
      "run tests with \"--audit 2 --audit-file stderr\" options or see /var/log/auth.log file for details\n"
   ));
@@ -194,10 +185,10 @@
   }
 
  /* 3. Основной фрагмент - запуск функции на выполнение */
-  if( !aktool_test_verbose ) {
-    printf(_("[%s: 16MB "), oid->mode == algorithm ? _("ecb mode") : oid->name[0] );
-    fflush( stdout );
-  }
+  printf(_("[%s:"), oid->mode == algorithm ? _("ecb mode") : oid->name[0] );
+  if( !ki.verbose ) printf(_(" 16MB "));
+   else printf("\n");
+  fflush( stdout );
 
  /* теперь собственно тестирование скорости реализации */
   for( i = 16; i < 129; i += 8 ) {
@@ -301,7 +292,7 @@
       aktool_error(_("computational error (%d)"), error );
       goto exit;
     }
-    if( aktool_test_verbose )
+    if( ki.verbose )
       printf(_(" %3uMB: %s time = %fs, per 1MB = %fs, speed = %f MBs\n"), (unsigned int)i,
                oid->mode == algorithm ? _("ecb mode") : oid->name[0],
                (double) timea / (double) CLOCKS_PER_SEC,
@@ -315,8 +306,8 @@
     }
   }
 
-  if( !aktool_test_verbose ) printf(_(" 128MB],"));
-  printf(_(" average speed: %10f MBs\n"), avg/iter );
+  if( !ki.verbose ) printf(_(" 128MB"));
+  printf(_("], average speed: %10f MBs\n"), avg/iter );
 
   exit_status = EXIT_SUCCESS;
   exit:
@@ -359,10 +350,10 @@
     return exit_status;
   }
 
-  if( !aktool_test_verbose ) {
-    printf(_("[%s: 16MB "), oid->name[0] );
-    fflush( stdout );
-  }
+  printf(_("[%s:"), oid->name[0] );
+  if( !ki.verbose ) printf(_(" 16MB "));
+   else printf("\n");
+  fflush( stdout );
 
  /* теперь собственно тестирование скорости реализации */
   for( i = 16; i < 129; i += 8 ) {
@@ -378,7 +369,7 @@
       aktool_error(_("computational error (%d)"), error );
       goto exit;
     }
-    if( aktool_test_verbose )
+    if( ki.verbose )
       printf(_(" %3uMB: %s time = %fs, per 1MB = %fs, speed = %f MBs\n"), (unsigned int)i,
                oid->name[0],
                (double) timea / (double) CLOCKS_PER_SEC,
@@ -391,8 +382,8 @@
       avg += (double) CLOCKS_PER_SEC*i / (double) timea;
     }
   }
-  if( !aktool_test_verbose ) printf(_(" 128MB],"));
-  printf(_(" average speed: %10f MBs\n"), avg/iter );
+  if( !ki.verbose ) printf(_(" 128MB"));
+  printf(_("], average speed: %10f MBs\n"), avg/iter );
 
   exit_status = EXIT_SUCCESS;
   exit:
@@ -414,7 +405,7 @@
   if( ak_random_create_lcg( &generator ) != ak_error_ok ) return EXIT_FAILURE;
 
   printf(_("curve: %s (%s) "), curve->name[0], curve->id[0] );
-  if( aktool_test_verbose ) printf("\n");
+  if( ki.verbose ) printf("\n");
 
   for( j = 1; j < 9; j++ ) {
      i = cnt = j*250;
@@ -428,7 +419,7 @@
      }
      timea = clock() - timea;
      val = (cnt *(double) CLOCKS_PER_SEC )/(double) timea;
-     if( aktool_test_verbose ) {
+     if( ki.verbose ) {
        printf(_("[count: %3lu, time = %fs, speed: %f sec., count: %f]\n"),
        (long unsigned int)cnt,
        (double) timea / (double) CLOCKS_PER_SEC,
