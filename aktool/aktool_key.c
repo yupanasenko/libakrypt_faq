@@ -1186,9 +1186,6 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key_verify_key( int argc , char *argv[] )
 {
-//  struct request_opts reqopt;
-//  struct certificate_opts caopts;
-//  struct verifykey vkey, cakey, *captr = NULL;
   int errcount = 0, error = ak_error_ok, exitcode = EXIT_SUCCESS;
 
   ++optind; /* пропускаем набор управляющих команд (k -v или key --verify) */

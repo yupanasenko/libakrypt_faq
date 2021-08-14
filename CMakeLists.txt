@@ -11,6 +11,8 @@ set( MAIN_VERSION 9 )
 set( MINOR_VERSION 6 )
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
+# строка с текущей датой, используется при сборке документации
+string( TIMESTAMP CURRENT_DATE_STRING "[%d %B, %Y]" )
 
 # -------------------------------------------------------------------------------------------------- #
 # Формируем название проекта
@@ -30,7 +32,7 @@ option( AK_TESTS_GMP "Build comparison tests for gmp and libakrypt" OFF )
 
 # -------------------------------------------------------------------------------------------------- #
 # Подключаем модули CMake для тонкой настройки параметров сборки
-set( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
+set( CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
 include( DetectFlags )
 include( DetectHeaders )
 include( DetectIntrinsics )
@@ -38,12 +40,12 @@ include( DetectLibraries )
 
 # -------------------------------------------------------------------------------------------------- #
 # Вырабатываем заголовочный файл (в каталоге сборки)
-configure_file( ${CMAKE_SOURCE_DIR}/source/libakrypt-base.h.in ${CMAKE_BINARY_DIR}/libakrypt-base.h @ONLY )
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/source/libakrypt-base.h.in ${CMAKE_CURRENT_BINARY_DIR}/libakrypt-base.h @ONLY )
 message("-- Generation of libakrypt-base.h is done")
 
 # -------------------------------------------------------------------------------------------------- #
 # Определяем базовое множество исходных текстов библиотеки
-set( MAIN_HEADERS ${CMAKE_BINARY_DIR}/libakrypt-base.h source/libakrypt.h )
+set( MAIN_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/libakrypt-base.h source/libakrypt.h )
 
 # -------------------------------------------------------------------------------------------------- #
 set( AKBASE_SOURCES
@@ -115,7 +117,7 @@ message("-- Path for libakrypt.conf is ${AK_CONFIG_PATH}")
 if( AK_CA_PATH )
 else()
   if( CMAKE_HOST_UNIX )
-    set( AK_CA_PATH "/usr/share/ca-certificates/libakrypt" )
+    set( AK_CA_PATH "${CMAKE_INSTALL_PREFIX}/share/ca-certificates/libakrypt" )
   endif()
   if( WIN32 )
     set( AK_CA_PATH "C:\\\\Program Files\\\\Akrypt\\\\ca-certificates" )
@@ -126,7 +128,7 @@ message("-- Path for ca-certificates is ${AK_CA_PATH}")
 # -------------------------------------------------------------------------------------------------- #
 # Определем процедуры сборки библиотек - статической или динамической
 include_directories( "source" )
-include_directories( ${CMAKE_BINARY_DIR} )
+include_directories( ${CMAKE_CURRENT_BINARY_DIR} )
 add_compile_options( -DLIBAKRYPT_OPTIONS_PATH="${AK_CONFIG_PATH}" )
 add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
 add_compile_options( -DLIBAKRYPT_COMPILER_NAME="${CMAKE_C_COMPILER}" )
@@ -266,13 +268,13 @@ target_link_libraries( aktool akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
 # Сборка документации и завершающие настройки
  include( MakeDoc )
  set( LIBAKRYPT_DOCUMENTATION
-      ${CMAKE_SOURCE_DIR}/LICENSE
-      ${CMAKE_SOURCE_DIR}/Changelog.md
+      ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
+      ${CMAKE_CURRENT_SOURCE_DIR}/Changelog.md
  )
  # теперь файлы с документацией не включаются в перечень инсталлируемых файлов по-умолчанию
  # set( LIBAKRYPT_GENERATED_DOCUMENTATION
- #    ${CMAKE_BINARY_DIR}/libakrypt-base-doc-${FULL_VERSION}.pdf
- #    ${CMAKE_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.pdf
+ #    ${CMAKE_CURRENT_BINARY_DIR}/libakrypt-base-doc-${FULL_VERSION}.pdf
+ #    ${CMAKE_CURRENT_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.pdf
  #   )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -289,30 +291,28 @@ if( CMAKE_HOST_UNIX )
   endif()
 
  # компилируем и инсталлируем файлы с рускоязычным переводом утилиты aktool
-  install( CODE "execute_process( COMMAND strip -s ${CMAKE_BINARY_DIR}/aktool )" )
+  install( CODE "execute_process( COMMAND strip -s ${CMAKE_CURRENT_BINARY_DIR}/aktool )" )
   install( TARGETS aktool DESTINATION bin )
 
   if( GETTEXT_FOUND )
-    install( CODE "execute_process( COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} ${CMAKE_SOURCE_DIR}/aktool/aktool.po -o ${CMAKE_BINARY_DIR}/aktool.mo )" )
-    install( FILES ${CMAKE_BINARY_DIR}/aktool.mo DESTINATION ${CMAKE_INSTALL_PREFIX}/share/locale/ru/LC_MESSAGES )
+    install( CODE "execute_process( COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.po -o ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo )" )
+    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo DESTINATION ${CMAKE_INSTALL_PREFIX}/share/locale/ru/LC_MESSAGES )
   endif()
 
  # инсталлируем заголовочные файлы и документацию к библиотеке
   install( FILES ${MAIN_HEADERS} DESTINATION include )
-  install( FILES ${CMAKE_SOURCE_DIR}/libakrypt.conf DESTINATION ${AK_CONFIG_PATH} )
-  install( FILES ${LIBAKRYPT_DOCUMENTATION} DESTINATION share/doc/libakrypt )
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/libakrypt.conf DESTINATION ${AK_CONFIG_PATH} )
+  install( FILES ${LIBAKRYPT_DOCUMENTATION} DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/libakrypt )
 
  # инсталлируем мануал для aktool
-  if( PANDOC )
-    if( GZIP )
-      install( FILES ${CMAKE_BINARY_DIR}/aktool.1.gz DESTINATION share/man/ru/man1 )
-    else()
-      install( FILES ${CMAKE_BINARY_DIR}/aktool/aktool.1 DESTINATION share/man/ru/man1 )
-    endif()
+  if( GZIP )
+    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.1.gz DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/ru/man1 )
+  else()
+    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool/aktool.1 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/ru/man1 )
   endif()
 
  # инсталлируем корневой сертификат библиотеки
-  install( FILES ${CMAKE_SOURCE_DIR}/cert/ca-libakrypt.crt DESTINATION ${AK_CA_PATH} )
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/cert/ca-libakrypt.crt DESTINATION ${AK_CA_PATH} )
 
 # деинсталляция
 # sudo xargs rm < install_manifest.txt

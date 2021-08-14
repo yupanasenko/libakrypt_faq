@@ -591,5 +591,87 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+                      /* Служебные функции для работы с сертификатами */
+/* ----------------------------------------------------------------------------------------------- */
+/*! Данный номер (serialNumber) зависит от номера секретного ключа, подписывающего открытый ключ и,
+    тем самым, может принимать различные значения для каждого из подписывающих ключей.
+
+    Серийный номер сертификата, по-умолчанию, образуют младшие 32 байта результата хеширования
+    последовательной конкатенации номеров открытого и секретного ключей.
+    Для хеширования используется функция, определенная в контексте `секретного` ключа,
+    т.е. Стрибог512 для длинной подписи и Стрибог256 для короткой.
+
+   \code
+    result[0 .. size-1] = LSB( size, Hash( vk->number || sk->number ))
+   \endcode
+
+    Вычисленное значение не размещается в контексте открытого ключа, а
+    помещается в заданную область памяти. Это позволяет использовать данную функцию как при экспорте,
+    так и при импорте сертификатов открытых ключей (в момент разбора цепочек сертификации).
+
+   \param vk контекст открытого ключа, помещаемого в asn1 дерево сертификата
+   \param sk контекст ключа подписи, содержащий параметры центра сертификации
+   \param buf буффер, в котором размещается серийный номер.
+   \param size размер буффера (в октетах).
+   \return Функция возвращает указатель на созданный объект.
+   В случае ошибки возвращается NULL.                                                              */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_certificate_generate_serial_number( ak_verifykey vk, ak_signkey sk,
+                                                                 ak_uint8 *buf, const size_t size )
+{
+  if( vk == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                       "using null pointer to verifykey context" );
+  if( sk == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                      "using null pointer to secret key context" );
+  if( size > ak_hash_get_tag_size( &sk->ctx ))
+    return ak_error_message( ak_error_wrong_length, __func__,
+                                                 "the buffer size exceeds the permissible bound" );
+ /* используем для хеширования контекст секретного ключа */
+  ak_hash_clean( &sk->ctx );
+  ak_hash_update( &sk->ctx, vk->number, sizeof( vk->number ));
+  ak_hash_finalize( &sk->ctx, sk->key.number, sizeof( sk->key.number ), buf, size );
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param cert контекст сертификата открытого ключа
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль), в противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_certificate_opts_create( ak_certificate_opts opts )
+{
+  if( opts == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                              "initializing null pointer to certificate options" );
+ /* значения по умолчанию */
+  memset( opts, 0, sizeof( struct certificate_opts ));
+  opts->subject = NULL;
+  opts->issuer = NULL;
+  opts->ext_ca.is_present = ak_false;
+  opts->ext_key_usage.is_present = ak_false;
+  opts->ext_subjkey.is_present = ak_false;
+  opts->ext_authoritykey.is_present = ak_false;
+  opts->created = ak_false;
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_certificate_destroy( ak_certificate cert )
+{
+  int error = ak_error_ok;
+  if( cert == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                     "using null pointer to certificate context" );
+  if(( error = ak_verifykey_destroy( &cert->vkey )) != ak_error_ok )
+    ak_error_message( error, __func__, "wrong destroying of verifykey context" );
+
+  if( cert->opts.subject != NULL ) ak_tlv_delete( cert->opts.subject );
+  if( cert->opts.issuer != NULL ) ak_tlv_delete( cert->opts.issuer );
+
+  memset( cert, 0, sizeof( struct certificate ));
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                                                                 ak_asn1_cert.c  */
 /* ----------------------------------------------------------------------------------------------- */

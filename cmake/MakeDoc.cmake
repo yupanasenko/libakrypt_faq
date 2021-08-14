@@ -61,15 +61,15 @@ endif()
 # скрипты для генерации документации
 if( UNIX )
 
-  set( script ${CMAKE_BINARY_DIR}/make-doc-${FULL_VERSION}.sh )
-  set( pdf-script ${CMAKE_BINARY_DIR}/make-pdfdoc-${FULL_VERSION}.sh )
+  set( script ${CMAKE_CURRENT_BINARY_DIR}/make-doc-${FULL_VERSION}.sh )
+  set( pdf-script ${CMAKE_CURRENT_BINARY_DIR}/make-pdfdoc-${FULL_VERSION}.sh )
   file( WRITE ${script} "#/bin/bash\n" )
 
 # -----------------------------------------------------------------------------------
 # определяем команду для генерации man файла
-  configure_file( ${CMAKE_SOURCE_DIR}/aktool/aktool.1.in ${CMAKE_BINARY_DIR}/aktool.1 @ONLY )
+  configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.1.in ${CMAKE_CURRENT_BINARY_DIR}/aktool.1 @ONLY )
   if( GZIP )
-    execute_process( COMMAND  gzip --force ${CMAKE_BINARY_DIR}/aktool.1 )
+    execute_process( COMMAND  gzip --force ${CMAKE_CURRENT_BINARY_DIR}/aktool.1 )
   endif()
   message("-- Manual documentation for aktool utility created" )
 
@@ -77,10 +77,10 @@ if( UNIX )
 # документация для функций библиотеки
   if( DOXYGEN )
     # doxygen найден и документация может быть сгенерирована
-    configure_file( ${CMAKE_SOURCE_DIR}/doc/Doxyfile.akbase.in ${CMAKE_BINARY_DIR}/Doxyfile.akbase @ONLY )
-    configure_file( ${CMAKE_SOURCE_DIR}/doc/libakbase-header.tex.in ${CMAKE_BINARY_DIR}/libakbase-header.tex @ONLY )
-    configure_file( ${CMAKE_SOURCE_DIR}/doc/Doxyfile.akrypt.in ${CMAKE_BINARY_DIR}/Doxyfile.akrypt @ONLY )
-    configure_file( ${CMAKE_SOURCE_DIR}/doc/libakrypt-header.tex.in ${CMAKE_BINARY_DIR}/libakrypt-header.tex @ONLY )
+    configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.akbase.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.akbase @ONLY )
+    configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/doc/libakbase-header.tex.in ${CMAKE_CURRENT_BINARY_DIR}/libakbase-header.tex @ONLY )
+    configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.akrypt.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.akrypt @ONLY )
+    configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/doc/libakrypt-header.tex.in ${CMAKE_CURRENT_BINARY_DIR}/libakrypt-header.tex @ONLY )
 
     file( APPEND ${script} "doxygen Doxyfile.akbase\n" )
     file( APPEND ${script} "doxygen Doxyfile.akrypt\n" )
@@ -90,15 +90,15 @@ if( UNIX )
       file( WRITE ${pdf-script} "#/bin/bash\n" )
       file( APPEND ${pdf-script} "${script}\n" )
       file( APPEND ${pdf-script} "cd doc-akbase/latex; make; cd ../..\n" )
-      file( APPEND ${pdf-script} "cp doc-akbase/latex/refman.pdf ${CMAKE_BINARY_DIR}/libakrypt-base-doc-${FULL_VERSION}.pdf\n")
+      file( APPEND ${pdf-script} "cp doc-akbase/latex/refman.pdf ${CMAKE_CURRENT_BINARY_DIR}/libakrypt-base-doc-${FULL_VERSION}.pdf\n")
       file( APPEND ${pdf-script} "cd doc-akrypt/latex; make; cd ../..\n" )
-      file( APPEND ${pdf-script} "cp doc-akrypt/latex/refman.pdf ${CMAKE_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.pdf\n")
+      file( APPEND ${pdf-script} "cp doc-akrypt/latex/refman.pdf ${CMAKE_CURRENT_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.pdf\n")
     endif()
 
     if( QHELPGENERATOR )
-      file( APPEND ${script} "cp doc-akbase/html/akbase-library.qch ${CMAKE_BINARY_DIR}/libakrypt-base-doc-${FULL_VERSION}.qch\n" )
+      file( APPEND ${script} "cp doc-akbase/html/akbase-library.qch ${CMAKE_CURRENT_BINARY_DIR}/libakrypt-base-doc-${FULL_VERSION}.qch\n" )
       file( APPEND ${script} "rm doc-akbase/html/akbase-library.qch\n" )
-      file( APPEND ${script} "cp doc-akrypt/html/akrypt-library.qch ${CMAKE_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.qch\n" )
+      file( APPEND ${script} "cp doc-akrypt/html/akrypt-library.qch ${CMAKE_CURRENT_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.qch\n" )
       file( APPEND ${script} "rm doc-akrypt/html/akrypt-library.qch\n" )
     endif()
 
@@ -108,7 +108,7 @@ if( UNIX )
 
 # -----------------------------------------------------------------------------------
 # добавляем поддержку etags
-  file( APPEND ${script} "cd ${CMAKE_SOURCE_DIR}\n" )
+  file( APPEND ${script} "cd ${CMAKE_CURRENT_SOURCE_DIR}\n" )
   if( ETAGS )
     file( APPEND ${script} "etags.emacs source/*.[ch]\n" )
   endif()
@@ -123,7 +123,7 @@ if( UNIX )
     endif()
   endif()
 
-  file( APPEND ${script} "cd ${CMAKE_BINARY_DIR}\n" )
+  file( APPEND ${script} "cd ${CMAKE_CURRENT_BINARY_DIR}\n" )
   execute_process( COMMAND chmod +x ${script} )
   add_custom_target( doc ${script} )
   message("-- Script for documentation is done (now \"make doc\" enabled)")

@@ -1877,7 +1877,14 @@ extern "C" {
 } *ak_certificate;
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция присваивает значения по-умолчанию для опций сертификата. */
+ dll_export int ak_certificate_opts_create( ak_certificate_opts );
+/*! \brief Функция вырабатывает серийный номер сертификата. */
+ dll_export int ak_certificate_generate_serial_number( ak_verifykey , ak_signkey ,
+                                                                        ak_uint8 *, const size_t );
 
+/*! \brief Функция освобождает контекст сертификата открытого ключа. */
+ dll_export int ak_certificate_destroy( ak_certificate );
 
 
 /** @} *//** @} */
