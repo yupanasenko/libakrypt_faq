@@ -22,6 +22,7 @@ project( libakrypt C )
 # Перечень доступных опций для сборки библиотеки
 option( AK_STATIC_LIB "Build the static library" ON )
 option( AK_SHARED_LIB "Build the shared library" ON )
+option( AK_TESTS "Build test for libakrypt" OFF )
 option( AK_TESTS_GMP "Build comparison tests for gmp and libakrypt" OFF )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -165,22 +166,30 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 # Сборка примеров, иллюстрирующих работу базовой библиотеки
 # -------------------------------------------------------------------------------------------------- #
+if( AK_TESTS_GMP )
+  set( AK_TESTS ON )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
 set( EXAMPLES_LIST
      log
      ini
      file
    )
 
-foreach( programm ${EXAMPLES_LIST} )
-  if( AK_STATIC_LIB )
-    add_executable( example-${programm} examples/example-${programm}.c )
-    target_link_libraries( example-${programm} akbase-static ${LIBAKRYPT_LIBS} )
-  endif()
-  if( AK_SHARED_LIB )
-    add_executable( example-shared-${programm} examples/example-${programm}.c )
-    target_link_libraries( example-shared-${programm} akbase-shared ${LIBAKRYPT_LIBS} )
-  endif()
-endforeach()
+# -------------------------------------------------------------------------------------------------- #
+if( AK_TESTS )
+  foreach( programm ${EXAMPLES_LIST} )
+    if( AK_STATIC_LIB )
+      add_executable( example-${programm} examples/example-${programm}.c )
+      target_link_libraries( example-${programm} akbase-static ${LIBAKRYPT_LIBS} )
+    endif()
+    if( AK_SHARED_LIB )
+      add_executable( example-shared-${programm} examples/example-${programm}.c )
+      target_link_libraries( example-shared-${programm} akbase-shared ${LIBAKRYPT_LIBS} )
+    endif()
+  endforeach()
+endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # Сборка тестовых примеров, проверяющих корректность элементарных арифметических операций
@@ -206,13 +215,15 @@ if( AK_TESTS_GMP )
      )
 endif()
 
-enable_testing()
-foreach( programm ${ARITHMETIC_TESTS_LIST} )
-  add_executable( test-${programm} examples/test-${programm}.c )
-  target_link_libraries( test-${programm} akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
-  add_test( NAME test-${programm} COMMAND test-${programm} )
-endforeach()
-message("-- Added tests (now \"make test\" enabled): [ ${ARITHMETIC_TESTS_LIST} ]" )
+if( AK_TESTS )
+  enable_testing()
+  foreach( programm ${ARITHMETIC_TESTS_LIST} )
+    add_executable( test-${programm} examples/test-${programm}.c )
+    target_link_libraries( test-${programm} akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
+    add_test( NAME test-${programm} COMMAND test-${programm} )
+  endforeach()
+  message("-- Added tests (now \"make test\" enabled): [ ${ARITHMETIC_TESTS_LIST} ]" )
+endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # Сборка большого примера для функций криптобиблиотеки -- утилиты aktool
@@ -326,6 +337,7 @@ set( CPACK_SOURCE_GENERATOR "TBZ2")
 set( CPACK_SOURCE_IGNORE_FILES
   \\.git/
   .gitignore
+  .delme*
   TAGS
   "CMakeLists.txt.user*"
   "scratch*"
