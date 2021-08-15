@@ -160,7 +160,7 @@ if( AK_STATIC_LIB )
   add_library( akrypt-static STATIC ${MAIN_HEADERS} ${AKRYPT_SOURCES} )
   set_target_properties( akrypt-static PROPERTIES OUTPUT_NAME akrypt CLEAN_DIRECT_CUSTOM 1 )
   target_link_libraries( akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
-  message( "-- Building libakrypt: shared library" )
+  message( "-- Building libakrypt: static library" )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -303,7 +303,6 @@ if( CMAKE_HOST_UNIX )
  # компилируем и инсталлируем файлы с рускоязычным переводом утилиты aktool
   install( CODE "execute_process( COMMAND strip -s ${CMAKE_CURRENT_BINARY_DIR}/aktool )" )
   install( TARGETS aktool DESTINATION bin )
-
   if( GETTEXT_FOUND )
     install( CODE "execute_process( COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.po -o ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo )" )
     install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo DESTINATION ${CMAKE_INSTALL_PREFIX}/share/locale/ru/LC_MESSAGES )

@@ -60,7 +60,6 @@ endif()
 # -----------------------------------------------------------------------------------
 # скрипты для генерации документации
 if( UNIX )
-
   set( script ${CMAKE_CURRENT_BINARY_DIR}/make-doc-${FULL_VERSION}.sh )
   set( pdf-script ${CMAKE_CURRENT_BINARY_DIR}/make-pdfdoc-${FULL_VERSION}.sh )
   file( WRITE ${script} "#/bin/bash\n" )
@@ -110,19 +109,10 @@ if( UNIX )
 # добавляем поддержку etags
   file( APPEND ${script} "cd ${CMAKE_CURRENT_SOURCE_DIR}\n" )
   if( ETAGS )
-    file( APPEND ${script} "etags.emacs source/*.[ch]\n" )
+    file( APPEND ${script} "cd ${CMAKE_CURRENT_SOURCE_DIR}; etags.emacs source/*.[ch]; cd ${CMAKE_CURRENT_BINARY_DIR}\n" )
   endif()
 
 # -----------------------------------------------------------------------------------
-# Формируем уточненный файл перевода (нужно, в основном, при разработке)
-  if( GETTEXT_FOUND )
-    find_program( XGETTEXT xgettext )
-    if( XGETTEXT )
-      file( APPEND ${script} "cd aktool\n" )
-      file( APPEND ${script} "${XGETTEXT} aktool*.c -a -j --from-code utf-8 -o aktool.po\n" )
-    endif()
-  endif()
-
   file( APPEND ${script} "cd ${CMAKE_CURRENT_BINARY_DIR}\n" )
   execute_process( COMMAND chmod +x ${script} )
   add_custom_target( doc ${script} )
@@ -135,6 +125,15 @@ if( UNIX )
   endif()
 
 # -----------------------------------------------------------------------------------
+# Формируем уточненный файл перевода (нужно, в основном, при разработке)
+#  if( GETTEXT_FOUND )
+#    find_program( XGETTEXT xgettext )
+#    if( XGETTEXT )
+#      file( APPEND ${script} "cd ${CMAKE_CURRENT_SOURCE_DIR}/aktool\n" )
+#      file( APPEND ${script} "${XGETTEXT} aktool*.c -a -j --from-code utf-8 -o aktool.po\n" )
+#    endif()
+#  endif()
+
 # конец if( UNIX )
 endif()
 
