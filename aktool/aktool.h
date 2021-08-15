@@ -97,7 +97,8 @@
    char key_file[1024];   /* читаем, секретный ключ */
    char pubkey_file[1024]; /* читаем, открытый ключ */
    char capubkey_file[1024]; /* читаем второй (дополнительный) открытый ключ */
-   //struct certificate_opts certops;
+  /* открытый ключ */
+   struct certificate cert;
 } aktool_ki_t;
 
 /* собственно глобальная переменная с опциями */

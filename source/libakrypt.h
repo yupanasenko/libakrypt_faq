@@ -106,10 +106,10 @@ extern "C" {
 /*! \brief Ошибка использования для проверки сертификата открытого ключа,
   расширенное имя владельца которого не совпадает с именем эмитента в проверяемом сертификате. */
  #define ak_error_certificate_verify_names    (-162)
-/*! \brief Ошибка при импорте сертификата:
+/*! \brief Ошибка при импорте/экспорте сертификата:
   срок действия сертификата не актуален (истек или еще не начался) */
  #define ak_error_certificate_validity        (-165)
-/*! \brief Ошибка при импорте сертификата:
+/*! \brief Ошибка при импорте/экспорте сертификата:
     сертификат не является сертификатом центра сертификации. */
  #define ak_error_certificate_ca              (-166)
 /*! \brief Ошибка при импорте сертификата:
@@ -545,7 +545,7 @@ extern "C" {
     ak_uint8 padding[4];
   /*! \brief Cчетчик числа использований, например, зашифрованных/расшифрованных блоков. */
     ssize_t counter;
-} *ak_key_resoure_counter;
+ } *ak_key_resoure_counter;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Временной интервал действия ключа. */
@@ -554,7 +554,8 @@ extern "C" {
    time_t not_before;
   /*! \brief Время, после которого ключ недействителен. */
    time_t not_after;
-} *ak_time_intermal;
+ } *ak_time_intermal;
+ typedef struct time_interval time_interval_t;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Ресурс ключа. */
@@ -564,6 +565,7 @@ extern "C" {
   /*! \brief Временной интервал использования ключа. */
    struct time_interval time;
  } *ak_resource;
+ typedef struct resource resource_t;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Абстрактный секретный ключ, содержит базовый набор данных и методов контроля. */
@@ -1802,6 +1804,26 @@ extern "C" {
  dll_export int ak_request_destroy( ak_request );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Бит `digitalSignature` расширения `keyUsage`. */
+ #define bit_digitalSignature   (256)
+/*! \brief Бит `contentCommitment` расширения `keyUsage`. */
+ #define bit_contentCommitment  (128)
+/*! \brief Бит `keyEncipherment` расширения `keyUsage`. */
+ #define bit_keyEncipherment     (64)
+/*! \brief Бит `dataEncipherment` расширения `keyUsage`. */
+ #define bit_dataEncipherment    (32)
+/*! \brief Бит `keyAgreement` расширения `keyUsage`. */
+ #define bit_keyAgreement        (16)
+/*! \brief Бит `keyCertSign` расширения `keyUsage`. */
+ #define bit_keyCertSign          (8)
+/*! \brief Бит `cRLSign` расширения `keyUsage`. */
+ #define bit_cRLSign              (4)
+/*! \brief Бит `encipherOnly` расширения `keyUsage`. */
+ #define bit_encipherOnly         (2)
+/*! \brief Бит `decipherOnly` расширения `keyUsage`. */
+ #define bit_decipherOnly         (1)
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Параметры сертификата открытого ключа */
  typedef struct certificate_opts {
   /*! \brief Версия сертификата (по-умолчанию, мы всегда работаем с v3, значение 2 ) */
@@ -1882,12 +1904,31 @@ extern "C" {
 /*! \brief Функция вырабатывает серийный номер сертификата. */
  dll_export int ak_certificate_generate_serial_number( ak_verifykey , ak_signkey ,
                                                                         ak_uint8 *, const size_t );
-
+/*! \brief Функция создает asn1 дерево, содержащее сертификат открытого ключа. */
+ dll_export ak_asn1 ak_certificate_export_to_asn1( ak_certificate ,
+                                                         ak_signkey , ak_certificate , ak_random );
+/*! \brief Функция экспортирует открытый ключ асиметричного криптографического алгоритма
+    в сертификат открытого ключа. */
+ dll_export int ak_certificate_export_to_file( ak_certificate , ak_signkey , ak_certificate ,
+                                             ak_random , char * , const size_t , export_format_t );
 /*! \brief Функция освобождает контекст сертификата открытого ключа. */
  dll_export int ak_certificate_destroy( ak_certificate );
-
-
+/** @} */
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup cert-tlv-doc Функции создания расширений сертификатов открытых ключей
+ @{ */
+/*! \brief Создание расширения, содержащего идентификатор открытого ключа
+   (x509v3: SubjectKeyIdentifier ) */
+ dll_export ak_tlv ak_tlv_new_subject_key_identifier( ak_pointer, const size_t );
+/*! \brief Создание расширения, содержащего основные ограничения (x509v3: BasicConstraints ) */
+ dll_export ak_tlv ak_tlv_new_basic_constraints( bool_t , const ak_uint32 );
+/*! \brief Создание расширения, содержащего область применения сертификата (x509v3: keyUsage ) */
+ dll_export ak_tlv ak_tlv_new_key_usage( const ak_uint32 );
+/*! \brief Создание расширения, содержащего информацию о ключе проверки сертификата
+   (x509v3: Authority Key Identifier) */
+ dll_export ak_tlv ak_tlv_new_authority_key_identifier( ak_certificate , bool_t );
 /** @} *//** @} */
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \addtogroup skey-export-doc
  @{ */

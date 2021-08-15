@@ -45,6 +45,7 @@
 
  /* параметры, которые устанавливаются по умолчанию */
   ki.oid_of_generator = ak_oid_find_by_name( aktool_default_generator );
+  ak_certificate_opts_create( &ki.cert.opts );
 
  /* параметры, запрашиваемые пользователем */
   const struct option long_options[] = {
@@ -350,7 +351,7 @@
 
       /* определяем формат выходных данных */
         case 250: /* --to, --format  */
-                  {
+                   {
                     char tmp[4];
                     ak_uint32 i = 0;
                     memset( tmp, 0, sizeof( tmp ));
@@ -370,7 +371,62 @@
                              aktool_error(_("%s is not valid format of output data"), optarg );
                              return EXIT_FAILURE;
                            }
-                  }
+                   }
+                   break;
+
+      /* определяем опции сертификатов */
+        case 190:  ki.cert.opts.ext_key_usage.bits ^= bit_digitalSignature;
+                   ki.cert.opts.ext_key_usage.is_present = ak_true;
+                   break;
+        case 191:  ki.cert.opts.ext_key_usage.bits ^= bit_contentCommitment;
+                   ki.cert.opts.ext_key_usage.is_present = ak_true;
+                   break;
+        case 192:  ki.cert.opts.ext_key_usage.bits ^= bit_keyEncipherment;
+                   ki.cert.opts.ext_key_usage.is_present = ak_true;
+                   break;
+        case 193:  ki.cert.opts.ext_key_usage.bits ^= bit_dataEncipherment;
+                   ki.cert.opts.ext_key_usage.is_present = ak_true;
+                   break;
+        case 194:  ki.cert.opts.ext_key_usage.bits ^= bit_keyAgreement;
+                   ki.cert.opts.ext_key_usage.is_present = ak_true;
+                   break;
+        case 195:  ki.cert.opts.ext_key_usage.bits ^= bit_keyCertSign;
+                   ki.cert.opts.ext_key_usage.is_present = ak_true;
+                   break;
+        case 196:  ki.cert.opts.ext_key_usage.bits ^= bit_cRLSign;
+                   ki.cert.opts.ext_key_usage.is_present = ak_true;
+                   break;
+
+        case 197: /* --ca-ext */
+                   if( strncmp( optarg, "true", 4 ) == 0 )
+                     ki.cert.opts.ext_ca.is_present = ki.cert.opts.ext_ca.value = ak_true;
+                    else
+                     if( strncmp( optarg, "false", 5 ) == 0 ) {
+                       ki.cert.opts.ext_ca.is_present = ak_true;
+                       ki.cert.opts.ext_ca.value = ak_false;
+                     }
+                      else {
+                             aktool_error(
+                              _("%s is not valid value of certificate authority option"), optarg );
+                             return EXIT_FAILURE;
+                           }
+                   break;
+
+        case 198: /* --pathlen */
+                   {
+                     int value = 0;
+                     if(( value = atoi( optarg )) < 0 ) {
+                       aktool_error(_("the value of pathlenConstraints must be non negative integer"));
+                       return EXIT_FAILURE;
+                     }
+                     ki.cert.opts.ext_ca.is_present = ki.cert.opts.ext_ca.value = ak_true;
+                     ki.cert.opts.ext_ca.pathlenConstraint = ak_min( 100, value );
+                   }
+                   break;
+
+        case 200: /* --authority-name */
+                   ki.cert.opts.ext_authoritykey.is_present =
+                      ki.cert.opts.ext_authoritykey.include_name = ak_true;
                    break;
 
         case 175:  /* запрещаем выводить заголовок */
@@ -778,14 +834,14 @@
  * ----------------------------------------------------------------------------------------------- */
  int aktool_key_new_keypair( bool_t create_pair )
 {
+  time_interval_t tm;
   ak_pointer key = NULL;
-  time_t now = time( NULL );
   int exitcode = EXIT_FAILURE;
 
- /* создаем ключ */
+ /* 1. создаем ключ */
   if(( key = ak_oid_new_object( ki.oid_of_target )) == NULL ) return exitcode;
 
- /* для асимметричных ключей устанавливаем кривую */
+ /* 2. для асимметричных ключей устанавливаем кривую */
   if( ki.oid_of_target->engine == sign_function ) {
     if( ki.curve == NULL ) ki.curve = ak_oid_find_by_name( "cspa" );
     if( ak_signkey_set_curve( key, ki.curve->data ) != ak_error_ok ) {
@@ -794,19 +850,21 @@
     }
   }
 
- /* вырабатываем случайный секретный ключ */
+ /* 3. вырабатываем случайный секретный ключ */
   if( ki.oid_of_target->func.first.set_key_random( key, ki.generator ) != ak_error_ok ) {
     aktool_error(_("incorrect creation of a random secret key value"));
     goto labex2;
   }
 
- /* устанавливаем срок действия, в сутках, начиная с текущего момента */
-  if( ak_skey_set_validity( key, now, now + ki.days*86400 ) != ak_error_ok ) {
+ /* 4. устанавливаем срок действия, в сутках, начиная с текущего момента */
+  tm.not_before = time( NULL );
+  tm.not_after = tm.not_before + ki.days*86400;
+  if( ak_skey_set_validity( key, tm.not_before, tm.not_after ) != ak_error_ok ) {
     aktool_error(_("incorrect assigning the validity of secret key"));
     goto labex2;
   }
 
- /* устанавливаем метку */
+ /* 5. устанавливаем метку */
   if( ki.keylabel != NULL ) {
     if( ak_skey_set_label( key, ki.keylabel, strlen( ki.keylabel )) != ak_error_ok ) {
       aktool_error(_("incorrect assigning the label of secret key"));
@@ -814,31 +872,43 @@
     }
   }
 
- /* переходим к открытому ключу */
+  /* 6. переходим к открытому ключу */
   if( create_pair ) {
-    union { /* объединение для хранения открытого ключа */
-      struct request req;
-      struct certificate cert;
-    } public;
-    memset( &public, 0, sizeof( public ));
 
-   /* вырабатываем открытый ключ,
+   /* 6.1. вырабатываем открытый ключ,
       это позволяет выработать номер открытого ключа, а также присвоить ему имя и ресурс */
-    if( ak_verifykey_create_from_signkey( &public.cert.vkey, key ) != ak_error_ok ) {
+    if( ak_verifykey_create_from_signkey( &ki.cert.vkey, key ) != ak_error_ok ) {
       aktool_error(_("incorrect creation of public key"));
       goto labex2;
     }
 
-   /* создаем обобщенное имя владельца ключей */
-    public.cert.opts.subject = aktool_key_input_name();
+   /* 6.2. создаем обобщенное имя владельца ключей */
+    ki.cert.opts.subject = aktool_key_input_name();
 
-    if( ki.format == aktool_magic_number ) { /* сохраняем открытый ключ как корневой сертификат */
+   /* 6.3. */
+    if( ki.format == aktool_magic_number ) {
+     /* сохраняем открытый ключ как корневой сертификат и, в начале
+        возвращаем необходимое значение формата выходных данных */
+      ki.format = asn1_pem_format;
+     /* устанавливаем срок действия сертификата */
+      ki.cert.opts.time = tm;
+     /* сохраняем сертификат */
+      if( ak_certificate_export_to_file( &ki.cert, key, &ki.cert, ki.generator,
+                          ki.op_file, ( strlen( ki.op_file ) > 0 ) ? 0 : sizeof( ki.op_file ),
+                                                                     ki.format ) != ak_error_ok ) {
+        aktool_error(_("wrong export a public key to certificate %s%s%s"),
+                              ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
+        goto labex2;
+      }
+       else {
+         if( !ki.quiet ) printf(_("certificate of public key stored in %s%s%s file\n"),
+                              ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
+       }
 
-      /*  ...  */
-
+      ak_certificate_destroy( &ki.cert );
     }
      else { /* сохраняем запрос на сертификат */
-       if( ak_request_export_to_file( &public.req, key, ki.generator, ki.op_file,
+       if( ak_request_export_to_file( (ak_request)( &ki.cert ), key, ki.generator, ki.op_file,
           ( strlen( ki.op_file ) > 0 ) ? 0 : sizeof( ki.op_file ), ki.format ) != ak_error_ok ) {
           aktool_error(_("wrong export a public key to request %s%s%s"),
                               ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
@@ -849,11 +919,14 @@
                               ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
           }
 
-       ak_request_destroy( &public.req );
+       ak_request_destroy( (ak_request)( &ki.cert ));
      }
   } /* конец create_pair */
 
- /* мастерим пароль для сохранения секретного ключа */
+ /* восстанавливаем значение формата выходого файла */
+  if( ki.format == aktool_magic_number ) ki.format = asn1_pem_format;
+
+ /* 7. мастерим пароль для сохранения секретного ключа */
   if( ki.lenoutpass == 0 ) {
     if(( ki.lenoutpass =
                        aktool_load_user_password_twice( ki.outpass, sizeof( ki.outpass ))) < 1 ) {
@@ -862,7 +935,7 @@
     }
   }
 
- /* сохраняем созданный ключ в файле */
+ /* 8. сохраняем созданный ключ в файле */
   if( ak_skey_export_to_file_with_password(
           key,            /* ключ */
           ki.outpass,     /* пароль */
@@ -882,7 +955,7 @@
                               ak_error_get_start_string(), ki.os_file, ak_error_get_end_string( ));
      /* выводим информацию о созданном ключе */
      if( ki.verbose ) {
-       printf("\n");
+       if( ki.show_caption ) printf(" ----- \n");
        aktool_key_show_key( ki.os_file );
      }
      exitcode = EXIT_SUCCESS;
@@ -987,20 +1060,21 @@
   }
 
  /* c. Выводим стандартное пояснение */
-  printf(_(" -----\n"
+  if( ki.show_caption ) printf(" ----- \n");
+  printf(_(
    " You are about to be asked to enter information that will be incorporated\n"
    " into your certificate request.\n"
    " What you are about to enter is what is called a Distinguished Name or a DN.\n"
    " There are quite a few fields but you can leave some blank.\n"
    " For some fields there will be a default value.\n"
-   " If you do not want to provide information just enter a string of one or more spaces.\n"
-   " -----\n"));
+   " If you do not want to provide information just enter a string of one or more spaces.\n"));
+   if( ki.show_caption ) printf(" ----- \n");
 
  /* Вводим расширенное имя с клавиатуры
     1. Country Name */
 
   ak_snprintf( string, len = sizeof( string ), "RU" );
-  if( ak_string_read(_("Country Name (2 letter code)"), string, &len ) == ak_error_ok ) {
+  if( ak_string_read(_(" Country Name (2 letter code)"), string, &len ) == ak_error_ok ) {
    #ifdef AK_HAVE_CTYPE_H
     string[0] = toupper( string[0] );
     string[1] = toupper( string[1] );
@@ -1011,39 +1085,40 @@
   }
  /* 2. State or Province */
   memset( string, 0, len = sizeof( string ));
-  if( ak_string_read(_("State or Province"), string, &len ) == ak_error_ok )
+  if( ak_string_read(_(" State or Province"), string, &len ) == ak_error_ok )
     if( len && ( ak_tlv_add_string_to_global_name( subject,
                             "state-or-province-name", string ) == ak_error_ok )) noname = ak_false;
  /* 3. Locality */
   memset( string, 0, len = sizeof( string ));
-  if( ak_string_read(_("Locality (eg, city)"), string, &len ) == ak_error_ok )
+  if( ak_string_read(_(" Locality (eg, city)"), string, &len ) == ak_error_ok )
     if( len && ( ak_tlv_add_string_to_global_name( subject,
                                      "locality-name", string ) == ak_error_ok )) noname = ak_false;
  /* 4. Organization */
   memset( string, 0, len = sizeof( string ));
-  if( ak_string_read(_("Organization (eg, company)"), string, &len ) == ak_error_ok )
+  if( ak_string_read(_(" Organization (eg, company)"), string, &len ) == ak_error_ok )
     if( len && ( ak_tlv_add_string_to_global_name( subject,
                                       "organization", string ) == ak_error_ok )) noname = ak_false;
  /* 5. Organization Unit*/
   memset( string, 0, len = sizeof( string ));
-  if( ak_string_read(_("Organization Unit"), string, &len ) == ak_error_ok )
+  if( ak_string_read(_(" Organization Unit"), string, &len ) == ak_error_ok )
     if( len && ( ak_tlv_add_string_to_global_name( subject,
                                  "organization-unit", string ) == ak_error_ok )) noname = ak_false;
  /* 6. Street Address */
   memset( string, 0, len = sizeof( string ));
-  if( ak_string_read(_("Street Address"), string, &len ) == ak_error_ok )
+  if( ak_string_read(_(" Street Address"), string, &len ) == ak_error_ok )
     if( len && ( ak_tlv_add_string_to_global_name( subject,
                                     "street-address", string ) == ak_error_ok )) noname = ak_false;
  /* 7. Common Name */
   memset( string, 0, len = sizeof( string ));
-  if( ak_string_read(_("Common Name"), string, &len ) == ak_error_ok )
+  if( ak_string_read(_(" Common Name"), string, &len ) == ak_error_ok )
     if( len && ( ak_tlv_add_string_to_global_name( subject,
                                        "common-name", string ) == ak_error_ok )) noname = ak_false;
  /* 8. email address */
   memset( string, 0, len = sizeof( string ));
-  if( ak_string_read(_("Email Address"), string, &len ) == ak_error_ok )
+  if( ak_string_read(_(" Email Address"), string, &len ) == ak_error_ok )
     if( len && ( ak_tlv_add_string_to_global_name( subject,
                                      "email-address", string ) == ak_error_ok )) noname = ak_false;
+  if( ki.show_caption ) printf(" ----- \n");
   if( noname ) {
     aktool_error(
    _("generation of a secret or public keys without any information about owner are not allowed"));
@@ -1153,7 +1228,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  static int aktool_key_print_request( ak_request req )
 {
-  size_t i = 0, ts = ak_hash_get_tag_size( &req->vkey.ctx );
+  size_t ts = ak_hash_get_tag_size( &req->vkey.ctx );
 
   printf(_("Certificate's request\n"));
   printf(_("  subject: %s\n"),
@@ -1161,17 +1236,9 @@
  /* начинаем перебор всех элементов */
   aktool_key_verify_print_global_name( req->opts.subject->data.constructed );
  /* информация о ключе */
-  printf(_("  public key:\n    x:  "));
-  for( i = 0; i < ts; i++ ) {
-    printf("%02X ", ((ak_uint8 *)req->vkey.qpoint.x)[i] );
-    if(( i%16 == 15) && ( i != ts-1 )) printf("\n\t");
-  }
-  printf("\n    y:  ");
-  for( i = 0; i < ts; i++ ) {
-    printf("%02X ", ((ak_uint8 *)req->vkey.qpoint.y)[i] );
-    if(( i%16 == 15) && ( i != ts-1 )) printf("\n\t");
-  }
-  printf(_("\n    elliptic curve:\n\t%s (%u bits)\n"),
+  printf(_("  public key:\n    x: %s\n"), ak_mpzn_to_hexstr( req->vkey.qpoint.x, ( ts>>3 )));
+  printf("    y: %s\n", ak_mpzn_to_hexstr( req->vkey.qpoint.y, ( ts>>3 )));
+  printf(_("  curve: %s (%u bits)\n"),
                         ak_oid_find_by_data( req->vkey.wc )->name[0], ( req->vkey.wc->size << 6 ));
  /* информация о файле и его содержимом */
   printf(_("  request:\n    type: PKCS#10 (P 1323565.1.023-2018)\n    version: %d\n"),
@@ -1186,7 +1253,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key_verify_key( int argc , char *argv[] )
 {
-  int errcount = 0, error = ak_error_ok, exitcode = EXIT_SUCCESS;
+  int errcount = 0, exitcode = EXIT_SUCCESS;
 
   ++optind; /* пропускаем набор управляющих команд (k -v или key --verify) */
   if( optind < argc ) {

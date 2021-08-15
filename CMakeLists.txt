@@ -202,7 +202,6 @@ set ( ARITHMETIC_TESTS_LIST
       asn1-parse
       sign01
       asn1-keys
- #     asn1-cert
       blom-keys
     )
 

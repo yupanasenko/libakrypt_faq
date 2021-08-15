@@ -1,4 +1,4 @@
-#!/bin/bas
+#!/bin/bash
 # Testing a Blom key generation scheme
 export AKTOOL=aktool;
 #

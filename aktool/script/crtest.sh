@@ -10,8 +10,8 @@ export SSLCONF=/etc/ssl/openssl.cnf;
 #
 # ------------------------------------------------------------------------------------------------- #
 crt_exit() {
-rm -f openssl256_request.csr openssl256.key
-rm -f aktool256_request.csr aktool256.key
+rm -f openssl256_request.csr openssl256.key openssl512_request.csr
+rm -f aktool256_request.csr aktool256.key aktool512_request.csr
 rm -f openssl512_ca.crt openssl512.key
 rm -f aktool512.key aktool512_ca.crt
 rm -f openssl256_certificate.crt aktool256_certificate.crt
@@ -36,34 +36,68 @@ echo " ";
 # ------------------------------------------------------------------------------------------------- #
 echo; echo "2. Проверяем возможность создания и взаимной проверки запросов на сертификат"; echo;
 # ------------------------------------------------------------------------------------------------- #
-# создаем запрос на сертификат
+# создаем запрос на сертификат 256 бит
 openssl req -newkey gost2012_256 -pkeyopt paramset:A -out openssl256_request.csr -keyout openssl256.key -passout pass:321azO -subj "/C=RU/ST=Somewhere/L=Lies/O=The Truth/OU=But Where?/CN=Openssl Team (256)"
 if [[ $? -ne 0 ]]
-then echo "openssl не может создать запрос на сертификат"; exit;
+then echo "openssl не может создать запрос на сертификат (256 бит)"; exit;
 fi
 #
 # и мы пытаемся это прочесть и верифицировать
 ${AKTOOL} k -v openssl256_request.csr --verbose
 if [[ $? -ne 0 ]]
-then echo "aktool не может верифицировать запрос на сертификат"; exit;
+then echo "aktool не может верифицировать запрос на сертификат (256 бит)"; exit;
 fi
 echo "запрос openssl256_request.csr верифицирован";
 #
-# выводим asn1 дерево запроса
-${AKTOOL} a openssl256.key
-echo "представлена структура секретного ключа openssl";
-echo "";
+# создаем запрос на сертификат 512 бит
+openssl req -newkey gost2012_512 -pkeyopt paramset:A -out openssl512_request.csr -keyout openssl512.key -passout pass:321azO -subj "/CN=Openssl Team (512)"
+if [[ $? -ne 0 ]]
+then echo "openssl не может создать запрос на сертификат (512 бит)"; exit;
+fi
+# и мы пытаемся это прочесть и верифицировать
+${AKTOOL} k -v openssl512_request.csr --verbose
+if [[ $? -ne 0 ]]
+then echo "aktool не может верифицировать запрос на сертификат (512 бит)"; exit;
+fi
+echo "запрос openssl512_request.csr верифицирован";
+echo;
 #
 # теперь сами создаем запрос на сертификат и проверяем его с помощью openssl
 ${AKTOOL} k -nt sign256 -o aktool256.key --outpass 321azO --op aktool256_request.csr --to pem --id "/ct=RU/st=Somewhere/lt=Lies/or=The Truth/ou=With Overall Gladness/ln=But Where?/em=email@somewhere.lies/cn=Aktool Team (256)"
 #
 openssl req -verify -in aktool256_request.csr -text -noout
 if [[ $? -ne 0 ]]
-then echo "openssl не может верифицировать aktool_request.csr"; exit;
+then echo "openssl не может верифицировать aktool256_request.csr"; exit;
 fi
 echo "запрос aktool256_request.csr верифицирован";echo;
 #
+# создаем запрос на сертификат (512 бит) и проверяем его с помощью openssl
+${AKTOOL} k -nt sign512 --curve ec512c -o aktool512.key --outpass 321azO --op aktool512_request.csr --to pem --id "Example"
+#
+openssl req -verify -in aktool512_request.csr -text -noout
+if [[ $? -ne 0 ]]
+then echo "openssl не может верифицировать aktool512_request.csr"; exit;
+fi
+echo "запрос aktool512_request.csr верифицирован";echo;
+echo;
+#
+# завершая с запросами, верифицируем сами себя
+${AKTOOL} k -v aktool256_request.csr --verbose
+if [[ $? -ne 0 ]]
+then echo "aktool не может верифицировать запрос на сертификат (256 бит)"; exit;
+fi
+echo "запрос aktool256_request.csr верифицирован"; echo;
+#
+${AKTOOL} k -v aktool512_request.csr --verbose
+if [[ $? -ne 0 ]]
+then echo "aktool не может верифицировать запрос на сертификат (512 бит)"; exit;
+fi
+echo "запрос aktool512_request.csr верифицирован"; echo;
+#
 crt_exit;
+#
+#
+#
 # ------------------------------------------------------------------------------------------------- #
 echo; echo "3. Проверяем возможность создания и взаимной проверки самоподписанных сертификатов"; echo;
 # ------------------------------------------------------------------------------------------------- #

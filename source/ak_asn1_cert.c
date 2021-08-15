@@ -673,5 +673,696 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*                   Функции создания расширений x509v3 для сертификатов                           */
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает расширение x509v3 следующего вида.
+
+ \code
+   ├SEQUENCE┐
+            ├OBJECT IDENTIFIER 2.5.29.14 (subject-key-identifier)
+            └OCTET STRING
+               04 14 9B 85 5E FB 81 DC 4D 59 07 51 63 CF BE DF
+               DA 2C 7F C9 44 3C
+               ├ ( decoded 22 octets)
+               └OCTET STRING
+                  9B 85 5E FB 81 DC 4D 59 07 51 63 CF BE DF DA 2C  // данные, на которые
+                  7F C9 44 3C                                      // указывает ptr
+ \endcode
+
+ \param ptr указатель на область памяти, содержащую идентификатор ключа
+ \param size размер области памяти
+ \return Функция возвращает указатель на структуру узла. Данная структура должна
+  быть позднее удалена с помощью явного вызова функции ak_tlv_delete() или путем
+  удаления дерева, в который данный узел будет входить.
+  В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
+  функции ak_error_get_value().                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_tlv ak_tlv_new_subject_key_identifier( ak_pointer ptr, const size_t size )
+{
+  ak_uint8 encode[256]; /* очень длинные идентификаторы это плохо */
+  ak_tlv tlv = NULL, os = NULL;
+  size_t len = sizeof( encode );
+
+  if(( tlv = ak_tlv_new_sequence()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
+    return NULL;
+  }
+ /* добавляем идентификатор расширения */
+  ak_asn1_add_oid( tlv->data.constructed, "2.5.29.14" );
+ /* добавляем закодированный идентификатор (номер) ключа */
+  memset( encode, 0, sizeof( encode ));
+  if(( os = ak_tlv_new_primitive( TOCTET_STRING, size, ptr, ak_false )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                                   "incorrect creation of temporary tlv context" );
+    return ak_tlv_delete( tlv );
+  }
+  if( ak_tlv_encode( os, encode, &len ) != ak_error_ok ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                                    "incorrect encoding a temporary tlv context" );
+    return ak_tlv_delete( tlv );
+  }
+  ak_tlv_delete( os );
+ /* собственно вставка в asn1 дерево */
+  ak_asn1_add_octet_string( tlv->data.constructed, encode, len );
+ return tlv;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает расширение x509v3, определяемое следующей структурой
+
+  \code
+   id-ce-basicConstraints OBJECT IDENTIFIER ::=  { 2 5 29 19 }
+
+   BasicConstraints ::= SEQUENCE {
+        cA                      BOOLEAN DEFAULT FALSE,
+        pathLenConstraint       INTEGER (0..MAX) OPTIONAL }
+  \endcode
+
+
+  Пример иерархического представления данного расширения выгдядит следующим образом.
+
+ \code
+   └SEQUENCE┐
+            ├OBJECT IDENTIFIER 2.5.29.19 (basic-constraints)
+            ├BOOLEAN TRUE                 // расширение является критичным
+            └OCTET STRING
+               30 06 01 01 FF 02 01 00
+               ├ ( decoded 8 octets)
+               └SEQUENCE┐
+                        ├BOOLEAN TRUE     //  сертификат может создавать цепочки сертификации (cA)
+                        └INTEGER 0x0      //  длина цепочки равна 1
+                                          // (количество промежуточных сертификатов равно ноль)
+ \endcode
+
+  RFC5280: Расширение для базовых ограничений (basic constraints) указывает, является ли `субъект`
+  сертификата центром сертификации (certificate authority), а также максимальную глубину действительных
+  сертификационных путей, которые включают данный сертификат. Булевское значение сА указывает,
+  принадлежит ли сертифицированный открытый ключ центру сертификации.
+  Если булевское значение сА не установлено,
+  то бит keyCertSign в расширении использования ключа (keyUsage) не должен быть установлен.
+  Поле pathLenConstrant имеет смысл, только если булевское значение сА установлено, и в расширении
+  использования ключа установлен бит keyCertSign. В этом случае данное поле определяет максимальное
+  число несамовыпущенных промежуточных сертификатов, которые *могут* следовать за данным сертификатом
+  в действительном сертификационном пути.
+  Сертификат является самовыпущенным (самоподписаным), если номера ключей,
+  которые присутствуют в полях субъекта и выпускающего (эмитента), являются одинаковыми и не пустыми.
+  Когда pathLenConstraint не присутствует, никаких ограничений не предполагается.
+
+ \note Данное расширение должно присутствовать как критичное во всех сертификатах центра сертификации,
+ которые содержат открытые ключи, используемые для проверки цифровых подписей в сертификатах.
+ Данное расширение *может* присутствовать как критичное или некритичное расширение в сертификатах
+ центра сертификации, которые содержат открытые ключи, используемые для целей, отличных от проверки
+ цифровых подписей в сертификатах. Такие сертификаты содержат открытые ключи, используемые
+ исключительно для проверки цифровых подписей в CRLs,
+ и сертификатами, которые содержат открытые ключи для управления ключом, используемым в протоколах
+ регистрации сертификатов.
+
+ \param ca флаг возможности создавать цепочки сертификации
+ \param pathLen длина цепочки сертифкации
+ \return Функция возвращает указатель на структуру узла. Данная структура должна
+  быть позднее удалена с помощью явного вызова функции ak_tlv_delete() или путем
+  удаления дерева, в который данный узел будет входить.
+  В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
+  функции ak_error_get_value().                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_tlv ak_tlv_new_basic_constraints( bool_t ca, const ak_uint32 pathLen )
+{
+  ak_uint8 encode[256]; /* очень длинные идентификаторы это плохо */
+  ak_tlv tlv = NULL, os = NULL;
+  size_t len = sizeof( encode );
+
+  if(( tlv = ak_tlv_new_sequence()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
+    return NULL;
+  }
+ /* добавляем идентификатор расширения */
+  ak_asn1_add_oid( tlv->data.constructed, "2.5.29.19" );
+  ak_asn1_add_bool( tlv->data.constructed, ak_true ); /* расширение всегда критическое */
+
+ /* добавляем закодированный идентификатор (номер) ключа */
+  if(( os = ak_tlv_new_sequence()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                                   "incorrect creation of temporary tlv context" );
+    return ak_tlv_delete( tlv );
+  }
+
+  ak_asn1_add_bool( os->data.constructed, ca );
+  if( ca ) ak_asn1_add_uint32( os->data.constructed, pathLen );
+
+  memset( encode, 0, sizeof( encode ));
+  if( ak_tlv_encode( os, encode, &len ) != ak_error_ok ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                                    "incorrect encoding a temporary tlv context" );
+    return ak_tlv_delete( tlv );
+  }
+  ak_tlv_delete( os );
+
+ /* собственно вставка в asn1 дерево */
+  ak_asn1_add_octet_string( tlv->data.constructed, encode, len );
+ return tlv;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает расширение x509v3 следующего вида.
+
+ \code
+    └SEQUENCE┐
+             ├OBJECT IDENTIFIER 2.5.29.15 (key-usage)
+             └OCTET STRING
+                03 02 00 84
+                ├ (decoded 4 octets)
+                └BIT STRING
+                   84
+ \endcode
+
+ \param bits набор флагов
+ \return Функция возвращает указатель на структуру узла. Данная структура должна
+  быть позднее удалена с помощью явного вызова функции ak_tlv_delete() или путем
+  удаления дерева, в который данный узел будет входить.
+  В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
+  функции ak_error_get_value().                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_tlv ak_tlv_new_key_usage( const ak_uint32 bits )
+{
+  ak_uint8 buffer[2], /* значащими битами являются младшие 9,
+            поэтому нам хватит двух байт для хранения флагов */
+           encode[16];  /* массив для кодирования битовой строки */
+  struct bit_string bs;
+  ak_tlv tlv = NULL, os = NULL;
+  size_t len = sizeof( encode );
+
+  if( !bits ) {
+    ak_error_message( ak_error_zero_length, __func__, "using undefined set of keyUsage flags" );
+    return NULL;
+  }
+  if(( tlv = ak_tlv_new_sequence()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
+    return NULL;
+  }
+ /* добавляем идентификатор расширения */
+  ak_asn1_add_oid( tlv->data.constructed, "2.5.29.15" );
+
+  buffer[0] = ( bits >> 1 )&0xFF;
+  if( bits&0x01 ) { /* определен бит decipherOnly */
+    buffer[1] = 0x80;
+    bs.unused = 7;
+    bs.len = 2;
+  } else {
+      buffer[1] = 0;
+      bs.unused = 0;
+      bs.len = 1;
+   }
+  bs.value = buffer;
+
+ /* добавляем закодированную последовательность бит */
+  if(( os = ak_tlv_new_primitive( TBIT_STRING, bs.len+1, NULL, ak_true )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                                   "incorrect creation of temporary tlv context" );
+    return ak_tlv_delete( tlv );
+  }
+  os->data.primitive[0] = bs.unused;
+  memcpy( os->data.primitive+1, bs.value, bs.len );
+
+  memset( encode, 0, sizeof( encode ));
+  if( ak_tlv_encode( os, encode, &len ) != ak_error_ok ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                                    "incorrect encoding a temporary tlv context" );
+    return ak_tlv_delete( tlv );
+  }
+  ak_tlv_delete( os );
+
+ /* собственно вставка в asn1 дерево */
+  ak_asn1_add_octet_string( tlv->data.constructed, encode, len );
+ return tlv;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает расширение x509v3 определяемое следующей структурой
+
+ \code
+    KeyIdentifier ::= ОСТЕТ SТRING
+
+    AuthorityKeyIdentifier ::= SEQUENCE {
+       keyIdentifier       [О] KeyIdentifier OPTIONAL,
+       authorityCertIssuer [1] GeneralNames OPTIONAL,
+       authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL
+    }
+ \endcode
+
+   Пример данного расширения выглядит следующим образом (взято из сертификата,
+   подписанного корневым сертификатом ГУЦ)
+
+ \code
+└SEQUENCE┐
+         ├[0] 8b983b891851e8ef9c0278b8eac8d420b255c95d
+         ├[1]┐
+         │   └[4]┐
+         │       └SEQUENCE┐
+         │                ├SET┐
+         │                │   └SEQUENCE┐
+         │                │            ├OBJECT IDENTIFIER 1.2.840.113549.1.9.1 (email-address)
+         │                │            └IA5 STRING dit@minsvyaz.ru
+         │                ├SET┐
+         │                │   └SEQUENCE┐
+         │                │            ├OBJECT IDENTIFIER 2.5.4.6 (country-name)
+         │                │            └PRINTABLE STRING RU
+         │                ├SET┐
+         │                │   └SEQUENCE┐
+         │                │            ├OBJECT IDENTIFIER 2.5.4.8 (state-or-province-name)
+         │                │            └UTF8 STRING 77 г. Москва
+         │                └SET┐
+         │                    └SEQUENCE┐
+         │                             ├OBJECT IDENTIFIER 2.5.4.3 (common-name)
+         │                             └UTF8 STRING Головной удостоверяющий центр
+         └[2] 34681e40cb41ef33a9a0b7c876929a29
+ \endcode
+
+   Метке `[0]` соответствует номер ключа подписи (поле verifykey.number),
+   метке `[1]`  - расширенное имя ключа подписи (поле verifykey.name),
+   метке `[2]`  - серийный номер выпущенного сертификата открытого ключа (однозначно вычисляется из
+   номеров секретного ключа и ключа подписи).
+
+   RFC 5280: Расширение для идентификатора ключа сертификационного центра предоставляет способ
+   идентификации открытого ключа, соответствующего закрытому ключу, который использовался для
+   подписывания сертификата. Данное расширение используется, когда выпускающий имеет несколько ключей
+   для подписывания. Идентификация может быть основана либо на идентификаторе ключа
+   (идентификатор ключа субъекта в сертификате выпускающего), либо на имени выпускающего и
+   серийном номере сертификата.
+
+   \note Поле `keyIdentifier` расширения authorityKeyIdentifier должно быть включено во все
+   сертификаты, выпущенные цетром сертификации для обеспечения возможности создания
+   сертификационного пути. Существует одно исключение: когда центр сертификации распространяет свой
+   открытый ключ в форме самоподписанного сертификата, идентификатор ключа уполномоченного органа
+   может быть опущен. Подпись для самоподписанного сертификата создается закрытым ключом,
+   соответствующим открытому ключу субъекта. ЭТО доказывает, что выпускающий обладает как открытым
+   ключом, так и закрытым.
+
+   \param issuer_cert сертификат открытого ключа эмитента (лица, подписывающего сертификат)
+   \param include_name булево значение; если оно истинно,
+   то в расширение помещается глобальное имя владельца указанных ключей
+   \return Функция возвращает указатель на структуру узла. Данная структура должна
+   быть позднее удалена с помощью явного вызова функции ak_tlv_delete() или путем
+   удаления дерева, в который данный узел будет входить.
+   В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
+   функции ak_error_get_value().                                                                   */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_tlv ak_tlv_new_authority_key_identifier( ak_certificate issuer_cert, bool_t include_name )
+{
+  ak_uint8 encode[512];  /* массив для кодирования */
+  size_t len = sizeof( encode );
+  ak_tlv tlv = NULL, os = NULL;
+  ak_asn1 asn = NULL, asn1 = NULL;
+
+  if(( tlv = ak_tlv_new_sequence()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
+    return NULL;
+  }
+
+ /* добавляем идентификатор расширения */
+  ak_asn1_add_oid( tlv->data.constructed, "2.5.29.35" );
+
+ /* добавляем закодированную последовательность, содержащую перечень имен */
+  if(( os = ak_tlv_new_sequence()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                                   "incorrect creation of temporary tlv context" );
+    return ak_tlv_delete( tlv );
+  }
+
+ /* добавляем [0] */
+  ak_asn1_add_tlv( os->data.constructed,
+                 ak_tlv_new_primitive( CONTEXT_SPECIFIC^0x00,
+                             issuer_cert->vkey.number_length, issuer_cert->vkey.number, ak_true ));
+ /* добавляем [1] */
+  if( include_name ) {
+    ak_asn1_add_tlv( os->data.constructed,
+                  ak_tlv_new_constructed( CONSTRUCTED^CONTEXT_SPECIFIC^0x01, asn = ak_asn1_new()));
+    ak_asn1_add_tlv( asn,
+                 ak_tlv_new_constructed( CONSTRUCTED^CONTEXT_SPECIFIC^0x04, asn1 = ak_asn1_new()));
+    ak_asn1_add_tlv( asn1, ak_tlv_duplicate_global_name( issuer_cert->opts.subject ));
+  }
+ /* добавляем [2] */
+  if( issuer_cert->opts.serialnum_length ) {
+    ak_asn1_add_tlv( os->data.constructed,
+            ak_tlv_new_primitive( CONTEXT_SPECIFIC^0x02,
+                       issuer_cert->opts.serialnum_length, issuer_cert->opts.serialnum, ak_true ));
+  }
+
+  memset( encode, 0, sizeof( encode ));
+  if( ak_tlv_encode( os, encode, &len ) != ak_error_ok ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                                    "incorrect encoding a temporary tlv context" );
+    return ak_tlv_delete( tlv );
+  }
+  ak_tlv_delete( os );
+
+ /* собственно вставка в asn1 дерево */
+  ak_asn1_add_octet_string( tlv->data.constructed, encode, len );
+ return tlv;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+                     /* Функции экспорта открытых ключей в сертификат */
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Создание tlv узла, содержащего структуру TBSCertificate версии 3
+    в соответствии с Р 1323565.1.023-2018.
+
+   Структура `tbsCertificate` определяется следующим образом
+
+   \code
+    TBSCertificate  ::=  SEQUENCE  {
+        version         [0]  Version DEFAULT v1,
+        serialNumber         CertificateSerialNumber,
+        signature            AlgorithmIdentifier,
+        issuer               Name,
+        validity             Validity,
+        subject              Name,
+        subjectPublicKeyInfo SubjectPublicKeyInfo,
+        issuerUniqueID  [1]  IMPLICIT UniqueIdentifier OPTIONAL,
+                             -- If present, version MUST be v2 or v3
+        subjectUniqueID [2]  IMPLICIT UniqueIdentifier OPTIONAL,
+                             -- If present, version MUST be v2 or v3
+        extensions      [3]  Extensions OPTIONAL
+                             -- If present, version MUST be v3 --  }
+   \endcode
+
+   Перечень добавляемых расширений определяется значениями аргумента `opts`.
+
+   \param subject_cert контекст сертификата открытого ключа, помещаемого в asn1 дерево сертификата
+   \param issuer_skey контекст ключа подписи
+   \param issuer_cert контект сертификата ключа проверки подписи
+   \return Функция возвращает указатель на созданный объект.
+   В случае ошибки возвращается NULL.                                                              */
+/* ----------------------------------------------------------------------------------------------- */
+ static ak_tlv ak_certificate_export_to_tbs( ak_certificate subject_cert, ak_signkey issuer_skey,
+                                                                       ak_certificate issuer_cert )
+{
+  ak_mpzn256 serialNumber;
+  ak_tlv tbs = NULL, tlv = NULL;
+  ak_asn1 asn = NULL, tbasn = NULL;
+
+  if(( tbs = ak_tlv_new_sequence()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
+    return NULL;
+  }
+   else tbasn = tbs->data.constructed;
+
+ /* теперь создаем дерево сертификата в соответствии с Р 1323565.1.023-2018
+    version: начинаем с размещения версии сертификата, т.е. ветки следующего вида
+     ┐
+     ├[0]┐
+     │   └INTEGER 2 (величина 2 является максимально возможным значением ) */
+
+  ak_asn1_add_asn1( tbasn, CONTEXT_SPECIFIC^0x00, asn = ak_asn1_new( ));
+  if( asn != NULL ) ak_asn1_add_uint32( asn, 2 );
+    else {
+      ak_error_message( ak_error_get_value(), __func__,
+                                              "incorrect creation of certificate version context");
+      goto labex;
+    }
+
+ /* serialNumber: вырабатываем и добавляем номер сертификата */
+  ak_certificate_generate_serial_number( &subject_cert->vkey, issuer_skey,
+                                                                   subject_cert->opts.serialnum,
+              subject_cert->opts.serialnum_length = sizeof( subject_cert->opts.issuer_serialnum ));
+  ak_mpzn_set_little_endian( serialNumber, ak_mpzn256_size,
+                     subject_cert->opts.serialnum, subject_cert->opts.serialnum_length, ak_true );
+  ak_asn1_add_mpzn( tbasn, TINTEGER, serialNumber, ak_mpzn256_size );
+
+ /* signature: указываем алгоритм подписи (это будет повторено еще раз при выработке подписи) */
+  ak_asn1_add_algorithm_identifier( tbasn, issuer_skey->key.oid, NULL );
+
+ /* issuer: вставляем информацию о расширенном имени лица, подписывающего ключ
+    (эмитента, выдающего сертификат) */
+  ak_asn1_add_tlv( tbasn, ak_tlv_duplicate_global_name( issuer_cert->opts.subject ));
+
+ /* validity: вставляем информацию в времени действия ключа */
+  ak_asn1_add_validity( tbasn, subject_cert->opts.time.not_before,
+                                                               subject_cert->opts.time.not_after );
+ /* subject: вставляем информацию о расширенном имени владельца ключа  */
+  ak_asn1_add_tlv( tbasn, ak_tlv_duplicate_global_name( subject_cert->opts.subject ));
+
+ /* subjectPublicKeyInfo: вставляем информацию об открытом ключе */
+  ak_asn1_add_tlv( tbasn, tlv = ak_verifykey_export_to_asn1_value( &subject_cert->vkey ));
+  if( tlv == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                               "incorrect generation of subject public key info" );
+    goto labex;
+  }
+
+ /* далее мы реализуем возможности сертификатов третьей версии, а именно
+    вставляем перечень расширений
+    0x03 это помещаемое в CONTEXT_SPECIFIC значение */
+  ak_asn1_add_asn1( tbasn, CONTEXT_SPECIFIC^0x03, asn = ak_asn1_new( ));
+  if( asn == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                      "incorrect creation of certificate extensions asn1 context");
+    goto labex;
+  }
+  ak_asn1_add_tlv( asn, ak_tlv_new_sequence( ));
+  asn = asn->current->data.constructed;
+
+ /* 1. В обязательном порядке добавляем номер открытого ключа */
+  ak_asn1_add_tlv( asn, tlv = ak_tlv_new_subject_key_identifier( subject_cert->vkey.number,
+                                                               subject_cert->vkey.number_length ));
+  if( tlv == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                        "incorrect generation of SubjectKeyIdentifier extension" );
+    goto labex;
+  }
+
+ /* 2. Если определено расширение BasicConstraints, то добавляем его
+      (расширение может добавляться не только в самоподписаные сертификаты) */
+  if( subject_cert->opts.ext_ca.is_present ) {
+    ak_asn1_add_tlv( asn, tlv = ak_tlv_new_basic_constraints( subject_cert->opts.ext_ca.value,
+                                                    subject_cert->opts.ext_ca.pathlenConstraint ));
+    if( tlv == NULL ) {
+      ak_error_message( ak_error_get_value(), __func__,
+                                        "incorrect generation of SubjectKeyIdentifier extension" );
+      goto labex;
+    }
+  }
+
+ /* 3. Если определены флаги keyUsage, то мы добавляем соответствующее расширение */
+  if( subject_cert->opts.ext_key_usage.is_present ) {
+    ak_asn1_add_tlv( asn, tlv = ak_tlv_new_key_usage( subject_cert->opts.ext_key_usage.bits ));
+    if( tlv == NULL ) {
+      ak_error_message( ak_error_get_value(), __func__,
+                                        "incorrect generation of SubjectKeyIdentifier extension" );
+      goto labex;
+    }
+  }
+
+ /* 4. Добавляем имена для поиска ключа проверки подписи (Authority Key Identifier)
+                                                       данное расширение будет добавляться всегда */
+  ak_asn1_add_tlv( asn, tlv = ak_tlv_new_authority_key_identifier( issuer_cert,
+                                               subject_cert->opts.ext_authoritykey.include_name ));
+  if( tlv == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                    "incorrect generation of Authority Key Identifier extension" );
+    goto labex;
+  }
+
+ return tbs;
+
+  labex: if( tbs != NULL ) ak_tlv_delete( tbs );
+ return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param subject_cert контекст сертификата, помещаемого в asn1 дерево
+    \param issuer_skey контекст ключа подписи
+    \param issuer_cert контект сертификата ключа проверки подписи,
+     содержащий параметры центра сертификации
+    \param generator геератор случайных последовательностей, используемый для подписи сертификата
+    \return Функция возвращает указатель на созданный объект.
+    В случае ошибки возвращается NULL.                                                             */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_asn1 ak_certificate_export_to_asn1( ak_certificate subject_cert,
+                          ak_signkey issuer_skey, ak_certificate issuer_cert, ak_random generator )
+{
+  size_t len = 0;
+  struct bit_string bs;
+  int error = ak_error_ok;
+  ak_asn1 certificate = NULL;
+  time_t current = time( NULL );
+  ak_uint8 encode[4096], out[128];
+  ak_tlv tlv = NULL, ta = NULL, tbs = NULL;
+
+ /* 1. Необходимые проверки */
+  if( subject_cert == NULL ) { ak_error_message( ak_error_null_pointer, __func__,
+                                           "using null pointer to subject's certificate context" );
+    return NULL;
+  }
+  if( issuer_skey == NULL ) { ak_error_message( ak_error_null_pointer, __func__,
+                                             "using null pointer to issuer's secret key context" );
+    return NULL;
+  }
+  if( issuer_cert == NULL ) { ak_error_message( ak_error_null_pointer, __func__,
+                                            "using null pointer to issuer's certificate context" );
+    return NULL;
+  }
+
+ /* 2. Проверяем, разрешено ли issuer_cert подписывать сертификаты.
+       Для создания подписи расширение BasicConstraints должно быть определено,
+                                             а поле value установлено в "true".
+       Создание самоподписаных сертификатов разрешено в любом случае.            */
+  if( subject_cert != issuer_cert ) {
+    if( !issuer_cert->opts.ext_ca.is_present || !issuer_cert->opts.ext_ca.value ) {
+      ak_error_message( ak_error_certificate_ca, __func__, "issuer is not certificate's authority" );
+      return NULL;
+    }
+  }
+
+ /* 3. Проверяем, что текущее время попадает во время действия сертификата подписи. */
+  if( current < issuer_cert->opts.time.not_before ||
+      current > issuer_cert->opts.time.not_after ) {
+    ak_error_message( ak_error_certificate_validity, __func__,
+                                                             "issuer's certificate time expired" );
+    return NULL;
+  }
+
+ /* 4. Проверям, что секретный ключ соответствует сертификату ключа подписи */
+  if( issuer_cert->vkey.number_length != 32 ) {
+   /* мы работаем только со своими секретными ключами,
+      а у них длина номера - фиксирована и равна 32 октетам */
+    ak_error_message( ak_error_wrong_length, __func__,
+                                               "the issuer public key's number has wrong length" );
+    return NULL;
+  }
+  if( memcmp( issuer_skey->verifykey_number, issuer_cert->vkey.number, 32 ) != 0 ) {
+    ak_error_message( ak_error_not_equal_data, __func__,
+                           "the issuer's secret key does not correspond to the given public key" );
+    return NULL;
+  }
+
+ /* 5. Создаем контейнер для сертификата */
+  if(( error = ak_asn1_add_tlv( certificate = ak_asn1_new(),
+                                         tlv = ak_tlv_new_sequence( ))) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect addition of tlv context" );
+    goto labex;
+  }
+  if( tlv == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "incorrect creation of tlv context" );
+    goto labex;
+  }
+
+ /* 6. Создаем поле tbsCertificate */
+  if(( tbs = ak_certificate_export_to_tbs( subject_cert, issuer_skey, issuer_cert )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                                  "incorrect creation of tbsCertificate element" );
+    goto labex;
+  }
+
+ /* вставляем в основное дерево созданный элемент */
+  ak_asn1_add_tlv( tlv->data.constructed, tbs );
+ /* добавляем информацию о алгоритме подписи */
+  ak_asn1_add_tlv( tlv->data.constructed, ta = ak_tlv_new_sequence( ));
+  if( ta == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                          "incorrect generation of digital signature identifier" );
+    goto labex;
+  }
+  ak_asn1_add_oid( ta->data.constructed, issuer_skey->key.oid->id[0] );
+
+ /* 7. Вырабатываем подпись */
+  len = sizeof( encode );
+  if(( error = ak_tlv_encode( tbs, encode, &len )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect encoding of tbsCertificate element" );
+    goto labex;
+  }
+  if(( error = ak_signkey_sign_ptr( issuer_skey, generator, encode,
+                                                      len, out, sizeof( out ))) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect generation of digital signature" );
+    goto labex;
+  }
+
+ /* добавляем подпись в основное дерево */
+  bs.value = out;
+  bs.len = ak_signkey_get_tag_size( issuer_skey );
+  bs.unused = 0;
+  if(( error = ak_asn1_add_bit_string( tlv->data.constructed, &bs )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect adding a digital signature value" );
+    goto labex;
+  }
+ return certificate;
+
+  labex: if( certificate != NULL ) ak_asn1_delete( certificate );
+ return NULL;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция помещает информацию об открытом ключе в asn1 дерево, подписывает эту информацию,
+    помещает в это же asn1 дерево информацию о подписывающем лице и правилах применения ключа.
+    После этого сформированное дерево сохраняется в файл (сертификат открытого ключа)
+    в заданном пользователем формате.
+
+   \param subject_cert контекст сертификата, содержащий как открытый ключ, так и опции и расширения
+   создаваемого сертификата;
+   \param issuer_skey контекст секретного ключа, с помощью которого подписывается создаваемый сертификат;
+   \param issuer_cert контекст сертификата открытого ключа, соответствующий секретному ключу подписи;
+   данный контекст используется для получения расширенного имени лица,
+   подписывающего сертификат (issuer), а также для проверки разрешений на использование сертификата;
+   для самоподписанных сертификатов должен принимать значение, совпадающее с subject_cert;
+   \param generator генератор слечайных последовательностей, используемый для подписи сертификата.
+   \param filename указатель на строку, содержащую имя файла, в который будет экспортирован ключ;
+    Если параметр `filename_size` отличен от нуля,
+    то указатель должен указывать на область памяти, в которую будет помещено сформированное имя файла.
+   \param size  размер области памяти, в которую будет помещено имя файла.
+    Если размер области недостаточен, то будет возбуждена ошибка.
+    Данный параметр должен принимать значение 0 (ноль), если указатель `filename` указывает
+    на константную строку.
+   \param format формат, в котором сохраняются данные, допутимые значения
+   \ref asn1_der_format или \ref asn1_pem_format.
+
+   \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ dll_export int ak_certificate_export_to_file( ak_certificate subject_cert,
+                   ak_signkey issuer_skey, ak_certificate issuer_cert, ak_random generator,
+                                       char *filename, const size_t size, export_format_t format )
+{
+  int error = ak_error_ok;
+  ak_asn1 certificate = NULL;
+  const char *file_extensions[] = { /* имена параметризуются значениями типа export_format_t */
+   "cer",
+   "crt"
+  };
+
+  /* вырабатываем asn1 дерево */
+  if(( certificate = ak_certificate_export_to_asn1(
+                                    subject_cert, issuer_skey, issuer_cert, generator )) == NULL )
+    return ak_error_message( ak_error_get_value(), __func__,
+                                            "incorrect creation of asn1 context for certificate" );
+ /* формируем имя файла для хранения ключа
+    поскольку один и тот же ключ может быть помещен в несколько сертификатов,
+    то имя файла в точности совпадает с серийным номером сертификата */
+  if( size ) {
+    if( size < ( 5 + 2*sizeof( subject_cert->opts.serialnum )) ) {
+      ak_error_message( error = ak_error_out_of_memory, __func__,
+                                              "insufficent buffer size for certificate filename" );
+      goto labex;
+    }
+    if( subject_cert->opts.serialnum_length == 0 ) {
+      ak_certificate_generate_serial_number( &subject_cert->vkey, issuer_skey,
+                                                                   subject_cert->opts.serialnum,
+              subject_cert->opts.serialnum_length = sizeof( subject_cert->opts.issuer_serialnum ));
+
+    }
+    ak_snprintf( filename, size, "%s.%s", ak_ptr_to_hexstr( subject_cert->opts.serialnum,
+           subject_cert->opts.serialnum_length, ak_false ), file_extensions[ak_min( 1, format )] );
+
+  } /* конец if(size) */
+
+ /* сохраняем созданное дерево в файл */
+  if(( error = ak_asn1_export_to_file( certificate, filename,
+                                        format, public_key_certificate_content )) != ak_error_ok )
+    ak_error_message_fmt( error, __func__,
+                              "incorrect export asn1 context to file %s in pem format", filename );
+
+  labex: if( certificate != NULL ) ak_asn1_delete( certificate );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                                                                 ak_asn1_cert.c  */
 /* ----------------------------------------------------------------------------------------------- */
