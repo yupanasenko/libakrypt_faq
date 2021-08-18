@@ -409,7 +409,7 @@
   if(( DATA_STRUCTURE( asn->current->tag ) != PRIMITIVE ) ||
      ( TAG_NUMBER( asn->current->tag ) != TINTEGER ))
     return ak_error_message( ak_error_invalid_asn1_tag, __func__ ,
-                                          "the first element of root asn1 context be an integer" );
+                                     "the first element of root asn1 context must be an integer" );
   ak_tlv_get_uint32( asn->current, &val );
  /* проверяемое нами значение 0 соотвествует единственному
     поддерживаемому формату запроса не сертифкат */
@@ -662,9 +662,10 @@
   int error = ak_error_ok;
   if( cert == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                      "using null pointer to certificate context" );
-  if(( error = ak_verifykey_destroy( &cert->vkey )) != ak_error_ok )
-    ak_error_message( error, __func__, "wrong destroying of verifykey context" );
-
+  if( cert->opts.created ) { /* проверяем, был ли создан сертификат */
+    if(( error = ak_verifykey_destroy( &cert->vkey )) != ak_error_ok )
+      ak_error_message( error, __func__, "wrong destroying of verifykey context" );
+  }
   if( cert->opts.subject != NULL ) ak_tlv_delete( cert->opts.subject );
   if( cert->opts.issuer != NULL ) ak_tlv_delete( cert->opts.issuer );
 
@@ -1361,6 +1362,697 @@
 
   labex: if( certificate != NULL ) ak_asn1_delete( certificate );
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup cert-export-doc Функции экспорта и импорта открытых ключей
+@{
+ Для импорта открытых ключей из сертификатов в библиотеке реализованы следующие функции:
+
+ В процессе импорта сертификата (вне зависимости о того, какая из указанных функций вызывается пользователем)
+ возможно возникновение трех ситуаций:
+
+ - сертификат является самоподписанным
+   (в этом случае в функции импорта передается указатель на создаваемый контекст и NULL,
+    в качестве указателя на контекст ключа проверки, после импорта для проверки подписи под сертификатом
+    используется считанный ключ);
+
+ - сертификат не является самоподписанным и пользователь указывает сертификат с ключом проверки
+   (в этом случае в функции импорта передается указатель на создаваемый контекст и
+    указатель на созданый (импортированный) ранее пользователем сертификат ключа проверки подписи);
+
+ - сертификат не является самоподписанным, но пользователь об этом не догадывается
+   (в этом случае в функции импорта передается указатель на создаваемый контекст и NULL,
+    в качестве указателя на контекст ключа проверки; в момент импорта сертификата
+    библиотека определяет серийный номер сертификата подписи и ищет его в хранилище (репозитории)
+    доверенных сертификатов; в случае успешного поиска
+    ключ считывается без уведомления пользователя).
+@} */
+
+/* ----------------------------------------------------------------------------------------------- */
+                     /* Функции импорта открытых ключей из сертификата */
+/* ----------------------------------------------------------------------------------------------- */
+ typedef struct certificate_ptr {
+  /*! \brief указатель на область памяти, где располагается создаваемый ключ */
+   ak_certificate subject;
+  /*! \brief указатель на область памяти, где располагается ключ эмитента (УЦ) */
+   ak_certificate issuer;
+  /*! \brief место хранения сертификата, считываемого в процессе импорта */
+   struct certificate real_issuer;
+} *ak_certificate_ptr;
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_certificate_import_from_asn1( ak_certificate , ak_certificate , ak_asn1 );
+ static int ak_certificate_import_from_asn1_tbs( ak_certificate_ptr, ak_tlv );
+ static int ak_certificate_import_from_asn1_tbs_base( ak_certificate_ptr, ak_asn1 );
+ static int ak_certificate_import_from_asn1_extension( ak_certificate_ptr, ak_asn1 );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция считывает из заданного файла сертификат открытого ключа,
+    хранящийся в виде asn1 дерева, определяемого Р 1323565.1.023-2018.
+    Собственно asn1 дерево может храниться в файле в виде обычной der-последовательности,
+    либо в виде der-последовательности, дополнительно закодированной в `base64` (формат `pem`).
+
+    Функция является конструктором контекста `subject_cert`,
+    в случае возникновения некритичных ошибок, создает контекст `subject_cert` и инициирует
+    опции сертификата некоторыми значениями. Под некритичными понимаются ошибки
+    интерпретирования данных, содержащихся в asn1 дереве (например, неподдерживаемые алгоритмы
+    или значения). Критичными являются ошибки нарушения формата x509
+    (формата представления данных).
+
+    В случаях, когда ошибок импорта не возникает, создается контекст открытого ключа,
+    поле `subject_cert->opts.created` устанавливается истинным (`ak_true`).
+    Контекст должен позднее уничтожаться пользователем с помощью вызова ak_certificate_destroy().
+
+    Сертификат, содержащий ключ проверки должен быть предварительно создан и передаваться с помощью
+    указателя `issuer_cert` (если номер сертификата проверки подписи или расширенное имя владельца
+    не совпадают с тем, что содержится в issuer_cert, то возбуждается ошибка).
+
+    Если указатель `issuer_cert` равен `NULL`, то функция ищет сертифкат с соответствующим серийным
+    номером в устанавливаемом библиотекой `libakrypt` каталоге; данный каталог указывается при сборке
+    библотеки из исходных текстов в параметре `AK_CA_PATH`; для unix-like систем значением по
+    умолчанию является каталог `\usr\share\ca-certificates\libakrypt`.
+
+    \param subject_cert контекст импортируемого сертификата открытого ключа
+    асимметричного криптографического алгоритма,
+    \param issuer_cert сертификат открытого ключа, с помощью которого можно проверить подпись под сертификатом;
+    может принимать значение `NULL`
+    \param filename имя файла, из которого считываются значения параметров открытого ключа
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае валидности созданноего
+    ключа, иначе - возвращается код ошибки.                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_certificate_import_from_file( ak_certificate subject_cert, ak_certificate issuer_cert,
+                                                                              const char *filename )
+{
+  ak_asn1 root = NULL;
+  int error = ak_error_ok;
+
+ /* стандартные проверки */
+  if( subject_cert == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                           "using null pointer to subject's certificate context" );
+  if( filename == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                                "using null pointer to filename" );
+
+ /* считываем сертификат и преобразуем его в ASN.1 дерево */
+  if(( error = ak_asn1_import_from_file( root = ak_asn1_new(), filename )) != ak_error_ok ) {
+    ak_error_message_fmt( error, __func__,
+                                     "incorrect reading of ASN.1 context from %s file", filename );
+    goto lab1;
+  }
+
+ /* собственно выполняем импорт данных */
+  if(( error = ak_certificate_import_from_asn1( subject_cert, issuer_cert, root )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong import of public key from asn.1 context" );
+  }
+
+  lab1: if( root != NULL ) ak_asn1_delete( root );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция предполагает, что в области памяти `ptr` располагается сертификат открытого ключа,
+    записанныей в der-кодировке.
+    Причина использования даной фукции заключается в раскодировании сертификатов,
+    передаваемых в ходе выполнения криптографических протоколов, и считываемых, вместе с
+    другими данными, в оперативную память.
+
+    Поведение и возвращаетмые значения функции аналогичны поведению и возвращаемым
+    значениям функции ak_verifykey_import_from_certificate().
+
+    \param subject_cert контекст импортируемого сертификата открытого ключа
+    асимметричного криптографического алгоритма,
+    \param issuer_cert сертификат открытого ключа, с помощью которого можно проверить подпись под сертификатом;
+    может принимать значение `NULL`
+    \param указатель на область памяти, в которой распологается сертификат открытого ключа
+    \param size размер сертификата (в октетах)
+
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае валидности созданноего
+    ключа, иначе - возвращается код ошибки.                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_certificate_import_from_ptr( ak_certificate subject_cert, ak_certificate issuer_cert,
+                                                          const ak_pointer ptr, const size_t size )
+{
+  ak_asn1 root = NULL;
+  int error = ak_error_ok;
+
+ /* стандартные проверки */
+  if( subject_cert == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                           "using null pointer to subject's certificate context" );
+  if(( ptr == NULL ) || ( size == 0 ))
+    return ak_error_message( ak_error_null_pointer, __func__,
+                                       "using null pointer or zero length data with certificate" );
+
+ /* считываем сертификат и преобразуем его в ASN.1 дерево */
+  if(( error = ak_asn1_decode( root = ak_asn1_new(), ptr, size, ak_false )) != ak_error_ok ) {
+    ak_error_message_fmt( error, __func__, "incorrect decoding of ASN.1 context from data buffer");
+    goto lab1;
+  }
+
+ /* собственно выполняем импорт данных */
+  if(( error = ak_certificate_import_from_asn1( subject_cert, issuer_cert, root )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong import of public key from asn.1 context" );
+  }
+
+  lab1: if( root != NULL ) ak_asn1_delete( root );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Основная процедера разбора asn1 дерева.                                                 */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_certificate_import_from_asn1( ak_certificate subject_cert,
+                                                         ak_certificate issuer_cert, ak_asn1 root )
+{
+  size_t size = 0;
+  ak_tlv tbs = NULL;
+  ak_asn1 lvs = NULL;
+  struct bit_string bs;
+  ak_uint8 buffer[4096];
+  int error = ak_error_ok;
+  time_t now = time( NULL );
+  struct certificate_ptr vptr = {
+   .subject = subject_cert,
+   .issuer = issuer_cert,
+  };
+  memset( &vptr.real_issuer, 0, sizeof( struct certificate ));
+
+ /* 1. проверяем устройство asn1 дерева */
+  if( root->count != 1 )  {
+    /* здесь мы проверяем, что это сертификат, а не коллекция сертификатов, т.е.
+       asn1 дерево содержит только 1 элемент верхнего уровня */
+    ak_error_message( error = ak_error_invalid_asn1_count, __func__,
+                                         "unexpected count of top level elements (certificates)" );
+    goto lab1;
+  }
+  if(( DATA_STRUCTURE( root->current->tag ) != CONSTRUCTED ) ||
+     ( TAG_NUMBER( root->current->tag ) != TSEQUENCE )) {
+   /* здесь мы проверили, что внутри находится sequence */
+     ak_error_message_fmt( error = ak_error_invalid_asn1_tag, __func__ ,
+                      "unexpected type of certificate's container (tag: %x)", root->current->tag );
+     goto lab1;
+  } else lvs = root->current->data.constructed;
+
+  if( lvs->count != 3 )  {
+   /* здесь мы проверяем, что это последовательность из трех элементов
+      - tbs
+      - параметры подписи
+      - собственно сама подпись */
+    ak_error_message_fmt( error = ak_error_invalid_asn1_count, __func__,
+                      "incorrect count of top level certificate elements (value: %u, must be: 3)",
+                                                                       (unsigned int) lvs->count );
+    goto lab1;
+  }
+
+ /* 2. считываем информацию о ключе из tbsCertificate */
+  ak_asn1_first( lvs );
+  tbs = lvs->current;
+  if(( DATA_STRUCTURE( tbs->tag ) != CONSTRUCTED ) ||
+     ( TAG_NUMBER( tbs->tag ) != TSEQUENCE )) {
+   /* здесь мы проверили, что внутри находится sequence */
+     ak_error_message_fmt( error = ak_error_invalid_asn1_tag, __func__ ,
+                  "unexpected type of TBSCertificate's container (tag: %x)", root->current->tag );
+     goto lab1;
+  }
+
+ /* устанавливаем флаг, что ключ не создан, и переходим к его созданию
+    после завершения функции могут быть варианты
+     error  = ak_error_ok => можно проверять подпись
+     error != ak_error_ok
+        1. opts->created = true
+        2. opts->created = false
+        в обоих случаях проверка валидности сертификата не проводится. */
+  vptr.subject->opts.created = ak_false;
+  if(( error = ak_certificate_import_from_asn1_tbs( &vptr, tbs )) != ak_error_ok ) {
+    if( vptr.subject->opts.created )
+      ak_error_message( error, __func__, "incorrect validating of TBSCertificate's parameters");
+     else ak_error_message( error, __func__ ,
+                                         "incorrect decoding of TBSCertificate's asn1 container" );
+     goto lab1;
+  }
+  if( !vptr.subject->opts.created ) {
+    ak_error_message( error = ak_error_undefined_function, __func__ ,
+                                           "incorrect import TBSCertificate from asn1 container" );
+    goto lab1;
+  }
+
+ /* 3. проверяем валидность сертификата */
+ /* 3.1 - наличие ключа проверки */
+  if( vptr.issuer == NULL ) {
+    ak_error_message( error = ak_error_certificate_verify_key, __func__,
+                                   "using an undefined public key to verify a given certificate" );
+    goto lab1;
+  }
+ /* 3.2 - проверяем срок действия сертификата */
+  if(( vptr.subject->opts.time.not_before > now ) || ( vptr.subject->opts.time.not_after < now )) {
+    ak_error_message( error = ak_error_certificate_validity, __func__,
+             "the certificate has expired (the current time is not within the specified bounds)" );
+    goto lab1;
+  }
+
+ /* 3.3 - теперь ничего не остается, как проверять подпись под сертификатом
+    3.3.1 - начинаем с того, что готовим данные, под которыми должна быть проверена подпись */
+  memset( buffer, 0, size = sizeof( buffer ));
+  ak_asn1_first( lvs );
+  if(( error = ak_tlv_encode( lvs->current, buffer, &size )) != ak_error_ok ) {
+    ak_error_message_fmt( error, __func__,
+                 "incorrect encoding of tlv context contains of %u octets", (unsigned int) size );
+    goto lab1;
+  }
+
+ /* 3.3.2 - теперь получаем значение подписи из asn1 дерева и сравниваем его с вычисленным значением */
+  ak_asn1_last( lvs );
+  if(( DATA_STRUCTURE( lvs->current->tag ) != PRIMITIVE ) ||
+     ( TAG_NUMBER( lvs->current->tag ) != TBIT_STRING )) {
+    ak_error_message( error = ak_error_invalid_asn1_tag, __func__ ,
+                                 "the second element of child asn1 context must be a bit string" );
+    goto lab1;
+  }
+  if(( error = ak_tlv_get_bit_string( lvs->current, &bs )) != ak_error_ok ) {
+    ak_error_message( error , __func__ , "incorrect value of bit string in root asn1 context" );
+    goto lab1;
+  }
+ /* сохраняем данные для последующего вывода */
+  memcpy( vptr.subject->opts.signature, bs.value,
+                                          ak_min( bs.len, sizeof( vptr.subject->opts.signature )));
+
+ /* 3.3.3  - только сейчас проверяем подпись под данными */
+  if( ak_verifykey_verify_ptr( &vptr.issuer->vkey, buffer, size, bs.value ) != ak_true ) {
+     ak_error_message( error = ak_error_not_equal_data, __func__, "digital signature isn't valid" );
+     goto lab1;
+  }
+
+ /* 4. если открытый ключ проверки подписи был создан в ходе работы функции, его надо удалить */
+  lab1:
+   /* проверка, что ключ эмитента создавался в рамках данной функции */
+    if( vptr.issuer == &vptr.real_issuer ) {
+      ak_certificate_destroy( &vptr.real_issuer );
+    }
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция импортирует в секретный ключ значения, содержащиеся
+    в последовательности TBSCerfificate                                                            */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_certificate_import_from_asn1_tbs( ak_certificate_ptr vptr, ak_tlv tbs )
+{
+  ak_asn1 sequence = NULL;
+  int error = ak_error_ok;
+
+ /* считываем основные поля сертификата, определеные для версий 1 или 2. */
+  if(( error = ak_certificate_import_from_asn1_tbs_base( vptr,
+                                            sequence = tbs->data.constructed )) != ak_error_ok ) {
+    return ak_error_message( error, __func__, "incorrect loading a base part of certificate" );
+  }
+
+ /* пропускаем поля второй версии и переходим к третьей версии, а именно, к расширениям.
+    поля расширений должны нам разъяснить, является ли данный ключ самоподписанным или нет.
+    если нет, и issuer_vkey не определен, то мы должны считать его с диска */
+  ak_asn1_last( sequence );
+  if( vptr->subject->opts.version != 2 ) return error; /* нам достался сертификат версии один или два */
+
+ /* проверяем узел */
+  if(( DATA_STRUCTURE( sequence->current->tag ) != CONSTRUCTED ) ||
+     (( DATA_CLASS( sequence->current->tag )) != CONTEXT_SPECIFIC ) ||
+     ( TAG_NUMBER( sequence->current->tag ) != 0x3 )) {
+    return ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+              "incorrect tag value for certificate extensions (tag: %x)", sequence->current->tag );
+  }
+
+ /* считываем доступные расширения сертификата */
+  if(( error = ak_certificate_import_from_asn1_extension( vptr,
+                                           sequence->current->data.constructed )) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect loading a certificate's extensions" );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_certificate_import_from_asn1_tbs_base( ak_certificate_ptr vptr, ak_asn1 sequence )
+{
+  size_t len;
+  ak_pointer ptr = NULL;
+  ak_tlv subject_name = NULL;
+  time_t not_before, not_after;
+  ak_oid algoid = NULL, paroid = NULL;
+  int error = ak_error_ok, yaerror = ak_error_ok;
+
+ /* 1. получаем версию сертификата */
+  ak_asn1_first( sequence );
+  if(( DATA_STRUCTURE( sequence->current->tag ) != CONSTRUCTED ) ||
+     ( DATA_CLASS( sequence->current->tag ) != ( CONTEXT_SPECIFIC^0x00 ))) {
+    ak_error_message_fmt( error = ak_error_invalid_asn1_tag, __func__,
+               "incorrect tag value for certificate's version (tag: %x)", sequence->current->tag );
+    goto lab1;
+  }
+   else
+    if(( error = ak_tlv_get_uint32( sequence->current->data.constructed->current,
+                                                &vptr->subject->opts.version )) != ak_error_ok ) {
+      ak_error_message( error, __func__, "incorrect reading of certificate's version" );
+      goto lab1;
+    }
+
+ /* 2. определяем серийный номер сертификата (вырабатывается при подписи сертификата)
+       и помещаем его в структуру с опциями */
+  ak_asn1_next( sequence );
+  if(( DATA_STRUCTURE( sequence->current->tag ) != PRIMITIVE ) ||
+     ( TAG_NUMBER( sequence->current->tag ) != TINTEGER )) {
+    ak_error_message_fmt( error = ak_error_invalid_asn1_tag, __func__,
+         "incorrect tag value for certificate's serial number (tag: %x)", sequence->current->tag );
+    goto lab1;
+  }
+
+  len = vptr->subject->opts.serialnum_length;
+  if(( ak_tlv_get_octet_string( sequence->current,
+                                               &ptr, &len ) != ak_error_ok ) || ( ptr == NULL )) {
+    ak_error_message( error, __func__, "incorrect reading of certificate's serial number" );
+    goto lab1;
+  } else {
+      memset( vptr->subject->opts.serialnum, 0, sizeof( vptr->subject->opts.serialnum ));
+      memcpy( vptr->subject->opts.serialnum, ptr, vptr->subject->opts.serialnum_length =
+                                            ak_min( len, sizeof( vptr->subject->opts.serialnum )));
+    }
+
+ /* 3. Получаем алгоритм подписи (oid секретного ключа) */
+  ak_asn1_next( sequence );
+  if(( error = ak_tlv_get_algorithm_identifier( sequence->current,
+                                                            &algoid, &paroid )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "incorrect reading of signature algorithm identifier" );
+    goto lab1;
+  }
+
+ /* если разбирается сертификат с неподдерживаемым алгоритмом,
+    то в данном месте возникнет ошибка, но выполнение функции продолжится */
+  if( algoid->engine != sign_function ) {
+    ak_error_message( error = ak_error_oid_engine, __func__,
+                   "the certificate has incorrect or unsupported signature algorithm identifier" );
+  }
+
+ /* 4. Получаем имя эмитента (лица подписавшего сертификат)
+       и сравниваем с тем, что у нас есть (если сертификат был создан ранее)
+       иначе просто присваиваем имя в контекст */
+  ak_asn1_next( sequence );
+  if(( DATA_STRUCTURE( sequence->current->tag ) != CONSTRUCTED ) ||
+     ( TAG_NUMBER( sequence->current->tag ) != TSEQUENCE )) {
+    ak_error_message_fmt( error = ak_error_invalid_asn1_tag, __func__,
+                    "unexpected tag value for generalized name of certificate's issuer (tag: %x)",
+                                                                          sequence->current->tag );
+    goto lab1;
+  }
+  if( vptr->issuer != NULL ) { /* в функцию передан созданный ранее открытый ключ проверки подписи,
+                                  поэтому мы должны проверить совпадение имен, т.е. то,
+                                  что переданный ключ совпадает с тем, что был использован
+                                                                           при подписи сертификата */
+    if( ak_tlv_compare_global_names( sequence->current,
+                                                   vptr->issuer->opts.subject ) != ak_error_ok ) {
+      error = ak_error_certificate_verify_names;
+      goto lab1;
+    }
+  }
+  vptr->subject->opts.issuer = ak_tlv_duplicate_global_name( sequence->current );
+
+ /* 5. Получаем интервал времени действия */
+  ak_asn1_next( sequence );
+  if(( yaerror = ak_tlv_get_validity( sequence->current,
+                                         &not_before, &not_after )) != ak_error_ok ) {
+    ak_error_message( error = yaerror, __func__,
+                                          "incorrect reading a validity value from asn1 context" );
+    goto lab1;
+  }
+
+ /* 6. Получаем имя владельца импортируемого ключа */
+  ak_asn1_next( sequence );
+  if(( DATA_STRUCTURE( sequence->current->tag ) != CONSTRUCTED ) ||
+     ( TAG_NUMBER( sequence->current->tag ) != TSEQUENCE )) {
+    ak_error_message_fmt( error = ak_error_invalid_asn1_tag, __func__,
+                   "unexpected tag value for generalized name of certificate's subject (tag: %x)",
+                                                                          sequence->current->tag );
+    goto lab1;
+  }
+  subject_name = ak_tlv_duplicate_global_name( sequence->current );
+
+ /* ожидаем наличие поля, содержащего значение открытого ключа */
+  if( ak_asn1_next( sequence ) != ak_true ) {
+    ak_error_message( error = ak_error_invalid_asn1_count, __func__,
+                                                                   "unexpected end of asn1 tree" );
+    goto lab1;
+  }
+
+ /* если мы добрались, значит формат верный и мы, скорее всего, разбираем именно сертификат
+    установленный код ошибки говорит о том, что мы разбираем сертификат с
+    неподдерживаемыми алгортмами, такой ключ создается только для хранения считанных данных */
+  if( error != ak_error_ok ) {
+    if( ak_verifykey_create_streebog256( &vptr->subject->vkey ) != ak_error_ok ) {
+      ak_error_message( error, __func__, "incorrect creation of public key context" );
+      goto lab1;
+    }
+  }
+   else { /* только здесь мы считываем значение открытого ключа и помещаем его в контекст */
+    /* проверяем наличие последовательности верхнего уровня */
+     if(( DATA_STRUCTURE( sequence->current->tag ) != CONSTRUCTED ) ||
+        ( TAG_NUMBER( sequence->current->tag ) != TSEQUENCE )) {
+        ak_error_message( ak_error_invalid_asn1_tag, __func__ ,
+                      "the element of root asn1 tree must be a sequence with object identifiers" );
+        goto lab1;
+     }
+     if(( error = ak_verifykey_import_from_asn1_value( &vptr->subject->vkey,
+                                         sequence->current->data.constructed )) != ak_error_ok ) {
+       ak_error_message( error, __func__, "incorrect import of public key value" );
+       goto lab1;
+     }
+  }
+
+ /* присваиваем значения полей */
+  vptr->subject->opts.subject = subject_name;
+  vptr->subject->opts.time.not_after = not_after;
+  vptr->subject->opts.time.not_before = not_before;
+  vptr->subject->opts.created = ak_true;
+
+  lab1:
+    if( !vptr->subject->opts.created ) {
+      if( vptr->subject != NULL ) ak_tlv_delete( subject_name );
+    }
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_certificate_import_from_asn1_extension( ak_certificate_ptr vptr, ak_asn1 sequence )
+{
+  size_t size = 0;
+  ak_oid oid = NULL;
+  ak_pointer ptr = NULL;
+  int error = ak_error_ok;
+
+  if(( DATA_STRUCTURE( sequence->current->tag ) != CONSTRUCTED ) ||
+     ( TAG_NUMBER( sequence->current->tag ) != TSEQUENCE ))
+    return ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                              "incorrect asn1 tree for certificate's extensions" );
+    else ak_asn1_first( sequence = sequence->current->data.constructed ); /* все расширения здесь */
+  if( sequence->count == 0 ) goto lab1;
+
+ /* -- часть кода, отвечающая за разбор расширений сертификата */
+  do{
+    ak_asn1 ext = NULL, vasn = NULL;
+    if(( DATA_STRUCTURE( sequence->current->tag ) != CONSTRUCTED ) ||
+                                   ( TAG_NUMBER( sequence->current->tag ) != TSEQUENCE )) continue;
+
+    ak_asn1_first( ext = sequence->current->data.constructed ); /* текущее расширение */
+    if(( DATA_STRUCTURE( ext->current->tag ) != PRIMITIVE ) ||
+                          ( TAG_NUMBER( ext->current->tag ) != TOBJECT_IDENTIFIER )) continue;
+    if( ak_tlv_get_oid( ext->current, &ptr ) != ak_error_ok ) continue;
+    if(( oid = ak_oid_find_by_id( ptr )) == NULL ) continue;
+    ak_asn1_last( ext ); /* перемещаемся к данным */
+
+   /* теперь мы разбираем поступившие расширения */
+   /* ----------------------------------------------------------------------------------------- */
+    if( strcmp( oid->id[0], "2.5.29.14" ) == 0 ) { /* это subjectKeyIdentifier,
+                                                        т.е. номер считываемого открытого ключа */
+      if(( DATA_STRUCTURE( ext->current->tag ) != PRIMITIVE ) ||
+                          ( TAG_NUMBER( ext->current->tag ) != TOCTET_STRING )) continue;
+      vptr->subject->opts.ext_subjkey.is_present = ak_true;
+
+     /* декодируем номер ключа */
+      ak_tlv_get_octet_string( ext->current, &ptr, &size );
+      memcpy( vptr->subject->vkey.number, ((ak_uint8 *)ptr)+2,
+       vptr->subject->vkey.number_length = ak_min( size-2, sizeof( vptr->subject->vkey.number )));
+    }
+
+   /* ----------------------------------------------------------------------------------------- */
+    if( strcmp( oid->id[0], "2.5.29.19" ) == 0 ) { /* это basicConstraints
+                                                        т.е. принадлежность центрам сертификации */
+      if(( DATA_STRUCTURE( ext->current->tag ) != PRIMITIVE ) ||
+                          ( TAG_NUMBER( ext->current->tag ) != TOCTET_STRING )) continue;
+      vptr->subject->opts.ext_ca.is_present = ak_true;
+      ak_tlv_get_octet_string( ext->current, &ptr, &size );
+
+     /* теперь разбираем поля */
+      if( ak_asn1_decode( vasn = ak_asn1_new(), ptr, size, ak_false ) == ak_error_ok ) {
+
+        if(( DATA_STRUCTURE( vasn->current->tag ) == CONSTRUCTED ) ||
+           ( TAG_NUMBER( vasn->current->tag ) != TSEQUENCE )) {
+
+           ak_asn1 vasn2 = vasn->current->data.constructed;
+           if( vasn2->current != NULL ) {
+             ak_asn1_first( vasn2 );
+             if(( DATA_STRUCTURE( vasn2->current->tag ) == PRIMITIVE ) &&
+                ( TAG_NUMBER( vasn2->current->tag ) == TBOOLEAN )) {
+                  ak_tlv_get_bool( vasn2->current, &vptr->subject->opts.ext_ca.value );
+             }
+             if( ak_asn1_next( vasn2 ) ) {
+               if(( DATA_STRUCTURE( vasn2->current->tag ) != PRIMITIVE ) &&
+                  ( TAG_NUMBER( vasn2->current->tag ) != TINTEGER ))
+                    ak_tlv_get_uint32( vasn2->current,
+                                                   &vptr->subject->opts.ext_ca.pathlenConstraint );
+             }
+           }
+        }
+      }
+      if( vasn ) ak_asn1_delete( vasn );
+    }
+
+   /* ----------------------------------------------------------------------------------------- */
+    if( strcmp( oid->id[0], "2.5.29.15" ) == 0 ) { /* это keyUsage
+                                                        т.е. область применения сертификата */
+      if(( DATA_STRUCTURE( ext->current->tag ) != PRIMITIVE ) ||
+         ( TAG_NUMBER( ext->current->tag ) != TOCTET_STRING )) continue;
+      vptr->subject->opts.ext_key_usage.is_present = ak_true;
+
+     /* декодируем битовую последовательность */
+      ak_tlv_get_octet_string( ext->current, &ptr, &size );
+      if( ak_asn1_decode( vasn = ak_asn1_new(), ptr, size, ak_false ) == ak_error_ok ) {
+        if(( DATA_STRUCTURE( vasn->current->tag ) == PRIMITIVE ) &&
+           ( TAG_NUMBER( vasn->current->tag ) == TBIT_STRING )) {
+
+          struct bit_string bs;
+          ak_tlv_get_bit_string( vasn->current, &bs );
+          vptr->subject->opts.ext_key_usage.bits = bs.value[0]; /* TODO: это фрагмент необходимо оттестировать */
+          vptr->subject->opts.ext_key_usage.bits <<= 1;
+          if( bs.len > 1 ) {
+            vptr->subject->opts.ext_key_usage.bits <<= 8-bs.unused;
+            vptr->subject->opts.ext_key_usage.bits ^= bs.value[1];
+          }
+        }
+      }
+       else vptr->subject->opts.ext_key_usage.bits = 0;
+      if( vasn ) ak_asn1_delete( vasn );
+    }
+
+   /* ----------------------------------------------------------------------------------------- */
+    if( strcmp( oid->id[0], "2.5.29.35" ) == 0 ) { /* это authorityKeyIdentifier
+                                                                  т.е. номера ключа проверки */
+      if(( DATA_STRUCTURE( ext->current->tag ) != PRIMITIVE ) ||
+         ( TAG_NUMBER( ext->current->tag ) != TOCTET_STRING )) continue;
+      ak_tlv_get_octet_string( ext->current, &ptr, &size );
+      if( ak_asn1_decode( vasn = ak_asn1_new(), ptr, size, ak_false ) == ak_error_ok ) {
+
+     /* здесь мы должны иметь последовательность, примерно, такого вида
+
+        └SEQUENCE┐
+                 ├[0] 8b983b891851e8ef9c0278b8eac8d420b255c95d
+                 ├[1]┐
+                 │   └[4]┐
+                 │       └SEQUENCE┐
+                 │                ├SET┐
+                 │                │   └SEQUENCE┐
+                 │                │            ├OBJECT IDENTIFIER 1.2.840.113549.1.9.1 (email-address)
+                 │                │            └IA5 STRING dit@minsvyaz.ru
+                 └[2] 34681e40cb41ef33a9a0b7c876929a29
+
+        где
+          - [0] - номер открытого ключа, используемого для проверки подписи
+                  (в openssl для самоподписанных сертификатов совпадает с SubjectKeyIdentifer)
+                  (у нас это vkey->number)
+          - [1] - расширенное имя владельца
+          - [2] - номер сертификата открытого ключа, используемого для проверки подписи
+
+        может быть конечно не у всех, например, у корневого сертификата ГУЦ нет этого расширения
+        (для CA это допускается в RFC)                                                           */
+
+        ak_asn1 lasn = NULL;
+        if(( DATA_STRUCTURE( vasn->current->tag ) != CONSTRUCTED ) ||
+           ( TAG_NUMBER( vasn->current->tag ) != TSEQUENCE )) {
+           ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                    "incorrect asn1 tree for authorithyKeyIdentifier extension" );
+           goto labstop;
+        }
+
+        lasn = vasn->current->data.constructed;
+        vptr->subject->opts.ext_authoritykey.is_present = ak_true;
+
+        ak_asn1_first( lasn );
+        do{
+         if(( DATA_STRUCTURE( lasn->current->tag ) == CONSTRUCTED ) ||
+            (( DATA_CLASS( lasn->current->tag )) == CONTEXT_SPECIFIC )) {
+            switch( TAG_NUMBER( lasn->current->tag )) {
+              case 0x00:
+               /* сохраняем номер ключа эмитента */
+                vptr->subject->opts.issuer_number_length = ak_min( lasn->current->len ,
+                                                      sizeof( vptr->subject->opts.issuer_number ));
+                memcpy( vptr->subject->opts.issuer_number, lasn->current->data.primitive,
+                                                        vptr->subject->opts.issuer_number_length );
+                if( vptr->issuer == NULL ) {
+               /* в данной ситуации ключ проверки подписи не известен.
+                  поскольку мы можем считывать из файла и искать в хранилище только ключи по серийным номерам,
+                  то использовать данный номер мы можем только для проверки того, что сертификат
+                  является самоподписанным  т.е. subject_key.number =?  lasn->current->data.primitive */
+                 if( memcmp( lasn->current->data.primitive, vptr->subject->vkey.number,
+                                               vptr->subject->opts.issuer_number_length ) == 0 ) {
+                   vptr->issuer = vptr->subject; /* ключ проверки совпадает с ключом в сертификате */
+                 }
+                 /* поиск, на всякий "пожарный" случай
+                   ak_verifykey_import_from_repository( issuer_vkey,
+                                               lasn->current->data.primitive, lasn->current->len ); */
+                }
+                break;
+
+              case 0x01:
+                break;
+
+//              case 0x02: /* поиск сертификата по его серийному номеру */
+//               /* сохраняем номер ключа */
+//                vptr->certops->casertnumlen  = ak_min( lasn->current->len ,
+//                                                               sizeof( vptr->certops->casertnum ));
+//                memcpy( vptr->certops->casertnum, lasn->current->data.primitive,
+//                                                                     vptr->certops->casertnumlen );
+//               /* пытаемся считать ключ проверки из хранилища сертификатов */
+//                if( vptr->issuer == NULL ) {
+//                  if( ak_verifykey_import_from_repository_ptr( &vptr->real_issuer,
+//                                             lasn->current->data.primitive, lasn->current->len,
+//                                                          &vptr->real_certops ) != ak_error_ok ) {
+//                    vptr->issuer = NULL;
+//                  }
+//                   else { /* нам сопутствовала удача и сертификат успешно считан */
+//                     vptr->issuer = &vptr->real_issuer;
+//                   }
+//                }
+//                break;
+
+              default:
+                break;
+            }
+         }
+        } while( ak_asn1_next( lasn ));
+        labstop:;
+
+      }
+      if( vasn ) ak_asn1_delete( vasn );
+    }
+
+   /* ----------------------------------------------------------------------------------------- */
+   } while( ak_asn1_next( sequence )); /* конец цикла перебора расширений */
+
+  /* для самоподписанных сертификатов может быть не установлено расширение 2.5.29.35,
+     в этом случае, все-равно необходимо попробовать проверить подпись. */
+  if(( vptr->issuer == NULL ) && ( vptr->subject->opts.created )) {
+    if( vptr->subject->opts.ext_ca.is_present ) /* считанный сертификат является CA,
+          следовательно он может подписывать сертификаты и, в частности, самого себя  */
+      vptr->issuer = vptr->subject; /* теперь ключ проверки совпадает с ключом в сертификате */
+  }
+
+ lab1:
+  return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

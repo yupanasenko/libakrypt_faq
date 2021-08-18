@@ -1251,10 +1251,110 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ static int aktool_key_print_certificate( ak_certificate cert )
+{
+  char output_buffer[256];
+  size_t ts = ak_hash_get_tag_size( &cert->vkey.ctx );
+
+  printf(_("Public key certificate\n"));
+  printf(_("  subject: %s\n"),
+                        ak_tlv_get_string_from_global_name( cert->opts.subject, "2.5.4.3", NULL ));
+  aktool_key_verify_print_global_name( cert->opts.subject->data.constructed );
+  printf(_("  issuer: %s\n"),
+                         ak_tlv_get_string_from_global_name( cert->opts.issuer, "2.5.4.3", NULL ));
+  aktool_key_verify_print_global_name( cert->opts.issuer->data.constructed );
+
+ /* информация о ключе */
+  if( cert->vkey.oid != NULL ) {
+    printf(_("  algorithm: %s (%s)\n"), cert->vkey.oid->name[0], cert->vkey.oid->id[0] );
+    printf(_("  public key:\n    x: %s\n"), ak_mpzn_to_hexstr( cert->vkey.qpoint.x, ( ts>>3 )));
+    printf("    y: %s\n", ak_mpzn_to_hexstr( cert->vkey.qpoint.y, ( ts>>3 )));
+    printf(_("  curve: %s (%u bits)\n"),
+                      ak_oid_find_by_data( cert->vkey.wc )->name[0], ( cert->vkey.wc->size << 6 ));
+  }
+
+ /* информация о файле и его содержимом */
+  printf(_("  certificate:\n    type: x509 (P 1323565.1.023-2018)\n    version: %d\n"),
+                                                                           cert->opts.version +1 );
+  printf(_("    serial number:\n"));
+  aktool_print_buffer( cert->opts.serialnum, cert->opts.serialnum_length );
+
+ /* интервал действия сертификата */
+  #ifdef AK_HAVE_WINDOWS_H
+   ak_snprintf( output_buffer, sizeof( output_buffer ),"%s", ctime( &cert->opts.time.not_before ));
+   output_buffer[strlen( output_buffer )-1] = ' '; /* уничтожаем символ возврата каретки */
+  #else
+   strftime( output_buffer, sizeof( output_buffer ), /* локализованный вывод */
+                            "%e %b %Y %H:%M:%S (%A) %Z", localtime( &cert->opts.time.not_before ));
+  #endif
+  printf(_("    nof before: %s\n"), output_buffer );
+
+  #ifdef AK_HAVE_WINDOWS_H
+   ak_snprintf( output_buffer, sizeof( output_buffer ), "%s", ctime( &cert->opts.time.not_after ));
+   output_buffer[strlen( output_buffer )-1] = ' '; /* уничтожаем символ возврата каретки */
+  #else
+   strftime( output_buffer, sizeof( output_buffer ), /* локализованный вывод */
+                             "%e %b %Y %H:%M:%S (%A) %Z", localtime( &cert->opts.time.not_after ));
+  #endif
+  printf(_("    nof after:  %s\n"), output_buffer );
+
+/* выводим значение подписи для поддерживаемых алгоритмов */
+  printf(_("  signature:\n"));
+  aktool_print_buffer( cert->opts.signature, 2*ts );
+
+/* выводим расширения */
+  if( cert->opts.ext_ca.is_present ) {
+    printf(_("  basic constraints:\n    ca: %s\n    pathlen: %u\n"),
+                                  ( cert->opts.ext_ca.value == ak_true ) ? "true" : "false",
+                                                             cert->opts.ext_ca.pathlenConstraint );
+  }
+  if( cert->opts.ext_key_usage.is_present ) {
+    printf(_("  basic key usage:\n"));
+    if( cert->opts.ext_key_usage.bits&bit_decipherOnly) printf(_("\tdecipher\n"));
+    if( cert->opts.ext_key_usage.bits&bit_encipherOnly) printf(_("\tencipher\n"));
+    if( cert->opts.ext_key_usage.bits&bit_cRLSign) printf(_("\tCRL sign\n"));
+    if( cert->opts.ext_key_usage.bits&bit_keyCertSign) printf(_("\tcertificate sign\n"));
+    if( cert->opts.ext_key_usage.bits&bit_keyAgreement) printf(_("\tkey agreement\n"));
+    if( cert->opts.ext_key_usage.bits&bit_dataEncipherment) printf(_("\tdata encipherment\n"));
+    if( cert->opts.ext_key_usage.bits&bit_keyEncipherment) printf(_("\tkey encipherment\n"));
+    if( cert->opts.ext_key_usage.bits&bit_contentCommitment) printf(_("\tcontent commitment\n"));
+    if( cert->opts.ext_key_usage.bits&bit_digitalSignature) printf(_("\tdigital signature\n"));
+  }
+  if( cert->opts.ext_subjkey.is_present ) {
+    printf("  subjectkey:\n");
+    aktool_print_buffer( cert->vkey.number, cert->vkey.number_length );
+  }
+  if( cert->opts.ext_authoritykey.is_present ) { /* информация о ключе проверки подписи */
+    printf(_("  authority key:\n"));
+    if( cert->opts.issuer_number_length ) {
+      printf("    subject key:\n"); /* номер открытого ключа эмитента */
+      aktool_print_buffer( cert->opts.issuer_number, cert->opts.issuer_number_length );
+    }
+  }
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int aktool_key_verify_key( int argc , char *argv[] )
 {
+  struct certificate ca_cert;
+  ak_certificate ca_cert_ptr = NULL;
   int errcount = 0, exitcode = EXIT_SUCCESS;
 
+ /* считываем сертификат ключа УЦ */
+  if( strlen( ki.capubkey_file ) != 0 ) {
+    ak_certificate_opts_create( &ca_cert.opts );
+    if( ak_certificate_import_from_file( &ca_cert, NULL, ki.capubkey_file ) != ak_error_ok ) {
+      aktool_error(_("incorrect CA certificate, see --ca-cert %s option"), ki.capubkey_file );
+      ak_certificate_destroy( &ca_cert );
+      return EXIT_FAILURE;
+    }
+    ca_cert_ptr = &ca_cert;
+    if( ki.verbose ) aktool_key_print_certificate( &ca_cert );
+    if( !ki.quiet ) printf(_("CA certificate verified (%s): Ok\n"), ki.capubkey_file );
+  }
+
+ /* основной цикл опробования переданных в командной строке файлов */
   ++optind; /* пропускаем набор управляющих команд (k -v или key --verify) */
   if( optind < argc ) {
     while( optind < argc ) {
@@ -1270,29 +1370,45 @@
 
          /* опробуем содержимое файла как запрос на сертификат,
             если пользователь определил сертификат УЦ, то это явно не запрос на сертификат */
-            if( strlen( ki.capubkey_file ) == 0 ) {
+            if( ca_cert_ptr != NULL ) {
               struct request req;
               switch( ak_request_import_from_file( &req, ki.pubkey_file )) {
                 case ak_error_ok:
                   /* выводим ключ и переходим к следующему файлу */
                    if( ki.verbose ) aktool_key_print_request( &req );
-                   if( !ki.quiet ) printf(_("Verified (%s): Ok\n"), value );
+                   if( !ki.quiet ) printf(_("Request verified (%s): Ok\n"), value );
                    ak_request_destroy( &req ); /* не забыть убрать за собой */
                    continue;
 
                 case ak_error_not_equal_data:
-                   if( !ki.quiet ) printf(_("Verified (%s): No\n"), value );
+                   if( !ki.quiet ) printf(_("Request verified (%s): No\n"), value );
                    continue;
 
                 default:
                    break;
               }
-            } /* конец if( strlen( ki.capubkey )) */
+            } /* конец if( ca_cert_ptr != NULL ) */
 
-           /* опробуем файл как сертификат открытого ключа */
+         /* опробуем содержимое файла как сертификат открытого ключа */
+            ak_error_set_value( ak_error_ok );
+           /* считываем верифицируемый сертификат */
+            switch( ak_certificate_import_from_file( &ki.cert, ca_cert_ptr, value )) {
+              case ak_error_ok:
+                /* выводим сертификат и переходим к следующему файлу */
+                 if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
+                 if( !ki.quiet ) printf(_("Certificate verified (%s): Ok\n"), value );
+                 break;
 
-           /* ... */
+              case ak_error_not_equal_data:
+                 if( !ki.quiet ) printf(_("Certificate verified (%s): No\n"), value );
+                 break;
 
+              default:
+                 aktool_error(_("unsupported format of file %s"), value );
+                 errcount++;
+                 break;
+            }
+            ak_certificate_destroy( &ki.cert );
         }
          else {
           aktool_error(_("%s is not a regular file"), value );
@@ -1311,6 +1427,8 @@
             "rerun aktool with \"--audit-file stderr\" option or see syslog messages"), errcount );
     exitcode = EXIT_FAILURE;
   }
+
+  if( ca_cert_ptr != NULL ) ak_certificate_destroy( &ca_cert );
 
  return exitcode;
 }
