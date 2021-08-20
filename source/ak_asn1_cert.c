@@ -15,6 +15,13 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \details по-умолчанию, каталогу для хранения довереных сертификатов присваивается значение,
+   определенное при конфигурации библиотеки.
+   изменение данного пути возможно путем вызова cmake -D AK_CA_PATH="каталог"                      */
+/* ----------------------------------------------------------------------------------------------- */
+ static char ca_repository_path[FILENAME_MAX] = LIBAKRYPT_CA_PATH;
+
+/* ----------------------------------------------------------------------------------------------- */
                   /* Функции экспорта открытых ключей в запрос на сертификат */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_request_destroy( ak_request req )
@@ -1402,7 +1409,6 @@
 } *ak_certificate_ptr;
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_certificate_import_from_asn1( ak_certificate , ak_certificate , ak_asn1 );
  static int ak_certificate_import_from_asn1_tbs( ak_certificate_ptr, ak_tlv );
  static int ak_certificate_import_from_asn1_tbs_base( ak_certificate_ptr, ak_asn1 );
  static int ak_certificate_import_from_asn1_extension( ak_certificate_ptr, ak_asn1 );
@@ -2010,14 +2016,14 @@
               case 0x01:
                 break;
 
-//              case 0x02: /* поиск сертификата по его серийному номеру */
-//               /* сохраняем номер ключа */
-//                vptr->certops->casertnumlen  = ak_min( lasn->current->len ,
-//                                                               sizeof( vptr->certops->casertnum ));
-//                memcpy( vptr->certops->casertnum, lasn->current->data.primitive,
-//                                                                     vptr->certops->casertnumlen );
-//               /* пытаемся считать ключ проверки из хранилища сертификатов */
-//                if( vptr->issuer == NULL ) {
+              case 0x02: /* поиск сертификата по его серийному номеру */
+               /* сохраняем серийный номер ключа эмитента */
+                vptr->subject->opts.issuer_serialnum_length = ak_min( lasn->current->len ,
+                                                   sizeof( vptr->subject->opts.issuer_serialnum ));
+                memcpy( vptr->subject->opts.issuer_serialnum, lasn->current->data.primitive,
+                                                     vptr->subject->opts.issuer_serialnum_length );
+               /* пытаемся считать ключ проверки из хранилища сертификатов */
+                if( vptr->issuer == NULL ) {
 //                  if( ak_verifykey_import_from_repository_ptr( &vptr->real_issuer,
 //                                             lasn->current->data.primitive, lasn->current->len,
 //                                                          &vptr->real_certops ) != ak_error_ok ) {
@@ -2026,8 +2032,8 @@
 //                   else { /* нам сопутствовала удача и сертификат успешно считан */
 //                     vptr->issuer = &vptr->real_issuer;
 //                   }
-//                }
-//                break;
+                }
+                break;
 
               default:
                 break;
@@ -2053,6 +2059,38 @@
 
  lab1:
   return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*            Фукции для работы с репозиторием (хранилищем) доверенных сертификатов                */
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Устанавливаемый каталог используется функциями импорта сертификатов для поиска
+    доверенных сертификатов.
+    \param path Существующий каталог
+    \return В случае успеха функция возвращает \ref ak_error_ok (ноль). В противном случае,
+    возвращается код ошибки.                                                                       */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_certificate_set_repository( const char *path )
+{
+  if( path == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                    "using null pointer to CA repository's path" );
+  if( strlen( path ) > sizeof( ca_repository_path ) -1 )
+    return ak_error_message( ak_error_wrong_length, __func__, "CA repository's path is too long" );
+  if( ak_file_or_directory( path ) != DT_DIR )
+    return ak_error_message_fmt( ak_error_not_directory,
+                                                      __func__,  "directory %s not exists", path );
+  memset( ca_repository_path, 0, sizeof( ca_repository_path ));
+  strncpy( ca_repository_path, path, sizeof( ca_repository_path ) -1);
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \return Возвращается указатель на константную область памяти.                                  */
+/* ----------------------------------------------------------------------------------------------- */
+ const char *ak_certificate_get_repository( void )
+{
+  return ca_repository_path;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -1912,6 +1912,9 @@ extern "C" {
  dll_export int ak_certificate_export_to_file( ak_certificate , ak_signkey , ak_certificate ,
                                              ak_random , char * , const size_t , export_format_t );
 /*! \brief Функция импортирует открытый ключ асимметричного преобразования из сертификата
+   открытого ключа, представленного в виде asn1 дерева */
+ dll_export int ak_certificate_import_from_asn1( ak_certificate , ak_certificate , ak_asn1 );
+/*! \brief Функция импортирует открытый ключ асимметричного преобразования из сертификата
    открытого ключа */
  dll_export int ak_certificate_import_from_file( ak_certificate , ak_certificate , const char * );
 /*! \brief Функция импортирует открытый ключ асимметричного преобразования из сертификата
@@ -1924,7 +1927,10 @@ extern "C" {
  dll_export int ak_certificate_import_from_repository_file( ak_certificate , const char * );
 /*! \brief Функция изменяет установленный по-умолчанию каталог с расположением
     хранилища сертификатов */
- dll_export int ak_certficate_set_repository( const char * );
+ dll_export int ak_certificate_set_repository( const char * );
+/*! \brief Функция возвращает указатель на установленный каталог с расположением
+    хранилища сертификатов */
+ dll_export const char *ak_certificate_get_repository( void );
 /*! \brief Функция освобождает контекст сертификата открытого ключа. */
  dll_export int ak_certificate_destroy( ak_certificate );
  /** @} */

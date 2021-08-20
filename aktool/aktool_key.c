@@ -29,7 +29,7 @@
  int aktool_key_verify_key( int argc , char *argv[] );
  int aktool_key_new_certificate( int argc , char *argv[] );
  ak_tlv aktool_key_input_name( void );
- int aktool_key_repo_show( void );
+ int aktool_key_repo_ls( void );
  int aktool_key_repo_check( void );
  int aktool_key_repo_add( int argc , char *argv[] );
 
@@ -41,7 +41,7 @@
 {
   int next_option = 0, exit_status = EXIT_FAILURE;
   enum { do_nothing, do_new, do_show, do_verify, do_cert,
-                         do_repo_add, do_repo_del, do_repo_check, do_repo_show } work = do_nothing;
+                         do_repo_add, do_repo_rm, do_repo_check, do_repo_ls } work = do_nothing;
 
  /* параметры, которые устанавливаются по умолчанию */
   ki.oid_of_generator = ak_oid_find_by_name( aktool_default_generator );
@@ -94,10 +94,11 @@
      { "id-hex",              1, NULL,  183 },
 
    /* флаги для работы с базой сертификатов открытых ключей */
+     { "repo",                1, NULL,  170 },
      { "repo-add",            0, NULL,  171 },
      { "repo-check",          0, NULL,  172 },
      { "repo-rm",             1, NULL,  173 },
-     { "repo-show",           0, NULL,  174 },
+     { "repo-ls",           0, NULL,  174 },
      { "without-caption",     0, NULL,  175 },
 
      aktool_common_functions_definition,
@@ -433,6 +434,21 @@
                    ki.show_caption = ak_false;
                    break;
 
+        case 170:  /* --repo */
+                   if( ak_certificate_set_repository( optarg ) != ak_error_ok ) {
+                     aktool_error(_("incorrect value of certificate's repository path, see the argument of --repo option"));
+                     return EXIT_FAILURE;
+                   }
+                   break;
+
+        case 171: /* --repo-add */
+                   work = do_repo_add;
+                   break;
+
+        case 174: /* --repo-ls */
+                   work = do_repo_ls;
+                   break;
+
         default:  /* обрабатываем ошибочные параметры */
                    if( next_option != -1 ) work = do_nothing;
                    break;
@@ -464,6 +480,14 @@
 
     case do_verify: /* проверяем сертификаты и запросы на сертификат */
       exit_status = aktool_key_verify_key( argc, argv );
+      break;
+
+    case do_repo_add: /* добавляем один или несколько сертификатов в хранилище доверенных сертификатов */
+      exit_status = aktool_key_repo_add( argc, argv );
+      break;
+
+    case do_repo_ls: /* выводим переченб доверенных сертификатов в хранилище */
+      exit_status = aktool_key_repo_ls();
       break;
 
     default:
@@ -1330,6 +1354,10 @@
       printf("    subject key:\n"); /* номер открытого ключа эмитента */
       aktool_print_buffer( cert->opts.issuer_number, cert->opts.issuer_number_length );
     }
+    if( cert->opts.issuer_serialnum_length ) {
+      printf("    serial number:\n"); /* номер открытого ключа эмитента */
+      aktool_print_buffer( cert->opts.issuer_serialnum, cert->opts.issuer_serialnum_length );
+    }
   }
  return ak_error_ok;
 }
@@ -1350,7 +1378,8 @@
       return EXIT_FAILURE;
     }
     ca_cert_ptr = &ca_cert;
-    if( ki.verbose ) aktool_key_print_certificate( &ca_cert );
+   /* для вывода корневого сертификата можно сделать отдельный флаг в командной строке
+                             if( ki.verbose ) aktool_key_print_certificate( &ca_cert );  */
     if( !ki.quiet ) printf(_("CA certificate verified (%s): Ok\n"), ki.capubkey_file );
   }
 
@@ -1433,6 +1462,145 @@
  return exitcode;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*                                 Добавление сертификата в хранилище                              */
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_key_repo_add( int argc , char *argv[] )
+{
+  int errcount = 0;
+  char certname[FILENAME_MAX];
+
+  ++optind; /* пропускаем набор управляющих команд */
+  if( optind >= argc ) { /* если не задан файл с сертификатом, то дальше делать нечего */
+    aktool_error(_("certificate is not specified as the argument of the program"));
+    return EXIT_FAILURE;
+  }
+  if( ki.verbose ) printf(_("used repository: %s\n"), ak_certificate_get_repository());
+
+  while( optind < argc ) {
+     ak_asn1 root = NULL;
+     const char *sptr = NULL;
+     char *value = argv[optind++]; /* получаем указатель на запрашиваемое имя файла */
+     if( ak_file_or_directory( value ) != DT_REG ) {
+       aktool_error(_("%s is not a regular file"), value );
+       goto lab1;
+     }
+   /* считываем сертификат и преобразуем его в ASN.1 дерево */
+     if( ak_asn1_import_from_file( root = ak_asn1_new(), value ) != ak_error_ok ) {
+       aktool_error(_("incorrect reading of ASN.1 context from %s file"), value );
+       goto lab1;
+     }
+   /* проверяем, что сертификат валиден */
+     ak_certificate_opts_create( &ki.cert.opts );
+     if( ak_certificate_import_from_asn1( &ki.cert, NULL, root ) != ak_error_ok ) {
+       aktool_error(_("wrong import of public key from asn.1 context, file %s"), value );
+       goto lab2;
+     }
+     if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
+
+   /* сохраняем сертификат в der-формате */
+     sptr = ak_ptr_to_hexstr( ki.cert.opts.serialnum, ki.cert.opts.serialnum_length, ak_false );
+     ak_snprintf( certname, sizeof( certname ),
+                                           "%s/%s.cer", ak_certificate_get_repository(), sptr );
+     if( ak_asn1_export_to_derfile( root, certname ) != ak_error_ok ) {
+       aktool_error("wrong moving the certificate to repository, "
+                                              "maybe you need root privileges ... ", certname );
+       goto lab2;
+     }
+     ak_certificate_destroy( &ki.cert );
+   /* устанавливаем права доступа к записанному файлу */
+    #ifdef AK_HAVE_SYSSTAT_H
+     chmod( certname, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH );
+    #endif
+     if( !ki.quiet ) printf(_("%s added\n"), certname );
+
+     continue;
+     lab2:
+       ak_certificate_destroy( &ki.cert );
+     lab1:
+       errcount++;
+       if( root != NULL ) ak_asn1_delete( root );
+  } /* end while */
+
+  if( errcount ) {
+    aktool_error(_("aktool found %d error(s), "
+            "rerun aktool with \"--audit-file stderr\" option or see syslog messages"), errcount );
+    return EXIT_FAILURE;
+  }
+
+ return EXIT_SUCCESS;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                             Вывод информации о хранилище сертификатов                           */
+/* ----------------------------------------------------------------------------------------------- */
+ static int aktool_key_repo_ls_certificate( const tchar *filename , ak_pointer ptr )
+{
+  ak_uint8 *cname;
+  struct certificate ca;
+  char time_buffer[16], output_buffer[64];
+  int error = ak_error_ok, *count = ptr;
+
+ /* считываем сертификат */
+   ak_certificate_opts_create( &ca.opts );
+   if(( error = ak_certificate_import_from_file( &ca, NULL, filename )) != ak_error_ok ) {
+     ak_certificate_destroy( &ca );
+     if( count ) (*count)++;
+     return error;
+   }
+
+ /* выводим информацию */
+   cname = ak_tlv_get_string_from_global_name( ca.opts.issuer, "2.5.4.3", NULL );
+   memset( time_buffer, 0, sizeof( time_buffer ));
+   memset( output_buffer, 0, sizeof( output_buffer ));
+
+  #ifdef AK_HAVE_WINDOWS_H
+   ak_snprintf( time_buffer, sizeof( time_buffer ), "%s", ctime( &ca.time.not_after ));
+   output_buffer[strlen( time_buffer )-1] = ' '; /* уничтожаем символ возврата каретки */
+  #else
+   strftime( time_buffer, sizeof( output_buffer ), /* локализованный вывод */
+                                                 "%e %b %Y", localtime( &ca.opts.time.not_after ));
+  #endif
+   if( ca.opts.serialnum_length < 18 )
+     printf(" %-40s %-12s %s\n", ak_ptr_to_hexstr( ca.opts.serialnum,
+                                        ca.opts.serialnum_length, ak_false ), time_buffer, cname );
+    else {
+      ak_snprintf( output_buffer, sizeof( output_buffer ), "%s... ",
+                                              ak_ptr_to_hexstr( ca.opts.serialnum, 18, ak_false ));
+      printf(" %-40s %-12s %s\n", output_buffer, time_buffer, cname );
+    }
+  ak_certificate_destroy( &ca );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_key_repo_ls( void )
+{
+  int errcount = 0;
+
+ /* находим все доступные сертификаты в хранилище и выводим информацию в консоль */
+  if( ki.show_caption ) {
+    printf(" %-40s %-12s %s\n", _("serial number"), _("not after"), _("subject"));
+    printf("-------------------------------------------------------------------------\n");
+  }
+  ak_file_find( ak_certificate_get_repository(),
+         #ifdef AK_HAVE_WINDOWS_H
+           "*.*"
+         #else
+           "*"
+         #endif
+           , aktool_key_repo_ls_certificate, &errcount, ak_false );
+  if( ki.show_caption ) {
+    printf("-------------------------------------------------------------------------\n");
+  }
+  if( errcount ) {
+    if( !ki.quiet ) aktool_error(_(" found %d not valid certificates, use --repo-check option\n"),
+                                                                                       errcount );
+    return EXIT_FAILURE;
+  }
+ return EXIT_SUCCESS;
+}
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                 вывод справочной информации                                     */
@@ -1469,10 +1637,11 @@
      "     --random            set the name or identifier of random sequences generator\n"
      "                         the generator will be used to create a new key [ default value: \"%s\" ]\n"
      "     --random-file       set the name of file with random sequence\n"
+     "     --repo              set the path to certificate's repository\n"
      "     --repo-add          add the authority's public key to certificate's repository\n"
      "     --repo-check        check all public keys in the certificate's repository\n"
+     "     --repo-ls           list all public keys in the certificate's repository\n"
      "     --repo-rm           remove public key from the certificate's repository\n"
-     "     --repo-show         swow all public keys in the certificate's repository\n"
      " -s, --show              output the parameters of the secret key or public key's request or certificate\n"
      "     --size              set the dimension of secret master key, in particular, for blom scheme [ maximal value: 4096 ]\n"
      " -t, --target            specify the name of the cryptographic algorithm for the new generated key\n"
