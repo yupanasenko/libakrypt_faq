@@ -1613,7 +1613,7 @@ extern "C" {
 /*! \brief Экспорт ASN.1 дерева в файл. */
  dll_export int ak_asn1_export_to_file( ak_asn1 , const char * , export_format_t , crypto_content_t );
 /*! \brief Импорт ASN.1 дерева из файла, содержащего der-последовательность. */
- dll_export int ak_asn1_import_from_file( ak_asn1 , const char * );
+ dll_export int ak_asn1_import_from_file( ak_asn1 , const char * , export_format_t * );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция выводит в заданный файл закодированное ASN.1 дерево. */

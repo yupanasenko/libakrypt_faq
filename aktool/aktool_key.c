@@ -445,6 +445,10 @@
                    work = do_repo_add;
                    break;
 
+        case 172: /* --repo-check */
+                   work = do_repo_check;
+                   break;
+
         case 174: /* --repo-ls */
                    work = do_repo_ls;
                    break;
@@ -486,7 +490,11 @@
       exit_status = aktool_key_repo_add( argc, argv );
       break;
 
-    case do_repo_ls: /* выводим переченб доверенных сертификатов в хранилище */
+    case do_repo_check: /* добавляем один или несколько сертификатов в хранилище доверенных сертификатов */
+      exit_status = aktool_key_repo_check();
+      break;
+
+    case do_repo_ls: /* выводим перечень доверенных сертификатов в хранилище */
       exit_status = aktool_key_repo_ls();
       break;
 
@@ -1377,6 +1385,19 @@
       ak_certificate_destroy( &ca_cert );
       return EXIT_FAILURE;
     }
+
+   /* проверяем, что этот сертификат может проверять подписи */
+    if( !ca_cert.opts.ext_ca.is_present ) {
+      aktool_error(_("the certificate %s is not the CA certificate"), ki.capubkey_file );
+      ak_certificate_destroy( &ca_cert );
+      return EXIT_FAILURE;
+    }
+    if(( ca_cert.opts.ext_key_usage.bits&bit_keyCertSign ) == 0 ) {
+      aktool_error(_("the certificate %s is not intended to verify "
+                                         "the validity of other certificates"), ki.capubkey_file );
+      ak_certificate_destroy( &ca_cert );
+      return EXIT_FAILURE;
+    }
     ca_cert_ptr = &ca_cert;
    /* для вывода корневого сертификата можно сделать отдельный флаг в командной строке
                              if( ki.verbose ) aktool_key_print_certificate( &ca_cert );  */
@@ -1430,6 +1451,11 @@
 
               case ak_error_not_equal_data:
                  if( !ki.quiet ) printf(_("Certificate verified (%s): No\n"), value );
+                 break;
+
+              case ak_error_certificate_verify_names:
+                 aktool_error(_("inappropriate CA certificate for %s"), value );
+                 errcount++;
                  break;
 
               default:
@@ -1486,7 +1512,7 @@
        goto lab1;
      }
    /* считываем сертификат и преобразуем его в ASN.1 дерево */
-     if( ak_asn1_import_from_file( root = ak_asn1_new(), value ) != ak_error_ok ) {
+     if( ak_asn1_import_from_file( root = ak_asn1_new(), value, NULL ) != ak_error_ok ) {
        aktool_error(_("incorrect reading of ASN.1 context from %s file"), value );
        goto lab1;
      }
@@ -1550,7 +1576,7 @@
    }
 
  /* выводим информацию */
-   cname = ak_tlv_get_string_from_global_name( ca.opts.issuer, "2.5.4.3", NULL );
+   cname = ak_tlv_get_string_from_global_name( ca.opts.subject, "2.5.4.3", NULL );
    memset( time_buffer, 0, sizeof( time_buffer ));
    memset( output_buffer, 0, sizeof( output_buffer ));
 
@@ -1593,14 +1619,104 @@
   if( ki.show_caption ) {
     printf("-------------------------------------------------------------------------\n");
   }
+  if( !ki.quiet ) printf(_(" repo: %s\n"), ak_certificate_get_repository( ));
   if( errcount ) {
-    if( !ki.quiet ) aktool_error(_(" found %d not valid certificates, use --repo-check option\n"),
+    aktool_error(_("found %d not valid certificate(s), use --repo-check option\n"),
                                                                                        errcount );
     return EXIT_FAILURE;
   }
  return EXIT_SUCCESS;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*                               Проверка валидности сертификатов в хранилище                      */
+/* ----------------------------------------------------------------------------------------------- */
+ static int aktool_key_repo_check_certificate( const tchar *filename , ak_pointer ptr )
+{
+  ak_asn1 root = NULL;
+  struct certificate ca;
+  export_format_t format;
+  char fileca[FILENAME_MAX];
+  int error = ak_error_ok, *count = ptr;
+
+ /* считываем файл и определяем его формат */
+  if( ak_asn1_import_from_file( root = ak_asn1_new(), filename, &format ) != ak_error_ok ) {
+    /* файл не является asn1 деревом */
+    if(( error = aktool_remove_file( filename )) != ak_error_ok ) {
+      if( error == ak_error_access_file )
+        aktool_error(_(" %s cannot be removed [%s]\n"), filename, strerror( errno ));
+    } else {
+       if( !ki.quiet ) printf(_(" %s removed\n"), filename );
+       if( count ) (*count)++;
+      }
+    error = ak_error_invalid_asn1_content;
+    goto lab1;
+  }
+
+ /* проверяем, является ли файл - сертификатом, если сертификат не валиден - удаляем */
+  ak_certificate_opts_create( &ca.opts );
+  if(( error = ak_certificate_import_from_asn1( &ca, NULL, root )) != ak_error_ok ) {
+    /* файл не является asn1 деревом */
+    if(( error = aktool_remove_file( filename )) != ak_error_ok ) {
+      if( error == ak_error_access_file )
+        aktool_error(_(" %s cannot be removed [%s]\n"), filename, strerror( errno ));
+    } else {
+       if( !ki.quiet ) printf(_(" %s removed\n"), filename );
+       if( count ) (*count)++;
+      }
+    error = ak_error_invalid_asn1_content;
+    goto lab2;
+  }
+
+ /* проверяем, что имя файла совпадает с номером сертификата */
+  ak_snprintf( fileca, sizeof( fileca ), "%s/%s.cer", ak_certificate_get_repository(),
+               ak_ptr_to_hexstr( ca.opts.serialnum, ca.opts.serialnum_length, ak_false ), ".cer" );
+  if( strncmp( fileca, filename, ak_min( strlen( filename ), strlen( fileca ))) != 0 ) {
+    if( format == asn1_der_format ) {
+      rename( filename, fileca );
+      if( !ki.quiet ) printf(_(" %s renamed to %s\n"), filename, fileca );
+    }
+     else {
+      if( ak_asn1_export_to_derfile( root, fileca ) != ak_error_ok )
+        aktool_error(_(" %s cannot be encoded to der format [%s]\n"), filename, strerror( errno ));
+       else {
+        if( remove( filename ) < 0 )
+          aktool_error(_(" %s cannot be removed [%s]\n"), filename, strerror( errno ));
+        if( !ki.quiet ) printf(_(" %s encoded to %s\n"), filename, fileca );
+       }
+     }
+   }
+   else
+    if( !ki.quiet ) printf(_(" %s Ok\n"), filename );
+
+  lab2:
+   ak_certificate_destroy( &ca );
+  lab1:
+   if( root != NULL ) ak_asn1_delete( root );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_key_repo_check( void )
+{
+  int delcount = 0;
+  if( !ki.quiet ) printf(_(" repo: %s\n\n"), ak_certificate_get_repository( ));
+
+  ak_file_find( ak_certificate_get_repository(),
+         #ifdef AK_HAVE_WINDOWS_H
+           "*.*"
+         #else
+           "*"
+         #endif
+           , aktool_key_repo_check_certificate, &delcount, ak_false );
+
+  if( delcount ) {
+    if( !ki.quiet ) {
+      printf(_(" deleted %d non valid certificate(s)\n"), delcount );
+    }
+  }
+ return EXIT_SUCCESS;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                 вывод справочной информации                                     */

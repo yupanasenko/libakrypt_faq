@@ -474,7 +474,7 @@
   if( filename == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                                 "using null pointer to filename" );
  /* считываем ключ и преобразуем его в ASN.1 дерево */
-  if(( error = ak_asn1_import_from_file( root = ak_asn1_new(), filename )) != ak_error_ok ) {
+  if(( error = ak_asn1_import_from_file( root = ak_asn1_new(), filename, NULL )) != ak_error_ok ) {
     ak_error_message_fmt( error, __func__,
                                      "incorrect reading of ASN.1 context from %s file", filename );
     goto lab1;
@@ -1460,7 +1460,7 @@
                                                                 "using null pointer to filename" );
 
  /* считываем сертификат и преобразуем его в ASN.1 дерево */
-  if(( error = ak_asn1_import_from_file( root = ak_asn1_new(), filename )) != ak_error_ok ) {
+  if(( error = ak_asn1_import_from_file( root = ak_asn1_new(), filename, NULL )) != ak_error_ok ) {
     ak_error_message_fmt( error, __func__,
                                      "incorrect reading of ASN.1 context from %s file", filename );
     goto lab1;
@@ -2024,14 +2024,20 @@
                                                      vptr->subject->opts.issuer_serialnum_length );
                /* пытаемся считать ключ проверки из хранилища сертификатов */
                 if( vptr->issuer == NULL ) {
-//                  if( ak_verifykey_import_from_repository_ptr( &vptr->real_issuer,
-//                                             lasn->current->data.primitive, lasn->current->len,
-//                                                          &vptr->real_certops ) != ak_error_ok ) {
-//                    vptr->issuer = NULL;
-//                  }
-//                   else { /* нам сопутствовала удача и сертификат успешно считан */
-//                     vptr->issuer = &vptr->real_issuer;
-//                   }
+                  char fileca[FILENAME_MAX];
+
+                  ak_snprintf( fileca, sizeof( fileca ), "%s/%s.cer", ca_repository_path,
+                    ak_ptr_to_hexstr( vptr->subject->opts.issuer_serialnum,
+                                 vptr->subject->opts.issuer_serialnum_length, ak_false ), ".cer" );
+
+                  ak_certificate_opts_create( &vptr->real_issuer.opts );
+                  if( ak_certificate_import_from_file( &vptr->real_issuer,
+                                                                 NULL, fileca ) != ak_error_ok ) {
+                    ak_certificate_destroy( &vptr->real_issuer );
+                  }
+                   else { /* нам сопутствовала удача и сертификат успешно считан */
+                     vptr->issuer = &vptr->real_issuer;
+                   }
                 }
                 break;
 

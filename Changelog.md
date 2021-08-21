@@ -15,7 +15,8 @@
        ak_request(certificate)_import_from ...
        ak_request(certificate)_destroy() 
    )
-
+ - увеличен список аргументов функции ak_asn1_import_from_file()
+  
 
 ## Изменения в версии 0.9.5
 

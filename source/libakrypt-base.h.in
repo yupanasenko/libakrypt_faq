@@ -240,12 +240,14 @@ extern "C" {
  #define ak_error_read_data_timeout           (-20)
 /*! \brief Ошибка записи в файл (устройство). */
  #define ak_error_write_data                  (-21)
+ /*! \brief Ошибка удаления файла (удаление отменено) */
+ #define ak_error_cancel_delete_file          (-22)
 /*! \brief Ошибка записи в файл - файл существует */
- #define ak_error_file_exists                 (-22)
+ #define ak_error_file_exists                 (-23)
 /*! \brief Ошибка использования несуществующего каталога */
- #define ak_error_not_directory               (-23)
+ #define ak_error_not_directory               (-24)
 /*! \brief Ошибка отображения файла в память */
- #define ak_error_mmap_file                   (-24)
+ #define ak_error_mmap_file                   (-25)
 
 /*! \brief Ошибка выполнения библиотеки на неверной архитектуре. */
  #define ak_error_wrong_endian                (-31)

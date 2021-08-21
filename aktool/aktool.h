@@ -50,6 +50,8 @@
    bool_t aktool_hex_password_input;
   /* расширенный вывод сообщений */
    bool_t verbose;
+  /* запрашивать подтверждение при удалении файлов */
+   bool_t confirm;
   /* режим тишины (ни чего не выводим, используем код возврата) */
    bool_t quiet;
   /* показывать ли заголовки в выводимых таблицах */
@@ -131,6 +133,8 @@
  ak_random aktool_key_new_generator( void );
 /* функция удаляет генератор псевдослучайных чисел */
  void aktool_key_delete_generator( ak_random );
+/* функция удаляет заданный файл */
+ int aktool_remove_file( const tchar * );
 
 /* функция однократного чтения ключа */
  ssize_t aktool_load_user_password( const char *, char *, const size_t , password_t );
@@ -158,7 +162,8 @@
                                             { "openssl-style",       0, NULL,   5  },\
                                             { "hex-input",           0, NULL,   6  },\
                                             { "verbose",             0, NULL,   7  },\
-                                            { "quiet",               0, NULL,   8  }
+                                            { "quiet",               0, NULL,   8  },\
+                                            { "confirm",             0, NULL,   9  }
 
  #define aktool_common_functions_run( help_function )   \
      case 'h' :   return help_function();\
@@ -185,6 +190,9 @@
      case  8  : /* обрабатываем --quiet */\
         ki.quiet = ak_true;\
         ki.verbose = ak_false;\
+        break;\
+     case  9  : /* обрабатываем --confirm */\
+        ki.confirm = ak_true;\
         break;\
 
  #endif

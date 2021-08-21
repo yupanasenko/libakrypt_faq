@@ -1433,7 +1433,7 @@
      return NULL;
    }
   /* считываем ключ и преобразуем его в ASN.1 дерево */
-   if(( error = ak_asn1_import_from_file( asn = ak_asn1_new(), filename )) != ak_error_ok ) {
+   if(( error = ak_asn1_import_from_file( asn = ak_asn1_new(), filename, NULL )) != ak_error_ok ) {
      ak_error_message_fmt( error, __func__,
                                      "incorrect reading of ASN.1 context from %s file", filename );
      goto lab1;
@@ -1483,7 +1483,7 @@
      return NULL;
    }
   /* считываем ключ и преобразуем его в ASN.1 дерево */
-   if(( error = ak_asn1_import_from_file( asn = ak_asn1_new(), filename )) != ak_error_ok ) {
+   if(( error = ak_asn1_import_from_file( asn = ak_asn1_new(), filename, NULL )) != ak_error_ok ) {
      ak_error_message_fmt( error, __func__,
                                      "incorrect reading of ASN.1 context from %s file", filename );
      goto lab1;
@@ -1532,7 +1532,7 @@
      return ak_error_message( ak_error_null_pointer, __func__, "using null pointer to filename" );
 
   /* считываем ключ и преобразуем его в ASN.1 дерево */
-   if(( error = ak_asn1_import_from_file( asn = ak_asn1_new(), filename )) != ak_error_ok ) {
+   if(( error = ak_asn1_import_from_file( asn = ak_asn1_new(), filename, NULL )) != ak_error_ok ) {
      ak_error_message_fmt( error, __func__,
                                      "incorrect reading of ASN.1 context from %s file", filename );
      goto lab1;

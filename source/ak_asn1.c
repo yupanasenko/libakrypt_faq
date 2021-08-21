@@ -3121,12 +3121,17 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
     может хранится ключевая информация. Происходит повторное считывание информации и
     повторная попытка декодирования считанных данных.
 
+    В случае успешного считывания данных, формат хранения помещается в переменную format.
+    Если считывание произошло с ошибкой, то значение переменной format не определено.
+
     \param asn уровень ASN.1 в который помещается считываемое значение
     \param filename имя файла, в котором содержится der-последовательность
+    \param format если указатель не равен NULL, то по даному адресу размещается
+    формат считанных данных.
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_asn1_import_from_file( ak_asn1 asn, const char *filename )
+ int ak_asn1_import_from_file( ak_asn1 asn, const char *filename, export_format_t *format )
 {
   int error = ak_error_ok;
   ak_uint8 *ptr = NULL, buffer[2048];
@@ -3145,8 +3150,10 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
 
  /* очищаем, при необходимости, выделенную память */
   if( ptr != buffer ) free( ptr );
-  if( error == ak_error_ok ) return ak_error_ok; /* если декодировали успешно, то выходим */
-
+  if( error == ak_error_ok ) {
+    if( format != NULL ) *format = asn1_der_format;
+    return ak_error_ok; /* если декодировали успешно, то выходим */
+  }
  /* заново инициализируем локальные переменные */
   size = sizeof( buffer );
   while( ak_asn1_remove( asn ) == ak_true );
@@ -3161,8 +3168,10 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
 
  /* очищаем, при необходимости, выделенную память */
   if( ptr != buffer ) free( ptr );
-  if( error == ak_error_ok ) ak_error_set_value( ak_error_ok ); /* в случае успеха очищаем
-                                                                   ошибки неудачной конвертации */
+  if( error == ak_error_ok ) {
+    if( format != NULL ) *format = asn1_pem_format;
+    ak_error_set_value( ak_error_ok ); /* в случае успеха очищаем ошибки неудачной конвертации */
+  }
  return error;
 }
 
@@ -3188,8 +3197,8 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
   if(( error = ak_asn1_create( &asn )) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
 
- /* считываем данные и выводм в консоль */
-  if(( error = ak_asn1_import_from_file( &asn, filename )) == ak_error_ok ) {
+ /* считываем данные и выводим в консоль */
+  if(( error = ak_asn1_import_from_file( &asn, filename, NULL )) == ak_error_ok ) {
     ak_asn1_print( &asn );
   }
   ak_asn1_destroy( &asn );
@@ -3215,7 +3224,7 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
  /* 1. Считываем дерево из файла */
   if(( asn = ak_asn1_new( )) == NULL ) return ak_error_message( ak_error_get_value(),
                                               __func__, "incorrect creation of new asn1 context" );
-  if(( error = ak_asn1_import_from_file( asn, infile )) != ak_error_ok ) {
+  if(( error = ak_asn1_import_from_file( asn, infile, NULL )) != ak_error_ok ) {
     ak_error_message_fmt( error, __func__,
                                         "incorrect reading an asn1 context from file %s", infile );
     goto labex;
@@ -3261,7 +3270,7 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
  /* 1. Считываем дерево из файла */
   if(( asn = ak_asn1_new( )) == NULL ) return ak_error_message( ak_error_get_value(),
                                               __func__, "incorrect creation of new asn1 context" );
-  if(( error = ak_asn1_import_from_file( asn, infile )) != ak_error_ok ) {
+  if(( error = ak_asn1_import_from_file( asn, infile, NULL )) != ak_error_ok ) {
     ak_error_message_fmt( error, __func__,
                                         "incorrect reading an asn1 context from file %s", infile );
     goto labex;

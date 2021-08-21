@@ -344,6 +344,26 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ int aktool_remove_file( const tchar *filename )
+{
+  char ch[8];
+
+  if( ki.confirm ) { /* пользователь хочет подтверждать удаление файла */
+    printf(_(" remove the file %s? [y/n]"), filename ); fflush( stdout );
+    memset( ch, 0, sizeof( ch ));
+    fgets( ch, sizeof( ch ) -1, stdin );
+
+    if( ch[0] == 'y' || ch[0] == 'Y' ) {
+      if( remove( filename ) < 0 ) return ak_error_access_file;
+      return ak_error_ok;
+    }
+    return ak_error_cancel_delete_file;
+  }
+  if( remove( filename ) < 0 ) return ak_error_access_file;
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                 реализация вывода справки                                       */
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_litehelp( void )
@@ -370,6 +390,7 @@
    _("\ncommon aktool options:\n"
      "     --audit             set the audit level [ enabled values : 0 (none), 1 (standard), 2 (max) ]\n"
      "     --audit-file        set the output file for errors and libakrypt audit system messages\n"
+     "     --confirm           ask for confirmation when deleting files\n"
      "     --dont-use-colors   do not use the highlighting of output data\n"
      "     --help              show this information\n"
      "     --hex-input         read characters from terminal or console as hexademal numbers\n"
