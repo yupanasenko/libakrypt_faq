@@ -32,6 +32,7 @@
  int aktool_key_repo_ls( void );
  int aktool_key_repo_check( void );
  int aktool_key_repo_add( int argc , char *argv[] );
+ int aktool_key_repo_rm( int argc , char *argv[] );
 
 /* ----------------------------------------------------------------------------------------------- */
  #define aktool_magic_number (113)
@@ -98,7 +99,7 @@
      { "repo-add",            0, NULL,  171 },
      { "repo-check",          0, NULL,  172 },
      { "repo-rm",             1, NULL,  173 },
-     { "repo-ls",           0, NULL,  174 },
+     { "repo-ls",             0, NULL,  174 },
      { "without-caption",     0, NULL,  175 },
 
      aktool_common_functions_definition,
@@ -430,10 +431,6 @@
                       ki.cert.opts.ext_authoritykey.include_name = ak_true;
                    break;
 
-        case 175:  /* запрещаем выводить заголовок */
-                   ki.show_caption = ak_false;
-                   break;
-
         case 170:  /* --repo */
                    if( ak_certificate_set_repository( optarg ) != ak_error_ok ) {
                      aktool_error(_("incorrect value of certificate's repository path, see the argument of --repo option"));
@@ -449,8 +446,16 @@
                    work = do_repo_check;
                    break;
 
+        case 173: /* --repo-rm */
+                   work = do_repo_rm;
+                   break;
+
         case 174: /* --repo-ls */
                    work = do_repo_ls;
+                   break;
+
+        case 175:  /* запрещаем выводить заголовок */
+                   ki.show_caption = ak_false;
                    break;
 
         default:  /* обрабатываем ошибочные параметры */
@@ -488,6 +493,10 @@
 
     case do_repo_add: /* добавляем один или несколько сертификатов в хранилище доверенных сертификатов */
       exit_status = aktool_key_repo_add( argc, argv );
+      break;
+
+    case do_repo_rm: /* добавляем один или несколько сертификатов в хранилище доверенных сертификатов */
+      exit_status = aktool_key_repo_rm( argc, argv );
       break;
 
     case do_repo_check: /* добавляем один или несколько сертификатов в хранилище доверенных сертификатов */
@@ -1631,13 +1640,19 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                               Проверка валидности сертификатов в хранилище                      */
 /* ----------------------------------------------------------------------------------------------- */
+ typedef struct check_stat {
+  int deleted, renamed, encoded;
+ } *aktool_check_stat;
+
+/* ----------------------------------------------------------------------------------------------- */
  static int aktool_key_repo_check_certificate( const tchar *filename , ak_pointer ptr )
 {
   ak_asn1 root = NULL;
   struct certificate ca;
   export_format_t format;
   char fileca[FILENAME_MAX];
-  int error = ak_error_ok, *count = ptr;
+  int error = ak_error_ok;
+  aktool_check_stat stat = ptr;
 
  /* считываем файл и определяем его формат */
   if( ak_asn1_import_from_file( root = ak_asn1_new(), filename, &format ) != ak_error_ok ) {
@@ -1647,7 +1662,7 @@
         aktool_error(_(" %s cannot be removed [%s]\n"), filename, strerror( errno ));
     } else {
        if( !ki.quiet ) printf(_(" %s removed\n"), filename );
-       if( count ) (*count)++;
+       if( ptr ) stat->deleted++;
       }
     error = ak_error_invalid_asn1_content;
     goto lab1;
@@ -1662,7 +1677,7 @@
         aktool_error(_(" %s cannot be removed [%s]\n"), filename, strerror( errno ));
     } else {
        if( !ki.quiet ) printf(_(" %s removed\n"), filename );
-       if( count ) (*count)++;
+       if( ptr ) stat->deleted++;
       }
     error = ak_error_invalid_asn1_content;
     goto lab2;
@@ -1675,6 +1690,7 @@
     if( format == asn1_der_format ) {
       rename( filename, fileca );
       if( !ki.quiet ) printf(_(" %s renamed to %s\n"), filename, fileca );
+      if( ptr ) stat->renamed++;
     }
      else {
       if( ak_asn1_export_to_derfile( root, fileca ) != ak_error_ok )
@@ -1683,12 +1699,22 @@
         if( remove( filename ) < 0 )
           aktool_error(_(" %s cannot be removed [%s]\n"), filename, strerror( errno ));
         if( !ki.quiet ) printf(_(" %s encoded to %s\n"), filename, fileca );
+        if( ptr ) stat->encoded++;
        }
      }
    }
-   else
-    if( !ki.quiet ) printf(_(" %s Ok\n"), filename );
-
+   else { /* имена совпадают */
+    if( format == asn1_pem_format ) {
+      if( ak_asn1_export_to_derfile( root, filename ) != ak_error_ok )
+        aktool_error(_(" %s cannot be encoded to der format [%s]\n"), filename, strerror( errno ));
+       else {
+        if( !ki.quiet ) printf(_(" %s encoded to der format\n"), fileca );
+        if( ptr ) stat->encoded++;
+       }
+    }
+     else
+      if( !ki.quiet ) printf(_(" %s Ok\n"), filename );
+  }
   lab2:
    ak_certificate_destroy( &ca );
   lab1:
@@ -1699,7 +1725,11 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key_repo_check( void )
 {
-  int delcount = 0;
+  struct check_stat delcount = {
+   .deleted = 0,
+   .renamed = 0,
+   .encoded = 0
+  };
   if( !ki.quiet ) printf(_(" repo: %s\n\n"), ak_certificate_get_repository( ));
 
   ak_file_find( ak_certificate_get_repository(),
@@ -1710,13 +1740,28 @@
          #endif
            , aktool_key_repo_check_certificate, &delcount, ak_false );
 
-  if( delcount ) {
-    if( !ki.quiet ) {
-      printf(_(" deleted %d non valid certificate(s)\n"), delcount );
-    }
+  if( !ki.quiet ) {
+    printf("\n");
+    if( delcount.deleted ) printf(_(" deleted %d non valid certificate(s)\n"), delcount.deleted );
+    if( delcount.renamed ) printf(_(" renamed %d certificate(s)\n"), delcount.renamed );
+    if( delcount.encoded ) printf(_(" encoded %d certificate(s) to der format\n"), delcount.encoded );
   }
  return EXIT_SUCCESS;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                          удаление сертификата из хранилища                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_key_repo_rm( int argc , char *argv[] )
+{
+  // циел по всем файлам в каталоге
+  // ---> для каждого файла - цикл по optind (значение сохраняется)
+
+  // входные параметры не менее 6 символов ...
+
+ return EXIT_FAILURE;
+}
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                 вывод справочной информации                                     */
