@@ -32,8 +32,10 @@
   if(( error = ak_verifykey_destroy( &req->vkey )) != ak_error_ok )
     ak_error_message( error, __func__, "wrong destroying of verifykey context" );
 
-  if( req->opts.subject != NULL )
+  if( req->opts.subject != NULL ) {
     ak_tlv_delete( req->opts.subject );
+    req->opts.subject = NULL;
+  }
 
   memset( req, 0, sizeof( struct request ));
  return ak_error_ok;

@@ -86,6 +86,7 @@
      { "crl-sign",            0, NULL,  196 },
      { "ca-ext",              1, NULL,  197 },
      { "pathlen",             1, NULL,  198 },
+     { "ca",                  0, NULL,  199 },
      { "authority-name",      0, NULL,  200 },
 
    /* флаги для генерации ключей схемы Блома */
@@ -426,6 +427,12 @@
                    }
                    break;
 
+        case 199: /* --ca (объединение двух опций --ca-ext=true и --key-cert-sign) */
+                   ki.cert.opts.ext_ca.is_present = ki.cert.opts.ext_ca.value = ak_true;
+                   ki.cert.opts.ext_key_usage.bits ^= bit_keyCertSign;
+                   ki.cert.opts.ext_key_usage.is_present = ak_true;
+                   break;
+
         case 200: /* --authority-name */
                    ki.cert.opts.ext_authoritykey.is_present =
                       ki.cert.opts.ext_authoritykey.include_name = ak_true;
@@ -489,6 +496,10 @@
 
     case do_verify: /* проверяем сертификаты и запросы на сертификат */
       exit_status = aktool_key_verify_key( argc, argv );
+      break;
+
+    case do_cert: /* создаем сертификат открытого ключа из запроса на сертификат */
+      exit_status = aktool_key_new_certificate( argc, argv );
       break;
 
     case do_repo_add: /* добавляем один или несколько сертификатов в хранилище доверенных сертификатов */
@@ -1294,16 +1305,22 @@
 /* ----------------------------------------------------------------------------------------------- */
  static int aktool_key_print_certificate( ak_certificate cert )
 {
+  ak_uint8 *ptr;
   char output_buffer[256];
   size_t ts = ak_hash_get_tag_size( &cert->vkey.ctx );
 
   printf(_("Public key certificate\n"));
-  printf(_("  subject: %s\n"),
-                        ak_tlv_get_string_from_global_name( cert->opts.subject, "2.5.4.3", NULL ));
-  aktool_key_verify_print_global_name( cert->opts.subject->data.constructed );
-  printf(_("  issuer: %s\n"),
-                         ak_tlv_get_string_from_global_name( cert->opts.issuer, "2.5.4.3", NULL ));
-  aktool_key_verify_print_global_name( cert->opts.issuer->data.constructed );
+  if( cert->opts.subject != NULL ) {
+    printf(_("  subject: %s\n"), ak_tlv_get_string_from_global_name( cert->opts.subject, "2.5.4.3", NULL ));
+    aktool_key_verify_print_global_name( cert->opts.subject->data.constructed );
+  }
+
+  if( cert->opts.issuer != NULL ) {
+    printf(_("  issuer: %s\n"), ak_tlv_get_string_from_global_name( cert->opts.issuer, "2.5.4.3", NULL ));
+    aktool_key_verify_print_global_name( cert->opts.issuer->data.constructed );
+  }
+
+ return 0;
 
  /* информация о ключе */
   if( cert->vkey.oid != NULL ) {
@@ -1380,6 +1397,36 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ static ak_certificate aktool_key_verify_ca( ak_certificate ca_cert, const char *filename )
+{
+    ak_certificate_opts_create( &ca_cert->opts );
+    if( ak_certificate_import_from_file( ca_cert, NULL, filename ) != ak_error_ok ) {
+      aktool_error(_("incorrect CA certificate, see --ca-cert %s option"), filename );
+      ak_certificate_destroy( ca_cert );
+      return NULL;
+    }
+
+   /* проверяем, что этот сертификат может проверять подписи */
+    if( !ca_cert->opts.ext_ca.is_present ) {
+      aktool_error(_("the certificate %s is not the CA certificate"), filename );
+      ak_certificate_destroy( ca_cert );
+      return NULL;
+    }
+    if(( ca_cert->opts.ext_key_usage.bits&bit_keyCertSign ) == 0 ) {
+      aktool_error(_("the certificate %s is not intended to verify "
+                                         "the validity of other certificates"), filename );
+      ak_certificate_destroy( ca_cert );
+      return NULL;
+    }
+
+   /* для вывода корневого сертификата можно сделать отдельный флаг в командной строке
+                             if( ki.verbose ) aktool_key_print_certificate( &ca_cert );  */
+    if( !ki.quiet ) printf(_("CA certificate verified (%s): Ok\n"), filename );
+
+ return ca_cert;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int aktool_key_verify_key( int argc , char *argv[] )
 {
   struct certificate ca_cert;
@@ -1388,29 +1435,8 @@
 
  /* считываем сертификат ключа УЦ */
   if( strlen( ki.capubkey_file ) != 0 ) {
-    ak_certificate_opts_create( &ca_cert.opts );
-    if( ak_certificate_import_from_file( &ca_cert, NULL, ki.capubkey_file ) != ak_error_ok ) {
-      aktool_error(_("incorrect CA certificate, see --ca-cert %s option"), ki.capubkey_file );
-      ak_certificate_destroy( &ca_cert );
+    if(( ca_cert_ptr = aktool_key_verify_ca( &ca_cert, ki.capubkey_file )) == NULL )
       return EXIT_FAILURE;
-    }
-
-   /* проверяем, что этот сертификат может проверять подписи */
-    if( !ca_cert.opts.ext_ca.is_present ) {
-      aktool_error(_("the certificate %s is not the CA certificate"), ki.capubkey_file );
-      ak_certificate_destroy( &ca_cert );
-      return EXIT_FAILURE;
-    }
-    if(( ca_cert.opts.ext_key_usage.bits&bit_keyCertSign ) == 0 ) {
-      aktool_error(_("the certificate %s is not intended to verify "
-                                         "the validity of other certificates"), ki.capubkey_file );
-      ak_certificate_destroy( &ca_cert );
-      return EXIT_FAILURE;
-    }
-    ca_cert_ptr = &ca_cert;
-   /* для вывода корневого сертификата можно сделать отдельный флаг в командной строке
-                             if( ki.verbose ) aktool_key_print_certificate( &ca_cert );  */
-    if( !ki.quiet ) printf(_("CA certificate verified (%s): Ok\n"), ki.capubkey_file );
   }
 
  /* основной цикл опробования переданных в командной строке файлов */
@@ -1429,7 +1455,7 @@
 
          /* опробуем содержимое файла как запрос на сертификат,
             если пользователь определил сертификат УЦ, то это явно не запрос на сертификат */
-            if( ca_cert_ptr != NULL ) {
+            if( ca_cert_ptr == NULL ) {
               struct request req;
               switch( ak_request_import_from_file( &req, ki.pubkey_file )) {
                 case ak_error_ok:
@@ -1446,7 +1472,7 @@
                 default:
                    break;
               }
-            } /* конец if( ca_cert_ptr != NULL ) */
+            } /* конец if( ca_cert_ptr == NULL ) */
 
          /* опробуем содержимое файла как сертификат открытого ключа */
             ak_error_set_value( ak_error_ok );
@@ -1495,6 +1521,100 @@
   if( ca_cert_ptr != NULL ) ak_certificate_destroy( &ca_cert );
 
  return exitcode;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                          Создание сертификата из запроса на сертификат                          */
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_key_new_certificate( int argc , char *argv[] )
+{
+  struct signkey issuer_skey;
+  struct certificate ca_cert;
+  ak_certificate ca_cert_ptr = NULL;
+  int errcount = 0, exitcode = EXIT_FAILURE;
+
+  ++optind; /* пропускаем набор управляющих команд (k -c или key --cert) */
+  if( optind >= argc ) { /* если не задан файл с запросом, то дальше делать нечего */
+    aktool_error(_("certificate's request is not specified as the argument of the program"));
+    return EXIT_FAILURE;
+  }
+
+ /* выполняем проверки перед стартом */
+  if( strlen( ki.key_file ) == 0 ) {
+    aktool_error(_("the CA secret key is not defined, use --ca-key option"));
+    return EXIT_FAILURE;
+  }
+  if( strlen( ki.capubkey_file ) == 0 ) {
+    aktool_error(_("the CA certificate is not defined, use --ca-cert option"));
+    return EXIT_FAILURE;
+  }
+
+ /* считываем сертификат ключа УЦ */
+  if(( ca_cert_ptr = aktool_key_verify_ca( &ca_cert, ki.capubkey_file )) == NULL )
+    return EXIT_FAILURE;
+
+ /* запрашиваем пароль для доступа к секретному ключу (однократно, без дублирования) */
+  if( !ki.quiet ) printf(_("loading the CA secret key: %s\n"), ki.key_file );
+  if( ki.leninpass == 0 ) {
+    if(( ki.leninpass = aktool_load_user_password( NULL, ki.inpass, sizeof( ki.inpass ), 0 )) < 1 )
+    {
+       aktool_error(_("incorrect password reading"));
+       return exitcode;
+    }
+  }
+
+ /* считываем ключ из заданного файла
+    если пароль определен в командой строке, то используем именно его */
+  ak_libakrypt_set_password_read_function( aktool_load_user_password );
+  if(( ak_skey_import_from_file( &issuer_skey, sign_function, ki.key_file )) != ak_error_ok ) {
+    aktool_error(_("incorrect loading of the CA secret key"));
+    goto labex;
+    return EXIT_FAILURE;
+  }
+   else if( ki.verbose ) printf(_("the CA secret key loaded from file %s\n"), ki.key_file );
+
+ /* ключи подписи готовы, теперь начинаем основной цикл перебора запросов на сертификат */
+  while( optind < argc ) {
+     char *value = argv[optind++]; /* получаем указатель на запрашиваемое имя файла */
+     if( ak_file_or_directory( value ) == DT_REG ) {
+
+      /* 1. запускаем процедуру импорта запроса на сертификат */
+       printf("1: %p\n", ki.cert.opts.issuer );
+       aktool_key_print_certificate( &ki.cert );
+
+       if( ak_request_import_from_file( (ak_request)( &ki.cert ), value ) != ak_error_ok ) {
+         aktool_error(_("incorrect reading a certificate's request from %s"), value );
+         continue;
+       }
+        else if( ki.verbose ) printf(_("request loaded from %s\n"), value );
+
+       printf("2: %p\n", ki.cert.opts.issuer ); fflush( stdout );
+       aktool_key_print_certificate( &ki.cert );
+
+       ak_request_destroy( (ak_request)&ki.cert );
+     }
+      else {
+        aktool_error(_("%s is not a regular file"), value );
+        errcount++;
+      }
+  }
+
+  if( errcount ) {
+    aktool_error(_("aktool found %d error(s), "
+                 "rerun aktool with \"--audit-file stderr\" option or see syslog messages"), errcount );
+    exitcode = EXIT_FAILURE;
+  }
+
+
+
+
+  ak_signkey_destroy( &issuer_skey );
+  labex:
+   ak_certificate_destroy( &ca_cert );
+
+ return exitcode;
+
+
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1659,7 +1779,7 @@
     /* файл не является asn1 деревом */
     if(( error = aktool_remove_file( filename )) != ak_error_ok ) {
       if( error == ak_error_access_file )
-        aktool_error(_(" %s cannot be removed [%s]\n"), filename, strerror( errno ));
+        aktool_error(_("%s cannot be removed [%s]"), filename, strerror( errno ));
     } else {
        if( !ki.quiet ) printf(_(" %s removed\n"), filename );
        if( ptr ) stat->deleted++;
@@ -1674,7 +1794,7 @@
     /* файл не является asn1 деревом */
     if(( error = aktool_remove_file( filename )) != ak_error_ok ) {
       if( error == ak_error_access_file )
-        aktool_error(_(" %s cannot be removed [%s]\n"), filename, strerror( errno ));
+        aktool_error(_("%s cannot be removed [%s]"), filename, strerror( errno ));
     } else {
        if( !ki.quiet ) printf(_(" %s removed\n"), filename );
        if( ptr ) stat->deleted++;
@@ -1694,10 +1814,10 @@
     }
      else {
       if( ak_asn1_export_to_derfile( root, fileca ) != ak_error_ok )
-        aktool_error(_(" %s cannot be encoded to der format [%s]\n"), filename, strerror( errno ));
+        aktool_error(_("%s cannot be encoded to der format [%s]"), filename, strerror( errno ));
        else {
         if( remove( filename ) < 0 )
-          aktool_error(_(" %s cannot be removed [%s]\n"), filename, strerror( errno ));
+          aktool_error(_("%s cannot be removed [%s]"), filename, strerror( errno ));
         if( !ki.quiet ) printf(_(" %s encoded to %s\n"), filename, fileca );
         if( ptr ) stat->encoded++;
        }
@@ -1706,7 +1826,7 @@
    else { /* имена совпадают */
     if( format == asn1_pem_format ) {
       if( ak_asn1_export_to_derfile( root, filename ) != ak_error_ok )
-        aktool_error(_(" %s cannot be encoded to der format [%s]\n"), filename, strerror( errno ));
+        aktool_error(_("%s cannot be encoded to der format [%s]"), filename, strerror( errno ));
        else {
         if( !ki.quiet ) printf(_(" %s encoded to der format\n"), fileca );
         if( ptr ) stat->encoded++;
@@ -1760,6 +1880,7 @@
   // входные параметры не менее 6 символов ...
 
   //сделай меня, если сможешь
+  aktool_error(_("this function is not implemented yet, sorry ..."));
 
  return EXIT_FAILURE;
 }
@@ -1817,6 +1938,7 @@
   printf(
    _("options used for customizing a public key's certificate:\n"
      "     --authority-name    add an issuer's generalized name to the authority key identifier extension\n"
+     "     --ca                short form for union of two options: --ca-ext=true and --key-cert-sign\n"
      "     --ca-ext            use as certificate authority [ enabled values: true, false ]\n"
      "     --pathlen           set the maximal length of certificate's chain\n"
      "     --digital-signature use for verifying a digital signatures of user data\n"
