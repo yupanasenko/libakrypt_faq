@@ -94,15 +94,11 @@ then echo "aktool не может верифицировать запрос на
 fi
 echo "запрос aktool512_request.csr верифицирован"; echo;
 #
-crt_exit;
-#
-#
-#
 # ------------------------------------------------------------------------------------------------- #
 echo; echo "3. Проверяем возможность создания и взаимной проверки самоподписанных сертификатов"; echo;
 # ------------------------------------------------------------------------------------------------- #
 # сперва, создаем самоподписанный сертификат с помощью aktool
-${AKTOOL} k -nt sign512 --curve ec512b -o aktool512.key --outpass 321azO --op aktool512_ca.crt --to certificate --id "/ct=RU/st=Somewhere/lt=Lies/or=The Truth/ou=With Overall Gladness/ln=But Where?/em=email@somewhere.lies/cn=Aktool Team (512)"
+${AKTOOL} k -nt sign512 --curve ec512b -o aktool512.key --outpass 321azO --op aktool512_ca.crt --to certificate --id "/cn=Aktool Team CA (512)" --days 1 --ca --pathlen 77
 if [[ $? -ne 0 ]]
 then echo "aktool не может создать самоподписанный сертификат"; exit;
 fi
@@ -119,6 +115,8 @@ ${AKTOOL} k -v aktool512_ca.crt --verbose
 if [[ $? -ne 0 ]]
 then echo "aktool не может верифицировать самоподписанный сертификат"; exit;
 fi
+#
+#
 # создаем самоподписанный сертификат
 # для openssl в файле конфигурации нужно указать, что keyUsage = keyCertSign
 openssl req -x509 -newkey gost2012_512 -pkeyopt paramset:A -out openssl512_ca.crt -keyout openssl512.key -passout pass:321azO -subj "/C=RU/ST=Somewhere/L=Lies/O=The Truth/OU=But Where? Part II/CN=Openssl Team (512)"
@@ -131,6 +129,7 @@ if [[ $? -ne 0 ]]
 then echo "aktool не может верифицировать самоподписанный сертификат"; exit;
 fi
 echo "openssl512_ca.crt верифицирован";
+#
 #
 # ------------------------------------------------------------------------------------------------- #
 echo; echo "4. Проверяем процедуры подписания запросов на сертифкат секретным ключом эмитента"; echo;
@@ -162,10 +161,14 @@ if [[ $? -ne 0 ]]
 then echo "aktool не может верифицировать сертификат пользователя, возможно, нужно добавить \"keyUsage = keyCertSign\" в файл ${SSLCONF}"; exit;
 fi
 echo ""
-
+#
+#
+#
 ## теперь тестим генерацию сертификатов
 ##
 ## реализуем обратную процедуру - теперь aktool вырабатывает сертификаты
+#
+#
 ${AKTOOL} k -c openssl256_request.csr --ca-key aktool512.key --inpass 321azO --ca-cert aktool512_ca.crt --op openssl256_aktool_certificate.crt --to pem
 #
 openssl verify -CAfile aktool512_ca.crt openssl256_aktool_certificate.crt

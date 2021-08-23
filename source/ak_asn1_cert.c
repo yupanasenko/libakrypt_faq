@@ -675,10 +675,11 @@
     if(( error = ak_verifykey_destroy( &cert->vkey )) != ak_error_ok )
       ak_error_message( error, __func__, "wrong destroying of verifykey context" );
   }
-  if( cert->opts.subject != NULL ) ak_tlv_delete( cert->opts.subject );
-  if( cert->opts.issuer != NULL ) ak_tlv_delete( cert->opts.issuer );
+  if( cert->opts.subject != NULL ) cert->opts.subject = ak_tlv_delete( cert->opts.subject );
+  if( cert->opts.issuer != NULL ) cert->opts.issuer = ak_tlv_delete( cert->opts.issuer );
 
-  memset( cert, 0, sizeof( struct certificate ));
+ /* очистку установленных полей не производим
+    memset( cert, 0, sizeof( struct certificate )); */
  return ak_error_ok;
 }
 
@@ -1900,19 +1901,18 @@
 
         if(( DATA_STRUCTURE( vasn->current->tag ) == CONSTRUCTED ) ||
            ( TAG_NUMBER( vasn->current->tag ) != TSEQUENCE )) {
-
            ak_asn1 vasn2 = vasn->current->data.constructed;
+
            if( vasn2->current != NULL ) {
              ak_asn1_first( vasn2 );
              if(( DATA_STRUCTURE( vasn2->current->tag ) == PRIMITIVE ) &&
                 ( TAG_NUMBER( vasn2->current->tag ) == TBOOLEAN )) {
                   ak_tlv_get_bool( vasn2->current, &vptr->subject->opts.ext_ca.value );
              }
-             if( ak_asn1_next( vasn2 ) ) {
-               if(( DATA_STRUCTURE( vasn2->current->tag ) != PRIMITIVE ) &&
-                  ( TAG_NUMBER( vasn2->current->tag ) != TINTEGER ))
-                    ak_tlv_get_uint32( vasn2->current,
-                                                   &vptr->subject->opts.ext_ca.pathlenConstraint );
+             ak_asn1_last( vasn2 );
+             if(( DATA_STRUCTURE( vasn2->current->tag ) == PRIMITIVE ) &&
+                ( TAG_NUMBER( vasn2->current->tag ) == TINTEGER )) {
+                ak_tlv_get_uint32( vasn2->current, &vptr->subject->opts.ext_ca.pathlenConstraint );
              }
            }
         }
