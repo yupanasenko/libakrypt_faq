@@ -792,6 +792,9 @@ extern "C" {
 /*! \brief Завершение вычисления имитовставки согласно ГОСТ Р 34.13-2015. */
  dll_export int ak_bckey_cmac_finalize( ak_bckey , const ak_pointer , const size_t ,
                                                                        ak_pointer , const size_t );
+/*! \brief Вычисление имитовставки для заданного файла. */
+ dll_export int ak_bckey_cmac_file( ak_bckey , const char * , ak_pointer , const size_t );
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция очистки контекста хеширования. */
  typedef int ( ak_function_clean )( ak_pointer );

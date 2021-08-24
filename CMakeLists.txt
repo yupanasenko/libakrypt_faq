@@ -8,7 +8,7 @@ cmake_minimum_required( VERSION 3.2 FATAL_ERROR )
 # -------------------------------------------------------------------------------------------------- #
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 9 )
-set( MINOR_VERSION 6 )
+set( MINOR_VERSION 7 )
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 # строка с текущей датой, используется при сборке документации
@@ -99,7 +99,7 @@ endif()
 message("-- Used compile flags ${CMAKE_C_FLAGS}")
 
 # -------------------------------------------------------------------------------------------------- #
-# Определяем место хранения файла с  настройками библиотеки
+# Определяем место хранения файла с настройками библиотеки
 # -------------------------------------------------------------------------------------------------- #
 if( AK_CONFIG_PATH )
 else()
@@ -203,6 +203,7 @@ set ( ARITHMETIC_TESTS_LIST
       sign01
       asn1-keys
       blom-keys
+      cmac
     )
 
 if( AK_TESTS_GMP )
@@ -233,7 +234,7 @@ set( AKTOOL_SOURCES
      aktool/aktool_key.c
      aktool/aktool_show.c
      aktool/aktool_test.c
-#     aktool/aktool_icode.c
+     aktool/aktool_icode.c
 #     aktool/aktool_encrypt.c
    )
 set( AKTOOL_FILES
