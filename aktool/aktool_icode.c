@@ -36,7 +36,8 @@
      { "key",                 1, NULL,  203 },
      { "inpass-hex",          1, NULL,  251 },
      { "inpass",              1, NULL,  252 },
-     { "salt",                1, NULL,  253 },
+     { "seed",                1, NULL,  253 },
+     { "no-derive",           0, NULL,  160 },
 
    /* это стандартые для всех программ опции */
      aktool_common_functions_definition,
@@ -54,7 +55,8 @@
   #endif
   ki.tree = ak_false;
   ki.outfp = stdout;
-  ki.salt = NULL;
+  ki.seed = NULL;
+  ki.key_derive = ak_true;
 
  /* разбираем опции командной строки */
   do {
@@ -99,8 +101,12 @@
                    ki.tag = ak_true;
                    break;
 
-        case 253: /* --salt */
-                   ki.salt = optarg;
+        case 253: /* --seed */
+                   ki.seed = optarg;
+                   break;
+
+        case 160: /* --no-derive */
+                   ki.key_derive = ak_false;
                    break;
 
         case 252: /* --inpass */
@@ -175,12 +181,14 @@
   ak_oid oid;
   size_t tagsize;
   ak_function_icode_file *icode;
+  int errcount;
  } handle_ptr_t;
 
 /* ----------------------------------------------------------------------------------------------- */
  static int aktool_icode_function( const char *filename, ak_pointer ptr )
 {
   ak_uint8 buffer[256];
+  ak_pointer kh = NULL;
   handle_ptr_t *hdl = ptr;
   int error = ak_error_ok;
   char flongname[FILENAME_MAX];
@@ -200,19 +208,32 @@
                                               sizeof( ki.audit_filename ) -2 )) return ak_error_ok;
   }
 
- /* вырабатываем производный ключ */
+ /* вырабатываем производный ключ (если пользователь не запретил) */
+  if( !ki.key_derive || hdl->oid->engine == hash_function ) {
+    kh = hdl->handle;
+  }
+   else {
+    if(( kh = ak_skey_new_derive_kdf256( hdl->oid, hdl->handle,
+                                           (ak_uint8 *)filename, strlen( filename ),
+                                            ki.seed != NULL ? (ak_uint8 *)ki.seed : NULL,
+                                            ki.seed != NULL ? strlen( ki.seed ) : 0 )) == NULL ) {
+      aktool_error(_("incorrect creation of derivative key for %s"), filename );
+      hdl->errcount++;
+      return ak_error_get_value();
+    }
+  }
 
-  обратить внимание!
-
- /* проверяем ресурс файла */
+ /* проверяем ресурс секретного ключа */
   if( hdl->oid->engine == block_cipher ) {
     struct file fs;
     if(( error = ak_file_open_to_read( &fs, filename )) != ak_error_ok ) {
       aktool_error(_("access error to %s [%s]"), filename, strerror( errno ));
+      hdl->errcount++;
       return error;
-    }
-    if( ((ak_bckey)hdl->handle)->key.resource.value.counter < (ssize_t)(1 + fs.size/hdl->tagsize )) {
-      aktool_error(_("low resource of secret key (%s)"), filename );
+    }    
+    if( ((ak_bckey)kh)->key.resource.value.counter < (ssize_t)(1 + fs.size/hdl->tagsize )) {
+      hdl->errcount++;
+      aktool_error(_("low key resource for %s"), filename );
       ak_file_close( &fs );
       return ak_error_low_key_resource;
     }
@@ -220,8 +241,10 @@
   }
 
  /* хешируем */
-  if(( error = hdl->icode( hdl->handle, filename, buffer, hdl->tagsize )) != ak_error_ok ) {
+  if(( error = hdl->icode( kh, /* производный ключ */
+                              filename, buffer, hdl->tagsize )) != ak_error_ok ) {
     aktool_error(_("incorrect integrity code calculation for %s"), filename );
+    hdl->errcount++;
     return error;
   }
 
@@ -234,6 +257,7 @@
                             ak_ptr_to_hexstr( buffer, hdl->tagsize, ki.reverse_order ), filename );
     }
 
+  if( kh != hdl->handle ) ak_oid_delete_object( hdl->oid, kh );
  return ak_error_ok;
 }
 
@@ -326,8 +350,8 @@
           }
         }
         if( ki.method->func.first.set_key_from_password( hdl.handle, ki.inpass, ki.leninpass,
-                       ki.salt != NULL ? ki.salt : "Rj0z[1c<a3)oZq.s",
-                       ki.salt != NULL ? ak_min( strlen( ki.salt ), 16 ) : 16 ) != ak_error_ok ) {
+                       ki.seed != NULL ? ki.seed : "Rj0z[1c<a3)oZq.s",
+                       ki.seed != NULL ? ak_min( strlen( ki.seed ), 16 ) : 16 ) != ak_error_ok ) {
             ak_oid_delete_object( ki.method, hdl.handle );
             return EXIT_FAILURE;
         }
@@ -338,8 +362,11 @@
    while( optind < argc ) {
      char *value = argv[optind++];
      switch( ak_file_or_directory( value )) {
-        case DT_DIR: if( ak_file_find( value, ki.pattern,
-                                aktool_icode_function, &hdl, ki.tree ) != ak_error_ok ) errcount++;
+        case DT_DIR:
+          hdl.errcount = 0;
+          if( ak_file_find( value, ki.pattern,
+                            aktool_icode_function, &hdl, ki.tree ) != ak_error_ok )
+                                                                          errcount += hdl.errcount;
           break;
 
         case DT_REG: if( aktool_icode_function( value, &hdl )!= ak_error_ok ) errcount++;
@@ -374,15 +401,16 @@
      " -a, --algorithm         set the name or identifier of integrity function or block cipher\n"
      "                         default algorithm is \"streebog256\" defined by GOST R 34.10-2012\n"
      "     --inpass            set the password for the secret key to be read directly in command line\n"
-     "                         (this value also used for a secret key generation from password)\n"
+     "                         this value also used for a secret key generation from password\n"
      "     --inpass-hex        set the password for the secret key to be read directly in command line as hexademal string\n"
-     "                         (this value also used for a secret key generation from password)\n"
+     "                         this value also used for a secret key generation from password\n"
      "     --key               specify the name of file with the secret key\n"
+     "     --no-derive         do not use derived keys for file authentication"
      " -o, --output            set the output file for generated authentication or integrity codes\n"
      " -p, --pattern           set the pattern which is used to find files\n"
      " -r, --recursive         recursive search of files\n"
      "     --reverse-order     output of authentication or integrity code in reverse byte order\n"
-     "     --salt              set the initial value of PBKDF2 function for a secret key generaton from password\n"
+     "     --seed              set the initial value of key derivation functions (is used only for file authentication)\n"
      "     --tag               create a BSD-style checksum format\n"
   ));
   aktool_print_common_options();

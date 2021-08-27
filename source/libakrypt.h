@@ -701,12 +701,12 @@ extern "C" {
  dll_export int ak_bckey_set_key_random( ak_bckey , ak_random );
 /*! \brief Присвоение ключу алгоритма блочного шифрования значения, выработанного из пароля. */
  dll_export int ak_bckey_set_key_from_password( ak_bckey ,
-                                const ak_pointer , const size_t , const ak_pointer , const size_t );
+                               const ak_pointer , const size_t , const ak_pointer , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция вырабатывает пару ключей алгоритма блочного шифрования из заданного
    пользователем пароля. */
- int ak_bckey_create_key_pair_from_password( ak_bckey , ak_bckey , ak_oid ,
+ dll_export int ak_bckey_create_key_pair_from_password( ak_bckey , ak_bckey , ak_oid ,
                             const char * , const size_t , ak_uint8 *, const size_t, const size_t );
 /** @} */
 
@@ -941,7 +941,14 @@ extern "C" {
 /*! \brief Присвоение секретному ключу значения, выработанного из пароля */
  dll_export int ak_hmac_set_key_from_password( ak_hmac , const ak_pointer , const size_t ,
                                                                  const ak_pointer , const size_t );
-/** @} */
+
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup skey-doc-derive Функции выработки производных секретных ключей
+@{ */
+/*! Функция выработки производного ключа, согласно Р 50.1.113-2016, раздел 4.4. */
+ dll_export ak_pointer ak_skey_new_derive_kdf256( ak_oid , ak_pointer ,
+                                               ak_uint8* , const size_t, ak_uint8*, const size_t );
+/** @} *//** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup mac-doc Вычисление кодов целостности (хеширование и имитозащита)
