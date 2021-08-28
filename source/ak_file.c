@@ -117,8 +117,8 @@
            ak_snprintf( szDir, MAX_PATH-1, "%s\\%s", root,  ffd.cFileName );
           #endif
 
-           if(( error = ak_file_find( szDir, mask, function, ptr, tree )) != ak_error_ok )
-             ak_error_message_fmt( error,
+           if(( ev = ak_file_find( szDir, mask, function, ptr, tree )) != ak_error_ok )
+             ak_error_message_fmt( error = ev,
                                          __func__, "access to \"%s\" directory denied", filename );
          }
        } else {
@@ -167,8 +167,9 @@
       if( tree ) { // выполняем рекурсию для вложенных каталогов
         memset( filename, 0, FILENAME_MAX );
         ak_snprintf( filename, FILENAME_MAX, "%s/%s", root, ent->d_name );
-        if(( error = ak_file_find( filename, mask, function, ptr, tree )) != ak_error_ok )
-          ak_error_message_fmt( error, __func__, "access to \"%s\" directory denied", filename );
+        if(( ev = ak_file_find( filename, mask, function, ptr, tree )) != ak_error_ok ) {
+          ak_error_message_fmt( error = ev, __func__, "access to \"%s\" directory denied", filename );
+        }
       }
     } else
        if( ent->d_type == DT_REG ) { // обрабатываем только обычные файлы

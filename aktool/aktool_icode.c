@@ -30,14 +30,15 @@
      { "output",              1, NULL,  'o' },
      { "recursive",           0, NULL,  'r' },
      { "reverse-order",       0, NULL,  254 },
+     { "seed",                1, NULL,  253 },
      { "tag",                 0, NULL,  250 },
+     { "mode",                1, NULL,  'm' },
+     { "no-derive",           0, NULL,  160 },
 
     /* аналоги из aktool_key */
      { "key",                 1, NULL,  203 },
      { "inpass-hex",          1, NULL,  251 },
      { "inpass",              1, NULL,  252 },
-     { "seed",                1, NULL,  253 },
-     { "no-derive",           0, NULL,  160 },
 
    /* это стандартые для всех программ опции */
      aktool_common_functions_definition,
@@ -46,6 +47,7 @@
 
  /* устанавливаем значения по-умолчанию */
   ki.method = ak_oid_find_by_name( "streebog256" );
+  ki.mode = NULL;
   ki.outfp = NULL;
   ki.pattern =
   #ifdef _WIN32
@@ -60,16 +62,36 @@
 
  /* разбираем опции командной строки */
   do {
-       next_option = getopt_long( argc, argv, "ha:p:ro:", long_options, NULL );
+       next_option = getopt_long( argc, argv, "ha:p:ro:m:", long_options, NULL );
        switch( next_option )
       {
         aktool_common_functions_run( aktool_icode_help );
 
-        case 'a': /* --algorithm  устанавливаем имя криптографического алгоритма генерации ключей */
+        case 'a': /* --algorithm  устанавливаем имя криптографического алгоритма */
                    if(( ki.method = ak_oid_find_by_ni( optarg )) == NULL ) {
                      aktool_error(_("using unsupported name or identifier \"%s\""), optarg );
                      printf(_("try \"aktool s --oids\" for list of all available identifiers\n"));
                      return EXIT_FAILURE;
+                   }
+                   break;
+
+        case 'm': /* --mode  устанавливаем режим использования криптографического алгоритма */
+                   if(( ki.mode = ak_oid_find_by_ni( optarg )) == NULL ) {
+                     aktool_error(_("using unsupported name or identifier \"%s\""), optarg );
+                     printf(_("try \"aktool s --oids\" for list of all available identifiers\n"));
+                     return EXIT_FAILURE;
+                   }
+                   if( ki.mode->engine != block_cipher ) {
+                     aktool_error(_("you must use the block cipher mode as an argument to the --mode option"));
+                     printf(_("try \"aktool s --oid cipher\" for list of all available identifiers\n"));
+                     return EXIT_FAILURE;
+                   }
+                   switch( ki.mode->mode ) {
+                     case mac: /* здесь перечисляются допустимые режимы выработки имитовставки */
+                       break;
+                     default:
+                       aktool_error(_("you must use authentication mode for block cipher"));
+                       return EXIT_FAILURE;
                    }
                    break;
 
@@ -187,13 +209,17 @@
 /* ----------------------------------------------------------------------------------------------- */
  static int aktool_icode_function( const char *filename, ak_pointer ptr )
 {
+  handle_ptr_t *st = ptr;
   ak_uint8 buffer[256];
   ak_pointer kh = NULL;
-  handle_ptr_t *hdl = ptr;
   int error = ak_error_ok;
   char flongname[FILENAME_MAX];
 
-  if( sizeof( buffer ) < hdl->tagsize ) return ak_error_wrong_length;
+ /* проверяем размер доступной памяти для вычисления имитовставки */
+  if( sizeof( buffer ) < st->tagsize ) {
+    st->errcount++;
+    return ak_error_wrong_length;
+  }
 
  /* файл для вывода результатов не хешируем */
   if( ki.outfp != stdout ) {
@@ -209,63 +235,64 @@
   }
 
  /* вырабатываем производный ключ (если пользователь не запретил) */
-  if( !ki.key_derive || hdl->oid->engine == hash_function ) {
-    kh = hdl->handle;
+  if( !ki.key_derive || st->oid->engine == hash_function ) {
+    kh = st->handle;
   }
    else {
-    if(( kh = ak_skey_new_derive_kdf256( hdl->oid, hdl->handle,
+    if(( kh = ak_skey_new_derive_kdf256( st->oid, st->handle,
                                            (ak_uint8 *)filename, strlen( filename ),
                                             ki.seed != NULL ? (ak_uint8 *)ki.seed : NULL,
                                             ki.seed != NULL ? strlen( ki.seed ) : 0 )) == NULL ) {
       aktool_error(_("incorrect creation of derivative key for %s"), filename );
-      hdl->errcount++;
+      st->errcount++;
       return ak_error_get_value();
     }
   }
 
  /* проверяем ресурс секретного ключа */
-  if( hdl->oid->engine == block_cipher ) {
+  if( st->oid->engine == block_cipher ) {
     struct file fs;
     if(( error = ak_file_open_to_read( &fs, filename )) != ak_error_ok ) {
       aktool_error(_("access error to %s [%s]"), filename, strerror( errno ));
-      hdl->errcount++;
-      return error;
-    }    
-    if( ((ak_bckey)kh)->key.resource.value.counter < (ssize_t)(1 + fs.size/hdl->tagsize )) {
-      hdl->errcount++;
-      aktool_error(_("low key resource for %s"), filename );
-      ak_file_close( &fs );
-      return ak_error_low_key_resource;
+      st->errcount++;
+      goto labex;
+    }
+    if( ((ak_bckey)kh)->key.resource.value.counter < (ssize_t)(1 + fs.size/st->tagsize )) {
+      st->errcount++;
+      aktool_error(_("low key resource for %s (%lld bytes)"), filename, fs.size );
+      error = ak_error_low_key_resource;
     }
     ak_file_close( &fs );
+    if( error != ak_error_ok ) goto labex;
   }
 
  /* хешируем */
-  if(( error = hdl->icode( kh, /* производный ключ */
-                              filename, buffer, hdl->tagsize )) != ak_error_ok ) {
+  if(( error = st->icode( kh, /* производный ключ */
+                              filename, buffer, st->tagsize )) != ak_error_ok ) {
     aktool_error(_("incorrect integrity code calculation for %s"), filename );
-    hdl->errcount++;
+    st->errcount++;
     return error;
   }
 
  /* теперь вывод результата */
   if( ki.tag ) { /* вывод bsd */
-    fprintf( ki.outfp, "%s (%s) = %s\n", hdl->oid->name[0], filename,
-                                       ak_ptr_to_hexstr( buffer, hdl->tagsize, ki.reverse_order ));
+    fprintf( ki.outfp, "%s (%s) = %s\n", st->oid->name[0], filename,
+                                       ak_ptr_to_hexstr( buffer, st->tagsize, ki.reverse_order ));
   } else { /* вывод линуксовый */
       fprintf( ki.outfp, "%s %s\n",
-                            ak_ptr_to_hexstr( buffer, hdl->tagsize, ki.reverse_order ), filename );
+                            ak_ptr_to_hexstr( buffer, st->tagsize, ki.reverse_order ), filename );
     }
 
-  if( kh != hdl->handle ) ak_oid_delete_object( hdl->oid, kh );
- return ak_error_ok;
+  labex:
+   if( kh != st->handle ) ak_oid_delete_object( st->oid, kh );
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_icode_work( int argc, tchar *argv[] )
 {
-   size_t errcount = 0;
-   handle_ptr_t hdl = { .handle = NULL, .icode = NULL };
+   handle_ptr_t st;
+   int errcount = 0;
 
   /* проверяем, что файлы для контроля заданы */
    ++optind; /* пропускаем команду - i или icode */
@@ -275,101 +302,75 @@
      return EXIT_FAILURE;
    }
 
-  /* если задан ключ, то
-     считываем его и устанавливаем --algorithm соответствующим ключу */
    if( strlen( ki.key_file ) != 0 ) {
      ak_libakrypt_set_password_read_function( aktool_load_user_password );
-     if(( hdl.handle = ak_skey_load_from_file( ki.key_file )) == NULL ) {
+     if(( st.handle = ak_skey_load_from_file( ki.key_file )) == NULL ) {
        if( !ki.quiet ) aktool_error(_("wrong reading a secret key from %s file"), ki.key_file );
        return EXIT_FAILURE;
      }
-
-     switch( ((ak_skey) hdl.handle)->oid->engine ) {
+     st.oid = ((ak_skey) st.handle)->oid;
+     switch( st.oid->engine ) {
        case hmac_function:
-         hdl.icode = ( ak_function_icode_file *)ak_hmac_file;
-         hdl.tagsize = ak_hmac_get_tag_size( hdl.handle );
+         st.icode = ( ak_function_icode_file *) ak_hmac_file;
+         st.tagsize = ak_hmac_get_tag_size( st.handle );
          break;
 
-       case block_cipher: /* для поддержки aead необходимо учитывать значение параметра --algorithm */
-         hdl.icode = ( ak_function_icode_file *)ak_bckey_cmac_file;
-         hdl.tagsize = ((ak_bckey)hdl.handle)->bsize;
+       case block_cipher:
+         if( ki.mode == NULL ) {
+           aktool_error(_("you need specify the argument of --mode option"));
+           if( st.handle != NULL ) ak_oid_delete_object( ki.method, st.handle );
+           return EXIT_FAILURE;
+         }
+         switch( ki.mode->mode ) {
+           case mac: /* здесь перечисляются допустимые режимы выработки имитовставки */
+             st.icode = ( ak_function_icode_file *) ak_bckey_cmac_file;
+             break;
+
+           default:
+             aktool_error(_("you must use authentication mode for block cipher"));
+             return EXIT_FAILURE;
+         }
+         st.oid = ki.mode;
+         st.tagsize = ((ak_bckey)st.handle)->bsize;
          break;
 
        default:
-         ki.method = ((ak_skey)hdl.handle)->oid;
+         ki.method = ((ak_skey)st.handle)->oid;
          aktool_error(_(
                 "%s is not valid identifier for integrity checking algorithm (wrong engine: %s)"),
                             ki.method->name[0], ak_libakrypt_get_engine_name( ki.method->engine ));
-         if( hdl.handle != NULL ) ak_oid_delete_object( ki.method, hdl.handle );
+         if( st.handle != NULL ) ak_oid_delete_object( ki.method, st.handle );
          return EXIT_FAILURE;
      }
-     hdl.oid = ((ak_skey) hdl.handle)->oid;
-
-   } /* if( strlen ki.key_file .. ) */
-    else { /* здесь мы ориентируемся на алгоритм, указанный пользователем и, при необходимости,
-              вырабатываем ключ из пароля */
-      if(( hdl.handle = ak_oid_new_object( ki.method )) == NULL ) {
-            if( !ki.quiet ) aktool_error(_("wrong creation context for %s algorithm"),
+   }
+    else { /* ключ не определен, следовательно, создаем контекст алгоритма хеширования */
+      if( ki.method->engine != hash_function ) {
+        aktool_error(_("the --algorithm option argument should be the name of the hash function"));
+        return EXIT_FAILURE;
+      }
+      if(( st.handle = ak_oid_new_object( ki.method )) == NULL ) {
+        if( !ki.quiet ) aktool_error(_("wrong creation context for %s algorithm"),
                                                                               ki.method->name[0] );
-            return EXIT_FAILURE;
+        return EXIT_FAILURE;
       }
-
-      switch( ki.method->engine ) {
-        case hash_function:
-          hdl.icode = ( ak_function_icode_file *) ak_hash_file;
-          hdl.tagsize = ak_hash_get_tag_size( hdl.handle );
-          break;
-
-        case hmac_function:
-          hdl.icode = ( ak_function_icode_file *) ak_hmac_file;
-          hdl.tagsize = ak_hmac_get_tag_size( hdl.handle );
-          break;
-
-        case block_cipher:
-          hdl.icode = ( ak_function_icode_file *) ak_bckey_cmac_file;
-          hdl.tagsize = ((ak_bckey)hdl.handle)->bsize;
-          break;
-
-        default:
-          aktool_error(_(
-                "%s is not valid identifier for integrity checking algorithm (wrong engine: %s)"),
-                            ki.method->name[0], ak_libakrypt_get_engine_name( ki.method->engine ));
-          ak_oid_delete_object( ki.method, hdl.handle );
-          return EXIT_FAILURE;
-      }
-      hdl.oid = ki.method;
-
-      if( ki.method->engine != hash_function ){ /* вырабатываем ключ из пароля */
-        if( ki.leninpass == 0 ) {
-          ak_libakrypt_set_password_read_prompt(_(
-                                               "generation an integrity key, input secret seed:"));
-          if(( ki.leninpass = aktool_load_user_password( NULL, ki.inpass,
-                                                                 sizeof( ki.inpass ), 0 )) < 1 ) {
-            ak_oid_delete_object( ki.method, hdl.handle );
-            return EXIT_FAILURE;
-          }
-        }
-        if( ki.method->func.first.set_key_from_password( hdl.handle, ki.inpass, ki.leninpass,
-                       ki.seed != NULL ? ki.seed : "Rj0z[1c<a3)oZq.s",
-                       ki.seed != NULL ? ak_min( strlen( ki.seed ), 16 ) : 16 ) != ak_error_ok ) {
-            ak_oid_delete_object( ki.method, hdl.handle );
-            return EXIT_FAILURE;
-        }
-      }
-    } /* else if( strlen ki.key_file .. ) */
+      st.icode = ( ak_function_icode_file *) ak_hash_file;
+      st.tagsize = ak_hash_get_tag_size( st.handle );
+      st.oid = ((ak_hash)st.handle)->oid;
+    }
+   st.errcount = 0;
 
   /* только сейчас начиаем основной цикл хеширования файлов и каталогов, указанных пользователем */
    while( optind < argc ) {
      char *value = argv[optind++];
      switch( ak_file_or_directory( value )) {
         case DT_DIR:
-          hdl.errcount = 0;
+          st.errcount = 0;
           if( ak_file_find( value, ki.pattern,
-                            aktool_icode_function, &hdl, ki.tree ) != ak_error_ok )
-                                                                          errcount += hdl.errcount;
+                            aktool_icode_function, &st, ki.tree ) != ak_error_ok )
+                                                                           errcount += st.errcount;
           break;
 
-        case DT_REG: if( aktool_icode_function( value, &hdl )!= ak_error_ok ) errcount++;
+        case DT_REG: if( aktool_icode_function( value, &st )!= ak_error_ok ) errcount++;
           break;
 
         default: aktool_error(_("%s is unsupported argument"), value ); errcount++;
@@ -378,16 +379,16 @@
    }
 
   /* освобождаем выделенную ранее память */
-   if( hdl.handle != NULL ) {
-     if( hdl.icode == (ak_function_icode_file *)ak_hash_file )
-       ak_oid_delete_object( ((ak_hash)hdl.handle)->oid, hdl.handle );
-      else ak_oid_delete_object( ((ak_skey)hdl.handle)->oid, hdl.handle );
+   if( st.handle != NULL ) {
+     if( st.icode == (ak_function_icode_file *)ak_hash_file )
+       ak_oid_delete_object( ((ak_hash)st.handle)->oid, st.handle );
+      else ak_oid_delete_object( ((ak_skey)st.handle)->oid, st.handle );
    }
-  if( errcount ) {
-      if( !ki.quiet ) aktool_error(_("aktool found %d error(s), "
+   if( errcount ) {
+     if( !ki.quiet ) aktool_error(_("aktool found %d error(s), "
             "rerun aktool with \"--audit-file stderr\" option or see syslog messages"), errcount );
-    return EXIT_FAILURE;
-  }
+     return EXIT_FAILURE;
+   }
 
  return EXIT_SUCCESS;
 }
@@ -398,19 +399,18 @@
   printf(
    _("aktool icode [options] [files or directories]  - calculate or checking integrity codes for given files\n\n"
      "available options:\n"
-     " -a, --algorithm         set the name or identifier of integrity function or block cipher\n"
+     " -a, --algorithm         set the name or identifier of integrity function (used only for integrity checking)\n"
      "                         default algorithm is \"streebog256\" defined by GOST R 34.10-2012\n"
      "     --inpass            set the password for the secret key to be read directly in command line\n"
-     "                         this value also used for a secret key generation from password\n"
-     "     --inpass-hex        set the password for the secret key to be read directly in command line as hexademal string\n"
-     "                         this value also used for a secret key generation from password\n"
+     "     --inpass-hex        read the password for the secret key as hexademal string\n"
      "     --key               specify the name of file with the secret key\n"
-     "     --no-derive         do not use derived keys for file authentication"
+     " -m, --mode              set the block cipher mode [enambled values: cmac]\n"
+     "     --no-derive         do not use derived keys for file authentication\n"
      " -o, --output            set the output file for generated authentication or integrity codes\n"
      " -p, --pattern           set the pattern which is used to find files\n"
      " -r, --recursive         recursive search of files\n"
      "     --reverse-order     output of authentication or integrity code in reverse byte order\n"
-     "     --seed              set the initial value of key derivation functions (is used only for file authentication)\n"
+     "     --seed              set the initial value of key derivation functions (used only for file authentication)\n"
      "     --tag               create a BSD-style checksum format\n"
   ));
   aktool_print_common_options();
