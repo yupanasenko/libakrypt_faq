@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-08-26 10:33+0300\n"
+"POT-Creation-Date: 2021-08-29 03:35+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -456,7 +456,7 @@ msgstr ""
 
 #: aktool_key.c:277 aktool_key.c:276 aktool_key.c:296 aktool_key.c:822
 #: aktool_key.c:1381 aktool_key.c:980 aktool_key.c:1172 aktool_key.c:1315
-#: aktool_key.c:1382 aktool_key.c:1985 aktool_icode.c:390
+#: aktool_key.c:1382 aktool_key.c:1985 aktool_icode.c:390 aktool_icode.c:598
 #, c-format
 msgid "for usage examples try \"man aktool\"\n"
 msgstr ""
@@ -616,7 +616,7 @@ msgid "k"
 msgstr ""
 
 #: aktool.c:117 aktool_key.c:60 aktool.c:118 aktool_key.c:71 aktool_key.c:72
-#: aktool_key.c:73 aktool_key.c:74 aktool_icode.c:36
+#: aktool_key.c:73 aktool_key.c:74 aktool_icode.c:36 aktool_icode.c:46
 msgid "key"
 msgstr ""
 
@@ -741,7 +741,7 @@ msgstr ""
 msgid "pem"
 msgstr ""
 
-#: aktool_asn1.c:36 aktool_icode.c:30
+#: aktool_asn1.c:36 aktool_icode.c:30 aktool_icode.c:34
 msgid "output"
 msgstr ""
 
@@ -806,7 +806,7 @@ msgid "file %s is wrong\n"
 msgstr ""
 
 #: aktool_key.c:40 aktool_key.c:51 aktool_key.c:52 aktool_key.c:53
-#: aktool_key.c:54 aktool_icode.c:28
+#: aktool_key.c:54 aktool_icode.c:28 aktool_icode.c:32
 msgid "algorithm"
 msgstr ""
 
@@ -846,12 +846,12 @@ msgid "outpass"
 msgstr ""
 
 #: aktool_key.c:50 aktool_key.c:61 aktool_key.c:62 aktool_key.c:63
-#: aktool_key.c:64 aktool_icode.c:37
+#: aktool_key.c:64 aktool_icode.c:37 aktool_icode.c:47
 msgid "inpass-hex"
 msgstr ""
 
 #: aktool_key.c:51 aktool_key.c:62 aktool_key.c:63 aktool_key.c:64
-#: aktool_key.c:65 aktool_icode.c:38
+#: aktool_key.c:65 aktool_icode.c:38 aktool_icode.c:48
 msgid "inpass"
 msgstr ""
 
@@ -992,7 +992,7 @@ msgstr ""
 
 #: aktool_key.c:111 aktool_key.c:133 aktool_key.c:137 aktool_key.c:157
 #: aktool_key.c:138 aktool_key.c:158 aktool_key.c:141 aktool_key.c:161
-#: aktool_icode.c:69
+#: aktool_icode.c:69 aktool_icode.c:82 aktool_icode.c:90
 #, c-format
 msgid "try \"aktool s --oids\" for list of all available identifiers\n"
 msgstr ""
@@ -1025,7 +1025,7 @@ msgstr ""
 
 #: aktool_key.c:172 aktool_key.c:181 aktool_key.c:194 aktool_key.c:203
 #: aktool_key.c:242 aktool_key.c:251 aktool_key.c:243 aktool_key.c:252
-#: aktool_key.c:246 aktool_key.c:255 aktool_icode.c:110
+#: aktool_key.c:246 aktool_key.c:255 aktool_icode.c:110 aktool_icode.c:164
 msgid "the password cannot be zero length"
 msgstr ""
 
@@ -1038,7 +1038,7 @@ msgid ""
 msgstr ""
 
 #: aktool_key.c:212 aktool_key.c:234 aktool_key.c:282 aktool_key.c:283
-#: aktool_key.c:286 aktool_icode.c:124
+#: aktool_key.c:286 aktool_icode.c:124 aktool_icode.c:178
 #, c-format
 msgid ""
 "the password cannot be zero length, maybe input error, see --inpass-hex %s%s"
@@ -1355,7 +1355,7 @@ msgstr ""
 msgid "engine"
 msgstr ""
 
-#: aktool_show.c:86 aktool_show.c:98 aktool_show.c:159
+#: aktool_show.c:86 aktool_show.c:98 aktool_show.c:159 aktool_icode.c:39
 msgid "mode"
 msgstr ""
 
@@ -1422,7 +1422,8 @@ msgstr ""
 msgid "%-3s  %-26s"
 msgstr ""
 
-#: aktool_show.c:195 aktool_show.c:196 aktool_show.c:198
+#: aktool_show.c:195 aktool_show.c:196 aktool_show.c:198 aktool_icode.c:461
+#: aktool_icode.c:467
 msgid " "
 msgstr ""
 
@@ -1862,6 +1863,7 @@ msgstr ""
 
 #: aktool_key.c:1033 aktool_key.c:1122 aktool_key.c:1310 aktool_key.c:1243
 #: aktool_key.c:1537 aktool_key.c:1638 aktool_key.c:1712 aktool_icode.c:360
+#: aktool_icode.c:434
 #, c-format
 msgid ""
 "aktool found %d error(s), rerun aktool with \"--audit-file stderr\" option "
@@ -2117,6 +2119,7 @@ msgid "hns:a:o:t:vcs:"
 msgstr ""
 
 #: aktool_key.c:136 aktool_key.c:137 aktool_key.c:140 aktool_icode.c:68
+#: aktool_icode.c:81 aktool_icode.c:89
 #, c-format
 msgid "using unsupported name or identifier \"%s\""
 msgstr ""
@@ -2877,19 +2880,19 @@ msgid ""
 "certificates\n"
 msgstr ""
 
-#: aktool_icode.c:29
+#: aktool_icode.c:29 aktool_icode.c:33
 msgid "pattern"
 msgstr ""
 
-#: aktool_icode.c:31
+#: aktool_icode.c:31 aktool_icode.c:35
 msgid "recursive"
 msgstr ""
 
-#: aktool_icode.c:32
+#: aktool_icode.c:32 aktool_icode.c:36
 msgid "reverse-order"
 msgstr ""
 
-#: aktool_icode.c:33
+#: aktool_icode.c:33 aktool_icode.c:38
 msgid "tag"
 msgstr ""
 
@@ -2897,15 +2900,15 @@ msgstr ""
 msgid "salt"
 msgstr ""
 
-#: aktool_icode.c:47
+#: aktool_icode.c:47 aktool_icode.c:56
 msgid "streebog256"
 msgstr ""
 
-#: aktool_icode.c:51
+#: aktool_icode.c:51 aktool_icode.c:61
 msgid "*.*"
 msgstr ""
 
-#: aktool_icode.c:53
+#: aktool_icode.c:53 aktool_icode.c:63
 msgid "*"
 msgstr ""
 
@@ -2913,16 +2916,16 @@ msgstr ""
 msgid "ha:p:ro:"
 msgstr ""
 
-#: aktool_icode.c:80
+#: aktool_icode.c:80 aktool_icode.c:113
 msgid "w"
 msgstr ""
 
-#: aktool_icode.c:81
+#: aktool_icode.c:81 aktool_icode.c:114
 #, c-format
 msgid "checksum file \"%s\" cannot be created"
 msgstr ""
 
-#: aktool_icode.c:211
+#: aktool_icode.c:211 aktool_icode.c:285
 #, c-format
 msgid "access error to %s [%s]"
 msgstr ""
@@ -2932,39 +2935,39 @@ msgstr ""
 msgid "low resource of secret key (%s)"
 msgstr ""
 
-#: aktool_icode.c:224
+#: aktool_icode.c:224 aktool_icode.c:301
 #, c-format
 msgid "incorrect integrity code calculation for %s"
 msgstr ""
 
-#: aktool_icode.c:230
+#: aktool_icode.c:230 aktool_icode.c:308
 #, c-format
 msgid "%s (%s) = %s\n"
 msgstr ""
 
-#: aktool_icode.c:233
+#: aktool_icode.c:233 aktool_icode.c:311
 #, c-format
 msgid "%s %s\n"
 msgstr ""
 
-#: aktool_icode.c:250
+#: aktool_icode.c:250 aktool_icode.c:401
 msgid ""
 "the name of file or directory is not specified as the argument of the program"
 msgstr ""
 
-#: aktool_icode.c:259
+#: aktool_icode.c:259 aktool_icode.c:326
 #, c-format
 msgid "wrong reading a secret key from %s file"
 msgstr ""
 
-#: aktool_icode.c:277 aktool_icode.c:311
+#: aktool_icode.c:277 aktool_icode.c:311 aktool_icode.c:358
 #, c-format
 msgid ""
 "%s is not valid identifier for integrity checking algorithm (wrong engine: "
 "%s)"
 msgstr ""
 
-#: aktool_icode.c:288
+#: aktool_icode.c:288 aktool_icode.c:370
 #, c-format
 msgid "wrong creation context for %s algorithm"
 msgstr ""
@@ -2977,7 +2980,7 @@ msgstr ""
 msgid "Rj0z[1c<a3)oZq.s"
 msgstr ""
 
-#: aktool_icode.c:348
+#: aktool_icode.c:348 aktool_icode.c:422
 #, c-format
 msgid "%s is unsupported argument"
 msgstr ""
@@ -3010,5 +3013,134 @@ msgid ""
 "reverse byte order\n"
 "     --salt              set the initial value of PBKDF2 function for a "
 "secret key generaton from password\n"
+"     --tag               create a BSD-style checksum format\n"
+msgstr ""
+
+#: aktool_icode.c:37
+msgid "seed"
+msgstr ""
+
+#: aktool_icode.c:40
+msgid "no-derive"
+msgstr ""
+
+#: aktool_icode.c:41
+msgid "check"
+msgstr ""
+
+#: aktool_icode.c:42
+msgid "dont-show-stat"
+msgstr ""
+
+#: aktool_icode.c:43
+msgid "ignore-errors"
+msgstr ""
+
+#: aktool_icode.c:74
+msgid "ha:p:ro:m:c:"
+msgstr ""
+
+#: aktool_icode.c:94
+msgid "you must use the block cipher mode as an argument to the --mode option"
+msgstr ""
+
+#: aktool_icode.c:95
+#, c-format
+msgid "try \"aktool s --oid cipher\" for list of all available identifiers\n"
+msgstr ""
+
+#: aktool_icode.c:102 aktool_icode.c:348
+msgid "you must use authentication mode for block cipher"
+msgstr ""
+
+#: aktool_icode.c:275 aktool_icode.c:501
+#, c-format
+msgid "incorrect creation of derivative key for %s"
+msgstr ""
+
+#: aktool_icode.c:291
+#, c-format
+msgid "low key resource for %s (%lld bytes)"
+msgstr ""
+
+#: aktool_icode.c:338
+msgid "you need specify the argument of --mode option"
+msgstr ""
+
+#: aktool_icode.c:366
+msgid "the --algorithm option argument should be the name of the hash function"
+msgstr ""
+
+#: aktool_icode.c:457
+msgid "("
+msgstr ""
+
+#: aktool_icode.c:464 aktool_icode.c:485
+#, c-format
+msgid "incorrect icode string %s\n"
+msgstr ""
+
+#: aktool_icode.c:480
+msgid ")"
+msgstr ""
+
+#: aktool_icode.c:509
+#, c-format
+msgid "%s Wrong\n"
+msgstr ""
+
+#: aktool_icode.c:511
+#, c-format
+msgid "incorrect evaluation integrity code for \"%s\" file"
+msgstr ""
+
+#: aktool_icode.c:517
+#, c-format
+msgid "%s Ok\n"
+msgstr ""
+
+#: aktool_icode.c:520
+#, c-format
+msgid "%s %sWrong%s\n"
+msgstr ""
+
+#: aktool_icode.c:554
+#, c-format
+msgid ""
+"\n"
+"%s [%d lines, %d files, where: correct %d, wrong %d]\n"
+msgstr ""
+
+#: aktool_icode.c:577
+#, c-format
+msgid ""
+"aktool icode [options] [files or directories]  - calculate or checking "
+"integrity codes for given files\n"
+"\n"
+"available options:\n"
+" -a, --algorithm         set the name or identifier of integrity function "
+"(used only for integrity checking)\n"
+"                         default algorithm is \"streebog256\" defined by "
+"GOST R 34.10-2012\n"
+" -c, --check             check previously generated authrntication or "
+"integrity codes\n"
+"     --dont-show-stat    don't show a statistical results after checking\n"
+"     --ignore-errors     don't break a check if file is missing or "
+"corrupted\n"
+"     --inpass            set the password for the secret key to be read "
+"directly in command line\n"
+"     --inpass-hex        read the password for the secret key as hexademal "
+"string\n"
+"     --key               specify the name of file with the secret key\n"
+" -m, --mode              set the block cipher mode [enambled values: cmac]\n"
+"     --no-derive         do not use derived keys for file authentication\n"
+" -o, --output            set the output file for generated authentication or "
+"integrity codes\n"
+" -p, --pattern           set the pattern which is used to find files\n"
+" -r, --recursive         recursive search of files\n"
+"     --reverse-order     output of authentication or integrity code in "
+"reverse byte order\n"
+"     --seed              set the initial value of key derivation functions "
+"(used only for file authentication)\n"
 "     --tag               create a BSD-style checksum format\n"
 msgstr ""
