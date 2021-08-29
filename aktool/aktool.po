@@ -161,7 +161,7 @@ msgstr ""
 #: aktool.c:390 aktool.c:411
 #, c-format
 msgid "available commands (in short and long forms):\n"
-msgstr "доступные каманды (в короткой и полной формах):\n"
+msgstr "доступные команды (в короткой и полной формах):\n"
 
 #: aktool.c:261 aktool.c:283 aktool.c:284 aktool.c:285 aktool.c:394
 #: aktool.c:391 aktool.c:412

@@ -16,6 +16,10 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_icode_help( void );
  int aktool_icode_work( int argc, tchar *argv[] );
+ int aktool_icode_check( void );
+#if defined(_WIN32) || defined(_WIN64)
+ char* strtok_r( char *, const char *, char ** );
+#endif
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_icode( int argc, tchar *argv[] )
@@ -34,6 +38,9 @@
      { "tag",                 0, NULL,  250 },
      { "mode",                1, NULL,  'm' },
      { "no-derive",           0, NULL,  160 },
+     { "check",               1, NULL,  'c' },
+     { "dont-show-stat",      0, NULL,  161 },
+     { "ignore-errors",       0, NULL,  162 },
 
     /* аналоги из aktool_key */
      { "key",                 1, NULL,  203 },
@@ -59,10 +66,12 @@
   ki.outfp = stdout;
   ki.seed = NULL;
   ki.key_derive = ak_true;
+  ki.ignore_errors = ak_false;
+  ki.dont_show_stat = ak_false;
 
  /* разбираем опции командной строки */
   do {
-       next_option = getopt_long( argc, argv, "ha:p:ro:m:", long_options, NULL );
+       next_option = getopt_long( argc, argv, "ha:p:ro:m:c:", long_options, NULL );
        switch( next_option )
       {
         aktool_common_functions_run( aktool_icode_help );
@@ -107,6 +116,15 @@
                    }
                    break;
 
+        case 'c' : /* выполняем проверку контрольных сумм */
+                   work = do_check;
+                 #ifdef _WIN32
+                   GetFullPathName( optarg, FILENAME_MAX, ki.os_file, NULL );
+                 #else
+                   realpath( optarg , ki.os_file );
+                 #endif
+                   break;
+
         case 'p' : /* устанавливаем дополнительную маску для поиска файлов */
                    ki.pattern = optarg;
                    break;
@@ -129,6 +147,14 @@
 
         case 160: /* --no-derive */
                    ki.key_derive = ak_false;
+                   break;
+
+        case 161: /* --dont-show-stat */
+                   ki.dont_show_stat = ak_true;
+                   break;
+
+        case 162: /* --ignore-errors */
+                   ki.ignore_errors = ak_true;
                    break;
 
         case 252: /* --inpass */
@@ -182,6 +208,7 @@
        break;
 
      case do_check:
+       exit_status = aktool_icode_check();
        break;
 
      default:
@@ -204,6 +231,8 @@
   size_t tagsize;
   ak_function_icode_file *icode;
   int errcount;
+  int total;
+  int lines;
  } handle_ptr_t;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -289,9 +318,80 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ static int aktool_create_handle( handle_ptr_t *st )
+{
+   if( strlen( ki.key_file ) != 0 ) {
+     ak_libakrypt_set_password_read_function( aktool_load_user_password );
+     if(( st->handle = ak_skey_load_from_file( ki.key_file )) == NULL ) {
+       if( !ki.quiet ) aktool_error(_("wrong reading a secret key from %s file"), ki.key_file );
+       return EXIT_FAILURE;
+     }
+     st->oid = ((ak_skey) st->handle)->oid;
+     switch( st->oid->engine ) {
+       case hmac_function:
+         st->icode = ( ak_function_icode_file *) ak_hmac_file;
+         st->tagsize = ak_hmac_get_tag_size( st->handle );
+         break;
+
+       case block_cipher:
+         if( ki.mode == NULL ) {
+           aktool_error(_("you need specify the argument of --mode option"));
+           if( st->handle != NULL ) ak_oid_delete_object( ki.method, st->handle );
+           return EXIT_FAILURE;
+         }
+         switch( ki.mode->mode ) {
+           case mac: /* здесь перечисляются допустимые режимы выработки имитовставки */
+             st->icode = ( ak_function_icode_file *) ak_bckey_cmac_file;
+             break;
+
+           default:
+             aktool_error(_("you must use authentication mode for block cipher"));
+             return EXIT_FAILURE;
+         }
+         st->oid = ki.mode;
+         st->tagsize = ((ak_bckey)st->handle)->bsize;
+         break;
+
+       default:
+         ki.method = ((ak_skey)st->handle)->oid;
+         aktool_error(_(
+                "%s is not valid identifier for integrity checking algorithm (wrong engine: %s)"),
+                            ki.method->name[0], ak_libakrypt_get_engine_name( ki.method->engine ));
+         if( st->handle != NULL ) ak_oid_delete_object( ki.method, st->handle );
+         return EXIT_FAILURE;
+     }
+   }
+    else { /* ключ не определен, следовательно, создаем контекст алгоритма хеширования */
+      if( ki.method->engine != hash_function ) {
+        aktool_error(_("the --algorithm option argument should be the name of the hash function"));
+        return EXIT_FAILURE;
+      }
+      if(( st->handle = ak_oid_new_object( ki.method )) == NULL ) {
+        if( !ki.quiet ) aktool_error(_("wrong creation context for %s algorithm"),
+                                                                              ki.method->name[0] );
+        return EXIT_FAILURE;
+      }
+      st->icode = ( ak_function_icode_file *) ak_hash_file;
+      st->tagsize = ak_hash_get_tag_size( st->handle );
+      st->oid = ((ak_hash)st->handle)->oid;
+    }
+   st->errcount = 0;
+
+ return EXIT_SUCCESS;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int aktool_icode_work( int argc, tchar *argv[] )
 {
-   handle_ptr_t st;
+   handle_ptr_t st = {
+     .errcount = 0,
+     .handle = NULL,
+     .icode = NULL,
+     .lines = 0,
+     .oid = NULL,
+     .tagsize = 0,
+     .total = 0
+   };
    int errcount = 0;
 
   /* проверяем, что файлы для контроля заданы */
@@ -302,62 +402,8 @@
      return EXIT_FAILURE;
    }
 
-   if( strlen( ki.key_file ) != 0 ) {
-     ak_libakrypt_set_password_read_function( aktool_load_user_password );
-     if(( st.handle = ak_skey_load_from_file( ki.key_file )) == NULL ) {
-       if( !ki.quiet ) aktool_error(_("wrong reading a secret key from %s file"), ki.key_file );
-       return EXIT_FAILURE;
-     }
-     st.oid = ((ak_skey) st.handle)->oid;
-     switch( st.oid->engine ) {
-       case hmac_function:
-         st.icode = ( ak_function_icode_file *) ak_hmac_file;
-         st.tagsize = ak_hmac_get_tag_size( st.handle );
-         break;
-
-       case block_cipher:
-         if( ki.mode == NULL ) {
-           aktool_error(_("you need specify the argument of --mode option"));
-           if( st.handle != NULL ) ak_oid_delete_object( ki.method, st.handle );
-           return EXIT_FAILURE;
-         }
-         switch( ki.mode->mode ) {
-           case mac: /* здесь перечисляются допустимые режимы выработки имитовставки */
-             st.icode = ( ak_function_icode_file *) ak_bckey_cmac_file;
-             break;
-
-           default:
-             aktool_error(_("you must use authentication mode for block cipher"));
-             return EXIT_FAILURE;
-         }
-         st.oid = ki.mode;
-         st.tagsize = ((ak_bckey)st.handle)->bsize;
-         break;
-
-       default:
-         ki.method = ((ak_skey)st.handle)->oid;
-         aktool_error(_(
-                "%s is not valid identifier for integrity checking algorithm (wrong engine: %s)"),
-                            ki.method->name[0], ak_libakrypt_get_engine_name( ki.method->engine ));
-         if( st.handle != NULL ) ak_oid_delete_object( ki.method, st.handle );
-         return EXIT_FAILURE;
-     }
-   }
-    else { /* ключ не определен, следовательно, создаем контекст алгоритма хеширования */
-      if( ki.method->engine != hash_function ) {
-        aktool_error(_("the --algorithm option argument should be the name of the hash function"));
-        return EXIT_FAILURE;
-      }
-      if(( st.handle = ak_oid_new_object( ki.method )) == NULL ) {
-        if( !ki.quiet ) aktool_error(_("wrong creation context for %s algorithm"),
-                                                                              ki.method->name[0] );
-        return EXIT_FAILURE;
-      }
-      st.icode = ( ak_function_icode_file *) ak_hash_file;
-      st.tagsize = ak_hash_get_tag_size( st.handle );
-      st.oid = ((ak_hash)st.handle)->oid;
-    }
-   st.errcount = 0;
+  /* создаем контекст хеширования (имитозащиты) и проверяем входные параметры  */
+   if( aktool_create_handle( &st ) != EXIT_SUCCESS ) return EXIT_FAILURE;
 
   /* только сейчас начиаем основной цикл хеширования файлов и каталогов, указанных пользователем */
    while( optind < argc ) {
@@ -394,6 +440,137 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*                    Реализация алгоритма проверки файла с контрольными суммами                   */
+/* ----------------------------------------------------------------------------------------------- */
+ static int aktool_icode_check_function( const char *string, ak_pointer ptr )
+{
+  size_t len;
+  ak_pointer kh = NULL;
+  handle_ptr_t *st = ptr;
+  ak_uint8 buffer[256], out2[256];
+  char *substr = NULL, *filename = NULL, *icode = NULL;
+  int error = ak_error_ok, reterror = ak_error_undefined_value;
+
+  st->lines++;
+
+ /* получаем первый токен */
+  if(( icode = strtok_r( (char *)string, "(", &substr )) == NULL ) return reterror;
+  if( strlen( substr ) == 0 ) { /* строка не содержит скобки => вариант строки в формате Linux */
+
+   /* получаем первый токен - это должно быть значение контрольной суммы */
+    if(( icode = strtok_r( (char *)string, " ", &substr )) == NULL ) return reterror;
+    if(( error = ak_hexstr_to_ptr( icode, out2, sizeof( out2 ), ki.reverse_order )) != ak_error_ok ) {
+      st->errcount++;
+      return ak_error_message_fmt( error, __func__, "incorrect icode string %s\n", icode );
+    }
+   /* теперь второй токен - это имя файла */
+    if(( filename = strtok_r( substr, " ", &substr )) == NULL ) return reterror;
+
+  } else { /* обнаружилась скобка => вариант строки в формате BSD */
+
+   /* теперь надо проверить, что пролученное значение действительно является
+      допустимым криптографическим алгоритмом */
+
+   /* сперва уничтожаем пробелы в конце слова и получаем имя */
+    if( strlen( icode ) > 1024 ) return reterror;
+    if(( len = strlen( icode ) - 1 ) == 0 ) return reterror;
+    while(( icode[len] == ' ' ) && ( len )) icode[len--] = 0;
+
+   /* теперь второй токен - это имя файла */
+    if(( filename = strtok_r( substr, ")", &substr )) == NULL ) return reterror;
+
+   /* теперь, контрольная сумма */
+    while(( *substr == ' ' ) || ( *substr == '=' )) substr++;
+    if(( error = ak_hexstr_to_ptr( substr, out2, sizeof( out2 ), ki.reverse_order )) != ak_error_ok ) {
+      return ak_error_message_fmt( ak_error_ok, __func__, "incorrect icode string %s\n", icode );
+    }
+  }
+
+ /* приступаем к проверке*/
+  st->total++;
+
+ /* вырабатываем производный ключ (если пользователь не запретил) */
+  if( !ki.key_derive || st->oid->engine == hash_function ) {
+    kh = st->handle;
+  }
+   else {
+    if(( kh = ak_skey_new_derive_kdf256( st->oid, st->handle,
+                                           (ak_uint8 *)filename, strlen( filename ),
+                                            ki.seed != NULL ? (ak_uint8 *)ki.seed : NULL,
+                                            ki.seed != NULL ? strlen( ki.seed ) : 0 )) == NULL ) {
+      aktool_error(_("incorrect creation of derivative key for %s"), filename );
+      st->errcount++;
+      return ak_error_get_value();
+    }
+  }
+
+ /* проверяем контрольную сумму */
+  if(( error = st->icode( kh, filename, buffer, sizeof( buffer ))) != ak_error_ok ) {
+    if( !ki.quiet ) printf(_("%s Wrong\n"), filename );
+    ak_error_message_fmt( error, __func__,
+                               "incorrect evaluation integrity code for \"%s\" file", filename );
+    st->errcount++;
+    goto labex;
+  }
+
+  if( ak_ptr_is_equal_with_log( buffer, out2, st->tagsize ) == ak_true ) {
+    if( !ki.quiet ) printf("%s Ok\n", filename );
+    goto labex;
+  } else {
+     if( !ki.quiet ) printf(_("%s %sWrong%s\n"), filename,
+                                          ak_error_get_start_string(), ak_error_get_end_string());
+     st->errcount++;
+     if( ki.ignore_errors ) error = ak_error_ok;
+       else error = ak_error_not_equal_data;
+    }
+
+  labex:
+   if( kh != st->handle ) ak_oid_delete_object( st->oid, kh );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_icode_check( void )
+{
+   handle_ptr_t st = {
+     .errcount = 0,
+     .handle = NULL,
+     .icode = NULL,
+     .lines = 0,
+     .oid = NULL,
+     .tagsize = 0,
+     .total = 0
+   };
+   int exit_status = EXIT_FAILURE;
+
+ /* создаем контекст хеширования (имитозащиты) и проверяем входные параметры  */
+  if( aktool_create_handle( &st ) != EXIT_SUCCESS ) return EXIT_FAILURE;
+
+ /* теперь разбираем файл со строками и ведем статичтику происходящего */
+  if( ak_file_read_by_lines( ki.os_file, aktool_icode_check_function, &st ) == ak_error_ok ) {
+    if( !ki.quiet ) {
+      if( !ki.dont_show_stat ) {
+        printf(_("\n%s [%d lines, %d files, where: correct %d, wrong %d]\n"),
+                         ki.os_file, st.lines, st.total, ( st.total - st.errcount ), st.errcount );
+
+      }
+    }
+    if( !st.errcount ) exit_status = EXIT_SUCCESS;
+  }
+
+ /* освобождаем выделенную ранее память */
+  if( st.handle != NULL ) {
+    if( st.icode == (ak_function_icode_file *)ak_hash_file )
+      ak_oid_delete_object( ((ak_hash)st.handle)->oid, st.handle );
+     else ak_oid_delete_object( ((ak_skey)st.handle)->oid, st.handle );
+  }
+
+ return exit_status;
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
  int aktool_icode_help( void )
 {
   printf(
@@ -401,6 +578,9 @@
      "available options:\n"
      " -a, --algorithm         set the name or identifier of integrity function (used only for integrity checking)\n"
      "                         default algorithm is \"streebog256\" defined by GOST R 34.10-2012\n"
+     " -c, --check             check previously generated authrntication or integrity codes\n"
+     "     --dont-show-stat    don't show a statistical results after checking\n"
+     "     --ignore-errors     don't break a check if file is missing or corrupted\n"
      "     --inpass            set the password for the secret key to be read directly in command line\n"
      "     --inpass-hex        read the password for the secret key as hexademal string\n"
      "     --key               specify the name of file with the secret key\n"
@@ -418,6 +598,28 @@
   printf(_("for usage examples try \"man aktool\"\n" ));
  return EXIT_SUCCESS;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+#if defined(_WIN32) || defined(_WIN64)
+ char* strtok_r( char *str, const char *delim, char **nextp)
+{
+ char *ret;
+
+    if (str == NULL) { str = *nextp; }
+
+    str += strspn(str, delim);
+    if (*str == '\0') { return NULL; }
+
+    ret = str;
+    str += strcspn(str, delim);
+
+    if (*str) { *str++ = '\0'; }
+
+    *nextp = str;
+    return ret;
+}
+#endif
+
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                 aktool_icode.c  */
 /* ----------------------------------------------------------------------------------------------- */
