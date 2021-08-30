@@ -781,8 +781,10 @@
    char c = 0;
    DWORD mode, count;
    HANDLE ih = GetStdHandle( STD_INPUT_HANDLE  );
-   if( !GetConsoleMode( ih, &mode ))
-     return ak_error_message( ak_error_terminal, __func__, "not connected to a console" );
+
+   if( !GetConsoleMode( ih, &mode )) {
+     return ak_error_message( ak_error_terminal, __func__, "process can not connect to console" );
+   }
    SetConsoleMode( ih, mode & ~( ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT ));
 
    memset( pass, 0, psize );
@@ -799,7 +801,9 @@
    return len-1;
 
   #endif
-   return ak_error_undefined_function;
+
+  ak_error_message( ak_error_undefined_function, __func__, "this compile branch is unsupported" );
+  return ak_error_undefined_function;
 
  #else
    int error = ak_error_ok;

@@ -1696,7 +1696,11 @@
      ak_certificate_destroy( &ki.cert );
    /* устанавливаем права доступа к записанному файлу */
     #ifdef AK_HAVE_SYSSTAT_H
-     chmod( certname, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH );
+     #ifdef _MSC_VER
+      chmod( certname, _S_IREAD );
+     #else
+      chmod( certname, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH );
+     #endif
     #endif
      if( !ki.quiet ) printf(_("%s added\n"), certname );
 
@@ -1741,7 +1745,7 @@
    memset( output_buffer, 0, sizeof( output_buffer ));
 
   #ifdef AK_HAVE_WINDOWS_H
-   ak_snprintf( time_buffer, sizeof( time_buffer ), "%s", ctime( &ca.time.not_after ));
+   ak_snprintf( time_buffer, sizeof( time_buffer ), "%s", ctime( &ca.opts.time.not_after ));
    output_buffer[strlen( time_buffer )-1] = ' '; /* уничтожаем символ возврата каретки */
   #else
    strftime( time_buffer, sizeof( output_buffer ), /* локализованный вывод */

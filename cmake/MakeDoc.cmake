@@ -58,6 +58,12 @@ else()
 endif()
 
 # -----------------------------------------------------------------------------------
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.1.in ${CMAKE_CURRENT_BINARY_DIR}/aktool.1 @ONLY )
+if( GZIP )
+  execute_process( COMMAND  gzip --force ${CMAKE_CURRENT_BINARY_DIR}/aktool.1 )
+endif()
+
+# -----------------------------------------------------------------------------------
 # скрипты для генерации документации
 if( UNIX )
   set( script ${CMAKE_CURRENT_BINARY_DIR}/make-doc-${FULL_VERSION}.sh )
@@ -66,12 +72,8 @@ if( UNIX )
 
 # -----------------------------------------------------------------------------------
 # определяем команду для генерации man файла
-  configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.1.in ${CMAKE_CURRENT_BINARY_DIR}/aktool.1 @ONLY )
   if( PANDOC )
     execute_process( COMMAND pandoc -f man -t latex ${CMAKE_CURRENT_BINARY_DIR}/aktool.1 -s -o ${CMAKE_CURRENT_BINARY_DIR}/aktool.tex --template ${CMAKE_CURRENT_SOURCE_DIR}/doc/aktool-header.tex )
-  endif()
-  if( GZIP )
-    execute_process( COMMAND  gzip --force ${CMAKE_CURRENT_BINARY_DIR}/aktool.1 )
   endif()
   message("-- Manual documentation for aktool utility created" )
 
