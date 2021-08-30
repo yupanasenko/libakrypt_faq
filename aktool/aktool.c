@@ -150,10 +150,8 @@
    /* функция выводит сообщения в заданный файл */
     if( !fp ) return ak_error_open_file;
     fprintf( fp, "%s\n", message );
-#if defined(__unix__) || defined(__APPLE__)
-    ak_function_log_syslog( message ); /* все действия дополнительно дублируются в syslog */
-#endif
     if( fclose(fp) == EOF ) return ak_error_access_file;
+
  return ak_error_ok;
 }
 
@@ -199,14 +197,15 @@
 {
   ak_int64 number;
 
+ /* устанавливаем уровень аудита */
+  ak_log_set_level( ki.aktool_log_level );
+
  /* инициализируем библиотеку */
   if( ak_libakrypt_create( audit ) != ak_true ) {
     ak_libakrypt_destroy();
     aktool_error(_("incorrect initialization of libakrypt library"));
     return ak_false;
   }
- /* устанавливаем уровень аудита */
-  ak_log_set_level( ki.aktool_log_level );
 
  /* применяем флаг совместимости с openssl */
   number = ak_libakrypt_get_option_by_name( "openssl_compability ");

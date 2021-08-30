@@ -454,7 +454,9 @@
   st->lines++;
 
  /* получаем первый токен */
-  if(( icode = strtok_r( (char *)string, "(", &substr )) == NULL ) return reterror;
+  if(( icode = strtok_r( (char *)string, "(", &substr )) == NULL ) return ak_error_undefined_value;
+  if( substr == NULL ) return ak_error_null_pointer;
+
   if( strlen( substr ) == 0 ) { /* строка не содержит скобки => вариант строки в формате Linux */
 
    /* получаем первый токен - это должно быть значение контрольной суммы */
