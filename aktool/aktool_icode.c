@@ -455,17 +455,20 @@
 
  /* получаем первый токен */
   if(( icode = strtok_r( (char *)string, "(", &substr )) == NULL ) return ak_error_undefined_value;
-  if( substr == NULL ) return ak_error_null_pointer;
 
+#ifdef __clang__ 
+  if( substr == NULL ) {
+#else
   if( strlen( substr ) == 0 ) { /* строка не содержит скобки => вариант строки в формате Linux */
-
+#endif
    /* получаем первый токен - это должно быть значение контрольной суммы */
     if(( icode = strtok_r( (char *)string, " ", &substr )) == NULL ) return reterror;
     if(( error = ak_hexstr_to_ptr( icode, out2, sizeof( out2 ), ki.reverse_order )) != ak_error_ok ) {
       st->errcount++;
       return ak_error_message_fmt( error, __func__, "incorrect icode string %s\n", icode );
     }
-   /* теперь второй токен - это имя файла */
+   /* 
+теперь второй токен - это имя файла */
     if(( filename = strtok_r( substr, " ", &substr )) == NULL ) return reterror;
 
   } else { /* обнаружилась скобка => вариант строки в формате BSD */
