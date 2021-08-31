@@ -1,102 +1,66 @@
 ##########################################################################
 #! /bin/bash
+# проверка способов выработки и проверки контрольных сумм и имитовставок
 #
-# скрипт проверяет все возможные способы
-# генерации и проверки кодов целостности
+export AKTOOL=aktool
 #
+# может использоваться, например, так
+# export AKTOOL="qemu-mips64 -L /usr/mips64-linux-gnuabi64/ ./aktool"
 ##########################################################################
-echo "Тестируем функции хэширования"
-aktool i * --tag -o result.streebog256
+#
+run() {
+${AKTOOL} $1
 if [[ $? -ne 0 ]]
-then echo "aktool не может посчитать значения функции хеширования"; exit;
+then echo "${AKTOOL} не может выполнить $1"; exit;
 fi
+}
+#
+echo "Тестируем функции хэширования"
+run "i * --tag -o result.streebog256"
 echo "Ok (Стрибог256)";
 cat result.streebog256
-aktool i -c result.streebog256 --ignore-errors
-if [[ $? -ne 0 ]]
-then echo "aktool не может проверить значения функции хеширования"; exit;
-fi
+run "i -c result.streebog256 --ignore-errors"
 #
-aktool i -a streebog512 -p "*.s?" . -o result.streebog512
-if [[ $? -ne 0 ]]
-then echo "aktool не может посчитать значения функции хеширования Стрибог512"; exit;
-fi
+run "i -a streebog512 -p "*.s?" . -o result.streebog512"
 echo "Ok (Стрибог512)";
 cat result.streebog512
-aktool i -c result.streebog512 -a streebog512 --ignore-errors
-if [[ $? -ne 0 ]]
-then echo "aktool не может проверить значения функции хеширования"; exit;
-fi
+run "i -c result.streebog512 -a streebog512 --ignore-errors"
 #
 #
 echo; echo "Тестируем алгоритмы hmac"
-aktool k -nt hmac-streebog256 -o hmac256.key --outpass 132a
-if [[ $? -ne 0 ]]
-then echo "aktool не может создать ключ алгоритма hmac"; exit;
-fi
+run "k -nt hmac-streebog256 -o hmac256.key --outpass 132a"
 echo;
-aktool i --key hmac256.key --inpass 132a --tag . -o result.hmac-streebog256
-if [[ $? -ne 0 ]]
-then echo "aktool не может вычислить имитовставки"; exit;
-fi
+run "i --key hmac256.key --inpass 132a --tag . -o result.hmac-streebog256"
 cat result.hmac-streebog256
-aktool i -c result.hmac-streebog256 --key hmac256.key --inpass 132a
-if [[ $? -ne 0 ]]
-then echo "aktool не может проверить имитовставки"; exit;
-fi
+run "i -c result.hmac-streebog256 --key hmac256.key --inpass 132a"
 echo;
 #
 #
-aktool k -nt hmac-streebog512 -o hmac512.key --outpass 132a
-if [[ $? -ne 0 ]]
-then echo "aktool не может создать ключ алгоритма hmac"; exit;
-fi
+run "k -nt hmac-streebog512 -o hmac512.key --outpass 132a"
 echo;
-aktool i --key hmac512.key --inpass 132a * -o result.hmac-streebog512
-if [[ $? -ne 0 ]]
-then echo "aktool не может вычислить имитовставки"; exit;
-fi
+run "i --key hmac512.key --inpass 132a * -o result.hmac-streebog512"
 cat result.hmac-streebog512
-aktool i -c result.hmac-streebog512 --key hmac512.key --inpass 132a
-if [[ $? -ne 0 ]]
-then echo "aktool не может проверить имитовставки"; exit;
-fi
+run "i -c result.hmac-streebog512 --key hmac512.key --inpass 132a"
 echo;
 #
 #
 echo; echo "Тестируем алгоритмы выработки имитовставки с использованием шифра Магма"
-aktool k -nt magma -o magma.key --outpass 123
-if [[ $? -ne 0 ]]
-then echo "aktool не может создать ключ алгоритма Магма"; exit;
-fi
-aktool i --key magma.key -m cmac-magma --inpass 123 * -o result.magma
-if [[ $? -ne 0 ]]
-then echo "aktool не может выработать имитовставки для алгоритма cmac-magma"; exit;
-fi
+run "k -nt magma -o magma.key --outpass 123"
+run "i --key magma.key -m cmac-magma --inpass 123 * -o result.magma"
 echo
 cat result.magma
-aktool i -c result.magma --key magma.key -m cmac-magma --inpass 123
-if [[ $? -ne 0 ]]
-then echo "aktool не может проверить имитовставки для алгоритма cmac-magma"; exit;
-fi
+run "i -c result.magma --key magma.key -m cmac-magma --inpass 123"
 echo
 #
 #
 echo; echo "Тестируем алгоритмы выработки имитовставки с использованием шифра Кузнечик"
-aktool k -nt kuznechik -o kuznechik.key --outpass 123
-if [[ $? -ne 0 ]]
-then echo "aktool не может создать ключ алгоритма Кузнечик"; exit;
-fi
-aktool i --key kuznechik.key -m cmac-kuznechik --inpass 123 --tag * -o result.kuznechik
-if [[ $? -ne 0 ]]
-then echo "aktool не может выработать имитовставки для алгоритма cmac-kuznechik"; exit;
-fi
+run "k -nt kuznechik -o kuznechik.key --outpass 123"
+run "i --key kuznechik.key -m cmac-kuznechik --inpass 123 --tag * -o result.kuznechik"
 echo
 cat result.kuznechik
-aktool i -c result.kuznechik --key kuznechik.key -m cmac-kuznechik --inpass 123
-if [[ $? -ne 0 ]]
-then echo "aktool не может проверить имитовставки для алгоритма cmac-kuznechik"; exit;
-fi
-echo
+run "i -c result.kuznechik --key kuznechik.key -m cmac-kuznechik --inpass 123 --dont-show-stat"
+#
+#
 rm -f magma.key kuznechik.key hmac256.key hmac512.key
 rm -f result.*
+echo "Тест пройден"

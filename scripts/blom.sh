@@ -1,6 +1,6 @@
 #!/bin/bash
 # Testing a Blom key generation scheme
-export AKTOOL=aktool;
+export AKTOOL=aktools;
 #
 #
 ${AKTOOL} test --crypt

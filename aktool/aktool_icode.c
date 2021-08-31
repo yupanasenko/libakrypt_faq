@@ -17,9 +17,7 @@
  int aktool_icode_help( void );
  int aktool_icode_work( int argc, tchar *argv[] );
  int aktool_icode_check( void );
-#if defined(_WIN32) || defined(_WIN64)
- char* strtok_r( char *, const char *, char ** );
-#endif
+ char* aktool_strtok_r( char *, const char *, char ** );
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_icode( int argc, tchar *argv[] )
@@ -454,22 +452,18 @@
   st->lines++;
 
  /* получаем первый токен */
-  if(( icode = strtok_r( (char *)string, "(", &substr )) == NULL ) return ak_error_undefined_value;
+  if(( icode = aktool_strtok_r( (char *)string, "(", &substr )) == NULL )
+    return ak_error_undefined_value;
 
-#ifdef __clang__ 
-  if( substr == NULL ) {
-#else
   if( strlen( substr ) == 0 ) { /* строка не содержит скобки => вариант строки в формате Linux */
-#endif
    /* получаем первый токен - это должно быть значение контрольной суммы */
-    if(( icode = strtok_r( (char *)string, " ", &substr )) == NULL ) return reterror;
+    if(( icode = aktool_strtok_r( (char *)string, " ", &substr )) == NULL ) return reterror;
     if(( error = ak_hexstr_to_ptr( icode, out2, sizeof( out2 ), ki.reverse_order )) != ak_error_ok ) {
       st->errcount++;
       return ak_error_message_fmt( error, __func__, "incorrect icode string %s\n", icode );
     }
-   /* 
-теперь второй токен - это имя файла */
-    if(( filename = strtok_r( substr, " ", &substr )) == NULL ) return reterror;
+   /* теперь второй токен - это имя файла */
+    if(( filename = aktool_strtok_r( substr, " ", &substr )) == NULL ) return reterror;
 
   } else { /* обнаружилась скобка => вариант строки в формате BSD */
 
@@ -482,12 +476,13 @@
     while(( icode[len] == ' ' ) && ( len )) icode[len--] = 0;
 
    /* теперь второй токен - это имя файла */
-    if(( filename = strtok_r( substr, ")", &substr )) == NULL ) return reterror;
+    if(( filename = aktool_strtok_r( substr, ")", &substr )) == NULL ) return reterror;
 
    /* теперь, контрольная сумма */
     while(( *substr == ' ' ) || ( *substr == '=' )) substr++;
     if(( error = ak_hexstr_to_ptr( substr, out2, sizeof( out2 ), ki.reverse_order )) != ak_error_ok ) {
-      return ak_error_message_fmt( ak_error_ok, __func__, "incorrect icode string %s\n", icode );
+      st->errcount++;
+      return ak_error_message_fmt( error, __func__, "incorrect icode string %s\n", icode );
     }
   }
 
@@ -605,8 +600,8 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-#if defined(_WIN32) || defined(_WIN64)
- char* strtok_r( char *str, const char *delim, char **nextp)
+//#if defined(_WIN32) || defined(_WIN64)
+ char* aktool_strtok_r( char *str, const char *delim, char **nextp)
 {
  char *ret;
 
@@ -623,7 +618,7 @@
     *nextp = str;
     return ret;
 }
-#endif
+//#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                 aktool_icode.c  */
