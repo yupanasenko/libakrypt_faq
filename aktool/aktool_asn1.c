@@ -42,7 +42,7 @@
 
  /* разбираем опции командной строки */
   do {
-       next_option = getopt_long( argc, argv, "o:", long_options, NULL );
+       next_option = getopt_long( argc, argv, "o:h", long_options, NULL );
        switch( next_option )
       {
        /* сначала обработка стандартных опций */
@@ -192,13 +192,13 @@
 
        /* 3. конвертируем данные */
         if( ak_libakrypt_convert_asn1( argv[idx], name, format, content ) != ak_error_ok ) {
-          aktool_error(_("convertation of %s is wrong\n"), argv[idx] );
+          aktool_error(_("convertation of %s is wrong"), argv[idx] );
           ecount++;
         } else {
             if( ak_libakrypt_print_asn1( name ) == ak_error_ok )
               fprintf( stdout, _("convertation of %s to %s is Ok\n"), argv[idx], name );
              else {
-               aktool_error(_("convertation of %s is wrong\n"), argv[idx] );
+               aktool_error(_("convertation of %s is wrong"), argv[idx] );
                ecount++;
              }
           }
@@ -216,7 +216,7 @@
   for( idx = 2; idx < argc; idx++ ) {
      if( ak_file_or_directory( argv[idx] ) == DT_REG ) {
        if( ak_libakrypt_split_asn1( argv[idx], format, content ) != ak_error_ok ) {
-         aktool_error(_("file %s is wrong\n"), argv[idx] );
+         aktool_error(_("file %s is wrong"), argv[idx] );
          ecount++;
        }
      }

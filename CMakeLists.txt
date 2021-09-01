@@ -38,6 +38,8 @@ include( DetectFlags )
 include( DetectHeaders )
 include( DetectIntrinsics )
 include( DetectLibraries )
+# модули CMake
+include( GNUInstallDirs )
 
 # -------------------------------------------------------------------------------------------------- #
 # Вырабатываем заголовочный файл (в каталоге сборки)
@@ -307,19 +309,19 @@ if( CMAKE_HOST_UNIX )
   install( TARGETS aktool DESTINATION bin )
   if( GETTEXT_FOUND )
     install( CODE "execute_process( COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.po -o ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo )" )
-    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo DESTINATION ${CMAKE_INSTALL_PREFIX}/share/locale/ru/LC_MESSAGES )
+    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo DESTINATION ${CMAKE_INSTALL_FULL_LOCALEDIR}/ru/LC_MESSAGES )
   endif()
 
  # инсталлируем заголовочные файлы и документацию к библиотеке
   install( FILES ${MAIN_HEADERS} DESTINATION include )
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/libakrypt.conf DESTINATION ${AK_CONFIG_PATH} )
-  install( FILES ${LIBAKRYPT_DOCUMENTATION} DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/libakrypt )
+  install( FILES ${LIBAKRYPT_DOCUMENTATION} DESTINATION ${CMAKE_INSTALL_FULL_DOCDIR} )
 
  # инсталлируем мануал для aktool
   if( GZIP )
-    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.1.gz DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/ru/man1 )
+    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.1.gz DESTINATION ${CMAKE_INSTALL_FULL_MANDIR}/ru/man1 )
   else()
-    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool/aktool.1 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/ru/man1 )
+    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool/aktool.1 DESTINATION ${CMAKE_INSTALL_FULL_MANDIR}/ru/man1 )
   endif()
 
  # инсталлируем корневой сертификат библиотеки

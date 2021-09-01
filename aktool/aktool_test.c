@@ -38,7 +38,7 @@
 
  /* разбираем опции командной строки */
   do {
-       next_option = getopt_long( argc, argv, "v", long_options, NULL );
+       next_option = getopt_long( argc, argv, "vh", long_options, NULL );
        switch( next_option )
       {
         aktool_common_functions_run( aktool_test_help );
@@ -117,9 +117,7 @@
      "available options:\n"
      "     --crypto            complete test of cryptographic algorithms\n"
      "                         run all available algorithms on test values taken from standards and recommendations\n"
-     "     --speed <ni>        measuring the speed of the crypto algorithm with a given name or identifier\n"
-     "\n"
-     "run tests with \"--audit 2 --audit-file stderr\" options or see /var/log/auth.log file for details\n"
+     "     --speed             measuring the speed of the crypto algorithm with a given name or identifier\n"
   ));
 
  return aktool_print_common_options();

@@ -59,9 +59,6 @@ endif()
 
 # -----------------------------------------------------------------------------------
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.1.in ${CMAKE_CURRENT_BINARY_DIR}/aktool.1 @ONLY )
-if( GZIP )
-  execute_process( COMMAND  gzip --force ${CMAKE_CURRENT_BINARY_DIR}/aktool.1 )
-endif()
 
 # -----------------------------------------------------------------------------------
 # скрипты для генерации документации
@@ -133,17 +130,12 @@ if( UNIX )
     message("-- Script for PDF documentation (using xeLaTeX engine) is done (now \"make pdf\" enabled)")
   endif()
 
-## -----------------------------------------------------------------------------------
-## Формируем уточненный файл перевода (нужно, в основном, при разработке)
-#  if( GETTEXT_FOUND )
-#    find_program( XGETTEXT xgettext )
-#    if( XGETTEXT )
-#      file( APPEND ${script} "cd ${CMAKE_CURRENT_SOURCE_DIR}/aktool\n" )
-#      file( APPEND ${script} "${XGETTEXT} aktool*.c -a -j --from-code utf-8 -o aktool.po\n" )
-#      file( APPEND ${script} "cd ${CMAKE_CURRENT_BINARY_DIR}\n" )
-#    endif()
-#  endif()
-
 # конец if( UNIX )
 endif()
 
+
+# -----------------------------------------------------------------------------------
+# исполняем хвосты, т.е. то что почти забыли сделать
+if( GZIP )
+  execute_process( COMMAND  gzip --force ${CMAKE_CURRENT_BINARY_DIR}/aktool.1 )
+endif()
