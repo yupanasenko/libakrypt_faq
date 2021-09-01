@@ -318,11 +318,10 @@ if( CMAKE_HOST_UNIX )
   install( FILES ${LIBAKRYPT_DOCUMENTATION} DESTINATION ${CMAKE_INSTALL_FULL_DOCDIR} )
 
  # инсталлируем мануал для aktool
+  set( AK_MAN_PATH ${CMAKE_INSTALL_FULL_MANDIR}/ru/man1 )
   string( COMPARE EQUAL ${CMAKE_HOST_SYSTEM_NAME} "FreeBSD" AK_FREEBSD )
   if( AK_FREEBSD )
     set( AK_MAN_PATH ${CMAKE_INSTALL_PREFIX}/share/${CMAKE_INSTALL_MANDIR}/man1 )
-  elseif()
-    set( AK_MAN_PATH ${CMAKE_INSTALL_FULL_MANDIR}/ru/man1 )
   endif()
 
   if( GZIP )
