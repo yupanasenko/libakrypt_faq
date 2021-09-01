@@ -74,7 +74,7 @@
     при инсталляции файл aktool.mo должен помещаться в /usr/share/locale/ru/LC_MESSAGES
     (однако, при использовании bsd-like адрес может быть другим) */
   #ifdef AK_HAVE_LOCALE_H
-   setlocale( LC_ALL, "" );
+   setlocale( LC_ALL, "ru" );
   #endif
   bindtextdomain( "aktool", "/usr/share/locale/" );
   textdomain( "aktool" );

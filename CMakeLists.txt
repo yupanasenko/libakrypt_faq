@@ -318,10 +318,17 @@ if( CMAKE_HOST_UNIX )
   install( FILES ${LIBAKRYPT_DOCUMENTATION} DESTINATION ${CMAKE_INSTALL_FULL_DOCDIR} )
 
  # инсталлируем мануал для aktool
+  string( COMPARE EQUAL ${CMAKE_HOST_SYSTEM_NAME} "FreeBSD" AK_FREEBSD )
+  if( AK_FREEBSD )
+    set( AK_MAN_PATH ${CMAKE_INSTALL_PREFIX}/share/${CMAKE_INSTALL_MANDIR}/man1 )
+  elseif()
+    set( AK_MAN_PATH ${CMAKE_INSTALL_FULL_MANDIR}/ru/man1 )
+  endif()
+
   if( GZIP )
-    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.1.gz DESTINATION ${CMAKE_INSTALL_FULL_MANDIR}/ru/man1 )
+    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.1.gz DESTINATION ${AK_MAN_PATH} )
   else()
-    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool/aktool.1 DESTINATION ${CMAKE_INSTALL_FULL_MANDIR}/ru/man1 )
+    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool/aktool.1 DESTINATION ${AK_MAN_PATH} )
   endif()
 
  # инсталлируем корневой сертификат библиотеки
