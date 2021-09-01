@@ -368,17 +368,17 @@
  static const char *asn1_pkix_exAD_i[] =   { "1.3.6.1.5.5.7.48.2", NULL };
 
 /* следующее добро из Приказа ФСБ N 795 */
- static const char *asn1_ogrn_n[] =        { "ogrn", NULL };
+ static const char *asn1_ogrn_n[] =        { "ogrn", "og", NULL };
  static const char *asn1_ogrn_i[] =        { "1.2.643.100.1", NULL };
- static const char *asn1_snils_n[] =       { "snils", NULL };
+ static const char *asn1_snils_n[] =       { "snils", "si", NULL };
  static const char *asn1_snils_i[] =       { "1.2.643.100.3", NULL };
- static const char *asn1_ogrnip_n[] =      { "ogrnip", NULL };
+ static const char *asn1_ogrnip_n[] =      { "ogrnip", "oi", NULL };
  static const char *asn1_ogrnip_i[] =      { "1.2.643.100.5", NULL };
  static const char *asn1_owner_mod_n[] =   { "subject-crypto-module", NULL };
  static const char *asn1_owner_mod_i[] =   { "1.2.643.100.111", NULL };
  static const char *asn1_issuer_mod_n[] =  { "issuer-crypto-module", NULL };
  static const char *asn1_issuer_mod_i[] =  { "1.2.643.100.112", NULL };
- static const char *asn1_inn_n[] =         { "inn", NULL };
+ static const char *asn1_inn_n[] =         { "inn", "in", NULL };
  static const char *asn1_inn_i[] =         { "1.2.643.3.131.1.1", NULL };
 
  static const char *asn1_class_kc1_n[] =   { "digital-signature-module, class kc1", "kc1", NULL };
@@ -413,6 +413,47 @@
  static const char *asn1_mstndc_n[] =      { "microsoft-enrollment-certificate-type",
                                              NULL };
  static const char *asn1_mstndc_i[] =      { "1.3.6.1.4.1.311.20.2", NULL };
+
+/* ----------------------------------------------------------------------------------------------- */
+/* неподдерживаемые алгоритмы подписи, сертификаты которых могут разбираться на части */
+ static const char *asn1_sign94_n[] =      { "gost3411-94-with-gost3410-2001", NULL };
+ static const char *asn1_sign94_i[] =      { "1.2.643.2.2.3", NULL };
+ static const char *asn1_sha1sign_n[] =    { "sha1-with-rsa-signature", NULL };
+ static const char *asn1_sha1sign_i[] =    { "1.2.840.113549.1.1.5", NULL };
+ static const char *asn1_sha256sign_n[] =  { "sha256-with-rsa-encryption", NULL };
+ static const char *asn1_sha256sign_i[] =  { "1.2.840.113549.1.1.11", NULL };
+ static const char *asn1_sha384sign_n[] =  { "sha384-with-rsa-encryption", NULL };
+ static const char *asn1_sha384sign_i[] =  { "1.2.840.113549.1.1.12", NULL };
+ static const char *asn1_sha512sign_n[] =  { "sha512-with-rsa-encryption", NULL };
+ static const char *asn1_sha512sign_i[] =  { "1.2.840.113549.1.1.13", NULL };
+ static const char *asn1_sha224sign_n[] =  { "sha224-with-rsa-encryption", NULL };
+ static const char *asn1_sha224sign_i[] =  { "1.2.840.113549.1.1.14", NULL };
+ static const char *asn1_ecdsasha1_n[] =   { "ecdsa-with-sha1", NULL };
+ static const char *asn1_ecdsasha1_i[] =   { "1.2.840.10045.4.1", NULL };
+ static const char *asn1_ecdsasha224_n[] = { "ecdsa-with-sha224", NULL };
+ static const char *asn1_ecdsasha224_i[] = { "1.2.840.10045.4.3.1", NULL };
+ static const char *asn1_ecdsasha256_n[] = { "ecdsa-with-sha256", NULL };
+ static const char *asn1_ecdsasha256_i[] = { "1.2.840.10045.4.3.2", NULL };
+ static const char *asn1_ecdsasha384_n[] = { "ecdsa-with-sha384", NULL };
+ static const char *asn1_ecdsasha384_i[] = { "1.2.840.10045.4.3.3", NULL };
+ static const char *asn1_ecdsasha512_n[] = { "ecdsa-with-sha512", NULL };
+ static const char *asn1_ecdsasha512_i[] = { "1.2.840.10045.4.3.4", NULL };
+
+/* Сертикомовские параметры тоже могут быть определены,
+   но пока примеры их применения не находятся в анамнезе
+
+    2.23.42.9.11.4.1.0  - Certicom ECDSA, Elliptic Curve Digital Signature Algorithm generic curve ecdsaWithSHA-1
+    2.23.42.9.11.4.1.10 - Certicom ECDSA, Elliptic Curve Digital Signature Algorithm curve sigECDSAec131a01
+    2.23.42.9.11.4.1.11 - Certicom ECDSA, Elliptic Curve Digital Signature Algorithm curve sigECDSAec163a01
+    2.23.42.9.11.4.1.12 - Certicom ECDSA, Elliptic Curve Digital Signature Algorithm curve sigECDSAec239a01
+    2.23.42.9.11.4.1.13 - Certicom ECDSA, Elliptic Curve Digital Signature Algorithm curve sigECDSAec131b01
+    2.23.42.9.11.4.1.14 - Certicom ECDSA, Elliptic Curve Digital Signature Algorithm curve sigECDSAec155b01
+    2.23.42.9.11.4.1.15 - Certicom ECDSA, Elliptic Curve Digital Signature Algorithm curve sigECDSAec163b01
+    2.23.42.9.11.4.1.16 - Certicom ECDSA, Elliptic Curve Digital Signature Algorithm curve sigECDSAec191b01
+    2.23.42.9.11.4.1.17 - Certicom ECDSA, Elliptic Curve Digital Signature Algorithm curve sigECDSAec210b01
+    2.23.42.9.11.4.1.18 - Certicom ECDSA, Elliptic Curve Digital Signature Algorithm curve sigECDSAec239b01
+*/
+
 
 /* ----------------------------------------------------------------------------------------------- */
  #define ak_object_bckey_magma { sizeof( struct bckey ), \
@@ -746,6 +787,29 @@ static struct oid libakrypt_oids[] =
  { identifier, descriptor, asn1_mscav_i, asn1_mscav_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_mspsh_i, asn1_mspsh_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_mstndc_i, asn1_mstndc_n, NULL, ak_functional_objects_undefined },
+
+ /* неподдерживаемые алгоритмы подписи */
+ { identifier, algorithm, asn1_sign94_i, asn1_sign94_n, NULL, ak_functional_objects_undefined },
+ { identifier, algorithm, asn1_sha1sign_i,
+                                          asn1_sha1sign_n, NULL, ak_functional_objects_undefined },
+ { identifier, algorithm, asn1_sha256sign_i,
+                                        asn1_sha256sign_n, NULL, ak_functional_objects_undefined },
+ { identifier, algorithm, asn1_sha384sign_i,
+                                        asn1_sha384sign_n, NULL, ak_functional_objects_undefined },
+ { identifier, algorithm, asn1_sha512sign_i,
+                                        asn1_sha512sign_n, NULL, ak_functional_objects_undefined },
+ { identifier, algorithm, asn1_sha224sign_i,
+                                        asn1_sha224sign_n, NULL, ak_functional_objects_undefined },
+ { identifier, algorithm, asn1_ecdsasha1_i,
+                                         asn1_ecdsasha1_n, NULL, ak_functional_objects_undefined },
+ { identifier, algorithm, asn1_ecdsasha224_i,
+                                       asn1_ecdsasha224_n, NULL, ak_functional_objects_undefined },
+ { identifier, algorithm, asn1_ecdsasha256_i,
+                                       asn1_ecdsasha256_n, NULL, ak_functional_objects_undefined },
+ { identifier, algorithm, asn1_ecdsasha384_i,
+                                       asn1_ecdsasha384_n, NULL, ak_functional_objects_undefined },
+ { identifier, algorithm, asn1_ecdsasha512_i,
+                                       asn1_ecdsasha512_n, NULL, ak_functional_objects_undefined },
 
  /* завершающая константа, должна всегда принимать неопределенные и нулевые значения */
   ak_oid_undefined

@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2021 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Файл ak_sign.h                                                                                 */
 /*  - содержит реализацию функций для работы с электронной подписью.                               */
@@ -56,7 +56,7 @@
   mask = ( ak_uint64 *)( skey->key + skey->key_size );
 
  /* проверяем, установлена ли маска ранее */
-  if((( skey->flags)&ak_key_flag_set_mask ) == 0 ) {
+  if((( skey->flags)&key_flag_set_mask ) == 0 ) {
     /* создаем маску */
      if(( error = ak_random_ptr( &skey->generator, mask, skey->key_size )) != ak_error_ok )
        return ak_error_message( error, __func__ , "wrong mask generation for key buffer" );
@@ -85,7 +85,7 @@
      ak_mpzn_modpow_montgomery( mask, // m <- m^{q-2} (mod q)
                                     mask, u, wc->q, wc->nq, wc->size );
     /* меняем значение флага */
-     skey->flags |= ak_key_flag_set_mask;
+     skey->flags |= key_flag_set_mask;
 
   } else { /* если маска уже установлена, то мы сменяем ее на новую */
 
@@ -140,7 +140,7 @@
     return ak_error_message( ak_error_null_pointer, __func__ ,
                                                  "using internal null pointer to elliptic curve" );
  /* проверяем, установлена ли маска ранее */
-  if( (( skey->flags)&ak_key_flag_set_mask ) == 0 ) return ak_error_ok;
+  if( (( skey->flags)&key_flag_set_mask ) == 0 ) return ak_error_ok;
 
   key = ( ak_uint64 *)skey->key;
   mask = ( ak_uint64 *)( skey->key + skey->key_size );
@@ -153,7 +153,7 @@
   for( i = 0; i < wc->size; i++ ) key[i] = bswap_64( key[i] );
 #endif
  /* меняем значение флага */
-  skey->flags ^= ak_key_flag_set_mask;
+  skey->flags ^= key_flag_set_mask;
 
  return ak_error_ok;
 }
@@ -291,7 +291,7 @@
   /* сохраняем указатель на параметры эллиптической кривой */
    sk->key.data = wc;
   /* при удалении ключа не нужно освобождать память из под параметров эллиптической кривой  */
-   sk->key.flags |= ak_key_flag_data_not_free;
+   sk->key.flags |= key_flag_data_not_free;
   /* устанавливаем ресурс и время жизни ключа по-умолчанию */
    ak_signkey_set_resource_values( sk, key_using_resource,
                                                         "digital_signature_count_resource", 0, 0 );
@@ -836,12 +836,9 @@
  /* устанавливаем эллиптическую кривую */
   pctx->wc = wc;
  /* устанавливаем флаг отсутствия ключевого значения */
-  pctx->flags = ak_key_flag_undefined;
- /* инициализируем ресурс открытого ключа */
-  pctx->time.not_before = pctx->time.not_after = 0;
- /* обобщенное имя владельца ключа, по умолчанию, не определено */
-  pctx->name = NULL;
-
+  pctx->flags = key_flag_undefined;
+ /* устанавливаем максимальный размер номера ключа */
+  pctx->number_length = sizeof( pctx->number );
  return error;
 }
 
@@ -882,14 +879,8 @@
   ak_wpoint_pow( &pctx->qpoint, &pctx->qpoint, k, pctx->wc->size, pctx->wc );
   ak_wpoint_reduce( &pctx->qpoint, pctx->wc );
 
- /* разбираемся с ресурсом */
-  pctx->time.not_before = sctx->key.resource.time.not_before;
-  pctx->time.not_after = sctx->key.resource.time.not_after;
-
- /* имя владельца ключа не определено и может быть установлено позднее */
-  pctx->name = NULL;
  /* устанавливаем флаг  */
-  pctx->flags = ak_key_flag_set_key;
+  pctx->flags = key_flag_set_key;
  /* все параметры установлены => можно вырабатывать номер ключа */
   ak_verifykey_set_number( pctx );
  /* копируем выработанный номер в контекст секретного ключа */
@@ -902,37 +893,6 @@
  return ak_error_ok;
 }
 
-/* ----------------------------------------------------------------------------------------------- */
-/*! Присвоение времени происходит следующим образом. Если `not_before` равно нулю, то
-    устанавливается текущее время. Если `not_after` равно нулю или меньше, чем `not_before`,
-    то временной интервал действия ключа устанавливается равным 365 дней.
-
-    \param vkey Контекст открытого ключа.
-    \param not_before Время, начиная с которого ключ действителен. Значение, равное нулю,
-    означает, что будет установлено текущее время.
-    \param not_after Время, начиная с которого ключ недействителен.
-    \return В случае успеха функция возвращает \ref ak_error_ok. В противном случае,
-    возвращается код ошибки.                                                                       */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_verifykey_set_validity( ak_verifykey vkey, time_t not_before, time_t not_after )
-{
-  if( vkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                            "using a null pointer to public key" );
- /* устанавливаем временной интервал */
-  if( not_before == 0 )
- #ifdef AK_HAVE_TIME_H
-  vkey->time.not_before = time( NULL );
- #else
-  vkey->time.not_before = 0;
- #endif
-    else vkey->time.not_before = not_before;
-  if( not_after == 0 ) vkey->time.not_after = vkey->time.not_before + 31536000;
-    else {
-      if( not_after > vkey->time.not_before ) vkey->time.not_after = not_after;
-        else vkey->time.not_after = vkey->time.not_before + 31536000;
-    }
- return ak_error_ok;
-}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param pctx контекст открытого ключа алгоритма электронной подписи.
@@ -946,9 +906,6 @@
                                                       "using null pointer to public key context" );
   if(( error = ak_hash_destroy( &pctx->ctx )) != ak_error_ok )
     ak_error_message( error, __func__ , "incorrect destroying hash function context" );
-
- /* если обобщенное имя владельца было определено, то удаляем его */
-  if( pctx->name != NULL ) pctx->name = ak_tlv_delete( pctx->name );
 
   memset( pctx, 0, sizeof( struct verifykey ));
  return error;
@@ -1116,28 +1073,6 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! @param vk контекст открытого ключа электронной подписи
-    @param ni строка, содержащая имя или идентификатор, определяющий тип помещаемых
-    данных (attribute type)
-    @param string строка с данными.
-
-    @return В случае успеха возвращается \ref ak_error_ok. В противном случае
-    возвращается код ошибки.                                                                       */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_verifykey_add_name_string( ak_verifykey vk, const char *ni, const char *string )
-{
- /* необходимые проверки */
-  if( vk == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                      "using null pointer to secret key context" );
-  if( vk->name == NULL )
-    if(( vk->name = ak_tlv_new_sequence()) == NULL )
-      return ak_error_message( ak_error_get_value(), __func__,
-                                     "incorrect creation of tlv context for owner's common name" );
-
- return ak_tlv_add_string_to_global_name( vk->name, ni, string );
-}
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! В отличие от номеров секретных ключей, номера открытых ключей не являются случайными.
     Согласно рекомендациям RFC 5280 номер открытого ключа вырабатывается из
 
@@ -1202,7 +1137,7 @@
     goto labex;
   }
    else ak_hash_finalize( &hctx, buffer, vk->wc->size*sizeof( ak_uint64 ),
-                                                                 vk->number, sizeof( vk->number ));
+                                             vk->number, vk->number_length = sizeof( vk->number ));
   labex: ak_hash_destroy( &hctx );
  return error;
 }

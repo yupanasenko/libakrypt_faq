@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2021 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                            by Mikhail Lavrinovich, mikhail.lavrinovich@netcracker.com           */
 /*                                                                                                 */
 /*  Файл ak_magma.h                                                                                */
@@ -690,7 +690,7 @@
  /* выставляем флаги того, что память выделена */
   memset( data, 0, sizeof( struct magma_encrypted_keys ));
   skey->data = ( ak_pointer )data;
-  skey->flags |= ak_key_flag_data_not_free;
+  skey->flags |= key_flag_data_not_free;
 
  /* размещаем данные */
   if(( error = ak_random_ptr( &skey->generator, data->inmask, sizeof( data->inmask ))) != ak_error_ok )
@@ -738,7 +738,7 @@
   if( skey->key_size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
                                                            "using a key buffer with zero length" );
  /* проверяем, установлена ли маска ранее */
-  if((( skey->flags)&ak_key_flag_set_mask ) == 0 ) {
+  if((( skey->flags)&key_flag_set_mask ) == 0 ) {
 
    #ifdef AK_BIG_ENDIAN
     /* переворачиваем байты ключа для соответствия little endian */
@@ -755,7 +755,7 @@
         ((ak_uint32 *) skey->key)[idx] += ((ak_uint32 *) skey->key)[idx+8];
 
     /* меняем значение флага */
-     skey->flags |= ak_key_flag_set_mask;
+     skey->flags |= key_flag_set_mask;
 
   } else { /* если маска уже установлена, то мы сменяем ее на новую */
 
@@ -806,7 +806,7 @@
   if( skey->key_size == 0 ) return ak_error_message( ak_error_zero_length, __func__ ,
                                                            "using a key buffer with zero length" );
  /* проверяем, установлена ли маска ранее */
-  if( (( skey->flags)&ak_key_flag_set_mask ) == 0 ) return ak_error_ok;
+  if( (( skey->flags)&key_flag_set_mask ) == 0 ) return ak_error_ok;
 
  /* снимаем маску с ключа */
   for( idx = 0; idx < 8; idx++ ) {
@@ -821,7 +821,7 @@
  #endif
 
  /* меняем значение флага */
-  skey->flags ^= ak_key_flag_set_mask;
+  skey->flags ^= key_flag_set_mask;
  return ak_error_ok;
 }
 
@@ -857,7 +857,7 @@
   skey->icode = x.x;
 
  /* устанавливаем флаг */
-  skey->flags |= ak_key_flag_set_icode;
+  skey->flags |= key_flag_set_icode;
 
  return ak_error_ok;
 }

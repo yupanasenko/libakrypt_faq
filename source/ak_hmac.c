@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2021 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Файл ak_hmac.с                                                                                 */
 /*  - содержит реализацию семейства ключевых алгоритмов хеширования HMAC.                          */
@@ -34,7 +34,7 @@
   if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                       "using a null pointer to hmac key context" );
  /* проверяем наличие ключа и его ресурс */
-  if( !((hctx->key.flags)&ak_key_flag_set_key )) return ak_error_message( ak_error_key_value,
+  if( !((hctx->key.flags)&key_flag_set_key )) return ak_error_message( ak_error_key_value,
                                                __func__ , "using hmac key with unassigned value" );
 
   if( hctx->key.resource.value.counter <= 1 ) return ak_error_message( ak_error_low_key_resource,
@@ -89,7 +89,7 @@
   if( size%hctx->mctx.bsize ) return ak_error_message( ak_error_wrong_length, __func__ ,
                                                                   "using data with wrong length" );
  /* проверяем наличие ключа и его ресурс */
-  if( !((hctx->key.flags)&ak_key_flag_set_key )) return ak_error_message( ak_error_key_value,
+  if( !((hctx->key.flags)&key_flag_set_key )) return ak_error_message( ak_error_key_value,
                                                __func__ , "using hmac key with unassigned value" );
   if( hctx->key.resource.value.counter <= 0 ) return ak_error_message( ak_error_low_key_resource,
                                             __func__, "using hmac key context with low resource" );
@@ -126,7 +126,7 @@
   if( size >= hctx->mctx.bsize ) return ak_error_message( ak_error_zero_length,
                                           __func__ , "using wrong length for authenticated data" );
  /* проверяем наличие ключа (ресурс проверен при вызове clean) */
-  if( !((hctx->key.flags)&ak_key_flag_set_key )) return ak_error_message( ak_error_key_value,
+  if( !((hctx->key.flags)&key_flag_set_key )) return ak_error_message( ak_error_key_value,
                                                __func__ , "using hmac key with unassigned value" );
  /* обрабатываем хвост предыдущих данных */
   memset( temporary, 0, sizeof( temporary ));

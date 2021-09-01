@@ -8,9 +8,11 @@ cmake_minimum_required( VERSION 3.2 FATAL_ERROR )
 # -------------------------------------------------------------------------------------------------- #
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 9 )
-set( MINOR_VERSION 5 )
+set( MINOR_VERSION 7 )
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
+# строка с текущей датой, используется при сборке документации
+string( TIMESTAMP CURRENT_DATE_STRING "[%d %B, %Y]" )
 
 # -------------------------------------------------------------------------------------------------- #
 # Формируем название проекта
@@ -20,6 +22,7 @@ project( libakrypt C )
 # Перечень доступных опций для сборки библиотеки
 option( AK_STATIC_LIB "Build the static library" ON )
 option( AK_SHARED_LIB "Build the shared library" ON )
+option( AK_TESTS "Build test for libakrypt" OFF )
 option( AK_TESTS_GMP "Build comparison tests for gmp and libakrypt" OFF )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -35,6 +38,8 @@ include( DetectFlags )
 include( DetectHeaders )
 include( DetectIntrinsics )
 include( DetectLibraries )
+# модули CMake
+include( GNUInstallDirs )
 
 # -------------------------------------------------------------------------------------------------- #
 # Вырабатываем заголовочный файл (в каталоге сборки)
@@ -82,6 +87,7 @@ set( AKRYPT_SOURCES
    source/ak_asn1_keys.c
    source/ak_asn1_cert.c
    source/ak_blom.c
+   source/ak_kdf.c
 )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -96,7 +102,7 @@ endif()
 message("-- Used compile flags ${CMAKE_C_FLAGS}")
 
 # -------------------------------------------------------------------------------------------------- #
-# Определяем место хранения файла с  настройками библиотеки
+# Определяем место хранения файла с настройками библиотеки
 # -------------------------------------------------------------------------------------------------- #
 if( AK_CONFIG_PATH )
 else()
@@ -115,7 +121,7 @@ message("-- Path for libakrypt.conf is ${AK_CONFIG_PATH}")
 if( AK_CA_PATH )
 else()
   if( CMAKE_HOST_UNIX )
-    set( AK_CA_PATH "/usr/share/ca-certificates/libakrypt" )
+    set( AK_CA_PATH "${CMAKE_INSTALL_PREFIX}/share/ca-certificates/libakrypt" )
   endif()
   if( WIN32 )
     set( AK_CA_PATH "C:\\\\Program Files\\\\Akrypt\\\\ca-certificates" )
@@ -163,22 +169,30 @@ endif()
 # -------------------------------------------------------------------------------------------------- #
 # Сборка примеров, иллюстрирующих работу базовой библиотеки
 # -------------------------------------------------------------------------------------------------- #
+if( AK_TESTS_GMP )
+  set( AK_TESTS ON )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
 set( EXAMPLES_LIST
      log
      ini
      file
    )
 
-foreach( programm ${EXAMPLES_LIST} )
-  if( AK_STATIC_LIB )
-    add_executable( example-${programm} examples/example-${programm}.c )
-    target_link_libraries( example-${programm} akbase-static ${LIBAKRYPT_LIBS} )
-  endif()
-  if( AK_SHARED_LIB )
-    add_executable( example-shared-${programm} examples/example-${programm}.c )
-    target_link_libraries( example-shared-${programm} akbase-shared ${LIBAKRYPT_LIBS} )
-  endif()
-endforeach()
+# -------------------------------------------------------------------------------------------------- #
+if( AK_TESTS )
+  foreach( programm ${EXAMPLES_LIST} )
+    if( AK_STATIC_LIB )
+      add_executable( example-${programm} examples/example-${programm}.c )
+      target_link_libraries( example-${programm} akbase-static ${LIBAKRYPT_LIBS} )
+    endif()
+    if( AK_SHARED_LIB )
+      add_executable( example-shared-${programm} examples/example-${programm}.c )
+      target_link_libraries( example-shared-${programm} akbase-shared ${LIBAKRYPT_LIBS} )
+    endif()
+  endforeach()
+endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # Сборка тестовых примеров, проверяющих корректность элементарных арифметических операций
@@ -191,8 +205,8 @@ set ( ARITHMETIC_TESTS_LIST
       asn1-parse
       sign01
       asn1-keys
-      asn1-cert
       blom-keys
+      cmac
     )
 
 if( AK_TESTS_GMP )
@@ -204,25 +218,27 @@ if( AK_TESTS_GMP )
      )
 endif()
 
-enable_testing()
-foreach( programm ${ARITHMETIC_TESTS_LIST} )
-  add_executable( test-${programm} examples/test-${programm}.c )
-  target_link_libraries( test-${programm} akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
-  add_test( NAME test-${programm} COMMAND test-${programm} )
-endforeach()
-message("-- Added tests (now \"make test\" enabled): [ ${ARITHMETIC_TESTS_LIST} ]" )
+if( AK_TESTS )
+  enable_testing()
+  foreach( programm ${ARITHMETIC_TESTS_LIST} )
+    add_executable( test-${programm} examples/test-${programm}.c )
+    target_link_libraries( test-${programm} akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
+    add_test( NAME test-${programm} COMMAND test-${programm} )
+  endforeach()
+  message("-- Added tests (now \"make test\" enabled): [ ${ARITHMETIC_TESTS_LIST} ]" )
+endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # Сборка большого примера для функций криптобиблиотеки -- утилиты aktool
 # -------------------------------------------------------------------------------------------------- #
 set( AKTOOL_SOURCES
      aktool/aktool.c
-     aktool/aktool_show.c
-     aktool/aktool_test.c
      aktool/aktool_asn1.c
      aktool/aktool_key.c
+     aktool/aktool_show.c
+     aktool/aktool_test.c
      aktool/aktool_icode.c
-     aktool/aktool_encrypt.c
+#     aktool/aktool_encrypt.c
    )
 set( AKTOOL_FILES
      aktool/aktool.h
@@ -237,6 +253,8 @@ else()
 endif()
 message("-- Sources for aktool: [ ${AKTOOL_SOURCES} ]" )
 
+# -------------------------------------------------------------------------------------------------- #
+include( FindGettext )
 find_path( AK_HAVE_LIBINTL_H NAMES libintl.h )
 if( AK_HAVE_LIBINTL_H )
   include_directories( ${AK_HAVE_LIBINTL_H} )
@@ -286,16 +304,27 @@ if( CMAKE_HOST_UNIX )
     install( TARGETS akrypt-shared LIBRARY DESTINATION lib ARCHIVE DESTINATION lib )
   endif()
 
+ # компилируем и инсталлируем файлы с рускоязычным переводом утилиты aktool
+  install( CODE "execute_process( COMMAND strip -s ${CMAKE_CURRENT_BINARY_DIR}/aktool )" )
   install( TARGETS aktool DESTINATION bin )
-
-  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/libakrypt.conf DESTINATION ${AK_CONFIG_PATH} )
-  install( FILES ${MAIN_HEADERS} DESTINATION include )
-  install( FILES ${LIBAKRYPT_DOCUMENTATION} DESTINATION share/doc/libakrypt )
-  if( GZIP )
-    install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.1.gz DESTINATION share/man/ru/man1 )
-  else()
-    install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.1 DESTINATION share/man/ru/man1 )
+  if( GETTEXT_FOUND )
+    install( CODE "execute_process( COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.po -o ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo )" )
+    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo DESTINATION ${CMAKE_INSTALL_FULL_LOCALEDIR}/ru/LC_MESSAGES )
   endif()
+
+ # инсталлируем заголовочные файлы и документацию к библиотеке
+  install( FILES ${MAIN_HEADERS} DESTINATION include )
+  install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/libakrypt.conf DESTINATION ${AK_CONFIG_PATH} )
+  install( FILES ${LIBAKRYPT_DOCUMENTATION} DESTINATION ${CMAKE_INSTALL_FULL_DOCDIR} )
+
+ # инсталлируем мануал для aktool
+  if( GZIP )
+    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.1.gz DESTINATION ${CMAKE_INSTALL_FULL_MANDIR}/ru/man1 )
+  else()
+    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool/aktool.1 DESTINATION ${CMAKE_INSTALL_FULL_MANDIR}/ru/man1 )
+  endif()
+
+ # инсталлируем корневой сертификат библиотеки
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/cert/ca-libakrypt.crt DESTINATION ${AK_CA_PATH} )
 
 # деинсталляция
@@ -310,6 +339,7 @@ set( CPACK_SOURCE_GENERATOR "TBZ2")
 set( CPACK_SOURCE_IGNORE_FILES
   \\.git/
   .gitignore
+  .delme*
   TAGS
   "CMakeLists.txt.user*"
   "scratch*"
@@ -329,9 +359,13 @@ set( CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${FULL_VERSION}" )
 set( CPACK_STRIP_FILES TRUE )
 set( CPACK_PACKAGE_DESCRIPTION
      "Библиотека, реализующая российские криптографические механизмы в пространстве пользователя" )
-set(CPACK_VERBATIM_VARIABLES YES)
+set( CPACK_VERBATIM_VARIABLES YES )
    
 include( CPack )
+
+# запуск
+#   make package
+#   make package_source
 
 # -------------------------------------------------------------------------------------------------- #
 #                                                                                    CMakeLists.txt

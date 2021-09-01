@@ -261,6 +261,39 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \param function Функция, которая используется для вывода сообщения.
+    \param format Форматная строка, в соответствии с которой формируется сообщение
+
+    \note Функция сожержит внутреннее ограничение на длину выводимой троки символов.
+    Сейчас это ограничение равно 1022 символа.
+
+    \return Функция возвращает значение, которое вернул вызов системной (библиотечной) функции
+    форматирования строки.                                                                         */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_printf( ak_function_log *function, const char *format, ... )
+{
+  int result = 0;
+  va_list args;
+  char str[1024];
+
+  va_start( args, format );
+
+ #ifdef _MSC_VER
+  #if _MSC_VER > 1310
+    result = _vsnprintf_s( str, sizeof( str ) -1, sizeof( str ) -1, format, args );
+  #else
+    result = _vsnprintf( str, sizeof( str ) -1, format, args );
+  #endif
+ #else
+  result = vsnprintf( str, sizeof( str ) -1, format, args );
+ #endif
+  va_end( args );
+
+  function( str );
+ return result;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \param flag Если значение истинно, то цветовое выделение используется
 
     \return В случае удачного установления значения опции возввращается \ref ak_error_ok.
@@ -748,8 +781,10 @@
    char c = 0;
    DWORD mode, count;
    HANDLE ih = GetStdHandle( STD_INPUT_HANDLE  );
-   if( !GetConsoleMode( ih, &mode ))
-     return ak_error_message( ak_error_terminal, __func__, "not connected to a console" );
+
+   if( !GetConsoleMode( ih, &mode )) {
+     return ak_error_message( ak_error_terminal, __func__, "process can not connect to console" );
+   }
    SetConsoleMode( ih, mode & ~( ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT ));
 
    memset( pass, 0, psize );
@@ -761,12 +796,14 @@
 
    /* восстанавливаем настройки консоли */
    SetConsoleMode( ih, mode );
-   if(( len = strlen( pass )) < 1 )
+   if(( len = strlen( pass )) < 2 )
      return ak_error_message( ak_error_zero_length, __func__ , "input a very short password");
    return len-1;
 
   #endif
-   return ak_error_undefined_function;
+
+  ak_error_message( ak_error_undefined_function, __func__, "this compile branch is unsupported" );
+  return ak_error_undefined_function;
 
  #else
    int error = ak_error_ok;
@@ -793,20 +830,22 @@
 
    memset( pass, 0, psize );
    fgets( pass, psize, stdin );
-   if(( len = strlen( pass )) < 2 )
+   if(( len = strlen( pass )) < 2 ) {
      ak_error_message( error = ak_error_zero_length, __func__ , "input a very short password");
+     goto lab_exit;
+   }
    if( len > 0 ) pass[len-1] = 0;
     else pass[0] = 0;
 
   /* убираем за собой и восстанавливаем настройки */
    lab_exit: tcsetattr( STDIN_FILENO, TCSANOW, &ots );
-   return len-1;
+   if( error == ak_error_ok ) return len-1;
+    else return error;
  #endif
 
  /* некорректный путь компиляции исходного текста функции */
  return ak_error_undefined_function;
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция выводит предложение `message` в консоль, а после пытается считать строку и поместить

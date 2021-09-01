@@ -9,8 +9,11 @@
  int signkey_test( ak_oid );
 
 /* определяем функцию, которая будет имитировать чтение пароля пользователя */
- ssize_t get_user_password( char *password, size_t psize )
+ ssize_t get_user_password( const char *prompt, char *password, size_t psize, password_t flag )
 {
+  (void)prompt;
+  (void)flag;
+
   memset( password, 0, psize );
   ak_snprintf( password, psize, "password" );
  return strlen( password );
@@ -42,7 +45,8 @@
    }
   lab1:
 
- return ak_libakrypt_destroy();
+  ak_libakrypt_destroy();
+ return result;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -82,6 +86,12 @@
 
    /* импортируем ключ из файла */
     if(( lkey = key = ak_skey_load_from_file( filename )) == NULL ) return EXIT_FAILURE;
+   /* дополнительно проверяем код возврата функции,
+      однако в случае ошибки, эта часть кода не должна выполняться */
+    if( ak_error_get_value() != ak_error_ok ) {
+      printf("Exit on error value! Pointer is'nt equal to NULL\n");
+      return EXIT_FAILURE;
+    }
 
    /* выводим данные о ключе */
     printf("%s: %s (%s)\n", ak_libakrypt_get_engine_name( ((ak_skey)key)->oid->engine ),
@@ -89,11 +99,12 @@
     printf("      number: %s\n", ak_ptr_to_hexstr( ((ak_skey)key)->number, 32, ak_false ));
     printf("       label: %s\n", ((ak_skey)key)->label );
     printf("    resource: [type: %u, value: %ld]\n",
-                     ((ak_skey)key)->resource.value.type, ((ak_skey)key)->resource.value.counter );
+           ((ak_skey)key)->resource.value.type, (long int)((ak_skey)key)->resource.value.counter );
     printf("  not before: %s", ctime( &((ak_skey)key)->resource.time.not_before ));
     printf("   not after: %s", ctime( &((ak_skey)key)->resource.time.not_after ));
     printf("       flags: %016llx\n", ((ak_skey)key)->flags );
-    printf("      buffer: %s\n", ak_ptr_to_hexstr( ((ak_skey)key)->key, 2*((ak_skey)key)->key_size, ak_false ));
+    printf("      buffer: %s\n", ak_ptr_to_hexstr( ((ak_skey)key)->key,
+                                                           2*((ak_skey)key)->key_size, ak_false ));
 
    /* шифруем тестируемые данные еще раз*/
     if( ak_bckey_ctr( lkey, testdata, out2, sizeof( testdata ),
@@ -112,9 +123,10 @@
       else { printf("cmac: Wrong\n\n"); goto lab1; }
 
     result = EXIT_SUCCESS;
+
    /* самоуничтожение */
     lab1:
-     ak_oid_delete_object(((ak_skey)key)->oid, key );
+     ak_oid_delete_object( lkey->key.oid, key ); // или так ((ak_skey)key)->oid, key );
 
  return result;
 }
@@ -159,7 +171,7 @@
    printf("      number: %s\n", ak_ptr_to_hexstr( lctx.key.number, 32, ak_false ));
    printf("       label: %s\n", lctx.key.label );
    printf("    resource: [type: %u, value: %ld]\n",
-                                   lctx.key.resource.value.type, lctx.key.resource.value.counter );
+                         lctx.key.resource.value.type, (long int)lctx.key.resource.value.counter );
    printf("  not before: %s", ctime( &lctx.key.resource.time.not_before ));
    printf("   not after: %s", ctime( &lctx.key.resource.time.not_after ));
    printf("       flags: %016llx\n", lctx.key.flags );
@@ -232,7 +244,7 @@
    printf("       number: %s\n", ak_ptr_to_hexstr( lkey.key.number, 32, ak_false ));
    printf("        label: %s\n", lkey.key.label );
    printf("     resource: [type: %u, value: %ld]\n",
-                                   lkey.key.resource.value.type, lkey.key.resource.value.counter );
+                         lkey.key.resource.value.type, (long int)lkey.key.resource.value.counter );
    printf("   not before: %s", ctime( &lkey.key.resource.time.not_before ));
    printf("    not after: %s", ctime( &lkey.key.resource.time.not_after ));
    printf("        flags: %016llx\n", lkey.key.flags );

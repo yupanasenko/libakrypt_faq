@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*  Copyright (c) 2019 by Anton Sakharov                                                           */
-/*  Copyright (c) 2020 by Axel Kenzo, axelkenzo@mail.ru                                            */
+/*  Copyright (c) 2020 - 2021 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Файл ak_asn1.c                                                                                 */
 /*  - содержит реализацию функций,                                                                 */
@@ -68,7 +68,36 @@
  static char output_buffer[1024] = "";
 
 /* ----------------------------------------------------------------------------------------------- */
+ static int ak_asn1_print_to_stdout( const char *message )
+{
+  if( message ) printf( "%s", message );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static ak_function_log *asn1_print_function = ak_asn1_print_to_stdout;
+
+/* ----------------------------------------------------------------------------------------------- */
                                       /*  служебные функции */
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param new_function Функция, используемая для вывода сообщений                                 */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_set_print_function( ak_function_log *new_function )
+{
+  if( new_function == NULL )
+    return ak_error_message( ak_error_null_pointer, __func__, "using null pointer to new function" );
+
+  asn1_print_function = new_function;
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_asn1_unset_print_function( void )
+{
+  asn1_print_function = ak_asn1_print_to_stdout;
+ return ak_error_ok; 
+}
+
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param len длина данных
     \return Кол-во байтов, необходимое для хранения закодированной длины.                          */
@@ -489,13 +518,14 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \param tlv указатель на структуру узла ASN1 дерева.
-    \param fp Файловый дескриптор, в  который выводится информация об узле ASN1 дерева; дескриптор
-    должен быть предварительно связан с файлом.
+/*! Для вывода используется функция fprintf( stdout, ... )
+    (может быть изменена с помощью вызова ak_asn1_set_print_function() )
+
+    \param tlv указатель на структуру узла ASN1 дерева.
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_tlv_print( ak_tlv tlv, FILE *fp )
+ int ak_tlv_print( ak_tlv tlv )
 {
   const char *dp = NULL;
   char tmp[ sizeof(prefix) ];
@@ -514,7 +544,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     if(( plen == 0 ) && ( tlv->prev == NULL )) corner = LT_CORNER;
 
    /* выводим префикс и тег */
-    fprintf( fp, "%s%s%s%s\n", prefix, corner, dp, RT_CORNER );
+    ak_printf( asn1_print_function, "%s%s%s%s\n", prefix, corner, dp, RT_CORNER );
 
     memset( tmp, 0, sizeof( tmp ));
     memcpy( tmp, prefix, ak_min( sizeof(tmp)-1, strlen( prefix )));
@@ -522,25 +552,26 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
       ak_snprintf( prefix, sizeof( prefix ), "%s%s%*s", tmp, " ", strlen(dp), " " );
      else ak_snprintf( prefix, sizeof( prefix ), "%s%s%*s", tmp, VER_LINE, strlen(dp), " " );
 
-    ak_asn1_print( tlv->data.constructed, fp );
+    ak_asn1_print( tlv->data.constructed );
     prefix[plen] = 0;
   }
    else {
         /* выводим префикс и тег */
-         if( tlv->next == NULL ) fprintf( fp, "%s%s%s ", prefix, LB_CORNER, dp );
-          else fprintf( fp, "%s%s%s ", prefix, LTB_CORNERS, dp );
+         if( tlv->next == NULL ) ak_printf( asn1_print_function, "%s%s%s ", prefix, LB_CORNER, dp );
+          else ak_printf( asn1_print_function, "%s%s%s ", prefix, LTB_CORNERS, dp );
 
         /* теперь собственно данные */
          if( DATA_CLASS( tlv->tag ) == UNIVERSAL )
-           ak_tlv_print_primitive( tlv, fp );
+           ak_tlv_print_primitive( tlv );
           else {
             if( DATA_CLASS( tlv->tag ) == CONTEXT_SPECIFIC ) {
               if( tlv->data.primitive != NULL )
-                fprintf( fp, "%s\n", ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ));
-               else  fprintf( fp, "%s(null)%s",
-                                          ak_error_get_start_string(), ak_error_get_end_string());
+                ak_printf( asn1_print_function, "%s\n",
+                                      ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ));
+               else ak_printf( asn1_print_function, "%s(null)%s",
+                                           ak_error_get_start_string(), ak_error_get_end_string());
             }
-             else fprintf( fp, "%sUnknown data%s\n",
+             else ak_printf( asn1_print_function, "%sUnknown data%s\n",
                                            ak_error_get_start_string(), ak_error_get_end_string());
           } /* конец else UNIVERSAL */
    }
@@ -549,7 +580,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_tlv_print_primitive( ak_tlv tlv, FILE *fp )
+ int ak_tlv_print_primitive( ak_tlv tlv )
 {
   size_t len = 0;
   ak_uint32 u32 = 0;
@@ -563,17 +594,17 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   switch( TAG_NUMBER( tlv->tag )) {
 
     case TNULL:
-      fprintf( fp, "\n" );
+      ak_printf( asn1_print_function, "\n" );
       break;
 
     case TBOOLEAN:
-      if( *tlv->data.primitive == 0x00 ) fprintf( fp, "FALSE\n" );
-        else fprintf( fp, "TRUE\n");
+      if( *tlv->data.primitive == 0x00 ) ak_printf( asn1_print_function, "FALSE\n" );
+        else ak_printf( asn1_print_function, "TRUE\n");
       break;
 
     case TINTEGER:
       if(( error = ak_tlv_get_uint32( tlv, &u32 )) == ak_error_ok )
-        fprintf( fp, "0x%x\n", (unsigned int)u32 );
+        ak_printf( asn1_print_function, "0x%x\n", (unsigned int)u32 );
        else { /* обрабатываем большие целые числа */
          switch( error ) {
            case ak_error_invalid_asn1_length:
@@ -581,10 +612,10 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
              if( tlv->data.primitive[0] > 127 ) dp = ak_true;
               else {
                  if( tlv->data.primitive[0] == 0 )
-                   fprintf( fp, "0x%s [%u bits]\n",
+                   ak_printf( asn1_print_function, "0x%s [%u bits]\n",
                          ak_ptr_to_hexstr( tlv->data.primitive+1, tlv->len-1, ak_false ),
                                                                   (unsigned int)( 8*(tlv->len-1)));
-                  else fprintf( fp, "0x%s [%u bits]\n",
+                  else ak_printf( asn1_print_function, "0x%s [%u bits]\n",
                          ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ),
                                                                       (unsigned int)(8*tlv->len ));
               }
@@ -605,17 +636,17 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
        /*  в начале, обычный шестнадцатеричный вывод
            это все вместо простого fprintf( fp, "%s\n", ak_ptr_to_hexstr( ptr, len, ak_false )); */
-        fprintf( fp, "\n" ); /* здесь надо выводить длину в случае, когда данные распарсиваются */
+        ak_printf( asn1_print_function, "\n" ); /* здесь надо выводить длину в случае, когда данные распарсиваются */
         if( tlv->next == NULL ) fsym = " ";
         for( i = 0; i < row; i++ ) {
-           fprintf( fp, "%s%s ", prefix, fsym );
-           for( j = 0; j < 16; j++ ) fprintf( fp, " %02X", ((ak_uint8 *)ptr)[16*i+j] );
-           fprintf( fp, "\n");
+           ak_printf( asn1_print_function, "%s%s ", prefix, fsym );
+           for( j = 0; j < 16; j++ ) ak_printf( asn1_print_function, " %02X", ((ak_uint8 *)ptr)[16*i+j] );
+           ak_printf( asn1_print_function, "\n");
         }
         if( tail ) {
-           fprintf( fp, "%s%s ", prefix, fsym );
-           for( j = 0; j < tail; j++ ) fprintf( fp, " %02X", ((ak_uint8 *)ptr)[16*i+j] );
-           fprintf( fp, "\n");
+           ak_printf( asn1_print_function, "%s%s ", prefix, fsym );
+           for( j = 0; j < tail; j++ ) ak_printf( asn1_print_function, " %02X", ((ak_uint8 *)ptr)[16*i+j] );
+           ak_printf( asn1_print_function, "\n");
         }
 
        /* теперь мы пытаемся распарсить данные (в ряде случаев, это удается сделать) */
@@ -623,10 +654,10 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
         if( ak_asn1_decode( &asn, ptr, len, ak_false ) == ak_error_ok ) {
           size_t dlen = strlen( prefix );
           strcat( prefix, "   " );
-          fprintf( fp, "%s%s%s encoded (%u octets)%s\n", prefix,
-                                ak_error_get_start_string(), LTB_CORNERS, (unsigned int)len,
+          ak_printf( asn1_print_function, "%s%s%s (decoded %u octets)%s\n", prefix,
+                                ak_error_get_start_string(), LT_CORNER, (unsigned int)len, // LTB_CORNERS
                                                                        ak_error_get_end_string( ));
-          ak_asn1_print( &asn, fp );
+          ak_asn1_print( &asn );
           prefix[dlen] = 0;
         }
         ak_asn1_destroy( &asn) ;
@@ -643,20 +674,20 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
         char *fsym = VER_LINE;
 
        /*  как и ранее, обычный шестнадцатеричный вывод */
-        fprintf( fp, "\n" ); /* здесь надо выводить длину в случае, когда данные распарсиваются */
+        ak_printf( asn1_print_function, "\n" ); /* здесь надо выводить длину в случае, когда данные распарсиваются */
         if( tlv->next == NULL ) fsym = " ";
         for( i = 0; i < row; i++ ) {
-           fprintf( fp, "%s%s ", prefix, fsym );
-           for( j = 0; j < 16; j++ ) fprintf( fp, " %02X", bs.value[16*i+j] );
+           ak_printf( asn1_print_function, "%s%s ", prefix, fsym );
+           for( j = 0; j < 16; j++ ) ak_printf( asn1_print_function, " %02X", bs.value[16*i+j] );
            if(( i == row-1 ) && ( !tail ) && ( bs.unused >0 ))
-             fprintf( fp, " (%u bits unused)\n", bs.unused );
-            else fprintf( fp, "\n");
+             ak_printf( asn1_print_function, " (%u bits unused)\n", bs.unused );
+            else ak_printf( asn1_print_function, "\n");
         }
         if( tail ) {
-           fprintf( fp, "%s%s ", prefix, fsym );
-           for( j = 0; j < tail; j++ ) fprintf( fp, " %02X", bs.value[16*i+j] );
-           if( bs.unused > 0 ) fprintf( fp, " (%u bits unused)\n", bs.unused );
-            else fprintf( fp, "\n");
+           ak_printf( asn1_print_function, "%s%s ", prefix, fsym );
+           for( j = 0; j < tail; j++ ) ak_printf( asn1_print_function, " %02X", bs.value[16*i+j] );
+           if( bs.unused > 0 ) ak_printf( asn1_print_function, " (%u bits unused)\n", bs.unused );
+            else ak_printf( asn1_print_function, "\n");
         }
 
         /* в ряде случаев можно декодировать и битовые строки,
@@ -667,51 +698,51 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
     case TUTF8_STRING:
       if(( error = ak_tlv_get_utf8_string( tlv, &ptr )) == ak_error_ok ) {
-        fprintf( fp, "%s\n", (char *)ptr );
+        ak_printf( asn1_print_function, "%s\n", (char *)ptr );
       }
        else dp = ak_true;
       break;
 
     case TIA5_STRING:
       if(( error = ak_tlv_get_ia5_string( tlv, &ptr )) == ak_error_ok )
-        fprintf( fp, "%s\n", (char *)ptr );
+        ak_printf( asn1_print_function, "%s\n", (char *)ptr );
        else dp = ak_true;
       break;
 
     case TPRINTABLE_STRING:
       if(( error = ak_tlv_get_printable_string( tlv, &ptr )) == ak_error_ok )
-        fprintf( fp, "%s\n", (char *)ptr );
+        ak_printf( asn1_print_function, "%s\n", (char *)ptr );
        else dp = ak_true;
       break;
 
     case TNUMERIC_STRING:
       if(( error = ak_tlv_get_numeric_string( tlv, &ptr )) == ak_error_ok )
-        fprintf( fp, "%s\n", (char *)ptr );
+        ak_printf( asn1_print_function, "%s\n", (char *)ptr );
        else dp = ak_true;
       break;
 
     case TUTCTIME:
       if(( error = ak_tlv_get_utc_time_string( tlv, &ptr )) == ak_error_ok )
-        fprintf( fp, "%s\n", (char *)ptr );
+        ak_printf( asn1_print_function, "%s\n", (char *)ptr );
        else dp = ak_true;
       break;
 
     case TGENERALIZED_TIME:
       if(( error = ak_tlv_get_generalized_time_string( tlv, &ptr )) == ak_error_ok )
-        fprintf( fp, "%s\n", (char *)ptr );
+        ak_printf( asn1_print_function, "%s\n", (char *)ptr );
        else dp = ak_true;
       break;
 
     case TOBJECT_IDENTIFIER:
       if(( error = ak_tlv_get_oid( tlv, &ptr )) == ak_error_ok ) {
-        fprintf( fp, "%s", (char *)ptr );
+        ak_printf( asn1_print_function, "%s", (char *)ptr );
 
        /* ищем значение в базе oid'ов */
         if(( oid = ak_oid_find_by_ni( ptr )) != NULL ) {
-          fprintf( fp, " (%s)\n", oid->name[0] );
+          ak_printf( asn1_print_function, " (%s)\n", oid->name[0] );
          }
           else {
-           fprintf( fp, "\n");
+           ak_printf( asn1_print_function, "\n");
            ak_error_set_value( ak_error_ok ); /* убираем ошибку поиска oid */
          }
       }
@@ -724,9 +755,9 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
  /* случай, когда предопределенное преобразование неизвестно или выполнено с ошибкой */
   if( dp ) {
-    if( tlv->data.primitive != NULL ) fprintf( fp, " [len: %u, data: 0x%s]\n",
+    if( tlv->data.primitive != NULL ) ak_printf( asn1_print_function, " [len: %u, data: 0x%s]\n",
              (unsigned int) tlv->len, ak_ptr_to_hexstr( tlv->data.primitive, tlv->len, ak_false ));
-      else fprintf( fp, " [len: %u, data: %s(null)%s]\n", (unsigned int) tlv->len,
+      else ak_printf( asn1_print_function, " [len: %u, data: %s(null)%s]\n", (unsigned int) tlv->len,
                                          ak_error_get_start_string( ), ak_error_get_end_string( ));
   }
  return ak_error_ok;
@@ -753,8 +784,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
      break;
 
    case CONSTRUCTED:
-     if(( error = ak_asn1_evaluate_length(
-                                              tlv->data.constructed, &subtotal )) != ak_error_ok )
+     if(( error = ak_asn1_evaluate_length( tlv->data.constructed, &subtotal )) != ak_error_ok )
        return ak_error_message( error, __func__, "incorrect length evaluation of tlv element");
       else *length = 1 + ak_asn1_get_length_size(subtotal) + ( tlv->len = subtotal );
      break;
@@ -1523,7 +1553,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_tlv_print_global_name( ak_tlv tlv, FILE *fp )
+ int ak_tlv_print_global_name( ak_tlv tlv )
 {
   ak_asn1 asn = NULL;
   int error = ak_error_ok;
@@ -1582,9 +1612,9 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
       }
       ak_asn1_next( asnseq );
       if( ak_tlv_get_utf8_string( asnseq->current, &ptr ) == ak_error_ok ) {
-        fprintf( fp, "%s: %s", oid->name[1], (char *)ptr );
-        if( asn->current->next != NULL ) fprintf( fp, ", " );
-         else fprintf( fp, " " );
+        ak_printf( asn1_print_function, "%s: %s", oid->name[1], (char *)ptr );
+        if( asn->current->next != NULL ) ak_printf( asn1_print_function, ", " );
+         else ak_printf( asn1_print_function, " " );
       }
   } while( ak_asn1_next( asn ));
 
@@ -1703,8 +1733,10 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
                                                       "using tlv context which are not sequence" );
  /* стравниваем длины обобщенных имен */
   if( (asn_right = right->data.constructed)->count != (asn_left = left->data.constructed)->count )
-    return ak_error_message( ak_error_not_equal_data, __func__,
+    {
+      return ak_error_message( ak_error_not_equal_data, __func__,
                                           "the given global names has different element's count" );
+    }
  /* теперь поэлементное сравнение */
   ak_asn1_first( asn_right );
   ak_asn1_first( asn_left );
@@ -1782,350 +1814,48 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция создает расширение x509v3 следующего вида.
-
- \code
-   ├SEQUENCE┐
-            ├OBJECT IDENTIFIER 2.5.29.14 (SubjectKey Identifier)
-            └OCTET STRING
-               04 14 9B 85 5E FB 81 DC 4D 59 07 51 63 CF BE DF
-               DA 2C 7F C9 44 3C
-               ├ encoded (22 octets)
-               └OCTET STRING
-                  9B 85 5E FB 81 DC 4D 59 07 51 63 CF BE DF DA 2C  // данные, на которые
-                  7F C9 44 3C                                      // указывает ptr
- \endcode
-
- \param ptr указатель на область памяти, содержащую идентификатор ключа
- \param size размер области памяти
- \return Функция возвращает указатель на структуру узла. Данная структура должна
-  быть позднее удалена с помощью явного вызова функции ak_tlv_delete() или путем
-  удаления дерева, в который данный узел будет входить.
-  В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
-  функции ak_error_get_value().                                                                    */
+/*!
+    \param name Обобщенное имя, должно быть предварительно создано.
+    \param idx Строка (идентификатор), которым отмечены данные.
+    \param size Размер найденных данных
+    \return Функция возвращает указатель строку символов (данные не копируются и хранятся
+            в asn1 дереве). В случае ошибки возвращается NULL и устанавливается код ошибки,
+            который можно получить с помощью вызова ak_error_get_value().                          */
 /* ----------------------------------------------------------------------------------------------- */
- ak_tlv ak_tlv_new_subject_key_identifier( ak_pointer ptr, const size_t size )
+ ak_uint8 *ak_tlv_get_string_from_global_name( ak_tlv name, const char *idx, size_t *size )
 {
-  ak_uint8 encode[256]; /* очень длинные идентификаторы это плохо */
-  ak_tlv tlv = NULL, os = NULL;
-  size_t len = sizeof( encode );
+  ak_asn1 lst = NULL;
 
-  if(( tlv = ak_tlv_new_sequence()) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
+  if( name == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to global name" );
     return NULL;
   }
- /* добавляем идентификатор расширения */
-  ak_asn1_add_oid( tlv->data.constructed, "2.5.29.14" );
- /* добавляем закодированный идентификатор (номер) ключа */
-  memset( encode, 0, sizeof( encode ));
-  if(( os = ak_tlv_new_primitive( TOCTET_STRING, size, ptr, ak_false )) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                                   "incorrect creation of temporary tlv context" );
-    return ak_tlv_delete( tlv );
-  }
-  if( ak_tlv_encode( os, encode, &len ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                                    "incorrect encoding a temporary tlv context" );
-    return ak_tlv_delete( tlv );
-  }
-  ak_tlv_delete( os );
- /* собственно вставка в asn1 дерево */
-  ak_asn1_add_octet_string( tlv->data.constructed, encode, len );
- return tlv;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция создает расширение x509v3, определяемое следующей структурой
-
-  \code
-   id-ce-basicConstraints OBJECT IDENTIFIER ::=  { 2 5 29 19 }
-
-   BasicConstraints ::= SEQUENCE {
-        cA                      BOOLEAN DEFAULT FALSE,
-        pathLenConstraint       INTEGER (0..MAX) OPTIONAL }
-  \endcode
-
-
-  Пример иерархического представления данного расширения выгдядит следующим образом.
-
- \code
-   └SEQUENCE┐
-            ├OBJECT IDENTIFIER 2.5.29.19 (Basic Constraints)
-            ├BOOLEAN TRUE                 // расширение является критичным
-            └OCTET STRING
-               30 06 01 01 FF 02 01 00
-               ├ encoded (8 octets)
-               └SEQUENCE┐
-                        ├BOOLEAN TRUE     //  сертификат может создавать цепочки сертификации (cA)
-                        └INTEGER 0x0      //  длина цепочки равна 1
-                                          // (количество промежуточных сертификатов равно ноль)
- \endcode
-
-  RFC5280: Расширение для базовых ограничений (basic constraints) указывает, является ли `субъект`
-  сертификата центром сертификации (certificate authority), а также максимальную глубину действительных
-  сертификационных путей, которые включают данный сертификат. Булевское значение сА указывает,
-  принадлежит ли сертифицированный открытый ключ центру сертификации.
-  Если булевское значение сА не установлено,
-  то бит keyCertSign в расширении использования ключа (keyUsage) не должен быть установлен.
-  Поле pathLenConstrant имеет смысл, только если булевское значение сА установлено, и в расширении
-  использования ключа установлен бит keyCertSign. В этом случае данное поле определяет максимальное
-  число несамовыпущенных промежуточных сертификатов, которые *могут* следовать за данным сертификатом
-  в действительном сертификационном пути.
-  Сертификат является самовыпущенным (самоподписаным), если номера ключей,
-  которые присутствуют в полях субъекта и выпускающего (эмитента), являются одинаковыми и не пустыми.
-  Когда pathLenConstraint не присутствует, никаких ограничений не предполагается.
-
- \note Данное расширение должно присутствовать как критичное во всех сертификатах центра сертификации,
- которые содержат открытые ключи, используемые для проверки цифровых подписей в сертификатах.
- Данное расширение *может* присутствовать как критичное или некритичное расширение в сертификатах
- центра сертификации, которые содержат открытые ключи, используемые для целей, отличных от проверки
- цифровых подписей в сертификатах. Такие сертификаты содержат открытые ключи, используемые
- исключительно для проверки цифровых подписей в CRLs,
- и сертификатами, которые содержат открытые ключи для управления ключом, используемым в протоколах
- регистрации сертификатов.
-
- \param ca флаг возможности создавать цепочки сертификации
- \param pathLen длина цепочки сертифкации
- \return Функция возвращает указатель на структуру узла. Данная структура должна
-  быть позднее удалена с помощью явного вызова функции ak_tlv_delete() или путем
-  удаления дерева, в который данный узел будет входить.
-  В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
-  функции ak_error_get_value().                                                                    */
-/* ----------------------------------------------------------------------------------------------- */
- ak_tlv ak_tlv_new_basic_constraints( bool_t ca, const ak_uint32 pathLen )
-{
-  ak_uint8 encode[256]; /* очень длинные идентификаторы это плохо */
-  ak_tlv tlv = NULL, os = NULL;
-  size_t len = sizeof( encode );
-
-  if(( tlv = ak_tlv_new_sequence()) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
-    return NULL;
-  }
- /* добавляем идентификатор расширения */
-  ak_asn1_add_oid( tlv->data.constructed, "2.5.29.19" );
-  ak_asn1_add_bool( tlv->data.constructed, ak_true ); /* расширение всегда критическое */
-
- /* добавляем закодированный идентификатор (номер) ключа */
-  if(( os = ak_tlv_new_sequence()) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                                   "incorrect creation of temporary tlv context" );
-    return ak_tlv_delete( tlv );
-  }
-
-  ak_asn1_add_bool( os->data.constructed, ca );
-  if( ca ) ak_asn1_add_uint32( os->data.constructed, pathLen );
-
-  memset( encode, 0, sizeof( encode ));
-  if( ak_tlv_encode( os, encode, &len ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                                    "incorrect encoding a temporary tlv context" );
-    return ak_tlv_delete( tlv );
-  }
-  ak_tlv_delete( os );
-
- /* собственно вставка в asn1 дерево */
-  ak_asn1_add_octet_string( tlv->data.constructed, encode, len );
- return tlv;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция создает расширение x509v3 следующего вида.
-
- \code
-    └SEQUENCE┐
-             ├OBJECT IDENTIFIER 2.5.29.15 (Key Usage)
-             └OCTET STRING
-                03 02 00 84
-                ├ encoded (4 octets)
-                └BIT STRING
-                   84
- \endcode
-
- \param bits набор флагов
- \return Функция возвращает указатель на структуру узла. Данная структура должна
-  быть позднее удалена с помощью явного вызова функции ak_tlv_delete() или путем
-  удаления дерева, в который данный узел будет входить.
-  В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
-  функции ak_error_get_value().                                                                    */
-/* ----------------------------------------------------------------------------------------------- */
- ak_tlv ak_tlv_new_key_usage( const ak_uint32 bits )
-{
-  ak_uint8 buffer[2], /* значащими битами являются младшие 9,
-            поэтому нам хватит двух байт для хранения флагов */
-           encode[16];  /* массив для кодирования битовой строки */
-  struct bit_string bs;
-  ak_tlv tlv = NULL, os = NULL;
-  size_t len = sizeof( encode );
-
-  if( !bits ) {
-    ak_error_message( ak_error_zero_length, __func__, "using undefined set of keyUsage flags" );
-    return NULL;
-  }
-  if(( tlv = ak_tlv_new_sequence()) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
-    return NULL;
-  }
- /* добавляем идентификатор расширения */
-  ak_asn1_add_oid( tlv->data.constructed, "2.5.29.15" );
-
-  buffer[0] = ( bits >> 1 )&0xFF;
-  if( bits&0x01 ) { /* определен бит decipherOnly */
-    buffer[1] = 0x80;
-    bs.unused = 7;
-    bs.len = 2;
-  } else {
-      buffer[1] = 0;
-      bs.unused = 0;
-      bs.len = 1;
-   }
-  bs.value = buffer;
-
- /* добавляем закодированную последовательность бит */
-  if(( os = ak_tlv_new_primitive( TBIT_STRING, bs.len+1, NULL, ak_true )) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                                   "incorrect creation of temporary tlv context" );
-    return ak_tlv_delete( tlv );
-  }
-  os->data.primitive[0] = bs.unused;
-  memcpy( os->data.primitive+1, bs.value, bs.len );
-
-  memset( encode, 0, sizeof( encode ));
-  if( ak_tlv_encode( os, encode, &len ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                                    "incorrect encoding a temporary tlv context" );
-    return ak_tlv_delete( tlv );
-  }
-  ak_tlv_delete( os );
-
- /* собственно вставка в asn1 дерево */
-  ak_asn1_add_octet_string( tlv->data.constructed, encode, len );
- return tlv;
-}
-
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция создает расширение x509v3 определяемое следующей структурой
-
- \code
-    KeyIdentifier ::= ОСТЕТ SТRING
-
-    AuthorityKeyIdentifier ::= SEQUENCE {
-       keyIdentifier       [О] KeyIdentifier OPTIONAL,
-       authorityCertIssuer [1] GeneralNames OPTIONAL,
-       authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL
-    }
- \endcode
-
-   Пример данного расширения выглядит следующим образом (взято из сертификата,
-   подписанного корневым сертификатом ГУЦ)
-
- \code
-└SEQUENCE┐
-         ├[0] 8b983b891851e8ef9c0278b8eac8d420b255c95d
-         ├[1]┐
-         │   └[4]┐
-         │       └SEQUENCE┐
-         │                ├SET┐
-         │                │   └SEQUENCE┐
-         │                │            ├OBJECT IDENTIFIER 1.2.840.113549.1.9.1 (email-address)
-         │                │            └IA5 STRING dit@minsvyaz.ru
-         │                ├SET┐
-         │                │   └SEQUENCE┐
-         │                │            ├OBJECT IDENTIFIER 2.5.4.6 (country-name)
-         │                │            └PRINTABLE STRING RU
-         │                ├SET┐
-         │                │   └SEQUENCE┐
-         │                │            ├OBJECT IDENTIFIER 2.5.4.8 (state-or-province-name)
-         │                │            └UTF8 STRING 77 г. Москва
-         │                └SET┐
-         │                    └SEQUENCE┐
-         │                             ├OBJECT IDENTIFIER 2.5.4.3 (common-name)
-         │                             └UTF8 STRING Головной удостоверяющий центр
-         └[2] 34681e40cb41ef33a9a0b7c876929a29
- \endcode
-
-   Метке `[0]` соответствует номер ключа подписи (поле verifykey.number),
-   метке `[1]`  - расширенное имя ключа подписи (поле verifykey.name),
-   метке `[2]`  - серийный номер выпущенного сертификата открытого ключа (однозначно вычисляется из
-   номеров секретного ключа и ключа подписи).
-
-   RFC 5280: Расширение для идентификатора ключа сертификационного центра предоставляет способ
-   идентификации открытого ключа, соответствующего закрытому ключу, который использовался для
-   подписывания сертификата. Данное расширение используется, когда выпускающий имеет несколько ключей
-   для подписывания. Идентификация может быть основана либо на идентификаторе ключа
-   (идентификатор ключа субъекта в сертификате выпускающего), либо на имени выпускающего и
-   серийном номере сертификата.
-
-   \note Поле `keyIdentifier` расширения authorityKeyIdentifier должно быть включено во все
-   сертификаты, выпущенные цетром сертификации для обеспечения возможности создания
-   сертификационного пути. Существует одно исключение: когда центр сертификации распространяет свой
-   открытый ключ в форме самоподписанного сертификата, идентификатор ключа уполномоченного органа
-   может быть опущен. Подпись для самоподписанного сертификата создается закрытым ключом,
-   соответствующим открытому ключу субъекта. ЭТО доказывает, что выпускающий обладает как открытым
-   ключом, так и закрытым.
-
-   \param issuer_skey секретный ключ, используемый для подписи сертификата, в который
-   помещается расширение
-   \param issuer_vkey открытый ключ, соответствующий ключу подписи
-   \param name булево значение; если оно истинно, то в расширение помещается глобальное имя владельца
-   указанных ключей
-   \return Функция возвращает указатель на структуру узла. Данная структура должна
-   быть позднее удалена с помощью явного вызова функции ak_tlv_delete() или путем
-   удаления дерева, в который данный узел будет входить.
-   В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
-   функции ak_error_get_value().                                                                   */
-/* ----------------------------------------------------------------------------------------------- */
- ak_tlv ak_tlv_new_authority_key_identifier( ak_signkey issuer_skey,
-                                                     ak_verifykey issuer_vkey, const bool_t name )
-{
-  ak_mpzn256 serial;
-  ak_uint8 encode[512];  /* массив для кодирования */
-  size_t len = sizeof( encode );
-  ak_tlv tlv = NULL, os = NULL;
-  ak_asn1 asn = NULL, asn1 = NULL;
-
-  if(( tlv = ak_tlv_new_sequence()) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
+  if( idx == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to object identifier" );
     return NULL;
   }
 
- /* добавляем идентификатор расширения */
-  ak_asn1_add_oid( tlv->data.constructed, "2.5.29.35" );
+ /* начинаем перебор всех элементов */
+  if(( lst = name->data.constructed ) != NULL ) {
+    ak_asn1_first( lst );
+    do{
+        ak_pointer ptr = NULL;
+        ak_asn1 sq = lst->current->data.constructed;
 
- /* добавляем закодированную последовательность, содержащую перечень имен */
-  if(( os = ak_tlv_new_sequence()) == NULL ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                                   "incorrect creation of temporary tlv context" );
-    return ak_tlv_delete( tlv );
+        ak_asn1_first( sq = sq->current->data.constructed );
+        ak_tlv_get_oid( sq->current, &ptr );
+        if( strncmp( idx, ptr, strlen( idx )) == 0 ) {
+          ak_asn1_next( sq );
+          if( size != NULL ) *size = sq->current->len; /* получаем длину строки */
+
+          memcpy( output_buffer, sq->current->data.primitive, sq->current->len );
+          output_buffer[sq->current->len] = 0;
+          return (ak_uint8 *)output_buffer;
+        }
+    } while( ak_asn1_next( lst ));
   }
 
- /* добавляем [0] */
-  ak_asn1_add_tlv( os->data.constructed,
-                  ak_tlv_new_primitive( CONTEXT_SPECIFIC^0x00, 32, issuer_vkey->number, ak_true ));
- /* добавляем [1] */
-  if( name ) {
-    ak_asn1_add_tlv( os->data.constructed,
-                  ak_tlv_new_constructed( CONSTRUCTED^CONTEXT_SPECIFIC^0x01, asn = ak_asn1_new()));
-    ak_asn1_add_tlv( asn,
-                 ak_tlv_new_constructed( CONSTRUCTED^CONTEXT_SPECIFIC^0x04, asn1 = ak_asn1_new()));
-    ak_asn1_add_tlv( asn1, ak_tlv_duplicate_global_name( issuer_vkey->name ));
-  }
- /* добавляем [2] */
-  ak_verifykey_generate_certificate_serial_number( issuer_vkey, issuer_skey, serial );
-  ak_asn1_add_mpzn( os->data.constructed, CONTEXT_SPECIFIC^0x02, serial, ak_mpzn256_size );
-
-  memset( encode, 0, sizeof( encode ));
-  if( ak_tlv_encode( os, encode, &len ) != ak_error_ok ) {
-    ak_error_message( ak_error_get_value(), __func__,
-                                                    "incorrect encoding a temporary tlv context" );
-    return ak_tlv_delete( tlv );
-  }
-  ak_tlv_delete( os );
-
- /* собственно вставка в asn1 дерево */
-  ak_asn1_add_octet_string( tlv->data.constructed, encode, len );
- return tlv;
+ return NULL;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -2430,6 +2160,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
   if( size > ak_mpznmax_size ) return ak_error_message( ak_error_wrong_length, __func__,
                                                          "using mpzn number with very large size" );
  /* получаем массив байт в правильной кодировке */
+  memset( be, 0, sizeof( be ));
   ak_mpzn_to_little_endian( n, size, be, sizeof( be ), ak_true );
 
  /* ищем первый ненулевой октет, одновременно определяем длину копируемых данных */
@@ -2441,7 +2172,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
    else len -= idx;
 
  /* проверяем старший октет */
-  sz = ( be[idx]&0x80 ) ? len+1 : len;
+  sz = len; //sz = ( be[idx]&0x80 ) ? len+1 : len;
 
  /* создаем элемент и выделяем память */
   if(( tlv = ak_tlv_new_primitive( tag, sz, NULL, ak_true )) == NULL )
@@ -2897,29 +2628,29 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \param asn1 указатель на текущий уровень ASN.1 дерева.
-    \param fp файловый дескриптор, в который выводится информация;
+/*!  Для вывода используется функция fprintf( stdout, ... )
+    (может быть изменена с помощью вызова ak_asn1_set_print_function() )
+
+    \param asn1 указатель на текущий уровень ASN.1 дерева.
     файл должен быть преварительно открыт на запись.
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_asn1_print( ak_asn1 asn1, FILE *fp )
+ int ak_asn1_print( ak_asn1 asn1 )
 {
   ak_tlv x = NULL;
 
   if( asn1 == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                             "using null pointer to asn1 element" );
-  if( fp == NULL )  return ak_error_message( ak_error_null_pointer, __func__,
-                                                            "using null pointer to file context" );
  /* перебираем все узлы текущего слоя, начиная с первого */
   x = asn1->current;
   ak_asn1_first( asn1 );
   if( asn1->current == NULL ) /* это некорректная ситуация, поэтому сообщение выделяется красным */
-    fprintf( fp, "%s%s (null)%s\n", prefix,
+    ak_printf( asn1_print_function, "%s%s (null)%s\n", prefix,
                                           ak_error_get_start_string(), ak_error_get_end_string( ));
    else { /* перебор всех доступных узлов */
     do{
-      ak_tlv_print( asn1->current, fp );
+      ak_tlv_print( asn1->current );
     } while( ak_asn1_next( asn1 ));
   }
 
@@ -3256,7 +2987,7 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
 
   /* сохраняем */
    if(( error = ak_file_create_to_write( &fp, filename )) != ak_error_ok ) {
-     ak_error_message( error, __func__, "incorrect creation a file for secret key" );
+     ak_error_message_fmt( error, __func__, "incorrect creation a file %s", filename );
      goto lab2;
    }
    do{
@@ -3390,12 +3121,17 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
     может хранится ключевая информация. Происходит повторное считывание информации и
     повторная попытка декодирования считанных данных.
 
+    В случае успешного считывания данных, формат хранения помещается в переменную format.
+    Если считывание произошло с ошибкой, то значение переменной format не определено.
+
     \param asn уровень ASN.1 в который помещается считываемое значение
     \param filename имя файла, в котором содержится der-последовательность
+    \param format если указатель не равен NULL, то по даному адресу размещается
+    формат считанных данных.
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_asn1_import_from_file( ak_asn1 asn, const char *filename )
+ int ak_asn1_import_from_file( ak_asn1 asn, const char *filename, export_format_t *format )
 {
   int error = ak_error_ok;
   ak_uint8 *ptr = NULL, buffer[2048];
@@ -3414,8 +3150,10 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
 
  /* очищаем, при необходимости, выделенную память */
   if( ptr != buffer ) free( ptr );
-  if( error == ak_error_ok ) return ak_error_ok; /* если декодировали успешно, то выходим */
-
+  if( error == ak_error_ok ) {
+    if( format != NULL ) *format = asn1_der_format;
+    return ak_error_ok; /* если декодировали успешно, то выходим */
+  }
  /* заново инициализируем локальные переменные */
   size = sizeof( buffer );
   while( ak_asn1_remove( asn ) == ak_true );
@@ -3430,8 +3168,10 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
 
  /* очищаем, при необходимости, выделенную память */
   if( ptr != buffer ) free( ptr );
-  if( error == ak_error_ok ) ak_error_set_value( ak_error_ok ); /* в случае успеха очищаем
-                                                                   ошибки неудачной конвертации */
+  if( error == ak_error_ok ) {
+    if( format != NULL ) *format = asn1_pem_format;
+    ak_error_set_value( ak_error_ok ); /* в случае успеха очищаем ошибки неудачной конвертации */
+  }
  return error;
 }
 
@@ -3444,12 +3184,11 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
       закодирована в кодировке base64 (формат PEM для сертификатов и секретных ключей).
 
    \param filename файл, содержащий закодированное ASN.1 дерево.
-   \param fp файловый дескриптор, который связан с файлом, в который выводится информация;
     перед вызовом функции десткриптор должен быть открыт; может принимать значения stdout и stderr.
    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_print_asn1( const char *filename , FILE *fp )
+ int ak_libakrypt_print_asn1( const char *filename )
 {
   struct asn1 asn;
   int error = ak_error_ok;
@@ -3458,9 +3197,9 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
   if(( error = ak_asn1_create( &asn )) != ak_error_ok )
     return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
 
- /* считываем данные и выводм в консоль */
-  if(( error = ak_asn1_import_from_file( &asn, filename )) == ak_error_ok ) {
-    ak_asn1_print( &asn, fp );
+ /* считываем данные и выводим в консоль */
+  if(( error = ak_asn1_import_from_file( &asn, filename, NULL )) == ak_error_ok ) {
+    ak_asn1_print( &asn );
   }
   ak_asn1_destroy( &asn );
  return error;
@@ -3485,7 +3224,7 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
  /* 1. Считываем дерево из файла */
   if(( asn = ak_asn1_new( )) == NULL ) return ak_error_message( ak_error_get_value(),
                                               __func__, "incorrect creation of new asn1 context" );
-  if(( error = ak_asn1_import_from_file( asn, infile )) != ak_error_ok ) {
+  if(( error = ak_asn1_import_from_file( asn, infile, NULL )) != ak_error_ok ) {
     ak_error_message_fmt( error, __func__,
                                         "incorrect reading an asn1 context from file %s", infile );
     goto labex;
@@ -3531,7 +3270,7 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
  /* 1. Считываем дерево из файла */
   if(( asn = ak_asn1_new( )) == NULL ) return ak_error_message( ak_error_get_value(),
                                               __func__, "incorrect creation of new asn1 context" );
-  if(( error = ak_asn1_import_from_file( asn, infile )) != ak_error_ok ) {
+  if(( error = ak_asn1_import_from_file( asn, infile, NULL )) != ak_error_ok ) {
     ak_error_message_fmt( error, __func__,
                                         "incorrect reading an asn1 context from file %s", infile );
     goto labex;

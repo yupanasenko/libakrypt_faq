@@ -54,7 +54,7 @@
  int ak_file_find( const char *root , const char *mask,
                                           ak_function_find *function, ak_pointer ptr, bool_t tree )
 {
-  int error = ak_error_ok;
+  int ev, error = ak_error_ok;
 
 #ifdef _WIN32
   WIN32_FIND_DATA ffd;
@@ -117,8 +117,8 @@
            ak_snprintf( szDir, MAX_PATH-1, "%s\\%s", root,  ffd.cFileName );
           #endif
 
-           if(( error = ak_file_find( szDir, mask, function, ptr, tree )) != ak_error_ok )
-             ak_error_message_fmt( error,
+           if(( ev = ak_file_find( szDir, mask, function, ptr, tree )) != ak_error_ok )
+             ak_error_message_fmt( error = ev,
                                          __func__, "access to \"%s\" directory denied", filename );
          }
        } else {
@@ -137,7 +137,7 @@
                 #else
                  ak_snprintf( filename, MAX_PATH-1, "%s\\%s", root,  ffd.cFileName );
                 #endif
-                 function( filename, ptr );
+                 if(( ev = function( filename, ptr )) != ak_error_ok ) error = ev;
               }
 
   } while( FindNextFile( hFind, &ffd ) != 0);
@@ -167,23 +167,23 @@
       if( tree ) { // выполняем рекурсию для вложенных каталогов
         memset( filename, 0, FILENAME_MAX );
         ak_snprintf( filename, FILENAME_MAX, "%s/%s", root, ent->d_name );
-        if(( error = ak_file_find( filename, mask, function, ptr, tree )) != ak_error_ok )
-          ak_error_message_fmt( error, __func__, "access to \"%s\" directory denied", filename );
+        if(( ev = ak_file_find( filename, mask, function, ptr, tree )) != ak_error_ok ) {
+          ak_error_message_fmt( error = ev, __func__, "access to \"%s\" directory denied", filename );
+        }
       }
     } else
        if( ent->d_type == DT_REG ) { // обрабатываем только обычные файлы
-
           if( !fnmatch( mask, ent->d_name, FNM_PATHNAME )) {
             memset( filename, 0, FILENAME_MAX );
             ak_snprintf( filename, FILENAME_MAX, "%s/%s", root, ent->d_name );
-            function( filename, ptr );
+            if(( ev = function( filename, ptr )) != ak_error_ok ) error = ev;
           }
        }
   }
   if( closedir( dp )) return ak_error_message_fmt( ak_error_close_file,
                                                                 __func__ , "%s", strerror( errno ));
 #endif
- return ak_error_ok;
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

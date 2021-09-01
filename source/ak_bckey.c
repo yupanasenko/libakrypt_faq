@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2021 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                            by kirlit26                                                          */
 /*  Файл ak_bckey.c                                                                                */
 /*  - содержит реализацию общих функций для алгоритмов блочного шифрования.                        */
@@ -520,7 +520,7 @@
                                                 "wrong value for \"openssl_compability\" option" );
 
  /* проверяем, установлен ли ключ */
-  if(( bkey->key.flags&ak_key_flag_set_key ) == 0 ) return ak_error_message( ak_error_key_value,
+  if(( bkey->key.flags&key_flag_set_key ) == 0 ) return ak_error_message( ak_error_key_value,
                                     __func__, "using secret key context with undefined key value" );
 
  /* проверяем целостность ключа */
@@ -538,7 +538,7 @@
     всегда опускается при обработке данных, не кратных длина блока */
   if(( iv == NULL ) || ( iv_size == 0 )) { /* запрос на использование внутреннего значения */
 
-    if( bkey->key.flags&ak_key_flag_not_ctr )
+    if( bkey->key.flags&key_flag_not_ctr )
       return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                            "function call with undefined value of initial vector" );
   } else {
@@ -557,7 +557,7 @@
      memcpy( bkey->ivector + halfsize*((unsigned int)(1-oc)), iv, ak_min( halfsize, iv_size ));
 
     /* поднимаем значение флага: синхропосылка установлена */ 
-     bkey->key.flags = ( bkey->key.flags&( ~ak_key_flag_not_ctr ));
+     bkey->key.flags = ( bkey->key.flags&( ~key_flag_not_ctr ));
     }
 
  /* обработка основного массива данных (кратного длине блока) */
@@ -629,7 +629,7 @@
    /* запрещаем дальнейшее использование функции на данном значении синхропосылки,
                                            поскольку обрабатываемые данные не кратны длине блока. */
     memset( bkey->ivector, 0, sizeof( bkey->ivector ));
-    bkey->key.flags = bkey->key.flags&( ~ak_key_flag_not_ctr );
+    bkey->key.flags = bkey->key.flags&( ~key_flag_not_ctr );
   }
 
  /* перемаскируем ключ */
@@ -814,7 +814,7 @@
   /* проверяем длину синхропосылки */
   if(( iv == NULL ) || ( iv_size == 0 )) { /* запрос на использование внутреннего значения */
 
-    if( bkey->key.flags&ak_key_flag_not_ctr )
+    if( bkey->key.flags&key_flag_not_ctr )
       return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                            "function call with undefined value of initial vector" );
   }
@@ -828,7 +828,7 @@
   /* помещаем во внутренний буффер значение синхропосылки */
    memcpy( bkey->ivector, iv, iv_size);
   /* поднимаем значение флага: синхропосылка установлена */
-   bkey->key.flags = ( bkey->key.flags&( ~ak_key_flag_not_ctr ))^ak_key_flag_not_ctr;
+   bkey->key.flags = ( bkey->key.flags&( ~key_flag_not_ctr ))^key_flag_not_ctr;
 
    /* обработка основного массива данных (кратного длине блока) */
     switch( bkey->bsize ) {
@@ -876,7 +876,7 @@
     /* запрещаем дальнейшее использование функции на данном значении синхропосылки,
                                             поскольку обрабатываемые данные не кратны длине блока. */
      memset( bkey->ivector, 0, sizeof( bkey->ivector ));
-     bkey->key.flags = bkey->key.flags&( ~ak_key_flag_not_ctr );
+     bkey->key.flags = bkey->key.flags&( ~key_flag_not_ctr );
    }
 
   /* перемаскируем ключ */
@@ -914,7 +914,7 @@
      всегда опускается при обработке данных, не кратных длине блока */
    if(( iv == NULL ) || ( iv_size == 0 )) { /* запрос на использование внутреннего значения */
 
-     if( bkey->key.flags&ak_key_flag_not_ctr )
+     if( bkey->key.flags&key_flag_not_ctr )
        return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                             "function call with undefined value of initial vector" );
    } else {
@@ -928,7 +928,7 @@
       memcpy(bkey->ivector, iv, iv_size);
 
      /* поднимаем значение флага: синхропосылка установлена */
-      bkey->key.flags = ( bkey->key.flags&( ~ak_key_flag_not_ctr ))^ak_key_flag_not_ctr;
+      bkey->key.flags = ( bkey->key.flags&( ~key_flag_not_ctr ))^key_flag_not_ctr;
      }
 
   /* обработка основного массива данных (кратного длине блока) */
@@ -972,7 +972,7 @@
      /* запрещаем дальнейшее использование функции на данном значении синхропосылки,
                                                поскольку обрабатываемые данные не кратны длине блока. */
      memset( bkey->ivector, 0, sizeof( bkey->ivector ));
-     bkey->key.flags = bkey->key.flags&( ~ak_key_flag_not_ctr );
+     bkey->key.flags = bkey->key.flags&( ~key_flag_not_ctr );
      /* перемаскируем ключ */
      if(( error = bkey->key.set_mask( &bkey->key )) != ak_error_ok )
         ak_error_message( error, __func__ , "wrong remasking of secret key" );
@@ -1008,7 +1008,7 @@
      всегда опускается при обработке данных, не кратных длине блока */
    if(( iv == NULL ) || ( iv_size == 0 )) { /* запрос на использование внутреннего значения */
 
-     if( bkey->key.flags&ak_key_flag_not_ctr )
+     if( bkey->key.flags&key_flag_not_ctr )
        return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                             "function call with undefined value of initial vector" );
    } else {
@@ -1022,7 +1022,7 @@
       memcpy(bkey->ivector, iv, iv_size);
 
      /* поднимаем значение флага: синхропосылка установлена */
-      bkey->key.flags = ( bkey->key.flags&( ~ak_key_flag_not_ctr ))^ak_key_flag_not_ctr;
+      bkey->key.flags = ( bkey->key.flags&( ~key_flag_not_ctr ))^key_flag_not_ctr;
      }
 
   /* обработка основного массива данных (кратного длине блока) */
@@ -1066,7 +1066,7 @@
      /* запрещаем дальнейшее использование функции на данном значении синхропосылки,
                                                поскольку обрабатываемые данные не кратны длине блока. */
      memset( bkey->ivector, 0, sizeof( bkey->ivector ));
-     bkey->key.flags = bkey->key.flags&( ~ak_key_flag_not_ctr );
+     bkey->key.flags = bkey->key.flags&( ~key_flag_not_ctr );
      /* перемаскируем ключ */
      if(( error = bkey->key.set_mask( &bkey->key )) != ak_error_ok )
         ak_error_message( error, __func__ , "wrong remasking of secret key" );

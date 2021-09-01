@@ -189,6 +189,14 @@
   \settoheight{\CodeHeightChar}{?}%
 }
 
+% ---------------------------------------------------------------------------------------------- %
+\renewenvironment{DoxyVerb}{%
+  \small%
+  \verbatim
+}{%
+  \endverbatim%
+  \normalsize%
+}
 
 %===== C O N T E N T S =====
 

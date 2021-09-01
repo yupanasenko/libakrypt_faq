@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2020 by Axel Kenzo, axelkenzo@mail.ru                                            */
+/*  Copyright (c) 2020 - 2021 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Portions Copyright (c) 1996-1999 by Internet Software Consortium.                              */
 /*  Portions Copyright (c) 1995 by International Business Machines, Inc.                           */
@@ -32,21 +32,20 @@
     содержащие последовательность символов "-----",
     а также ограничители '#', ':', игнорируются.
 
-    Пробелы игнорируются.
-
-    В оставшихся строках символы, не входящие в base64, вызывают ошибку декодирования.
+    В оставшихся строках символы, не входящие в base64, игнорируются.
 
  \note Функция экспортируется.
  \param buf указатель на массив, в который будут считаны данные;
- память может быть выделена заранее, если память не выделена, то указатель должен принимать
- значение NULL.
+        память может быть выделена заранее, если память не выделена,
+        то указатель должен принимать значение NULL. Если выделенной памяти недостаточно,
+        то выделяется новая область памяти, которая должна быть позднее удалена с помощью функции free().
  \param size размер выделенной заранее памяти в байтах;
- в случае выделения новой памяти, в переменную `size` помещается размер выделенной памяти.
+        в случае выделения новой памяти, в переменную `size` помещается размер выделенной памяти.
  \param filename файл, из которого будет производиться чтение.
 
  \return Функция возвращает указатель на буффер, в который помещены данные.
- Если произошла ошибка, то функция возвращает NULL; код ошибки может быть получен с помощью
- вызова функции ak_error_get_value().                                                              */
+        Если произошла ошибка, то функция возвращает NULL; код ошибки может быть получен с помощью
+        вызова функции ak_error_get_value().                                                       */
 /* ----------------------------------------------------------------------------------------------- */
  ak_uint8 *ak_ptr_load_from_base64_file( ak_pointer buf, size_t *size, const char *filename )
 {
@@ -54,7 +53,7 @@
   ak_uint64 idx = 0;
   size_t ptrlen = 0, len = 0;
   ak_uint8 *ptr = NULL;
-  char ch, localbuffer[1024];
+  char ch, localbuffer[FILENAME_MAX]; /* максимальный размер строки, храимой в памяти */
   int error = ak_error_ok, off = 0;
 
  /* открываемся */
@@ -63,7 +62,7 @@
     return NULL;
   }
 
-  /* надо бы определиться с размером буффера:
+  /* надо бы определиться с размером буфера:
      величины 1 + sfp.size*3/4 должно хватить, даже без лишних символов. */
   if( sfp.size < 5 ) {
     ak_error_message( ak_error_zero_length, __func__, "loading from file with zero length" );
@@ -75,9 +74,12 @@
   if(( buf == NULL ) || ( ptrlen > *size )) {
     if(( ptr = malloc( ptrlen )) == NULL ) {
       ak_error_message( error = ak_error_out_of_memory, __func__, "incorrect memory allocation" );
-      goto  exlab;
+      goto exlab;
     }
-  } else { ptr = buf; }
+  } else {
+      ptr = buf;
+      ptrlen = *size;
+    }
 
  /* нарезаем входные данные на строки длиной не более чем 1022 символа */
   memset( ptr, 0, ptrlen );
@@ -88,9 +90,9 @@
                                                                "unexpected end of %s", filename );
        goto exlab;
      }
-     if( off > 1022 ) {
+     if( off > (int)( sizeof( localbuffer )-2 )) {
        ak_error_message_fmt( error = ak_error_read_data, __func__ ,
-                                          "%s has a line with more than 1022 symbols", filename );
+                   "%s has a line with more than %u symbols", filename, sizeof( localbuffer )-2 );
        goto exlab;
      }
     if( ch == '\n' ) {
@@ -103,7 +105,6 @@
 
      /* проверяем корректность строки с данными */
       if(( slen != 0 ) &&              /* строка не пустая */
-         ( slen%4 ==0 ) &&             /* длина строки кратна четырем */
          ( strchr( localbuffer, '#' ) == 0 ) &&        /* строка не содержит символ # */
          ( strchr( localbuffer, ':' ) == 0 ) &&        /* строка не содержит символ : */
          ( strstr( localbuffer, "-----" ) == NULL )) { /* строка не содержит ----- */
@@ -112,10 +113,8 @@
          while(( ch = localbuffer[i++]) != 0 ) {
            if( ch == ' ' ) continue; /* пробелы пропускаем */
            if( ch == '=' ) break;    /* достигли конца данных */
-           if(( pos = strchr( base64, ch )) == NULL ) { /* встречен некорректный символ */
-             ak_error_message_fmt( error = ak_error_undefined_value, __func__ ,
-                                                    "%s contains an incorrect symbol", filename );
-             goto exlab;
+           if(( pos = strchr( base64, ch )) == NULL ) { /* встречен некорректный символ,
+                                                                      мы его игнорируем */
            }
            if( len + 1 >= ptrlen ) { /* достаточно места для хранения данных */
              ak_error_message( error = ak_error_wrong_index, __func__ ,
@@ -162,7 +161,7 @@
 
       } /* далее мы очищаем строку независимо от ее содержимого */
       off = 0;
-      memset( localbuffer, 0, 1024 );
+      memset( localbuffer, 0, sizeof( localbuffer ));
     } else localbuffer[off++] = ch;
   }
 
@@ -173,9 +172,10 @@
   *size = len;
   ak_file_close( &sfp );
   if( error != ak_error_ok ) {
-    if( ptr != NULL ) free(ptr);
+    if(( ptr != NULL ) && (ptr != buf )) free(ptr);
     ptr = NULL;
   }
+
  return ptr;
 }
 

@@ -2,30 +2,80 @@
 # генерация документации (только для UNIX)
 # -------------------------------------------------------------------------------------------------- #
 find_program( PANDOC pandoc )
-find_program( SED sed )
-find_program( DOXYGEN doxygen )
-find_program( XELATEX xelatex )
-find_program( QHELPGENERATOR qhelpgenerator )
-find_program( ETAGS etags )
-find_program( GZIP gzip )
+if( PANDOC )
+  message( "-- pandoc found" )
+else()
+  message( "-- pandoc not found" )
+endif()
 
+find_program( SED sed )
+if( SED )
+  message( "-- sed found" )
+else()
+  message( "-- sed not found" )
+endif()
+
+find_program( DOXYGEN doxygen )
+if( DOXYGEN )
+  message( "-- doxygen found" )
+else()
+  message( "-- doxygen not found" )
+endif()
+
+find_program( XELATEX xelatex )
+if( XELATEX )
+  message( "-- xelatex found" )
+else()
+  message( "-- xelateX not found" )
+endif()
+
+find_program( QHELPGENERATOR qhelpgenerator )
+if( QHELPGENERATOR )
+  message( "-- qhelpgenerator found" )
+else()
+  message( "-- qhelpgenerator not found" )
+endif()
+
+find_program( ETAGS etags )
+if( ETAGS )
+  message( "-- etags found" )
+else()
+  message( "-- etags not found" )
+endif()
+
+find_program( GZIP gzip )
+if( GZIP )
+  message( "-- gzip found" )
+else()
+  message( "-- gzip not found" )
+endif()
+
+find_program( XGETTEXT xgettext )
+if( XGETTEXT )
+  message( "-- xgettext found" )
+else()
+  message( "-- xgettext not found" )
+endif()
+
+# -----------------------------------------------------------------------------------
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.1.in ${CMAKE_CURRENT_BINARY_DIR}/aktool.1 @ONLY )
+
+# -----------------------------------------------------------------------------------
+# скрипты для генерации документации
 if( UNIX )
   set( script ${CMAKE_CURRENT_BINARY_DIR}/make-doc-${FULL_VERSION}.sh )
   set( pdf-script ${CMAKE_CURRENT_BINARY_DIR}/make-pdfdoc-${FULL_VERSION}.sh )
   file( WRITE ${script} "#/bin/bash\n" )
 
+# -----------------------------------------------------------------------------------
+# определяем команду для генерации man файла
   if( PANDOC )
-   # определяем команду для генерации man файла
-    file( APPEND ${script} "echo Create documentation for aktool utility\n" )
-    file( APPEND ${script}
-     "pandoc --metadata=date:\"18 July 2021\" --metadata=title:\"aktool\" --metadata=section:1 --metadata=footer:\"Правила пользования\" -s -t man ${CMAKE_CURRENT_SOURCE_DIR}/aktool/Readme.md -o ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.1\n" )
-    if( GZIP )
-      file( APPEND ${script} "gzip --force ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.1\n" )
-    endif()
-    file( APPEND ${script} "echo Ok\n" )
+    execute_process( COMMAND pandoc -f man -t latex ${CMAKE_CURRENT_BINARY_DIR}/aktool.1 -s -o ${CMAKE_CURRENT_BINARY_DIR}/aktool.tex --template ${CMAKE_CURRENT_SOURCE_DIR}/doc/aktool-header.tex )
   endif()
+  message("-- Manual documentation for aktool utility created" )
 
-  # документация для функций библиотеки
+# -----------------------------------------------------------------------------------
+# документация для функций библиотеки
   if( DOXYGEN )
     # doxygen найден и документация может быть сгенерирована
     configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.akbase.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.akbase @ONLY )
@@ -36,12 +86,18 @@ if( UNIX )
     file( APPEND ${script} "doxygen Doxyfile.akbase\n" )
     file( APPEND ${script} "doxygen Doxyfile.akrypt\n" )
 
+    # добавляем генерацию мануалов
     if( XELATEX )
+      file( WRITE ${pdf-script} "#/bin/bash\n" )
       file( APPEND ${pdf-script} "${script}\n" )
+      if( PANDOC )
+        file( APPEND ${pdf-script} "xelatex -interaction=nonstopmode ${CMAKE_CURRENT_BINARY_DIR}/aktool.tex\n" )
+        file( APPEND ${pdf-script} "mv ${CMAKE_CURRENT_BINARY_DIR}/aktool.pdf ${CMAKE_CURRENT_BINARY_DIR}/aktool-doc-${FULL_VERSION}.pdf\n" )
+      endif()
       file( APPEND ${pdf-script} "cd doc-akbase/latex; make; cd ../..\n" )
       file( APPEND ${pdf-script} "cp doc-akbase/latex/refman.pdf ${CMAKE_CURRENT_BINARY_DIR}/libakrypt-base-doc-${FULL_VERSION}.pdf\n")
       file( APPEND ${pdf-script} "cd doc-akrypt/latex; make; cd ../..\n" )
-      file( APPEND ${pdf-script} "cp doc-akrypt/latex/refman.pdf ${CMAKE_CURRENT_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.pdf\n")
+      file( APPEND ${pdf-script} "cp doc-akrypt/latex/refman.pdf ${CMAKE_CURRENT_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.pdf\n")      
     endif()
 
     if( QHELPGENERATOR )
@@ -50,16 +106,20 @@ if( UNIX )
       file( APPEND ${script} "cp doc-akrypt/html/akrypt-library.qch ${CMAKE_CURRENT_BINARY_DIR}/libakrypt-doc-${FULL_VERSION}.qch\n" )
       file( APPEND ${script} "rm doc-akrypt/html/akrypt-library.qch\n" )
     endif()
+
     file( APPEND ${script} "tar -cjvf libakrypt-base-doc-${FULL_VERSION}.tar.bz2 doc-akbase/html\n")
     file( APPEND ${script} "tar -cjvf libakrypt-doc-${FULL_VERSION}.tar.bz2 doc-akrypt/html\n")
-  else()
-      message("-- doxygen not found")
   endif()
 
+# -----------------------------------------------------------------------------------
+# добавляем поддержку etags
+  file( APPEND ${script} "cd ${CMAKE_CURRENT_SOURCE_DIR}\n" )
   if( ETAGS )
     file( APPEND ${script} "cd ${CMAKE_CURRENT_SOURCE_DIR}; etags.emacs source/*.[ch]; cd ${CMAKE_CURRENT_BINARY_DIR}\n" )
   endif()
 
+# -----------------------------------------------------------------------------------
+  file( APPEND ${script} "cd ${CMAKE_CURRENT_BINARY_DIR}\n" )
   execute_process( COMMAND chmod +x ${script} )
   add_custom_target( doc ${script} )
   message("-- Script for documentation is done (now \"make doc\" enabled)")
@@ -67,7 +127,15 @@ if( UNIX )
   if( XELATEX )
     execute_process( COMMAND chmod +x ${pdf-script} )
     add_custom_target( pdf ${pdf-script} )
-    message("-- xeLaTeX support added (now \"make pdf\" enabled)")
+    message("-- Script for PDF documentation (using xeLaTeX engine) is done (now \"make pdf\" enabled)")
   endif()
 
+# конец if( UNIX )
+endif()
+
+
+# -----------------------------------------------------------------------------------
+# исполняем хвосты, т.е. то что почти забыли сделать
+if( GZIP )
+  execute_process( COMMAND  gzip --force ${CMAKE_CURRENT_BINARY_DIR}/aktool.1 )
 endif()

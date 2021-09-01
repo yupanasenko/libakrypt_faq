@@ -42,7 +42,7 @@
 
  /* разбираем опции командной строки */
   do {
-       next_option = getopt_long( argc, argv, "o:", long_options, NULL );
+       next_option = getopt_long( argc, argv, "o:h", long_options, NULL );
        switch( next_option )
       {
        /* сначала обработка стандартных опций */
@@ -63,7 +63,7 @@
                        if(( strncmp( optarg, "pem", 3 ) == 0 ) || ( strncmp( optarg, "PEM", 3 ) == 0 ))
                          format = asn1_pem_format;
                         else {
-                          fprintf( stdout, "error:\t%s is not valid format of output data\n", optarg );
+                          aktool_error(_("%s is not valid format of output data"), optarg );
                           return EXIT_FAILURE;
                         }
                      break;
@@ -110,7 +110,6 @@
   if( argc < 3 ) return aktool_asn1_help();
 
  /* начинаем работу с криптографическими примитивами */
- /* начинаем работу с криптографическими примитивами */
    if( !aktool_create_libakrypt( )) return EXIT_FAILURE;
 
   switch( work ) {
@@ -132,8 +131,8 @@
   aktool_destroy_libakrypt();
 
   if( exitcode ) {
-    fprintf( stdout,
-            _("aktool found %d error(s), rerun aktool with \"--audit stderr\" option\n"), exitcode );
+    if( exitcode > 0 )
+      aktool_error(_("aktool found %d error(s), rerun aktool with \"--audit stderr\" option or see syslog messages"), exitcode );
     return EXIT_FAILURE;
   }
 
@@ -143,26 +142,37 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_asn1_print( int argc, tchar *argv[] )
 {
-  int idx = 0, error = ak_error_ok, ecount = 0;
+  int ecount = 0;
 
-  for( idx = 2; idx < argc; idx++ ) {
-     if( ak_file_or_directory( argv[idx] ) == DT_REG ) {
-       if(( error = ak_libakrypt_print_asn1( argv[idx], stdout )) != ak_error_ok ) {
-         fprintf( stdout, _("file %s is wrong\n"), argv[idx] );
-         ecount++;
-       }
-     }
+  ++optind; /* пропускаем управляющую команду (a или asn1parse) */
+  if( optind < argc ) {
+    while( optind < argc ) {
+        char *value = argv[optind++]; /* получаем указатель на запрашиваемое имя файла */
+        if( ak_file_or_directory( value ) == DT_REG ) {
+          if( ak_libakrypt_print_asn1( value ) != ak_error_ok ) {
+            aktool_error(_("file %s is wrong"), value );
+            ecount++;
+          }
+        }
+          else aktool_error(_("incorrect filename %s"), value );
+    }
   }
+   else {
+      aktool_error(_("file with asn1 content is not specified as the last argument of the program"));
+      return ak_error_undefined_file;
+    }
 
  return ecount;
 }
+
+/* дальнейшие функции надо исправить через optind */
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_asn1_convert( int argc, tchar *argv[],
                                   char *outname, export_format_t format, crypto_content_t content )
 {
   size_t sl = 0;
-  int idx = 0, error = ak_error_ok, ecount = 0;
+  int idx = 0, ecount = 0;
 
   for( idx = 2; idx < argc; idx++ ) {
      if( ak_file_or_directory( argv[idx] ) == DT_REG ) {
@@ -181,15 +191,14 @@
        /* 2. если формат pem и тип не определен, надо бы потестировать */
 
        /* 3. конвертируем данные */
-        if(( error = ak_libakrypt_convert_asn1( argv[idx], name, format, content )) != ak_error_ok )
-        {
-          fprintf( stdout, _("convertation of %s is wrong\n"), argv[idx] );
+        if( ak_libakrypt_convert_asn1( argv[idx], name, format, content ) != ak_error_ok ) {
+          aktool_error(_("convertation of %s is wrong"), argv[idx] );
           ecount++;
         } else {
-            if(( error = ak_libakrypt_print_asn1( name, stdout )) == ak_error_ok )
+            if( ak_libakrypt_print_asn1( name ) == ak_error_ok )
               fprintf( stdout, _("convertation of %s to %s is Ok\n"), argv[idx], name );
              else {
-               fprintf( stdout, _("convertation of %s is wrong\n"), argv[idx] );
+               aktool_error(_("convertation of %s is wrong"), argv[idx] );
                ecount++;
              }
           }
@@ -202,12 +211,12 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_asn1_split( int argc, tchar *argv[], export_format_t format, crypto_content_t content )
 {
-  int idx = 0, error = ak_error_ok, ecount = 0;
+  int idx = 0, ecount = 0;
 
   for( idx = 2; idx < argc; idx++ ) {
      if( ak_file_or_directory( argv[idx] ) == DT_REG ) {
-       if(( error = ak_libakrypt_split_asn1( argv[idx], format, content )) != ak_error_ok ) {
-         fprintf( stdout, _("file %s is wrong\n"), argv[idx] );
+       if( ak_libakrypt_split_asn1( argv[idx], format, content ) != ak_error_ok ) {
+         aktool_error(_("file %s is wrong"), argv[idx] );
          ecount++;
        }
      }
@@ -235,4 +244,3 @@
 
  return aktool_print_common_options();
 }
-

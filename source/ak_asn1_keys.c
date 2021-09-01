@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2020 by Axel Kenzo, axelkenzo@mail.ru                                            */
+/*  Copyright (c) 2020 - 2021 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Файл ak_asn1_keys.c                                                                            */
 /*  - содержит реализацию функций, предназначенных для экспорта/импорта секретной                  */
@@ -16,7 +16,10 @@
 #endif
 
 /* ----------------------------------------------------------------------------------------------- */
+/* устанавливаем начальные значения для глобавальных переменных */
  ak_function_password_read *ak_function_default_password_read = ak_password_read_from_terminal;
+ char *ak_default_password_prompt = "password: ";
+ password_t ak_default_password_interpretation = symbolic_pass;
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \note Функция экспортируется.
@@ -33,20 +36,92 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ssize_t ak_password_read_from_terminal( char *password, const size_t pass_size )
+/*! \note Функция экспортируется.
+    \param prompt Константная строка, которая выводит перед запросом пароля
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_libakrypt_set_password_read_prompt( const char *prompt )
 {
+  if( prompt == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                  "using null pointer to password prompt value" );
+  ak_default_password_prompt = (char *) prompt;
+ return ak_error_ok;
+
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \note Функция экспортируется.
+    \param method Элемент перечисления, указывающий способ интерпретации вводимых данных.
+    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_libakrypt_set_password_read_method( password_t method )
+{
+  ak_default_password_interpretation = method;
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция расширяет возможности функции ak_password_read() следующим образом:
+
+    - функция выводит приглашение для ввода пароля,
+    - функция позволяет вводить данные в шестнадцатеричном формате.
+
+    \param prompt Приглашение, печатаемое перед вводом пароля
+    \param password Указатель на область памяти, в которую помещается пароль.
+    Если даные вводятся в символьном формате (hex = ak_false), то последний введенный символ
+    полагается равным нулю, так что позднее, размер введенного пароля также может быть определен
+    с помощью функции strlen().
+
+    \param pass_size Размер массива, для хранения введенных данных.
+    \param hex Флаг того, вводятся ли даные в символьном (hex = ak_false) или
+    шестнадцатеричном формате (hex = ak_true ).
+
+    @return В случае успеха функция возвращает количество считанных символов.
+    В случае возникновения ошибки возвращается ее код.                                             */
+/* ----------------------------------------------------------------------------------------------- */
+ ssize_t ak_password_read_from_terminal( const char *prompt, char *password,
+                                                           const size_t pass_size, password_t hex )
+{
+   char buffer[256];
+   struct random generator;
    ssize_t error = ak_error_ok;
 
-  fprintf( stdout, "password: "); fflush( stdout );
-  error = ak_password_read( password, pass_size );
+   fprintf( stdout, "%s", prompt ); fflush( stdout );
+   if( hex == hexademal_pass ) {
+     size_t length = ak_password_read( buffer, sizeof( buffer )); /* мы считали максимум 255 символов
+                                                                            + замыкающий ноль */
+     if(( length > 0 ) && ( strlen( buffer ) == (size_t)length )) { /* ошибки нет,
+                                                                        можно преобразовывать */
+       if(( error = ak_hexstr_to_ptr( buffer, password, pass_size, ak_false )) == ak_error_ok ) {
+        /* получаем длину преобразованных данных */
+         if( length&1 ) length++;
+         error = ( length >>= 1 );
+        /* здесь мы, фактически, хотим почистить стек процесса */
+         ak_random_create_lcg( &generator );
+         ak_ptr_wipe( buffer, sizeof( buffer ), &generator );
+         ak_random_destroy( &generator );
+       }
+     }
+      else error = length;
+   }
+    else error = ak_password_read( password, pass_size );
   fprintf( stdout, "\n" );
+
  return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
                   /* Функции выработки и сохранения производных ключей */
 /* ----------------------------------------------------------------------------------------------- */
-/*! \param ekey контекст создаваемого ключа шифрования
+/*! Для выработки ключей `eKey` и `iKey` используется алгоритм PBKDF2, реализуемый при
+    помощи функции хеширования Стрибог512 (см. Р 50.1.111-2016), т.е.
+    \code
+     eKey || iKey = PBKDF2( password, salt, iter, 64 )
+    \endcode
+
+    \param ekey контекст создаваемого ключа шифрования
     \param ikey контекст создаваемого ключа имитозащиты
     \param oid идентификатор алгоритма блочного шифрования, для которого создается ключевая пара
     \param password пароль
@@ -308,13 +383,15 @@
   ak_tlv_get_uint32( asn->current, &u32 ); /* число циклов */
 
  /* вырабатываем производную ключевую информацию */
-  if(( passlen = ak_function_default_password_read( password, sizeof( password ))) < ak_error_ok )
+  if(( passlen = ak_function_default_password_read( ak_default_password_prompt,
+               password, sizeof( password ), ak_default_password_interpretation )) < ak_error_ok )
     return ak_error_message( error, __func__, "incorrect password reading" );
 
  /* 1. получаем пользовательский пароль и вырабатываем производную ключевую информацию */
-   error = ak_bckey_create_key_pair_from_password( ekey, ikey, eoid,
-                                                               password, passlen, ptr, size, u32 );
-   memset( password, 0, sizeof( password ));
+   if(( error = ak_bckey_create_key_pair_from_password( ekey, ikey, eoid,
+                                             password, passlen, ptr, size, u32 )) == ak_error_ok )
+     ak_ptr_wipe( password, sizeof( password ), &ikey->key.generator );
+    else memset( password, 0, sizeof( password ));
 
  return error;
 }
@@ -1094,7 +1171,7 @@
    ak_mpzn_set_little_endian( (ak_uint64 *)(skey->key),
                                               (skey->key_size >>2), ptr+ivsize, keysize, ak_true );
   /* меняем значение флага */
-   skey->flags |= ak_key_flag_set_mask;
+   skey->flags |= key_flag_set_mask;
 
   /* вычисляем контрольную сумму */
    if(( error = skey->set_icode( skey )) != ak_error_ok ) return ak_error_message( error,
@@ -1104,7 +1181,7 @@
                                                            __func__ , "wrong secret key masking" );
   /* устанавливаем флаг того, что ключевое значение определено.
     теперь ключ можно использовать в криптографических алгоритмах */
-   skey->flags |= ak_key_flag_set_key;
+   skey->flags |= key_flag_set_key;
 
   /* для ключей блочного шифрования выполняем развертку раундовых ключей */
    if( skey->oid->engine == block_cipher ) {
@@ -1334,6 +1411,8 @@
     /* удаляем объект */
      if( engine == undefined_engine ) ak_oid_delete_object( oid, *key );
       else oid->func.first.destroy( *key );
+     *key = NULL; /* это значение возвращается наверх и служит признаком ошибки
+                                           исполнения функции, так же как и код  */
    }
 
  return error;
@@ -1360,7 +1439,7 @@
      return NULL;
    }
   /* считываем ключ и преобразуем его в ASN.1 дерево */
-   if(( error = ak_asn1_import_from_file( asn = ak_asn1_new(), filename )) != ak_error_ok ) {
+   if(( error = ak_asn1_import_from_file( asn = ak_asn1_new(), filename, NULL )) != ak_error_ok ) {
      ak_error_message_fmt( error, __func__,
                                      "incorrect reading of ASN.1 context from %s file", filename );
      goto lab1;
@@ -1410,7 +1489,7 @@
      return NULL;
    }
   /* считываем ключ и преобразуем его в ASN.1 дерево */
-   if(( error = ak_asn1_import_from_file( asn = ak_asn1_new(), filename )) != ak_error_ok ) {
+   if(( error = ak_asn1_import_from_file( asn = ak_asn1_new(), filename, NULL )) != ak_error_ok ) {
      ak_error_message_fmt( error, __func__,
                                      "incorrect reading of ASN.1 context from %s file", filename );
      goto lab1;
@@ -1459,7 +1538,7 @@
      return ak_error_message( ak_error_null_pointer, __func__, "using null pointer to filename" );
 
   /* считываем ключ и преобразуем его в ASN.1 дерево */
-   if(( error = ak_asn1_import_from_file( asn = ak_asn1_new(), filename )) != ak_error_ok ) {
+   if(( error = ak_asn1_import_from_file( asn = ak_asn1_new(), filename, NULL )) != ak_error_ok ) {
      ak_error_message_fmt( error, __func__,
                                      "incorrect reading of ASN.1 context from %s file", filename );
      goto lab1;
