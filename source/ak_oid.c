@@ -332,11 +332,17 @@
  static const char *asn1_o_i[] =           { "2.5.4.10", NULL };
  static const char *asn1_ou_n[] =          { "organization-unit", "ou", NULL };
  static const char *asn1_ou_i[] =          { "2.5.4.11", NULL };
+ static const char *asn1_ps_n[] =          { "pseudonym", "ps", NULL };
+ static const char *asn1_ps_i[] =          { "2.5.4.65", NULL };
 
- static const char *asn1_ku_n[] =          { "key-usage", NULL };
- static const char *asn1_ku_i[] =          { "2.5.29.15", NULL };
  static const char *asn1_ski_n[] =         { "subject-key-identifier", NULL };
  static const char *asn1_ski_i[] =         { "2.5.29.14", NULL };
+ static const char *asn1_ku_n[] =          { "key-usage", NULL };
+ static const char *asn1_ku_i[] =          { "2.5.29.15", NULL };
+ static const char *asn1_san_n[] =         { "subject-alternative-name", NULL };
+ static const char *asn1_san_i[] =         { "2.5.29.17", NULL };
+ static const char *asn1_ian_n[] =         { "issuer-alternative-name", NULL };
+ static const char *asn1_ian_i[] =         { "2.5.29.18", NULL };
  static const char *asn1_bc_n[] =          { "basic-constraints", NULL };
  static const char *asn1_bc_i[] =          { "2.5.29.19", NULL };
  static const char *asn1_crldp_n[] =       { "crl-distribution-points", NULL };
@@ -416,8 +422,10 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /* неподдерживаемые алгоритмы подписи, сертификаты которых могут разбираться на части */
- static const char *asn1_sign94_n[] =      { "gost3411-94-with-gost3410-2001", NULL };
+ static const char *asn1_sign94_n[] =      { "id-gost3411-94-with-gost3410-2001", NULL };
  static const char *asn1_sign94_i[] =      { "1.2.643.2.2.3", NULL };
+ static const char *asn1_sign01_n[] =      { "id-gost3410-2001", NULL };
+ static const char *asn1_sign01_i[] =      { "1.2.643.2.2.19", NULL };
  static const char *asn1_sha1sign_n[] =    { "sha1-with-rsa-signature", NULL };
  static const char *asn1_sha1sign_i[] =    { "1.2.840.113549.1.1.5", NULL };
  static const char *asn1_sha256sign_n[] =  { "sha256-with-rsa-encryption", NULL };
@@ -745,9 +753,12 @@ static struct oid libakrypt_oids[] =
  { identifier, descriptor, asn1_sa_i, asn1_sa_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_o_i, asn1_o_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_ou_i, asn1_ou_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_ps_i, asn1_ps_n, NULL, ak_functional_objects_undefined },
 
  { identifier, descriptor, asn1_ski_i, asn1_ski_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_ku_i, asn1_ku_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_ian_i, asn1_ian_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_san_i, asn1_san_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_bc_i, asn1_bc_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_crldp_i, asn1_crldp_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_cp_i, asn1_cp_n, NULL, ak_functional_objects_undefined },
@@ -790,6 +801,7 @@ static struct oid libakrypt_oids[] =
 
  /* неподдерживаемые алгоритмы подписи */
  { identifier, algorithm, asn1_sign94_i, asn1_sign94_n, NULL, ak_functional_objects_undefined },
+ { identifier, algorithm, asn1_sign01_i, asn1_sign01_n, NULL, ak_functional_objects_undefined },
  { identifier, algorithm, asn1_sha1sign_i,
                                           asn1_sha1sign_n, NULL, ak_functional_objects_undefined },
  { identifier, algorithm, asn1_sha256sign_i,

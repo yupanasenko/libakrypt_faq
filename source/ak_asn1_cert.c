@@ -1816,6 +1816,9 @@
       ak_error_message( error, __func__, "incorrect creation of public key context" );
       goto lab1;
     }
+   /* изменяем значения, которые будут использованы при выводе сертификата */
+    vptr->subject->vkey.oid = algoid;
+    vptr->subject->vkey.wc = NULL;
   }
    else { /* только здесь мы считываем значение открытого ключа и помещаем его в контекст */
     /* проверяем наличие последовательности верхнего уровня */

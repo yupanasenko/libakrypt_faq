@@ -1477,7 +1477,6 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 {
   ak_asn1 asn = NULL;
   ak_tlv newtlv = NULL;
-  int error = ak_error_ok;
 
  /* проверяем свойства узла */
   if( tlv == NULL ) {
@@ -1515,23 +1514,25 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
 
       if(( DATA_STRUCTURE( asn->current->tag ) != CONSTRUCTED ) ||
          ( TAG_NUMBER( asn->current->tag ) != TSET )) {
-        ak_error_message( error = ak_error_invalid_asn1_tag, __func__,
-                                              "source tlv context hasn't set as correct subtree" );
+        ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                    "source tlv context hasn't SET as correct subtree (tag: %u)",
+                                                                  TAG_NUMBER( asn->current->tag ));
         continue;
       }
       if(( asnset = asn->current->data.constructed )->count != 1 ) {
-        ak_error_message( error = ak_error_invalid_asn1_count, __func__,
-                                           "source tlv context hasn't correct count of subtrees" );
+        ak_error_message_fmt( ak_error_invalid_asn1_count, __func__,
+                                "source tlv context hasn't correct count of subtrees (count: %u)",
+                                                                     (unsigned int)asnset->count );
         continue;
       }
       if(( DATA_STRUCTURE( asnset->current->tag ) != CONSTRUCTED ) ||
          ( TAG_NUMBER( asnset->current->tag ) != TSEQUENCE )) {
-        ak_error_message( error = ak_error_invalid_asn1_tag, __func__,
+        ak_error_message( ak_error_invalid_asn1_tag, __func__,
                                         "nested asn1 context hasn't sequence as correct subtree" );
         continue;
       }
       if(( asnseq = asnset->current->data.constructed )->count != 2 ) {
-        ak_error_message( error = ak_error_invalid_asn1_count, __func__,
+        ak_error_message( ak_error_invalid_asn1_count, __func__,
                                           "nested asn1 context hasn't correct count of subtrees" );
         continue;
       }
@@ -1540,7 +1541,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
       ak_asn1_first( asnseq );
       ak_tlv_get_oid( asnseq->current, &ptr );
       if(( oid = ak_oid_find_by_id( ptr )) == NULL ) {
-        ak_error_message( error = ak_error_invalid_asn1_count, __func__,
+        ak_error_message( ak_error_invalid_asn1_count, __func__,
                                                     "source tlv contains a wrong attribute type" );
         continue;
       }
@@ -1549,6 +1550,7 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
         ak_tlv_add_string_to_global_name( newtlv, oid->id[0], ptr );
       }
   } while( ak_asn1_next( asn ));
+
  return newtlv;
 }
 
@@ -1840,7 +1842,10 @@ int ak_asn1_get_length_from_der( ak_uint8** pp_data, size_t *p_len )
     ak_asn1_first( lst );
     do{
         ak_pointer ptr = NULL;
-        ak_asn1 sq = lst->current->data.constructed;
+        ak_asn1 sq = NULL;
+
+        if( lst->current != NULL ) sq = lst->current->data.constructed;
+          else break;
 
         ak_asn1_first( sq = sq->current->data.constructed );
         ak_tlv_get_oid( sq->current, &ptr );

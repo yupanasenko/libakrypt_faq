@@ -1262,12 +1262,15 @@
  static void aktool_key_verify_print_global_name( ak_asn1 lst )
 {
  /* начинаем перебор всех элементов */
-  if( lst != NULL ) {
+  if(( lst != NULL ) && ( lst->count > 0 ) && ( lst->current != NULL )) {
     ak_asn1_first( lst );
     do{
         ak_oid oid = NULL;
+        ak_asn1 sq = NULL;
         ak_pointer ptr = NULL;
-        ak_asn1 sq = lst->current->data.constructed;
+
+        if( lst->current != NULL ) sq = lst->current->data.constructed;
+          else break;
 
         ak_asn1_first( sq = sq->current->data.constructed );
         ak_tlv_get_oid( sq->current, &ptr );
@@ -1314,9 +1317,11 @@
 /* ----------------------------------------------------------------------------------------------- */
  static int aktool_key_print_certificate( ak_certificate cert )
 {
+  ak_uint8 zero[128];
   char output_buffer[256];
   size_t ts = ak_hash_get_tag_size( &cert->vkey.ctx );
 
+  memset( zero, 0, sizeof( zero ));
   printf(_("Public key certificate\n"));
   if( cert->opts.subject != NULL ) {
     printf(_("  subject: %s\n"),
@@ -1333,9 +1338,12 @@
  /* информация о ключе */
   if( cert->vkey.oid != NULL ) {
     printf(_("  algorithm: %s (%s)\n"), cert->vkey.oid->name[0], cert->vkey.oid->id[0] );
-    printf(_("  public key:\n    x: %s\n"), ak_mpzn_to_hexstr( cert->vkey.qpoint.x, ( ts>>3 )));
-    printf("    y: %s\n", ak_mpzn_to_hexstr( cert->vkey.qpoint.y, ( ts>>3 )));
-    printf(_("  curve: %s (%u bits)\n"),
+    if(( memcmp( cert->vkey.qpoint.x, zero, ts ) != 0 ) ||
+       ( memcmp( cert->vkey.qpoint.y, zero, ts ) != 0 )) {
+      printf(_("  public key:\n    x: %s\n"), ak_mpzn_to_hexstr( cert->vkey.qpoint.x, ( ts>>3 )));
+      printf("    y: %s\n", ak_mpzn_to_hexstr( cert->vkey.qpoint.y, ( ts>>3 )));
+    }
+    if( cert->vkey.wc != NULL ) printf(_("  curve: %s (%u bits)\n"),
                       ak_oid_find_by_data( cert->vkey.wc )->name[0], ( cert->vkey.wc->size << 6 ));
   }
 
@@ -1363,11 +1371,16 @@
    strftime( output_buffer, sizeof( output_buffer ), /* локализованный вывод */
                              "%e %b %Y %H:%M:%S (%A) %Z", localtime( &cert->opts.time.not_after ));
   #endif
-  printf(_("    nof after:  %s\n"), output_buffer );
+  printf(_("    nof after:  %s "), output_buffer );
+  if( cert->opts.time.not_after < time( NULL )) printf(_(" (%sexpired%s)\n"),
+                                           ak_error_get_start_string(), ak_error_get_end_string());
+   else printf("\n");
 
 /* выводим значение подписи для поддерживаемых алгоритмов */
-  printf(_("  signature:\n"));
-  aktool_print_buffer( cert->opts.signature, 2*ts );
+  if( memcmp( cert->opts.signature, zero, 2*ts )) {
+    printf(_("  signature:\n"));
+    aktool_print_buffer( cert->opts.signature, 2*ts );
+  }
 
 /* выводим расширения */
   if( cert->opts.ext_ca.is_present ) {
@@ -1507,6 +1520,12 @@
               case ak_error_certificate_verify_names:
                  if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
                  if( !ki.quiet ) aktool_error(_("inappropriate CA certificate (%s)"), value );
+                 errcount++;
+                 break;
+
+              case ak_error_oid_engine:
+                 if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
+                 if( !ki.quiet ) aktool_error(_("unsupported digital signature algorithm (%s)"), value );
                  errcount++;
                  break;
 
