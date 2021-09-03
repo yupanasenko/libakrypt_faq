@@ -458,13 +458,17 @@
   if( strlen( substr ) == 0 ) { /* строка не содержит скобки => вариант строки в формате Linux */
    /* получаем первый токен - это должно быть значение контрольной суммы */
     if(( icode = aktool_strtok_r( (char *)string, " ", &substr )) == NULL ) return reterror;
-    if(( error = ak_hexstr_to_ptr( icode, out2, sizeof( out2 ), ki.reverse_order )) != ak_error_ok ) {
+    if(( error = ak_hexstr_to_ptr( icode,
+                                      out2, sizeof( out2 ), ki.reverse_order )) != ak_error_ok ) {
       st->errcount++;
       return ak_error_message_fmt( error, __func__, "incorrect icode string %s\n", icode );
     }
    /* теперь второй токен - это имя файла */
-    if(( filename = aktool_strtok_r( substr, " ", &substr )) == NULL ) return reterror;
-
+    if(( filename = substr ) == NULL ) { /* не кооректно -> aktool_strtok_r( substr, " ", &substr ) */
+      st->errcount++;
+      return ak_error_message( ak_error_undefined_file, __func__,
+                                                         "the name of file cannot be determined" );
+    }
   } else { /* обнаружилась скобка => вариант строки в формате BSD */
 
    /* теперь надо проверить, что пролученное значение действительно является
