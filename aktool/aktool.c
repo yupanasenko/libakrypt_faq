@@ -214,8 +214,8 @@
 
 #ifdef _WIN32
   aktool_console_page = GetConsoleCP();
-  SetConsoleCP( 65001 );
-  SetConsoleOutputCP( 65001 ); /*  SetConsoleCP( 1251 ); SetConsoleOutputCP( 1251 ); */
+  /*SetConsoleCP( 65001 ); SetConsoleOutputCP( 65001 ); */
+  SetConsoleCP( 1251 ); SetConsoleOutputCP( 1251 );
 #endif
 
  return ak_true;

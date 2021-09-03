@@ -17,7 +17,7 @@
  int aktool_icode_help( void );
  int aktool_icode_work( int argc, tchar *argv[] );
  int aktool_icode_check( void );
- char* aktool_strtok_r( char *, const char *, char ** );
+ tchar* aktool_strtok_r( tchar *, const tchar *, tchar ** );
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_icode( int argc, tchar *argv[] )
@@ -440,24 +440,24 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                    Реализация алгоритма проверки файла с контрольными суммами                   */
 /* ----------------------------------------------------------------------------------------------- */
- static int aktool_icode_check_function( const char *string, ak_pointer ptr )
+ static int aktool_icode_check_function( const tchar *string, ak_pointer ptr )
 {
   size_t len;
   ak_pointer kh = NULL;
   handle_ptr_t *st = ptr;
   ak_uint8 buffer[256], out2[256];
-  char *substr = NULL, *filename = NULL, *icode = NULL;
+  tchar *substr = NULL, *filename = NULL, *icode = NULL;
   int error = ak_error_ok, reterror = ak_error_undefined_value;
 
   st->lines++;
 
  /* получаем первый токен */
-  if(( icode = aktool_strtok_r( (char *)string, "(", &substr )) == NULL )
+  if(( icode = aktool_strtok_r( (tchar *)string, "(", &substr )) == NULL )
     return ak_error_undefined_value;
 
   if( strlen( substr ) == 0 ) { /* строка не содержит скобки => вариант строки в формате Linux */
    /* получаем первый токен - это должно быть значение контрольной суммы */
-    if(( icode = aktool_strtok_r( (char *)string, " ", &substr )) == NULL ) return reterror;
+    if(( icode = aktool_strtok_r( (tchar *)string, " ", &substr )) == NULL ) return reterror;
     if(( error = ak_hexstr_to_ptr( icode,
                                       out2, sizeof( out2 ), ki.reverse_order )) != ak_error_ok ) {
       st->errcount++;
@@ -604,10 +604,9 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-//#if defined(_WIN32) || defined(_WIN64)
- char* aktool_strtok_r( char *str, const char *delim, char **nextp)
+ tchar* aktool_strtok_r( tchar *str, const tchar *delim, tchar **nextp)
 {
- char *ret;
+ tchar *ret = NULL;
 
     if (str == NULL) { str = *nextp; }
 
@@ -622,7 +621,6 @@
     *nextp = str;
     return ret;
 }
-//#endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                 aktool_icode.c  */
