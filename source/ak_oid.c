@@ -384,9 +384,10 @@
  static const char *asn1_owner_mod_i[] =   { "1.2.643.100.111", NULL };
  static const char *asn1_issuer_mod_n[] =  { "issuer-crypto-module", NULL };
  static const char *asn1_issuer_mod_i[] =  { "1.2.643.100.112", NULL };
- static const char *asn1_inn_n[] =         { "inn", "in", NULL };
+ static const char *asn1_inn_n[] =         { "inn", "in", NULL }; /* ИНН физлица */
  static const char *asn1_inn_i[] =         { "1.2.643.3.131.1.1", NULL };
-
+ static const char *asn1_innle_n[] =       { "inn-legal-entity", "le", NULL }; /* ИНН юрлица, начиная с 2021 г. */
+ static const char *asn1_innle_i[] =       { "1.2.643.100.4", NULL };
  static const char *asn1_class_kc1_n[] =   { "digital-signature-module, class kc1", "kc1", NULL };
  static const char *asn1_class_kc1_i[] =   { "1.2.643.100.113.1", NULL };
  static const char *asn1_class_kc2_n[] =   { "digital-signature-module, class kc2", "kc2", NULL };
@@ -414,10 +415,11 @@
 /* ----------------------------------------------------------------------------------------------- */
  static const char *asn1_mscav_n[] =       { "microsoft-ca-version", NULL };
  static const char *asn1_mscav_i[] =       { "1.3.6.1.4.1.311.21.1", NULL };
+ static const char *asn1_msct_n[] =        { "microsoft-certificate-template", NULL };
+ static const char *asn1_msct_i[] =        { "1.3.6.1.4.1.311.21.7", NULL };
  static const char *asn1_mspsh_n[] =       { "microsoft-previous-certificate-hash", NULL };
  static const char *asn1_mspsh_i[] =       { "1.3.6.1.4.1.311.21.2", NULL };
- static const char *asn1_mstndc_n[] =      { "microsoft-enrollment-certificate-type",
-                                             NULL };
+ static const char *asn1_mstndc_n[] =      { "microsoft-enrollment-certificate-type", NULL };
  static const char *asn1_mstndc_i[] =      { "1.3.6.1.4.1.311.20.2", NULL };
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -780,6 +782,7 @@ static struct oid libakrypt_oids[] =
  { identifier, descriptor, asn1_issuer_mod_i, asn1_issuer_mod_n,
                                                            NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_inn_i, asn1_inn_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_innle_i, asn1_innle_n, NULL, ak_functional_objects_undefined },
 
  { identifier, descriptor, asn1_class_kc1_i, asn1_class_kc1_n,
                                                            NULL, ak_functional_objects_undefined },
@@ -796,6 +799,7 @@ static struct oid libakrypt_oids[] =
 
  { identifier, descriptor, asn1_netsmsg_i, asn1_netsmsg_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_mscav_i, asn1_mscav_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_msct_i, asn1_msct_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_mspsh_i, asn1_mspsh_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_mstndc_i, asn1_mstndc_n, NULL, ak_functional_objects_undefined },
 
