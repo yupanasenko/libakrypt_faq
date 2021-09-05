@@ -2105,5 +2105,53 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*                                Функции доступа к p7b контейнерам                                */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_asn1 ak_certificate_get_sequence_from_p7b_asn1( ak_asn1 root )
+{
+  ak_asn1 seq = NULL;
+
+  if( root == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to p7b asn1 tree" );
+    return NULL;
+  }
+
+  ak_asn1_print( root );
+
+ return seq;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ak_asn1 ak_certificate_get_sequence_from_p7b_container( const char *filename )
+{
+  int error = ak_error_ok;
+  ak_asn1 root = NULL, seq = NULL;
+
+  if( filename == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to filename" );
+    return NULL;
+  }
+
+ /* считываем ключ и преобразуем его в ASN.1 дерево */
+  if(( error = ak_asn1_import_from_file( root = ak_asn1_new(), filename, NULL )) != ak_error_ok ) {
+    ak_error_message_fmt( error, __func__,
+                                     "incorrect reading of ASN.1 context from %s file", filename );
+    goto lab1;
+  }
+
+ /* получаем asn1 последовательность сертификатов */
+  if(( seq = ak_certificate_get_sequence_from_p7b_asn1( root )) == NULL ) {
+    ak_error_message( error, __func__,
+                                 "given asn1 context has not a correct sequence of certificates" );
+    goto lab1;
+  }
+
+ lab1:
+  if( root != NULL ) ak_asn1_delete( root );
+
+ return seq;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                                                                 ak_asn1_cert.c  */
 /* ----------------------------------------------------------------------------------------------- */

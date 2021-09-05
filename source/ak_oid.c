@@ -400,7 +400,22 @@
  static const char *asn1_class_kb2_i[] =   { "1.2.643.100.113.5", NULL };
  static const char *asn1_class_ka1_n[] =   { "digital-signature-module, class ka", "ka", NULL };
  static const char *asn1_class_ka1_i[] =   { "1.2.643.100.113.6", NULL };
+ static const char *asn1_identkind_n[] =   { "identification-kind", "ik", NULL };
+ static const char *asn1_identkind_i[] =   { "1.2.643.100.114", NULL };
 
+/* ----------------------------------------------------------------------------------------------- */
+/* идентификаторы из RFC 5652 (про CMS) */
+/* ----------------------------------------------------------------------------------------------- */
+ static const char *asn1_cms_data_n[] =    { "cms-data-content-type", NULL };
+ static const char *asn1_cms_data_i[] =    { "1.2.840.113549.1.7.1", NULL };
+ static const char *asn1_cms_signed_n[] =  { "cms-signed-data-content-type", NULL };
+ static const char *asn1_cms_signed_i[] =  { "1.2.840.113549.1.7.2", NULL };
+ static const char *asn1_cms_envelop_n[] = { "cms-enveloped-data-content-type", NULL };
+ static const char *asn1_cms_envelop_i[] = { "1.2.840.113549.1.7.3", NULL };
+ static const char *asn1_cms_digest_n[] =  { "cms-digest-data-content-type", NULL };
+ static const char *asn1_cms_digest_i[] =  { "1.2.840.113549.1.7.5", NULL };
+ static const char *asn1_cms_enc_n[] =     { "cms-encrypted-data-content-type", NULL };
+ static const char *asn1_cms_enc_i[] =     { "1.2.840.113549.1.7.6", NULL };
 
 /* ----------------------------------------------------------------------------------------------- */
 /* внутренности openssl */
@@ -771,8 +786,10 @@ static struct oid libakrypt_oids[] =
  { identifier, descriptor, asn1_kpca_i, asn1_kpca_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_kpcs_i, asn1_kpcs_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_kpep_i, asn1_kpep_n, NULL, ak_functional_objects_undefined },
- { identifier, descriptor, asn1_pkix_exaIA_i, asn1_pkix_exaIA_n, NULL, ak_functional_objects_undefined },
- { identifier, descriptor, asn1_pkix_exAD_i, asn1_pkix_exAD_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_pkix_exaIA_i, asn1_pkix_exaIA_n,
+                                                           NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_pkix_exAD_i, asn1_pkix_exAD_n,
+                                                           NULL, ak_functional_objects_undefined },
 
  { identifier, descriptor, asn1_ogrn_i, asn1_ogrn_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_snils_i, asn1_snils_n, NULL, ak_functional_objects_undefined },
@@ -796,6 +813,18 @@ static struct oid libakrypt_oids[] =
                                                            NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_class_ka1_i, asn1_class_ka1_n,
                                                            NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_identkind_i, asn1_identkind_n,
+                                                           NULL, ak_functional_objects_undefined },
+
+ { identifier, descriptor, asn1_cms_data_i, asn1_cms_data_n,
+                                                           NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_cms_signed_i, asn1_cms_signed_n,
+                                                           NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_cms_envelop_i, asn1_cms_envelop_n,
+                                                           NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_cms_digest_i, asn1_cms_digest_n,
+                                                           NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_cms_enc_i, asn1_cms_enc_n, NULL, ak_functional_objects_undefined },
 
  { identifier, descriptor, asn1_netsmsg_i, asn1_netsmsg_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_mscav_i, asn1_mscav_n, NULL, ak_functional_objects_undefined },

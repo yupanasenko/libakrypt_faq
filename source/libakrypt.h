@@ -1931,10 +1931,6 @@ extern "C" {
    открытого ключа, расположенного в памяти */
  dll_export int ak_certificate_import_from_ptr( ak_certificate , ak_certificate ,
                                                                  const ak_pointer , const size_t );
-/*! \brief Функция импортирует открытый ключ асимметричного преобразования из хранилища */
- dll_export int ak_certificate_import_from_repository_ptr( ak_certificate , ak_uint8 * , size_t );
-/*! \brief Функция импортирует открытый ключ асимметричного преобразования из хранилища */
- dll_export int ak_certificate_import_from_repository_file( ak_certificate , const char * );
 /*! \brief Функция изменяет установленный по-умолчанию каталог с расположением
     хранилища сертификатов */
  dll_export int ak_certificate_set_repository( const char * );
@@ -1943,6 +1939,11 @@ extern "C" {
  dll_export const char *ak_certificate_get_repository( void );
 /*! \brief Функция освобождает контекст сертификата открытого ключа. */
  dll_export int ak_certificate_destroy( ak_certificate );
+
+/*! \brief Получение последовательности сертификатов из p7b контейнера */
+ dll_export ak_asn1 ak_certificate_get_sequence_from_p7b_asn1( ak_asn1 );
+/*! \brief Получение последовательности сертификатов из p7b контейнера */
+ dll_export ak_asn1 ak_certificate_get_sequence_from_p7b_container( const char * );
  /** @} */
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup cert-tlv-doc Функции создания расширений сертификатов открытых ключей

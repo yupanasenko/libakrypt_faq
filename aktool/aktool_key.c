@@ -1451,6 +1451,7 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key_verify_public_key( int argc , char *argv[] )
 {
+  ak_asn1 sequence = NULL;
   struct certificate ca_cert;
   ak_certificate ca_cert_ptr = NULL;
   int errcount = 0, exitcode = EXIT_SUCCESS, error = ak_error_ok, count = 0, dir = 0;
@@ -1529,9 +1530,25 @@
                  errcount++;
                  break;
 
-              default:
-                 if( !ki.quiet ) aktool_error(_("unsupported format of %s"), value );
-                 errcount++;
+              default: /* теперь пробуем разобрать файл как p7b контейнер */
+
+                  пора оптимизироваться
+                   - сначала считать asn1
+                   - потом тестить можество вариантов (request, certificate, p7b, libakrypt_container, ... )
+                   - для каждого варианта сделать функцию
+                     ak_asn1_is_request()
+                     ak_asn1_is_certificate()
+                     ak_asn1_is_p7b_container() ...
+
+
+                 if(( sequence = ak_certificate_get_sequence_from_p7b_container( value )) == NULL ) {
+
+                   ak_asn1_delete( sequence );
+                 }
+                  else {
+                    if( !ki.quiet ) aktool_error(_("unsupported format of %s"), value );
+                    errcount++;
+                  }
                  break;
             }
             ak_certificate_destroy( &ki.cert );
@@ -1939,6 +1956,9 @@
  return EXIT_FAILURE;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*                      Разделение p7b контейнера на отдельные сертификаты                         */
+/* ----------------------------------------------------------------------------------------------- */
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                 вывод справочной информации                                     */

@@ -116,7 +116,7 @@ then echo "aktool не может добавить сертификат удос
 fi
 
 ##########################################################################
-# 7. Завершаем эксерсиз и вырабатываем мертификат пользователя 
+# 7. Завершаем собственный эксерсиз и вырабатываем сертификат пользователя 
 aktool k -nt sign256 -o secret-user.key --op public-user.csr --id "/cn=Aktool User Certificate/em=user@mail.mail" --to pem --outpass 321azO
 if [[ $? -ne 0 ]]
 then echo "aktool не может создать запрос на сертификат"; exit;
@@ -133,6 +133,16 @@ if [[ $? -ne 0 ]]
 then echo "aktool не может верифицировать сертификат пользователя"; exit;
 fi
 echo;
+
+##########################################################################
+# 8. Упражнение с сертфикатами тестового УЦ от КриптоПро
+wget http://testca2012.cryptopro.ru/cert/rootca.cer
+wget http://testca2012.cryptopro.ru/cert/subca.cer
+aktool k --repo-add rootca.cer subca.cer --repo .ca
+if [[ $? -ne 0 ]]
+then echo "aktool не может добавить в хранилище сертификаты тестового УЦ от КриптоПро"; exit;
+fi
+
 #
 #
 ##########################################################################
@@ -145,5 +155,6 @@ rm -f secret-l3.key public-l3.csr public-l3.crt
 rm -f secret-l4.key public-l4.csr public-l4.crt
 rm -f secret-user.key public-user.csr public-user.crt
 rm .ca/*.cer
+rm rootca.cer subca.cer
 rmdir .ca
 
