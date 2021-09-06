@@ -408,7 +408,7 @@
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_request_import_from_asn1( ak_request req, ak_asn1 asnkey )
+ static int ak_request_import_from_asn1_tree( ak_request req, ak_asn1 asnkey )
 {
   ak_uint32 val = 0;
   ak_asn1 asn = asnkey; /* копируем адрес */
@@ -445,46 +445,24 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция считывает из заданного файла запрос на получение сертификата. Запрос хранится в виде
-    asn1 дерева, определяемого Р 1323565.1.023-2018.
-    Собственно asn1 дерево может быть храниться в файле в виде обычной der-последовательности,
-    либо в виде der-последовательности, дополнительно закодированной в `base64` (формат `pem`).
-    После считывания asn1 дерева  функция проверяет подпись под открытым ключом и,
-    в случае успешной проверки, создает контекст и инициирует его необходимыми значениями.
-
-    \note Функция является конструктором контекста ak_request (и ak_verifykey, в частности)
-
-    \param req контекст на сертификат, содержит в себе открытый ключ
-     асимметричного криптографического алгоритма, а также параметры ключа
-    \param filename имя файла
-
-    \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
-   возвращается код ошибки.                                                                        */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_request_import_from_file( ak_request req, const char *filename )
+ int ak_request_import_from_asn1( ak_request req, ak_asn1 root )
 {
   size_t size = 0;
   ak_tlv tlv = NULL;
+  ak_asn1 asn = NULL;
   struct bit_string bs;
   int error = ak_error_ok;
   ak_uint8 buffer[1024], *ptr = NULL;
-  ak_asn1 root = NULL, asn = NULL;
 
  /* стандартные проверки */
   if( req == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                          "using null pointer to request context" );
-  if( filename == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                                "using null pointer to filename" );
- /* считываем ключ и преобразуем его в ASN.1 дерево */
-  if(( error = ak_asn1_import_from_file( root = ak_asn1_new(), filename, NULL )) != ak_error_ok ) {
-    ak_error_message_fmt( error, __func__,
-                                     "incorrect reading of ASN.1 context from %s file", filename );
-    goto lab1;
-  }
+  if( root == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                       "using null pointer to root asn1 context" );
+
  /* проверяем, что данные содержат хоть какое-то значение */
   if(( root->count == 0 ) || ( root->current == NULL )) {
-    ak_error_message_fmt( error = ak_error_null_pointer, __func__,
-                                           "reading a zero ASN.1 context from %s file", filename );
+    ak_error_message_fmt( error = ak_error_null_pointer, __func__, "using zero ASN.1 context");
     goto lab1;
   }
 
@@ -513,7 +491,7 @@
                                                            "incorrect structure of asn1 context" );
     goto lab1;
   }
-  if(( error = ak_request_import_from_asn1( req,
+  if(( error = ak_request_import_from_asn1_tree( req,
                                                asn->current->data.constructed )) != ak_error_ok ) {
     ak_error_message( error, __func__, "incorrect structure of request" );
     goto lab1;
@@ -593,9 +571,36 @@
   }
 
  lab1:
-  if( root != NULL ) ak_asn1_delete( root );
   if(( ptr != NULL ) && ( ptr != buffer )) free( ptr );
 
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_request_import_from_file( ak_request req, const char *filename )
+{
+  ak_asn1 root = NULL;
+  int error = ak_error_ok;
+
+ /* стандартные проверки */
+  if( req == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                         "using null pointer to request context" );
+  if( filename == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                                "using null pointer to filename" );
+
+ /* считываем сертификат и преобразуем его в ASN.1 дерево */
+  if(( error = ak_asn1_import_from_file( root = ak_asn1_new(), filename, NULL )) != ak_error_ok ) {
+    ak_error_message_fmt( error, __func__,
+                                     "incorrect reading of ASN.1 context from %s file", filename );
+    goto lab1;
+  }
+
+ /* собственно выполняем импорт данных */
+  if(( error = ak_request_import_from_asn1( req, root )) != ak_error_ok ) {
+    ak_error_message( error, __func__, "wrong import of public key from asn.1 context" );
+  }
+
+  lab1: if( root != NULL ) ak_asn1_delete( root );
  return error;
 }
 
@@ -2105,6 +2110,353 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+                        /* Функции проверки содержимого asn1 дерева */
+/* ----------------------------------------------------------------------------------------------- */
+/*! Поскольку формат запроса не предусматривает наличие
+    какого-либо фиксированого идентификатора, то проверяется, что поданное на вход дерево
+    состоит из одного элемента sequence, содержащего в точности три элемента.
+
+    \param root asn1 дерево, содержащее запрос на сертификат
+    \return В случае успешного выполнения всех проверок, возвращается истина.                      */
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_asn1_is_request( ak_asn1 root )
+{
+  ak_tlv tlv = NULL;
+  ak_asn1 asn = NULL;
+
+  if( root == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to asn1 context" );
+    return ak_false;
+  }
+
+ /* проверяем, что данные содержат хоть какое-то значение */
+  if(( root->count != 1 ) || ( root->current == NULL )) {
+    ak_error_message_fmt( ak_error_invalid_value, __func__, "asn1 context does not contain data" );
+    return ak_false;
+  }
+
+ /* здесь мы считали asn1, декодировали и должны убедиться, что это то самое дерево */
+  ak_asn1_first( root );
+  tlv = root->current;
+  if(( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) || ( TAG_NUMBER( tlv->tag ) != TSEQUENCE )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                             "unexpected tag (%u) instead of sequence", tlv->tag );
+    return ak_false;
+  }
+
+ /* проверяем количество узлов */
+  if(( asn = tlv->data.constructed )->count != 3 ) {
+    ak_error_message_fmt( ak_error_invalid_asn1_count, __func__,
+                                          "root asn1 context contains incorrect count of leaves" );
+    return ak_false;
+  }
+
+ /* проверяем, что первый узел sequence */
+  ak_asn1_first( asn );
+  tlv = asn->current;
+  if(( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) || ( TAG_NUMBER( tlv->tag ) != TSEQUENCE )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                             "unexpected tag (%u) instead of sequence", tlv->tag );
+    return ak_false;
+  }
+
+  if( tlv->data.constructed->count == 0 ) {
+    ak_error_message_fmt( ak_error_invalid_asn1_count, __func__,
+                                "subsecuence of asn1 context contains incorrect count of leaves" );
+    return ak_false;
+  }
+
+  ak_asn1_first( tlv->data.constructed ); /* различие, межу запросом и сертификатом, */
+  tlv = tlv->data.constructed->current;   /*                проявляется только здесь */
+  if(( DATA_STRUCTURE( tlv->tag ) != PRIMITIVE ) || ( TAG_NUMBER( tlv->tag ) != TINTEGER )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                             "unexpected tag (%u) instead of sequence", tlv->tag );
+    return ak_false;
+  }
+
+ /* проверяем, что последний узел - строка бит */
+  ak_asn1_last( asn );
+  if(( DATA_STRUCTURE( asn->current->tag ) != PRIMITIVE ) ||
+     ( TAG_NUMBER( asn->current->tag ) != TBIT_STRING )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                  "unexpected tag (%u) instead of bit string", asn->current->tag );
+    return ak_false;
+  }
+
+ return ak_true;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Поскольку формат сертификата не предусматривает наличие
+    какого-либо фиксированого идентификатора, то проверяется, что поданное на вход дерево
+    состоит из одного элемента sequence, содержащего в точности три элемента.
+
+    \param root asn1 дерево, содержащее запрос на сертификат
+    \return В случае успешного выполнения всех проверок, возвращается истина.                      */
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_asn1_is_certificate( ak_asn1 root )
+{
+  ak_tlv tlv = NULL;
+  ak_asn1 asn = NULL;
+
+  if( root == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to asn1 context" );
+    return ak_false;
+  }
+
+ /* проверяем, что данные содержат хоть какое-то значение */
+  if(( root->count != 1 ) || ( root->current == NULL )) {
+    ak_error_message_fmt( ak_error_invalid_value, __func__, "asn1 context does not contain data" );
+    return ak_false;
+  }
+
+ /* здесь мы считали asn1, декодировали и должны убедиться, что это то самое дерево */
+  ak_asn1_first( root );
+  tlv = root->current;
+  if(( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) || ( TAG_NUMBER( tlv->tag ) != TSEQUENCE )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                             "unexpected tag (%u) instead of sequence", tlv->tag );
+    return ak_false;
+  }
+
+ /* проверяем количество узлов */
+  if(( asn = tlv->data.constructed )->count != 3 ) {
+    ak_error_message_fmt( ak_error_invalid_asn1_count, __func__,
+                                          "root asn1 context contains incorrect count of leaves" );
+    return ak_false;
+  }
+
+ /* проверяем, что первый узел sequence */
+  ak_asn1_first( asn );
+  tlv = asn->current;
+  if(( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) || ( TAG_NUMBER( tlv->tag ) != TSEQUENCE )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                             "unexpected tag (%u) instead of sequence", tlv->tag );
+    return ak_false;
+  }
+
+  if( tlv->data.constructed->count == 0 ) {
+    ak_error_message_fmt( ak_error_invalid_asn1_count, __func__,
+                                "subsecuence of asn1 context contains incorrect count of leaves" );
+    return ak_false;
+  }
+
+  ak_asn1_first( tlv->data.constructed ); /* различие, межу запросом и сертификатом, */
+  tlv = tlv->data.constructed->current;   /*                проявляется только здесь */
+ /* проверяем поле [0] */
+  if(( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) ||
+     (( DATA_CLASS( tlv->tag )) != CONTEXT_SPECIFIC ) ||
+     ( TAG_NUMBER( tlv->tag ) != 0x00 )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                             "incorrect tag value for certificate tbs field (tag: %x)", tlv->tag );
+    return ak_false;
+  }
+
+ /* проверяем, что последний узел - строка бит */
+  ak_asn1_last( asn );
+  if(( DATA_STRUCTURE( asn->current->tag ) != PRIMITIVE ) ||
+     ( TAG_NUMBER( asn->current->tag ) != TBIT_STRING )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                  "unexpected tag (%u) instead of bit string", asn->current->tag );
+    return ak_false;
+  }
+
+ return ak_true;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция выполняет "грязную" работу и проверяет поля контейнера. В случае успешной,
+     проверки возвращается указатель на уровень asn1 дерева, содержащий последовательность
+     сертификатов.                                                                                 */
+/* ----------------------------------------------------------------------------------------------- */
+ static ak_asn1 ak_asn1_get_p7b_container_sequence( ak_asn1 root )
+{
+  ak_uint32 value;
+  ak_oid oid = NULL;
+  ak_tlv tlv = NULL;
+  ak_asn1 asn = NULL;
+  ak_pointer ptr = NULL;
+
+ /* проверяем, что данные содержат хоть какое-то значение */
+  if(( root->count != 1 ) || ( root->current == NULL )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_count, __func__,
+                                                       "root asn1 context does not contain data" );
+    return NULL;
+  }
+
+ /* здесь мы считали asn1, декодировали и должны убедиться, что это то самое дерево */
+  ak_asn1_first( root );
+  tlv = root->current;
+  if(( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) || ( TAG_NUMBER( tlv->tag ) != TSEQUENCE )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                             "unexpected tag (%u) instead of sequence", tlv->tag );
+    return NULL;
+  }
+
+  asn = tlv->data.constructed;
+  if(( asn->count != 2 ) || ( asn->current == NULL )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_count, __func__,
+                                              "asn1 context does not contain two fixed elements" );
+    return NULL;
+  }
+
+ /* получаем идентификатор cms контейнера */
+  ak_asn1_first( asn );
+  tlv = asn->current;
+  if(( DATA_STRUCTURE( tlv->tag ) != PRIMITIVE ) ||
+     ( TAG_NUMBER( tlv->tag ) != TOBJECT_IDENTIFIER )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                    "unexpected tag (%u) instead of object identifier", tlv->tag );
+    return NULL;
+  }
+  ak_tlv_get_oid( tlv, &ptr );
+  if(( oid = ak_oid_find_by_id( ptr )) == NULL ) {
+    ak_error_message_fmt( ak_error_null_pointer, __func__,
+                                                   "using unsupported object identifier %s", ptr );
+    return NULL;
+  }
+  if( strncmp( oid->id[0], "1.2.840.113549.1.7.2", strlen( oid->id[0] )) != 0 ) {
+    ak_error_message( ak_error_oid_id, __func__, "using wrong object identifier" );
+    return NULL;
+  }
+
+ /* проверяем поле [0] */
+  ak_asn1_next( asn );
+  tlv = asn->current;
+  if(( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) ||
+     (( DATA_CLASS( tlv->tag )) != CONTEXT_SPECIFIC ) ||
+     ( TAG_NUMBER( tlv->tag ) != 0x00 )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                              "incorrect tag value for p7b container header (tag: %x)", tlv->tag );
+    return NULL;
+  }
+
+ /* спускаемся ниже */
+  asn = tlv->data.constructed;
+  tlv = asn->current;
+  if(( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) || ( TAG_NUMBER( tlv->tag ) != TSEQUENCE )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                             "unexpected tag (%u) instead of sequence", tlv->tag );
+    return NULL;
+  }
+  asn = tlv->data.constructed;
+
+ /* теперь мы внизу и имеем такое дерево
+
+  ├INTEGER 0x1
+  ├SET┐
+  │    (null)
+  ├SEQUENCE┐
+  │        └OBJECT IDENTIFIER 1.2.840.113549.1.7.1 (cms-data-content-type)
+  ├[0]┐
+
+  где после [0] идет последовательность сертификатов */
+
+  ak_asn1_first( asn );
+  tlv = asn->current;
+  if(( DATA_STRUCTURE( tlv->tag ) != PRIMITIVE ) || ( TAG_NUMBER( tlv->tag ) != TINTEGER )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                              "unexpected tag (%u) instead of integer", tlv->tag );
+    return NULL;
+  }
+  ak_tlv_get_uint32( tlv, &value );
+  if( value != 1 ) {
+    ak_error_message_fmt( ak_error_invalid_asn1_content, __func__,
+                                                           "unexpected version of p7b container" );
+    return NULL;
+  }
+
+ /* 2 */
+  ak_asn1_next( asn );
+  tlv = asn->current;
+  if(( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) || ( TAG_NUMBER( tlv->tag ) != TSET )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                                  "unexpected tag (%u) instead of set", tlv->tag );
+    return NULL;
+  }
+
+ /* 3 */
+  ak_asn1_next( asn );
+  tlv = asn->current;
+  if(( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) || ( TAG_NUMBER( tlv->tag ) != TSEQUENCE )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                    "unexpected tag (%u) instead of object identifier", tlv->tag );
+    return NULL;
+  }
+  if( tlv->data.constructed != NULL ) {
+    tlv = ( tlv->data.constructed )->current;
+
+    if(( DATA_STRUCTURE( tlv->tag ) != PRIMITIVE ) ||
+       ( TAG_NUMBER( tlv->tag ) != TOBJECT_IDENTIFIER )) {
+      ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                    "unexpected tag (%u) instead of object identifier", tlv->tag );
+      return NULL;
+    }
+    ak_tlv_get_oid( tlv, &ptr );
+    if(( oid = ak_oid_find_by_id( ptr )) == NULL ) {
+      ak_error_message_fmt( ak_error_oid_id, __func__,
+                                                   "using unsupported object identifier %s", ptr );
+      return NULL;
+    }
+    if( strncmp( oid->id[0], "1.2.840.113549.1.7.1", strlen( oid->id[0] )) != 0 ) {
+      ak_error_message( ak_error_oid_engine, __func__, "using wrong object identifier" );
+      return NULL;
+    }
+  } else {
+      ak_error_message( ak_error_null_pointer, __func__, "null pointer to internal sequence" );
+      return NULL;
+    }
+
+ /* 4 */
+  ak_asn1_next( asn );
+  tlv = asn->current;
+  if(( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) ||
+     (( DATA_CLASS( tlv->tag )) != CONTEXT_SPECIFIC ) ||
+     ( TAG_NUMBER( tlv->tag ) != 0x00 )) {
+    ak_error_message_fmt( ak_error_invalid_asn1_tag, __func__,
+                                "incorrect tag value for p7b container data (tag: %x)", tlv->tag );
+    return NULL;
+  }
+
+ return tlv->data.constructed;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция понимает частный случай формата CMS, а именно структуру,
+    хранящую список сертификатов согласно RFC 5652.
+    Поданное на вход функции дерево должно иметь следующую структуру.
+
+\code
+┌SEQUENCE┐
+         ├OBJECT IDENTIFIER 1.2.840.113549.1.7.2 (cms-signed-data-content-type)
+         └[0]┐
+             └SEQUENCE┐
+                      ├INTEGER 0x1
+                      ├SET┐
+                      │    (null)
+                      ├SEQUENCE┐
+                      │        └OBJECT IDENTIFIER 1.2.840.113549.1.7.1 (cms-data-content-type)
+                      ├[0]┐
+
+\endcode
+    После [0] должна идти последовательность сертификатов (как элементов одного уровня asn1 дерева).
+
+    \param root asn1 дерево, содержащее p7b контейнер сертификатов
+    \return В случае успешного выполнения всех проверок, возвращается истина.                      */
+/* ----------------------------------------------------------------------------------------------- */
+ bool_t ak_asn1_is_p7b_container( ak_asn1 root )
+{
+  if( root == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to asn1 context" );
+    return ak_false;
+  }
+
+  if( ak_asn1_get_p7b_container_sequence( root ) != NULL ) return ak_true;
+
+ return ak_false;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                Функции доступа к p7b контейнерам                                */
 /* ----------------------------------------------------------------------------------------------- */
  ak_asn1 ak_certificate_get_sequence_from_p7b_asn1( ak_asn1 root )
@@ -2151,6 +2503,7 @@
 
  return seq;
 }
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                 ak_asn1_cert.c  */

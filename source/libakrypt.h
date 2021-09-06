@@ -1633,7 +1633,16 @@ extern "C" {
                                                               export_format_t , crypto_content_t );
 /*! \brief Разбиение asn1 дерева на поддеревья первого уровня. */
  dll_export int ak_libakrypt_split_asn1( const char * , export_format_t , crypto_content_t );
-/** @} */
+
+/** \addtogroup asn1-doc-is Функции проверки содержимого asn1 дерева
+ @{ */
+/*! \brief Функция проверяет, является ли заданное asn1 дерево запросом на сертификат открытого ключа. */
+ dll_export bool_t ak_asn1_is_request( ak_asn1 );
+/*! \brief Функция проверяет, является ли заданное asn1 дерево сертификатом открытого ключа. */
+ dll_export bool_t ak_asn1_is_certificate( ak_asn1 );
+/*! \brief Функция проверяет, является ли заданное asn1 дерево хранилищем списка сертификатов. */
+ dll_export bool_t ak_asn1_is_p7b_container( ak_asn1 );
+ /** @} *//** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup skey-doc Ключи криптографических механизмов
@@ -1810,6 +1819,9 @@ extern "C" {
 /*! \brief Функция импортирует открытый ключ асимметричного преобразования из запроса
    на сертификат открытого ключа */
  dll_export int ak_request_import_from_file( ak_request , const char * );
+/*! \brief Функция импортирует открытый ключ асимметричного преобразования из запроса
+   на сертификат открытого ключа */
+ dll_export int ak_request_import_from_asn1( ak_request , ak_asn1 );
 /*! \brief Функция освобождает контекст запроса на сертификат. */
  dll_export int ak_request_destroy( ak_request );
 
