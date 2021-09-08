@@ -1621,7 +1621,7 @@
            }
           labex:
            ak_error_set_value( ak_error_ok );
-           if( root != NULL ) root = ak_asn1_delete( root );
+           if( root != NULL ) ak_asn1_delete( root );
         }
          else {
           if( !ki.quiet ) {
@@ -1742,7 +1742,7 @@
 
   if( errcount ) {
     aktool_error(_("aktool found %d error(s), "
-                 "rerun aktool with \"--audit-file stderr\" option or see syslog messages"), errcount );
+            "rerun aktool with \"--audit-file stderr\" option or see syslog messages"), errcount );
     exitcode = EXIT_FAILURE;
   }
    else exitcode = EXIT_SUCCESS;
@@ -1757,10 +1757,52 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                                 Добавление сертификата в хранилище                              */
 /* ----------------------------------------------------------------------------------------------- */
+ static int aktool_key_repo_add_certificate( ak_asn1 root, char *value )
+{
+  const char *sptr = NULL;
+  int error = ak_error_ok;
+  char certname[FILENAME_MAX];
+
+ /* проверяем, что сертификат валиден */
+  ak_certificate_opts_create( &ki.cert.opts );
+  if(( error = ak_certificate_import_from_asn1( &ki.cert, NULL, root )) != ak_error_ok ) {
+    ak_snprintf( certname, sizeof( certname ), _("%s from %s"),
+                 ak_ptr_to_hexstr( ki.cert.opts.serialnum, ki.cert.opts.serialnum_length,
+                                                                               ak_false ), value );
+    aktool_key_verify_switch( error, certname );
+    goto lab2;
+  }
+  if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
+
+ /* сохраняем сертификат в der-формате */
+  sptr = ak_ptr_to_hexstr( ki.cert.opts.serialnum, ki.cert.opts.serialnum_length, ak_false );
+  ak_snprintf( certname, sizeof( certname ), "%s/%s.cer", ak_certificate_get_repository(), sptr );
+  if( ak_asn1_export_to_derfile( root, certname ) != ak_error_ok ) {
+    aktool_error("wrong moving the certificate to repository, "
+                                                 "maybe you need root privileges ... ", certname );
+    goto lab2;
+  }
+
+ /* устанавливаем права доступа к записанному файлу */
+  #ifdef AK_HAVE_SYSSTAT_H
+   #ifdef _MSC_VER
+    chmod( certname, _S_IREAD );
+   #else
+    chmod( certname, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH );
+   #endif
+  #endif
+  if( !ki.quiet ) printf(_("%s added\n"), certname );
+
+  lab2:
+    ak_certificate_destroy( &ki.cert );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int aktool_key_repo_add( int argc , char *argv[] )
 {
   int errcount = 0;
-  char certname[FILENAME_MAX];
 
   ++optind; /* пропускаем набор управляющих команд */
   if( optind >= argc ) { /* если не задан файл с сертификатом, то дальше делать нечего */
@@ -1770,51 +1812,42 @@
   if( ki.verbose ) printf(_("used repository: %s\n"), ak_certificate_get_repository());
 
   while( optind < argc ) {
-     ak_asn1 root = NULL;
-     const char *sptr = NULL;
+     ak_asn1 root = NULL, sequence = NULL;
      char *value = argv[optind++]; /* получаем указатель на запрашиваемое имя файла */
      if( ak_file_or_directory( value ) != DT_REG ) {
        aktool_error(_("%s is not a regular file"), value );
        goto lab1;
      }
-   /* считываем сертификат и преобразуем его в ASN.1 дерево */
+   /* считываем ASN.1 дерево */
      if( ak_asn1_import_from_file( root = ak_asn1_new(), value, NULL ) != ak_error_ok ) {
        aktool_error(_("incorrect reading of ASN.1 context from %s file"), value );
        goto lab1;
      }
-   /* проверяем, что сертификат валиден */
-     ak_certificate_opts_create( &ki.cert.opts );
-     if( ak_certificate_import_from_asn1( &ki.cert, NULL, root ) != ak_error_ok ) {
-       aktool_error(_("wrong import of public key from asn.1 context, file %s"), value );
-       goto lab2;
-     }
-     if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
 
-   /* сохраняем сертификат в der-формате */
-     sptr = ak_ptr_to_hexstr( ki.cert.opts.serialnum, ki.cert.opts.serialnum_length, ak_false );
-     ak_snprintf( certname, sizeof( certname ),
-                                           "%s/%s.cer", ak_certificate_get_repository(), sptr );
-     if( ak_asn1_export_to_derfile( root, certname ) != ak_error_ok ) {
-       aktool_error("wrong moving the certificate to repository, "
-                                              "maybe you need root privileges ... ", certname );
-       goto lab2;
+   /* если мы считали сертификат, то добавляем его */
+     if( ak_asn1_is_certificate( root )) {
+       if( aktool_key_repo_add_certificate( root, value ) != ak_error_ok ) errcount++;
+       goto lab1;
      }
-     ak_certificate_destroy( &ki.cert );
-   /* устанавливаем права доступа к записанному файлу */
-    #ifdef AK_HAVE_SYSSTAT_H
-     #ifdef _MSC_VER
-      chmod( certname, _S_IREAD );
-     #else
-      chmod( certname, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH );
-     #endif
-    #endif
-     if( !ki.quiet ) printf(_("%s added\n"), certname );
 
-     continue;
-     lab2:
-       ak_certificate_destroy( &ki.cert );
+   /* если мы считали контейнер, то добавляем его содержимое */
+     if(( sequence = ak_certificate_get_sequence_from_p7b_asn1( root )) != NULL ) {
+        ak_asn1_first( sequence );
+        while( sequence->count ) {
+          ak_asn1 cert = ak_asn1_new();
+
+          ak_asn1_add_tlv( cert, ak_asn1_exclude( sequence ));
+          if( aktool_key_repo_add_certificate( cert, value ) != ak_error_ok ) errcount++;
+
+          ak_asn1_delete( cert );
+        }
+       goto lab1;
+     }
+
+   /* все доступные варианты закончились */
+     aktool_error(_("unsupported format of asn1 container (%s)"), value );
+     errcount++;
      lab1:
-       errcount++;
        if( root != NULL ) ak_asn1_delete( root );
   } /* end while */
 

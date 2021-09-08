@@ -2,6 +2,8 @@
 #! /bin/bash
 #
 # скрипт проверяет глубину вложенности проверки сертификатов
+# а также возможность верификации и добавления в репозиторий p7b (cms) контейнеров
+# (используется доступ к сети Интернет)
 #
 ##########################################################################
 # 1. В начале создаем самоподписанный сертификат УЦ
@@ -136,18 +138,42 @@ echo;
 
 ##########################################################################
 # 8. Упражнение с сертфикатами тестового УЦ от КриптоПро
+#
+echo "Проверка сертификатов внешних производителей"; echo
 wget http://testca2012.cryptopro.ru/cert/rootca.cer
+if [[ $? -ne 0 ]]
+then echo "wget не найден или нет подключения к глобальной сети"; exit;
+fi
+#
 wget http://testca2012.cryptopro.ru/cert/subca.cer
 aktool k --repo-add rootca.cer subca.cer --repo .ca
 if [[ $? -ne 0 ]]
 then echo "aktool не может добавить в хранилище сертификаты тестового УЦ от КриптоПро"; exit;
 fi
-
+echo;
+##########################################################################
+# 9. Упражнение с коллекциями сертификатов в формате pkcs#7 (см. RFC 5652)
+# аккредитованный УЦ КриптоПро
+echo "Проверка хранилищ сертификатов от внешних производителей"; echo
+wget http://q.cryptopro.ru/GUC.p7b http://q.cryptopro.ru/qcasub.p7b
+# не аккредитованный УЦ КриптоПро
+wget http://cpca.cryptopro.ru/cacer.p7b
+# ЦУС VPN от КриптоПро
+wget http://vpnca.cryptopro.ru/cacer.p7b -nc -O vpnca.cacer.p7b
+# УЦ КриптоПро TLS CA
+wget https://tlsca.cryptopro.ru/tlscaroot.p7b https://tlsca.cryptopro.ru/tlsca.p7b
+#
+# при вызове этой команды могут быть ошибки
+# из-за отсутствия поддержки сертификатов 2001 года
+ls -la *.p7b
+aktool k --repo-add *.p7b --repo .ca
 #
 #
 ##########################################################################
 # на-последок, показываем, что натворили и удаляем созданные файлы
 aktool k --repo-ls --repo .ca
+aktool k --repo-check --repo .ca
+#
 rm -f secret-ca.key public-ca.crt
 rm -f secret-l1.key public-l1.csr public-l1.crt
 rm -f secret-l2.key public-l2.csr public-l2.crt
@@ -156,5 +182,6 @@ rm -f secret-l4.key public-l4.csr public-l4.crt
 rm -f secret-user.key public-user.csr public-user.crt
 rm .ca/*.cer
 rm rootca.cer subca.cer
+rm -f *.p7b
 rmdir .ca
 
