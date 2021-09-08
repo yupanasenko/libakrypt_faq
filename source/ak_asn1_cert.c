@@ -2265,17 +2265,77 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция выполняет "грязную" работу и проверяет поля контейнера. В случае успешной,
-     проверки возвращается указатель на уровень asn1 дерева, содержащий последовательность
-     сертификатов.                                                                                 */
+/*! Функция понимает частный случай формата CMS, а именно структуру,
+    хранящую список сертификатов согласно RFC 5652.
+    Поданное на вход функции дерево должно иметь следующую структуру.
+
+\code
+┌SEQUENCE┐
+         ├OBJECT IDENTIFIER 1.2.840.113549.1.7.2 (cms-signed-data-content-type)
+         └[0]┐
+             └SEQUENCE┐
+                      ├INTEGER 0x1
+                      ├SET┐
+                      │    (null)
+                      ├SEQUENCE┐
+                      │        └OBJECT IDENTIFIER 1.2.840.113549.1.7.1 (cms-data-content-type)
+                      ├[0]┐
+
+\endcode
+    После [0] должна идти последовательность сертификатов (как элементов одного уровня asn1 дерева).
+
+    \param root asn1 дерево, содержащее p7b контейнер сертификатов
+    \return В случае успешного выполнения всех проверок, возвращается истина.                      */
 /* ----------------------------------------------------------------------------------------------- */
- static ak_asn1 ak_asn1_get_p7b_container_sequence( ak_asn1 root )
+ bool_t ak_asn1_is_p7b_container( ak_asn1 root )
+{
+  if( root == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to asn1 context" );
+    return ak_false;
+  }
+
+  if( ak_certificate_get_sequence_from_p7b_asn1( root ) != NULL ) return ak_true;
+
+ return ak_false;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                                Функции доступа к p7b контейнерам                                */
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция выполняет "грязную" работу и проверяет поля p7b контейнера.
+    Поданное на вход функции дерево должно иметь следующую структуру.
+
+\code
+┌SEQUENCE┐
+         ├OBJECT IDENTIFIER 1.2.840.113549.1.7.2 (cms-signed-data-content-type)
+         └[0]┐
+             └SEQUENCE┐
+                      ├INTEGER 0x1
+                      ├SET┐
+                      │    (null)
+                      ├SEQUENCE┐
+                      │        └OBJECT IDENTIFIER 1.2.840.113549.1.7.1 (cms-data-content-type)
+                      ├[0]┐
+
+\endcode
+    После [0] должна идти последовательность сертификатов (как элементов одного уровня asn1 дерева).
+
+    \param root asn1 дерево, сожержащее p7b-контейнер
+    \return В случае успешной проверки, функция возвращается указатель на уровень asn1 дерева,
+    содержащий последовательность сертификатов.                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_asn1 ak_certificate_get_sequence_from_p7b_asn1( ak_asn1 root )
 {
   ak_uint32 value;
   ak_oid oid = NULL;
   ak_tlv tlv = NULL;
   ak_asn1 asn = NULL;
   ak_pointer ptr = NULL;
+
+  if( root == NULL ) {
+    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to p7b asn1 tree" );
+    return NULL;
+  }
 
  /* проверяем, что данные содержат хоть какое-то значение */
   if(( root->count != 1 ) || ( root->current == NULL )) {
@@ -2419,58 +2479,6 @@
   }
 
  return tlv->data.constructed;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция понимает частный случай формата CMS, а именно структуру,
-    хранящую список сертификатов согласно RFC 5652.
-    Поданное на вход функции дерево должно иметь следующую структуру.
-
-\code
-┌SEQUENCE┐
-         ├OBJECT IDENTIFIER 1.2.840.113549.1.7.2 (cms-signed-data-content-type)
-         └[0]┐
-             └SEQUENCE┐
-                      ├INTEGER 0x1
-                      ├SET┐
-                      │    (null)
-                      ├SEQUENCE┐
-                      │        └OBJECT IDENTIFIER 1.2.840.113549.1.7.1 (cms-data-content-type)
-                      ├[0]┐
-
-\endcode
-    После [0] должна идти последовательность сертификатов (как элементов одного уровня asn1 дерева).
-
-    \param root asn1 дерево, содержащее p7b контейнер сертификатов
-    \return В случае успешного выполнения всех проверок, возвращается истина.                      */
-/* ----------------------------------------------------------------------------------------------- */
- bool_t ak_asn1_is_p7b_container( ak_asn1 root )
-{
-  if( root == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to asn1 context" );
-    return ak_false;
-  }
-
-  if( ak_asn1_get_p7b_container_sequence( root ) != NULL ) return ak_true;
-
- return ak_false;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*                                Функции доступа к p7b контейнерам                                */
-/* ----------------------------------------------------------------------------------------------- */
- ak_asn1 ak_certificate_get_sequence_from_p7b_asn1( ak_asn1 root )
-{
-  ak_asn1 seq = NULL;
-
-  if( root == NULL ) {
-    ak_error_message( ak_error_null_pointer, __func__, "using null pointer to p7b asn1 tree" );
-    return NULL;
-  }
-
-  ak_asn1_print( root );
-
- return seq;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

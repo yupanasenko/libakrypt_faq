@@ -1474,48 +1474,91 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ static void aktool_key_verify_switch( int error, const char *message )
+{
+     switch( error ) {
+       case ak_error_ok:
+         if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
+         if( !ki.quiet ) printf(_("Certificate verified (%s): Ok\n"), message );
+         break;
+
+       case ak_error_not_equal_data:
+         if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
+         aktool_error(_("certificate not verified (%s)"), message );
+         break;
+
+       case ak_error_certificate_verify_key:
+         if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
+         aktool_error(_("CA certificate not found (%s)"), message );
+         break;
+
+       case ak_error_certificate_verify_names:
+         if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
+         aktool_error(_("inappropriate CA certificate (%s)"), message );
+         break;
+
+       case ak_error_certificate_validity:
+         if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
+         aktool_error(_("certificate expired (%s)"), message );
+         break;
+
+       case ak_error_oid_engine:
+         if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
+         aktool_error(_("unsupported digital signature algorithm (%s)"), message );
+         break;
+
+       default:
+         aktool_error(_("unexpected format of certificate (%s)"), message );
+         break;
+     }
+}
+
+
+/* ----------------------------------------------------------------------------------------------- */
  static int aktool_key_verify_certificate( ak_certificate ca_cert_ptr,
                                                                   ak_asn1 root, const char *value )
 {
   int error = ak_error_ok;
 
   ak_certificate_opts_create( &ki.cert.opts );
-  switch(( error = ak_certificate_import_from_asn1( &ki.cert, ca_cert_ptr, root ))) {
-    case ak_error_ok:
-      if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
-      if( !ki.quiet ) printf(_("Certificate verified (%s): Ok\n"), value );
-      break;
-
-    case ak_error_not_equal_data:
-      if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
-      aktool_error(_("certificate not verified (%s)"), value );
-      break;
-
-    case ak_error_certificate_verify_key:
-      if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
-      aktool_error(_("CA certificate not found (%s)"), value );
-      break;
-
-    case ak_error_certificate_verify_names:
-      if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
-      aktool_error(_("inappropriate CA certificate (%s)"), value );
-      break;
-
-    case ak_error_certificate_validity:
-      if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
-      aktool_error(_("certificate expired (%s)"), value );
-      break;
-
-    case ak_error_oid_engine:
-      if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
-      aktool_error(_("unsupported digital signature algorithm (%s)"), value );
-      break;
-
-    default:
-      aktool_error(_("unexpected format of certificate (%s)"), value );
-      break;
-  }
+  aktool_key_verify_switch( error =
+                           ak_certificate_import_from_asn1( &ki.cert, ca_cert_ptr, root ), value );
   ak_certificate_destroy( &ki.cert );
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int aktool_key_verify_p7b( ak_certificate ca_cert_ptr, ak_asn1 seq, const char *value )
+{
+  int error = ak_error_ok;
+  char message[FILENAME_MAX];
+
+  if(( seq == NULL ) || ( seq->count == 0 )) {
+    aktool_error(_("p7b container does not contain certificates"));
+    return ak_error_invalid_asn1_count;
+  }
+
+  ak_asn1_first( seq );
+  while( seq->count ) {
+     int result = 0;
+    /* вынимаем сертификат из полученной последовательности и
+       перемещаем его в новую последовательность, состоящую только
+       из 1го элемента, тем самым имитируя формат сертификатов открытого ключа */
+     ak_asn1 sequence = ak_asn1_new();
+     ak_asn1_add_tlv( sequence, ak_asn1_exclude( seq ));
+
+    /* импортируем сертификат и одновременно его верифицируем */
+     ak_certificate_opts_create( &ki.cert.opts );
+     result = ak_certificate_import_from_asn1( &ki.cert, ca_cert_ptr, sequence );
+     ak_snprintf( message, sizeof( message ), _("%s from %s"),
+      ak_ptr_to_hexstr( ki.cert.opts.serialnum, ki.cert.opts.serialnum_length, ak_false ), value );
+     aktool_key_verify_switch( result, message );
+
+     if( result != ak_error_ok ) error = result;
+     ak_certificate_destroy( &ki.cert );
+     ak_asn1_delete( sequence );
+  };
 
  return error;
 }
@@ -1526,7 +1569,7 @@
   struct certificate ca_cert;
   ak_certificate ca_cert_ptr = NULL;
   ak_asn1 sequence = NULL, root = NULL;
-  int errcount = 0, exitcode = EXIT_SUCCESS, error = ak_error_ok, count = 0, dir = 0;
+  int errcount = 0, exitcode = EXIT_SUCCESS, count = 0, dir = 0;
 
  /* считываем сертификат ключа УЦ */
   if( strlen( ki.capubkey_file ) != 0 ) {
@@ -1563,8 +1606,8 @@
               goto labex;
             }
            /* 3. верифицируем контейнер */
-            if( ak_asn1_is_p7b_container( root )) {
-              printf("p7b: %s\n", value );
+            if(( sequence = ak_certificate_get_sequence_from_p7b_asn1( root )) != NULL ) {
+              if( aktool_key_verify_p7b( ca_cert_ptr, sequence, value ) != ak_error_ok ) errcount++;
               goto labex;
             }
 
