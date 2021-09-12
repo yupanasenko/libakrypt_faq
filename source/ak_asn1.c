@@ -3020,7 +3020,8 @@ AlgorithmIdentifier  ::=  SEQUENCE  {
   "CERTIFICATE",
   "CERTIFICATE REQUEST",
   "ENCRYPTED DATA",
-  "PLAIN DATA"
+  "PLAIN DATA",
+  "PKCS7"
  };
 
 /* ----------------------------------------------------------------------------------------------- */

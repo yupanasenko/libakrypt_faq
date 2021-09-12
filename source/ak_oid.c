@@ -332,6 +332,10 @@
  static const char *asn1_o_i[] =           { "2.5.4.10", NULL };
  static const char *asn1_ou_n[] =          { "organization-unit", "ou", NULL };
  static const char *asn1_ou_i[] =          { "2.5.4.11", NULL };
+ static const char *asn1_title_n[] =       { "title", "tl", NULL };
+ static const char *asn1_title_i[] =       { "2.5.4.12", NULL };
+ static const char *asn1_gn_n[] =          { "given-name", "gn", NULL };
+ static const char *asn1_gn_i[] =          { "2.5.4.42", NULL };
  static const char *asn1_ps_n[] =          { "pseudonym", "ps", NULL };
  static const char *asn1_ps_i[] =          { "2.5.4.65", NULL };
 
@@ -770,6 +774,8 @@ static struct oid libakrypt_oids[] =
  { identifier, descriptor, asn1_sa_i, asn1_sa_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_o_i, asn1_o_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_ou_i, asn1_ou_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_title_i, asn1_title_n, NULL, ak_functional_objects_undefined },
+ { identifier, descriptor, asn1_gn_i, asn1_gn_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_ps_i, asn1_ps_n, NULL, ak_functional_objects_undefined },
 
  { identifier, descriptor, asn1_ski_i, asn1_ski_n, NULL, ak_functional_objects_undefined },

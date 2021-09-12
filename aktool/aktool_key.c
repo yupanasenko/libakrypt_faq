@@ -33,6 +33,8 @@
  int aktool_key_repo_check( void );
  int aktool_key_repo_add( int argc , char *argv[] );
  int aktool_key_repo_rm( int argc , char *argv[] );
+ int aktool_key_p7b_lsp( int argc , char *argv[], int );
+ int aktool_key_p7b_create( int argc , char *argv[] );
 
 /* ----------------------------------------------------------------------------------------------- */
  #define aktool_magic_number (113)
@@ -41,10 +43,11 @@
  int aktool_key( int argc, char *argv[] )
 {
   int next_option = 0, exit_status = EXIT_FAILURE;
-  enum { do_nothing, do_new, do_show, do_verify, do_cert,
-                         do_repo_add, do_repo_rm, do_repo_check, do_repo_ls } work = do_nothing;
+  enum { do_nothing, do_new, do_show, do_verify, do_cert, do_repo_add, do_repo_rm,
+             do_repo_check, do_repo_ls, do_p7b_create, do_p7b_ls, do_p7b_split } work = do_nothing;
 
  /* параметры, которые устанавливаются по умолчанию */
+  ki.format = asn1_der_format;
   ki.oid_of_generator = ak_oid_find_by_name( aktool_default_generator );
   ak_certificate_opts_create( &ki.cert.opts );
 
@@ -102,6 +105,11 @@
      { "repo-rm",             1, NULL,  173 },
      { "repo-ls",             0, NULL,  174 },
      { "without-caption",     0, NULL,  175 },
+
+   /* флаги для работы с p7b контейнерами */
+     { "p7b-create",          0, NULL,  176 },
+     { "p7b-ls",              0, NULL,  177 },
+     { "p7b-split",           0, NULL,  178 },
 
      aktool_common_functions_definition,
      { NULL,                  0, NULL,   0  },
@@ -465,6 +473,18 @@
                    ki.show_caption = ak_false;
                    break;
 
+        case 176: /* --p7b-create */
+                   work = do_p7b_create;
+                   break;
+
+        case 177: /* --p7b-ls */
+                   work = do_p7b_ls;
+                   break;
+
+        case 178: /* --p7b-split */
+                   work = do_p7b_split;
+                   break;
+
         default:  /* обрабатываем ошибочные параметры */
                    if( next_option != -1 ) work = do_nothing;
                    break;
@@ -525,6 +545,18 @@
 
     case do_repo_ls: /* выводим перечень доверенных сертификатов в хранилище */
       exit_status = aktool_key_repo_ls();
+      break;
+
+    case do_p7b_create: /* создаем контейнер */
+      exit_status = aktool_key_p7b_create( argc, argv );
+      break;
+
+    case do_p7b_ls: /* выводим перечень сертификатов из заданного контейнера */
+      exit_status = aktool_key_p7b_lsp( argc, argv, 1 );
+      break;
+
+    case do_p7b_split: /* создаем контейнер */
+      exit_status = aktool_key_p7b_lsp( argc, argv, 2 );
       break;
 
     default:
@@ -690,6 +722,7 @@
     if(( ki.lenoutpass = aktool_load_user_password_twice( ki.outpass, sizeof( ki.outpass ))) < 1 )
       goto labex2;
   }
+
 
  /* сохраняем созданный ключ в файле */
   if( ak_blomkey_export_to_file_with_password(
@@ -1081,6 +1114,12 @@
                                     "/ou=", "organization-unit" ) == ak_error_ok ) found = ak_true;
   if( aktool_key_input_name_from_console_line( subject,
                                         "/sn=", "serial-number" ) == ak_error_ok ) found = ak_true;
+  if( aktool_key_input_name_from_console_line( subject,
+                                           "/gn=", "given-name" ) == ak_error_ok ) found = ak_true;
+  if( aktool_key_input_name_from_console_line( subject,
+                                                "/tl=", "title" ) == ak_error_ok ) found = ak_true;
+  if( aktool_key_input_name_from_console_line( subject,
+                                            "/ps=", "pseudonym" ) == ak_error_ok ) found = ak_true;
 /* свое, родное ))) */
   if( aktool_key_input_name_from_console_line( subject,
                                     "/og=", "ogrn" ) == ak_error_ok ) found = ak_true;
@@ -1776,7 +1815,13 @@
 
  /* сохраняем сертификат в der-формате */
   sptr = ak_ptr_to_hexstr( ki.cert.opts.serialnum, ki.cert.opts.serialnum_length, ak_false );
-  ak_snprintf( certname, sizeof( certname ), "%s/%s.cer", ak_certificate_get_repository(), sptr );
+  ak_snprintf( certname, sizeof( certname ), "%s%s%s.cer", ak_certificate_get_repository(),
+         #ifdef AK_HAVE_WINDOWS_H
+           "\\"
+         #else
+           "/"
+         #endif
+  , sptr );
   if( ak_asn1_export_to_derfile( root, certname ) != ak_error_ok ) {
     aktool_error("wrong moving the certificate to repository, "
                                                  "maybe you need root privileges ... ", certname );
@@ -1863,11 +1908,40 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                             Вывод информации о хранилище сертификатов                           */
 /* ----------------------------------------------------------------------------------------------- */
- static int aktool_key_repo_ls_certificate( const tchar *filename , ak_pointer ptr )
+ static void aktool_key_ls_certificate_line( ak_certificate ca, int error )
 {
   ak_uint8 *cname;
-  struct certificate ca;
   char time_buffer[16], output_buffer[64];
+
+ /* выводим информацию */
+   cname = ak_tlv_get_string_from_global_name( ca->opts.subject, "2.5.4.3", NULL );
+   memset( time_buffer, 0, sizeof( time_buffer ));
+   memset( output_buffer, 0, sizeof( output_buffer ));
+
+  #ifdef AK_HAVE_WINDOWS_H
+   ak_snprintf( time_buffer, sizeof( time_buffer ), "%s", ctime( &ca->opts.time.not_after ));
+   output_buffer[strlen( time_buffer )-1] = ' '; /* уничтожаем символ возврата каретки */
+  #else
+   strftime( time_buffer, sizeof( output_buffer ), /* локализованный вывод */
+                                                "%e %b %Y", localtime( &ca->opts.time.not_after ));
+  #endif
+   if( ca->opts.serialnum_length < 18 )
+     printf(" %-40s %-12s %s", ak_ptr_to_hexstr( ca->opts.serialnum,
+                                       ca->opts.serialnum_length, ak_false ), time_buffer, cname );
+    else {
+      ak_snprintf( output_buffer, sizeof( output_buffer ), "%s... ",
+                                             ak_ptr_to_hexstr( ca->opts.serialnum, 18, ak_false ));
+      printf(" %-40s %-12s %s", output_buffer, time_buffer, cname );
+    }
+  if( error != ak_error_ok ) {
+    printf(_(" (%snot verified%s)\n"), ak_error_get_start_string(), ak_error_get_end_string( ));
+  } else printf("\n");
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int aktool_key_repo_ls_certificate( const tchar *filename , ak_pointer ptr )
+{
+  struct certificate ca;
   int error = ak_error_ok, *count = ptr;
 
  /* считываем сертификат */
@@ -1877,28 +1951,9 @@
      if( count ) (*count)++;
      return error;
    }
+   aktool_key_ls_certificate_line( &ca, ak_error_ok );
+   ak_certificate_destroy( &ca );
 
- /* выводим информацию */
-   cname = ak_tlv_get_string_from_global_name( ca.opts.subject, "2.5.4.3", NULL );
-   memset( time_buffer, 0, sizeof( time_buffer ));
-   memset( output_buffer, 0, sizeof( output_buffer ));
-
-  #ifdef AK_HAVE_WINDOWS_H
-   ak_snprintf( time_buffer, sizeof( time_buffer ), "%s", ctime( &ca.opts.time.not_after ));
-   output_buffer[strlen( time_buffer )-1] = ' '; /* уничтожаем символ возврата каретки */
-  #else
-   strftime( time_buffer, sizeof( output_buffer ), /* локализованный вывод */
-                                                 "%e %b %Y", localtime( &ca.opts.time.not_after ));
-  #endif
-   if( ca.opts.serialnum_length < 18 )
-     printf(" %-40s %-12s %s\n", ak_ptr_to_hexstr( ca.opts.serialnum,
-                                        ca.opts.serialnum_length, ak_false ), time_buffer, cname );
-    else {
-      ak_snprintf( output_buffer, sizeof( output_buffer ), "%s... ",
-                                              ak_ptr_to_hexstr( ca.opts.serialnum, 18, ak_false ));
-      printf(" %-40s %-12s %s\n", output_buffer, time_buffer, cname );
-    }
-  ak_certificate_destroy( &ca );
  return ak_error_ok;
 }
 
@@ -1924,8 +1979,7 @@
   }
   if( !ki.quiet ) printf(_(" repo: %s\n"), ak_certificate_get_repository( ));
   if( errcount ) {
-    aktool_error(_("found %d not valid certificate(s), use --repo-check option\n"),
-                                                                                       errcount );
+    aktool_error(_("found %d not valid certificate(s), use --repo-check option"), errcount );
     return EXIT_FAILURE;
   }
  return EXIT_SUCCESS;
@@ -1978,8 +2032,13 @@
   }
 
  /* проверяем, что имя файла совпадает с номером сертификата */
-  ak_snprintf( fileca, sizeof( fileca ), "%s/%s.cer", ak_certificate_get_repository(),
-               ak_ptr_to_hexstr( ca.opts.serialnum, ca.opts.serialnum_length, ak_false ), ".cer" );
+  ak_snprintf( fileca, sizeof( fileca ), "%s%s%s.cer", ak_certificate_get_repository(),
+         #ifdef AK_HAVE_WINDOWS_H
+           "\\"
+         #else
+           "/"
+         #endif
+  , ak_ptr_to_hexstr( ca.opts.serialnum, ca.opts.serialnum_length, ak_false ));
   if( strncmp( fileca, filename, ak_min( strlen( filename ), strlen( fileca ))) != 0 ) {
     if( format == asn1_der_format ) {
       rename( filename, fileca );
@@ -2060,11 +2119,161 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*                      Разделение p7b контейнера на отдельные сертификаты                         */
+/*                              Вывод содержимого p7b контейнера                                   */
+/*                     Разделение p7b контейнера на отдельные сертификаты                          */
 /* ----------------------------------------------------------------------------------------------- */
+ int aktool_key_p7b_lsp( int argc , char *argv[], int flag )
+{
+  char outfile[FILENAME_MAX];
+  int error, cnt = 0, errcount = 0;
+
+  ++optind; /* пропускаем набор управляющих команд */
+  if( optind >= argc ) { /* если не задан хотя бы один файл, то дальше делать нечего */
+    aktool_error(_("p7b container is not specified as the argument of the program"));
+    return EXIT_FAILURE;
+  }
+
+  while( optind < argc ) {
+     ak_asn1 root = NULL, sequence = NULL;
+     char *value = argv[optind++]; /* получаем указатель на запрашиваемое имя файла */
+
+   /* считываем ASN.1 дерево */
+     if( ak_asn1_import_from_file( root = ak_asn1_new(), value, NULL ) != ak_error_ok ) {
+       aktool_error(_("incorrect reading of ASN.1 context from %s file"), value );
+       goto lab1;
+     }
+
+   /* если мы считали контейнер, то добавляем его содержимое */
+     if(( sequence = ak_certificate_get_sequence_from_p7b_asn1( root )) != NULL ) {
+       if( ki.show_caption && ( flag == 1 )) {
+         printf(" %-40s %-12s %s\n", _("serial number"), _("not after"), _("subject"));
+         printf("-------------------------------------------------------------------------\n");
+       }
+
+       cnt = 0;
+       ak_asn1_first( sequence );
+       while( sequence->count ) {
+         ak_asn1 cert = ak_asn1_new();
+         ak_asn1_add_tlv( cert, ak_asn1_exclude( sequence ));
+
+       /* верифицируем сертификат */
+         ak_certificate_opts_create( &ki.cert.opts );
+         error = ak_certificate_import_from_asn1( &ki.cert, NULL, cert );
+
+       /* теперь cert содержит готовый сертификат */
+         switch( flag ) {
+           case 1: /* выводим сертификат */
+             aktool_key_ls_certificate_line( &ki.cert, error );
+             if( ki.verbose ) aktool_key_print_certificate( &ki.cert );
+             break;
+           case 2: /* экспортируем во внешний файл */
+             switch( ki.format ) {
+               case asn1_der_format:
+                 ak_snprintf( outfile, sizeof( outfile ), "%s-%04u.der", value, ++cnt );
+                 error = ak_asn1_export_to_derfile( cert, outfile );
+                 break;
+               default:
+                 ki.format = asn1_pem_format;
+                 ak_snprintf( outfile, sizeof( outfile ), "%s-%04u.cer", value, ++cnt );
+                 error = ak_asn1_export_to_pemfile( cert, outfile, public_key_certificate_content );
+                 break;
+             }
+             if( error == ak_error_ok ) {
+               if( !ki.quiet ) printf(_("Created %s\n"), outfile );
+             }
+              else errcount++;
+             break;
+           default: /* игнорим */
+             break;
+         }
+         ak_asn1_delete( cert );
+         ak_certificate_destroy( &ki.cert );
+       }
+
+       if( ki.show_caption  && ( flag == 1 )) {
+         printf("-------------------------------------------------------------------------\n");
+       }
+       if( !ki.quiet && ( flag == 1 )) printf(_(" p7b: %s\n"), value );
+       goto lab1;
+      }
+
+   /* все доступные варианты закончились */
+     aktool_error(_("unsupported format of asn1 container (%s)"), value );
+     lab1:
+       if( root != NULL ) ak_asn1_delete( root );
+  }
+  if( errcount ) {
+    aktool_error(_("%d certificate(s) are not exported"), errcount );
+    return EXIT_FAILURE;
+  }
+ return EXIT_SUCCESS;
+
+}
 
 /* ----------------------------------------------------------------------------------------------- */
-/*                                 вывод справочной информации                                     */
+/*                                  Создание p7b контейнера                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_key_p7b_create( int argc , char *argv[] )
+{
+  ak_asn1 root = NULL, sequence = NULL, cert = NULL;
+
+  ++optind; /* пропускаем набор управляющих команд */
+  if( optind >= argc ) { /* если не задан хотя бы один файл, то дальше делать нечего */
+    aktool_error(_("one or more certificates is not specified as the argument of the program"));
+    return EXIT_FAILURE;
+  }
+
+ /* создаем корень */
+  if(( root = ak_certificate_new_p7b_skeleton( &sequence )) == NULL ) {
+    aktool_error(_("the p7b container cannot be created"));
+    return EXIT_FAILURE;
+  }
+
+  /* последовательно навершиваем на него сертификаты */
+  while( optind < argc ) {
+     int error = ak_error_ok;
+     char *value = argv[optind++]; /* получаем указатель на запрашиваемое имя файла */
+
+   /* считываем ASN.1 дерево */
+     if( ak_asn1_import_from_file( cert = ak_asn1_new(), value, NULL ) != ak_error_ok ) {
+       aktool_error(_("incorrect reading of ASN.1 context from %s file"), value );
+       goto labw;
+     }
+
+   /* верифицируем сертификат */
+     ak_certificate_opts_create( &ki.cert.opts );
+     if(( error = ak_certificate_import_from_asn1( &ki.cert, NULL, cert )) != ak_error_ok ) {
+       aktool_key_verify_switch( error, value );
+     }
+      else {
+        /* если он проверяем, то добавляем в контейнер */
+         ak_asn1_add_tlv( sequence, ak_asn1_exclude( cert ));
+      }
+     ak_certificate_destroy( &ki.cert );
+
+     labw:
+       if( cert != NULL ) ak_asn1_delete( cert );
+  } /* end of while */
+
+ /* теперь сохраняем собранное чудо */
+  if( strlen( ki.op_file ) == 0 )
+    ak_snprintf( ki.op_file, sizeof( ki.op_file ), "aktool-cacer.p7b" );
+
+  if( ak_asn1_export_to_file( root, ki.op_file,
+                                              ki.format, p7b_container_content ) != ak_error_ok )
+    aktool_error(_("wrong export to %s%s%s container"),
+                              ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
+   else {
+     if( !ki.quiet ) printf(_("p7b container stored in %s%s%s\n"),
+                              ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
+  }
+  if( root != NULL ) ak_asn1_delete( root );
+
+ return EXIT_FAILURE;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                                 Вывод справочной информации                                     */
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_key_help( void )
 {
@@ -2095,11 +2304,15 @@
      "     --outpass-hex       set the password for the secret key to be stored directly on the command line as hexademal string\n"
      "     --output-public-key set the file name for the new public key request\n"
      " -o, --output-secret-key set the file name for the new secret key\n"
+     "     --p7b-create        create the collection of certificates\n"
+     "     --p7b-ls            display a list of all certificates from the specified collection\n"
+     "     --p7b-split         split the collection into separate certificates\n"
      "     --random            set the name or identifier of random sequences generator\n"
      "                         the generator will be used to create a new key [ default value: \"%s\" ]\n"
      "     --random-file       set the name of file with random sequence\n"
      "     --repo              set the path to certificate's repository\n"
      "     --repo-add          add the authority's public key to certificate's repository\n"
+     "                         both a single certificate and a collection in p7b format can be used as an argument\n"
      "     --repo-check        check all public keys in the certificate's repository\n"
      "     --repo-ls           list all public keys in the certificate's repository\n"
      "     --repo-rm           remove public key from the certificate's repository\n"
@@ -2109,13 +2322,13 @@
      "                         one can use any supported names or identifiers of algorithm,\n"
      "                         or \"undefined\" value for generation the plain unecrypted key unrelated to any algorithm\n"
      "     --to                another form of --format option\n"
-     " -v, --verify            verify the public key's request or certificate\n"
+     " -v, --verify            verify the public key's request, certificate or collection in p7b format\n"
      "     --without-caption   don't show a caption for displayed values\n\n"),
   aktool_default_generator);
   printf(
    _("options used for customizing a public key's certificate:\n"
      "     --authority-name    add an issuer's generalized name to the authority key identifier extension\n"
-     "     --ca                short form for union of two options: --ca-ext=true and --key-cert-sign\n"
+     "     --ca                short form for the union of two options: --ca-ext=true and --key-cert-sign\n"
      "     --ca-ext            use as certificate authority [ enabled values: true, false ]\n"
      "     --pathlen           set the maximal length of certificate's chain\n"
      "     --digital-signature use for verifying a digital signatures of user data\n"

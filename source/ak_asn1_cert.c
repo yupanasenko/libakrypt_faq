@@ -2320,7 +2320,7 @@
 \endcode
     После [0] должна идти последовательность сертификатов (как элементов одного уровня asn1 дерева).
 
-    \param root asn1 дерево, сожержащее p7b-контейнер
+    \param root asn1 дерево, содержащее p7b-контейнер
     \return В случае успешной проверки, функция возвращается указатель на уровень asn1 дерева,
     содержащий последовательность сертификатов.                                                    */
 /* ----------------------------------------------------------------------------------------------- */
@@ -2510,6 +2510,44 @@
   if( root != NULL ) ak_asn1_delete( root );
 
  return seq;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param sequence указатель, в который помещается ссылка нас прелполагаемый список сертификатов
+    \return В случае успеха возвращается указатель на вершину созданного asn1 дерева.              */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_asn1 ak_certificate_new_p7b_skeleton( ak_asn1 *sequence )
+{
+  ak_tlv tlv = NULL;
+  int error = ak_error_ok;
+  ak_asn1 root = ak_asn1_new(), asn = NULL;
+
+   if(( error = ak_asn1_add_tlv( root, tlv = ak_tlv_new_sequence( ))) != ak_error_ok ) goto labex;
+   asn = tlv->data.constructed;
+
+   if(( error = ak_asn1_add_oid( asn, "1.2.840.113549.1.7.2" )) != ak_error_ok ) goto labex;
+   if(( error = ak_asn1_add_asn1( asn, CONTEXT_SPECIFIC^0x00,
+                                                      ak_asn1_new( ))) != ak_error_ok ) goto labex;
+   asn = asn->current->data.constructed;
+
+   if(( error = ak_asn1_add_tlv( asn, tlv = ak_tlv_new_sequence( ))) != ak_error_ok ) goto labex;
+   asn = tlv->data.constructed;
+
+   if(( error = ak_asn1_add_uint32( asn, 1 )) != ak_error_ok ) goto labex;
+   if(( error = ak_asn1_add_tlv( asn, ak_tlv_new_constructed( TSET,
+                                                     ak_asn1_new( )))) != ak_error_ok ) goto labex;
+   if(( error = ak_asn1_add_tlv( asn, tlv = ak_tlv_new_sequence( ))) != ak_error_ok ) goto labex;
+   if(( error = ak_asn1_add_oid( tlv->data.constructed,
+                                             "1.2.840.113549.1.7.1" )) != ak_error_ok ) goto labex;
+   if(( error = ak_asn1_add_asn1( asn, CONTEXT_SPECIFIC^0x00,
+                                                     ak_asn1_new( ))) != ak_error_ok ) goto labex;
+   if( sequence != NULL ) *sequence = asn->current->data.constructed;
+
+   error = ak_asn1_add_tlv( asn, ak_tlv_new_constructed( TSET, ak_asn1_new( )));
+
+   labex:
+     if( error != ak_error_ok ) root = ak_asn1_delete( root );
+ return root;
 }
 
 

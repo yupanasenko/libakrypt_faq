@@ -1445,7 +1445,10 @@ extern "C" {
   /*! \brief Зашифрованные, не ключевые данные. */
    encrypted_content = 0x5,
   /*! \brief Незашифрованные, не ключевые данные. */
-   plain_content = 0x06
+   plain_content = 0x06,
+  /*! \brief Контейнер сертификатов открытых ключей, в формате PKCS #7 */
+   p7b_container_content = 0x07
+
 } crypto_content_t;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1956,6 +1959,8 @@ extern "C" {
  dll_export ak_asn1 ak_certificate_get_sequence_from_p7b_asn1( ak_asn1 );
 /*! \brief Получение последовательности сертификатов из p7b контейнера */
  dll_export ak_asn1 ak_certificate_get_sequence_from_p7b_container( const char * );
+/*! \brief Создание нового (пустого) p7b контейнера */
+ dll_export ak_asn1 ak_certificate_new_p7b_skeleton( ak_asn1 *);
  /** @} */
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup cert-tlv-doc Функции создания расширений сертификатов открытых ключей

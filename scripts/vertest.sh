@@ -139,7 +139,7 @@ echo;
 ##########################################################################
 # 8. Упражнение с сертфикатами тестового УЦ от КриптоПро
 #
-echo "Проверка сертификатов внешних производителей"; echo
+echo "Проверка сертификатов внешних производителей (КриптоПро)"; echo
 wget http://testca2012.cryptopro.ru/cert/rootca.cer
 if [[ $? -ne 0 ]]
 then echo "wget не найден или нет подключения к глобальной сети"; exit;
@@ -151,8 +151,25 @@ if [[ $? -ne 0 ]]
 then echo "aktool не может добавить в хранилище сертификаты тестового УЦ от КриптоПро"; exit;
 fi
 echo;
+
 ##########################################################################
-# 9. Упражнение с коллекциями сертификатов в формате pkcs#7 (см. RFC 5652)
+# 9. Упражнение с сертфикатами УЦ от Инфотекс
+#
+echo "Проверка сертификатов внешних производителей (Инфотекс)"; echo
+wget http://iitrust.ru/downloads/ca/guc2021.crt
+if [[ $? -ne 0 ]]
+then echo "wget не найден или нет подключения к глобальной сети"; exit;
+fi
+#
+wget http://ca-infotecs.ru/ca/CA-INFOTECS-1-2021.cer
+aktool k --repo-add guc2021.crt CA-INFOTECS-1-2021.cer --repo .ca
+if [[ $? -ne 0 ]]
+then echo "aktool не может добавить в хранилище сертификаты тестового УЦ от КриптоПро"; exit;
+fi
+echo;
+
+##########################################################################
+# 10. Упражнение с коллекциями сертификатов в формате pkcs#7 (см. RFC 5652)
 # аккредитованный УЦ КриптоПро
 echo "Проверка хранилищ сертификатов от внешних производителей"; echo
 wget http://q.cryptopro.ru/GUC.p7b http://q.cryptopro.ru/qcasub.p7b
@@ -172,7 +189,7 @@ aktool k --repo-add *.p7b --repo .ca
 ##########################################################################
 # на-последок, показываем, что натворили и удаляем созданные файлы
 aktool k --repo-ls --repo .ca
-aktool k --repo-check --repo .ca
+# aktool k --repo-check --repo .ca
 #
 rm -f secret-ca.key public-ca.crt
 rm -f secret-l1.key public-l1.csr public-l1.crt
@@ -180,6 +197,7 @@ rm -f secret-l2.key public-l2.csr public-l2.crt
 rm -f secret-l3.key public-l3.csr public-l3.crt
 rm -f secret-l4.key public-l4.csr public-l4.crt
 rm -f secret-user.key public-user.csr public-user.crt
+rm -f guc2021.crt CA-INFOTECS-1-2021.cer
 rm .ca/*.cer
 rm rootca.cer subca.cer
 rm -f *.p7b
