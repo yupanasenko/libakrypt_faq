@@ -27,7 +27,7 @@ We have implementation of:
   all elliptic curves described by R 1323565.024-2019;
 12. GOST R 34.10-2012 digital signature generation and verification algorithms, see ISO/IEC 14888-3:2016;
 13. Low level ASN.1 routines for data encoding with support of DER and PEM formats;
-14. x509 certificate management, including public keys formats described by R 1323565.023-2018;
+14. x509 certificate management, including public keys formats described by R 1323565.023-2018 and PKCS #7;
 15. Rolf Blom's scheme for symmetric keys generation.
 
 The library can be compiled with many compilers,

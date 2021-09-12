@@ -76,7 +76,7 @@
   #ifdef AK_HAVE_LOCALE_H
    setlocale( LC_ALL, "ru" );
   #endif
-  bindtextdomain( "aktool", "/usr/share/locale/" );
+  bindtextdomain( "aktool", LIBAKRYPT_LOCALE_PATH );
   textdomain( "aktool" );
  #endif
 

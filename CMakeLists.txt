@@ -138,6 +138,7 @@ add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
 add_compile_options( -DLIBAKRYPT_COMPILER_NAME="${CMAKE_C_COMPILER}" )
 add_compile_options( -DLIBAKRYPT_COMPILER_VERSION="${CMAKE_C_COMPILER_VERSION}" )
 add_compile_options( -DLIBAKRYPT_CA_PATH="${AK_CA_PATH}" )
+add_compile_options( -DLIBAKRYPT_LOCALE_PATH="${CMAKE_INSTALL_FULL_LOCALEDIR}" )
 
 if( AK_SHARED_LIB )
   add_library( akbase-shared SHARED ${MAIN_HEADERS} ${AKBASE_SOURCES} )
