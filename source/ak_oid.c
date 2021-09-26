@@ -131,6 +131,8 @@
  static const char *asn1_hmac_streebog256_i[] = { "1.2.643.7.1.1.4.1", NULL };
  static const char *asn1_hmac_streebog512_n[] = { "hmac-streebog512", "HMAC-md_gost12_512", NULL };
  static const char *asn1_hmac_streebog512_i[] = { "1.2.643.7.1.1.4.2", NULL };
+ static const char *asn1_nmac_streebog_n[] =    { "nmac-streebog", NULL };
+ static const char *asn1_nmac_streebog_i[] =    { "1.2.643.2.52.1.8.1", NULL };
  static const char *asn1_magma_n[] =       { "magma", NULL };
  static const char *asn1_magma_i[] =       { "1.2.643.7.1.1.5.1", NULL };
  static const char *asn1_kuznechik_n[] =   { "kuznechik", "kuznyechik", "grasshopper", NULL };
@@ -513,6 +515,13 @@
                            ( ak_function_set_key_random_object *)ak_hmac_set_key_random, \
                        ( ak_function_set_key_from_password_object *)ak_hmac_set_key_from_password }
 
+ #define ak_object_nmac_streebog { sizeof( struct hmac ), \
+                           ( ak_function_create_object *) ak_hmac_create_nmac, \
+                           ( ak_function_destroy_object *) ak_hmac_destroy, \
+                           ( ak_function_set_key_object *)ak_hmac_set_key, \
+                           ( ak_function_set_key_random_object *)ak_hmac_set_key_random, \
+                       ( ak_function_set_key_from_password_object *)ak_hmac_set_key_from_password }
+
  #define ak_object_signkey256 { sizeof( struct signkey ), \
                           ( ak_function_create_object *) ak_signkey_create_streebog256, \
                           ( ak_function_destroy_object *) ak_signkey_destroy, \
@@ -578,6 +587,10 @@ static struct oid libakrypt_oids[] =
 
  { hmac_function, algorithm, asn1_hmac_streebog512_i, asn1_hmac_streebog512_n, NULL,
                             { ak_object_hmac_streebog512,
+                              ak_object_undefined, (ak_function_run_object *) ak_hmac_ptr, NULL }},
+
+ { hmac_function, algorithm, asn1_nmac_streebog_i, asn1_nmac_streebog_n, NULL,
+                            { ak_object_nmac_streebog,
                               ak_object_undefined, (ak_function_run_object *) ak_hmac_ptr, NULL }},
 
  { block_cipher, algorithm, asn1_magma_i, asn1_magma_n, NULL,

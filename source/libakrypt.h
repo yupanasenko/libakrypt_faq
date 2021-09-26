@@ -924,12 +924,17 @@ extern "C" {
    struct mac mctx;
   /*! \brief Контекст функции хеширования */
    struct hash ctx;
+  /*! \brief Идентификатор второго алгоритма хеширования,
+      применяется только в алгоритмах семейства NMAC (см. Р 1323565.1.022-2018) */
+   ak_oid nmac_second_hash_oid;
 } *ak_hmac;
 
 /*! \brief Создание секретного ключа алгоритма выработки имитовставки HMAC на основе функции Стрибог256. */
  dll_export int ak_hmac_create_streebog256( ak_hmac );
 /*! \brief Создание секретного ключа алгоритма выработки имитовставки HMAC на основе функции Стрибог512. */
  dll_export int ak_hmac_create_streebog512( ak_hmac );
+/*! \brief Создание секретного ключа алгоритма выработки имитовставки NMAC, использующего две функции семейства Стрибог. */
+ dll_export int ak_hmac_create_nmac( ak_hmac );
 /*! \brief Создание секретного ключа алгоритма выработки имитовставки HMAC c помощью заданного oid. */
  dll_export int ak_hmac_create_oid( ak_hmac , ak_oid );
 /*! \brief Уничтожение секретного ключа. */
@@ -946,8 +951,89 @@ extern "C" {
 /** \addtogroup skey-doc-derive Функции выработки производных секретных ключей
 @{ */
 /*! Функция выработки производного ключа, согласно Р 50.1.113-2016, раздел 4.4. */
+ dll_export int ak_skey_derive_kdf256_to_ptr( ak_pointer , ak_uint8 *, const size_t ,
+                                             ak_uint8 *, const size_t , ak_uint8 *, const size_t );
+/*! Функция выработки производного ключа, согласно Р 50.1.113-2016, раздел 4.4. */
  dll_export ak_pointer ak_skey_new_derive_kdf256( ak_oid , ak_pointer ,
                                                ak_uint8* , const size_t, ak_uint8*, const size_t );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Алгоритм выработки производного ключа согласно Р 1323565.1.022-2018, раздел 5. */
+ typedef enum {
+  /*! \brief Неопределеный алгоритм, может служить признаком ошибки  */
+   undefined_kdf = 0x00,
+  /*! \brief Промежуточный ключ `nmac`,
+      развертка ключа - `cmac` с использованием блочного шифра Магма */
+   nmac_cmac_magma_kdf = 0x11,
+  /*! \brief Промежуточный ключ `nmac`,
+      развертка ключа - `cmac` с использованием блочного шифра Магма */
+   nmac_cmac_kuznechik_kdf = 0x12,
+  /*! \brief Промежуточный ключ `nmac`, развертка ключа - `hmac256` */
+   nmac_hmac256_kdf = 0x13,
+  /*! \brief Промежуточный ключ `nmac`, развертка ключа - `hmac512` */
+   nmac_hmac512_kdf = 0x14,
+  /*! \brief Промежуточный ключ `nmac`, развертка ключа - `nmac` */
+   nmac_nmac_kdf = 0x15,
+
+  /*! \brief Промежуточный ключ `lsb256(hmac512)`,
+      развертка ключа - `cmac` с использованием блочного шифра Магма */
+   hmac_cmac_magma_kdf = 0x21,
+  /*! \brief Промежуточный ключ `lsb256(hmac512)`,
+      развертка ключа - `cmac` с использованием блочного шифра Кузнечик */
+   hmac_cmac_kuznechik_kdf = 0x22,
+  /*! \brief Промежуточный ключ `lsb256(hmac512)`, развертка ключа - `hmac256` */
+   hmac_hmac256_kdf = 0x23,
+  /*! \brief Промежуточный ключ `lsb256(hmac512)`, развертка ключа - `hmac512` */
+   hmac_hmac512_kdf = 0x24,
+  /*! \brief Промежуточный ключ `lsb256(hmac512)`, развертка ключа - `nmac` */
+   hmac_nmac_kdf = 0x25,
+
+  /*! \brief Промежуточный ключ `xor`,
+      развертка ключа - `cmac` с использованием блочного шифра Магма */
+   xor_cmac_magma_kdf = 0x31,
+  /*! \brief Промежуточный ключ `xor`,
+      развертка ключа - `cmac` с использованием блочного шифра Кузнечик */
+   xor_cmac_kuznechik_kdf = 0x32,
+  /*! \brief Промежуточный ключ `xor`, развертка ключа - `hmac256` */
+   xor_hmac256_kdf = 0x33,
+  /*! \brief Промежуточный ключ `xor`, развертка ключа - `hmac512` */
+   xor_hmac512_kdf = 0x34,
+  /*! \brief Промежуточный ключ `xor`, развертка ключа - `nmac` */
+   xor_nmac_kdf = 0x35
+} kdf_t;
+
+/* ----------------------------------------------------------------------------------------------- */
+ typedef struct kdf_state {
+  /*! \brief Промежуточный ключ, используемый для выработки ключевой информации */
+   union {
+     struct bckey bkey;
+     struct hmac hkey;
+   } key;
+  /*! \brief Внутреннее состояние */
+   ak_uint8 ivbuffer[1024];
+  /*! \brief Размер внутреннего состояния в октетах  */
+   size_t state_size;
+  /*! \brief Размер блока вырабатываемой ключевой информации (в октетах) */
+   size_t block_size;
+  /*! \breif Номер последнего выработанного ключа */
+   ak_uint64 number;
+  /*! \brief Максимально допустимое количество ключей */
+   ak_uint64 max;
+  /*! \brief Испольуемый алгоритм */
+   kdf_t algorithm;
+} *ak_kdf_state;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Инициализация контекта выработки производных ключей,
+    согласно Р 1323565.1.022-2018, раздел 5. */
+ dll_export int ak_kdf_state_create( ak_kdf_state , ak_uint8 *, const size_t , kdf_t , ak_uint8 *,
+                      const size_t , ak_uint8 *, const size_t , ak_uint8 *, const size_t , size_t );
+/*! \brief Функция возвращает длину обного блока вырабатываемой ключевой информации */
+ dll_export size_t ak_kdf_state_get_block_size( ak_kdf_state );
+/*! \brief Функция вырабатывает следующий фрагмент ключевой информации */
+ dll_export int ak_kdf_state_next( ak_kdf_state , ak_pointer , const size_t );
+/*! \brief Удаление контекста выработки производных ключей */
+ dll_export int ak_kdf_state_destroy( ak_kdf_state );
 /** @} *//** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -2071,7 +2157,7 @@ extern "C" {
 /*! \brief Импорт ключа схемы Блома из заданного файла */
  dll_export int ak_blomkey_import_from_file_with_password( ak_blomkey ,
                                                             const char * , const size_t , char * );
- /** @} */
+/** @} */
 
 #ifdef __cplusplus
 } /* конец extern "C" */

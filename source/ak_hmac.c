@@ -142,6 +142,13 @@
   }
   for( ; idx < hctx->mctx.bsize; idx++ ) keybuffer[idx] = 0x5C;
 
+
+ /* различие с nmac в последней функции хеширования */
+  if( hctx->nmac_second_hash_oid ) {
+    ak_hash_destroy( &hctx->ctx );
+    hctx->nmac_second_hash_oid->func.first.create( &hctx->ctx );
+  }
+
  /* возвращаем контекст хеширования в начальное состояние */
   if(( error = ak_hash_clean( &hctx->ctx )) != ak_error_ok )
     return ak_error_message( error, __func__, "wrong cleaning of hash function context" );
@@ -219,6 +226,8 @@
   }
  /* доопределяем oid ключа */
   hctx->key.oid = oid;
+ /* устанавливаем указатель на второй алгоритм хеширования */
+  hctx->nmac_second_hash_oid = NULL;
 
  return error;
 }
@@ -238,6 +247,19 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_hmac_create_streebog512( ak_hmac hctx )
 { return ak_hmac_create_oid( hctx, ak_oid_find_by_name( "hmac-streebog512" )); }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \param hctx Контекст алгоритма NMAC выработки имитовставки.
+    \return В случае успешного завершения функций возвращает \ref ak_error_ok. В случае
+    возникновения ошибки возвращеется ее код.                                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_hmac_create_nmac( ak_hmac hctx )
+{
+  int error = ak_hmac_create_oid( hctx, ak_oid_find_by_name( "hmac-streebog512" ));
+  hctx->key.oid = ak_oid_find_by_name( "nmac-streebog" );
+  hctx->nmac_second_hash_oid = ak_oid_find_by_name( "streebog256" );
+  return error;
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param hctx Контекст алгоритма HMAC выработки имитовставки.

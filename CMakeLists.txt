@@ -8,7 +8,7 @@ cmake_minimum_required( VERSION 3.2 FATAL_ERROR )
 # -------------------------------------------------------------------------------------------------- #
 set( HEAD_VERSION 0 )
 set( MAIN_VERSION 9 )
-set( MINOR_VERSION 8 )
+set( MINOR_VERSION 9 )
 set( MAJOR_VERSION ${HEAD_VERSION}.${MAIN_VERSION} )
 set( FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION} )
 # строка с текущей датой, используется при сборке документации
@@ -208,6 +208,8 @@ set ( ARITHMETIC_TESTS_LIST
       asn1-keys
       blom-keys
       cmac
+      hmac
+      kdf-state
     )
 
 if( AK_TESTS_GMP )
