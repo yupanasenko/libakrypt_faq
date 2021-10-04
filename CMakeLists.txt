@@ -88,6 +88,7 @@ set( AKRYPT_SOURCES
    source/ak_asn1_cert.c
    source/ak_blom.c
    source/ak_kdf.c
+   source/ak_npecies.c
 )
 
 # -------------------------------------------------------------------------------------------------- #

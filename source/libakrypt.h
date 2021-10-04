@@ -2159,6 +2159,58 @@ extern "C" {
                                                             const char * , const size_t , char * );
 /** @} */
 
+/* ----------------------------------------------------------------------------------------------- */
+/** \addtogroup hybrid-doc Гибридные схемы шифрования
+ @{ */ /*! \brief Перечень доступных схем гибридного шифрования */
+ typedef enum {
+  /*! \brief Асимметричная схема шифрования c возможностью использования групповых ключей. */
+    npecies_scheme
+ } hybrid_sheme_t;
+
+/*! \brief Асимметричная схема шифрования c возможностью использования групповых ключей. */
+ typedef struct npecies_scheme {
+ /*! \breif Открытый ключ получателя файла. */
+  struct verifykey recipient;
+} *ak_npecies_scheme;
+
+/*! \brief Механизм деления данных на фрагменты */
+ typedef enum {
+  /*! \brief Деление не предусматривается. */
+   undefined_fraction,
+  /*! \brief Деление на заданное количество фрагментов. */
+   count_fraction,
+  /*! \brief Деление на фрагменты заданного размера. */
+   size_fraction,
+  /*! \brief Деление на фрагменты случайного размера. */
+   random_size_fraction
+ } fraction_mechanism_t;
+
+/*! \brief Структура, описывающая механизм деления данных и его параметры. */
+ typedef struct fraction_opts {
+  /*! \brief Механизм (способ) деления данных. */
+   fraction_mechanism_t mechanism;
+  /*! \brief Значение параметра (в случае длин - в октетах) */
+   size_t value;
+ } *ak_fraction_opts;
+
+/*! \brief Множество параметров механизма шифрования и контроля целостности для гибридной схемы шифрования */
+ typedef struct hybrid_encryption_set {
+  /*! \brief AEAD режим шифрования. */
+   ak_oid mode;
+  /*! \brief Способ деления данных на фрагменты. */
+   struct fraction_opts fraction;
+  /*! \brief Используемая схема гибридного шифрования. */
+   hybrid_sheme_t scheme;
+} *ak_hybrid_encryption_set;
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция зашифрования заданного файла. */
+ int ak_hybrid_encrypt_file( ak_hybrid_encryption_set , ak_pointer ,
+              const char * , const char * , const size_t , ak_random , const char * , const size_t );
+
+/** @} */
+
+
 #ifdef __cplusplus
 } /* конец extern "C" */
 #endif

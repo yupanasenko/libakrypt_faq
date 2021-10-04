@@ -299,6 +299,8 @@
  static const char *asn1_sdhkey_i[] =      { "1.2.643.2.52.1.127.2.2", NULL };
  static const char *asn1_extkey_n[] =      { "external-basic-key", NULL };
  static const char *asn1_extkey_i[] =      { "1.2.643.2.52.1.127.2.3", NULL };
+ static const char *asn1_npecieskey_n[] =  { "npecies-scheme-key", NULL };
+ static const char *asn1_npecieskey_i[] =  { "1.2.643.2.52.1.127.2.4", NULL };
 
  static const char *asn1_symkmd_n[] =      { "symmetric-key-content", NULL };
  static const char *asn1_symkmd_i[] =      { "1.2.643.2.52.1.127.3.1", NULL };
@@ -753,7 +755,8 @@ static struct oid libakrypt_oids[] =
 
 /* идентификаторы, используемые при реализации схемы Блома */
  { blom_master, algorithm, asn1_blom_m_i, asn1_blom_m_n, NULL, ak_functional_objects_undefined },
- { blom_subscriber, algorithm, asn1_blom_a_i, asn1_blom_a_n, NULL, ak_functional_objects_undefined },
+ { blom_subscriber, algorithm, asn1_blom_a_i, asn1_blom_a_n, NULL,
+                                                                 ak_functional_objects_undefined },
  { blom_pairwise, algorithm, asn1_blom_p_i, asn1_blom_p_n, NULL, ak_functional_objects_undefined },
 
 /* идентификаторы, используемые при разборе сертификатов и ключевых контейнеров */
@@ -763,7 +766,8 @@ static struct oid libakrypt_oids[] =
                                                            NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_sdhkey_i, asn1_sdhkey_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_extkey_i, asn1_extkey_n, NULL, ak_functional_objects_undefined },
-
+ { identifier, descriptor, asn1_npecieskey_i, asn1_npecieskey_n, NULL,
+                                                                 ak_functional_objects_undefined },
  { identifier, parameter, asn1_symkmd_i, asn1_symkmd_n,
                              (ak_pointer) symmetric_key_content, ak_functional_objects_undefined },
  { identifier, parameter, asn1_skmd_i, asn1_skmd_n,
