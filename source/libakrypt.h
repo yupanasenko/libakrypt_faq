@@ -2205,8 +2205,8 @@ extern "C" {
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция зашифрования заданного файла. */
- int ak_hybrid_encrypt_file( ak_hybrid_encryption_set , ak_pointer ,
-              const char * , const char * , const size_t , ak_random , const char * , const size_t );
+ int ak_hybrid_encrypt_file( ak_hybrid_encryption_set , ak_pointer , const char * ,
+                const char * , const size_t , ak_random , ak_random , const char * , const size_t );
 
 /** @} */
 

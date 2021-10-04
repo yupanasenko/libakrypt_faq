@@ -409,6 +409,8 @@
   printf(_("  aktool command [options] [files]\n\n"));
   printf(_("available commands (in short and long forms):\n"));
   printf(_("  a, asn1parse  -  decode and print the ASN.1 data\n"));
+  printf(_("  e, encrypt    -  encrypt given file or directory\n"));
+  printf(_("  d, decrypt    -  decrypt given file\n"));
   printf(_("  i, icode      -  calculate or check integrity codes\n"));
   printf(_("  k, key        -  key generation and management functions\n"));
   printf(_("  s, show       -  show useful information\n"));
@@ -421,10 +423,6 @@
                                          LIBAKRYPT_COMPILER_NAME, __VERSION__, __DATE__, __TIME__ );
  return EXIT_SUCCESS;
 }
-
-/* ----------------------------------------------------------------------------------------------- */
-/* заглушки */
- int aktool_encrypt( int argc, tchar *argv[], encrypt_t work ) { return EXIT_FAILURE; }
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                       akrypt.c  */

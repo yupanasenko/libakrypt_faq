@@ -242,7 +242,7 @@ set( AKTOOL_SOURCES
      aktool/aktool_show.c
      aktool/aktool_test.c
      aktool/aktool_icode.c
-#     aktool/aktool_encrypt.c
+     aktool/aktool_encrypt.c
    )
 set( AKTOOL_FILES
      aktool/aktool.h
