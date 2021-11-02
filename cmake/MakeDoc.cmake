@@ -3,56 +3,56 @@
 # -------------------------------------------------------------------------------------------------- #
 find_program( PANDOC pandoc )
 if( PANDOC )
-  message( "-- pandoc found" )
+  message( "-- pandoc found (${PANDOC})" )
 else()
   message( "-- pandoc not found" )
 endif()
 
 find_program( SED sed )
 if( SED )
-  message( "-- sed found" )
+  message( "-- sed found (${SED})" )
 else()
   message( "-- sed not found" )
 endif()
 
 find_program( DOXYGEN doxygen )
 if( DOXYGEN )
-  message( "-- doxygen found" )
+  message( "-- doxygen found (${DOXYGEN})" )
 else()
   message( "-- doxygen not found" )
 endif()
 
 find_program( XELATEX xelatex )
 if( XELATEX )
-  message( "-- xelatex found" )
+  message( "-- xelatex found (${XELATEX}" )
 else()
   message( "-- xelateX not found" )
 endif()
 
 find_program( QHELPGENERATOR qhelpgenerator )
 if( QHELPGENERATOR )
-  message( "-- qhelpgenerator found" )
+  message( "-- qhelpgenerator found (${QHELPGENERATOR})" )
 else()
   message( "-- qhelpgenerator not found" )
 endif()
 
 find_program( ETAGS etags )
 if( ETAGS )
-  message( "-- etags found" )
+  message( "-- etags found (${ETAGS})" )
 else()
   message( "-- etags not found" )
 endif()
 
 find_program( GZIP gzip )
 if( GZIP )
-  message( "-- gzip found" )
+  message( "-- gzip found (${GZIP})" )
 else()
   message( "-- gzip not found" )
 endif()
 
 find_program( XGETTEXT xgettext )
 if( XGETTEXT )
-  message( "-- xgettext found" )
+  message( "-- xgettext found (${XGETTEXT})" )
 else()
   message( "-- xgettext not found" )
 endif()
@@ -133,9 +133,15 @@ if( UNIX )
 # конец if( UNIX )
 endif()
 
-
 # -----------------------------------------------------------------------------------
 # исполняем хвосты, т.е. то что почти забыли сделать
 if( GZIP )
   execute_process( COMMAND  gzip --force ${CMAKE_CURRENT_BINARY_DIR}/aktool.1 )
 endif()
+
+# -----------------------------------------------------------------------------------
+if( ETAGS )
+  add_custom_target( tags COMMAND etags --recurse=yes --totals=yes -f ${CMAKE_CURRENT_SOURCE_DIR}/TAGS ${CMAKE_CURRENT_SOURCE_DIR} )
+  message("-- Script for etags enabled (now \"make tags\" enabled)")
+endif()
+

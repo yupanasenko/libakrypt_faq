@@ -121,7 +121,12 @@
    bool_t ignore_errors;
   /* при установленном флаге программа не выводи статистику */
    bool_t dont_show_stat;
-
+  /* структура для параметров асимметричного шифрования */
+   struct hybrid_encryption_set heset;
+ #ifdef AK_HAVE_BZLIB_H
+  /* сжимать файлы, перед обработкой */
+   bool_t compress_bz2;
+ #endif
 } aktool_ki_t;
 
 /* собственно глобальная переменная с опциями */

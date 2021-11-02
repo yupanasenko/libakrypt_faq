@@ -258,28 +258,47 @@ endif()
 message("-- Sources for aktool: [ ${AKTOOL_SOURCES} ]" )
 
 # -------------------------------------------------------------------------------------------------- #
+# дополнительный (опциональный) функционал утилиты aktool
 include( FindGettext )
+
+# libbz2
+find_library( LIBBZ2_LIB bz2 )
+if( LIBBZ2_LIB )
+  message("-- libbz2 found" )
+  find_file( AK_HAVE_LIBBZ2_H bzlib.h )
+  if( AK_HAVE_LIBBZ2_H )
+    message("-- bzlib.h found")
+    set( LIBAKRYPT_LIBS ${LIBAKRYPT_LIBS} ${LIBBZ2_LIB} )
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAK_HAVE_BZLIB_H" )
+  endif()
+endif()
+
+# libintl
+find_library( LIBINTL_LIB intl )
+if( LIBINTL_LIB )
+  message("-- libintl found")
+  set( LIBAKRYPT_LIBS ${LIBAKRYPT_LIBS} ${LIBINTL_LIB} )
+endif()
+
 find_path( AK_HAVE_LIBINTL_H NAMES libintl.h )
 if( AK_HAVE_LIBINTL_H )
   include_directories( ${AK_HAVE_LIBINTL_H} )
-  message("-- Additional header for aktool is libintl.h" )
+  message("-- libintl.h found" )
 endif()
 
-add_executable( aktool ${AKTOOL_SOURCES} )
-target_include_directories( aktool PUBLIC "aktool" )
-
-find_library( LIBINTL_LIB intl )
-if( LIBINTL_LIB )
-  set( LIBAKRYPT_LIBS ${LIBAKRYPT_LIBS} ${LIBINTL_LIB} )
-endif()
+# libiconv
 find_library( LIBICONV_LIB iconv )
 if( LIBICONV_LIB )
+  message("-- libiconv found")
   set( LIBAKRYPT_LIBS ${LIBAKRYPT_LIBS} ${LIBICONV_LIB} )
 endif()
 
 if( LIBAKRYPT_LIBS )
   message("-- Additional libraries for aktool is ${LIBAKRYPT_LIBS}")
 endif()
+
+add_executable( aktool ${AKTOOL_SOURCES} )
+target_include_directories( aktool PUBLIC "aktool" )
 target_link_libraries( aktool akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -350,6 +369,7 @@ set( CPACK_SOURCE_IGNORE_FILES
   \\.git/
   .gitignore
   .delme*
+  .kdev4/*
   TAGS
   "CMakeLists.txt.user*"
   "scratch*"
