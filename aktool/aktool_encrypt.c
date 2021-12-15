@@ -141,7 +141,7 @@
                   #endif
                    break;
 
-      /* устанавливаем способы разбиения зашифровываемых файлов */
+     /* устанавливаем способы разбиения зашифровываемых файлов */
         case 231: /* --fs */
                    ki.heset.fraction.mechanism = size_fraction;
                    size_value = atoi( optarg );

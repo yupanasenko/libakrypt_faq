@@ -13,6 +13,8 @@
 {
   struct file ifp, ofp;
   int error = ak_error_ok;
+  ak_asn1 header = NULL;
+  ak_tlv sequence = NULL;
   ak_int64 total = 0, maxlen = 0, value = 0, sum = 0;
 
    if( generator == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -32,8 +34,6 @@
      strncpy( outfile, ak_ptr_to_hexstr( outfile, 12, ak_false ), outsize );
    }
 
-   printf("infile: %s, outfile: %s\n", filename, outfile );/* <----------------------------------- DELME */
-
  /* формируем разбиение исходного файла */
    if(( error = ak_file_open_to_read( &ifp, filename )) != ak_error_ok ) {
      return ak_error_message_fmt( error, __func__, "wrong open a file (%s)", filename );
@@ -41,14 +41,23 @@
 
  /* устраиваем перебор фрагментов исходного текста */
   total = ifp.size;
-  printf("total: %lld\n", total );
-
   if(( value = set->fraction.value ) == 0 ) value = 10; /* количество фрагментов по-умолчанию */
   if( strstr( set->mode->name[0], "kuznechik" ) != NULL )
     maxlen = 16*ak_libakrypt_get_option_by_name( "kuznechik_cipher_resource" );
    else maxlen = 8*ak_libakrypt_get_option_by_name( "magma_cipher_resource" );
 
-  printf("maxlen: %lld\n", maxlen );
+ /* формируем asn1 заголовок */
+  ak_asn1_add_tlv( header = ak_asn1_new(), sequence = ak_tlv_new_sequence( ));
+  /* - схема шифрования - */
+   ak_asn1_add_uint32( sequence->data.constructed, set->scheme );
+  /* - режим шифрования - */
+   ak_asn1_add_algorithm_identifier( sequence->data.constructed, set->mode , NULL );
+  /* - имя файла после расшифрования - */
+   ak_asn1_add_utf8_string( sequence->data.constructed, filename );
+  /* - размер заголовка в байтах - */
+   ak_asn1_add_uint32( sequence->data.constructed, 320 );
+
+  ak_asn1_print( header );
 
  /* разбиение исходного файла на фрагменты длины
     от 4096 байт до maxlen, где maxlen определяется
@@ -78,6 +87,7 @@
   }
   if( sum != ifp.size ) ak_error_message( ak_error_wrong_length, __func__,
                          "the length of encrypted data is not equal to the length of plain data" );
+
   ak_file_close( &ifp );
  return ak_error_ok;
 }
