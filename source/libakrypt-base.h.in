@@ -248,6 +248,8 @@ extern "C" {
  #define ak_error_not_directory               (-24)
 /*! \brief Ошибка отображения файла в память */
  #define ak_error_mmap_file                   (-25)
+/*! \brief Ошибка удаления файла из памяти */
+ #define ak_error_unmap_file                  (-26)
 
 /*! \brief Ошибка выполнения библиотеки на неверной архитектуре. */
  #define ak_error_wrong_endian                (-31)
@@ -415,6 +417,10 @@ extern "C" {
   ak_int64 size;
  /*! \brief Размер блока для оптимального чтения с жесткого диска. */
   ak_int64 blksize;
+ /*! \brief Указатель на память (после вызова mmap) */
+  ak_pointer addr;
+ /*! \brief Реальный размер отображенной памяти (после вызова mmap) */
+  ak_int64 mmaped_size;
  } *ak_file;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -431,9 +437,9 @@ extern "C" {
 /*! \brief Функция записывает в файл строку символов. */
  dll_export ssize_t ak_file_printf( ak_file , const char * , ... );
 /*! \brief Отображение заданного файла в память. */
- dll_export ak_pointer ak_file_mmap( ak_file , const char * , const filestate_t , const size_t );
+ dll_export ak_pointer ak_file_mmap( ak_file , void * , int , int , off_t );
 /*! \brief Закрытие файла, отбраженног в память. */
- dll_export int ak_file_unmap( ak_file , ak_pointer );
+ dll_export int ak_file_unmap( ak_file );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Проверка, является ли заданное имя обычным файлом или каталогом. */

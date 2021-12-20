@@ -176,38 +176,34 @@
     /* только теперь шифруем входящие даные */
      curdiff = current;
 
-     нам нужен mmap_file();
+//     нам нужен mmap_file();
 
 
-     set->mode->
+//     set->mode->
 
-        error = oid->func.direct(
-           encryptionKey,     /* ключ шифрования */
-           authenticationKey, /* ключ имитозащиты */
-           data,              /* ассоциированные данные */
-           128,               /* размер ассоциированных данных */
-           data+128,          /* указатель на зашифровываемые данные */
-           data+128,          /* указатель на зашифрованные данные */
-           size-128,          /* размер шифруемых данных */
-           iv,                /* синхропосылка для режима гаммирования */
-           sizeof( iv ),      /* доступный размер синхропосылки */
-           icode,             /* имитовставка */
-           sizeof( icode )    /* доступный размер памяти для имитовставки */
-        );
+//        error = oid->func.direct(
+//           encryptionKey,     /* ключ шифрования */
+//           authenticationKey, /* ключ имитозащиты */
+//           data,              /* ассоциированные данные */
+//           128,               /* размер ассоциированных данных */
+//           data+128,          /* указатель на зашифровываемые данные */
+//           data+128,          /* указатель на зашифрованные данные */
+//           size-128,          /* размер шифруемых данных */
+//           iv,                /* синхропосылка для режима гаммирования */
+//           sizeof( iv ),      /* доступный размер синхропосылки */
+//           icode,             /* имитовставка */
+//           sizeof( icode )    /* доступный размер памяти для имитовставки */
+//        );
+//     while( curdiff > 0 ) {
+//        if(( val = ak_file_read( &ifp, buffer, ak_min( curdiff, sizeof( buffer )))) < 0 ) {
+//          ak_error_message_fmt( ak_error_get_value(), __func__,
+//                                                "incorrect block reading form %s file", filename );
+//          break;
+//        }
+//        ak_file_write( &ofp, buffer, val );
+//        curdiff -= val;
+//     }
 
-
-
-
-
-     while( curdiff > 0 ) {
-        if(( val = ak_file_read( &ifp, buffer, ak_min( curdiff, sizeof( buffer )))) < 0 ) {
-          ak_error_message_fmt( ak_error_get_value(), __func__,
-                                                "incorrect block reading form %s file", filename );
-          break;
-        }
-        ak_file_write( &ofp, buffer, val );
-        curdiff -= val;
-     }
     /* вырабатываем новое значение ключа для доступа к контейнеру */
      if(( error = ak_encrypt_assign_container_key( &kcont,
                               salt, 32, iv, 8, vect, 32, password, pass_size )) != ak_error_ok ) {

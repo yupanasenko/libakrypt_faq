@@ -414,18 +414,35 @@
 /* ----------------------------------------------------------------------------------------------- */
                    /* Отображение файлов в память (обертка вокруг mmap) */
 /* ----------------------------------------------------------------------------------------------- */
- ak_pointer ak_file_mmap( ak_file file, const char *filename,
-                                                     const filestate_t state, const size_t offset )
+ ak_pointer ak_file_mmap( ak_file file, void *addr, int prot, int flags, off_t offset )
 {
+ #ifdef AK_HAVE_SYSMMAN_H
+  if(( file->addr = mmap( addr, file->mmaped_size = file->size - offset,
+                                                prot, flags, file->fd, offset )) == MAP_FAILED ) {
+    ak_error_message_fmt( ak_error_mmap_file, __func__, "mmap error (%s)", strerror( errno ));
+  }
+  return file->addr;
+ #else
  /* в ситуациях, когда mmap не определена, сразу выходим */
-#ifndef AK_HAVE_WINDOWS_H
- #ifndef AK_HAVE_SYSMMAN_H
-   return ak_error_undefined_function;
+  ak_error_message( ak_error_undefined_function, __func__, "this function is'nt well developed" );
+  return NULL;
  #endif
-#endif
+}
 
- ak_error_message( ak_error_undefined_function, __func__, "this function is'nt well developed" );
- return NULL;
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_file_unmap( ak_file file )
+{
+ #ifdef AK_HAVE_SYSMMAN_H
+  if( munmap( file->addr, file->mmaped_size ) < 0 ) {
+    return ak_error_message_fmt( ak_error_unmap_file, __func__,
+                                                           "munmap error (%s)", strerror( errno ));
+  }
+  return ak_error_ok;
+ #else
+ /* в ситуациях, когда mmap не определена, сразу выходим */
+  return ak_error_message( ak_error_undefined_function, __func__,
+                                                            "this function is'nt well developed" );
+ #endif
 }
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -180,18 +180,22 @@ set( EXAMPLES_LIST
      log
      ini
      file
+     mmap
    )
 
 # -------------------------------------------------------------------------------------------------- #
 if( AK_TESTS )
+  message("-- Added tests and examples (now \"make test\" enabled):" )
   foreach( programm ${EXAMPLES_LIST} )
     if( AK_STATIC_LIB )
       add_executable( example-${programm} examples/example-${programm}.c )
       target_link_libraries( example-${programm} akbase-static ${LIBAKRYPT_LIBS} )
+      message("      example-${programm}" )
     endif()
     if( AK_SHARED_LIB )
       add_executable( example-shared-${programm} examples/example-${programm}.c )
       target_link_libraries( example-shared-${programm} akbase-shared ${LIBAKRYPT_LIBS} )
+      message("      example-shared-${programm}" )
     endif()
   endforeach()
 endif()
@@ -226,10 +230,14 @@ if( AK_TESTS )
   enable_testing()
   foreach( programm ${ARITHMETIC_TESTS_LIST} )
     add_executable( test-${programm} examples/test-${programm}.c )
-    target_link_libraries( test-${programm} akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
+    if( AK_STATIC_LIB )
+      target_link_libraries( test-${programm} akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
+    else()
+      target_link_libraries( test-${programm} akrypt-shared akbase-shared ${LIBAKRYPT_LIBS} )
+    endif()
     add_test( NAME test-${programm} COMMAND test-${programm} )
+    message("      test-${programm}" )
   endforeach()
-  message("-- Added tests (now \"make test\" enabled): [ ${ARITHMETIC_TESTS_LIST} ]" )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
@@ -255,7 +263,10 @@ if( AK_HAVE_GETOPT_H )
 else()
   set( AKTOOL_SOURCES ${AKTOOL_SOURCES} aktool/getopt.c )
 endif()
-message("-- Sources for aktool: [ ${AKTOOL_SOURCES} ]" )
+message("-- Sources for aktool utility:" )
+foreach( filename ${AKTOOL_SOURCES} )
+  message("      ${filename}" )
+endforeach()
 
 # -------------------------------------------------------------------------------------------------- #
 # дополнительный (опциональный) функционал утилиты aktool
