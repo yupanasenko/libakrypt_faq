@@ -299,8 +299,8 @@
  static const char *asn1_sdhkey_i[] =      { "1.2.643.2.52.1.127.2.2", NULL };
  static const char *asn1_extkey_n[] =      { "external-basic-key", NULL };
  static const char *asn1_extkey_i[] =      { "1.2.643.2.52.1.127.2.3", NULL };
- static const char *asn1_npecieskey_n[] =  { "npecies-scheme-key", NULL };
- static const char *asn1_npecieskey_i[] =  { "1.2.643.2.52.1.127.2.4", NULL };
+ static const char *asn1_ecieskey_n[] =    { "ecies-scheme-key", NULL };
+ static const char *asn1_ecieskey_i[] =    { "1.2.643.2.52.1.127.2.4", NULL };
 
  static const char *asn1_symkmd_n[] =      { "symmetric-key-content", NULL };
  static const char *asn1_symkmd_i[] =      { "1.2.643.2.52.1.127.3.1", NULL };
@@ -766,7 +766,7 @@ static struct oid libakrypt_oids[] =
                                                            NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_sdhkey_i, asn1_sdhkey_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_extkey_i, asn1_extkey_n, NULL, ak_functional_objects_undefined },
- { identifier, descriptor, asn1_npecieskey_i, asn1_npecieskey_n, NULL,
+ { identifier, descriptor, asn1_ecieskey_i, asn1_ecieskey_n, NULL,
                                                                  ak_functional_objects_undefined },
  { identifier, parameter, asn1_symkmd_i, asn1_symkmd_n,
                              (ak_pointer) symmetric_key_content, ak_functional_objects_undefined },

@@ -121,6 +121,9 @@ extern "C" {
 /*! \brief Ошибка при импорте сертификата: электроннная подпись под сертификатом не верна. */
  #define ak_error_certificate_signature       (-169)
 
+/*! \brief Ошибка при выборе схемы асимметричного шифрования */
+ #define ak_error_encrypt_scheme              (-180)
+
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup options-doc Инициализация и настройка параметров библиотеки
  @{ */
@@ -2101,7 +2104,7 @@ extern "C" {
  dll_export ak_pointer ak_skey_new_from_file( const char * );
 /*! \brief Функция создает и инициализирует контекст секретного ключа, после чего импортирует
     значение секретного ключа и его параметры из указанного файла. */
- dll_export ak_pointer ak_skey_load_from_file( const char *filename );
+ dll_export ak_pointer ak_skey_load_from_file( const char * );
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -2165,15 +2168,16 @@ extern "C" {
  typedef enum {
   /*! \brief Неопределенная асимметричная схема, используется как ошибка */
     undefined_scheme,
-  /*! \brief Асимметричная схема шифрования c возможностью использования групповых ключей. */
-    npecies_scheme
- } hybrid_sheme_t;
+  /*! \brief Гибридная асимметричная схема шифрования, реализуемая в группе точек
+      эллиптической кривой. Вариант ISO/IEC 18033-2:2006. */
+    ecies_scheme
+ } scheme_t;
 
-/*! \brief Асимметричная схема шифрования c возможностью использования групповых ключей. */
- typedef struct npecies_scheme {
+/*! \brief Гибридная асимметричная схема шифрования. */
+ typedef struct ecies_scheme {
  /*! \breif Открытый ключ получателя файла. */
-  struct verifykey recipient;
-} *ak_npecies_scheme;
+  struct certificate recipient;
+} *ak_ecies_scheme;
 
 /*! \brief Механизм деления данных на фрагменты */
  typedef enum {
@@ -2187,6 +2191,7 @@ extern "C" {
    random_size_fraction
  } fraction_mechanism_t;
 
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура, описывающая механизм деления данных и его параметры. */
  typedef struct fraction_opts {
   /*! \brief Механизм (способ) деления данных. */
@@ -2195,22 +2200,33 @@ extern "C" {
    size_t value;
  } *ak_fraction_opts;
 
+ #define default_fraction_opts  { .mechanism = count_fraction; .value = 1 }
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Множество параметров механизма шифрования и контроля целостности для гибридной схемы шифрования */
- typedef struct hybrid_encryption_set {
+ typedef struct encryption_set {
   /*! \brief AEAD режим шифрования. */
    ak_oid mode;
   /*! \brief Способ деления данных на фрагменты. */
    struct fraction_opts fraction;
   /*! \brief Используемая схема гибридного шифрования. */
-   hybrid_sheme_t scheme;
-} *ak_hybrid_encryption_set;
+   scheme_t scheme;
+} *ak_encryption_set;
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Функция зашифрования заданного файла. */
- int ak_hybrid_encrypt_file( ak_hybrid_encryption_set , ak_pointer , const char * ,
-                                 char * , const size_t , ak_random , const char * , const size_t );
-/** @} */
+/*! \brief Зашифрование указанного файла при помощи асимметричной схемы шифрования. */
+ int ak_encrypt_file( const char *, ak_encryption_set ,
+                     ak_pointer , char * , const size_t , ak_random , const char * , const size_t );
+/*! \brief Зашифрование указаного файла при помощи асимметричной схемы шифрования. */
+ int ak_encrypt_file_with_key( const char *, ak_encryption_set ,
+                                         ak_pointer , char * , const size_t , ak_random , ak_skey );
+/*! \brief Расшифрование указанного файла */
+ int ak_decrypt_file( const char * , const char * , const size_t );
+/*! \brief Расшифрование указанного файла */
+ int ak_decrypt_file_with_key( const char * , ak_skey );
 
+/** @} */
+/* ----------------------------------------------------------------------------------------------- */
 #ifdef __cplusplus
 } /* конец extern "C" */
 #endif

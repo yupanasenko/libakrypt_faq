@@ -2282,7 +2282,7 @@
      "available options:\n"
      " -a, --algorithm         specify the method or the cryptographic algorithm for key generation\n"
      "                         this option needs to be used in some key generation schemes, e.g. in Blom scheme\n"
-     "     --ca-cert           set the name of the certificate authorithy's public key\n"
+     "     --ca-cert           set the file with certificate of authorithy's public key\n"
      "     --ca-key            another form of --key option used to sign the certificate\n"
      " -c, --cert              sign the request and generate the certificate of public key\n"
      "     --curve             set the elliptic curve name or identifier for asymmetric keys\n"

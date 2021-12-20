@@ -20,8 +20,8 @@ project( libakrypt C )
 
 # -------------------------------------------------------------------------------------------------- #
 # Перечень доступных опций для сборки библиотеки
-option( AK_STATIC_LIB "Build the static library" ON )
 option( AK_SHARED_LIB "Build the shared library" ON )
+option( AK_STATIC_LIB "Build the static library" OFF )
 option( AK_TESTS "Build test for libakrypt" OFF )
 option( AK_TESTS_GMP "Build comparison tests for gmp and libakrypt" OFF )
 
@@ -88,7 +88,7 @@ set( AKRYPT_SOURCES
    source/ak_asn1_cert.c
    source/ak_blom.c
    source/ak_kdf.c
-   source/ak_npecies.c
+   source/ak_encrypt.c
 )
 
 # -------------------------------------------------------------------------------------------------- #
@@ -299,7 +299,12 @@ endif()
 
 add_executable( aktool ${AKTOOL_SOURCES} )
 target_include_directories( aktool PUBLIC "aktool" )
-target_link_libraries( aktool akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
+
+if( AK_STATIC_LIB )
+  target_link_libraries( aktool akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
+else()
+  target_link_libraries( aktool akrypt-shared akbase-shared ${LIBAKRYPT_LIBS} )
+endif()
 
 # -------------------------------------------------------------------------------------------------- #
 # Сборка документации и завершающие настройки

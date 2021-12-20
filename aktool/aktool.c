@@ -292,10 +292,10 @@
   }
 
   if( ki.aktool_hex_password_input ) {
-    return ak_password_read_from_terminal(_("input password [as hexademal string]: "),
+    return ak_password_read_from_terminal(_("Input password [as hexademal string]: "),
                                                              password, pass_size, hexademal_pass );
   }
- return ak_password_read_from_terminal(_("input password: "), password, pass_size, symbolic_pass );
+ return ak_password_read_from_terminal(_("Input password: "), password, pass_size, symbolic_pass );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -307,10 +307,10 @@
 
  /* считываем первый раз */
   if( ki.aktool_hex_password_input ) {
-    buflen1 = ak_password_read_from_terminal(_("input password [as hexademal string]: "),
+    buflen1 = ak_password_read_from_terminal(_("Input password [as hexademal string]: "),
                                                               buf1, sizeof(buf1), hexademal_pass );
   }
-   else buflen1 = ak_password_read_from_terminal(_("input password: "),
+   else buflen1 = ak_password_read_from_terminal(_("Input password: "),
                                                                buf1, sizeof(buf1), symbolic_pass );
   if( buflen1 < 1 ) {
     aktool_error(_("password has zero length"));
@@ -319,10 +319,10 @@
 
  /* считываем второй раз */
   if( ki.aktool_hex_password_input ) {
-    buflen2 = ak_password_read_from_terminal(_("retype password [as hexademal string]: "),
+    buflen2 = ak_password_read_from_terminal(_("Retype password [as hexademal string]: "),
                                                               buf2, sizeof(buf2), hexademal_pass );
   }
-   else buflen2 = ak_password_read_from_terminal(_("retype password: "),
+   else buflen2 = ak_password_read_from_terminal(_("Retype password: "),
                                                                buf2, sizeof(buf2), symbolic_pass );
 
   if(( buflen1 != buflen2 ) || ( !ak_ptr_is_equal( buf1, buf2, buflen1 ))) {
@@ -348,7 +348,7 @@
   char ch[8];
 
   if( ki.confirm ) { /* пользователь хочет подтверждать удаление файла */
-    printf(_(" remove the file %s? [y/n]"), filename ); fflush( stdout );
+    printf(_("Remove the file %s? [y/n]"), filename ); fflush( stdout );
     memset( ch, 0, sizeof( ch ));
     fgets( ch, sizeof( ch ) -1, stdin );
 
