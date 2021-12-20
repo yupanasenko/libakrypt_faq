@@ -77,7 +77,7 @@
      return ak_error_message( error, __func__, "incorrect creation of container's secret key" );
    ak_random_ptr( generator, salt, 14 );
    if(( error = ak_encrypt_assign_container_key( &kcont, /* устанавливаем первичное значение ключа */
-                              salt, 14, iv, 8, vect, 16, password, pass_size )) != ak_error_ok ) {
+                              salt, 14, iv, 8, vect, 32, password, pass_size )) != ak_error_ok ) {
      ak_error_message( error, __func__, "incorrect assign value of container's secret key" );
      goto lab_exit;
    }
@@ -142,7 +142,7 @@
 
   /* основной цикл разбиения входных данных */
    while( total > 0 ) {
-    ak_int64 current = maxlen;
+    ak_int64 current = maxlen, val = 0, curdiff = 0;
     if( set->fraction.mechanism == random_size_fraction ) {
       ak_random_ptr( generator, &current, 4 ); /* нам хватит 4х октетов */
       current %= ifp.size;
@@ -151,22 +151,14 @@
     }
     current = ak_min( current, total );
     if(((total - current) > 0 ) && ((total - current) < 4096 )) current = total;
-    /* теперь мы можем зашифровать фрагмент входных данных, длина которого определена current */
-    /* начинаем с того, что вырабатываем ключи и заголовок фрагмента */
+
+
+    /* теперь мы можем зашифровать фрагмент входных данных,
+       длина которого определена значением current.
+       начинаем с того, что вырабатываем ключи и заголовок фрагмента */
      if(( error = ak_encrypt_assign_encryption_keys(
-            encryptionKey,
-            authenticationKey,
-            set,
-            scheme_key,
-            generator,
-            vect,
-            16,
-            iv,
-            16,
-            salt,
-            32,
-            buffer,
-            head )) != ak_error_ok ) {
+                      encryptionKey, authenticationKey, set, scheme_key,
+                      generator, vect, 32, iv, 16, salt, 32, buffer, head )) != ak_error_ok ) {
         ak_error_message( error, __func__, "incorrect creation of input data encryption keys" );
         break;
      }
@@ -182,9 +174,46 @@
      ak_bckey_ctr( &kcont, buffer, buffer, head, NULL, 0 );
      ak_file_write( &ofp, buffer, len );
     /* только теперь шифруем входящие даные */
+     curdiff = current;
 
+     нам нужен mmap_file();
+
+
+     set->mode->
+
+        error = oid->func.direct(
+           encryptionKey,     /* ключ шифрования */
+           authenticationKey, /* ключ имитозащиты */
+           data,              /* ассоциированные данные */
+           128,               /* размер ассоциированных данных */
+           data+128,          /* указатель на зашифровываемые данные */
+           data+128,          /* указатель на зашифрованные данные */
+           size-128,          /* размер шифруемых данных */
+           iv,                /* синхропосылка для режима гаммирования */
+           sizeof( iv ),      /* доступный размер синхропосылки */
+           icode,             /* имитовставка */
+           sizeof( icode )    /* доступный размер памяти для имитовставки */
+        );
+
+
+
+
+
+     while( curdiff > 0 ) {
+        if(( val = ak_file_read( &ifp, buffer, ak_min( curdiff, sizeof( buffer )))) < 0 ) {
+          ak_error_message_fmt( ak_error_get_value(), __func__,
+                                                "incorrect block reading form %s file", filename );
+          break;
+        }
+        ak_file_write( &ofp, buffer, val );
+        curdiff -= val;
+     }
     /* вырабатываем новое значение ключа для доступа к контейнеру */
-
+     if(( error = ak_encrypt_assign_container_key( &kcont,
+                              salt, 32, iv, 8, vect, 32, password, pass_size )) != ak_error_ok ) {
+       ak_error_message( error, __func__, "incorrect assign value of container's secret key" );
+       break;
+     }
     /* зашифровываем и сохраняем имитоставку */
 
     /* уточняем оставшуюся длину входных данных */
