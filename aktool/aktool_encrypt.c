@@ -330,8 +330,6 @@
  #endif
   ak_file_close( &file );
 
-//  fprintf( stdout, "%s (Encryption ... )          \r", filename ); fflush( stdout );
-
   if( st->key != NULL )  {
      error = ak_encrypt_file_with_key( name,
                    &ki.heset,
@@ -356,7 +354,9 @@
      );
    }
 
-  fprintf( stdout, "%s (%s): Ok\n", filename, ki.os_file );
+  if( error == ak_error_ok )
+    fprintf( stdout, "%s (%s): Ok\n", filename, ki.os_file );
+   else aktool_error("%s (wrong encryption)", filename );
 
  /* очищаем имя зашифрованного файла
    (для предотвращения попыток записи нескольких файлов в один) */

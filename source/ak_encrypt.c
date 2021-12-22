@@ -43,14 +43,14 @@
                  ak_pointer scheme_key, char *outfile, const size_t outsize, ak_random generator,
                                                     const char *password, const size_t pass_size )
 {
+  struct aead ctx;
   struct bckey kcont;
   struct file ifp, ofp;
-  ak_uint8 buffer[1024];
+  ak_uint8 buffer[4096];
   int error = ak_error_ok;
-  ak_uint8 salt[32], iv[16], vect[32];
+  ak_uint8 salt[32], iv[16], vect[32], im[16];
   size_t len = sizeof( buffer ), head = 0;
   ak_int64 total = 0, maxlen = 0, value = 0, sum = 0;
-  ak_pointer encryptionKey = NULL, authenticationKey = NULL;
 
   /* выполняем многочисленные начальные проверки */
    if( filename == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -111,16 +111,11 @@
    }
    memcpy( buffer, salt, 14 );
    ak_file_write( &ofp, buffer, len );
+   printf("added %lu bytes (global header)\n", len );
 
   /* создаем ключи шифрования и имитозащиты данных */
-   if(( encryptionKey = ak_oid_new_object( set->mode )) == NULL ) {
-     ak_error_message( error, __func__, "incorrect memory allocation for encryption key" );
-     goto lab_exit2;
-   }
-   if(( authenticationKey = ak_oid_new_second_object( set->mode )) == NULL ) {
-     ak_oid_delete_object( set->mode, encryptionKey );
-     ak_oid_delete_second_object( set->mode, authenticationKey );
-     ak_error_message( error, __func__, "incorrect memory allocation for authentictionkey" );
+   if(( error = ak_aead_create_oid( &ctx, ak_true, set->mode )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect intialization of secret keys" );
      goto lab_exit2;
    }
 
@@ -142,7 +137,7 @@
 
   /* основной цикл разбиения входных данных */
    while( total > 0 ) {
-    ak_int64 current = maxlen, val = 0, curdiff = 0;
+    ak_int64 current = maxlen, val = 0, crt = 0;
     if( set->fraction.mechanism == random_size_fraction ) {
       ak_random_ptr( generator, &current, 4 ); /* нам хватит 4х октетов */
       current %= ifp.size;
@@ -152,12 +147,11 @@
     current = ak_min( current, total );
     if(((total - current) > 0 ) && ((total - current) < 4096 )) current = total;
 
-
     /* теперь мы можем зашифровать фрагмент входных данных,
        длина которого определена значением current.
        начинаем с того, что вырабатываем ключи и заголовок фрагмента */
      if(( error = ak_encrypt_assign_encryption_keys(
-                      encryptionKey, authenticationKey, set, scheme_key,
+                      ctx.encryptionKey, ctx.authenticationKey, set, scheme_key,
                       generator, vect, 32, iv, 16, salt, 32, buffer, head )) != ak_error_ok ) {
         ak_error_message( error, __func__, "incorrect creation of input data encryption keys" );
         break;
@@ -172,37 +166,44 @@
      buffer[head -2] = ( current >>  8 )&0xFF;
      buffer[head -1] = current&0xFF;
      ak_bckey_ctr( &kcont, buffer, buffer, head, NULL, 0 );
-     ak_file_write( &ofp, buffer, len );
+     ak_file_write( &ofp, buffer, head );
+     printf("added %lu bytes (local header)\n", head );
+
     /* только теперь шифруем входящие даные */
-     curdiff = current;
+     printf("current: %lld\n", current );
+     if(( error = ctx.auth_clean( ctx.ictx, ctx.authenticationKey,
+                                               iv, ak_min( 16, ctx.tag_size ))) != ak_error_ok ) {
+       ak_error_message( error, __func__, "incorrect cleaning of authentication context" );
+       break;
+     }
+     if(( error = ctx.enc_clean( ctx.ictx, ctx.encryptionKey,
+                                               iv, ak_min( 16, ctx.tag_size ))) != ak_error_ok ) {
+       ak_error_message( error, __func__, "incorrect cleaning of encryption context" );
+       break;
+     }
 
-//     нам нужен mmap_file();
-
-
-//     set->mode->
-
-//        error = oid->func.direct(
-//           encryptionKey,     /* ключ шифрования */
-//           authenticationKey, /* ключ имитозащиты */
-//           data,              /* ассоциированные данные */
-//           128,               /* размер ассоциированных данных */
-//           data+128,          /* указатель на зашифровываемые данные */
-//           data+128,          /* указатель на зашифрованные данные */
-//           size-128,          /* размер шифруемых данных */
-//           iv,                /* синхропосылка для режима гаммирования */
-//           sizeof( iv ),      /* доступный размер синхропосылки */
-//           icode,             /* имитовставка */
-//           sizeof( icode )    /* доступный размер памяти для имитовставки */
-//        );
-//     while( curdiff > 0 ) {
-//        if(( val = ak_file_read( &ifp, buffer, ak_min( curdiff, sizeof( buffer )))) < 0 ) {
-//          ak_error_message_fmt( ak_error_get_value(), __func__,
-//                                                "incorrect block reading form %s file", filename );
-//          break;
-//        }
-//        ak_file_write( &ofp, buffer, val );
-//        curdiff -= val;
-//     }
+     crt = current;
+     while( crt > 0 ) {
+       if(( val = ak_file_read( &ifp, buffer, ak_min( sizeof( buffer ), crt ))) == 0 ) {
+         error = ak_error_message( ak_error_undefined_value, __func__,
+                                                             "incorrect loading of input buffer" );
+         break;
+       }
+       if(( error = ctx.enc_update( ctx.ictx, ctx.encryptionKey,
+                                  ctx.authenticationKey, buffer, buffer, val )) != ak_error_ok ) {
+         ak_error_message( error, __func__, "incorrect update of internal state" );
+         break;
+       }
+       ak_file_write( &ofp, buffer, val );
+       crt -= val;
+     }
+    /* проверяем, что цикл завершен успешно */
+     if( error != ak_error_ok ) break;
+     if(( error = ctx.auth_finalize( ctx.ictx, ctx.authenticationKey,
+                                               im, ak_min( 16, ctx.tag_size ))) != ak_error_ok ) {
+       ak_error_message( error, __func__, "incorrect finalize of internal state" );
+       break;
+     }
 
     /* вырабатываем новое значение ключа для доступа к контейнеру */
      if(( error = ak_encrypt_assign_container_key( &kcont,
@@ -210,7 +211,11 @@
        ak_error_message( error, __func__, "incorrect assign value of container's secret key" );
        break;
      }
+
     /* зашифровываем и сохраняем имитоставку */
+     ak_bckey_ctr( &kcont, im, im, ak_min( 16, ctx.tag_size ), iv, 8 );
+     ak_file_write( &ofp, im, ak_min( 16, ctx.tag_size ) );
+     printf("added %lu bytes (imito)\n", ak_min( 16, ctx.tag_size ) );
 
     /* уточняем оставшуюся длину входных данных */
     total -= current;
@@ -220,14 +225,14 @@
                          "the length of encrypted data is not equal to the length of plain data" );
 
   /* очищием файловые дескрипторы, ключевые контексты, промежуточные данные и выходим */
-   ak_oid_delete_object( set->mode, encryptionKey );
-   ak_oid_delete_second_object( set->mode, authenticationKey );
+   ak_aead_destroy( &ctx );
 
   lab_exit2:
    ak_file_close( &ofp );
    ak_file_close( &ifp );
 
   lab_exit:
+   ak_ptr_wipe( &ctx, sizeof( struct aead ), &kcont.key.generator );
    ak_ptr_wipe( salt, sizeof( salt ), &kcont.key.generator );
    ak_ptr_wipe( iv, sizeof( iv ), &kcont.key.generator );
    ak_ptr_wipe( vect, sizeof( vect ), &kcont.key.generator );
@@ -468,9 +473,8 @@
        ak_wpoint_set_as_unit( &U, wc );
        ak_wpoint_pow( &U, &wc->point, xi, wc->size, wc );
        ak_wpoint_reduce( &U, wc );
-       ak_mpzn_to_little_endian( U.x, wc->size, buffer, sizeof( ak_uint64 )*wc->size, ak_true );
-       ak_mpzn_to_little_endian( U.y, wc->size, buffer+sizeof( ak_uint64 )*wc->size,
-                                                           sizeof( ak_uint64 )*wc->size, ak_true );
+       ak_mpzn_to_little_endian( U.x, wc->size, buffer, cnt, ak_true );
+       ak_mpzn_to_little_endian( U.y, wc->size, buffer +cnt, cnt, ak_true );
       break;
 
     default:
@@ -489,10 +493,10 @@
 {
   ak_asn1 asn;
   struct file ifp;
-  size_t len, head;
+  size_t len; //, head;
   ak_uint8 buffer[1024];
   int error = ak_error_ok;
-  struct bckey kcont, kenc, kauth;
+  struct bckey kcont; //, kenc, kauth;
   ak_uint8 salt[32], iv[16], vect[32];
 
   /* проверяем корректность аргументов функции */

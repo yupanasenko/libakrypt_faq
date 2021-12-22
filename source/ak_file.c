@@ -414,10 +414,11 @@
 /* ----------------------------------------------------------------------------------------------- */
                    /* Отображение файлов в память (обертка вокруг mmap) */
 /* ----------------------------------------------------------------------------------------------- */
- ak_pointer ak_file_mmap( ak_file file, void *addr, int prot, int flags, off_t offset )
+ ak_pointer ak_file_mmap( ak_file file,
+                                    void *addr, size_t length, int prot, int flags, off_t offset )
 {
  #ifdef AK_HAVE_SYSMMAN_H
-  if(( file->addr = mmap( addr, file->mmaped_size = file->size - offset,
+  if(( file->addr = mmap( addr, file->mmaped_size = length,
                                                 prot, flags, file->fd, offset )) == MAP_FAILED ) {
     ak_error_message_fmt( ak_error_mmap_file, __func__, "mmap error (%s)", strerror( errno ));
   }

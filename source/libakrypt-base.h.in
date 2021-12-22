@@ -437,7 +437,7 @@ extern "C" {
 /*! \brief Функция записывает в файл строку символов. */
  dll_export ssize_t ak_file_printf( ak_file , const char * , ... );
 /*! \brief Отображение заданного файла в память. */
- dll_export ak_pointer ak_file_mmap( ak_file , void * , int , int , off_t );
+ dll_export ak_pointer ak_file_mmap( ak_file , void * , size_t , int , int , off_t );
 /*! \brief Закрытие файла, отбраженног в память. */
  dll_export int ak_file_unmap( ak_file );
 

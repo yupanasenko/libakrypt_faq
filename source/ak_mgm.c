@@ -89,27 +89,29 @@
     @return В случае успеха функция возвращает \ref ak_error_ok (ноль). В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_mgm_authentication_clean( ak_mgm_ctx ctx,
-                            ak_bckey authenticationKey, const ak_pointer iv, const size_t iv_size )
+ static int ak_mgm_authentication_clean( ak_pointer actx,
+                                        ak_pointer akey, const ak_pointer iv, const size_t iv_size )
 {
- ak_uint8 ivector[16]; /* временное значение синхропосылки */
+  ak_mgm_ctx ctx = actx;
+  ak_bckey authenticationKey = akey;
+  ak_uint8 ivector[16]; /* временное значение синхропосылки */
 
- if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+  if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                       "using null pointer to internal mgm context");
- if( authenticationKey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+  if( authenticationKey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                         "using null pointer to authentication key");
- if( authenticationKey->bsize > 16 ) return ak_error_message( ak_error_wrong_length,
+  if( authenticationKey->bsize > 16 ) return ak_error_message( ak_error_wrong_length,
                                                  __func__, "using key with very large block size" );
  /* инициализация значением и ресурс */
- if(( authenticationKey->key.flags&key_flag_set_key ) == 0 )
-   return ak_error_message( ak_error_key_value, __func__,
+  if(( authenticationKey->key.flags&key_flag_set_key ) == 0 )
+    return ak_error_message( ak_error_key_value, __func__,
                                          "using block cipher key context with undefined key value");
- if( authenticationKey->key.resource.value.counter <= 0 )
-   return ak_error_message( ak_error_low_key_resource, __func__, "using key with low key resource");
+  if( authenticationKey->key.resource.value.counter <= 0 )
+    return ak_error_message( ak_error_low_key_resource, __func__, "using key with low key resource");
 
- if( iv == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+  if( iv == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using null pointer to initial vector");
- if( !iv_size ) return ak_error_message( ak_error_zero_length, __func__,
+  if( !iv_size ) return ak_error_message( ak_error_zero_length, __func__,
                                                             "using initial vector of zero length" );
  /* обнуляем необходимое */
   ctx->abitlen = 0;
@@ -178,10 +180,12 @@
     вызвана с данными, длина которых не кратна длине блока используемого алгоритма шифрования,
     или возникла ошибка, то возвращается код ошибки                                                */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_mgm_authentication_update( ak_mgm_ctx ctx,
-                      ak_bckey authenticationKey, const ak_pointer adata, const size_t adata_size )
+ static int ak_mgm_authentication_update( ak_pointer actx,
+                                  ak_pointer akey, const ak_pointer adata, const size_t adata_size )
 {
   ak_uint128 h;
+  ak_mgm_ctx ctx = actx;
+  ak_bckey authenticationKey = akey;
   ak_uint8 temp[16], *aptr = (ak_uint8 *)adata;
   ssize_t absize = ( ssize_t ) authenticationKey->bsize;
   ssize_t resource = 0,
@@ -242,10 +246,12 @@
    @return Функция возвращает \ref ak_error_ok в случае успешного завершения.
    В противном случае, возвращается код ошибки.                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_mgm_authentication_finalize( ak_mgm_ctx ctx,
-                               ak_bckey authenticationKey, ak_pointer out, const size_t out_size )
+ static int ak_mgm_authentication_finalize( ak_pointer actx,
+                                  ak_pointer akey, ak_pointer out, const size_t out_size )
 {
   ak_uint128 temp, h;
+  ak_mgm_ctx ctx = actx;
+  ak_bckey authenticationKey = akey;
   size_t absize = authenticationKey->bsize;
 
   if( out == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
@@ -312,27 +318,29 @@
     @return В случае успеха функция возвращает \ref ak_error_ok (ноль). В противном случае
     возвращается код ошибки.                                                                       */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_mgm_encryption_clean( ak_mgm_ctx ctx,
-                            ak_bckey encryptionKey, const ak_pointer iv, const size_t iv_size )
+ static int ak_mgm_encryption_clean( ak_pointer ectx,
+                                        ak_pointer ekey, const ak_pointer iv, const size_t iv_size )
 {
- ak_uint8 ivector[16]; /* временное значение синхропосылки */
+  ak_mgm_ctx ctx = ectx;
+  ak_bckey encryptionKey = ekey;
+  ak_uint8 ivector[16]; /* временное значение синхропосылки */
 
- if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+  if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                       "using null pointer to internal mgm context");
- if( encryptionKey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+  if( encryptionKey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                         "using null pointer to authentication key");
- if( encryptionKey->bsize > 16 ) return ak_error_message( ak_error_wrong_length,
+  if( encryptionKey->bsize > 16 ) return ak_error_message( ak_error_wrong_length,
                                                       __func__, "using key with large block size" );
  /* инициализация значением и ресурс */
- if(( encryptionKey->key.flags&key_flag_set_key ) == 0 )
-           return ak_error_message( ak_error_key_value, __func__,
+  if(( encryptionKey->key.flags&key_flag_set_key ) == 0 )
+    return ak_error_message( ak_error_key_value, __func__,
                                                "using secret key context with undefined key value");
- if( encryptionKey->key.resource.value.counter <= 0 )
-   return ak_error_message( ak_error_low_key_resource, __func__, "using key with low key resource");
+  if( encryptionKey->key.resource.value.counter <= 0 )
+    return ak_error_message( ak_error_low_key_resource, __func__, "using key with low key resource");
 
- if( iv == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+  if( iv == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using null pointer to initial vector");
- if( !iv_size ) return ak_error_message( ak_error_zero_length,
+  if( !iv_size ) return ak_error_message( ak_error_zero_length,
                                                  __func__, "using initial vector with zero length");
  /* обнуляем необходимое */
   ctx->flags &= ak_aead_assosiated_data_bit;
@@ -394,11 +402,14 @@
     вызвана с данными, длина которых не кратна длине блока используемого алгоритма шифрования,
     или возникла ошибка, то возвращается код ошибки                                                */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_mgm_encryption_update( ak_mgm_ctx ctx, ak_bckey encryptionKey,
-              ak_bckey authenticationKey, const ak_pointer in, ak_pointer out, const size_t size )
+ static int ak_mgm_encryption_update( ak_pointer ectx, ak_pointer ekey,
+                           ak_pointer akey, const ak_pointer in, ak_pointer out, const size_t size )
 {
   ak_uint128 e, h;
   ak_uint8 temp[16];
+  ak_mgm_ctx ctx = ectx;
+  ak_bckey encryptionKey = ekey;
+  ak_bckey authenticationKey = akey;
   size_t i = 0, absize = encryptionKey->bsize;
   ak_uint64 *inp = (ak_uint64 *)in, *outp = (ak_uint64 *)out;
   size_t resource = 0,
@@ -530,9 +541,12 @@
     вызвана с данными, длина которых не кратна длине блока используемого алгоритма шифрования,
     или возникла ошибка, то возвращается код ошибки                                                */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_mgm_decryption_update( ak_mgm_ctx ctx, ak_bckey encryptionKey,
-              ak_bckey authenticationKey, const ak_pointer in, ak_pointer out, const size_t size )
+ static int ak_mgm_decryption_update( ak_pointer ectx, ak_pointer ekey,
+                           ak_pointer akey, const ak_pointer in, ak_pointer out, const size_t size )
 {
+  ak_mgm_ctx ctx = ectx;
+  ak_bckey encryptionKey = ekey;
+  ak_bckey authenticationKey = akey;
   ak_uint8 temp[16];
   ak_uint128 e, h;
   size_t i = 0, absize = encryptionKey->bsize;
@@ -902,6 +916,125 @@
  return error;
 }
 
+/* ----------------------------------------------------------------------------------------------- */
+/*                           создание структур управления контекстом                               */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_aead_create_keys( ak_aead ctx, bool_t crf, char *name )
+{
+   if(( ctx->oid = ak_oid_find_by_name( name )) == NULL )
+     return ak_error_message_fmt( ak_error_oid_name, __func__, "invalid oid name \"%s\"", name );
+   if( ctx->oid->mode != aead ) return ak_error_message_fmt( ak_error_oid_mode, __func__,
+                                                             "oid mode must be an \"aead mode\"" );
+  /* создаем ключи (значения не присваиваем) */
+   if(( ctx->authenticationKey = ak_oid_new_second_object( ctx->oid )) == NULL )
+     return ak_error_message( ak_error_get_value(), __func__,
+                                            "incorrect memory allocation for authentication key" );
+   ctx->encryptionKey = NULL;
+   if( crf ) { /* по запросу пользователя создаем ключ шифрования */
+     if(( ctx->encryptionKey = ak_oid_new_object( ctx->oid )) == NULL ) {
+       ak_oid_delete_second_object( ctx->authenticationKey, ctx->oid );
+       return ak_error_message( ak_error_get_value(), __func__,
+                                                "incorrect memory allocation for encryption key" );
+     }
+   }
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_aead_create_mgm_magma( ak_aead ctx, bool_t crf )
+{
+   int error = ak_error_ok;
+
+   if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to aead context" );
+   memset( ctx, 0, sizeof( struct aead ));
+   if(( ctx->ictx = malloc( sizeof( struct mgm_ctx ))) == NULL )
+     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
+   if(( error = ak_aead_create_keys( ctx, crf, "mgm-magma" )) != ak_error_ok ) {
+     if( ctx->ictx != NULL ) free( ctx->ictx );
+     return ak_error_message( error, __func__, "incorrect secret keys context creation" );
+   }
+
+   ctx->tag_size = 8; /* длина блока алгоритма Магма */
+   ctx->auth_clean = ak_mgm_authentication_clean;
+   ctx->auth_update = ak_mgm_authentication_update;
+   ctx->auth_finalize = ak_mgm_authentication_finalize;
+   ctx->enc_clean = ak_mgm_encryption_clean;
+   ctx->enc_update = ak_mgm_encryption_update;
+   ctx->dec_update = ak_mgm_decryption_update;
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_aead_create_mgm_kuznechik( ak_aead ctx, bool_t crf )
+{
+   int error = ak_error_ok;
+
+   if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to aead context" );
+   memset( ctx, 0, sizeof( struct aead ));
+   if(( ctx->ictx = malloc( sizeof( struct mgm_ctx ))) == NULL )
+     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
+   if(( error = ak_aead_create_keys( ctx, crf, "mgm-kuznechik" )) != ak_error_ok ) {
+     if( ctx->ictx != NULL ) free( ctx->ictx );
+     return ak_error_message( error, __func__, "incorrect secret keys context creation" );
+   }
+
+   ctx->tag_size = 16; /* длина блока алгоритма Кузнечик */
+   ctx->auth_clean = ak_mgm_authentication_clean;
+   ctx->auth_update = ak_mgm_authentication_update;
+   ctx->auth_finalize = ak_mgm_authentication_finalize;
+   ctx->enc_clean = ak_mgm_encryption_clean;
+   ctx->enc_update = ak_mgm_encryption_update;
+   ctx->dec_update = ak_mgm_decryption_update;
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_aead_create_oid( ak_aead ctx, bool_t crf, ak_oid oid )
+{
+  if( oid == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                                     "using null pointer to oid" );
+  if( oid->mode != aead ) return ak_error_message( ak_error_oid_mode, __func__,
+                                                                  "using oid with non aead mode" );
+
+  if( strncmp( oid->name[0], "mgm-magma", 9 ) == 0 )
+    return ak_aead_create_mgm_magma( ctx, crf );
+  if( strncmp( oid->name[0], "mgm-kuznechik", 13 ) == 0 )
+    return ak_aead_create_mgm_kuznechik( ctx, crf );
+
+ return ak_error_message( ak_error_wrong_oid, __func__, "using unsupported oid" );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_aead_destroy( ak_aead ctx )
+{
+   if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to aead context" );
+   if( ctx->oid == NULL ) return ak_error_message( ak_error_wrong_oid, __func__,
+                                                         "destroying context with undefined oid" );
+   if( ctx->authenticationKey != NULL )
+     ak_oid_delete_second_object( ctx->oid, ctx->authenticationKey );
+   if( ctx->encryptionKey != NULL ) ak_oid_delete_object( ctx->oid, ctx->encryptionKey );
+   if( ctx->ictx != NULL ) free( ctx->ictx );
+
+   ctx->oid = NULL;
+   ctx->tag_size = 0;
+   ctx->auth_clean = NULL;
+   ctx->auth_update = NULL;
+   ctx->auth_finalize = NULL;
+   ctx->enc_clean = NULL;
+   ctx->enc_update = NULL;
+   ctx->dec_update = NULL;
+
+  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                               тестирование корректной реализации                                */
 /* ----------------------------------------------------------------------------------------------- */
  bool_t ak_libakrypt_test_mgm( void )
 {

@@ -1070,46 +1070,103 @@ extern "C" {
  @{ */
 /*! \brief Функция аутентифицированного шифрования. */
  typedef int ( ak_function_aead )( ak_pointer, ak_pointer, const ak_pointer , const size_t ,
-                   const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
-                                                                         ak_pointer , const size_t );
+                 const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                       ak_pointer , const size_t );
 
 /*! \brief Зашифрование данных в режиме `mgm` с одновременной выработкой имитовставки
     согласно Р 1323565.1.026-2019. */
  dll_export int ak_bckey_encrypt_mgm( ak_pointer , ak_pointer , const ak_pointer ,
-    const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
-                                                                         ak_pointer , const size_t );
+  const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                       ak_pointer , const size_t );
 /*! \brief Расшифрование данных в режиме `mgm` с одновременной проверкой имитовставки
     согласно Р 1323565.1.026-2019. */
  dll_export int ak_bckey_decrypt_mgm( ak_pointer , ak_pointer , const ak_pointer ,
-    const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
-                                                                          ak_pointer, const size_t );
+  const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                        ak_pointer, const size_t );
 /*! \brief Зашифрование данных в режиме `xtsmac` с одновременной выработкой имитовставки. */
  dll_export int ak_bckey_encrypt_xtsmac( ak_pointer , ak_pointer , const ak_pointer ,
-    const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
-                                                                         ak_pointer , const size_t );
+  const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                       ak_pointer , const size_t );
 /*! \brief Расшифрование данных в режиме `xtsmac` с одновременной проверкой имитовставки. */
  dll_export int ak_bckey_decrypt_xtsmac( ak_pointer , ak_pointer , const ak_pointer ,
-    const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
-                                                                          ak_pointer, const size_t );
+  const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                        ak_pointer, const size_t );
 
 /*! \brief Зашифрование данных с одновременной выработкой имитовставки согласно ГОСТ Р 34.13-2015. */
  dll_export int ak_bckey_encrypt_ctr_cmac( ak_pointer , ak_pointer , const ak_pointer ,
-    const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
-                                                                         ak_pointer , const size_t );
+  const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                       ak_pointer , const size_t );
 /*! \brief Расшифрование данных с одновременной проверкой имитовставки согласно ГОСТ Р 34.13-2015. */
  dll_export int ak_bckey_decrypt_ctr_cmac( ak_pointer , ak_pointer , const ak_pointer ,
-    const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
-                                                                          ak_pointer, const size_t );
+  const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                        ak_pointer, const size_t );
 /*! \brief Зашифрование данных в режиме гаммирования с одновременной выработкой имитовставки
    согласно Р 50.1.113-2016. */
  dll_export int ak_bckey_encrypt_ctr_hmac( ak_pointer , ak_pointer , const ak_pointer ,
-    const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
-                                                                         ak_pointer , const size_t );
+  const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                       ak_pointer , const size_t );
 /*! \brief Расшифрование данных в режиме гаммирования с одновременной проверкой имитовставки
    согласно Р 50.1.113-2016. */
  dll_export int ak_bckey_decrypt_ctr_hmac( ak_pointer , ak_pointer , const ak_pointer ,
-    const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
-                                                                          ak_pointer, const size_t );
+  const size_t , const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                        ak_pointer, const size_t );
+
+/* ----------------------------------------------------------------------------------------------- */
+ typedef int ( ak_function_aead_authentication_clean )
+                                     ( ak_pointer , ak_pointer , const ak_pointer , const size_t );
+ typedef int ( ak_function_aead_authentication_update)
+                                     ( ak_pointer , ak_pointer , const ak_pointer , const size_t );
+ typedef int ( ak_function_aead_authentication_finalize)
+                                        ( ak_pointer , ak_pointer , ak_pointer out, const size_t );
+ typedef int ( ak_function_aead_encryption_clean )
+                                     ( ak_pointer , ak_pointer , const ak_pointer , const size_t );
+ typedef int ( ak_function_aead_encryption_update )
+                 ( ak_pointer , ak_pointer , ak_pointer , ak_pointer , ak_pointer , const size_t );
+ typedef int ( ak_function_aead_decryption_update )
+                 ( ak_pointer , ak_pointer , ak_pointer , ak_pointer , ak_pointer , const size_t );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Общая структура aead алгоритма */
+ typedef struct aead {
+  /*! \brief Ключ шифрования */
+   ak_pointer encryptionKey;
+  /*! \brief Ключ имитозашиты */
+   ak_pointer authenticationKey;
+  /*! \brief Идентификатор созданного алгоритма */
+  ak_oid oid;
+  /*! \brief Указатель на внутренний контекст алгоритма */
+  ak_pointer ictx;
+  /*! \brief Размер имитовставки */
+  size_t tag_size;
+  /*! \brief Функция первичной инициализации параметров алгоритма, отвечающих за имитозащиту */
+  ak_function_aead_authentication_clean *auth_clean;
+  /*! \brief Функция первичной инициализации параметров алгоритма, отвечающих за шифрование */
+  ak_function_aead_encryption_clean *enc_clean;
+  /*! \brief Имитозащита данных, передаваемых в открытом виде */
+  ak_function_aead_authentication_update *auth_update;
+  /*! \brief Шифрование и имитозащита данных, подлежащих защите */
+  ak_function_aead_encryption_update *enc_update;
+  /*! \brief Расшифрование и имитозащита данных, подлежащих защите */
+  ak_function_aead_decryption_update *dec_update;
+  /*! \brief Завершение вычисления имитовставки */
+  ak_function_aead_authentication_finalize *auth_finalize;
+} *ak_aead;
+
+/*! Создание контекста алгоритма аутентифицированного шифрования Р 1323565.1.024-2019
+    для блочного шифра Магма */
+ dll_export int ak_aead_create_mgm_magma( ak_aead , bool_t );
+/*! Создание контекста алгоритма аутентифицированного шифрования Р 1323565.1.024-2019
+    для блочного шифра Кузнечик */
+ dll_export int ak_aead_create_mgm_kuznechik( ak_aead , bool_t );
+/*! Создание контекста алгоритма аутентифицированного шифрования xtsmac для блочного шифра Магма */
+ dll_export int ak_aead_create_xtsmac_magma( ak_aead , bool_t );
+/*! Создание контекста алгоритма аутентифицированного шифрования xtsmac для блочного шифра Кузнечик */
+ dll_export int ak_aead_create_xtsmac_magma( ak_aead , bool_t );
+/*! Создание контекста алгоритма аутентифицированного шифрования по заданному oid  */
+ dll_export int ak_aead_create_oid( ak_aead , bool_t, ak_oid );
+/*! Удаление контекста алгоритма аутентифицированного шифрования xtsmac  */
+ dll_export int ak_aead_destroy( ak_aead );
+
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
