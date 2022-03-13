@@ -7,9 +7,9 @@
  #include <libakrypt-internal.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-/*                                 процедуры зашифрования информации                              */
+/*                                 процедуры зашифрования информации                               */
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция проверяет, поддерживается ли библиотекой указанная схема асимметричного шифрования */
+/*! \brief Функция проверяет, поддерживается ли библиотекой указанная схема шифрования             */
 /* ----------------------------------------------------------------------------------------------- */
  static bool_t ak_encrypt_file_is_scheme_valid( scheme_t scheme )
 {
@@ -33,8 +33,8 @@
                                  ak_uint8 *vect, size_t vect_size, ak_uint8 *buffer, size_t head );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Для зашифрования данных используется открытый ключ получателя. Для доступа к контейнеру с данными
-    используется пароль.
+/*! Для зашифрования данных используется открытый ключ получателя. 
+    Для доступа к контейнеру с данными используется пароль.
 
     @return В случае успеха функция возвращает ak_error_ok (ноль). В противном случае
     возвращается код ошибки.                                                                       */
@@ -137,15 +137,15 @@
 
   /* основной цикл разбиения входных данных */
    while( total > 0 ) {
-    ak_int64 current = maxlen, val = 0, crt = 0;
-    if( set->fraction.mechanism == random_size_fraction ) {
-      ak_random_ptr( generator, &current, 4 ); /* нам хватит 4х октетов */
-      current %= ifp.size;
-      if( current > maxlen ) current = maxlen; /* не очень большая */
-      current = ak_max( 4096, current );     /* не очень маленькая */
-    }
-    current = ak_min( current, total );
-    if(((total - current) > 0 ) && ((total - current) < 4096 )) current = total;
+     ak_int64 current = maxlen, val = 0, crt = 0;
+     if( set->fraction.mechanism == random_size_fraction ) {
+       ak_random_ptr( generator, &current, 4 ); /* нам хватит 4х октетов */
+       current %= ifp.size;
+       if( current > maxlen ) current = maxlen; /* не очень большая */
+       current = ak_max( 4096, current );     /* не очень маленькая */
+     }
+     current = ak_min( current, total );
+     if(((total - current) > 0 ) && ((total - current) < 4096 )) current = total;
 
     /* теперь мы можем зашифровать фрагмент входных данных,
        длина которого определена значением current.
@@ -218,8 +218,8 @@
      printf("added %lu bytes (imito)\n", ak_min( 16, ctx.tag_size ) );
 
     /* уточняем оставшуюся длину входных данных */
-    total -= current;
-    sum += current;
+     total -= current;
+     sum += current;
    }
    if( sum != ifp.size ) ak_error_message( error = ak_error_wrong_length, __func__,
                          "the length of encrypted data is not equal to the length of plain data" );
@@ -284,8 +284,10 @@
       }
        else {
          ak_ecies_scheme ecs = scheme_key;
+        /* помещаем номер открытого ключа */
          ak_asn1_add_octet_string( sq2->data.constructed,
                                  ecs->recipient.vkey.number, ecs->recipient.vkey.number_length );
+        /* помещаем номер сертификата открытого ключа */
          ak_asn1_add_octet_string( sq2->data.constructed,
                            ecs->recipient.opts.serialnum, ecs->recipient.opts.serialnum_length );
        }
@@ -346,13 +348,17 @@
    ak_asn1_add_uint32( sequence->data.constructed,
                                *head = ak_encrypt_public_key_size( set->scheme, scheme_key ) + 8 );
 
-  /* кодируем содуржимое заголовка */
+  /* кодируем содержимое заголовка */
    memset( buffer, 0, *len );
    if(( error = ak_asn1_encode( header, buffer +16, len )) == ak_error_ok ) {
      buffer[15] = *len&0xFF;
      buffer[14] = (*len - buffer[15])&0xFF;
      *len += 16; /* добавляем к длине 16 октетов  */
    }
+
+  /* DELME */
+   ak_asn1_print( header );
+
    ak_asn1_delete( header );
    if( error != ak_error_ok ) return ak_error_message( error, __func__,
                                                       "encorrect encrypted file header encoding" );
@@ -487,16 +493,20 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                                 процедуры расшифрования информации                              */
 /* ----------------------------------------------------------------------------------------------- */
+ static ak_pointer ak_decrypt_file_load_secret_key( scheme_t , ak_tlv );
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_decrypt_file( const char *filename, const char *password, const size_t pass_size )
 {
-  ak_asn1 asn;
+  ak_asn1 asn, seq;
   struct file ifp;
+  ak_pointer skey;
+  scheme_t scheme;
   size_t len; //, head;
   ak_uint8 buffer[1024];
   int error = ak_error_ok;
   struct bckey kcont; //, kenc, kauth;
+  ak_oid mode = NULL, params = NULL;
   ak_uint8 salt[32], iv[16], vect[32];
 
   /* проверяем корректность аргументов функции */
@@ -540,14 +550,53 @@
 
   /* 2. Проверяем корректность считанных из заголовка параметров */
    if(( error = ak_asn1_decode( asn = ak_asn1_new(), buffer, len, ak_false )) != ak_error_ok ) {
-     if( asn ) ak_asn1_delete( asn );
      ak_error_message( error, __func__, "incorrect decoding of the header" );
-     goto lab_exit2;
+     goto lab_exit3;
+   }
+   ak_asn1_first( asn );
+   if(( DATA_STRUCTURE( asn->current->tag ) != CONSTRUCTED ) ||
+        ( TAG_NUMBER( asn->current->tag ) != TSEQUENCE )) {
+     ak_error_message( error, __func__, "header has not a main sequence" );
+     goto lab_exit3;
    }
 
   /* delme :)) */
-   ak_asn1_print(asn);
-   ak_asn1_delete(asn);
+   ak_asn1_print( asn );
+
+  /* a. считываем и проверяем корректность использованной асимметричной схемы */
+   ak_asn1_first( seq = asn->current->data.constructed );
+   ak_tlv_get_uint32( seq->current, &scheme );
+   if( !ak_encrypt_file_is_scheme_valid( scheme )) {
+     ak_error_message( error, __func__, "encrypted file use an unsupported encryption scheme" );
+     goto lab_exit3;
+   }
+  /* b. считываем секретный ключ для расшифрования */
+   ak_asn1_next( seq );
+   if(( skey = ak_decrypt_file_load_secret_key( scheme, seq->current )) == NULL ) {
+     ak_error_message( ak_error_get_value(), __func__, "incorrect creation of decryption key");
+     goto lab_exit3;
+   }
+
+//править здесь
+
+  /* c. считываем режим шифрования */
+   ak_asn1_next( seq );
+   ak_tlv_get_algorithm_identifier( seq->current, &mode, &params );
+   printf("mode: %s\n", mode->name[0] );
+
+  /* d. считываем имя расшифрованного файла */
+   ak_asn1_next( seq );
+   //ak_asn1_add_utf8_string( sequence->data.constructed, filename );
+  /* e. считываем размер служебного заголовка */
+   ak_asn1_next( seq );
+//   ak_asn1_add_uint32( sequence->data.constructed,
+//                               *head = ak_encrypt_public_key_size( set->scheme, scheme_key ) + 8 );
+
+  /* delme :)) */
+   ak_asn1_print( seq );
+
+  lab_exit3:
+   if( asn ) ak_asn1_delete( asn );
 
   lab_exit2:
    ak_bckey_destroy( &kcont );
@@ -575,6 +624,32 @@
                                                                      "error key masking process" );
  return error;
 }
+
+
+/* ----------------------------------------------------------------------------------------------- */
+ static ak_pointer ak_decrypt_file_load_secret_key( scheme_t sheme , ak_tlv tlv )
+{
+  ak_pointer key = NULL;
+
+  /* выбор схемы для считывания последовательности 
+   switch( scheme ) {
+    case ecies_scheme:
+      
+
+      break;
+
+    default:
+      ak_error_message( ak_error_encrypt_scheme, __func__, "using unsupported encryption scheme" );
+  }
+ */
+
+ ak_error_message( ak_error_undefined_function, __func__, "this function not implemented yet");
+
+ return key;
+}
+
+
+
 
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -18,6 +18,11 @@
  #endif
 
 /* ----------------------------------------------------------------------------------------------- */
+ typedef enum {
+   show_all, show_algoid, show_number, show_resource, show_public_key, show_curveoid
+ } what_show_t;
+
+/* ----------------------------------------------------------------------------------------------- */
 /* Предварительное описание используемых функций */
  int aktool_key_help( void );
  int aktool_key_new( void );
@@ -25,7 +30,7 @@
  int aktool_key_new_blom_subscriber( void );
  int aktool_key_new_blom_pairwise( void );
  int aktool_key_new_keypair( bool_t );
- int aktool_key_show_key( char * );
+ int aktool_key_show_key( char *, what_show_t );
  int aktool_key_verify_public_key( int argc , char *argv[] );
  int aktool_key_new_certificate( int argc , char *argv[] );
  ak_tlv aktool_key_input_name( void );
@@ -43,6 +48,7 @@
  int aktool_key( int argc, char *argv[] )
 {
   int next_option = 0, exit_status = EXIT_FAILURE;
+  what_show_t what_show = show_all;
   enum { do_nothing, do_new, do_show, do_verify, do_cert, do_repo_add, do_repo_rm,
              do_repo_check, do_repo_ls, do_p7b_create, do_p7b_ls, do_p7b_split } work = do_nothing;
 
@@ -91,6 +97,7 @@
      { "pathlen",             1, NULL,  198 },
      { "ca",                  0, NULL,  199 },
      { "authority-name",      0, NULL,  200 },
+     { "secret-key-number",   1, NULL,  201 },
 
    /* флаги для генерации ключей схемы Блома */
      { "field",               1, NULL,  180 },
@@ -110,6 +117,13 @@
      { "p7b-create",          0, NULL,  176 },
      { "p7b-ls",              0, NULL,  177 },
      { "p7b-split",           0, NULL,  178 },
+
+   /* флажки для вывода отдельных полей секретных ключей */
+     { "show-algorithm",      1, NULL,  165 },
+     { "show-curve",          1, NULL,  166 },
+     { "show-number",         1, NULL,  167 },
+     { "show-public-key",     1, NULL,  168 },
+     { "show-resource",       1, NULL,  169 },
 
      aktool_common_functions_definition,
      { NULL,                  0, NULL,   0  },
@@ -136,6 +150,52 @@
 
         case 's': /* --show */
                    work = do_show;
+                   what_show = show_all;
+                   #ifdef _WIN32
+                     GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
+                   #else
+                     realpath( optarg , ki.key_file );
+                   #endif
+                   break;
+        case 165: /* --show-algorithm */
+                   work = do_show;
+                   what_show = show_algoid;
+                   #ifdef _WIN32
+                     GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
+                   #else
+                     realpath( optarg , ki.key_file );
+                   #endif
+                   break;
+        case 166: /* --show-curve */
+                   work = do_show;
+                   what_show = show_curveoid;
+                   #ifdef _WIN32
+                     GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
+                   #else
+                     realpath( optarg , ki.key_file );
+                   #endif
+                   break;
+        case 167: /* --show-number */
+                   work = do_show;
+                   what_show = show_number;
+                   #ifdef _WIN32
+                     GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
+                   #else
+                     realpath( optarg , ki.key_file );
+                   #endif
+                   break;
+        case 168: /* --show-public-key */
+                   work = do_show;
+                   what_show = show_public_key;
+                   #ifdef _WIN32
+                     GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
+                   #else
+                     realpath( optarg , ki.key_file );
+                   #endif
+                   break;
+        case 169: /* --show-resource */
+                   work = do_show;
+                   what_show = show_resource;
                    #ifdef _WIN32
                      GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                    #else
@@ -392,8 +452,13 @@
         case 191:  ki.cert.opts.ext_key_usage.bits ^= bit_contentCommitment;
                    ki.cert.opts.ext_key_usage.is_present = ak_true;
                    break;
+                  /* --key-encipherment */
         case 192:  ki.cert.opts.ext_key_usage.bits ^= bit_keyEncipherment;
                    ki.cert.opts.ext_key_usage.is_present = ak_true;
+                  /* добавляем расширение с номером секретного ключа */
+                   ki.cert.opts.ext_secret_key_number.is_present = ak_true;
+                   memset( ki.cert.opts.ext_secret_key_number.number, 0,
+                                              sizeof( ki.cert.opts.ext_secret_key_number.number ));
                    break;
         case 193:  ki.cert.opts.ext_key_usage.bits ^= bit_dataEncipherment;
                    ki.cert.opts.ext_key_usage.is_present = ak_true;
@@ -444,6 +509,16 @@
         case 200: /* --authority-name */
                    ki.cert.opts.ext_authoritykey.is_present =
                       ki.cert.opts.ext_authoritykey.include_name = ak_true;
+                   break;
+
+        case 201: /* --secret-key-number, устанавливаем номер секретного ключа */
+                   ki.cert.opts.ext_secret_key_number.is_present = ak_true;
+                   memset( ki.cert.opts.ext_secret_key_number.number, 0, sizeof( ki.cert.opts.ext_secret_key_number.number ));
+                   if( ak_hexstr_to_ptr( optarg, ki.cert.opts.ext_secret_key_number.number,
+                                           sizeof( ki.cert.opts.ext_secret_key_number.number ), ak_false ) != ak_error_ok ) {
+                     aktool_error(_("incorrect value of secret key number, see the argument of --secret-key-number option"));
+                     return EXIT_FAILURE;
+                   }
                    break;
 
         case 170:  /* --repo */
@@ -511,7 +586,7 @@
       break;
 
     case do_show: /* выводим информацию о секретном ключе */
-      exit_status = aktool_key_show_key( ki.key_file );
+      exit_status = aktool_key_show_key( ki.key_file, what_show );
       break;
 
     case do_verify: /* проверяем сертификаты и запросы на сертификат */
@@ -966,30 +1041,42 @@
     }
   }
 
-  /* 6. переходим к открытому ключу */
+ /* 6. если указано, то устанавливаем номер секретного ключа */
+  if( ((ak_uint64 *)ki.cert.opts.ext_secret_key_number.number)[0] != 0 ) {
+    memcpy( ((ak_skey)key)->number, ki.cert.opts.ext_secret_key_number.number,
+                        ak_min( sizeof( ki.cert.opts.ext_secret_key_number.number ),
+                                                                sizeof( ((ak_skey)key)->number )));
+  }
+
+  /* 7. переходим к открытому ключу */
   if( create_pair ) {
 
-   /* 6.1. вырабатываем открытый ключ,
+   /* 7.1. вырабатываем открытый ключ,
       это позволяет выработать номер открытого ключа, а также присвоить ему имя и ресурс */
     if( ak_verifykey_create_from_signkey( &ki.cert.vkey, key ) != ak_error_ok ) {
       aktool_error(_("incorrect creation of public key"));
       goto labex2;
     }
 
-   /* 6.2. создаем обобщенное имя владельца ключей */
+   /* 7.2. создаем обобщенное имя владельца ключей */
     ki.cert.opts.subject = aktool_key_input_name();
 
-   /* 6.3. */
+   /* 7.3. */
     if( ki.format == aktool_magic_number ) {
      /* сохраняем открытый ключ как корневой сертификат и, в начале
         возвращаем необходимое значение формата выходных данных */
       ki.format = asn1_pem_format;
      /* устанавливаем срок действия сертификата */
       ki.cert.opts.time = tm;
+     /* при использовании опции --secret-key-number добавляем номер секретного ключа */
+      if( ki.cert.opts.ext_secret_key_number.is_present )
+          memcpy( ki.cert.opts.ext_secret_key_number.number, ((ak_skey)key)->number,
+                         ak_min( sizeof( ki.cert.opts.ext_secret_key_number.number ),
+                                                                sizeof( ((ak_skey)key)->number )));
      /* сохраняем сертификат */
       if( ak_certificate_export_to_file( &ki.cert, key, &ki.cert, ki.generator,
                           ki.op_file, ( strlen( ki.op_file ) > 0 ) ? 0 : sizeof( ki.op_file ),
-                                                                     ki.format ) != ak_error_ok ) {
+                                                                    ki.format ) != ak_error_ok ) {
         aktool_error(_("wrong export a public key to certificate %s%s%s"),
                               ak_error_get_start_string(), ki.op_file, ak_error_get_end_string( ));
         goto labex2;
@@ -1050,7 +1137,7 @@
      /* выводим информацию о созданном ключе */
      if( ki.verbose ) {
        if( ki.show_caption ) printf(" ----- \n");
-       aktool_key_show_key( ki.os_file );
+       aktool_key_show_key( ki.os_file, show_all );
      }
      exitcode = EXIT_SUCCESS;
     }
@@ -1228,7 +1315,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int aktool_key_show_key( char *filename )
+ int aktool_key_show_key( char *filename, what_show_t what )
 {
   ak_skey skey = NULL;
   ak_pointer key = NULL;
@@ -1243,43 +1330,70 @@
   }
 
   skey = (ak_skey)key;
-  printf(_("Type:\n"));
-  if( skey->oid->engine == sign_function ) printf(_("    Asymmetric secret key\n"));
-    else printf(_("    Symmetric secret key\n"));
-  printf(_("Algorithm:\n    %s (%s, %s)\n"), ak_libakrypt_get_engine_name( skey->oid->engine ),
+  switch( what ) {
+    case show_algoid:
+      printf("%s\n", skey->oid->id[0] );
+      break;
+    case show_curveoid:
+      if( skey->oid->engine == sign_function ) {
+        ak_oid curvoid = ak_oid_find_by_data( skey->data );
+        if( curvoid == NULL ) printf("( undefined )\n");
+          else printf("%s\n", curvoid->id[0] );
+      }
+       else printf("( undefined )\n");
+      break;
+    case show_number:
+      printf("%s\n", ak_ptr_to_hexstr( skey->number, 32, ak_false ));
+      break;
+    case show_public_key:
+      if( skey->oid->engine == sign_function ) {
+        printf("%s\n", ak_ptr_to_hexstr(((ak_signkey)skey)->verifykey_number, 32, ak_false ));
+      }
+       else printf("( undefined )\n");
+      break;
+    case show_resource:
+      printf("%ld\n", (long int)( skey->resource.value.counter ));
+      break;
+    case show_all:
+
+      printf(_("Type:\n"));
+      if( skey->oid->engine == sign_function ) printf(_("    Asymmetric secret key\n"));
+       else printf(_("    Symmetric secret key\n"));
+      printf(_("Algorithm:\n    %s (%s, %s)\n"), ak_libakrypt_get_engine_name( skey->oid->engine ),
                                                             skey->oid->name[0], skey->oid->id[0] );
-  printf(_("Number:\n    %s\n"), ak_ptr_to_hexstr( skey->number, 32, ak_false ));
-  printf(_("Resource: %ld (%s)\n"), (long int)( skey->resource.value.counter ),
+      printf(_("Number:\n    %s\n"), ak_ptr_to_hexstr( skey->number, 32, ak_false ));
+      printf(_("Resource: %ld (%s)\n"), (long int)( skey->resource.value.counter ),
                               ak_libakrypt_get_counter_resource_name( skey->resource.value.type ));
-
- #ifdef AK_HAVE_WINDOWS_H
-  printf(_(" from: %s"), ctime( &skey->resource.time.not_before ));
-  printf(_("   to: %s"), ctime( &skey->resource.time.not_after ));
- #else
-  strftime( output_buffer, sizeof( output_buffer ), /* локализованный вывод */
+     #ifdef AK_HAVE_WINDOWS_H
+      printf(_(" from: %s"), ctime( &skey->resource.time.not_before ));
+      printf(_("   to: %s"), ctime( &skey->resource.time.not_after ));
+     #else
+      strftime( output_buffer, sizeof( output_buffer ), /* локализованный вывод */
                         "%e %b %Y %H:%M:%S (%A) %Z", localtime( &skey->resource.time.not_before ));
-  printf(_(" from: %s\n"), output_buffer );
-  strftime( output_buffer, sizeof( output_buffer ), /* локализованный вывод */
+      printf(_(" from: %s\n"), output_buffer );
+      strftime( output_buffer, sizeof( output_buffer ), /* локализованный вывод */
                         "%e %b %Y %H:%M:%S (%A) %Z", localtime( &skey->resource.time.not_after ));
-  printf(_("   to: %s\n"), output_buffer );
- #endif
+      printf(_("   to: %s\n"), output_buffer );
+     #endif
 
- /* для асимметричных секретных ключей выводим дополнительную информацию */
-  if( skey->oid->engine == sign_function ) {
-    ak_uint8 zerobuf[32];
-    ak_oid curvoid = ak_oid_find_by_data( skey->data );
+     /* для асимметричных секретных ключей выводим дополнительную информацию */
+      if( skey->oid->engine == sign_function ) {
+        ak_uint8 zerobuf[32];
+        ak_oid curvoid = ak_oid_find_by_data( skey->data );
 
-    printf(_("Public key number:\n    "));
-    memset( zerobuf, 0, sizeof( zerobuf ));
-    if( memcmp( zerobuf, ((ak_signkey)skey)->verifykey_number, 32 ) == 0 )
-      printf(_("( undefined )\n"));
-     else printf("%s\n", ak_ptr_to_hexstr(((ak_signkey)skey)->verifykey_number, 32, ak_false ));
+        printf(_("Public key number:\n    "));
+        memset( zerobuf, 0, sizeof( zerobuf ));
+        if( memcmp( zerobuf, ((ak_signkey)skey)->verifykey_number, 32 ) == 0 )
+          printf(_("( undefined )\n"));
+         else printf("%s\n", ak_ptr_to_hexstr(((ak_signkey)skey)->verifykey_number, 32, ak_false ));
 
-    printf(_("Curve:\n    "));
-    if( curvoid == NULL ) printf(_("( undefined )\n"));
-      else printf("%s (%s)\n", curvoid->name[0], curvoid->id[0] );
+        printf(_("Curve:\n    "));
+        if( curvoid == NULL ) printf(_("( undefined )\n"));
+         else printf("%s (%s)\n", curvoid->name[0], curvoid->id[0] );
+      }
+      if( skey->label != NULL ) printf(_("Label:\n    %s\n"), skey->label );
+      break;
   }
-  if( skey->label != NULL ) printf(_("Label:\n    %s\n"), skey->label );
   ak_oid_delete_object( ((ak_skey)key)->oid, key );
 
  return EXIT_SUCCESS;
@@ -1454,6 +1568,12 @@
       aktool_print_buffer( cert->opts.issuer_serialnum, cert->opts.issuer_serialnum_length );
     }
   }
+  if( cert->opts.ext_secret_key_number.is_present ) {
+    printf("  secret key number:\n");
+    aktool_print_buffer( cert->opts.ext_secret_key_number.number,
+                                                sizeof( cert->opts.ext_secret_key_number.number ));
+  }
+
  return ak_error_ok;
 }
 
@@ -1551,7 +1671,6 @@
          break;
      }
 }
-
 
 /* ----------------------------------------------------------------------------------------------- */
  static int aktool_key_verify_certificate( ak_certificate ca_cert_ptr,
@@ -2298,7 +2417,9 @@
      "     --key               specify the name of file with the secret key\n"
      "                         this can be a master key or certificate authority's secret key which is used to sign a certificate\n"
      "     --label             assign the user-defined label to secret key\n"
-     " -n, --new               generate a new key or key pair for specified target\n"
+  ));
+  printf(
+   _(" -n, --new               generate a new key or key pair for specified target\n"
      "     --op                short form of --output-public-key option\n"
      "     --outpass           set the password for the secret key to be stored directly on the command line\n"
      "     --outpass-hex       set the password for the secret key to be stored directly on the command line as hexademal string\n"
@@ -2316,7 +2437,13 @@
      "     --repo-check        check all public keys in the certificate's repository\n"
      "     --repo-ls           list all public keys in the certificate's repository\n"
      "     --repo-rm           remove public key from the certificate's repository\n"
-     " -s, --show              output the parameters of the secret key or public key's request or certificate\n"
+     "     --secret-key-number use the hexademal string as the number of secret key\n"
+     " -s, --show              output all unencrypted parameters of the secret key\n"
+     "     --show-algorithm    show the identifier of secret key's algorithm\n"
+     "     --show-curve        show the identifier of elliptic curve for related public key (if defined)\n"
+     "     --show-number       show the unique number of secret key\n"
+     "     --show-public-key   show the number of related public key (if defined)\n"
+     "     --show-resource     show the available resource of secret key\n"
      "     --size              set the dimension of secret master key, in particular, for blom scheme [ maximal value: 4096 ]\n"
      " -t, --target            specify the name of the cryptographic algorithm for the new generated key\n"
      "                         one can use any supported names or identifiers of algorithm,\n"
@@ -2330,14 +2457,15 @@
      "     --authority-name    add an issuer's generalized name to the authority key identifier extension\n"
      "     --ca                short form for the union of two options: --ca-ext=true and --key-cert-sign\n"
      "     --ca-ext            use as certificate authority [ enabled values: true, false ]\n"
-     "     --pathlen           set the maximal length of certificate's chain\n"
-     "     --digital-signature use for verifying a digital signatures of user data\n"
      "     --content-commitment\n"
-     "     --key-encipherment  use for encipherment of secret keys\n"
+     "     --crl-sign          use for verifying of revocation lists of certificates\n"
      "     --data-encipherment use for encipherment of user data (is not usally used)\n"
+     "     --digital-signature use for verifying a digital signatures of user data\n"
      "     --key-agreement     use in key agreement protocols for subject's authentication\n"
      "     --key-cert-sign     use for verifying of public key's certificates\n"
-     "     --crl-sign          use for verifying of revocation lists of certificates\n"
+     "     --key-encipherment  use for encipherment of secret keys, this means that the public key\n"
+     "                         can be used to encrypt a key containers or user data using asymmetric encryption schemes\n"
+     "     --pathlen           set the maximal length of certificate's chain\n"
   ));
   aktool_print_common_options();
 

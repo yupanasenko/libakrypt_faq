@@ -97,6 +97,7 @@
 
   - `1.2.643.2.52.1.181` алгоритмы генерации ключевой информации для схемы Блома
   - `1.2.643.2.52.1.127` контейнеры библиотеки
+  - `1.2.643.2.52.1.98` расширения инфраструктуры открытых ключей (PKIX)
 
   Техническая реализация класса \ref oid представляет собой структуру,
   связывающую вместе списки имен (каждый \ref oid может иметь несколько имен),
@@ -410,6 +411,10 @@
  static const char *asn1_class_ka1_i[] =   { "1.2.643.100.113.6", NULL };
  static const char *asn1_identkind_n[] =   { "identification-kind", "ik", NULL };
  static const char *asn1_identkind_i[] =   { "1.2.643.100.114", NULL };
+
+/* расширения PKIX, определяемые библиотекой libakrypt */
+ static const char *asn1_akskn_n[] =       { "secret-key-number", NULL };
+ static const char *asn1_akskn_i[] =       { "1.2.643.2.52.1.98.1", NULL };
 
 /* ----------------------------------------------------------------------------------------------- */
 /* идентификаторы из RFC 5652 (про CMS) */
@@ -838,7 +843,6 @@ static struct oid libakrypt_oids[] =
                                                            NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_identkind_i, asn1_identkind_n,
                                                            NULL, ak_functional_objects_undefined },
-
  { identifier, descriptor, asn1_cms_data_i, asn1_cms_data_n,
                                                            NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_cms_signed_i, asn1_cms_signed_n,
@@ -854,6 +858,9 @@ static struct oid libakrypt_oids[] =
  { identifier, descriptor, asn1_msct_i, asn1_msct_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_mspsh_i, asn1_mspsh_n, NULL, ak_functional_objects_undefined },
  { identifier, descriptor, asn1_mstndc_i, asn1_mstndc_n, NULL, ak_functional_objects_undefined },
+
+/* PKIX расширения библиотеки libakrypt */
+ { identifier, descriptor, asn1_akskn_i, asn1_akskn_n, NULL, ak_functional_objects_undefined },
 
  /* неподдерживаемые алгоритмы подписи */
  { identifier, algorithm, asn1_sign94_i, asn1_sign94_n, NULL, ak_functional_objects_undefined },

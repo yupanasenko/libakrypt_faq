@@ -2058,6 +2058,16 @@ extern "C" {
      bool_t include_name;
    } ext_authoritykey;
 
+  /*! \brief расширение `Secret Key Number` (oid: 1.2.643.2.52.1.98.1) */
+   struct {
+    /*! \brief определено ли данное расширение */
+     bool_t is_present;
+    /*! \brief уникальный номер секретного ключа, соответствующий данному открытому ключу
+        \details поскольку данное расширение вводится только в рамках данной библиотеки,
+        то длина номера определяется длиной поля struct skey.number */
+     ak_uint8 number[32];
+   } ext_secret_key_number;
+
 } *ak_certificate_opts;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -2121,6 +2131,9 @@ extern "C" {
 /*! \brief Создание расширения, содержащего информацию о ключе проверки сертификата
    (x509v3: Authority Key Identifier) */
  dll_export ak_tlv ak_tlv_new_authority_key_identifier( ak_certificate , bool_t );
+/*! \brief Создание расширения, содержащего номер секретного ключа, соответсвующего открытому ключу
+   (non x509v3, Secret Key Number) */
+ dll_export ak_tlv ak_tlv_new_secret_key_number( ak_pointer , const size_t );
 /** @} *//** @} */
 
 /* ----------------------------------------------------------------------------------------------- */

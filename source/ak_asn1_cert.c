@@ -1037,6 +1037,53 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! Функция создает расширение сертификата открытого ключа,
+    содержащее номер секретного ключа, соответсвующего открытому ключу.
+    Расширение имеет следующий вид.
+
+ \code
+   ├SEQUENCE┐
+ \endcode
+
+ \param ptr указатель на область памяти, содержащую номер секретного ключа
+ \param size размер области памяти
+ \return Функция возвращает указатель на структуру узла. Данная структура должна
+  быть позднее удалена с помощью явного вызова функции ak_tlv_delete() или путем
+  удаления дерева, в который данный узел будет входить.
+  В случае ошибки возвращается NULL. Код ошибки может быть получен с помощью вызова
+  функции ak_error_get_value().                                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ ak_tlv ak_tlv_new_secret_key_number( ak_pointer ptr, const size_t size )
+{
+  ak_uint8 encode[256]; /* очень длинные идентификаторы это плохо */
+  ak_tlv tlv = NULL, os = NULL;
+  size_t len = sizeof( encode );
+
+  if(( tlv = ak_tlv_new_sequence()) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__, "incorrect creation of tlv context" );
+    return NULL;
+  }
+ /* добавляем идентификатор расширения */
+  ak_asn1_add_oid( tlv->data.constructed, "1.2.643.2.52.1.98.1" );
+ /* добавляем закодированный идентификатор (номер) ключа */
+  memset( encode, 0, sizeof( encode ));
+  if(( os = ak_tlv_new_primitive( TOCTET_STRING, size, ptr, ak_false )) == NULL ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                                   "incorrect creation of temporary tlv context" );
+    return ak_tlv_delete( tlv );
+  }
+  if( ak_tlv_encode( os, encode, &len ) != ak_error_ok ) {
+    ak_error_message( ak_error_get_value(), __func__,
+                                                    "incorrect encoding a temporary tlv context" );
+    return ak_tlv_delete( tlv );
+  }
+  ak_tlv_delete( os );
+ /* собственно вставка в asn1 дерево */
+  ak_asn1_add_octet_string( tlv->data.constructed, encode, len );
+ return tlv;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
                      /* Функции экспорта открытых ключей в сертификат */
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Создание tlv узла, содержащего структуру TBSCertificate версии 3
@@ -1176,6 +1223,18 @@
     ak_error_message( ak_error_get_value(), __func__,
                                     "incorrect generation of Authority Key Identifier extension" );
     goto labex;
+  }
+
+ /* 5. Добавляем номер секретного ключа, соответствующего открытому ключу */
+  if( subject_cert->opts.ext_secret_key_number.is_present ) {
+    ak_asn1_add_tlv( asn,
+      tlv = ak_tlv_new_secret_key_number( subject_cert->opts.ext_secret_key_number.number,
+                                       sizeof( subject_cert->opts.ext_secret_key_number.number )));
+    if( tlv == NULL ) {
+      ak_error_message( ak_error_get_value(), __func__,
+                                             "incorrect generation of SecretKeyNumber extension" );
+      goto labex;
+    }
   }
 
  return tbs;
@@ -1883,6 +1942,19 @@
     ak_asn1_last( ext ); /* перемещаемся к данным */
 
    /* теперь мы разбираем поступившие расширения */
+   /* ----------------------------------------------------------------------------------------- */
+    if( strcmp( oid->id[0], "1.2.643.2.52.1.98.1" ) == 0 ) {
+                 /* это SecretKeyNumber, т.е. номер секретного ключа, соотвествующего открытому */
+      if(( DATA_STRUCTURE( ext->current->tag ) != PRIMITIVE ) ||
+                          ( TAG_NUMBER( ext->current->tag ) != TOCTET_STRING )) continue;
+      vptr->subject->opts.ext_secret_key_number.is_present = ak_true;
+
+     /* декодируем номер ключа */
+      ak_tlv_get_octet_string( ext->current, &ptr, &size );
+      memcpy( vptr->subject->opts.ext_secret_key_number.number, ((ak_uint8 *)ptr)+2,
+                    ak_min( size-2, sizeof( vptr->subject->opts.ext_secret_key_number.number )));
+    }
+
    /* ----------------------------------------------------------------------------------------- */
     if( strcmp( oid->id[0], "2.5.29.14" ) == 0 ) { /* это subjectKeyIdentifier,
                                                         т.е. номер считываемого открытого ключа */

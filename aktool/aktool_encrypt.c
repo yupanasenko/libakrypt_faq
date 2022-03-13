@@ -576,7 +576,7 @@
      "     --fr                use fragments of random length when splitting the input file\n"
      "     --fs                set the length of one fragment\n"
      "     --inpass            set the password for decrypting one or more files directly in command line\n"
-     "     --outpass-hex       set the password for decrypting files as hexademal string\n"
+     "     --inpass-hex        set the password for decrypting files as hexademal string\n"
   ));
    #ifdef AK_HAVE_BZLIB_H
   printf(
