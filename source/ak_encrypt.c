@@ -286,10 +286,13 @@
          ak_ecies_scheme ecs = scheme_key;
         /* помещаем номер открытого ключа */
          ak_asn1_add_octet_string( sq2->data.constructed,
-                                 ecs->recipient.vkey.number, ecs->recipient.vkey.number_length );
-        /* помещаем номер сертификата открытого ключа */
-         ak_asn1_add_octet_string( sq2->data.constructed,
-                           ecs->recipient.opts.serialnum, ecs->recipient.opts.serialnum_length );
+                                   ecs->recipient.vkey.number, ecs->recipient.vkey.number_length );
+        /* если в сертификате одержится, то помещаем номер секретного ключа */
+         if( ecs->recipient.opts.ext_secret_key_number.is_present ) {
+           ak_asn1_add_octet_string( sq2->data.constructed,
+                                      ecs->recipient.opts.ext_secret_key_number.number,
+                                       sizeof( ecs->recipient.opts.ext_secret_key_number.number ));
+         }
        }
       break;
 
@@ -357,6 +360,7 @@
    }
 
   /* DELME */
+   printf("ASN1 Header:\n");
    ak_asn1_print( header );
 
    ak_asn1_delete( header );
@@ -625,7 +629,6 @@
  return error;
 }
 
-
 /* ----------------------------------------------------------------------------------------------- */
  static ak_pointer ak_decrypt_file_load_secret_key( scheme_t sheme , ak_tlv tlv )
 {
@@ -647,10 +650,6 @@
 
  return key;
 }
-
-
-
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                   ak_encrypt.c  */

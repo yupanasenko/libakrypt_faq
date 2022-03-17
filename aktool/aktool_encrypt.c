@@ -38,9 +38,13 @@
      { "recursive",           0, NULL,  'r' },
      { "output",              1, NULL,  'o' },
      { "mode",                1, NULL,  'm' },
-     { "key",                 1, NULL,  203 },
-     { "random-file",         1, NULL,  206 },
+     { "key",                 1, NULL,  'k' },
+     { "ckpass",              1, NULL,  201 },
+     { "ckpass-hex",          1, NULL,  202 },
+     { "ck",                  1, NULL,  203 },
+     { "container-key",       1, NULL,  203 },
      { "random",              1, NULL,  205 },
+     { "random-file",         1, NULL,  206 },
      { "fs",                  1, NULL,  231 },
      { "fc",                  1, NULL,  232 },
      { "fr",                  0, NULL,  233 },
@@ -81,7 +85,7 @@
 
  /* разбираем опции командной строки */
   do {
-       next_option = getopt_long( argc, argv, "hp:rjo:m:c:", long_options, NULL );
+       next_option = getopt_long( argc, argv, "hp:rjo:m:c:k:", long_options, NULL );
        switch( next_option )
       {
         aktool_common_functions_run( aktool_encrypt_help );
@@ -191,7 +195,7 @@
                    memset( ki.outpass, 0, sizeof( ki.outpass ));
                    strncpy( ki.outpass, optarg, sizeof( ki.outpass ) -1 );
                    if(( ki.lenoutpass = strlen( ki.outpass )) == 0 ) {
-                     aktool_error(_("the password cannot be zero length"));
+                     aktool_error(_("the password cannot be zero length, see --outpass option"));
                      return EXIT_FAILURE;
                    }
                    break;
@@ -200,7 +204,16 @@
                    memset( ki.inpass, 0, sizeof( ki.inpass ));
                    strncpy( ki.inpass, optarg, sizeof( ki.inpass ) -1 );
                    if(( ki.leninpass = strlen( ki.inpass )) == 0 ) {
-                     aktool_error(_("the password cannot be zero length"));
+                     aktool_error(_("the password cannot be zero length, see --inpass option"));
+                     return EXIT_FAILURE;
+                   }
+                   break;
+
+        case 201: /* --ckpass */
+                   memset( ki.ckpass, 0, sizeof( ki.ckpass ));
+                   strncpy( ki.ckpass, optarg, sizeof( ki.ckpass ) -1 );
+                   if(( ki.lenckpass = strlen( ki.ckpass )) == 0 ) {
+                     aktool_error(_("the password cannot be zero length, see --ckpass option"));
                      return EXIT_FAILURE;
                    }
                    break;
@@ -238,11 +251,36 @@
                      }
                    break;
 
-        case 203: /* --key, --ca-key */
+        case 202: /* --ckpass-hex */
+                   ki.lenckpass = 0;
+                   memset( ki.ckpass, 0, sizeof( ki.ckpass ));
+                   if( ak_hexstr_to_ptr( optarg, ki.ckpass,
+                                                sizeof( ki.ckpass ), ak_false ) == ak_error_ok ) {
+                     ki.lenckpass = ak_min(( strlen( optarg )%2 ) + ( strlen( optarg ) >> 1 ),
+                                                                              sizeof( ki.ckpass ));
+                   }
+                   if( ki.lenckpass == 0 ) {
+                       aktool_error(_("the password cannot be zero length, "
+                                                    "maybe input error, see --ckpass-hex %s%s%s"),
+                                  ak_error_get_start_string(), optarg, ak_error_get_end_string( ));
+                       return EXIT_FAILURE;
+                     }
+                   break;
+
+
+        case 'k': /* --key, -k */
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                   #else
                     realpath( optarg , ki.key_file );
+                  #endif
+                    break;
+
+        case 203: /* --container-key, --ck */
+                  #ifdef _WIN32
+                    GetFullPathName( optarg, FILENAME_MAX, ki.op_file, NULL );
+                  #else
+                    realpath( optarg , ki.op_file );
                   #endif
                     break;
 
@@ -322,7 +360,9 @@
     while(( val = ak_file_read( &file, buffer, sizeof( buffer ))) != 0 ) {
       BZ2_bzwrite( fz, buffer, val );
       if( (sum += val )%1048576U == 0 ) {
-        fprintf( stdout, _("%s (Compression ... %3luMb)\r"), filename, sum>>20 ); fflush( stdout );
+        if( !ki.quiet ) {
+          fprintf( stdout, _("%s (Compression ... %3luMb)\r"), filename, sum>>20 ); fflush( stdout );
+        }
       }
     }
     BZ2_bzclose ( fz );
@@ -377,6 +417,17 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ ssize_t aktool_set_ckpass( const char *prompt, char *password,
+                                                           const size_t pass_size, password_t hex )
+{
+  memset( password, 0, pass_size );
+  if( ki.lenckpass > 0 ) {
+    memcpy( password, ki.ckpass, ak_min( (size_t)ki.lenckpass, pass_size ));
+  }
+  return ki.lenckpass;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  int aktool_encrypt_work( int argc, tchar *argv[] )
 {
    ak_random gptr = NULL;
@@ -422,14 +473,21 @@
      goto lab_exit;
    }
 
- /* если задана опция --key, то используем указанный секретный ключ для шифрования контейнера
+ /* если задана опция --container-key, то используем указанный секретный ключ для шифрования контейнера
     в противном случае используем пароль (из командной строки или заданный пользователем) */
-   if( strlen( ki.key_file ) != 0 ) {
-     if(( st.key = ak_skey_load_from_file( ki.key_file )) == NULL ) {
-       aktool_error(_("incorrect secret key file (see --key option)"));
+   if( strlen( ki.op_file ) != 0 ) {
+     if( ki.lenckpass != 0 ) {
+       /* подменяем функцию ввода пароля доступа к секретному ключу */
+       ak_libakrypt_set_password_read_function( aktool_set_ckpass );
+     }
+      else printf(_("Loading a secret key to access the file container,\nset the access "));
+     if(( st.key = ak_skey_load_from_file( ki.op_file )) == NULL ) {
+       aktool_error(_("incorrect access to the secret key file (see --container-key or --ckpass options)"));
        exitcode = EXIT_FAILURE;
        goto lab_exit2;
      }
+    /* возвращаем функцию ввода пароля доступа к секретному ключу в исходное состояние */
+     ak_libakrypt_set_password_read_function( ak_password_read_from_terminal );
    }
     else { /* проверяем, задан ли пароль шифрования контейнера */
       if( ki.lenoutpass == 0 ) {
@@ -516,18 +574,26 @@
      return EXIT_FAILURE;
    }
 
- /* если задана опция --key, то используем указанный секретный ключ для шифрования контейнера
+ /* если задана опция --container-key, то используем указанный секретный ключ для шифрования контейнера
     в противном случае используем пароль (из командной строки или заданный пользователем) */
-   if( strlen( ki.key_file ) != 0 ) {
-     if(( st.key = ak_skey_load_from_file( ki.key_file )) == NULL ) {
-       aktool_error(_("incorrect secret key file (see --key option)"));
-       return EXIT_FAILURE;
+   if( strlen( ki.op_file ) != 0 ) {
+     if( ki.lenckpass != 0 ) {
+       /* подменяем функцию ввода пароля доступа к секретному ключу */
+       ak_libakrypt_set_password_read_function( aktool_set_ckpass );
      }
+      else printf(_("Loading a secret key to access the file container,\nset the access "));
+     if(( st.key = ak_skey_load_from_file( ki.op_file )) == NULL ) {
+       aktool_error(_("incorrect access to the secret key file (see --container-key or --ckpass options)"));
+       exitcode = EXIT_FAILURE;
+       goto lab_exit2;
+     }
+    /* возвращаем функцию ввода пароля доступа к секретному ключу в исходное состояние */
+     ak_libakrypt_set_password_read_function( ak_password_read_from_terminal );
    }
     else { /* проверяем, задан ли пароль шифрования контейнера */
 
        if( ki.leninpass == 0 ) {
-         if( !ki.quiet ) printf(_("You must specify a password to access the encrypted file.\n"));
+         if( !ki.quiet ) printf(_("You must specify a password to access the file container\n"));
          if(( ki.leninpass = aktool_load_user_password( NULL, ki.inpass, sizeof( ki.inpass ), 0 )) < 1 ) {
            aktool_error(_("incorrect password reading"));
            exitcode = EXIT_FAILURE;
@@ -572,6 +638,11 @@
      "available options:\n"
      "     --ca-cert           set the file with certificate of authorithy's public key\n"
      " -c  --cert              the recipient's public key certificate\n"
+     "     --ck                short form for the --container-key option\n"
+     "     --ckpass            set the password for access key directly in command line\n"
+     "     --ckpass-hex        set the password for access key as hexademal string\n"
+     "     --container-key     specify the secret key for access to the file container\n"
+     "                         this is stronger than applying a password, but does not override the use of a public key\n"
      "     --fc                set the number of fragments into which the input file will be splitted\n"
      "     --fr                use fragments of random length when splitting the input file\n"
      "     --fs                set the length of one fragment\n"
@@ -584,8 +655,7 @@
   ));
    #endif
   printf(
-   _("     --key               specify the symmetric secret key for file encryption/decryption\n"
-     "                         this does not cancel the use of the public key certificate\n"
+   _(" -k, --key               set the file with secret decryption key\n"
      " -m, --mode              set the authenticated encryption mode [ default value: \"%s\" ]\n"
      "     --outpass           set the password for the encrypting one or more files directly in command line\n"
      "     --outpass-hex       set the password for the encrypting files as hexademal string\n"

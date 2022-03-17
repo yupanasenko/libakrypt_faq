@@ -94,6 +94,12 @@
    char inpass[aktool_password_max_length];
   /* пароль для создаваемого файла */
    char outpass[aktool_password_max_length];
+
+  /* длина пароля для пароля ввода дополнительного секретного ключа */
+   ssize_t lenckpass;
+  /* пароль для ввода дополнительного пароля доступа к ключу */
+   char ckpass[aktool_password_max_length];
+
   /* имя файла аудита */
    char audit_filename[512];
    char os_file[1024]; /* сохраняем, секретный ключ */
