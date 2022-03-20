@@ -45,6 +45,8 @@
      { "container-key",       1, NULL,  203 },
      { "random",              1, NULL,  205 },
      { "random-file",         1, NULL,  206 },
+     { "keypass",             1, NULL,  210 },
+     { "keypass-hex",         1, NULL,  211 },
      { "fs",                  1, NULL,  231 },
      { "fc",                  1, NULL,  232 },
      { "fr",                  0, NULL,  233 },
@@ -218,6 +220,15 @@
                    }
                    break;
 
+        case 210: /* --keypass */
+                   memset( ki.keypass, 0, sizeof( ki.keypass ));
+                   strncpy( ki.keypass, optarg, sizeof( ki.keypass ) -1 );
+                   if(( ki.lenkeypass = strlen( ki.keypass )) == 0 ) {
+                     aktool_error(_("the password cannot be zero length, see --keypass option"));
+                     return EXIT_FAILURE;
+                   }
+                   break;
+
       /* передача паролей через командную строку в шестнадцатеричном виде */
         case 249: /* --outpass-hex */
                    ki.lenoutpass = 0;
@@ -267,6 +278,21 @@
                      }
                    break;
 
+        case 211: /* --keypass-hex */
+                   ki.lenkeypass = 0;
+                   memset( ki.keypass, 0, sizeof( ki.keypass ));
+                   if( ak_hexstr_to_ptr( optarg, ki.keypass,
+                                               sizeof( ki.keypass ), ak_false ) == ak_error_ok ) {
+                     ki.lenkeypass = ak_min(( strlen( optarg )%2 ) + ( strlen( optarg ) >> 1 ),
+                                                                             sizeof( ki.keypass ));
+                   }
+                   if( ki.lenkeypass == 0 ) {
+                       aktool_error(_("the password cannot be zero length, "
+                                                    "maybe input error, see --keypass-hex %s%s%s"),
+                                  ak_error_get_start_string(), optarg, ak_error_get_end_string( ));
+                       return EXIT_FAILURE;
+                     }
+                   break;
 
         case 'k': /* --key, -k */
                   #ifdef _WIN32
@@ -417,7 +443,7 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- ssize_t aktool_set_ckpass( const char *prompt, char *password,
+ static ssize_t aktool_set_ckpass( const char *prompt, char *password,
                                                            const size_t pass_size, password_t hex )
 {
   memset( password, 0, pass_size );
@@ -546,17 +572,54 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                          Реализация процедуры расшифрования файла                               */
 /* ----------------------------------------------------------------------------------------------- */
+ static ssize_t aktool_set_keypass( const char *prompt, char *password,
+                                                           const size_t pass_size, password_t hex )
+{
+  memset( password, 0, pass_size );
+  if( ki.lenkeypass > 0 ) {
+    memcpy( password, ki.keypass, ak_min( (size_t)ki.lenkeypass, pass_size ));
+  }
+  return ki.lenkeypass;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
  static int aktool_decrypt_function( const char *filename, ak_pointer ptr )
 {
-  handle_ptr_t *st = ptr;
+  char outfile[1024];
   int error= ak_error_ok;
+  handle_ptr_t *st = ptr;
 
-   if( st->key != NULL )  {
-     error = ak_decrypt_file_with_key( filename, (ak_skey)st->key );
+  memset( outfile, 0, sizeof( outfile ));
+  if( ki.lenkeypass != 0 ) { /* подменяем функцию ввода пароля доступа к секретному ключу */
+    ak_libakrypt_set_password_read_function( aktool_set_keypass );
+  }
+  if( st->key != NULL )  {
+    error = ak_decrypt_file_with_key(
+              filename,
+              (ak_skey)st->key,
+              strlen( ki.key_file ) > 0 ? ki.key_file : NULL,
+              outfile,
+              sizeof( outfile )
+            );
+  } else {
+     error = ak_decrypt_file(
+               filename,
+               ki.inpass,
+               ki.leninpass,
+               strlen( ki.key_file ) > 0 ? ki.key_file : NULL,
+               outfile,
+               sizeof( outfile )
+             );
    }
-    else {
-     error = ak_decrypt_file( filename, ki.inpass, ki.leninpass );
-    }
+  ak_libakrypt_set_password_read_function( ak_password_read_from_terminal );
+
+  if( error == ak_error_ok )
+    fprintf( stdout, "%s (%s): Ok\n", filename, outfile );
+   else aktool_error("%s (wrong decryption)", filename );
+
+ #ifdef AK_HAVE_BZLIB_H
+   /* не забыть про разархивирование расшифрованных данных */
+ #endif
 
   return error;
 }
@@ -656,6 +719,8 @@
    #endif
   printf(
    _(" -k, --key               set the file with secret decryption key\n"
+     "     --keypass           set the password for secret decryption key directly in command line\n"
+     "     --keypass-hex       set the password for secret decryption key as hexademal string\n"
      " -m, --mode              set the authenticated encryption mode [ default value: \"%s\" ]\n"
      "     --outpass           set the password for the encrypting one or more files directly in command line\n"
      "     --outpass-hex       set the password for the encrypting files as hexademal string\n"

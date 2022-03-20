@@ -2291,9 +2291,10 @@ extern "C" {
  int ak_encrypt_file_with_key( const char *, ak_encryption_set ,
                                          ak_pointer , char * , const size_t , ak_random , ak_skey );
 /*! \brief Расшифрование указанного файла */
- int ak_decrypt_file( const char * , const char * , const size_t );
+ int ak_decrypt_file( const char * , const char * , const size_t ,
+                                                             const char * , char * , const size_t );
 /*! \brief Расшифрование указанного файла */
- int ak_decrypt_file_with_key( const char * , ak_skey );
+ int ak_decrypt_file_with_key( const char * , ak_skey , const char * , char * , const size_t  );
 
 /** @} */
 /* ----------------------------------------------------------------------------------------------- */

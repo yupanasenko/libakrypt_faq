@@ -72,15 +72,34 @@
                                                                 "using null pointer to password" );
    if( pass_size == 0 ) return ak_error_message( ak_error_wrong_length, __func__,
                                                                "using password with zero length" );
+  /* вырабатываем первичные случайные данные */
+   memset( salt, 0, sizeof( salt ));
+   memset( iv, 0, sizeof( iv ));
+   memset( vect, 0, sizeof( vect ));
+   if(( error = ak_random_ptr( generator, salt, 14 )) != ak_error_ok ) {
+     return ak_error_message( error, __func__, "wrong generation of initial random data" );
+   }
+
   /* инициализируем ключ доступа к контейнеру */
    if(( error = ak_bckey_create_kuznechik( &kcont )) != ak_error_ok )
      return ak_error_message( error, __func__, "incorrect creation of container's secret key" );
-   ak_random_ptr( generator, salt, 14 );
+
+   printf("\nFirst container key:\n");
+   printf("salt:     %s (%s)\n", ak_ptr_to_hexstr( salt, 32, ak_false ), __func__ );
+   printf("password: %s (%s)\n", ak_ptr_to_hexstr( password, pass_size, ak_false ), __func__ );
+
    if(( error = ak_encrypt_assign_container_key( &kcont, /* устанавливаем первичное значение ключа */
                               salt, 14, iv, 8, vect, 32, password, pass_size )) != ak_error_ok ) {
      ak_error_message( error, __func__, "incorrect assign value of container's secret key" );
      goto lab_exit;
    }
+
+   /* delme ;)) */
+    printf("vect:     %s (%s)\n", ak_ptr_to_hexstr( vect, 32, ak_false ), __func__ );
+    printf("iv:       %s (%s)\n", ak_ptr_to_hexstr( iv, 16, ak_false ), __func__ );
+    ak_skey_unmask_xor( (ak_skey)&kcont );
+    printf("key-cont: %s (%s)\n\n", ak_ptr_to_hexstr( kcont.key.key, kcont.key.key_size, ak_false ), __func__ );
+    ak_skey_set_mask_xor( (ak_skey)&kcont );
 
   /* формируем файловые дескрипторы */
    if( outsize > 0 ) {
@@ -105,12 +124,18 @@
      ak_error_message( error, __func__, "header of encrypted file cannot be created" );
      goto lab_exit2;
    }
+
+   printf("buffer:   %s\n", ak_ptr_to_hexstr( buffer, 16, ak_false ));
+   printf("buffer:   %s [len = %lu, palin] (%s)\n", ak_ptr_to_hexstr( buffer, len, ak_false ), len, __func__ );
+
    if(( error = ak_bckey_ctr( &kcont, buffer, buffer, len, iv, 8 )) != ak_error_ok ) {
      ak_error_message( error, __func__, "incorrect encryption of header" );
      goto lab_exit2;
    }
    memcpy( buffer, salt, 14 );
    ak_file_write( &ofp, buffer, len );
+
+   printf("buffer:   %s [len = %lu, written] (%s)\n", ak_ptr_to_hexstr( buffer, len, ak_false ), len, __func__ );
    printf("added %lu bytes (global header)\n", len );
 
   /* создаем ключи шифрования и имитозащиты данных */
@@ -150,12 +175,25 @@
     /* теперь мы можем зашифровать фрагмент входных данных,
        длина которого определена значением current.
        начинаем с того, что вырабатываем ключи и заголовок фрагмента */
+
+    /* delme ;)) */
+     printf("\nEncryption Keys\n");
+     printf("vect:     %s (%s)\n", ak_ptr_to_hexstr( vect, 32, ak_false ), __func__ );
+
      if(( error = ak_encrypt_assign_encryption_keys(
                       ctx.encryptionKey, ctx.authenticationKey, set, scheme_key,
                       generator, vect, 32, iv, 16, salt, 32, buffer, head )) != ak_error_ok ) {
         ak_error_message( error, __func__, "incorrect creation of input data encryption keys" );
         break;
      }
+
+   /* delme ;)) */
+    printf("iv:       %s (%s)\n", ak_ptr_to_hexstr( iv, 16, ak_false ), __func__ );
+    printf("salt:     %s (%s)\n", ak_ptr_to_hexstr( salt, 32, ak_false ), __func__ );
+    ak_skey_unmask_xor( ctx.encryptionKey );
+    printf("ekey:     %s (%s)\n\n", ak_ptr_to_hexstr( ((ak_skey)ctx.encryptionKey)->key, 32, ak_false ), __func__ );
+    ak_skey_set_mask_xor( ctx.encryptionKey );
+
     /* добавляем в буффер значение current, зашифровываем его и сохраняем в файл (head = len + 8) */
      buffer[head -8] = ( current >> 56 )&0xFF;
      buffer[head -7] = ( current >> 48 )&0xFF;
@@ -165,6 +203,10 @@
      buffer[head -3] = ( current >> 16 )&0xFF;
      buffer[head -2] = ( current >>  8 )&0xFF;
      buffer[head -1] = current&0xFF;
+
+     printf("buf[data]:%s\n", ak_ptr_to_hexstr( buffer, head -8, ak_false ));
+     printf("buf[len]: %s\n\n", ak_ptr_to_hexstr( buffer + (head-8), 8, ak_false ));
+
      ak_bckey_ctr( &kcont, buffer, buffer, head, NULL, 0 );
      ak_file_write( &ofp, buffer, head );
      printf("added %lu bytes (local header)\n", head );
@@ -205,12 +247,24 @@
        break;
      }
 
+
+   /* delme ;)) */
+    printf("\nContainer Key\n");
+    printf("salt:     %s (%s)\n", ak_ptr_to_hexstr( salt, 32, ak_false ), __func__ );
+
     /* вырабатываем новое значение ключа для доступа к контейнеру */
      if(( error = ak_encrypt_assign_container_key( &kcont,
                               salt, 32, iv, 8, vect, 32, password, pass_size )) != ak_error_ok ) {
        ak_error_message( error, __func__, "incorrect assign value of container's secret key" );
        break;
      }
+
+   /* delme ;)) */
+    printf("vect:     %s (%s)\n", ak_ptr_to_hexstr( vect, 32, ak_false ), __func__ );
+    printf("iv:       %s (%s)\n", ak_ptr_to_hexstr( iv, 16, ak_false ), __func__ );
+    ak_skey_unmask_xor( (ak_skey)&kcont );
+    printf("key-cont: %s (%s)\n\n", ak_ptr_to_hexstr( kcont.key.key, 32, ak_false ), __func__ );
+    ak_skey_set_mask_xor( (ak_skey)&kcont );
 
     /* зашифровываем и сохраняем имитоставку */
      ak_bckey_ctr( &kcont, im, im, ak_min( 16, ctx.tag_size ), iv, 8 );
@@ -399,9 +453,6 @@
      goto ex;
    }
 
-  /* delme )) */
-   printf("\nKEY: %s\n", ak_ptr_to_hexstr( value, 32, ak_false ));
-
    if(( error = ak_bckey_set_key( kcont, value, 32 )) != ak_error_ok ) {
      ak_error_message( error, __func__, "incorrect assigning a secret value to container's key" );
    }
@@ -485,6 +536,12 @@
        ak_wpoint_reduce( &U, wc );
        ak_mpzn_to_little_endian( U.x, wc->size, buffer, cnt, ak_true );
        ak_mpzn_to_little_endian( U.y, wc->size, buffer +cnt, cnt, ak_true );
+
+     /* delme :)) */
+       printf(" point U [\n"
+              "    U.x: %s\n", ak_mpzn_to_hexstr( U.x, wc->size ));
+       printf("    U.y: %s\n", ak_mpzn_to_hexstr( U.y, wc->size ));
+       printf("       ]\n");
       break;
 
     default:
@@ -497,21 +554,39 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                                 процедуры расшифрования информации                              */
 /* ----------------------------------------------------------------------------------------------- */
- static ak_pointer ak_decrypt_file_load_secret_key( scheme_t , ak_tlv );
+ static ak_pointer ak_decrypt_file_load_secret_key( scheme_t , ak_tlv , const char * );
+ static int ak_decrypt_assign_encryption_keys( ak_pointer kenc, ak_pointer kauth, ak_oid mode,
+  scheme_t scheme, ak_signkey key, ak_uint8 *salt, size_t salt_size, ak_uint8 *iv, size_t iv_size,
+                                 ak_uint8 *vect, size_t vect_size, ak_uint8 *buffer, size_t head );
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_decrypt_file( const char *filename, const char *password, const size_t pass_size )
+/*!
+  \param filename Имя расшифровываемого файла
+  \param password пароль доступа к контейнеру, содержащему зашифрованные данные
+  \param pass_size длиа пароля (в октетах)
+  \param skeyfile Имя файла с секретным ключом (формат секретного ключа зависит от использумой схемы)
+   Если имя не определено (skeyfile равен `null`), то функция пытается отыскать секретный ключ
+   в стандартных каталогах пользователя библиотеки.
+
+  \return  В случае успеха возвращается ноль (ak_error_ok). В противном случае,
+   возвращается код ошибки.                                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_decrypt_file( const char *filename, const char *password, const size_t pass_size ,
+                                    const char *skeyfile, char *outfile, const size_t outfile_size )
 {
+  size_t len;
   ak_asn1 asn, seq;
   struct file ifp;
-  ak_pointer skey;
   scheme_t scheme;
-  size_t len; //, head;
+  ak_uint32 head = 0;
   ak_uint8 buffer[1024];
+  ak_pointer ptr, skey = NULL;
   int error = ak_error_ok;
-  struct bckey kcont; //, kenc, kauth;
+  struct aead ctx;
+  struct bckey kcont;
   ak_oid mode = NULL, params = NULL;
   ak_uint8 salt[32], iv[16], vect[32];
+  ak_uint64 total = 0;
 
   /* проверяем корректность аргументов функции */
    if( filename == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -520,6 +595,10 @@
                                                                 "using null pointer to password" );
    if( pass_size == 0 ) return ak_error_message( ak_error_wrong_length,
                                                      __func__, "using password with zero length" );
+
+   memset( salt, 0, sizeof( salt ));
+   memset( iv, 0, sizeof( iv ));
+   memset( vect, 0, sizeof( vect ));
 
  /* 1. Считываем заголовок и проверяем, наше ли это добро */
    if(( error = ak_file_open_to_read( &ifp, filename )) != ak_error_ok ) {
@@ -532,11 +611,24 @@
    }
    if(( error = ak_bckey_create_kuznechik( &kcont )) != ak_error_ok )
      return ak_error_message( error, __func__, "incorrect creation of container's secret key" );
+
+   printf("\nFirst container key:\n");
+   printf("salt:     %s (%s)\n", ak_ptr_to_hexstr( salt, 32, ak_false ), __func__ );
+   printf("password: %s (%s)\n", ak_ptr_to_hexstr( password, pass_size, ak_false ), __func__ );
+
    if(( error = ak_encrypt_assign_container_key( &kcont, /* устанавливаем первичное значение ключа */
-                              salt, 14, iv, 8, vect, 16, password, pass_size )) != ak_error_ok ) {
+                              salt, 14, iv, 8, vect, 32, password, pass_size )) != ak_error_ok ) {
      ak_error_message( error, __func__, "incorrect assign value of container's secret key" );
      goto lab_exit2;
    }
+
+  /* delme ;)) */
+    printf("vect:     %s (%s)\n", ak_ptr_to_hexstr( vect, 32, ak_false ), __func__ );
+    printf("iv:       %s (%s)\n", ak_ptr_to_hexstr( iv, 16, ak_false ), __func__ );
+    ak_skey_unmask_xor( (ak_skey)&kcont );
+    printf("key-cont: %s (%s)\n\n", ak_ptr_to_hexstr( kcont.key.key, 32, ak_false ), __func__ );
+    ak_skey_set_mask_xor( (ak_skey)&kcont );
+
    memcpy( buffer, salt, 16 );
    if(( error = ak_bckey_ctr( &kcont, buffer, buffer, 16, iv, 8 )) != ak_error_ok ) {
      ak_error_message( error, __func__, "incorrect decryption of the first part of the header" );
@@ -566,6 +658,7 @@
 
   /* delme :)) */
    ak_asn1_print( asn );
+   printf("----------------------------------------------------------------------- delme\n");
 
   /* a. считываем и проверяем корректность использованной асимметричной схемы */
    ak_asn1_first( seq = asn->current->data.constructed );
@@ -576,30 +669,103 @@
    }
   /* b. считываем секретный ключ для расшифрования */
    ak_asn1_next( seq );
-   if(( skey = ak_decrypt_file_load_secret_key( scheme, seq->current )) == NULL ) {
-     ak_error_message( ak_error_get_value(), __func__, "incorrect creation of decryption key");
+   if(( skey = ak_decrypt_file_load_secret_key( scheme, seq->current, skeyfile )) == NULL ) {
+     error = ak_error_message( ak_error_get_value(), __func__,
+                                                           "incorrect creation of decryption key");
+     goto lab_exit3;
+   }
+  /* c. считываем режим шифрования */
+   ak_asn1_next( seq );
+   if(( error = ak_tlv_get_algorithm_identifier( seq->current, &mode, &params )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "wrong reading an encryption mode" );
+     goto lab_exit3;
+   }
+  /* d. считываем имя расшифрованного файла */
+   memset( outfile, 0, outfile_size );
+   ak_asn1_next( seq );
+   if(( error = ak_tlv_get_utf8_string( seq->current, &ptr )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "wrong reading of unencrypted file name" );
+     goto lab_exit3;
+   }
+   memcpy( outfile, ptr, ak_min( strlen(ptr), outfile_size -1 ));
+  /* e. считываем размер служебного заголовка */
+   ak_asn1_next( seq );
+   if(( error = ak_tlv_get_uint32( seq->current, &head )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "wrong reading of local header length" );
      goto lab_exit3;
    }
 
-//править здесь
+  /* начинаем основной цикл опробования фрагментов шифрованного файла */
+   total = ifp.size -16 -len;
+  /* создаем ключи шифрования и имитозащиты данных */
+   if(( error = ak_aead_create_oid( &ctx, ak_true, mode )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "incorrect intialization of secret keys" );
+     goto lab_exit4;
+   }
 
-  /* c. считываем режим шифрования */
-   ak_asn1_next( seq );
-   ak_tlv_get_algorithm_identifier( seq->current, &mode, &params );
-   printf("mode: %s\n", mode->name[0] );
+   while( total > 0 ) {
+    ak_uint64 current = 0;
+   /* 1. получаем значения из локального заголовка (заголовка фрагмента) */
+    if( total < head ) { /* проверяем, что данных достаточно */
+      ak_error_message( ak_error_wrong_length, __func__, "unexpected length of encrypted file" );
+      goto lab_exit4;
+    }
+    if( ak_file_read( &ifp, buffer, head ) != head ) {
+      ak_error_message( ak_error_access_file, __func__, "wrong reading of fragment's header" );
+      goto lab_exit4;
+    }
+    ak_bckey_ctr( &kcont, buffer, buffer, head, NULL, 0 );
+    current =  buffer[head -1];
+    current += ((ak_uint64)(buffer[head -2]) << 8 );
+    current += ((ak_uint64)(buffer[head -3]) << 16 );
+    current += ((ak_uint64)(buffer[head -4]) << 24 );
+    current += ((ak_uint64)(buffer[head -5]) << 32 );
+    current += ((ak_uint64)(buffer[head -6]) << 40 );
+    current += ((ak_uint64)(buffer[head -7]) << 48 );
+    current += ((ak_uint64)(buffer[head -8]) << 56 );
+    if( current > ( total -head -16 )) {
+      ak_error_message( ak_error_wrong_length, __func__, "wrong reading of fragment's length" );
+      goto lab_exit4;
+    }
 
-  /* d. считываем имя расшифрованного файла */
-   ak_asn1_next( seq );
-   //ak_asn1_add_utf8_string( sequence->data.constructed, filename );
-  /* e. считываем размер служебного заголовка */
-   ak_asn1_next( seq );
-//   ak_asn1_add_uint32( sequence->data.constructed,
-//                               *head = ak_encrypt_public_key_size( set->scheme, scheme_key ) + 8 );
+   /* delme :)) */
+    printf("total: %llu, local head: %u, current: %llu\n", total, head, current );
 
-  /* delme :)) */
-   ak_asn1_print( seq );
+   /* 2. вырабатываем производные ключи шифрования и имитозащиты */
+
+   /* delme :)) */
+    printf("\nEncryption Keys\n");
+    printf("vect:     %s (%s)\n\n", ak_ptr_to_hexstr( vect, 32, ak_false ), __func__ );
+    printf("buf[data]:%s\n", ak_ptr_to_hexstr( buffer, head -8, ak_false ));
+    printf("buf[len]: %s\n\n", ak_ptr_to_hexstr( buffer + (head-8), 8, ak_false ));
+
+
+    if(( error = ak_decrypt_assign_encryption_keys(
+                    ctx.encryptionKey, ctx.authenticationKey, mode, scheme, skey,
+                      vect, 32, iv, 16, salt, 32, buffer, head )) != ak_error_ok ) {
+      ak_error_message( error, __func__, "incorrect creation of input data encryption keys" );
+      goto lab_exit4;
+    }
+
+   /* delme ;)) */
+    printf("iv:       %s (%s)\n", ak_ptr_to_hexstr( iv, 16, ak_false ), __func__ );
+    printf("salt:     %s (%s)\n", ak_ptr_to_hexstr( salt, 32, ak_false ), __func__ );
+    ak_skey_unmask_xor( ctx.encryptionKey );
+    printf("ekey:     %s (%s)\n\n", ak_ptr_to_hexstr( ((ak_skey)ctx.encryptionKey)->key, 32, ak_false ), __func__ );
+    ak_skey_set_mask_xor( ctx.encryptionKey );
+
+
+   /* уточняем разме оставшихся данных */
+    total -= (current +head +16);
+
+   }
+
+ /* очищием файловые дескрипторы, ключевые контексты, промежуточные данные и выходим */
+  lab_exit4:
+   ak_aead_destroy( &ctx );
 
   lab_exit3:
+   if( skey != NULL ) ak_oid_delete_object( ((ak_skey)skey)->oid, skey );
    if( asn ) ak_asn1_delete( asn );
 
   lab_exit2:
@@ -612,7 +778,8 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int ak_decrypt_file_with_key( const char *filename, ak_skey key )
+ int ak_decrypt_file_with_key( const char *filename, ak_skey key , const char *skeyfile,
+                                                         char *outfile, const size_t outfile_size )
 {
   int error = ak_error_ok;
 
@@ -623,32 +790,214 @@
  /* отправляем массив ключевой информации в качестве пароля для расшифрования файла */
   if(( error = key->unmask( key )) != ak_error_ok ) return ak_error_message( error, __func__,
                                                                    "error key unmasking process" );
-  error = ak_decrypt_file( filename, ( const char *)key->key, key->key_size );
+  error = ak_decrypt_file( filename, ( const char *)key->key, key->key_size ,
+                                                                 skeyfile, outfile, outfile_size );
   if( key->set_mask( key ) != ak_error_ok ) ak_error_message( error, __func__,
                                                                      "error key masking process" );
  return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static ak_pointer ak_decrypt_file_load_secret_key( scheme_t sheme , ak_tlv tlv )
+ static ak_pointer ak_decrypt_file_load_secret_key( scheme_t scheme ,
+                                                                ak_tlv tlv, const char *skeyfile )
 {
-  ak_pointer key = NULL;
+  ak_asn1 seq = NULL;
+  int error = ak_error_ok;
+  size_t pknlen = 0, sknlen = 0;
+  ak_pointer key = NULL, pkn = NULL, skn = NULL;
 
-  /* выбор схемы для считывания последовательности 
-   switch( scheme ) {
+  /* выбор схемы для считывания последовательности */
+   switch( scheme ) {    
     case ecies_scheme:
-      
+     /* определяем характеристики ожидаемого ключа */
+      if( tlv == NULL ) {
+        ak_error_message( ak_error_null_pointer, __func__,
+                                                   "using null pointer to incomming tlv element" );
+        return NULL;
+      }
+      if(( DATA_STRUCTURE( tlv->tag ) != CONSTRUCTED ) ||
+                  ( TAG_NUMBER( tlv->tag ) != TSEQUENCE )) {
+        ak_error_message( ak_error_invalid_asn1_tag, __func__,
+                                                      "incommint tlv element has not a sequence" );
+        return NULL;
+      }
+      if(( seq = tlv->data.constructed ) == NULL ) {
+        ak_error_message( ak_error_null_pointer, __func__, "using null pointer to asn1 sequence" );
+        return NULL;
+      }
+      ak_asn1_first( seq );
+      if( seq->current == NULL ) {
+        ak_error_message( ak_error_null_pointer, __func__,
+                                                "incomming sequence has not a public key number" );
+        return NULL;
+      }
+      if(( error = ak_tlv_get_octet_string( seq->current, &pkn, &pknlen )) != ak_error_ok ) {
+        ak_error_message( error, __func__, "incorrect reading of public key number" );
+        return NULL;
+      }
+      if( ak_asn1_next( seq ) != ak_false ) { /* секретный номер ключа определен и мы можем его считать */
+        if( seq->current == NULL ) {
+          ak_error_message( ak_error_null_pointer, __func__,
+                                                "incomming sequence has not a secret key number" );
+          return NULL;
+        }
+        if(( error = ak_tlv_get_octet_string( seq->current, &skn, &sknlen )) != ak_error_ok ) {
+          ak_error_message( error, __func__, "incorrect reading of secret key number" );
+          return NULL;
+        }
+      }
 
+     /* переходим к чтению ключа */
+      if( skeyfile != NULL ) { /* самый очевидный случай - чтение из заданного файла */
+        if(( key = ak_skey_load_from_file( skeyfile )) == NULL ) {
+          ak_error_message( ak_error_get_value(), __func__, "incorrect reading of secret key" );
+          return NULL;
+        }
+
+        /* проверяем совпадение номеров */
+        if( memcmp( pkn, ((ak_signkey)key)->verifykey_number, ak_min( pknlen, 32))) {
+          ak_error_message( ak_error_not_equal_data, __func__,  "reading a secret key that "
+                                     "does not correspond to the public key used for encryption" );
+          if( key != NULL ) ak_oid_delete_object( ((ak_skey)key)->oid, key );
+          return NULL;
+        }
+        if( skn != NULL ) {
+          if( memcmp( skn, ((ak_skey)key)->number, ak_min( sknlen, 32))) {
+            ak_error_message( ak_error_not_equal_data, __func__,
+                                                    "reading a secret key with different number" );
+            if( key != NULL ) ak_oid_delete_object( ((ak_skey)key)->oid, key );
+            return NULL;
+          }
+        }
+      }
+       else {
+        /* здесь мы пытаемся найти секретный ключ по имеющимся метаданным */
+        /* во-первых, пытаемся найти ключ с заданным номером в стандартном каталоге пользователя */
+        /* во-вторых, предлагаем пользователю ввести имя файла с ключом,
+           для которого задан номер соотвествующего открытого ключа
+           (результат действия aktool k --show-public-key secret.key) */
+
+        ak_error_message( ak_error_null_pointer, __func__, "using null pointer to secret key filename" );
+        return NULL;
+       }
       break;
 
     default:
       ak_error_message( ak_error_encrypt_scheme, __func__, "using unsupported encryption scheme" );
   }
- */
-
- ak_error_message( ak_error_undefined_function, __func__, "this function not implemented yet");
 
  return key;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_decrypt_assign_encryption_keys( ak_pointer kenc, ak_pointer kauth, ak_oid mode,
+  scheme_t scheme, ak_signkey key, ak_uint8 *salt, size_t salt_size, ak_uint8 *iv, size_t iv_size,
+                                  ak_uint8 *vect, size_t vect_size, ak_uint8 *buffer, size_t head )
+{
+  size_t cnt;
+  struct wpoint U;
+  ak_wcurve wc = NULL;
+  ak_oid curvoid = NULL;
+  struct kdf_state state;
+  int error = ak_error_ok;
+  ak_mpzn512 k, one = ak_mpzn512_one;
+
+  switch( scheme ) {
+    case ecies_scheme:
+     /* получаем доступ к параметрам эллиптической кривой, на которой проводятся вычисления */
+      if(( curvoid = ak_oid_find_by_data( key->key.data )) == NULL )
+        return ak_error_message( ak_error_wrong_oid, __func__,
+                        "secret key does not contain a pointer to the elliptic curve identifier" );
+      if(( wc = (ak_wcurve)curvoid->data ) == NULL )
+        return ak_error_message( ak_error_wrong_oid, __func__,
+                        "secret key does not contain a pointer to the elliptic curve parameters" );
+      if( head != ( 2*wc->size*sizeof( ak_uint64 ) +8 ))
+        return ak_error_message( error = ak_error_wrong_length, __func__,
+                                                       "using unexpected length of chunk header" );
+
+     /* вырабатываем точку, которая будет использована для генерации ключевой информации */
+      cnt = wc->size*sizeof( ak_uint64 );
+      ak_mpzn_set_little_endian( U.x, wc->size, buffer, cnt, ak_true );
+      ak_mpzn_set_little_endian( U.y, wc->size, buffer +cnt, cnt, ak_true );
+      ak_mpzn_set_ui( U.z, wc->size, 1 );
+
+      if( ak_wpoint_is_ok( &U, wc ) != ak_true )
+        return ak_error_message( error = ak_error_curve_point, __func__,
+                     "encrypted file contains a point which does not belongs to elliptic curve" );
+      if( ak_wpoint_check_order( &U, wc ) != ak_true )
+        return ak_error_message( error = ak_error_curve_point_order , __func__,
+                                          "encrypted file contains a point with incorrect order" );
+
+     /* возводим точку U в степень секретного ключа */
+      ak_mpzn_mul_montgomery( k, ( ak_uint64 *) key->key.key, one, wc->q, wc->nq, wc->size );
+      ak_wpoint_pow( &U, &U, k, wc->size, wc );
+      ak_mpzn_mul_montgomery( k, ( ak_uint64 *)( key->key.key + key->key.key_size ),
+                                                                     one, wc->q, wc->nq, wc->size);
+      ak_wpoint_pow( &U, &U, k, wc->size, wc );
+      ak_wpoint_reduce( &U, wc );
+
+     /* delme :)) */
+       printf(" point U [\n"
+              "    U.x: %s\n", ak_mpzn_to_hexstr( U.x, wc->size ));
+       printf("    U.y: %s\n", ak_mpzn_to_hexstr( U.y, wc->size ));
+       printf("    U.z: %s\n", ak_mpzn_to_hexstr( U.z, wc->size ));
+       printf("       ]\n");
+
+      /* вырабатываем необходимую производную информацию */
+       ak_mpzn_to_little_endian( U.x, wc->size, buffer, cnt, ak_true );
+       ak_mpzn_to_little_endian( U.y, wc->size, buffer + cnt, cnt, ak_true );
+       if(( error = ak_kdf_state_create( &state, buffer, 2*cnt,
+                    hmac_hmac512_kdf, NULL, 0, salt, salt_size, NULL, 0, 256 )) != ak_error_ok ) {
+         ak_error_message( error, __func__, "wrong generation of initial secret key" );
+         break;
+       }
+       if(( error = ak_kdf_state_next( &state, iv, iv_size )) != ak_error_ok ) {
+         ak_error_message( error, __func__, "incorrect generation of initial vector" );
+       }
+        else {
+          if(( error = ak_kdf_state_next( &state, vect, vect_size )) != ak_error_ok ) {
+            ak_error_message( error, __func__, "incorrect generation of additional vector" );
+          }
+           else {
+              if(( error = ak_kdf_state_next( &state, buffer, 64 )) != ak_error_ok )
+                ak_error_message( error, __func__, "incorrect generation of secret vector" );
+           }
+        }
+       ak_kdf_state_destroy( &state );
+       if( error != ak_error_ok ) break;
+
+      /* присваиваем ключевые значения */
+       if(( error = mode->func.first.set_key( kenc, buffer, 32 )) != ak_error_ok ) {
+         ak_error_message( error, __func__, "incorrect assigning of secret key" );
+         break;
+       }
+       if(( error = mode->func.second.set_key( kauth, buffer+32, 32 )) != ak_error_ok ) {
+         ak_error_message( error, __func__, "incorrect assigning of authentication key" );
+         break;
+       }
+      break;
+
+    default:
+      ak_error_message( error = ak_error_encrypt_scheme, __func__,
+                                                           "using unsupported encryption scheme" );
+  }
+
+ /* в завершение, очищаем стековые и другие переменные */
+  if( error != ak_error_ok ) {
+    ak_mpzn_set_ui( k, ak_mpzn512_size, 0 );
+    ak_mpzn_set_ui( U.x, ak_mpzn512_size, 0 );
+    ak_mpzn_set_ui( U.y, ak_mpzn512_size, 0 );
+    ak_mpzn_set_ui( U.z, ak_mpzn512_size, 1 );
+    memset( buffer, 0, head );
+  }
+   else {
+     ak_ptr_wipe( buffer, head, &((ak_skey)kauth)->generator );
+     ak_ptr_wipe( k, ak_mpzn512_size*sizeof( ak_uint64 ), &((ak_skey)kenc)->generator );
+     ak_ptr_wipe( U.x, ak_mpzn512_size*sizeof( ak_uint64 ), &((ak_skey)kenc)->generator );
+     ak_ptr_wipe( U.y, ak_mpzn512_size*sizeof( ak_uint64 ), &((ak_skey)kauth)->generator );
+     ak_mpzn_set_ui( U.z, ak_mpzn512_size, 1 );
+   }
+  return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
