@@ -19,7 +19,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  typedef enum {
-   show_all, show_algoid, show_number, show_resource, show_public_key, show_curveoid
+   show_all, show_algoid, show_number, show_resource, show_public_key, show_curveoid, show_label
  } what_show_t;
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -119,6 +119,7 @@
      { "p7b-split",           0, NULL,  178 },
 
    /* флажки для вывода отдельных полей секретных ключей */
+     { "show-label",          1, NULL,  164 },
      { "show-algorithm",      1, NULL,  165 },
      { "show-curve",          1, NULL,  166 },
      { "show-number",         1, NULL,  167 },
@@ -151,6 +152,15 @@
         case 's': /* --show */
                    work = do_show;
                    what_show = show_all;
+                   #ifdef _WIN32
+                     GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
+                   #else
+                     realpath( optarg , ki.key_file );
+                   #endif
+                   break;
+        case 164: /* --show-label */
+                   work = do_show;
+                   what_show = show_label;
                    #ifdef _WIN32
                      GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                    #else
@@ -1354,8 +1364,11 @@
     case show_resource:
       printf("%ld\n", (long int)( skey->resource.value.counter ));
       break;
-    case show_all:
+    case show_label:
+      if( skey->label != NULL ) printf( "%s\n", skey->label );
+      break;
 
+    case show_all:
       printf(_("Type:\n"));
       if( skey->oid->engine == sign_function ) printf(_("    Asymmetric secret key\n"));
        else printf(_("    Symmetric secret key\n"));
@@ -2441,6 +2454,7 @@
      " -s, --show              output all unencrypted parameters of the secret key\n"
      "     --show-algorithm    show the identifier of secret key's algorithm\n"
      "     --show-curve        show the identifier of elliptic curve for related public key (if defined)\n"
+     "     --show-label        show the secret key label (if defined)\n"
      "     --show-number       show the unique number of secret key\n"
      "     --show-public-key   show the number of related public key (if defined)\n"
      "     --show-resource     show the available resource of secret key\n"
