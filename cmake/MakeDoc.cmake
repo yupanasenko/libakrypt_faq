@@ -127,7 +127,7 @@ if( UNIX )
   if( XELATEX )
     execute_process( COMMAND chmod +x ${pdf-script} )
     add_custom_target( pdf ${pdf-script} )
-    message("-- Script for PDF documentation (using xeLaTeX engine) is done (now \"make pdf\" enabled)")
+    message("-- Script for PDF documentation (using XeLaTeX engine) is done (now \"make pdf\" enabled)")
   endif()
 
 # конец if( UNIX )

@@ -508,5 +508,24 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ int ak_file_delete( const char *file, ak_random rnd )
+{
+  if( file == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                               "using null pointer to file name" );
+  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                "using null pointer to random generator context" );
+  if( rnd->random == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                  "using uninitialized random generator context" );
+ /* пропущен фрагмент с очищением кармы */
+  #ifdef AK_HAVE_UNISTD_H
+   unlink( file );
+  #else
+   remove( file );
+  #endif
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                                                                    ak_random.c  */
 /* ----------------------------------------------------------------------------------------------- */

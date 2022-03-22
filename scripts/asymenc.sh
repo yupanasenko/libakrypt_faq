@@ -1,7 +1,9 @@
+# -------------------------------------------------------------------------------------
 # /bin/bash
 #
-# Пример иллюстрирует процесс создания ключевой системы и последующего шифрования данных 
-# с использованием асимметричного алгоритма шифрования
+# Пример иллюстрирует процесс создания ключевой системы и последующего шифрования
+# данных с использованием асимметричного алгоритма шифрования
+# -------------------------------------------------------------------------------------
 #
 # 1. Создаем ключи центра сертификации
 aktool k -nt sign512 --curve ec512b --ca -o ca.key --outpass z12Ajq --op ca.crt --to certificate --id "Root CA"
@@ -17,37 +19,43 @@ aktool k -v user.crt --ca-cert ca.crt --verbose
 #
 # 4. Вырабатываем данные для тестирования
 dd if=/dev/zero of=file bs=1M count=256
-echo "Значение хешкода для исходного тестового файла"
-aktool i file
+aktool i file -o results.streebog
 #
-# 5. Приступаем к шифрованию
-#aktool e file --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file01.bin
-## выводим информацию о зашифрованном файле
-#echo; echo "Значение хешкода для зашифрованного файла"
-#aktool i file01.bin
-#ls -la file01.bin
-#xxd -g1 -l256 file01.bin
-#
-
 # -------------------------------------------------------------------------------------
-# Второй эксперимент, с сжатием данных и использованием преварительно
+# Первый эксперимент, с паролем для шифрования контейнера и 
+#  разбиением на случайные фрагменты
+# -------------------------------------------------------------------------------------
+echo; echo "Эксперимент N1. Простое шифрование."
+aktool e file --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file01.bin --delete-source
+#
+# выводим информацию о зашифрованном файле
+echo; echo "Значение хешкода для зашифрованного файла"
+aktool i file01.bin
+ls -la file01.bin
+#
+# Расшифрование исходных данных
+aktool d file01.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
+aktool i -c results.streebog --dont-show-stat
+#
+# -------------------------------------------------------------------------------------
+# Второй эксперимент, со сжатием данных и использованием преварительно
 #  распределенного ключа в качестве ключа шифрования контенера
 # -------------------------------------------------------------------------------------
 echo; echo "Создаем ключ для шифрования контейнера"
-aktool k -nt magma -o magma256.key --outpass mag13
+aktool k -nt hmac-streebog512 -o psk.512 --outpass mag13s
 #
-echo; echo "Зашифровываем данные на открытом ключе получателя"
-aktool e file --bz2 --ck magma256.key --ckpass mag13 --cert user.crt --ca-cert ca.crt -o file02.bin
+echo; echo "Экперимент 2. Шифрование с использованием ключа контейнера и предварительным сжатием"
+aktool e file --bz2 --ck psk.512 --ckpass mag13s --cert user.crt --ca-cert ca.crt --delete-source -o file02.bin
 # выводим информацию о зашифрованном файле
 echo; echo "Значение хешкода для зашифрованного файла"
 aktool i file02.bin
 ls -la file02.bin
 #
 # Расшифрование исходных данных
-aktool d file02.bin --ck magma256.key --ckpass mag13 --key user.key --keypass 1Qlm21u
-
+aktool d file02.bin --ck psk.512 --ckpass mag13s --key user.key --keypass 1Qlm21u --delete-source
+aktool i -c results.streebog --dont-show-stat
+#
 # -------------------------------------------------------------------------------------
-#  В завершение эксперимента, удаляем созданные временные файлы
+#  В завершение экспериментов, удаляем созданные временные файлы
 # -------------------------------------------------------------------------------------
-# rm -f ca.key ca.crt user_request.csr user.key user.crt file file01.bin file02.bin
-
+rm -f ca.key ca.crt user_request.csr user.key user.crt psk.512 file results.streebog

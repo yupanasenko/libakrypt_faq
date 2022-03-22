@@ -1,10 +1,13 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2021 by Axel Kenzo, axelkenzo@mail.ru                                            */
+/*  Copyright (c) 2021 - 2022 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Файл ak_encrypt.c                                                                              */
 /*  - содержит реализацию схемы асимметричного шифрования                                          */
 /* ----------------------------------------------------------------------------------------------- */
  #include <libakrypt-internal.h>
+ #ifdef AK_HAVE_UNISTD_H
+  #include <unistd.h>
+ #endif
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                 процедуры зашифрования информации                               */
@@ -568,6 +571,12 @@
    Если имя не определено (skeyfile равен `null`), то функция пытается отыскать секретный ключ
    в стандартных каталогах пользователя библиотеки.
 
+  \param outfile указатель на область, в которой располагается имя расшифрованного файла.
+  \param outfile_size Размер области памяти. Если размер равен нулю, то предполагается, что
+  используемое для создаваемого файла имя определяется строкой, на которую указывает outfile.
+  Если значение `outfile_size` отлично от нуля, то оно задает размер области памяти,
+  в которую помещается считываемое из контенера имя файла.
+
   \return  В случае успеха возвращается ноль (ak_error_ok). В противном случае,
    возвращается код ошибки.                                                                        */
 /* ----------------------------------------------------------------------------------------------- */
@@ -575,18 +584,18 @@
                                     const char *skeyfile, char *outfile, const size_t outfile_size )
 {
   size_t len;
-  ak_asn1 asn, seq;
-  struct file ifp;
   scheme_t scheme;
-  ak_uint32 head = 0;
-  ak_uint8 buffer[1024];
-  ak_pointer ptr, skey = NULL;
-  int error = ak_error_ok;
   struct aead ctx;
+  ak_asn1 asn, seq;
+  ak_uint32 head = 0;
   struct bckey kcont;
-  ak_oid mode = NULL, params = NULL;
-  ak_uint8 salt[32], iv[16], vect[32];
   ak_uint64 total = 0;
+  struct file ifp, ofp;
+  ak_uint8 buffer[1024];
+  int error = ak_error_ok;
+  ak_pointer ptr, skey = NULL;
+  ak_oid mode = NULL, params = NULL;
+  ak_uint8 salt[32], iv[16], vect[32], im[16];
 
   /* проверяем корректность аргументов функции */
    if( filename == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -595,7 +604,9 @@
                                                                 "using null pointer to password" );
    if( pass_size == 0 ) return ak_error_message( ak_error_wrong_length,
                                                      __func__, "using password with zero length" );
-
+   if(( outfile_size == 0 ) && ( outfile == NULL ))
+     return ak_error_message( ak_error_null_pointer, __func__,
+                                                  "using null pointer to name of decrypted file" );
    memset( salt, 0, sizeof( salt ));
    memset( iv, 0, sizeof( iv ));
    memset( vect, 0, sizeof( vect ));
@@ -681,17 +692,26 @@
      goto lab_exit3;
    }
   /* d. считываем имя расшифрованного файла */
-   memset( outfile, 0, outfile_size );
    ak_asn1_next( seq );
    if(( error = ak_tlv_get_utf8_string( seq->current, &ptr )) != ak_error_ok ) {
      ak_error_message( error, __func__, "wrong reading of unencrypted file name" );
      goto lab_exit3;
    }
-   memcpy( outfile, ptr, ak_min( strlen(ptr), outfile_size -1 ));
+   if( outfile_size > 0 ) {
+     memset( outfile, 0, outfile_size );
+     memcpy( outfile, ptr, ak_min( strlen(ptr), outfile_size -1 ));
+   }
+
   /* e. считываем размер служебного заголовка */
    ak_asn1_next( seq );
    if(( error = ak_tlv_get_uint32( seq->current, &head )) != ak_error_ok ) {
      ak_error_message( error, __func__, "wrong reading of local header length" );
+     goto lab_exit3;
+   }
+
+  /* открываем файл для записи расшифрованных данных */
+   if(( error = ak_file_create_to_write( &ofp, outfile )) != ak_error_ok ) {
+     ak_error_message( error, __func__, "wrong creation of decrypted file" );
      goto lab_exit3;
    }
 
@@ -704,7 +724,7 @@
    }
 
    while( total > 0 ) {
-    ak_uint64 current = 0;
+    ak_uint64 crt, val, current = 0;
    /* 1. получаем значения из локального заголовка (заголовка фрагмента) */
     if( total < head ) { /* проверяем, что данных достаточно */
       ak_error_message( ak_error_wrong_length, __func__, "unexpected length of encrypted file" );
@@ -754,15 +774,89 @@
     printf("ekey:     %s (%s)\n\n", ak_ptr_to_hexstr( ((ak_skey)ctx.encryptionKey)->key, 32, ak_false ), __func__ );
     ak_skey_set_mask_xor( ctx.encryptionKey );
 
+   /* выполняем процедуру расшифрования данных */
+    printf("current: %lld\n", current );
+    if(( error = ctx.auth_clean( ctx.ictx, ctx.authenticationKey,
+                                               iv, ak_min( 16, ctx.tag_size ))) != ak_error_ok ) {
+      ak_error_message( error, __func__, "incorrect cleaning of authentication context" );
+      break;
+    }
+    if(( error = ctx.enc_clean( ctx.ictx, ctx.encryptionKey,
+                                               iv, ak_min( 16, ctx.tag_size ))) != ak_error_ok ) {
+      ak_error_message( error, __func__, "incorrect cleaning of encryption context" );
+      break;
+    }
 
-   /* уточняем разме оставшихся данных */
+    crt = current;
+    while( crt > 0 ) {
+       if(( val = ak_file_read( &ifp, buffer, ak_min( sizeof( buffer ), crt ))) == 0 ) {
+         error = ak_error_message( ak_error_undefined_value, __func__,
+                                                             "incorrect loading of input buffer" );
+         break;
+       }
+       if(( error = ctx.dec_update( ctx.ictx, ctx.encryptionKey,
+                                  ctx.authenticationKey, buffer, buffer, val )) != ak_error_ok ) {
+         ak_error_message( error, __func__, "incorrect update of internal state" );
+         break;
+       }
+       ak_file_write( &ofp, buffer, val );
+       crt -= val;
+    }
+
+   /* проверяем, что цикл завершен успешно */
+    if( error != ak_error_ok ) break;
+    if(( error = ctx.auth_finalize( ctx.ictx, ctx.authenticationKey,
+                                               im, ak_min( 16, ctx.tag_size ))) != ak_error_ok ) {
+      ak_error_message( error, __func__, "incorrect finalize of internal state" );
+      break;
+    }
+
+   /* изменяем ключ контейнера и разбираемся с имитоставкой */
+
+   /* delme ;)) */
+    printf("\nContainer Key\n");
+    printf("salt:     %s (%s)\n", ak_ptr_to_hexstr( salt, 32, ak_false ), __func__ );
+
+    /* вырабатываем новое значение ключа для доступа к контейнеру */
+     if(( error = ak_encrypt_assign_container_key( &kcont,
+                              salt, 32, iv, 8, vect, 32, password, pass_size )) != ak_error_ok ) {
+       ak_error_message( error, __func__, "incorrect assign value of container's secret key" );
+       break;
+     }
+
+   /* delme ;)) */
+    printf("vect:     %s (%s)\n", ak_ptr_to_hexstr( vect, 32, ak_false ), __func__ );
+    printf("iv:       %s (%s)\n", ak_ptr_to_hexstr( iv, 16, ak_false ), __func__ );
+    ak_skey_unmask_xor( (ak_skey)&kcont );
+    printf("key-cont: %s (%s)\n\n", ak_ptr_to_hexstr( kcont.key.key, 32, ak_false ), __func__ );
+    ak_skey_set_mask_xor( (ak_skey)&kcont );
+
+    ak_file_read( &ifp, buffer, ak_min( 16, ctx.tag_size ));
+    ak_bckey_ctr( &kcont, buffer, buffer, ak_min( 16, ctx.tag_size ), iv, 8 );
+
+    printf("im:       %s\n", ak_ptr_to_hexstr( im, ak_min( 16, ctx.tag_size ), ak_false ));
+    printf("buffer:   %s\n", ak_ptr_to_hexstr( buffer, ak_min( 16, ctx.tag_size ), ak_false ));
+    if( memcmp( im, buffer, ak_min( 16, ctx.tag_size)) != 0 ) {
+      ak_error_message( error = ak_error_not_equal_data, __func__,
+                                           "incorrect authentiction code for decrypted data" );
+      goto lab_exit4;
+    }
+
+   /* уточняем размер оставшихся данных и переходм к следующему фрагменту */
     total -= (current +head +16);
-
    }
 
  /* очищием файловые дескрипторы, ключевые контексты, промежуточные данные и выходим */
   lab_exit4:
    ak_aead_destroy( &ctx );
+   ak_file_close( &ofp );
+   if( error != ak_error_ok ) {
+    #ifdef AK_HAVE_UNISTD_H
+     unlink( outfile );
+    #else
+     remove( outfile );
+    #endif
+   }
 
   lab_exit3:
    if( skey != NULL ) ak_oid_delete_object( ((ak_skey)skey)->oid, skey );
@@ -982,7 +1076,7 @@
                                                            "using unsupported encryption scheme" );
   }
 
- /* в завершение, очищаем стековые и другие переменные */
+ /* в завершение, очищаем стековые и внешние переменные */
   if( error != ak_error_ok ) {
     ak_mpzn_set_ui( k, ak_mpzn512_size, 0 );
     ak_mpzn_set_ui( U.x, ak_mpzn512_size, 0 );

@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2019 - 2021 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2019 - 2022 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Прикладной модуль, реализующий процедуры шифрования файлов                                     */
 /*                                                                                                 */
@@ -56,6 +56,7 @@
      { "outpass-hex",         1, NULL,  249 },
      { "inpass-hex",          1, NULL,  251 },
      { "inpass",              1, NULL,  252 },
+     { "delete-source",       0, NULL,  253 },
 
    #ifdef AK_HAVE_BZLIB_H
      { "bz2",                 0, NULL,  'j' },
@@ -84,6 +85,7 @@
   ki.heset.fraction.mechanism = size_fraction;
   ki.heset.fraction.value = 16*ak_libakrypt_get_option_by_name( "kuznechik_cipher_resource" );
   ki.heset.scheme = ecies_scheme;
+  ki.delete_source = ak_false;
 
  /* разбираем опции командной строки */
   do {
@@ -300,7 +302,7 @@
                   #else
                     realpath( optarg , ki.key_file );
                   #endif
-                    break;
+                   break;
 
         case 203: /* --container-key, --ck */
                   #ifdef _WIN32
@@ -308,7 +310,11 @@
                   #else
                     realpath( optarg , ki.op_file );
                   #endif
-                    break;
+                   break;
+
+        case 253: /* --delete-source */
+                   ki.delete_source = ak_true;
+                   break;
 
         default:  /* обрабатываем ошибочные параметры */
                    if( next_option != -1 ) work = do_nothing;
@@ -420,14 +426,6 @@
      );
    }
 
-  if( error == ak_error_ok )
-    fprintf( stdout, "%s (%s): Ok\n", filename, ki.os_file );
-   else aktool_error("%s (wrong encryption)", filename );
-
- /* очищаем имя зашифрованного файла
-   (для предотвращения попыток записи нескольких файлов в один) */
-  memset( ki.os_file, 0, strlen( ki.os_file ));
-
  /* удаляем архивированный файл */
  #ifdef AK_HAVE_BZLIB_H
   if( ki.compress_bz2 ) {
@@ -438,6 +436,23 @@
     #endif
   }
  #endif
+
+  if( error == ak_error_ok ) {
+   /* удаляем файл с исходными (открытыми) данными */
+    if( ki.delete_source ) {
+      #ifdef AK_HAVE_UNISTD_H
+       unlink( filename );
+      #else
+       remove( filename );
+      #endif
+    }
+    fprintf( stdout, "%s (%s): Ok\n", filename, ki.os_file );
+  }
+   else aktool_error("%s (wrong encryption)", filename );
+
+ /* очищаем имя зашифрованного файла
+   (для предотвращения попыток записи нескольких файлов в один) */
+  memset( ki.os_file, 0, strlen( ki.os_file ));
 
  return error;
 }
@@ -494,7 +509,7 @@
 
  /* считываем сертификат открытого ключа получателя сообщения */
    if( ak_certificate_import_from_file( &subject.recipient, issuer_ptr, ki.pubkey_file ) != ak_error_ok ) {
-     aktool_error(_("incorrect reading of recipient's public key certificate (see --cert option)"));
+     aktool_error(_("incorrect reading of recipient's public key certificate (see --cert and --ca-cert options)"));
      exitcode = EXIT_FAILURE;
      goto lab_exit;
    }
@@ -585,11 +600,9 @@
 /* ----------------------------------------------------------------------------------------------- */
  static int aktool_decrypt_function( const char *filename, ak_pointer ptr )
 {
-  char outfile[1024];
   int error= ak_error_ok;
   handle_ptr_t *st = ptr;
 
-  memset( outfile, 0, sizeof( outfile ));
   if( ki.lenkeypass != 0 ) { /* подменяем функцию ввода пароля доступа к секретному ключу */
     ak_libakrypt_set_password_read_function( aktool_set_keypass );
   }
@@ -598,8 +611,8 @@
               filename,
               (ak_skey)st->key,
               strlen( ki.key_file ) > 0 ? ki.key_file : NULL,
-              outfile,
-              sizeof( outfile )
+              ki.os_file,
+              strlen( ki.os_file ) > 0 ? 0 : sizeof( ki.os_file )
             );
   } else {
      error = ak_decrypt_file(
@@ -607,21 +620,46 @@
                ki.inpass,
                ki.leninpass,
                strlen( ki.key_file ) > 0 ? ki.key_file : NULL,
-               outfile,
-               sizeof( outfile )
+               ki.os_file,
+               strlen( ki.os_file ) > 0 ? 0 : sizeof( ki.os_file )
              );
    }
   ak_libakrypt_set_password_read_function( ak_password_read_from_terminal );
 
-  if( error == ak_error_ok )
-    fprintf( stdout, "%s (%s): Ok\n", filename, outfile );
-   else aktool_error("%s (wrong decryption)", filename );
+ /* в случае успеха, выполняем дополнительный функционал */
+  if( error == ak_error_ok ) {
 
- #ifdef AK_HAVE_BZLIB_H
-   /* не забыть про разархивирование расшифрованных данных */
- #endif
+    /* 1. не забываем про разархивирование расшифрованных данных */
+     #ifdef AK_HAVE_BZLIB_H
+     if( strstr( ki.os_file, ".bz2" ) != NULL ) {
+       char command[1024];
+       memset( command, 0, sizeof( command ));
+       ak_snprintf( command, sizeof( command ) -1, "bunzip2 -f %s", ki.os_file );
+       system( command );
+       ki.os_file[ strlen( ki.os_file ) -4 ] = 0;
+     }
+     #endif
 
-  return error;
+    /* 2. удаляем файл с исходными (зашифрованными) данными */
+     if( ki.delete_source ) {
+       #ifdef AK_HAVE_UNISTD_H
+        unlink( filename );
+       #else
+        remove( filename );
+       #endif
+     }
+
+     if( !ki.quiet ) fprintf( stdout, "%s (%s): Ok\n", filename, ki.os_file );
+  }
+   else {
+    st->errcount++;
+    aktool_error("%s (wrong decryption)", filename );
+   }
+
+ /* очищаем имя выходного файла, чтобы не расшифровывать два файла в один */
+  memset( ki.os_file, 0, sizeof( ki.os_file ));
+
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -706,6 +744,7 @@
      "     --ckpass-hex        set the password for access key as hexademal string\n"
      "     --container-key     specify the secret key for access to the file container\n"
      "                         this is stronger than applying a password, but does not override the use of a public key\n"
+     "     --delete-source     delete the encrypted or decrypted file\n"
      "     --fc                set the number of fragments into which the input file will be splitted\n"
      "     --fr                use fragments of random length when splitting the input file\n"
      "     --fs                set the length of one fragment\n"
