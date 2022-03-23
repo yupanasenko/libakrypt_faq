@@ -195,6 +195,7 @@
  static const char *asn1_mgm_magma_i[] =   { "1.2.643.7.1.1.5.1.3", NULL };
  static const char *asn1_mgm_kuznechik_n[] =
                                            { "mgm-kuznechik", "mgm-kuznyechik",
+                                             "id-tc26-cipher-gostr3412-2015-kuznechik-mgm",
                                              "id-tc26-cipher-gostr3412-2015-kuznyechik-mgm", NULL };
  static const char *asn1_mgm_kuznechik_i[] =
                                            { "1.2.643.7.1.1.5.2.3", NULL };
@@ -203,7 +204,8 @@
  static const char *asn1_ctr_cmac_magma_i[] =
                                            { "1.2.643.2.52.1.6.1.1", NULL };
  static const char *asn1_ctr_cmac_kuznechik_n[] =
-                                           { "ctr-cmac-kuznechik", NULL };
+                                           { "ctr-cmac-kuznechik",
+                                             "ctr-cmac-kuznyechik", NULL };
  static const char *asn1_ctr_cmac_kuznechik_i[] =
                                            { "1.2.643.2.52.1.6.1.2", NULL };
  static const char *asn1_ctr_hmac_magma_streebog256_n[] =
@@ -215,11 +217,13 @@
  static const char *asn1_ctr_hmac_magma_streebog512_i[] =
                                            { "1.2.643.2.52.1.6.2.1.2", NULL };
  static const char *asn1_ctr_hmac_kuznechik_streebog256_n[] =
-                                           { "ctr-hmac-kuznechik-streebog256", NULL };
+                                           { "ctr-hmac-kuznechik-streebog256",
+                                             "ctr-hmac-kuznyechik-streebog256", NULL };
  static const char *asn1_ctr_hmac_kuznechik_streebog256_i[] =
                                            { "1.2.643.2.52.1.6.2.2.1", NULL };
  static const char *asn1_ctr_hmac_kuznechik_streebog512_n[] =
-                                           { "ctr-hmac-kuznechik-streebog512", NULL };
+                                           { "ctr-hmac-kuznechik-streebog512",
+                                             "ctr-hmac-kuznyechik-streebog512", NULL };
  static const char *asn1_ctr_hmac_kuznechik_streebog512_i[] =
                                            { "1.2.643.2.52.1.6.2.2.2", NULL };
  static const char *asn1_xtsmac_magma_n[] =
@@ -433,8 +437,8 @@
 /* ----------------------------------------------------------------------------------------------- */
 /* внутренности openssl */
 /* ----------------------------------------------------------------------------------------------- */
- static const char *asn1_netsmsg_n[] =       { "netscape-certificate-comment", NULL };
- static const char *asn1_netsmsg_i[] =       { "2.16.840.1.113730.1.13", NULL };
+ static const char *asn1_netsmsg_n[] =     { "netscape-certificate-comment", NULL };
+ static const char *asn1_netsmsg_i[] =     { "2.16.840.1.113730.1.13", NULL };
 
 /* ----------------------------------------------------------------------------------------------- */
 /* вот что приходится разбирать в сертификатах от КриптоПро */
