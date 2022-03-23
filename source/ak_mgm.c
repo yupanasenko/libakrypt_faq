@@ -919,6 +919,12 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*                           создание структур управления контекстом                               */
 /* ----------------------------------------------------------------------------------------------- */
+/*! \param ctx контекст aead алгоритма
+    \param crf флаг необходимости создания ключа шифрования
+    \param name идентификатор aead алгоритма
+    \return В случае успеха функция возвращает ak_error_ok (ноль). В случае возникновения ошибки
+    возвращается ее код.                                                                           */
+/* ----------------------------------------------------------------------------------------------- */
  int ak_aead_create_keys( ak_aead ctx, bool_t crf, char *name )
 {
    if(( ctx->oid = ak_oid_find_by_name( name )) == NULL )
@@ -1000,11 +1006,14 @@
                                                                      "using null pointer to oid" );
   if( oid->mode != aead ) return ak_error_message( ak_error_oid_mode, __func__,
                                                                   "using oid with non aead mode" );
-
   if( strncmp( oid->name[0], "mgm-magma", 9 ) == 0 )
     return ak_aead_create_mgm_magma( ctx, crf );
   if( strncmp( oid->name[0], "mgm-kuznechik", 13 ) == 0 )
     return ak_aead_create_mgm_kuznechik( ctx, crf );
+  if( strncmp( oid->name[0], "xtsmac-magma", 12 ) == 0 )
+    return ak_aead_create_xtsmac_magma( ctx, crf );
+  if( strncmp( oid->name[0], "xtsmac-kuznechik", 16 ) == 0 )
+    return ak_aead_create_xtsmac_kuznechik( ctx, crf );
 
  return ak_error_message( ak_error_wrong_oid, __func__, "using unsupported oid" );
 }

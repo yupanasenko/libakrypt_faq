@@ -108,13 +108,13 @@
                         _("using unsupported name or identifier \"%s\" for encryption mode"),
                                                                                           optarg );
                      printf(
-                        _("try \"aktool s --oid aead\" for list of all available identifiers\n"));
+                         _("try \"aktool s --oid aead\" for list of all available identifiers\n"));
                      return EXIT_FAILURE;
                    }
                    if( ki.heset.mode->mode != aead ) {
                      aktool_error(_("using non aead object identifier \"%s\""), optarg );
                      printf(
-                        _("try \"aktool s --oid aead\" for list of all available identifiers\n"));
+                         _("try \"aktool s --oid aead\" for list of all available identifiers\n"));
                      return EXIT_FAILURE;
                    }
                    break;
@@ -725,6 +725,13 @@
   lab_exit2:
  /* очищаем память и удаляем генератор случайных чисел */
    if( st.key != NULL ) ak_oid_delete_object( ((ak_skey)st.key)->oid , st.key );
+
+ /* проверяем на наличие ошибок при шифровании */
+   if( errcount ) {
+     if( !ki.quiet ) aktool_error(_("aktool found %d error(s), "
+            "rerun aktool with \"--audit-file stderr\" option or see syslog messages"), errcount );
+     exitcode = EXIT_FAILURE;
+   }
 
  return exitcode;
 }

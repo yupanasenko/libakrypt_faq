@@ -348,7 +348,7 @@ if( CMAKE_HOST_UNIX )
   install( TARGETS aktool DESTINATION bin )
   if( GETTEXT_FOUND )
     install( CODE "execute_process( COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.po -o ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo )" )
-    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo DESTINATION ${CMAKE_INSTALL_FULL_LOCALEDIR}/ru/LC_MESSAGES )
+    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo DESTINATION ${CMAKE_INSTALL_FULL_LOCALEDIR}/ru_RU/LC_MESSAGES )
   endif()
 
  # инсталлируем заголовочные файлы и документацию к библиотеке

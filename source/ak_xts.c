@@ -293,10 +293,12 @@
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_xtsmac_authentication_clean( ak_xtsmac_ctx ctx,
-                            ak_bckey authenticationKey, const ak_pointer iv, const size_t iv_size )
+ static int ak_xtsmac_authentication_clean( ak_pointer actx,
+                                       ak_pointer akey, const ak_pointer iv, const size_t iv_size )
 {
   int error = ak_error_ok;
+  ak_xtsmac_ctx ctx = actx;
+  ak_bckey authenticationKey = akey;
   ak_uint64 lvector[6] = { 0, 0, 0, 0, 0, 0 };
   ak_uint8 liv[16] = { 0x35, 0xea, 0x16, 0xc4, 0x06, 0x36, 0x3a, 0x30,
                         0xbf, 0x0b, 0x2e, 0x69, 0x39, 0x92, 0xb5, 0x8f }; /* разложение числа pi,
@@ -447,10 +449,12 @@
          }
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_xtsmac_authentication_update( ak_xtsmac_ctx ctx,
-                      ak_bckey authenticationKey, const ak_pointer adata, const size_t adata_size )
+ static int ak_xtsmac_authentication_update( ak_pointer actx,
+                                 ak_pointer akey, const ak_pointer adata, const size_t adata_size )
 {
   register ak_uint64 v = 0;
+  ak_xtsmac_ctx ctx = actx;
+  ak_bckey authenticationKey = akey;
   const ak_uint64 *inptr = (const ak_uint64 *)adata;
 #ifdef AK_HAVE_STDALIGN_H
   alignas(32)
@@ -535,10 +539,12 @@
     \return В случае успеха функция возвращает ak_error_ok (ноль).
     В случае возникновения ошибки возвращается ее код.                                             */
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_xtsmac_authentication_finalize( ak_xtsmac_ctx ctx,
-                               ak_bckey authenticationKey, ak_pointer out, const size_t out_size )
+ static int ak_xtsmac_authentication_finalize( ak_pointer actx,
+                                           ak_pointer akey, ak_pointer out, const size_t out_size )
 {
   register ak_uint64 v;
+  ak_xtsmac_ctx ctx = actx;
+  ak_bckey authenticationKey = akey;
 #ifdef AK_HAVE_STDALIGN_H
   alignas(32)
 #endif
@@ -606,10 +612,19 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_xtsmac_encryption_update( ak_xtsmac_ctx ctx, ak_bckey encryptionKey,
+ static int ak_xtsmac_encryption_clean( ak_pointer ectx,
+                                      ak_pointer ekey, const ak_pointer iv, const size_t iv_size )
+{
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_xtsmac_encryption_update( ak_pointer actx, ak_pointer ekey, ak_pointer akey,
                                           const ak_pointer in, ak_pointer out, const size_t size )
 {
   register ak_uint64 v = 0;
+  ak_xtsmac_ctx ctx = actx;
+  ak_bckey encryptionKey = ekey;
   ak_uint64 *outptr = (ak_uint64 *)out;
   const ak_uint64 *inptr = (const ak_uint64 *)in;
 #ifdef AK_HAVE_STDALIGN_H
@@ -679,10 +694,12 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- static int ak_xtsmac_decryption_update( ak_xtsmac_ctx ctx, ak_bckey encryptionKey,
+ static int ak_xtsmac_decryption_update( ak_pointer actx, ak_pointer ekey, ak_pointer akey,
                                           const ak_pointer in, ak_pointer out, const size_t size )
 {
   register ak_uint64 v = 0;
+  ak_xtsmac_ctx ctx = actx;
+  ak_bckey encryptionKey = ekey;
   ak_uint64 *outptr = (ak_uint64 *)out;
   const ak_uint64 *inptr = (const ak_uint64 *)in;
 #ifdef AK_HAVE_STDALIGN_H
@@ -833,7 +850,7 @@
   }
 
  /* потом зашифровываем данные */
-  if(( error = ak_xtsmac_encryption_update( &ctx, encryptionKey,
+  if(( error = ak_xtsmac_encryption_update( &ctx, encryptionKey, authenticationKey,
                                                              in, out, size )) != ak_error_ok ) {
      ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), &((ak_bckey)encryptionKey)->key.generator );
      return ak_error_message( error, __func__, "incorrect encryption of plain data" );
@@ -906,7 +923,7 @@
   }
 
  /* потом зашифровываем данные */
-  if(( error = ak_xtsmac_decryption_update( &ctx, encryptionKey,
+  if(( error = ak_xtsmac_decryption_update( &ctx, encryptionKey, authenticationKey,
                                                              in, out, size )) != ak_error_ok ) {
      ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), &((ak_bckey)encryptionKey)->key.generator );
      return ak_error_message( error, __func__, "incorrect encryption of plain data" );
@@ -924,6 +941,60 @@
   if( ak_ptr_is_equal_with_log( icode2, icode, icode_size )) return ak_error_ok;
 
  return ak_error_not_equal_data;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                                создание контекста aead алгоритма                                */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_aead_create_xtsmac_magma( ak_aead ctx, bool_t crf )
+{
+   int error = ak_error_ok;
+
+   if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to aead context" );
+   memset( ctx, 0, sizeof( struct aead ));
+   if(( ctx->ictx = malloc( sizeof( struct xtsmac_ctx ))) == NULL )
+     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
+   if(( error = ak_aead_create_keys( ctx, crf, "xtsmac-magma" )) != ak_error_ok ) {
+     if( ctx->ictx != NULL ) free( ctx->ictx );
+     return ak_error_message( error, __func__, "incorrect secret keys context creation" );
+   }
+
+   ctx->tag_size = 8; /* длина блока алгоритма Магма */
+   ctx->auth_clean = ak_xtsmac_authentication_clean;
+   ctx->auth_update = ak_xtsmac_authentication_update;
+   ctx->auth_finalize = ak_xtsmac_authentication_finalize;
+   ctx->enc_clean = ak_xtsmac_encryption_clean;
+   ctx->enc_update = ak_xtsmac_encryption_update;
+   ctx->dec_update = ak_xtsmac_decryption_update;
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_aead_create_xtsmac_kuznechik( ak_aead ctx, bool_t crf )
+{
+   int error = ak_error_ok;
+
+   if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to aead context" );
+   memset( ctx, 0, sizeof( struct aead ));
+   if(( ctx->ictx = malloc( sizeof( struct xtsmac_ctx ))) == NULL )
+     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
+   if(( error = ak_aead_create_keys( ctx, crf, "xtsmac-kuznechik" )) != ak_error_ok ) {
+     if( ctx->ictx != NULL ) free( ctx->ictx );
+     return ak_error_message( error, __func__, "incorrect secret keys context creation" );
+   }
+
+   ctx->tag_size = 16; /* длина блока алгоритма Кузнечик */
+   ctx->auth_clean = ak_xtsmac_authentication_clean;
+   ctx->auth_update = ak_xtsmac_authentication_update;
+   ctx->auth_finalize = ak_xtsmac_authentication_finalize;
+   ctx->enc_clean = ak_xtsmac_encryption_clean;
+   ctx->enc_update = ak_xtsmac_encryption_update;
+   ctx->dec_update = ak_xtsmac_decryption_update;
+
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

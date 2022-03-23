@@ -1163,7 +1163,7 @@ extern "C" {
 /*! Создание контекста алгоритма аутентифицированного шифрования xtsmac для блочного шифра Магма */
  dll_export int ak_aead_create_xtsmac_magma( ak_aead , bool_t );
 /*! Создание контекста алгоритма аутентифицированного шифрования xtsmac для блочного шифра Кузнечик */
- dll_export int ak_aead_create_xtsmac_magma( ak_aead , bool_t );
+ dll_export int ak_aead_create_xtsmac_kuznechik( ak_aead , bool_t );
 /*! Создание контекста алгоритма аутентифицированного шифрования по заданному oid  */
  dll_export int ak_aead_create_oid( ak_aead , bool_t, ak_oid );
 /*! Удаление контекста алгоритма аутентифицированного шифрования xtsmac  */

@@ -743,7 +743,8 @@
     current += ((ak_uint64)(buffer[head -6]) << 40 );
     current += ((ak_uint64)(buffer[head -7]) << 48 );
     current += ((ak_uint64)(buffer[head -8]) << 56 );
-    if( current > ( total -head -16 )) {
+
+    if( current > ( total -head -ak_min( 16, ctx.tag_size ))) {
       ak_error_message( ak_error_wrong_length, __func__, "wrong reading of fragment's length" );
       goto lab_exit4;
     }
@@ -843,7 +844,7 @@
     }
 
    /* уточняем размер оставшихся данных и переходм к следующему фрагменту */
-    total -= (current +head +16);
+    total -= (current + head + ak_min( 16, ctx.tag_size));
    }
 
  /* очищием файловые дескрипторы, ключевые контексты, промежуточные данные и выходим */
