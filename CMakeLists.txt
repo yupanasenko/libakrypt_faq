@@ -24,6 +24,7 @@ option( AK_SHARED_LIB "Build the shared library" ON )
 option( AK_STATIC_LIB "Build the static library" OFF )
 option( AK_TESTS "Build test for libakrypt" OFF )
 option( AK_TESTS_GMP "Build comparison tests for gmp and libakrypt" OFF )
+string( COMPARE EQUAL ${CMAKE_HOST_SYSTEM_NAME} "FreeBSD" AK_FREEBSD )
 
 # -------------------------------------------------------------------------------------------------- #
 # Перечень опций, которые имеют предустановленные значения и могут изменяться через командную строку
@@ -139,6 +140,14 @@ add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
 add_compile_options( -DLIBAKRYPT_COMPILER_NAME="${CMAKE_C_COMPILER}" )
 add_compile_options( -DLIBAKRYPT_COMPILER_VERSION="${CMAKE_C_COMPILER_VERSION}" )
 add_compile_options( -DLIBAKRYPT_CA_PATH="${AK_CA_PATH}" )
+if( CMAKE_HOST_UNIX )
+  if( AK_FREEBSD )
+    set( AK_LOCALE_PATH "/usr/local/share/locale" )
+  else()
+    set( AK_LOCALE_PATH "/usr/share/locale" )
+  endif()
+  add_compile_options( -DLIBAKRYPT_LOCALE_PATH="${AK_LOCALE_PATH}" )
+endif()
 
 if( AK_SHARED_LIB )
   add_library( akbase-shared SHARED ${MAIN_HEADERS} ${AKBASE_SOURCES} )
@@ -346,7 +355,7 @@ if( CMAKE_HOST_UNIX )
   install( TARGETS aktool DESTINATION bin )
   if( XGETTEXT )
     install( CODE "execute_process( COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.po -o ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo )" )
-    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo DESTINATION /usr/share/locale/ru/LC_MESSAGES/ )
+    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo DESTINATION ${AK_LOCALE_PATH}/ru/LC_MESSAGES/ )
   endif()
 
  # инсталлируем заголовочные файлы и документацию к библиотеке
