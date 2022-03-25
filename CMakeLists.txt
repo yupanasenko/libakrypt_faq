@@ -139,7 +139,6 @@ add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
 add_compile_options( -DLIBAKRYPT_COMPILER_NAME="${CMAKE_C_COMPILER}" )
 add_compile_options( -DLIBAKRYPT_COMPILER_VERSION="${CMAKE_C_COMPILER_VERSION}" )
 add_compile_options( -DLIBAKRYPT_CA_PATH="${AK_CA_PATH}" )
-add_compile_options( -DLIBAKRYPT_LOCALE_PATH="${CMAKE_INSTALL_FULL_LOCALEDIR}" )
 
 if( AK_SHARED_LIB )
   add_library( akbase-shared SHARED ${MAIN_HEADERS} ${AKBASE_SOURCES} )
@@ -207,6 +206,7 @@ set ( ARITHMETIC_TESTS_LIST
       gf2n
       mgm01
       xtsmac01
+      aead
       asn1-build
       asn1-parse
       sign01
@@ -270,8 +270,6 @@ endforeach()
 
 # -------------------------------------------------------------------------------------------------- #
 # дополнительный (опциональный) функционал утилиты aktool
-include( FindGettext )
-
 # libbz2
 find_library( LIBBZ2_LIB bz2 )
 if( LIBBZ2_LIB )
@@ -346,9 +344,9 @@ if( CMAKE_HOST_UNIX )
  # компилируем и инсталлируем файлы с рускоязычным переводом утилиты aktool
   install( CODE "execute_process( COMMAND strip -s ${CMAKE_CURRENT_BINARY_DIR}/aktool )" )
   install( TARGETS aktool DESTINATION bin )
-  if( GETTEXT_FOUND )
+  if( XGETTEXT )
     install( CODE "execute_process( COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.po -o ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo )" )
-    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo DESTINATION ${CMAKE_INSTALL_FULL_LOCALEDIR}/ru_RU/LC_MESSAGES )
+    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo DESTINATION /usr/share/locale/ru/LC_MESSAGES/ )
   endif()
 
  # инсталлируем заголовочные файлы и документацию к библиотеке

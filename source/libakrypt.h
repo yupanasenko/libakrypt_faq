@@ -1074,7 +1074,6 @@ extern "C" {
  typedef int ( ak_function_aead )( ak_pointer, ak_pointer, const ak_pointer , const size_t ,
                  const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
                                                                        ak_pointer , const size_t );
-
 /*! \brief Зашифрование данных в режиме `mgm` с одновременной выработкой имитовставки
     согласно Р 1323565.1.026-2019. */
  dll_export int ak_bckey_encrypt_mgm( ak_pointer , ak_pointer , const ak_pointer ,
@@ -1114,21 +1113,27 @@ extern "C" {
                                                                         ak_pointer, const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Функция первичной инициализации контекста aead алгоритма перед выработкой имитовставки. */
  typedef int ( ak_function_aead_authentication_clean )
                                      ( ak_pointer , ak_pointer , const ak_pointer , const size_t );
+/*! \brief Функция обновления контекста aead алгоритма в процессе выработки имитовставки. */
  typedef int ( ak_function_aead_authentication_update)
                                      ( ak_pointer , ak_pointer , const ak_pointer , const size_t );
+/*! \brief Функция закрытия контекста aead алгоритма в процессе выработки имитовставки. */
  typedef int ( ak_function_aead_authentication_finalize)
                                         ( ak_pointer , ak_pointer , ak_pointer out, const size_t );
+/*! \brief Функция первичной инициализации контекста aead алгоритма перед шифрованием данных. */
  typedef int ( ak_function_aead_encryption_clean )
                                      ( ak_pointer , ak_pointer , const ak_pointer , const size_t );
+/*! \brief Функция обновления контекста aead алгоритма в процессе зашифрования данных. */
  typedef int ( ak_function_aead_encryption_update )
                  ( ak_pointer , ak_pointer , ak_pointer , ak_pointer , ak_pointer , const size_t );
+/*! \brief Функция обновления контекста aead алгоритма в процессе расшифрования данных. */
  typedef int ( ak_function_aead_decryption_update )
                  ( ak_pointer , ak_pointer , ak_pointer , ak_pointer , ak_pointer , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! \brief Общая структура aead алгоритма */
+/*! \brief Контекст алгоритма аутентифицированного шифрования */
  typedef struct aead {
   /*! \brief Ключ шифрования */
    ak_pointer encryptionKey;
@@ -1154,19 +1159,19 @@ extern "C" {
   ak_function_aead_authentication_finalize *auth_finalize;
 } *ak_aead;
 
-/*! Создание контекста алгоритма аутентифицированного шифрования Р 1323565.1.024-2019
+/*! \brief Создание контекста алгоритма аутентифицированного шифрования Р 1323565.1.024-2019
     для блочного шифра Магма */
  dll_export int ak_aead_create_mgm_magma( ak_aead , bool_t );
-/*! Создание контекста алгоритма аутентифицированного шифрования Р 1323565.1.024-2019
+/*! \brief Создание контекста алгоритма аутентифицированного шифрования Р 1323565.1.024-2019
     для блочного шифра Кузнечик */
  dll_export int ak_aead_create_mgm_kuznechik( ak_aead , bool_t );
-/*! Создание контекста алгоритма аутентифицированного шифрования xtsmac для блочного шифра Магма */
+/*! \brief Создание контекста алгоритма аутентифицированного шифрования xtsmac для блочного шифра Магма */
  dll_export int ak_aead_create_xtsmac_magma( ak_aead , bool_t );
-/*! Создание контекста алгоритма аутентифицированного шифрования xtsmac для блочного шифра Кузнечик */
+/*! \brief Создание контекста алгоритма аутентифицированного шифрования xtsmac для блочного шифра Кузнечик */
  dll_export int ak_aead_create_xtsmac_kuznechik( ak_aead , bool_t );
-/*! Создание контекста алгоритма аутентифицированного шифрования по заданному oid  */
+/*! \brief Создание контекста алгоритма аутентифицированного шифрования по заданному oid  */
  dll_export int ak_aead_create_oid( ak_aead , bool_t, ak_oid );
-/*! Удаление контекста алгоритма аутентифицированного шифрования xtsmac  */
+/*! \brief Удаление контекста алгоритма аутентифицированного шифрования xtsmac  */
  dll_export int ak_aead_destroy( ak_aead );
 
 /** @} */

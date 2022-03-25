@@ -1,16 +1,16 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
+# This file is distributed under the same license as the aktool package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #: aktool.c:35 aktool.c:36 aktool.c:37 aktool.c:38 aktool.c:39 aktool.c:40
-#: aktool.c:41 aktool.c:42 aktool.c:43
+#: aktool.c:41 aktool.c:42 aktool.c:43 aktool.c:77
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-03-23 20:45+0300\n"
+"Project-Id-Version: aktool\n"
+"Report-Msgid-Bugs-To: Axel Kenzo <axelkenzo@mail.ru\n"
+"POT-Creation-Date: 2022-03-25 16:48+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,166 +19,58 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: aktool.c:77
-msgid "ru"
-msgstr ""
-
-#: aktool.c:79 aktool.c:80
-msgid "aktool"
-msgstr ""
-
-#: aktool.c:87
-msgid "-h"
-msgstr ""
-
-#: aktool.c:88
-msgid "--help"
-msgstr ""
-
-#: aktool.c:89
-msgid "/?"
-msgstr ""
-
-#: aktool.c:90
-msgid "--version"
-msgstr ""
-
-#: aktool.c:95
-#, c-format
-msgid "%s\\.config\\libakrypt\\aktool.log"
-msgstr ""
-
-#: aktool.c:102 aktool.c:105
-#, c-format
-msgid "%s started at %s"
-msgstr ""
-
-#: aktool.c:112
-msgid "s"
-msgstr ""
-
-#: aktool.c:113
-msgid "show"
-msgstr ""
-
-#: aktool.c:114
-msgid "a"
-msgstr ""
-
-#: aktool.c:115
-msgid "asn1parse"
-msgstr ""
-
-#: aktool.c:116
-msgid "test"
-msgstr ""
-
-#: aktool.c:117
-msgid "k"
-msgstr ""
-
-#: aktool.c:118
-msgid "key"
-msgstr ""
-
-#: aktool.c:119
-msgid "i"
-msgstr ""
-
-#: aktool.c:120
-msgid "icode"
-msgstr ""
-
-#: aktool.c:121
-msgid "e"
-msgstr ""
-
-#: aktool.c:122
-msgid "encrypt"
-msgstr ""
-
-#: aktool.c:123
-msgid "d"
-msgstr ""
-
-#: aktool.c:124
-msgid "decrypt"
-msgstr ""
-
 #: aktool.c:129
 #, c-format
 msgid "undefined command \"%s\""
-msgstr ""
-
-#: aktool.c:149
-msgid "a+"
-msgstr ""
-
-#: aktool.c:152
-#, c-format
-msgid "%s\n"
-msgstr ""
-
-#: aktool.c:161
-msgid "stderr"
-msgstr ""
+msgstr "неподдерживаемая команда \"%s\""
 
 #: aktool.c:192
 #, c-format
-msgid "%serror%s: %s\n"
+msgid "%sошибка%s: %s\n"
 msgstr ""
 
 #: aktool.c:206
 msgid "incorrect initialization of libakrypt library"
-msgstr ""
-
-#: aktool.c:211
-msgid "openssl_compability "
-msgstr ""
-
-#: aktool.c:238
-#, c-format
-msgid "%s"
-msgstr ""
+msgstr "ошибочная инициализация библиотеки libakrypt"
 
 #: aktool.c:255
 #, c-format
 msgid "using file with random data: %s\n"
-msgstr ""
+msgstr "используется файл со случайными данными: %s\n"
 
 #: aktool.c:260
 #, c-format
 msgid "using random number generator: %s\n"
-msgstr ""
+msgstr "используется генератор случайных чисел: %s\n"
 
 #: aktool.c:295 aktool.c:310
 msgid "Input password [as hexademal string]: "
-msgstr ""
+msgstr "Введите пароль [как шестнадцатеричную строку]: "
 
 #: aktool.c:298 aktool.c:313
 msgid "Input password: "
-msgstr ""
+msgstr "Введите пароль: "
 
 #: aktool.c:316
 msgid "password has zero length"
-msgstr ""
+msgstr "введенный пароль имеет нулевую длину"
 
 #: aktool.c:322
 msgid "Retype password [as hexademal string]: "
-msgstr ""
+msgstr "Введите тот же пароль повторно [как шестнадцатеричную строку]: "
 
 #: aktool.c:325
 msgid "Retype password: "
-msgstr ""
+msgstr "Введите тот же пароль повторно: "
 
 #: aktool.c:329
 msgid "the passwords don't match"
-msgstr ""
+msgstr "введенные пароли не совпадают"
 
 #: aktool.c:351
 #, c-format
 msgid "Remove the file %s? [y/n]"
-msgstr ""
+msgstr "Удалить файл %s? [y/n]"
 
 #: aktool.c:370
 #, c-format
@@ -186,16 +78,18 @@ msgid ""
 "aktool - crypto utility based on libakrypt library (version: %s)\n"
 "\n"
 msgstr ""
+"aktool - консольная утилита, реализующая российские криптографические преобразования (версия %s)\n"
+"\n"
 
 #: aktool.c:372
 #, c-format
 msgid "try \"aktool --help\" to get more information\n"
-msgstr ""
+msgstr "попробуй \"aktool --help\" для получения справки\n"
 
 #: aktool.c:380
 #, c-format
 msgid "version: %s [compiled by %s, version: %s, date: %s at %s]\n"
-msgstr ""
+msgstr "версия %s [скомпилирована %s версии %s, %s в %s]\n"
 
 #: aktool.c:389
 #, c-format
@@ -218,16 +112,29 @@ msgid ""
 "     --verbose           show the additional information\n"
 "\n"
 msgstr ""
+"\n"
+"опции, общие для всех команд:\n"
+"     --audit             установить уровень аудита [ доступно: 0 (нет), 1 (обычный), 2 (максимум) ]\n"
+"     --audit-file        указать имя файла для вывода ошибок выполнения и сообщений аудита\n"
+"     --confirm           запросить подтверждение при удалении файлов\n"
+"     --dont-use-colors   не использовать цветовое выделение при выводе в консоль\n"
+"     --help              вывести эту справку\n"
+"     --hex-input         считывать символы с консоли как шестнадцатеричные числа\n"
+"     --openssl-style     использовать нестандартизированные форматы ряда криптографических преобразований\n"
+"                         (для совместимости с форматами библиотеки openssl)\n"
+"     --quiet             не выводить ни какой информации в консоль и использовать только код возврата\n"
+"     --verbose           выводить дополнительную информацию о происходящем\n"
+"\n"
 
 #: aktool.c:406
 #, c-format
 msgid "aktool - crypto utility based on libakrypt library (version: %s)\n"
-msgstr "aktool - утилита, реализующая российские криптографические механизмы (версия: %s)\n"
+msgstr "aktool - консольная утилита, реализующая российские криптографические преобразования (версия %s)\n"
 
 #: aktool.c:408
 #, c-format
 msgid "usage:\n"
-msgstr ""
+msgstr "использование:\n"
 
 #: aktool.c:409
 #, c-format
@@ -235,41 +142,43 @@ msgid ""
 "  aktool command [options] [files]\n"
 "\n"
 msgstr ""
+"  aktool команда [опции] [файл(ы)]\n"
+"\n"
 
 #: aktool.c:410
 #, c-format
 msgid "available commands (in short and long forms):\n"
-msgstr ""
+msgstr "доступные команды (в короткой и полной форме):\n"
 
 #: aktool.c:411
 #, c-format
 msgid "  a, asn1parse  -  decode and print the ASN.1 data\n"
-msgstr ""
+msgstr "  a, asn1parse  -  декодировать и вывести в консоль данные в формате asn1\n"
 
 #: aktool.c:412
 #, c-format
 msgid "  e, encrypt    -  encrypt given file or directory\n"
-msgstr ""
+msgstr "  e, encrypt    -  зашифровать один или несколько файлов асимметричной схемой шифрования\n"
 
 #: aktool.c:413
 #, c-format
 msgid "  d, decrypt    -  decrypt given file\n"
-msgstr ""
+msgstr "  d, decrypt    -  расшифровать один или несколько файлов\n"
 
 #: aktool.c:414
 #, c-format
 msgid "  i, icode      -  calculate or check integrity codes\n"
-msgstr ""
+msgstr "  i, icode      -  вычислить или проверить код целостности\n"
 
 #: aktool.c:415
 #, c-format
 msgid "  k, key        -  key generation and management functions\n"
-msgstr ""
+msgstr "  k, key        -  функции выработки и управления ключами\n"
 
 #: aktool.c:416
 #, c-format
 msgid "  s, show       -  show useful information\n"
-msgstr ""
+msgstr "  s, show       -  вывод дополнительной информации о криптографических преобразованиях\n"
 
 #: aktool.c:417
 #, c-format
@@ -277,21 +186,23 @@ msgid ""
 "     test       -  run performance and correct operation tests\n"
 "\n"
 msgstr ""
+"     test       -  запуск тестов на корректность и скорость работы\n"
+"\n"
 
 #: aktool.c:418
 #, c-format
 msgid "also try:\n"
-msgstr ""
+msgstr "также попробуй выполнить:\n"
 
 #: aktool.c:419
 #, c-format
 msgid "  \"aktool command --help\" to get information about command options\n"
-msgstr ""
+msgstr "  \"aktool команда --help\" для получения справки об указанной команде\n"
 
 #: aktool.c:420
 #, c-format
 msgid "  \"aktool --version\" to get version of aktool\n"
-msgstr ""
+msgstr "  \"aktool --version\" для получения версии утилиты\n"
 
 #: aktool.c:421
 #, c-format
@@ -299,8 +210,10 @@ msgid ""
 "  \"man aktool\" to get more information about aktool and useful examples\n"
 "\n"
 msgstr ""
+"  \"man aktool\" для получения подробной справки о работе программы и примерах ее применения\n"
+"\n"
 
 #: aktool.c:422
 #, c-format
 msgid "aktool compiled by %s, version: %s (%s at %s)\n"
-msgstr ""
+msgstr "утилита скомпилирована %s версии %s (%s в %s)\n"

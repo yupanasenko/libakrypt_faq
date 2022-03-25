@@ -18,7 +18,7 @@ aktool k -c user_request.csr --key-encipherment --secret-key-number `aktool k --
 aktool k -v user.crt --ca-cert ca.crt --verbose
 #
 # 4. Вырабатываем данные для тестирования
-dd if=/dev/zero of=file bs=1M count=256
+dd if=/dev/zero of=file bs=1M count=32
 aktool i file -o results.streebog
 #
 # -------------------------------------------------------------------------------------
@@ -27,7 +27,7 @@ aktool i file -o results.streebog
 # алгоритм шифрования Кузнечик в режиме MGM (по-умолчанию)
 # -------------------------------------------------------------------------------------
 echo; echo "Эксперимент N1. Простое шифрование."
-aktool e file -m xtsmac-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file01.bin --delete-source
+aktool e file --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file01.bin --delete-source
 #
 # выводим информацию о зашифрованном файле
 echo; echo "Значение хешкода для зашифрованного файла"
@@ -47,7 +47,7 @@ echo; echo "Создаем ключ для шифрования контейне
 aktool k -nt hmac-streebog512 -o psk.512 --outpass mag13s
 #
 echo; echo "Экперимент N2. Шифрование с использованием ключа контейнера и предварительным сжатием"
-aktool e file -m xtsmac-magma --bz2 --ck psk.512 --ckpass mag13s --cert user.crt --ca-cert ca.crt --delete-source -o file02.bin --audit 2 --audit-file stderr
+aktool e file -m mgm-magma --bz2 --ck psk.512 --ckpass mag13s --cert user.crt --ca-cert ca.crt --delete-source -o file02.bin
 # выводим информацию о зашифрованном файле
 echo; echo "Значение хешкода для зашифрованного файла"
 aktool i file02.bin
@@ -55,6 +55,26 @@ ls -la file02.bin
 #
 # Расшифрование исходных данных
 aktool d file02.bin --ck psk.512 --ckpass mag13s --key user.key --keypass 1Qlm21u --delete-source
+aktool i -c results.streebog --dont-show-stat
+#
+# -------------------------------------------------------------------------------------
+# Третий эксперимент, тестирующий различные алгоритмы шифрования
+# -------------------------------------------------------------------------------------
+echo; echo "Эксперимент N3. Многократное шифрование в различных режимах."
+aktool e file -m xtsmac-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file03.bin --delete-source
+aktool e file03.bin -m xtsmac-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file04.bin --delete-source
+aktool e file04.bin -m mgm-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file05.bin --delete-source
+aktool e file05.bin -m mgm-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file06.bin --delete-source
+#
+echo; echo "Процесс зашифрования завершен."
+aktool i file06.bin
+ls -la file06.bin
+#
+echo
+aktool d file06.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
+aktool d file05.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
+aktool d file04.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
+aktool d file03.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
 aktool i -c results.streebog --dont-show-stat
 #
 # -------------------------------------------------------------------------------------
