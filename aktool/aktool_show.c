@@ -42,7 +42,7 @@
 
  /* разбираем опции командной строки */
   do {
-       next_option = getopt_long( argc, argv, "", long_options, NULL );
+       next_option = getopt_long( argc, argv, "h", long_options, NULL );
        switch( next_option )
       {
         aktool_common_functions_run( aktool_show_help );
@@ -214,8 +214,10 @@
      "     --modes             show all types of cryptographic modes\n"
      "     --without-caption   don't show a caption for displayed values\n"
   ));
+  aktool_print_common_options();
 
- return aktool_print_common_options();
+  printf(_("for usage examples try \"man aktool\"\n" ));
+ return EXIT_SUCCESS;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
