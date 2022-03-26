@@ -119,8 +119,10 @@
      "                         run all available algorithms on test values taken from standards and recommendations\n"
      "     --speed             measuring the speed of the crypto algorithm with a given name or identifier\n"
   ));
+  aktool_print_common_options();
 
- return aktool_print_common_options();
+  printf(_("for usage examples try \"man aktool\"\n" ));
+ return EXIT_SUCCESS;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

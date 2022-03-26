@@ -97,7 +97,7 @@
                      case mac: /* здесь перечисляются допустимые режимы выработки имитовставки */
                        break;
                      default:
-                       aktool_error(_("you must use authentication mode for block cipher"));
+                       aktool_error(_("argument of --mode option must be authentication mode (mac) for block cipher"));
                        return EXIT_FAILURE;
                    }
                    break;
@@ -581,14 +581,14 @@
    _("aktool icode [options] [files or directories]  - calculate or checking integrity codes for given files\n\n"
      "available options:\n"
      " -a, --algorithm         set the name or identifier of integrity function (used only for integrity checking)\n"
-     "                         default algorithm is \"streebog256\" defined by GOST R 34.10-2012\n"
-     " -c, --check             check previously generated authrntication or integrity codes\n"
+     "                         default algorithm is \"streebog256\" defined by RFC 6986\n"
+     " -c, --check             check previously generated authentication or integrity codes\n"
      "     --dont-show-stat    don't show a statistical results after checking\n"
      "     --ignore-errors     don't break a check if file is missing or corrupted\n"
      "     --inpass            set the password for the secret key to be read directly in command line\n"
      "     --inpass-hex        read the password for the secret key as hexademal string\n"
      "     --key               specify the name of file with the secret key\n"
-     " -m, --mode              set the block cipher mode [enambled values: cmac]\n"
+     " -m, --mode              set the block cipher mode [enabled values: cmac-{cipher}]\n"
      "     --no-derive         do not use derived keys for file authentication\n"
      " -o, --output            set the output file for generated authentication or integrity codes\n"
      " -p, --pattern           set the pattern which is used to find files\n"

@@ -137,7 +137,7 @@ include_directories( "source" )
 include_directories( ${CMAKE_CURRENT_BINARY_DIR} )
 add_compile_options( -DLIBAKRYPT_OPTIONS_PATH="${AK_CONFIG_PATH}" )
 add_compile_options( -DLIBAKRYPT_VERSION="${FULL_VERSION}" )
-add_compile_options( -DLIBAKRYPT_COMPILER_NAME="${CMAKE_C_COMPILER}" )
+add_compile_options( -DLIBAKRYPT_COMPILER_NAME="${CMAKE_C_COMPILER_ID}" )
 add_compile_options( -DLIBAKRYPT_COMPILER_VERSION="${CMAKE_C_COMPILER_VERSION}" )
 add_compile_options( -DLIBAKRYPT_CA_PATH="${AK_CA_PATH}" )
 if( CMAKE_HOST_UNIX )
@@ -350,18 +350,21 @@ if( CMAKE_HOST_UNIX )
     install( TARGETS akrypt-shared LIBRARY DESTINATION lib ARCHIVE DESTINATION lib )
   endif()
 
- # компилируем и инсталлируем файлы с рускоязычным переводом утилиты aktool
-  install( CODE "execute_process( COMMAND strip -s ${CMAKE_CURRENT_BINARY_DIR}/aktool )" )
-  install( TARGETS aktool DESTINATION bin )
-  if( XGETTEXT )
-    install( CODE "execute_process( COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.po -o ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo )" )
-    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo DESTINATION ${AK_LOCALE_PATH}/ru/LC_MESSAGES/ )
-  endif()
-
  # инсталлируем заголовочные файлы и документацию к библиотеке
   install( FILES ${MAIN_HEADERS} DESTINATION include )
   install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/libakrypt.conf DESTINATION ${AK_CONFIG_PATH} )
   install( FILES ${LIBAKRYPT_DOCUMENTATION} DESTINATION ${CMAKE_INSTALL_FULL_DOCDIR} )
+
+ # инсталлируем aktool
+  install( CODE "execute_process( COMMAND strip -s ${CMAKE_CURRENT_BINARY_DIR}/aktool )" )
+  install( TARGETS aktool DESTINATION bin )
+
+ # компилируем и инсталлируем файлы с рускоязычным переводом утилиты aktool
+  include( FindGettext )
+  if( GETTEXT_MSGFMT_EXECUTABLE )
+    install( CODE "execute_process( COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.po -o ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo )" )
+    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.mo DESTINATION ${AK_LOCALE_PATH}/ru/LC_MESSAGES/ )
+  endif()
 
  # инсталлируем мануал для aktool
   set( AK_MAN_PATH ${CMAKE_INSTALL_FULL_MANDIR}/ru/man1 )
