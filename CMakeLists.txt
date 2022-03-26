@@ -221,7 +221,8 @@ set ( ARITHMETIC_TESTS_LIST
       sign01
       asn1-keys
       blom-keys
-      cmac
+      cmac01
+      cmac02
       hmac
       kdf-state
     )

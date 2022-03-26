@@ -169,6 +169,7 @@
 {
   if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                         "using null pointer to block cipher key" );
+  bkey->ivector_size = 0;
   memset( bkey->ivector, 0, sizeof( bkey->ivector ));
 
   return ak_error_ok;
@@ -192,40 +193,88 @@
     а также алгоритмы вычисления имитовставки с помощью алгоритмов хеширования, см. класс \ref hmac.
 
     Последовательный вызов всех трех функций может быть заменен вызовом функции ak_bckey_cmac().
+    Можно привести следующие примеры вычисления имитоставки.
+
+ \code
+    ak_uint8 data[37], imito[8];
+
+    ak_bckey_cmac_clean( &key );
+    ak_bckey_cmac_update( &key, data, 16 );
+    ak_bckey_cmac_update( &key, data +16, 16 );
+    ak_bckey_cmac_finalize( &key, data +32, 5, imito, sizeof( imito ));
+ \endcode
+
+    или
+
+ \code
+    ak_bckey_cmac_clean( &key );
+    ak_bckey_cmac_update( &key, data, 37 );
+    ak_bckey_cmac_finalize( &key, NULL, 0, imito, sizeof( imito ));
+ \endcode
 
     \param bkey Контекст секретного ключа блочного алгоритма шифрования.
     \param in Указатель на входные данные для которых вычисляется имитовставка.
-    \param size Размер входных данных в октетах (должен быть кратен длине блока алгоритма шифрования).
+    \param size Размер входных данных в октетах.
+     Если данные планируется обрабатывать несколькими фрагментами, то size должен быть кратен длине блока.
+     В противном случае, считается, что фрагмент данных является последним и
+     последующие вызовы функции блокируются. При этом, также,
+     игнорирубтся данные, подаваемые на вход функции ak_bckey_cmac_finalize().
+
     \return В случае успеха функция возвращает ak_error_ok. В случае возникновения ошибки
     возвращается ее код.                                                                           */
 /* ----------------------------------------------------------------------------------------------- */
  int ak_bckey_cmac_update( ak_bckey bkey, const ak_pointer in, const size_t size )
 {
-  ak_int64 i, blocks = 0;
-  ak_uint64 *yaout = NULL, *inptr = (ak_uint64 *)in;
+  ak_int64 i, blocks = 0, tail = 0;
+  ak_uint64 *yaout = NULL, *lastout = NULL, *inptr = (ak_uint64 *)in;
 
+ /* проверяем указатель на ключ и целостность ключа */
   if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                         "using null pointer to block cipher key" );
-  if(( size%bkey->bsize ) != 0 ) return ak_error_message( ak_error_wrong_length, __func__,
-                                                                "using a data with wrong length" );
- /* проверяем целостность ключа */
   if( bkey->key.check_icode( &bkey->key ) != ak_true )
     return ak_error_message( ak_error_wrong_key_icode, __func__,
                                                   "incorrect integrity code of secret key value" );
-
- /* уменьшаем значение ресурса ключа */
+ /* определяем количество блоков поступившей на вход информации */
   blocks = (ak_int64)size/bkey->bsize;
-  if( bkey->key.resource.value.counter < ( blocks + 1 ))
+  tail = size - ( blocks*bkey->bsize );
+
+ /* проверяем ресурс ключа */
+  if( bkey->key.resource.value.counter < ( blocks + ( tail > 0 )))
     return ak_error_message( ak_error_low_key_resource, __func__ ,
                                                               "low resource of block cipher key" );
-   else bkey->key.resource.value.counter -= blocks; /* уменьшаем ресурс ключа */
+ /* формируем указатели */
+  yaout = (ak_uint64 *) bkey->ivector;
+  lastout = (ak_uint64 *) bkey->ivector +4; /* сдвигаемся на 4*8 = 32 байта */
+
+ /* проверяем, остались ли данные с предыдущих вызовов */
+  if( bkey->ivector_size > 0 ) {
+    if( bkey->ivector_size < bkey->bsize ) { /* здесь находится неполный блок,
+                            т.е. дальнейшее вычисление имитовставки невозможно */
+      return ak_error_message( ak_error_ok, __func__, "attempt to updating the locked context" );
+    }
+    bkey->key.resource.value.counter--; /* уменьшаем ресурс ключа */
+    switch( bkey->bsize ) {
+      case  8 :
+         /* здесь длина блока равна 64 бита */
+          yaout[0] ^= lastout[0];
+          bkey->encrypt( &bkey->key, yaout, yaout );
+          break;
+      case 16 :
+         /* здесь длина блока равна 128 бит */
+          yaout[0] ^= lastout[0];
+          yaout[1] ^= lastout[1];
+          bkey->encrypt( &bkey->key, yaout, yaout );
+          break;
+    }
+    bkey->ivector_size = 0;
+    memset( lastout, 0, bkey->bsize ); /* это, чтоб наверняка */
+  }
 
  /* основной цикл */
-  yaout = (ak_uint64 *) bkey->ivector;
   switch( bkey->bsize ) {
    case  8 :
          /* здесь длина блока равна 64 бита */
-            for( i = 0; i < blocks; i++, inptr++ ) {
+            for( i = 0; i < blocks - ( 1 - ( tail > 0 )); i++, inptr++ ) {
                yaout[0] ^= inptr[0];
                bkey->encrypt( &bkey->key, yaout, yaout );
             }
@@ -233,13 +282,19 @@
 
    case 16 :
           /* здесь длина блока равна 128 бит */
-            for( i = 0; i < blocks; i++, inptr += 2 ) {
+            for( i = 0; i < blocks - ( 1 - ( tail > 0 )); i++, inptr += 2 ) {
                yaout[0] ^= inptr[0];
                yaout[1] ^= inptr[1];
                bkey->encrypt( &bkey->key, yaout, yaout );
             }
             break;
   }
+  bkey->key.resource.value.counter -= ( blocks - ( 1 - ( tail > 0 ))); /* уменьшаем ресурс ключа */
+
+ /* поскольку длина bckey->ivector слишком велика,
+    мы можем хранить в нем не только текущее значение шифртекста,
+    но и фрагмент открытого текста */
+  memcpy( lastout, inptr, bkey->ivector_size = ( tail > 0 ? tail : bkey->bsize ));
 
  return ak_error_ok;
 }
@@ -262,11 +317,28 @@
     а также алгоритмы вычисления имитовставки с помощью алгоритмов хеширования, см. класс \ref hmac.
 
     Последовательный вызов всех трех функций может быть заменен вызовом функции ak_bckey_cmac().
+    Можно привести следующие примеры вычисления имитоставки.
+
+ \code
+    ak_uint8 data[37], imito[8];
+
+    ak_bckey_cmac_clean( &key );
+    ak_bckey_cmac_update( &key, data, 16 );
+    ak_bckey_cmac_update( &key, data +16, 16 );
+    ak_bckey_cmac_finalize( &key, data +32, 5, imito, sizeof( imito ));
+ \endcode
+
+    или
+
+ \code
+    ak_bckey_cmac_clean( &key );
+    ak_bckey_cmac_update( &key, data, 37 );
+    ak_bckey_cmac_finalize( &key, NULL, 0, imito, sizeof( imito ));
+ \endcode
 
     \param bkey Контекст секретного ключа блочного алгоритма шифрования.
     \param in Указатель на входные данные для которых вычисляется имитовставка.
-    \param size Размер входных данных в октетах (данные должны иметь длину отличную от нуля
-    и не превосходящую одного блока алгоритма шифрования).
+    \param size Размер входных данных в октетах.
     \param out Область памяти, куда будет помещен результат. Память должна быть заранее выделена.
     Размер выделяемой памяти должен совпадать с длиной блока используемого алгоритма
     блочного шифрования.
@@ -277,29 +349,37 @@
  int ak_bckey_cmac_finalize( ak_bckey bkey, const ak_pointer in, const size_t size,
                                                            ak_pointer out, const size_t out_size )
 {
+  int error = ak_error_ok;
   ak_int64 oc = (int) ak_libakrypt_get_option_by_name( "openssl_compability" ),
         #ifdef AK_LITTLE_ENDIAN
            one64[2] = { 0x02, 0x00 };
         #else
            one64[2] = { 0x0200000000000000LL, 0x00 };
         #endif
-  ak_uint64 i, *yaout, akey[2], *inptr = (ak_uint64 *)in;
+  ak_uint64 i, *yaout, akey[2], *lastout = NULL;
 
   if( bkey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                         "using null pointer to block cipher key" );
-  if( size == 0 ) return ak_error_message( ak_error_zero_length, __func__,
-                                                                 "using a data with zero length" );
-  if( size > bkey->bsize ) return ak_error_message( ak_error_zero_length, __func__,
-                                                                            "using a large data" );
   if( out == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                            "using null pointer to result buffer" );
   if( !out_size ) return ak_error_message( ak_error_zero_length, __func__,
                                                             "using zero length of result buffer" );
- /* уменьшаем значение ресурса ключа */
-  bkey->key.resource.value.counter--; /* уменьшаем ресурс ключа */
+ /* в начале прогоняем входные данные через update */
+  if( bkey->ivector_size%bkey->bsize == 0 ) {
+   if(( error = ak_bckey_cmac_update( bkey, in, size )) != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect updating a secret key context" );
+  }
 
+ /* теперь данные перемещены в lastout и должны иметь длину от bkey->bsize до 1 октета */
   memset( akey, 0, sizeof( akey ));
-  yaout = ( ak_uint64 * )bkey->ivector;
+  yaout = (ak_uint64 *) bkey->ivector;
+  lastout = (ak_uint64 *) bkey->ivector +4; /* сдвигаемся на 4*8 = 32 байта */
+
+  if( bkey->ivector_size > bkey->bsize )
+    return ak_error_message( ak_error_wrong_length, __func__,
+                                                        "unxepected length of last block length" );
+ /* уменьшаем значение ресурса ключа */
+  bkey->key.resource.value.counter--;
 
  /* основной цикл */
   switch( bkey->bsize ) {
@@ -309,19 +389,19 @@
             if( oc ) akey[0] = bswap_64( akey[0] );
             ak_gf64_mul( akey, akey, one64 );
 
-            if( size < bkey->bsize ) {
+            if( bkey->ivector_size < bkey->bsize ) {
               ak_gf64_mul( akey, akey, one64 );
-              ((ak_uint8 *)akey)[size] ^= 0x80;
+              ((ak_uint8 *)akey)[bkey->ivector_size] ^= 0x80;
             }
 
           /* теперь шифруем последний блок */
             if( oc ) {
                yaout[0] ^= bswap_64( akey[0] );
-               for( i = 0; i < size; i++ ) ((ak_uint8 *)yaout)[7-i] ^= ((ak_uint8 *)inptr)[size-1-i];
+               for( i = 0; i < bkey->ivector_size; i++ ) ((ak_uint8 *)yaout)[7-i] ^= ((ak_uint8 *)lastout)[bkey->ivector_size-1-i];
             }
               else {
                yaout[0] ^= akey[0];
-               for( i = 0; i < size; i++ ) ((ak_uint8 *)yaout)[i] ^= ((ak_uint8 *)inptr)[i];
+               for( i = 0; i < bkey->ivector_size; i++ ) ((ak_uint8 *)yaout)[i] ^= ((ak_uint8 *)lastout)[i];
               }
             bkey->encrypt( &bkey->key, yaout, akey );
           break;
@@ -335,21 +415,21 @@
               akey[1] = tmp;
             }
             ak_gf128_mul( akey, akey, one64 );
-            if( size < bkey->bsize ) {
+            if( bkey->ivector_size < bkey->bsize ) {
               ak_gf128_mul( akey, akey, one64 );
-              ((ak_uint8 *)akey)[size] ^= 0x80;
+              ((ak_uint8 *)akey)[bkey->ivector_size] ^= 0x80;
             }
 
           /* теперь шифруем последний блок*/
             if( oc ) {
                yaout[0] ^= bswap_64( akey[1] );
                yaout[1] ^= bswap_64( akey[0] );
-               for( i = 0; i < size; i++ ) ((ak_uint8 *)yaout)[15-i] ^= ((ak_uint8 *)inptr)[size-1-i];
+               for( i = 0; i < bkey->ivector_size; i++ ) ((ak_uint8 *)yaout)[15-i] ^= ((ak_uint8 *)lastout)[bkey->ivector_size-1-i];
             }
              else {
               yaout[0] ^= akey[0];
               yaout[1] ^= akey[1];
-              for( i = 0; i < size; i++ ) ((ak_uint8 *)yaout)[i] ^= ((ak_uint8 *)inptr)[i];
+              for( i = 0; i < bkey->ivector_size; i++ ) ((ak_uint8 *)yaout)[i] ^= ((ak_uint8 *)lastout)[i];
              }
             bkey->encrypt( &bkey->key, yaout, akey );
           break;
@@ -360,7 +440,6 @@
   else memcpy( out, (ak_uint8 *)akey+( out_size > bkey->bsize ? 0 : bkey->bsize-out_size ),
                                                                   ak_min( out_size, bkey->bsize ));
  return ak_error_ok;
-
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -611,15 +690,19 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-                               /* Функции тестироания реализаций */
+                               /* Функции тестирования реализаций */
 /* ----------------------------------------------------------------------------------------------- */
  bool_t ak_libakrypt_test_cmac( void )
 {
-  ak_uint8 data[64] =
+  ak_uint8 data[128] =
   { 0xdd, 0x80, 0x65, 0x59, 0xf2, 0xa6, 0x45, 0x07, 0x05, 0x76, 0x74, 0x36, 0xcc, 0x74, 0x4d, 0x23,
     0xa2, 0x42, 0x2a, 0x08, 0xa4, 0x60, 0xd3, 0x15, 0x4b, 0x7c, 0xe0, 0x91, 0x92, 0x67, 0x69, 0x01,
     0x71, 0x4e, 0xb8, 0x8d, 0x75, 0x85, 0xc4, 0xfc, 0x2f, 0x6a, 0x76, 0x43, 0x2e, 0x45, 0xd0, 0x16,
-    0xeb, 0xcb, 0x2f, 0x81, 0xc0, 0x65, 0x7c, 0x1f, 0xb1, 0x08, 0x5b, 0xda, 0x1e, 0xca, 0xda, 0xe9 };
+    0xeb, 0xcb, 0x2f, 0x81, 0xc0, 0x65, 0x7c, 0x1f, 0xb1, 0x08, 0x5b, 0xda, 0x1e, 0xca, 0xda, 0xe9,
+    0xdd, 0x80, 0x65, 0x59, 0xf2, 0xa6, 0x45, 0x07, 0x05, 0x76, 0x74, 0x36, 0xcc, 0x74, 0x4d, 0x23,
+    0xa2, 0x42, 0x2a, 0x08, 0xa4, 0x60, 0xd3, 0x15, 0x4b, 0x7c, 0xe0, 0x91, 0x92, 0x67, 0x69, 0x01,
+    0x71, 0x4e, 0xb8, 0x8d, 0x75, 0x85, 0xc4, 0xfc, 0x2f, 0x6a, 0x76, 0x43, 0x2e, 0x45, 0xd0, 0x16,
+    0xeb, 0xcb, 0x2f, 0x81, 0xc0, 0x65, 0x7c, 0x1f, 0xb1, 0x08, 0x5b, 0xda, 0x1e, 0xca, 0xda, 0xe7 };
 
   struct bckey key;
   int error = ak_error_ok;
