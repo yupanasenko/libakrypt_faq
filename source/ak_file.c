@@ -410,12 +410,11 @@
  return result;
 }
 
-
 /* ----------------------------------------------------------------------------------------------- */
                    /* Отображение файлов в память (обертка вокруг mmap) */
 /* ----------------------------------------------------------------------------------------------- */
  ak_pointer ak_file_mmap( ak_file file,
-                                    void *addr, size_t length, int prot, int flags, off_t offset )
+                                    void *addr, size_t length, int prot, int flags, size_t offset )
 {
  #ifdef AK_HAVE_SYSMMAN_H
   if(( file->addr = mmap( addr, file->mmaped_size = length,
