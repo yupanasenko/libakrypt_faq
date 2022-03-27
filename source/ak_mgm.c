@@ -8,51 +8,6 @@
  #include <libakrypt-internal.h>
 
 /* ----------------------------------------------------------------------------------------------- */
-/** \addtogroup aead-doc Аутентифицированное шифрование данных
-    \details Аутентифицированное шифрование (AEAD, Authenticated Ecncryption with Associated Data)
-    представляет собой совокупность из одного или
-    двух алгоритмов, позволяющих одновременно зашифровать данные и вычислить их имитовставку,
-    обеспечивая тем самым конфиденциальность, целостность данных (имитозащиту),
-    а также аутентификацию отправителя данных.
-
-    В общем случае аутентифицированное шифрование может рассматриваться как отображение
-    \f[
-     AEAD:\quad \mathbb A \times \mathbb P \times \mathbb K_1 \times \mathbb K_2 \rightarrow
-      \mathbb C \times \mathbb V_{m},
-    \f]
-    где
-    - \f$ \mathbb A \subset \mathbb V_\infty\f$ -- пространство ассоциированных данных, т.е.
-    данных, которые передаются в незашифрованном виде, но для которых должна
-    обеспечиваться целостность.
-    - \f$ \mathbb P \subset \mathbb V_\infty\f$ -- пространство открытых текстов,
-    которые подлежат зашифрованию,
-    - \f$ \mathbb C \subset \mathbb V_\infty\f$ -- пространство шифртекстов,
-    - \f$ \mathbb K_1, \mathbb K_2 \f$ -- пространства ключей, используемых, соответственно, для
-    шифрования и имитозащиты.
-
-    Отметим, что в общем случае отображение, определяющее аутентифицированное шифрование,
-    может зависеть от двух секретных ключей
-     - ключа шифрования,
-     - ключа имитозащиты.
-
-    В ряде алгоритмов указаные ключи могут совпадать.
-
-    Аутентифицированное шифрование может быть реализовано как одним алгоритмом, так и комбинацией
-    двух независимых алгоритмов - шифрования и имитозащиты. Примером первого подхода служат:
-    - режим `MGM`, регламентируемый  рекомендациями по стандартизации Р 1323565.1.026-2019,
-      см. функции ak_aead_create_mgm_magma(), ak_aead_create_mgm_kuznechik().
-    - режим `XTSMAC`, разработанный авторами библиотеки,
-      см. функции ak_aead_create_xtsmac_magma(), ak_aead_create_xtsmac_kuznechik().
-
-    Примером второго подхода служат комбинации:
-    - шифрование в режиме счетчика `CTR` с вычислением имитовставки по алгоритму `CMAC`,
-    регламентируемому стандартом ГОСТ Р 34.11-2012,
-    - шифрование в режиме счетчика `CTR` с вычислением имитовставки по алгоритму `HMAC` и т.д.
-
-    \note Алгоритм аутентифицированного шифрования может не принимать на вход зашифровываемые
-    данные. В этом случае алгоритм должен действовать как обычный алгоритм имитозащиты.   */
-
-/* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура, содержащая текущее состояние внутренних переменных режима `mgm`
    аутентифицированного шифрования. */
  typedef struct mgm_ctx {
@@ -921,35 +876,6 @@
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param ctx контекст aead алгоритма
     \param crf флаг необходимости создания ключа шифрования
-    \param name идентификатор aead алгоритма
-    \return В случае успеха функция возвращает ak_error_ok (ноль). В случае возникновения ошибки
-    возвращается ее код.                                                                           */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_aead_create_keys( ak_aead ctx, bool_t crf, char *name )
-{
-   if(( ctx->oid = ak_oid_find_by_name( name )) == NULL )
-     return ak_error_message_fmt( ak_error_oid_name, __func__, "invalid oid name \"%s\"", name );
-   if( ctx->oid->mode != aead ) return ak_error_message_fmt( ak_error_oid_mode, __func__,
-                                                             "oid mode must be an \"aead mode\"" );
-  /* создаем ключи (значения не присваиваем) */
-   if(( ctx->authenticationKey = ak_oid_new_second_object( ctx->oid )) == NULL )
-     return ak_error_message( ak_error_get_value(), __func__,
-                                            "incorrect memory allocation for authentication key" );
-   ctx->encryptionKey = NULL;
-   if( crf ) { /* по запросу пользователя создаем ключ шифрования */
-     if(( ctx->encryptionKey = ak_oid_new_object( ctx->oid )) == NULL ) {
-       ak_oid_delete_second_object( ctx->authenticationKey, ctx->oid );
-       return ak_error_message( ak_error_get_value(), __func__,
-                                                "incorrect memory allocation for encryption key" );
-     }
-   }
-
- return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \param ctx контекст aead алгоритма
-    \param crf флаг необходимости создания ключа шифрования
     \return В случае успеха функция возвращает ak_error_ok (ноль). В случае возникновения ошибки
     возвращается ее код.                                                                           */
 /* ----------------------------------------------------------------------------------------------- */
@@ -1007,49 +933,6 @@
    ctx->dec_update = ak_mgm_decryption_update;
 
  return error;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
- int ak_aead_create_oid( ak_aead ctx, bool_t crf, ak_oid oid )
-{
-  if( oid == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                                     "using null pointer to oid" );
-  if( oid->mode != aead ) return ak_error_message( ak_error_oid_mode, __func__,
-                                                                  "using oid with non aead mode" );
-  if( strncmp( oid->name[0], "mgm-magma", 9 ) == 0 )
-    return ak_aead_create_mgm_magma( ctx, crf );
-  if( strncmp( oid->name[0], "mgm-kuznechik", 13 ) == 0 )
-    return ak_aead_create_mgm_kuznechik( ctx, crf );
-  if( strncmp( oid->name[0], "xtsmac-magma", 12 ) == 0 )
-    return ak_aead_create_xtsmac_magma( ctx, crf );
-  if( strncmp( oid->name[0], "xtsmac-kuznechik", 16 ) == 0 )
-    return ak_aead_create_xtsmac_kuznechik( ctx, crf );
-
- return ak_error_message( ak_error_wrong_oid, __func__, "using unsupported oid" );
-}
-
-/* ----------------------------------------------------------------------------------------------- */
- int ak_aead_destroy( ak_aead ctx )
-{
-   if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                            "using null pointer to aead context" );
-   if( ctx->oid == NULL ) return ak_error_message( ak_error_wrong_oid, __func__,
-                                                         "destroying context with undefined oid" );
-   if( ctx->authenticationKey != NULL )
-     ak_oid_delete_second_object( ctx->oid, ctx->authenticationKey );
-   if( ctx->encryptionKey != NULL ) ak_oid_delete_object( ctx->oid, ctx->encryptionKey );
-   if( ctx->ictx != NULL ) free( ctx->ictx );
-
-   ctx->oid = NULL;
-   ctx->tag_size = 0;
-   ctx->auth_clean = NULL;
-   ctx->auth_update = NULL;
-   ctx->auth_finalize = NULL;
-   ctx->enc_clean = NULL;
-   ctx->enc_update = NULL;
-   ctx->dec_update = NULL;
-
-  return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

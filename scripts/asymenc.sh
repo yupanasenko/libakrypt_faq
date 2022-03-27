@@ -65,12 +65,16 @@ aktool e file -m xtsmac-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert 
 aktool e file03.bin -m xtsmac-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file04.bin --delete-source
 aktool e file04.bin -m mgm-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file05.bin --delete-source
 aktool e file05.bin -m mgm-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file06.bin --delete-source
+aktool e file06.bin -m ctr-cmac-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file07.bin --delete-source
+aktool e file07.bin -m ctr-cmac-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file08.bin --delete-source
 #
 echo; echo "Процесс зашифрования завершен."
 aktool i file06.bin
 ls -la file06.bin
 #
 echo
+aktool d file08.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
+aktool d file07.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
 aktool d file06.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
 aktool d file05.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
 aktool d file04.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source

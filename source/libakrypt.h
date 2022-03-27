@@ -1169,11 +1169,36 @@ extern "C" {
  dll_export int ak_aead_create_xtsmac_magma( ak_aead , bool_t );
 /*! \brief Создание контекста алгоритма аутентифицированного шифрования xtsmac для блочного шифра Кузнечик */
  dll_export int ak_aead_create_xtsmac_kuznechik( ak_aead , bool_t );
+/*! \brief Создание контекста алгоритма аутентифицированного шифрования ctr-cmac для блочного шифра Магма */
+ dll_export int ak_aead_create_ctr_cmac_magma( ak_aead , bool_t );
+/*! \brief Создание контекста алгоритма аутентифицированного шифрования ctr-cmac для блочного шифра Кузнечик */
+ dll_export int ak_aead_create_ctr_cmac_kuznechik( ak_aead , bool_t );
 /*! \brief Создание контекста алгоритма аутентифицированного шифрования по заданному oid  */
  dll_export int ak_aead_create_oid( ak_aead , bool_t, ak_oid );
-/*! \brief Удаление контекста алгоритма аутентифицированного шифрования xtsmac  */
+/*! \brief Удаление контекста алгоритма аутентифицированного шифрования */
  dll_export int ak_aead_destroy( ak_aead );
-
+/*! \brief Присвоение секретному ключу шифрования константного значения */
+ dll_export int ak_aead_set_encrypt_key( ak_aead , const ak_pointer , const size_t );
+/*! \brief Присвоение секретному ключу аутентификации константного значения */
+ dll_export int ak_aead_set_auth_key( ak_aead , const ak_pointer , const size_t );
+/*! \brief Присвоение константных значений секретным ключам шифрования и аутентификации */
+ dll_export int ak_aead_set_keys( ak_aead , const ak_pointer , const size_t ,
+                                                                 const ak_pointer , const size_t );
+/*! \brief Первичная инициализация параметров контекста алгоритма аутентифицированного шифрования,
+    отвеающих как за шифрование, так и за выработку кода атентификации (имитовставку) */
+ dll_export int ak_aead_clean( ak_aead , const ak_pointer , const size_t );
+/*! \brief Первичная инициализация параметров, отвечающих за выработку кода атентификации (имитовставку) */
+ dll_export int ak_aead_auth_clean( ak_aead , const ak_pointer , const size_t );
+/*! \brief Первичная инициализация параметров, отвечающих за шифрование */
+ dll_export int ak_aead_encrypt_clean( ak_aead , const ak_pointer , const size_t );
+/*! \brief Обновление контекста алгоритма аутентифицированного шифрования ассоциированными данными */
+ dll_export int ak_aead_auth_update( ak_aead , const ak_pointer , const size_t );
+/*! \brief Закрытие контекста алгоритма аутентифицированного шифрования и вычисление кода аутентификации */
+ dll_export int ak_aead_auth_finalize( ak_aead , ak_pointer out, const size_t out_size );
+/*! \brief Зашифрование данных и обновление контекста алгоритма аутентифицированного шифрования */
+ dll_export int ak_aead_encrypt_update( ak_aead , const ak_pointer , ak_pointer , const size_t );
+/*! \brief Расшифрование данных и обновление контекста алгоритма аутентифицированного шифрования */
+ dll_export int ak_aead_decrypt_update( ak_aead , const ak_pointer , ak_pointer , const size_t );
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */

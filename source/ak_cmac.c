@@ -1,10 +1,10 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2020, 2022 by Axel Kenzo, axelkenzo@mail.ru                               */
 /*                                                                                                 */
 /*  Файл ak_cmac.c                                                                                 */
 /*  - содержит реализацию общих функций для алгоритмов блочного шифрования.                        */
 /* ----------------------------------------------------------------------------------------------- */
- #include <libakrypt.h>
+ #include <libakrypt-internal.h>
  #ifdef AK_HAVE_ERRNO_H
   #include <errno.h>
  #endif
@@ -690,6 +690,163 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+                                      /* интерфейс к aead алгоритму */
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Очистка контекста перед вычислением имитовставки */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_ctr_cmac_authentication_clean( ak_pointer actx,
+                                      ak_pointer akey, const ak_pointer iv, const size_t iv_size )
+{
+  ak_mac ctx = actx;
+  ak_bckey authenticationKey = akey;
+
+  if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                     "using null pointer to internal mac context");
+  if( authenticationKey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                       "using null pointer to authentication key");
+  if( authenticationKey->bsize > 16 ) return ak_error_message( ak_error_wrong_length,
+                                                __func__, "using key with very large block size" );
+  return ak_mac_clean( ctx );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Очистка контекста перед шифрованием */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_ctr_cmac_encryption_clean( ak_pointer ectx,
+                                      ak_pointer ekey, const ak_pointer iv, const size_t iv_size )
+{
+  if( ectx == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                     "using null pointer to internal mac context");
+  if( ekey != NULL ) return ak_bckey_ctr( ekey, NULL, NULL, 0, iv, iv_size );
+
+  /* в случае имитозащиты без шифрования ключ шифрования может быть не определен */
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Обновление контекста в процессе вычисления имитовставки */
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_ctr_cmac_authentication_update( ak_pointer actx,
+                                  ak_pointer akey, const ak_pointer adata, const size_t adata_size )
+{
+  return ak_mac_update(( ak_mac )actx, adata, adata_size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_ctr_cmac_authentication_finalize( ak_pointer actx,
+                                  ak_pointer akey, ak_pointer out, const size_t out_size )
+{
+  return ak_mac_finalize(( ak_mac )actx, NULL, 0, out, out_size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_ctr_cmac_encryption_update( ak_pointer ectx, ak_pointer ekey,
+                           ak_pointer akey, const ak_pointer in, ak_pointer out, const size_t size )
+{
+  int error = ak_mac_update( ( ak_mac )ectx, in, size );
+  if( error != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect updating an internal mac context" );
+
+  if( ekey != NULL ) return ak_bckey_ctr( ekey, in, out, size, NULL, 0 );
+
+  /* в случае имитозащиты без шифрования ключ шифрования может быть не определен */
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_ctr_cmac_decryption_update( ak_pointer ectx, ak_pointer ekey,
+                           ak_pointer akey, const ak_pointer in, ak_pointer out, const size_t size )
+{
+  int error = ak_error_ok;
+
+ /* в случае имитозащиты без шифрования ключ шифрования может быть не определен */
+  if( ekey != NULL ) {
+    if(( error = ak_bckey_ctr( ekey, in, out, size, NULL, 0 )) != ak_error_ok ) {
+      return ak_error_message( error, __func__, "incorrect decryption of input data" );
+    }
+  }
+ return ak_mac_update(( ak_mac )ectx, out, size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_aead_create_ctr_cmac_magma( ak_aead ctx, bool_t crf )
+{
+   ak_mac mctx = NULL;
+   int error = ak_error_ok;
+
+   if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to aead context" );
+   memset( ctx, 0, sizeof( struct aead ));
+   if(( ctx->ictx = ( mctx = malloc( sizeof( struct mac )))) == NULL )
+     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
+   if(( error = ak_aead_create_keys( ctx, crf, "ctr-cmac-magma" )) != ak_error_ok ) {
+     if( ctx->ictx != NULL ) free( ctx->ictx );
+     return ak_error_message( error, __func__, "incorrect secret keys context creation" );
+   }
+
+  /* устанавливаем поля структуры mac,
+     которая будет использована исключительно для вычисления имитовставки */
+   if(( error = ak_mac_create( mctx, 8, ctx->authenticationKey,
+                              (ak_function_clean *)ak_bckey_cmac_clean,
+                              (ak_function_update *)ak_bckey_cmac_update,
+                              (ak_function_finalize *)ak_bckey_cmac_finalize )) != ak_error_ok ) {
+     ak_mac_destroy( mctx );
+     ak_aead_destroy( ctx );
+     return ak_error_message( error, __func__, "incorrect creation of mac context" );
+   }
+
+ /* теперь контекст двойного алгоритма (шифрование + имитозащита) */
+   ctx->tag_size = 8; /* длина блока алгоритма Магма */
+   ctx->auth_clean = ak_ctr_cmac_authentication_clean;
+   ctx->auth_update = ak_ctr_cmac_authentication_update;
+   ctx->auth_finalize = ak_ctr_cmac_authentication_finalize;
+   ctx->enc_clean = ak_ctr_cmac_encryption_clean;
+   ctx->enc_update = ak_ctr_cmac_encryption_update;
+   ctx->dec_update = ak_ctr_cmac_decryption_update;
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_aead_create_ctr_cmac_kuznechik( ak_aead ctx, bool_t crf )
+{
+   ak_mac mctx = NULL;
+   int error = ak_error_ok;
+
+   if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to aead context" );
+   memset( ctx, 0, sizeof( struct aead ));
+   if(( ctx->ictx = ( mctx = malloc( sizeof( struct mac )))) == NULL )
+     return ak_error_message( ak_error_out_of_memory, __func__, "incorrect memory allocation" );
+   if(( error = ak_aead_create_keys( ctx, crf, "ctr-cmac-kuznechik" )) != ak_error_ok ) {
+     if( ctx->ictx != NULL ) free( ctx->ictx );
+     return ak_error_message( error, __func__, "incorrect secret keys context creation" );
+   }
+
+  /* устанавливаем поля структуры mac,
+     которая будет использована исключительно для вычисления имитовставки */
+   if(( error = ak_mac_create( mctx, 16, ctx->authenticationKey,
+                              (ak_function_clean *)ak_bckey_cmac_clean,
+                              (ak_function_update *)ak_bckey_cmac_update,
+                              (ak_function_finalize *)ak_bckey_cmac_finalize )) != ak_error_ok ) {
+     ak_mac_destroy( mctx );
+     ak_aead_destroy( ctx );
+     return ak_error_message( error, __func__, "incorrect creation of mac context" );
+   }
+
+ /* теперь контекст двойного алгоритма (шифрование + имитозащита) */
+   ctx->tag_size = 16; /* длина блока алгоритма Магма */
+   ctx->auth_clean = ak_ctr_cmac_authentication_clean;
+   ctx->auth_update = ak_ctr_cmac_authentication_update;
+   ctx->auth_finalize = ak_ctr_cmac_authentication_finalize;
+   ctx->enc_clean = ak_ctr_cmac_encryption_clean;
+   ctx->enc_update = ak_ctr_cmac_encryption_update;
+   ctx->dec_update = ak_ctr_cmac_decryption_update;
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
                                /* Функции тестирования реализаций */
 /* ----------------------------------------------------------------------------------------------- */
  bool_t ak_libakrypt_test_cmac( void )
@@ -741,11 +898,11 @@
   labm: ak_bckey_destroy( &key );
   if( result != ak_true ) {
     ak_error_message( ak_error_ok, __func__,
-                            "tesing different realization of cmac mode on magma cipher is wrong" );
+                           "testing different realization of cmac mode on magma cipher is wrong" );
     return result;
   }
   if( ak_log_get_level() >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__,
-                               "tesing different realization of cmac mode on magma cipher is Ok" );
+                              "testing different realization of cmac mode on magma cipher is Ok" );
 
  /* тестируем Кузнечик */
  /* создаем ключ и присваиваем ему какое-то значение */
@@ -777,11 +934,11 @@
   labk: ak_bckey_destroy( &key );
   if( result != ak_true ) {
     ak_error_message( ak_error_ok, __func__,
-                        "tesing different realization of cmac mode on kuznechik cipher is wrong" );
+                       "testing different realization of cmac mode on kuznechik cipher is wrong" );
     return result;
   }
   if( ak_log_get_level() >= ak_log_maximum ) ak_error_message( ak_error_ok, __func__,
-                           "tesing different realization of cmac mode on kuznechik cipher is Ok" );
+                          "testing different realization of cmac mode on kuznechik cipher is Ok" );
  return result;
 }
 

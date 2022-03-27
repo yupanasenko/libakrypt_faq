@@ -82,6 +82,7 @@ set( AKRYPT_SOURCES
    source/ak_kuznechik.c
    source/ak_acpkm.c
    source/ak_mgm.c
+   source/ak_aead.c
    source/ak_xts.c
    source/ak_asn1.c
    source/ak_sign.c
