@@ -587,9 +587,12 @@
   }
   if(( adata != NULL ) && ( adata_size != 0 )) {
     /* проверяем, что данные расположены в памяти последовательно */
-     if( ((ak_uint8*)adata)+adata_size != (ak_uint8 *)in )
-       return ak_error_message( ak_error_linked_data, __func__,
+     if( in != NULL ) {
+       if( ((ak_uint8*)adata)+adata_size != (ak_uint8 *)in ) {
+         return ak_error_message( ak_error_linked_data, __func__,
                                           "this function can't be applied to non sequenced data" );
+       }
+     }
      ptr = adata;
      sizeptr = adata_size + size;
   } else {
@@ -602,6 +605,8 @@
              ak_bckey_cmac( authenticationKey, ptr, sizeptr, icode, icode_size )) != ak_error_ok )
      return ak_error_message( error, __func__, "incorrect data encryption" );
   }
+
+ /* шифруем только в том случае, когда определен ключ шифрования */
   if( encryptionKey != NULL ) {
     if(( error = ak_bckey_ctr( encryptionKey, in, out, size, iv, iv_size )) != ak_error_ok )
      return ak_error_message( error, __func__, "incorrect data encryption" );
@@ -658,9 +663,12 @@
   }
   if(( adata != NULL ) && ( adata_size != 0 )) {
     /* проверяем, что данные расположены в памяти последовательно */
-     if( ((ak_uint8*)adata)+adata_size != (ak_uint8 *)in )
-       return ak_error_message( ak_error_linked_data, __func__,
+     if( in != NULL ) {
+       if( ((ak_uint8*)adata)+adata_size != (ak_uint8 *)in ) {
+         return ak_error_message( ak_error_linked_data, __func__,
                                           "this function can't be applied to non sequenced data" );
+       }
+     }
      ptr = adata;
      sizeptr = adata_size + size;
   } else {
@@ -668,10 +676,12 @@
       sizeptr = size;
     }
 
+ /* расшифровываем только в том случае, когда определен ключ шифрования */
   if( encryptionKey != NULL ) {
     if(( error = ak_bckey_ctr( encryptionKey, in, out, size, iv, iv_size )) != ak_error_ok )
      return ak_error_message( error, __func__, "incorrect data decryption" );
   }
+
   if( authenticationKey != NULL ) {
     ak_uint8 icode2[32];
     memset( icode2, 0, sizeof( icode2 ));
@@ -796,7 +806,7 @@
    }
 
  /* теперь контекст двойного алгоритма (шифрование + имитозащита) */
-   ctx->tag_size = 8; /* длина блока алгоритма Магма */
+   ctx->tag_size = ctx->block_size = 8; /* длина блока алгоритма Магма */
    ctx->auth_clean = ak_ctr_cmac_authentication_clean;
    ctx->auth_update = ak_ctr_cmac_authentication_update;
    ctx->auth_finalize = ak_ctr_cmac_authentication_finalize;
@@ -835,7 +845,7 @@
    }
 
  /* теперь контекст двойного алгоритма (шифрование + имитозащита) */
-   ctx->tag_size = 16; /* длина блока алгоритма Магма */
+   ctx->tag_size = ctx->block_size = 16; /* длина блока алгоритма Магма */
    ctx->auth_clean = ak_ctr_cmac_authentication_clean;
    ctx->auth_update = ak_ctr_cmac_authentication_update;
    ctx->auth_finalize = ak_ctr_cmac_authentication_finalize;

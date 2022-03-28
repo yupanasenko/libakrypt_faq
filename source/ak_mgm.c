@@ -893,7 +893,7 @@
      return ak_error_message( error, __func__, "incorrect secret keys context creation" );
    }
 
-   ctx->tag_size = 8; /* длина блока алгоритма Магма */
+   ctx->tag_size = ctx->block_size = 8; /* длина блока алгоритма Магма */
    ctx->auth_clean = ak_mgm_authentication_clean;
    ctx->auth_update = ak_mgm_authentication_update;
    ctx->auth_finalize = ak_mgm_authentication_finalize;
@@ -924,7 +924,7 @@
      return ak_error_message( error, __func__, "incorrect secret keys context creation" );
    }
 
-   ctx->tag_size = 16; /* длина блока алгоритма Кузнечик */
+   ctx->tag_size = ctx->block_size = 16; /* длина блока алгоритма Кузнечик */
    ctx->auth_clean = ak_mgm_authentication_clean;
    ctx->auth_update = ak_mgm_authentication_update;
    ctx->auth_finalize = ak_mgm_authentication_finalize;
