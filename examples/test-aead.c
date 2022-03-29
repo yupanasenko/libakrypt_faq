@@ -111,6 +111,8 @@
     приведенный выше фрагмент кода используется далее при расшифровании данных,
     сейчас же мы используем поблочную обработку данных */
 
+  printf("bl: %llu\n", ctx.block_size );
+
   shift = 0;
   for( size_t i = 0; i < ( blocks = 41/ctx.block_size ); i++ ) {
     ak_aead_auth_update( &ctx, apdata +shift, ctx.block_size );
@@ -118,15 +120,19 @@
   }
   if(( tail = 41%ctx.block_size ) > 0 ) ak_aead_auth_update( &ctx, apdata +shift, tail );
 
+ printf("auth: OK\n");
+
  /* теперь зашифровываем данные */
   shift = 0;
-  for( size_t i = 0; i < ( blocks = 67/ctx.block_size ); i++ ) {
-    ak_aead_encrypt_update( &ctx, apdata +41 +shift, apdata +41 +shift, ctx.block_size );
-    shift += ctx.block_size;
+  for( size_t i = 0; i < ( blocks = 67/2*ctx.block_size ); i++ ) {
+    ak_aead_encrypt_update( &ctx, apdata +41 +shift, apdata +41 +shift, 2*ctx.block_size );
+    shift += 2*ctx.block_size;
   }
-  if(( tail = 67%ctx.block_size ) > 0 )
+  if(( tail = 67%(2*ctx.block_size) ) > 0 )
     ak_aead_encrypt_update( &ctx, apdata +41 +shift, apdata +41 +shift, tail );
   ak_aead_auth_finalize( &ctx, icode, icode_size );
+
+ printf("enc:  OK\n");
 
  /* проверяем тестовое значение имитовставки */
   if( !ak_ptr_is_equal_with_log( icode, icodetest, icode_size )) {
@@ -134,6 +140,8 @@
     goto exlab;
   }
   printf(" 2. %s\n", ak_ptr_to_hexstr( apdata +41, 67, ak_false ));
+
+  return EXIT_SUCCESS;
 
  /* расшифровываем, используя пошаговые вычисления */
   memset( icode, 0, sizeof( icode ));
@@ -233,27 +241,31 @@
   ak_uint8 icode_ctr_cmac_magma[8] = { 0xdf, 0xdb, 0x24, 0x1f, 0x0b, 0x9f, 0x5e, 0x63 };
   ak_uint8 icode_ctr_cmac_kuznechik[16] = {
     0xad, 0x86, 0xb9, 0x16, 0xe9, 0x42, 0xbd, 0x45, 0x0e, 0xba, 0xcb, 0x50, 0xd6, 0x0b, 0x68, 0x4c };
-  ak_uint8 icode_xtsmac_magma[8] = { 0x50, 0x7f, 0x88, 0x75, 0x27, 0x9d, 0x57, 0x0d };
+  ak_uint8 icode_xtsmac_magma[8] = { 0xbe, 0xc1, 0x7e, 0x75, 0xb7, 0x12, 0xea, 0x9a };
 
  /* по-умолчанию сообщения об ошибках выволятся в журналы syslog
     мы изменяем стандартный обработчик, на вывод сообщений в консоль */
   ak_log_set_level( ak_log_maximum );
   ak_libakrypt_create( ak_function_log_stderr );
 
- /* тестируем режим работы ctr-cmac-magma */
-  exitcode = testfunc( ak_oid_find_by_name( "ctr-cmac-magma" ), icode_ctr_cmac_magma, 8 );
-  if( exitcode == EXIT_FAILURE ) goto exit;
+// /* тестируем режим работы ctr-cmac-magma */
+//  exitcode = testfunc( ak_oid_find_by_name( "ctr-cmac-magma" ), icode_ctr_cmac_magma, 8 );
+//  if( exitcode == EXIT_FAILURE ) goto exit;
 
- /* тестируем режим работы ctr-cmac-kuznechik */
-  exitcode = testfunc( ak_oid_find_by_name( "ctr-cmac-kuznechik" ), icode_ctr_cmac_kuznechik, 16 );
-  if( exitcode == EXIT_FAILURE ) goto exit;
+// /* тестируем режим работы ctr-cmac-kuznechik */
+//  exitcode = testfunc( ak_oid_find_by_name( "ctr-cmac-kuznechik" ), icode_ctr_cmac_kuznechik, 16 );
+//  if( exitcode == EXIT_FAILURE ) goto exit;
 
- /* тестируем режим работы mgm-kuznechik */
-  exitcode = testfunc( ak_oid_find_by_name( "mgm-magma" ), icode_mgm_magma, 8 );
-  if( exitcode == EXIT_FAILURE ) goto exit;
+// /* тестируем режим работы mgm-magma */
+//  exitcode = testfunc( ak_oid_find_by_name( "mgm-magma" ), icode_mgm_magma, 8 );
+//  if( exitcode == EXIT_FAILURE ) goto exit;
 
- /* тестируем режим работы mgm-kuznechik */
-  exitcode = testfunc( ak_oid_find_by_name( "mgm-kuznechik" ), icode_mgm_kuznechik, 16 );
+// /* тестируем режим работы mgm-kuznechik */
+//  exitcode = testfunc( ak_oid_find_by_name( "mgm-kuznechik" ), icode_mgm_kuznechik, 16 );
+//  if( exitcode == EXIT_FAILURE ) goto exit;
+
+ /* тестируем режим работы xtsmac-magma */
+  exitcode = testfunc( ak_oid_find_by_name( "xtsmac-magma" ), icode_xtsmac_magma, 8 );
   if( exitcode == EXIT_FAILURE ) goto exit;
 
  /* завершаем выполнение теста */

@@ -74,9 +74,9 @@
 
      case do_speed_oid:
        if(( oid = ak_oid_find_by_ni( value )) == NULL ) {
-         printf(_("using unsupported name or identifier \"%s\"\n\n"), value );
-         printf(_("try \"aktool show --oids\" for list of all available identifiers\n"));
-         exit_status = EXIT_FAILURE;
+          printf( _("using unsupported name or identifier \"%s\"\n\n"), value );
+          printf( _("try \"aktool show --oids\" for list of all available identifiers\n"));
+          exit_status = EXIT_FAILURE;
          break;
        }       
        switch( oid->engine ) {
@@ -101,8 +101,8 @@
      default:  break; /* конец switch( work ) */
    }
    if( exit_status == EXIT_FAILURE )
-     printf(_("for more information run tests with \"--audit 2 --audit-file stderr\" options or see /var/log/auth.log file\n"));
-
+     if( !ki.quiet ) printf( _("for more information run test with \"--audit 2 --audit-file stderr\" options "
+                                                                              "or see /var/log/auth.log file\n"));
  /* завершаем работу и выходим */
    aktool_destroy_libakrypt();
 

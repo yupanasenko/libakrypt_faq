@@ -75,7 +75,7 @@ aktool i file08.bin
 ls -la *.bin
 #
 # Поскольку мы знаем имена файлов, которые будут расшифрованы,
-# то указываем их в командной строке, несомтря на то, что они пока еще не существуют
+# то указываем их в командной строке, несмотря на то, что они пока еще не существуют
 # опция --delete-source удалает файлы сразу после их расшифрования
 echo; echo "Расшифрование."
 aktool d file08.bin file07.bin file06.bin file05.bin file04.bin file03.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
@@ -86,22 +86,3 @@ aktool i -c results.streebog --dont-show-stat
 #  В завершение экспериментов, удаляем созданные временные файлы
 # -------------------------------------------------------------------------------------
 rm -f ca.key ca.crt user_request.csr user.key user.crt psk.512 file results.streebog
-
-
-
-
-
-
-#aktool e file -m xtsmac-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file03.bin --delete-source
-#aktool e file03.bin -m xtsmac-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file04.bin --delete-source
-#aktool e file04.bin -m mgm-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file05.bin --delete-source
-#aktool e file05.bin -m mgm-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file06.bin --delete-source
-#aktool e file06.bin -m ctr-cmac-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file07.bin --delete-source
-#aktool e file07.bin -m ctr-cmac-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file08.bin --delete-source
-
-#aktool d file08.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
-#aktool d file07.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
-#aktool d file06.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
-#aktool d file05.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
-#aktool d file04.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
-#aktool d file03.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
