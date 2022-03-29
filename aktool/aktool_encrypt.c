@@ -393,7 +393,7 @@
       BZ2_bzwrite( fz, buffer, val );
       if( (sum += val )%1048576U == 0 ) {
         if( !ki.quiet ) {
-          fprintf( stdout, _("%s (Compression ... %3luMb)\r"), filename, sum>>20 ); fflush( stdout );
+          fprintf( stdout, _("%s (Compression ... %3luMb)%s"), filename, sum>>20, "\r" ); fflush( stdout );
         }
       }
     }

@@ -78,7 +78,8 @@
     ak_error_message_fmt( ak_error_not_equal_data, __func__ , "неверная контрольная сумма" );
     goto exlab;
   }
-  printf("%s\n 1. %s\n", oid->name[0], ak_ptr_to_hexstr( apdata +41, 67, ak_false ));
+  printf("%s (%s)\n", oid->name[0], ak_ptr_to_hexstr( icodetest, icode_size, ak_false ));
+  printf(" 1. %s\n", ak_ptr_to_hexstr( apdata +41, 67, ak_false ));
 
  /* расшифровываем */
   if(( error = oid->func.invert(
@@ -107,7 +108,7 @@
     if(( shift = 41 - tail) > 0 ) ak_aead_auth_update( &ctx, apdata, shift );
     if( tail ) ak_aead_auth_update( &ctx, apdata +shift, tail );
 
-    приведенный фрагмент кода используется далее при расшифровании данных,
+    приведенный выше фрагмент кода используется далее при расшифровании данных,
     сейчас же мы используем поблочную обработку данных */
 
   shift = 0;
@@ -155,7 +156,7 @@
   exlab:
     ak_aead_destroy( &ctx );
 
- /* в заключение, тестируем функцию имитозащиты (без создания ключа шфирования) */
+ /* в заключение, тестируем функцию имитозащиты (без создания ключа шифрования в контенксте aead) */
   if( ak_aead_create_oid( &ctx, ak_false, oid ) != ak_error_ok ) return EXIT_FAILURE;
  /* присваиваем значение ключу имитозащиты */
   if( ctx.tag_size == 8 ) { /* для режимов на основе Магмы */
@@ -173,18 +174,17 @@
  /* в начале, пошаговое вычисление имитовставки от двух половинок текста (без шифрования) */
   memset( icode, 0, sizeof( icode ));
   ak_aead_auth_clean( &ctx, ctx.tag_size == 8 ? iv64 : iv128, ctx.tag_size );
-  ak_aead_auth_update( &ctx, apdata, 41 );
-  ak_aead_encrypt_update( &ctx, apdata +41, NULL, 67 );
+  tail = ak_max( 32, ctx.tag_size );
+  ak_aead_auth_update( &ctx, apdata, tail );
+  ak_aead_encrypt_update( &ctx, apdata +tail, NULL, sizeof( apdata ) -tail );
   ak_aead_auth_finalize( &ctx, icode, icode_size );
- /* проверяем тестовое значение имитовставки */
-  if( !ak_ptr_is_equal_with_log( icode, icodetest, icode_size )) {
-    ak_error_message_fmt( ak_error_not_equal_data, __func__ , "неверная контрольная сумма" );
-    goto exlab2;
+ /* проверяем тестовое значение имитовставки, должно совпадать
+    либо с предыдущим, либо с тем, что будет далее )) */
+  if( !ak_ptr_is_equal( icode, icodetest, icode_size )) {
+    printf(" 4. divided mac not supported (%s, compare with next values)\n",
+                                            ak_ptr_to_hexstr( icode, icode_size, ak_false ));
   }
-  printf(" 4. divided mac (%s) Ok\n", ak_ptr_to_hexstr( icode, icode_size, ak_false ));
-
-  exitcode = EXIT_SUCCESS;
-  goto exlab2;
+   else printf(" 4. divided mac (%s) Ok\n", ak_ptr_to_hexstr( icode, icode_size, ak_false ));
 
  /* потом, прямое вычисление имитовставки */
   memset( icode, 0, sizeof( icode ));
@@ -207,6 +207,7 @@
   ak_aead_auth_update( &ctx, apdata, 41+67 );
   ak_aead_auth_finalize( &ctx, icode2, icode_size );
   printf(" 6. mac: %s ", ak_ptr_to_hexstr( icode2, icode_size, ak_false ));
+ /* сравниваем вычисленые двумя способами имитовставки */
   if( !ak_ptr_is_equal_with_log( icode, icode2, icode_size )) {
     ak_error_message_fmt( ak_error_not_equal_data, __func__ , "неверная контрольная сумма" );
     printf("Wrong\n");
@@ -232,6 +233,7 @@
   ak_uint8 icode_ctr_cmac_magma[8] = { 0xdf, 0xdb, 0x24, 0x1f, 0x0b, 0x9f, 0x5e, 0x63 };
   ak_uint8 icode_ctr_cmac_kuznechik[16] = {
     0xad, 0x86, 0xb9, 0x16, 0xe9, 0x42, 0xbd, 0x45, 0x0e, 0xba, 0xcb, 0x50, 0xd6, 0x0b, 0x68, 0x4c };
+  ak_uint8 icode_xtsmac_magma[8] = { 0x50, 0x7f, 0x88, 0x75, 0x27, 0x9d, 0x57, 0x0d };
 
  /* по-умолчанию сообщения об ошибках выволятся в журналы syslog
     мы изменяем стандартный обработчик, на вывод сообщений в консоль */
@@ -244,6 +246,10 @@
 
  /* тестируем режим работы ctr-cmac-kuznechik */
   exitcode = testfunc( ak_oid_find_by_name( "ctr-cmac-kuznechik" ), icode_ctr_cmac_kuznechik, 16 );
+  if( exitcode == EXIT_FAILURE ) goto exit;
+
+ /* тестируем режим работы mgm-kuznechik */
+  exitcode = testfunc( ak_oid_find_by_name( "mgm-magma" ), icode_mgm_magma, 8 );
   if( exitcode == EXIT_FAILURE ) goto exit;
 
  /* тестируем режим работы mgm-kuznechik */

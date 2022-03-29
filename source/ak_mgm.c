@@ -363,23 +363,35 @@
   ak_uint128 e, h;
   ak_uint8 temp[16];
   ak_mgm_ctx ctx = ectx;
+  size_t i = 0, absize = 0;
   ak_bckey encryptionKey = ekey;
   ak_bckey authenticationKey = akey;
-  size_t i = 0, absize = encryptionKey->bsize;
+  size_t resource = 0, tail, blocks;
   ak_uint64 *inp = (ak_uint64 *)in, *outp = (ak_uint64 *)out;
-  size_t resource = 0,
-         tail = size%absize,
-         blocks = size/absize;
 
- /* принудительно закрываем обновление ассоциированных данных */
-  ak_aead_set_bit( ctx->flags, ak_aead_assosiated_data_bit );
  /* проверяем возможность обновления */
   if( ctx->flags&ak_aead_encrypted_data_bit )
     return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                         "using this function with previously closed aead context");
-
+ /* проверка того, что хотя бы один ключ определен */
+  if(( authenticationKey == NULL ) && ( encryptionKey == NULL ))
+    return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                        "using null pointers to both secret keys");
  /* ни чего не задано => ни чего не обрабатываем */
   if(( in == NULL ) || ( size == 0 )) return ak_error_ok;
+
+ /* проверяем, что ключ шифрования определен,
+    если нет, то используем входные данные как ассоциированные
+    отметим, что если ассоциированные данные были ранее обработаны
+    и их длина была не кратна длине блока, то здесь появится ошибка */
+  if( encryptionKey == NULL ) {
+    return ak_mgm_authentication_update( ectx, authenticationKey, in, size );
+  }
+
+ /* вычисляем длины блоков */
+  absize = encryptionKey->bsize;
+  tail = size%absize,
+  blocks = size/absize;
 
  /* проверка ресурса ключа выработки имитовставки */
   if( authenticationKey != NULL ) {
@@ -390,15 +402,19 @@
   }
 
  /* проверка ресурса ключа шифрования */
-  if( encryptionKey->key.resource.value.counter <= ( ssize_t )resource )
-   return ak_error_message( ak_error_low_key_resource, __func__,
+  if( encryptionKey->key.resource.value.counter <= ( ssize_t )(resource = blocks + (tail > 0)) )
+    return ak_error_message( ak_error_low_key_resource, __func__,
                                                    "using encryption key with low key resource");
-  else encryptionKey->key.resource.value.counter -= resource;
+   else encryptionKey->key.resource.value.counter -= resource;
 
  /* теперь обработка данных */
   memset( &e, 0, 16 );
   ctx->pbitlen += ( absize*blocks << 3 );
-  if( authenticationKey == NULL ) { /* только шифрование (без вычисления имитовставки) */
+
+ /* ----------------------------------------------------------- */
+ /* рассматриваем все возможные случаи отдельно,
+    начинаем со случая, в котором реализуется только шифрование */
+  if(( authenticationKey == NULL ) && ( encryptionKey != NULL )) {
 
     if( absize&0x10 ) { /* режим работы для 128-битного шифра */
      /* основная часть */
@@ -431,49 +447,52 @@
         }
       } /* конец шифрования без аутентификации для 64-битного шифра */
 
-  } else { /* основной режим работы => шифрование с одновременной выработкой имитовставки */
-
-     if( absize&0x10 ) { /* режим работы для 128-битного шифра */
-      /* основная часть */
-      for( ; blocks > 0; blocks--, inp += 2, outp += 2 ) {
-         estep128;
-         astep128( outp );
-      }
-      /* хвост */
-      if( tail ) {
-        memset( temp, 0, 16 );
-        encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &e );
-        for( i = 0; i < tail; i++ )
-           ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ e.b[16-tail+i];
-        memcpy( temp+16-tail, outp, (size_t)tail );
-        astep128( temp );
-
-       /* закрываем добавление шифруемых данных */
-        ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
-        ctx->pbitlen += ( tail << 3 );
-      }
-
-    } else { /* режим работы для 64-битного шифра */
-      /* основная часть */
-       for( ; blocks > 0; blocks--, inp++, outp++ ) {
-          estep64;
-          astep64( outp );
-       }
-       /* хвост */
-       if( tail ) {
-         memset( temp, 0, 8 );
-         encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &e );
-         for( i = 0; i < tail; i++ )
-            ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ e.b[8-tail+i];
-         memcpy( temp+8-tail, outp, (size_t)tail );
-         astep64( temp );
-
-        /* закрываем добавление шифруемых данных */
-         ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
-         ctx->pbitlen += ( tail << 3 );
-       }
-     } /* конец 64-битного шифра */
+   return ak_error_ok;
   }
+
+ /* -------------------------------------- */
+ /* в завершение, реализуется общий случай */
+
+  if( absize&0x10 ) { /* режим работы для 128-битного шифра */
+   /* основная часть */
+    for( ; blocks > 0; blocks--, inp += 2, outp += 2 ) {
+      estep128;
+      astep128( outp );
+    }
+   /* хвост */
+    if( tail ) {
+      memset( temp, 0, 16 );
+      encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &e );
+      for( i = 0; i < tail; i++ )
+         ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ e.b[16-tail+i];
+      memcpy( temp+16-tail, outp, (size_t)tail );
+      astep128( temp );
+
+    /* закрываем добавление шифруемых данных */
+      ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
+      ctx->pbitlen += ( tail << 3 );
+    }
+  } else { /* режим работы для 64-битного шифра */
+
+    /* основная часть */
+     for( ; blocks > 0; blocks--, inp++, outp++ ) {
+        estep64;
+        astep64( outp );
+     }
+    /* хвост */
+     if( tail ) {
+       memset( temp, 0, 8 );
+       encryptionKey->encrypt( &encryptionKey->key, &ctx->ycount, &e );
+       for( i = 0; i < tail; i++ )
+          ((ak_uint8 *)outp)[i] = ((ak_uint8 *)inp)[i] ^ e.b[8-tail+i];
+       memcpy( temp+8-tail, outp, (size_t)tail );
+       astep64( temp );
+
+      /* закрываем добавление шифруемых данных */
+       ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
+       ctx->pbitlen += ( tail << 3 );
+     }
+  } /* конец 64-битного шифра */
 
  return ak_error_ok;
 }

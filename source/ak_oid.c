@@ -692,6 +692,7 @@ static struct oid libakrypt_oids[] =
                                           ( ak_function_run_object *) ak_bckey_encrypt_ctr_cmac,
                                           ( ak_function_run_object *) ak_bckey_decrypt_ctr_cmac }},
 
+/*
  { block_cipher, aead, asn1_ctr_hmac_magma_streebog256_i, asn1_ctr_hmac_magma_streebog256_n, NULL,
   { ak_object_bckey_magma, ak_object_hmac_streebog256,
                                           ( ak_function_run_object *) ak_bckey_encrypt_ctr_hmac,
@@ -713,7 +714,7 @@ static struct oid libakrypt_oids[] =
   { ak_object_bckey_kuznechik, ak_object_hmac_streebog512,
                                           ( ak_function_run_object *) ak_bckey_encrypt_ctr_hmac,
                                           ( ak_function_run_object *) ak_bckey_decrypt_ctr_hmac }},
-
+*/
  { block_cipher, aead, asn1_xtsmac_magma_i, asn1_xtsmac_magma_n, NULL,
   { ak_object_bckey_magma, ak_object_bckey_magma,
                                             ( ak_function_run_object *) ak_bckey_encrypt_xtsmac,
@@ -723,7 +724,6 @@ static struct oid libakrypt_oids[] =
   { ak_object_bckey_kuznechik, ak_object_bckey_kuznechik,
                                             ( ak_function_run_object *) ak_bckey_encrypt_xtsmac,
                                             ( ak_function_run_object *) ak_bckey_decrypt_xtsmac }},
-
  { sign_function, algorithm, asn1_sign256_i, asn1_sign256_n, NULL,
   { ak_object_signkey256, ak_object_undefined,
                                           ( ak_function_run_object *) ak_signkey_sign_ptr, NULL }},

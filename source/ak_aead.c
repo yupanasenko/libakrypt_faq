@@ -80,7 +80,6 @@
  return ak_error_ok;
 }
 
-
 /* ----------------------------------------------------------------------------------------------- */
  int ak_aead_create_oid( ak_aead ctx, bool_t crf, ak_oid oid )
 {
