@@ -123,6 +123,8 @@ extern "C" {
 
 /*! \brief Ошибка при выборе схемы асимметричного шифрования */
  #define ak_error_encrypt_scheme              (-180)
+/*! \brief Ошибка использования не инициализированного aead контекста */
+ #define ak_error_aead_initialization         (-181)
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup options-doc Инициализация и настройка параметров библиотеки
@@ -1145,6 +1147,8 @@ extern "C" {
   ak_pointer ictx;
   /*! \brief Размер блока обрабатываемых данных */
   size_t block_size;
+  /*! \brief Размер синхропосылки */
+  size_t iv_size;
   /*! \brief Размер имитовставки */
   size_t tag_size;
   /*! \brief Функция первичной инициализации параметров алгоритма, отвечающих за имитозащиту */
@@ -1186,6 +1190,24 @@ extern "C" {
 /*! \brief Присвоение константных значений секретным ключам шифрования и аутентификации */
  dll_export int ak_aead_set_keys( ak_aead , const ak_pointer , const size_t ,
                                                                  const ak_pointer , const size_t );
+/*! \brief Функция возвращает размер вырабатываемой имитовставки (в октетах) */
+ dll_export ssize_t ak_aead_get_tag_size( ak_aead );
+/*! \brief Функция возвращает размер блока обрабатываемых данных (в октетах) */
+ dll_export ssize_t ak_aead_get_block_size( ak_aead );
+/*! \brief Функция возвращает ожидаемый размер синхропосылки (в октетах) */
+ dll_export ssize_t ak_aead_get_iv_size( ak_aead );
+/*! \brief Функция реализует аутентифицируемое зашифрование данных */
+ dll_export int ak_aead_encrypt( ak_aead ,  const ak_pointer , const size_t ,
+   const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                       ak_pointer , const size_t );
+/*! \brief Функция реализует аутентифицируемое расшифрование данных */
+ dll_export int ak_aead_decrypt( ak_aead ,  const ak_pointer , const size_t ,
+   const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                       ak_pointer , const size_t );
+/*! \brief Функция реализует выработку имитовставки (кода аутентификации) */
+ dll_export int ak_aead_mac( ak_aead ,  const ak_pointer , const size_t ,
+                const ak_pointer , const size_t , const ak_pointer , const size_t ,
+                                                                       ak_pointer , const size_t );
 /*! \brief Первичная инициализация параметров контекста алгоритма аутентифицированного шифрования,
     отвеающих как за шифрование, так и за выработку кода атентификации (имитовставку) */
  dll_export int ak_aead_clean( ak_aead , const ak_pointer , const size_t );

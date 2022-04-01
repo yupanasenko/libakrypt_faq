@@ -807,6 +807,7 @@
 
  /* теперь контекст двойного алгоритма (шифрование + имитозащита) */
    ctx->tag_size = ctx->block_size = 8; /* длина блока алгоритма Магма */
+   ctx->iv_size = 4;
    ctx->auth_clean = ak_ctr_cmac_authentication_clean;
    ctx->auth_update = ak_ctr_cmac_authentication_update;
    ctx->auth_finalize = ak_ctr_cmac_authentication_finalize;
@@ -846,6 +847,7 @@
 
  /* теперь контекст двойного алгоритма (шифрование + имитозащита) */
    ctx->tag_size = ctx->block_size = 16; /* длина блока алгоритма Магма */
+   ctx->iv_size = 8;
    ctx->auth_clean = ak_ctr_cmac_authentication_clean;
    ctx->auth_update = ak_ctr_cmac_authentication_update;
    ctx->auth_finalize = ak_ctr_cmac_authentication_finalize;

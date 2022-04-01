@@ -551,7 +551,7 @@
  /* 3. Только сейчас проверяем подпись под данными */
   if( ak_verifykey_verify_ptr( &req->vkey, ptr, size, bs.value ) != ak_true ) {
     ak_error_message( error = ak_error_not_equal_data, __func__, "digital signature isn't valid" );
-    goto lab1;
+   /* удаляем goto lab1; */
   }
    else { /* копируем значение подписи в опции запроса на сертификат */
        memset( req->opts.signature, 0, sizeof( req->opts.signature ));

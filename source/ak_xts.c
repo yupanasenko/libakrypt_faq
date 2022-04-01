@@ -272,7 +272,12 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*                 реализация режима аутентифицирующего шифрования xtsmac                          */
+/* реализация режима аутентифицирующего шифрования xtsmac                                          */
+/*                                                                                                 */
+/* в редакции статьи A.Yu.Nesterenko,
+   Differential properties of authenticated encryption mode based on universal hash function (XTSMAC),
+   2021 XVII International Symposium "Problems of Redundancy in Information and Control Systems".
+   IEEE, 2021. P. 39-44, doi: https://doi.org/10.1109/REDUNDANCY52534.2021.9606446                 */
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Структура, содержащая текущее состояние внутренних переменных режима `xtsmac`
    аутентифицированного шифрования. */
@@ -290,322 +295,62 @@
 } *ak_xtsmac_ctx;
 
 /* ----------------------------------------------------------------------------------------------- */
+/*! \brief Инициализация контекста перед вычислением имитовставки и шифрованием информации
+
+    Функция вычисляет начальное значение внутреннего состояния `gamma`
+    из заданного значения синхропосылки с помощью равенства `gamma = CBC( K, iv, 0 )`,
+    т.е. зашифровывает синхропосылку, переданную в аргументах функции,
+    в режиме `cbc` с использованием нулевого вектора в качестве синхропосылки.
+
+    \param actx контекст алгоритма xtsmac
+    \param akey ключ аутентификации (должен быть ключом блочного алгоритма шифрования)
+    \param iv указатель на область памяти, где хранится синхропосылка.
+    \param iv_size размер синхропосылки (в октетах, ожадаемое значение -- два блока)
+
+    \note Ожидаемый размер синхропосылки должен составлять два блока блочного шифра.
+    Если аргумент `iv_size` содержит меньшую длину, то синхропосылка дополняется нулями
+    в старших разрядах. Если `iv_size` большую длину, то лишние октеты отбрасываются.
+
+    \return В случае успеха функция возвращает ноль (ak_error_ok). В случае
+    возникновения ошибки возвращается ее код.                                                      */
+/* ----------------------------------------------------------------------------------------------- */
  static int ak_xtsmac_authentication_clean( ak_pointer actx,
                                        ak_pointer akey, const ak_pointer iv, const size_t iv_size )
 {
+  size_t b2 = 0;
   int error = ak_error_ok;
   ak_xtsmac_ctx ctx = actx;
+  ak_uint8 ivcbc[16], in[32];
   ak_bckey authenticationKey = akey;
-  ak_uint64 lvector[6] = { 0, 0, 0, 0, 0, 0 };
-  ak_uint8 liv[16] = { 0x35, 0xea, 0x16, 0xc4, 0x06, 0x36, 0x3a, 0x30,
-                        0xbf, 0x0b, 0x2e, 0x69, 0x39, 0x92, 0xb5, 0x8f }; /* разложение числа pi,
-                                                                           начиная с 100000 знака */
- if( authenticationKey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                        "using null pointer to authentication key");
 
- if( iv == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+  if( authenticationKey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                        "using null pointer to authentication key");
+  if( authenticationKey->key.oid->engine != block_cipher )
+    return ak_error_message( ak_error_oid_engine, __func__,
+                                                      "using non block cipher authentication key" );
+  if( iv == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                             "using null pointer to initial vector");
- if( !iv_size ) return ak_error_message( ak_error_zero_length, __func__,
+  if( !iv_size ) return ak_error_message( ak_error_zero_length, __func__,
                                                             "using initial vector of zero length" );
  /* обнуляем необходимое */
   memset( ctx, 0, sizeof( struct xtsmac_ctx ));
 
- /* формируем значение gamma */
-  memcpy( lvector, iv, ak_min( iv_size, 16 ));
-  if(( error = ak_bckey_encrypt_cbc( authenticationKey, lvector,
-                               ctx->gamma, sizeof( lvector ), liv, sizeof( liv ))) != ak_error_ok )
-    ak_error_message( error, __func__, "incorrect initialization of gamma values" );
+ /* формируем исходное значение gamma */
+  memset( in, 0, sizeof( in ));
+  memcpy( in, iv, ak_min( iv_size, b2 = ( authenticationKey->bsize << 1 )));
+
+  printf("in: %s\n", ak_ptr_to_hexstr( in, b2, ak_false ));
+
+
+//  memset( ivcbc, 0, authenticationKey->bsize );
+//  memset( ptcbc, 0, sizeof( ptcbc ));
+//  memcpy( ptcbc, iv, ak_min( iv_size, 2*authenticationKey->bsize )); /* переносим не более 2х блоков */
+//  if(( error = ak_bckey_encrypt_cbc( authenticationKey, ptcbc,
+//                 ctx->gamma, 2*authenticationKey->bsize, ivcbc, sizeof( ivcbc ))) != ak_error_ok )
+//    ak_error_message( error, __func__, "incorrect initialization of gamma values" );
+
+  ak_aead_set_bit( ctx->flags, ak_aead_initialization_bit );
  return error;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
- #define ak_xtsmac_next_gamma { \
-            t[0] = ctx->gamma[0] >> 63; t[1] = ctx->gamma[1] >> 63; \
-            ctx->gamma[0] <<= 1; ctx->gamma[1] <<= 1; \
-            ctx->gamma[1] ^= t[0]; \
-            if( t[1] ) ctx->gamma[0] ^= 0x87; \
-         }
-
- #define ak_xtsmac_update_sum { \
-            t[0] ^= ctx->gamma[2]; \
-            v  = streebog_Areverse_expand_with_pi[0][tb[ 0]]; \
-            v ^= streebog_Areverse_expand_with_pi[1][tb[ 1]]; \
-            v ^= streebog_Areverse_expand_with_pi[2][tb[ 2]]; \
-            v ^= streebog_Areverse_expand_with_pi[3][tb[ 3]]; \
-            v ^= streebog_Areverse_expand_with_pi[4][tb[ 4]]; \
-            v ^= streebog_Areverse_expand_with_pi[5][tb[ 5]]; \
-            v ^= streebog_Areverse_expand_with_pi[6][tb[ 6]]; \
-            v ^= streebog_Areverse_expand_with_pi[7][tb[ 7]]; \
-            t[1] ^= v; \
-            t[1] ^= ctx->gamma[3]; \
-            v  = streebog_Areverse_expand_with_pi[0][tb[ 8]]; \
-            v ^= streebog_Areverse_expand_with_pi[1][tb[ 9]]; \
-            v ^= streebog_Areverse_expand_with_pi[2][tb[10]]; \
-            v ^= streebog_Areverse_expand_with_pi[3][tb[11]]; \
-            v ^= streebog_Areverse_expand_with_pi[4][tb[12]]; \
-            v ^= streebog_Areverse_expand_with_pi[5][tb[13]]; \
-            v ^= streebog_Areverse_expand_with_pi[6][tb[14]]; \
-            v ^= streebog_Areverse_expand_with_pi[7][tb[15]]; \
-            t[0] ^= v; \
-            t[0] ^= ctx->gamma[4]; \
-            v  = streebog_Areverse_expand_with_pi[0][tb[ 0]]; \
-            v ^= streebog_Areverse_expand_with_pi[1][tb[ 1]]; \
-            v ^= streebog_Areverse_expand_with_pi[2][tb[ 2]]; \
-            v ^= streebog_Areverse_expand_with_pi[3][tb[ 3]]; \
-            v ^= streebog_Areverse_expand_with_pi[4][tb[ 4]]; \
-            v ^= streebog_Areverse_expand_with_pi[5][tb[ 5]]; \
-            v ^= streebog_Areverse_expand_with_pi[6][tb[ 6]]; \
-            v ^= streebog_Areverse_expand_with_pi[7][tb[ 7]]; \
-            t[1] ^= v; \
-            t[1] ^= ctx->gamma[5]; \
-            v  = streebog_Areverse_expand_with_pi[0][tb[ 8]]; \
-            v ^= streebog_Areverse_expand_with_pi[1][tb[ 9]]; \
-            v ^= streebog_Areverse_expand_with_pi[2][tb[10]]; \
-            v ^= streebog_Areverse_expand_with_pi[3][tb[11]]; \
-            v ^= streebog_Areverse_expand_with_pi[4][tb[12]]; \
-            v ^= streebog_Areverse_expand_with_pi[5][tb[13]]; \
-            v ^= streebog_Areverse_expand_with_pi[6][tb[14]]; \
-            v ^= streebog_Areverse_expand_with_pi[7][tb[15]]; \
-            t[0] ^= v; \
-            ctx->sum[0] ^= t[0]; \
-            ctx->sum[1] ^= t[1]; \
-         }
-
-/* ----------------------------------------------------------------------------------------------- */
- #define ak_xtsmac_authenticate_step64( in ) { \
-            t[0] = *(in)^ctx->gamma[0]; (in)++; \
-            t[1] = *(in)^ctx->gamma[1]; (in)++; \
-            authenticationKey->encrypt( &authenticationKey->key, t, t ); \
-            authenticationKey->encrypt( &authenticationKey->key, t+1, t+1 ); \
-           /* вычисляем слагаемое для имитовставки */ \
-            ak_xtsmac_update_sum; \
-           /* изменяем значение гаммы */ \
-            ak_xtsmac_next_gamma; \
-         }
-
- #define ak_xtsmac_encrypt_step64( in, out ) { \
-            t[0] = *(in)^ctx->gamma[0]; (in)++; \
-            t[1] = *(in)^ctx->gamma[1]; (in)++; \
-            encryptionKey->encrypt( &encryptionKey->key, t, t ); \
-            encryptionKey->encrypt( &encryptionKey->key, t+1, t+1 ); \
-            *(out) = t[0]^ctx->gamma[0]; (out)++; \
-            *(out) = t[1]^ctx->gamma[1]; (out)++; \
-           /* вычисляем слагаемое для имитовставки */ \
-            ak_xtsmac_update_sum;  \
-           /* изменяем значение гаммы */ \
-            ak_xtsmac_next_gamma; \
-         }
-
- #define ak_xtsmac_decrypt_step64( in, out ) { \
-            t[0] = temp[0] = *(in)^ctx->gamma[0]; (in)++; \
-            t[1] = temp[1] = *(in)^ctx->gamma[1]; (in)++; \
-           /* вычисляем слагаемое для имитовставки */ \
-            ak_xtsmac_update_sum;  \
-           /* расшифровываем данные */ \
-            encryptionKey->decrypt( &encryptionKey->key, temp, t ); \
-            encryptionKey->decrypt( &encryptionKey->key, temp+1, t+1 ); \
-            *(out) = t[0]^ctx->gamma[0]; (out)++; \
-            *(out) = t[1]^ctx->gamma[1]; (out)++; \
-            ak_xtsmac_next_gamma; \
-         }
-
-/* ----------------------------------------------------------------------------------------------- */
- #define ak_xtsmac_authenticate_step128( in ) { \
-            t[0] = *(in)^ctx->gamma[0]; (in)++; \
-            t[1] = *(in)^ctx->gamma[1]; (in)++; \
-            authenticationKey->encrypt( &authenticationKey->key, t, t ); \
-           /* вычисляем слагаемое для имитовставки */ \
-            ak_xtsmac_update_sum;  \
-           /* изменяем значение гаммы */ \
-            ak_xtsmac_next_gamma; \
-         }
-
- #define ak_xtsmac_encrypt_step128( in, out ) { \
-            t[0] = *(in)^ctx->gamma[0]; (in)++; \
-            t[1] = *(in)^ctx->gamma[1]; (in)++; \
-            encryptionKey->encrypt( &encryptionKey->key, t, t ); \
-            *(out) = t[0]^ctx->gamma[0]; (out)++; \
-            *(out) = t[1]^ctx->gamma[1]; (out)++; \
-           /* вычисляем слагаемое для имитовставки */ \
-            ak_xtsmac_update_sum;  \
-           /* изменяем значение гаммы */ \
-            ak_xtsmac_next_gamma; \
-         }
-
- #define ak_xtsmac_decrypt_step128( in, out ) { \
-            t[0] = temp[0] = *(in)^ctx->gamma[0]; (in)++; \
-            t[1] = temp[1] = *(in)^ctx->gamma[1]; (in)++; \
-           /* вычисляем слагаемое для имитовставки */ \
-            ak_xtsmac_update_sum;  \
-           /* расшифровываем данные */ \
-            encryptionKey->decrypt( &encryptionKey->key, temp, t ); \
-            *(out) = t[0]^ctx->gamma[0]; (out)++; \
-            *(out) = t[1]^ctx->gamma[1]; (out)++; \
-           /* изменяем значение гаммы */ \
-            ak_xtsmac_next_gamma; \
-         }
-
-/* ----------------------------------------------------------------------------------------------- */
- static int ak_xtsmac_authentication_update( ak_pointer actx,
-                                 ak_pointer akey, const ak_pointer adata, const size_t adata_size )
-{
-  register ak_uint64 v = 0;
-  ak_xtsmac_ctx ctx = actx;
-  ak_bckey authenticationKey = akey;
-  const ak_uint64 *inptr = (const ak_uint64 *)adata;
-#ifdef AK_HAVE_STDALIGN_H
-  alignas(32)
-#endif
-  ak_uint64 t[2], temp[2] = { 0, 0 };
-  ak_uint8 *tb = (ak_uint8 *)&t;
-  ssize_t tail = ( ssize_t )( adata_size&0xf ),
-          blocks = ( ssize_t )( adata_size >> 4 ),
-          resource = (( blocks + (tail > 0)) << 1)/( authenticationKey->bsize >> 3 );
-                                                                       /* общее количество блоков,
-                                                                          подлежащее зашифрованию  */
- /* ни чего не задано => ни чего не обрабатываем */
-  if(( adata == NULL ) || ( adata_size == 0 )) return ak_error_ok;
-
- /* проверка возможности обновления */
-  if( ctx->flags&ak_aead_assosiated_data_bit )
-    return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
-                                              "attemp to update previously closed xtsmac context");
- /* проверка ресурса ключа */
-  if( authenticationKey->key.resource.value.counter < resource )
-   return ak_error_message( ak_error_low_key_resource, __func__, "using key with low key resource");
-  else authenticationKey->key.resource.value.counter -= resource;
-
- /* теперь основной цикл */
-  switch( authenticationKey->bsize ) {
-     case  8: /* шифр с длиной блока 64 бита */
-       while( blocks > 0 ) {
-          ak_xtsmac_authenticate_step64( inptr );
-          ctx->abitlen += 128;
-          --blocks;
-       }
-       if( tail ) {
-          ak_uint64 *tptr = temp;
-          memcpy( temp, inptr, tail ); /* копируем входные данные (здесь меньше одного 16-ти байтного блока) */
-          ak_xtsmac_authenticate_step64( tptr );
-          ak_aead_set_bit( ctx->flags, ak_aead_assosiated_data_bit );
-          ctx->abitlen += ( tail << 3 );
-       }
-       break;
-
-     case 16: /* шифр с длиной блока 128 бит */
-       while( blocks > 0 ) {
-          ak_xtsmac_authenticate_step128( inptr );
-          ctx->abitlen += 128;
-          --blocks;
-       }
-       if( tail ) {
-          ak_uint64 *tptr = temp;
-          memcpy( temp, inptr, tail ); /* копируем входные данные */
-          ak_xtsmac_authenticate_step128( tptr );
-          ak_aead_set_bit( ctx->flags, ak_aead_assosiated_data_bit );
-          ctx->abitlen += ( tail << 3 );
-       }
-       break;
-  }
- return ak_error_ok;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \details Для завершения процесса вычисления имитовставки мы применяем процедуру шифрования
-    для специального блока, который формируется из длин обработаных данных `plen || alen`.
-    Результат шифрования подсуммируется к общей контрольной сумме.
-
-    Последним шагом вычисления имитовставки является операция наложения гаммы и зашифрование
-    вычисленной контрольной суммы. Полученное в ходе шифрования значение и является результирующим
-    значением имитовставки. Формально, реализуемое преобразование может быть описано
-    следующим образом
-
-    \f[ \Sigma = \Sigma \oplus \Pi( \texttt{ECB}( K_A, ( \texttt{plen}||\texttt{alen}) \oplus \gamma_{n+1})), \f]
-
-    \f[ Im = \texttt{ECB}( K_A, \Sigma \oplus \gamma_{n+2} ), \f]
-
-    где, как и ранее, `ECB` это режим простой замены,
-    \f$ \Pi \f$ - используемое в алгоритме перемешивающее преобразование,
-    а `n` это количество 16-ти байтных блоков, преобразованных ранее.
-    Во всех операциях шифрования используется ключ аутентификации \f$ K_A \f$.
-
-    \param ctx
-    \param authenticationKey
-    \param out
-    \param out_size
-    \return В случае успеха функция возвращает ak_error_ok (ноль).
-    В случае возникновения ошибки возвращается ее код.                                             */
-/* ----------------------------------------------------------------------------------------------- */
- static int ak_xtsmac_authentication_finalize( ak_pointer actx,
-                                           ak_pointer akey, ak_pointer out, const size_t out_size )
-{
-  register ak_uint64 v;
-  ak_xtsmac_ctx ctx = actx;
-  ak_bckey authenticationKey = akey;
-#ifdef AK_HAVE_STDALIGN_H
-  alignas(32)
-#endif
-  ak_uint64 t[2];
-  ak_uint8 *tb = (ak_uint8 *)&t;
-
-  if( out == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
-                                                           "using null pointer to output buffer" );
- /* проверка запрашиваемой длины iv */
-  if( out_size == 0 ) return ak_error_message( ak_error_zero_length, __func__,
-                                                      "unexpected zero length of integrity code" );
- /* проверка длины блока */
-  if( authenticationKey->bsize > 16 ) return ak_error_message( ak_error_wrong_length, __func__,
-                                                               "using key with large block size" );
-  /* традиционная проверка ресурса */
-  if( authenticationKey->key.resource.value.counter <= 0 )
-    return ak_error_message( ak_error_low_key_resource, __func__,
-                                                                "using key with low key resource");
-   else authenticationKey->key.resource.value.counter--;
-
- /* закрываем добавление шифруемых данных */
-   ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
-
- /* формируем последний вектор из длин, записанных в big-endian формате */
-#ifdef AK_BIG_ENDIAN
-    t[0] = ( ak_uint64 )ctx->pbitlen;
-    t[1] = ( ak_uint64 )ctx->abitlen;
-#else
-    t[0] = bswap_64(( ak_uint64 )ctx->pbitlen );
-    t[1] = bswap_64(( ak_uint64 )ctx->abitlen );
-#endif
-    t[0] ^= ctx->gamma[0];
-    t[1] ^= ctx->gamma[1];
-
-  if( authenticationKey->bsize == 8 ) {
-     authenticationKey->encrypt( &authenticationKey->key, t, t ); \
-     authenticationKey->encrypt( &authenticationKey->key, t+1, t+1 ); \
-    /* вычисляем слагаемое для имитовставки */ \
-     ak_xtsmac_update_sum;
-    /* изменяем значение гаммы */
-     ak_xtsmac_next_gamma;
-    /* последнее шифрование и завершение работы */
-     ctx->sum[0] ^= ctx->gamma[0];
-     ctx->sum[1] ^= ctx->gamma[1];
-     authenticationKey->encrypt( &authenticationKey->key, &ctx->sum, &ctx->sum );
-     authenticationKey->encrypt( &authenticationKey->key, &ctx->sum+1, &ctx->sum+1 );
-
-  } else { /* теперь тоже самое, но для 128-битного шифра */
-     authenticationKey->encrypt( &authenticationKey->key, t, t ); \
-    /* вычисляем слагаемое для имитовставки */ \
-     ak_xtsmac_update_sum;
-    /* изменяем значение гаммы */
-     ak_xtsmac_next_gamma;
-    /* последнее шифрование и завершение работы */
-     ctx->sum[0] ^= ctx->gamma[0];
-     ctx->sum[1] ^= ctx->gamma[1];
-     authenticationKey->encrypt( &authenticationKey->key, &ctx->sum, &ctx->sum );
-  }
-
- /* если памяти много (out_size >= 16), то копируем все, что есть, */
-            /* в противном случае - только ту часть, что вмещается */
-  memcpy( out, ((ak_uint8 *)ctx->sum)+( out_size >= 16 ? 0 : 16 - out_size ),
-                                                                           ak_min( out_size, 16 ));
- return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -616,7 +361,17 @@
  static int ak_xtsmac_encryption_clean( ak_pointer ectx,
                                       ak_pointer ekey, const ak_pointer iv, const size_t iv_size )
 {
- /*  ...  */
+  ak_xtsmac_ctx ctx = ectx;
+  if(( ctx->flags&ak_aead_initialization_bit ) == 0 )
+    return ak_error_message( ak_error_aead_initialization, __func__ ,
+                                                             "using non initialized aead context");
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_xtsmac_authentication_update( ak_pointer actx,
+                                 ak_pointer akey, const ak_pointer adata, const size_t adata_size )
+{
  return ak_error_ok;
 }
 
@@ -624,74 +379,6 @@
  static int ak_xtsmac_encryption_update( ak_pointer actx, ak_pointer ekey, ak_pointer akey,
                                           const ak_pointer in, ak_pointer out, const size_t size )
 {
-  register ak_uint64 v = 0;
-  ak_xtsmac_ctx ctx = actx;
-  ak_bckey encryptionKey = ekey;
-  ak_uint64 *outptr = (ak_uint64 *)out;
-  const ak_uint64 *inptr = (const ak_uint64 *)in;
-#ifdef AK_HAVE_STDALIGN_H
-  alignas(32)
-#endif
-  ak_uint64 t[2], temp[2] = { 0, 0 };
-  ak_uint8 *tb = (ak_uint8 *)t;
-  ssize_t i = 0,
-          tail = ( ssize_t )( size&0xf ),
-          blocks = ( ssize_t )( size >> 4 ),
-          resource = (( blocks + (tail > 0)) << 1)/( encryptionKey->bsize >> 3 );
-                                                                       /* общее количество блоков,
-                                                                          подлежащее зашифрованию  */
- /* ни чего не задано => ни чего не обрабатываем */
-  if(( in == NULL ) || ( size == 0 )) return ak_error_ok;
- /* слишком короткие сообщения не умеем обрабатывать */
-  if( !blocks && ( tail > 0 ))
-    return ak_error_message( ak_error_wrong_length, __func__ ,
-            "xtsmac mode unsupport short messages (length must be equal or more than block size)");
- /* проверка возможности обновления */
-  if( ctx->flags&ak_aead_encrypted_data_bit )
-    return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
-                                              "attemp to update previously closed xtsmac context");
- /* проверка ресурса ключа */
-  if( encryptionKey->key.resource.value.counter < resource )
-   return ak_error_message( ak_error_low_key_resource, __func__, "using key with low key resource");
-  else encryptionKey->key.resource.value.counter -= resource;
-
- /* теперь основной цикл */
-  switch( encryptionKey->bsize ) {
-     case  8: /* шифр с длиной блока 64 бита */
-       while( blocks > 0 ) {
-          ak_xtsmac_encrypt_step64( inptr, outptr );
-          ctx->pbitlen += 128;
-          --blocks;
-       }
-       break;
-
-     case 16: /* шифр с длиной блока 128 бит */
-       while( blocks > 0 ) {
-          ak_xtsmac_encrypt_step128( inptr, outptr );
-          ctx->pbitlen += 128;
-          --blocks;
-       }
-       break;
-  }
-
-  if( tail ) { /* реализуем "скрадывание" шифртекста таким образом, чтобы длина шифртекста
-                                                                   совпадала с длиной открытого  */
-    size_t adlen = 16 - tail;
-    ak_uint64 *tpi = (ak_uint64 *)t, *tpo = (ak_uint64 *)temp;
-   /* формируем дополнительный полный блок */
-    memcpy( tb, inptr, tail );
-    memcpy( tb + tail, ((ak_uint8 *)outptr) - adlen, adlen );
-   /* шифруем полученное */
-    if( encryptionKey->bsize == 8 ) { ak_xtsmac_encrypt_step64( tpi, tpo ); }
-     else { ak_xtsmac_encrypt_step128( tpi, tpo ); }
-   /* размещаем по ячейкам */
-    for( i = 0; i < tail; i++ ) ((ak_uint8* )outptr)[i] = ((ak_uint8 *)(outptr-2))[i];
-       *(outptr-2) = temp[0];
-       *(outptr-1) = temp[1];
-       ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
-       ctx->pbitlen += ( tail << 3 );
-    }
-
  return ak_error_ok;
 }
 
@@ -699,250 +386,14 @@
  static int ak_xtsmac_decryption_update( ak_pointer actx, ak_pointer ekey, ak_pointer akey,
                                           const ak_pointer in, ak_pointer out, const size_t size )
 {
-  register ak_uint64 v = 0;
-  ak_xtsmac_ctx ctx = actx;
-  ak_bckey encryptionKey = ekey;
-  ak_uint64 *outptr = (ak_uint64 *)out;
-  const ak_uint64 *inptr = (const ak_uint64 *)in;
-#ifdef AK_HAVE_STDALIGN_H
-  alignas(32)
-#endif
-  ak_uint64 t[2], temp[2] = { 0, 0 };
-  ak_uint8 *tb = (ak_uint8 *)t;
-  ssize_t i = 0,
-          tail = ( ssize_t )( size&0xf ),
-          blocks = ( ssize_t )( size >> 4 ),
-          resource = (( blocks + (tail > 0)) << 1)/( encryptionKey->bsize >> 3 );
-                                                                       /* общее количество блоков,
-                                                                          подлежащее зашифрованию  */
- /* ни чего не задано => ни чего не обрабатываем */
-  if(( in == NULL ) || ( size == 0 )) return ak_error_ok;
- /* слишком короткие сообщения не умеем обрабатывать */
-  if( !blocks && ( tail > 0 ))
-    return ak_error_message( ak_error_wrong_length, __func__ ,
-            "xtsmac mode unsupport short messages (length must be equal or more than block size)");
-
- /* проверка возможности обновления */
-  if( ctx->flags&ak_aead_encrypted_data_bit )
-    return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
-                                              "attemp to update previously closed xtsmac context");
- /* проверка ресурса ключа */
-  if( encryptionKey->key.resource.value.counter < resource )
-   return ak_error_message( ak_error_low_key_resource, __func__, "using key with low key resource");
-  else encryptionKey->key.resource.value.counter -= resource;
-
- /* теперь основной цикл */
-  switch( encryptionKey->bsize ) {
-     case  8: /* шифр с длиной блока 64 бита */
-       while( blocks > ( tail > 0 )) {
-          ak_xtsmac_decrypt_step64( inptr, outptr );
-          ctx->pbitlen += 128;
-          --blocks;
-       }
-       break;
-
-     case 16: /* шифр с длиной блока 128 бит */
-       while( blocks > ( tail > 0 )) {
-          ak_xtsmac_decrypt_step128( inptr, outptr );
-          ctx->pbitlen += 128;
-          --blocks;
-       }
-       break;
-  }
-
-  if( tail ) { /* восстановливаем "скраденый" шифртекст */
-    size_t adlen = 16 - tail;
-    ak_uint64 *tpi = (ak_uint64 *)t, *tpo = (ak_uint64 *)temp,
-              tgam[2] = { ctx->gamma[0], ctx->gamma[1] };
-
-   /* сохраняем текущее значение гаммы и переходим к следующему */
-    ak_xtsmac_next_gamma;
-   /* расшифровываем последний полный блок */
-    if( encryptionKey->bsize == 8 ) { ak_xtsmac_decrypt_step64( inptr, outptr ); }
-     else { ak_xtsmac_decrypt_step128( inptr, outptr ); }
-    ctx->pbitlen += 128;
-
-   /* формируем дополнительный полный блок */
-    memcpy( tb, inptr, tail );
-    memcpy( tb + tail, ((ak_uint8 *)outptr) - adlen, adlen );
-
-   /* восстанавливаем значение гаммы и расшифровываем полученное */
-    ctx->gamma[0] = tgam[0]; ctx->gamma[1] = tgam[1];
-    if( encryptionKey->bsize == 8 ) { ak_xtsmac_decrypt_step64( tpi, tpo ); }
-     else { ak_xtsmac_decrypt_step128( tpi, tpo ); }
-
-   /* приводим гамму к ожидаемому виду */
-    ak_xtsmac_next_gamma;
-   /* размещаем по ячейкам */
-    for( i = 0; i < tail; i++ ) ((ak_uint8* )outptr)[i] = ((ak_uint8 *)(outptr-2))[i];
-    *(outptr-2) = temp[0];
-    *(outptr-1) = temp[1];
-    ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
-    ctx->pbitlen += ( tail << 3 );
-
-   /* заполняем память мусором */
-    ak_ptr_wipe( tgam, sizeof( tgam ), &encryptionKey->key.generator );
-  }
-
  return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-/*! Функция реализует режим шифрования для блочного шифра с одновременным вычислением
-    имитовставки. На вход функции подаются как данные, подлежащие зашифрованию,
-    так и ассоциированные данные, которые не зашифровываются. При этом имитовставка вычисляется
-    для всех переданных на вход функции данных.
-
-    Режим `xtsmac` должен использовать для шифрования и выработки имитовставки два различных ключа -
-    в этом случае длины блоков обрабатываемых данных для ключей должны совпадать (то есть два ключа для
-    алгоритмов с длиной блока 64 бита или два ключа для алгоритмов с длиной блока 128 бит).
-
-    Если хотя бы один из указателей на ключ равен `NULL`, то возбуждается ошибка.
-
-    \note Данный режим не позволяет обрабатывать сообщения, длина которых менее 16 октетов.
-
-    @param encryptionKey ключ шифрования, должен быть инициализирован перед вызовом функции;
-    @param authenticationKey ключ выработки кода аутентификации (имитовставки), должен быть инициализирован
-           перед вызовом функции;
-
-    @param adata указатель на ассоциированные (незашифровываемые) данные;
-    @param adata_size длина ассоциированных данных в байтах;
-    @param in указатель на зашифровываеме данные;
-    @param out указатель на зашифрованные данные;
-    @param size размер зашифровываемых данных в байтах, должен быть не менее 16 октетов;
-    @param iv указатель на синхропосылку;
-    @param iv_size длина синхропосылки в байтах;
-    @param icode указатель на область памяти, куда будет помещено значение имитовставки;
-           память должна быть выделена заранее;
-    @param icode_size ожидаемый размер имитовставки в байтах; значение не должно
-           превышать 16 октетов; если значение icode_size, то возвращается запрашиваемое количество
-           старших байт результата вычислений.
-
-   @return Функция возвращает \ref ak_error_ok в случае успешного завершения.
-   В противном случае, возвращается код ошибки.                                                    */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_bckey_encrypt_xtsmac( ak_pointer encryptionKey, ak_pointer authenticationKey,
-           const ak_pointer adata, const size_t adata_size, const ak_pointer in, ak_pointer out,
-                                   const size_t size, const ak_pointer iv, const size_t iv_size,
-                                                       ak_pointer icode, const size_t icode_size )
+ static int ak_xtsmac_authentication_finalize( ak_pointer actx,
+                                           ak_pointer akey, ak_pointer out, const size_t out_size )
 {
-  int error = ak_error_ok;
-  struct xtsmac_ctx ctx; /* контекст структуры, в которой хранятся промежуточные данные */
-
- /* проверки ключей */
-  if(( encryptionKey == NULL ) || ( authenticationKey == NULL ))
-    return ak_error_message( ak_error_null_pointer, __func__ ,"using null pointer to secret key" );
-  if( ((ak_bckey)encryptionKey)->bsize != ((ak_bckey)authenticationKey)->bsize )
-    return ak_error_message( ak_error_not_equal_data, __func__,
-                                                    "different block sizes for given secret keys");
- /* подготавливаем память */
-  memset( &ctx, 0, sizeof( struct xtsmac_ctx ));
-
- /* в начале обрабатываем ассоциированные данные */
-  if(( error = ak_xtsmac_authentication_clean( &ctx, authenticationKey, iv, iv_size ))
-                                                                              != ak_error_ok ) {
-    ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ),&((ak_bckey)authenticationKey)->key.generator );
-    return ak_error_message( error, __func__,
-                                           "incorrect initialization of internal xtsmac context" );
-  }
-  if(( error = ak_xtsmac_authentication_update( &ctx, authenticationKey, adata, adata_size ))
-                                                                              != ak_error_ok ) {
-    ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ),&((ak_bckey)authenticationKey)->key.generator );
-    return ak_error_message( error, __func__, "incorrect hashing of associated data" );
-  }
-
- /* потом зашифровываем данные */
-  if(( error = ak_xtsmac_encryption_update( &ctx, encryptionKey, authenticationKey,
-                                                             in, out, size )) != ak_error_ok ) {
-     ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), &((ak_bckey)encryptionKey)->key.generator );
-     return ak_error_message( error, __func__, "incorrect encryption of plain data" );
-  }
-
- /* в конце - вырабатываем имитовставку */
-  if(( error = ak_xtsmac_authentication_finalize( &ctx,
-                                         authenticationKey, icode, icode_size )) != ak_error_ok )
-    ak_error_message( error, __func__, "incorrect finanlize of integrity code" );
-
-  ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), &((ak_bckey)authenticationKey)->key.generator );
- return error;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! Функция реализует процедуру расшифрования с одновременной проверкой целостности зашифрованных
-    данных. На вход функции подаются как данные, подлежащие расшифрованию,
-    так и ассоциированные данные, которые не незашифровывавались - при этом имитовставка
-    проверяется ото всех переданных на вход функции данных. Требования к передаваемым параметрам
-    аналогичны требованиям, предъявляемым к параметрам функции ak_bckey_encrypt_xtsmac().
-
-    @param encryptionKey ключ шифрования, должен быть инициализирован перед вызовом функции;
-    @param authenticationKey ключ выработки кода аутентификации (имитовставки), должен быть инициализирован
-           перед вызовом функции;
-
-    @param adata указатель на ассоциированные (незашифровываемые) данные;
-    @param adata_size длина ассоциированных данных в байтах;
-    @param in указатель на расшифровываемые данные;
-    @param out указатель на область памяти, куда будут помещены расшифрованные данные;
-           данный указатель может совпадать с указателем in;
-    @param size размер зашифровываемых данных в байтах;
-    @param iv указатель на синхропосылку;
-    @param iv_size длина синхропосылки в байтах;
-    @param icode указатель на область памяти, в которой хранится значение имитовставки;
-    @param icode_size размер имитовставки в байтах; значение не должно превышать 16 октетов;
-
-    @return Функция возвращает \ref ak_error_ok, если значение имитовтсавки совпало с
-            вычисленным в ходе выполнения функции значением; если значения не совпадают,
-            или в ходе выполнения функции возникла ошибка, то возвращается код ошибки.             */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_bckey_decrypt_xtsmac( ak_pointer encryptionKey, ak_pointer authenticationKey,
-           const ak_pointer adata, const size_t adata_size, const ak_pointer in, ak_pointer out,
-                                     const size_t size, const ak_pointer iv, const size_t iv_size,
-                                                         ak_pointer icode, const size_t icode_size )
-{
-  ak_uint8 icode2[16];
-  int error = ak_error_ok;
-  struct xtsmac_ctx ctx; /* контекст структуры, в которой хранятся промежуточные данные */
-
- /* проверки ключей */
-  if(( encryptionKey == NULL ) || ( authenticationKey == NULL ))
-    return ak_error_message( ak_error_null_pointer, __func__ ,"using null pointer to secret key" );
-  if( ((ak_bckey)encryptionKey)->bsize != ((ak_bckey)authenticationKey)->bsize )
-    return ak_error_message( ak_error_not_equal_data, __func__,
-                                                    "different block sizes for given secret keys");
- /* подготавливаем память */
-  memset( &ctx, 0, sizeof( struct xtsmac_ctx ));
-
- /* в начале обрабатываем ассоциированные данные */
-  if(( error = ak_xtsmac_authentication_clean( &ctx, authenticationKey, iv, iv_size ))
-                                                                              != ak_error_ok ) {
-    ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ),&((ak_bckey)authenticationKey)->key.generator );
-    return ak_error_message( error, __func__,
-                                           "incorrect initialization of internal xtsmac context" );
-  }
-  if(( error = ak_xtsmac_authentication_update( &ctx, authenticationKey, adata, adata_size ))
-                                                                              != ak_error_ok ) {
-    ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ),&((ak_bckey)authenticationKey)->key.generator );
-    return ak_error_message( error, __func__, "incorrect hashing of associated data" );
-  }
-
- /* потом зашифровываем данные */
-  if(( error = ak_xtsmac_decryption_update( &ctx, encryptionKey, authenticationKey,
-                                                             in, out, size )) != ak_error_ok ) {
-     ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), &((ak_bckey)encryptionKey)->key.generator );
-     return ak_error_message( error, __func__, "incorrect encryption of plain data" );
-  }
-
- /* в конце - вырабатываем имитовставку */
-  memset( icode2, 0, 16 );
-  if(( error = ak_xtsmac_authentication_finalize( &ctx,
-                                         authenticationKey, icode2, icode_size )) != ak_error_ok ) {
-    ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), &((ak_bckey)authenticationKey)->key.generator );
-    return ak_error_message( error, __func__, "incorrect finanlize of integrity code" );
-  }
-
-  ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), &((ak_bckey)authenticationKey)->key.generator );
-  if( ak_ptr_is_equal_with_log( icode2, icode, icode_size )) return ak_error_ok;
-
- return ak_error_not_equal_data;
+ return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -967,8 +418,7 @@
      return ak_error_message( error, __func__, "incorrect secret keys context creation" );
    }
 
-   ctx->tag_size = 16;
-   ctx->block_size = 16; /* длина 2х блоков алгоритма Магма */
+   ctx->tag_size = ctx->iv_size = ctx->block_size = 16; /* длина 2х блоков алгоритма Магма */
    ctx->auth_clean = ak_xtsmac_authentication_clean;
    ctx->auth_update = ak_xtsmac_authentication_update;
    ctx->auth_finalize = ak_xtsmac_authentication_finalize;
@@ -1000,6 +450,7 @@
    }
 
    ctx->tag_size = ctx->block_size = 16; /* длина блока алгоритма Кузнечик */
+   ctx->iv_size = 32;
    ctx->auth_clean = ak_xtsmac_authentication_clean;
    ctx->auth_update = ak_xtsmac_authentication_update;
    ctx->auth_finalize = ak_xtsmac_authentication_finalize;
@@ -1009,6 +460,197 @@
 
  return error;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                функции прямой реализации, без использования контекста aead                      */
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция реализует режим шифрования для блочного шифра с одновременным вычислением
+    имитовставки. На вход функции подаются как данные, подлежащие зашифрованию,
+    так и ассоциированные данные, которые не зашифровываются. При этом имитовставка вычисляется
+    для всех переданных на вход функции данных.
+
+    Режим `xtsmac` должен использовать для шифрования и выработки имитовставки два различных ключа -
+    в этом случае длины блоков обрабатываемых данных для ключей должны совпадать (то есть два ключа для
+    алгоритмов с длиной блока 64 бита или два ключа для алгоритмов с длиной блока 128 бит).
+
+    Если указатель на ключ имитозащиты равен `NULL`, то возбуждается ошибка.
+    Если указатель на ключ шифрования равен `NULL`, то данные не зашифровываются, однако
+    имитовставка вычисляется.
+
+    \note Данный режим не позволяет обрабатывать сообщения, длина которых менее 16 октетов.
+
+    @param encryptionKey ключ шифрования, должен быть инициализирован перед вызовом функции;
+    @param authenticationKey ключ выработки кода аутентификации (имитовставки), должен быть инициализирован
+           перед вызовом функции;
+
+    @param adata указатель на ассоциированные (незашифровываемые) данные;
+    @param adata_size длина ассоциированных данных в байтах;
+    @param in указатель на зашифровываеме данные;
+    @param out указатель на зашифрованные данные;
+    @param size размер зашифровываемых данных в байтах, должен быть не менее 16 октетов;
+    @param iv указатель на синхропосылку;
+    @param iv_size длина синхропосылки в байтах;
+    @param icode указатель на область памяти, куда будет помещено значение имитовставки;
+           память должна быть выделена заранее;
+    @param icode_size ожидаемый размер имитовставки в байтах; значение не должно
+           превышать 16 октетов; если значение icode_size, то возвращается запрашиваемое количество
+           старших байт результата вычислений.
+
+   @return Функция возвращает \ref ak_error_ok в случае успешного завершения.
+   В противном случае, возвращается код ошибки.                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_bckey_encrypt_xtsmac( ak_pointer encryptionKey, ak_pointer authenticationKey,
+           const ak_pointer adata, const size_t adata_size, const ak_pointer in, ak_pointer out,
+                                   const size_t size, const ak_pointer iv, const size_t iv_size,
+                                                       ak_pointer icode, const size_t icode_size )
+{
+  int error = ak_error_ok;
+  struct xtsmac_ctx ctx; /* контекст структуры, в которой хранятся промежуточные данные */
+  ak_random generator = NULL;
+
+  printf("%s\n", __func__ );
+
+ /* проверки ключей */
+  if(( error = ak_xtsmac_authentication_clean( &ctx, authenticationKey, iv, iv_size ))
+                                                                              != ak_error_ok ) {
+    if( authenticationKey != NULL ) ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ),
+                                                   &((ak_bckey)authenticationKey)->key.generator );
+    return ak_error_message( error, __func__,
+                                           "incorrect initialization of internal xtsmac context" );
+  }
+//  if( encryptionKey != NULL ) {
+//    if( ((ak_bckey)encryptionKey)->bsize != ((ak_bckey)authenticationKey)->bsize )
+//    return ak_error_message( ak_error_not_equal_data, __func__,
+//                                                    "different block sizes for given secret keys");
+//  }
+
+ /* в начале обрабатываем ассоциированные данные */
+  generator = &((ak_bckey)authenticationKey)->key.generator;
+//  if(( error = ak_xtsmac_authentication_update( &ctx, authenticationKey, adata, adata_size ))
+//                                                                              != ak_error_ok ) {
+//    ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), generator );
+//    return ak_error_message( error, __func__, "incorrect hashing of associated data" );
+//  }
+
+// /* потом зашифровываем данные */
+//  if( encryptionKey != NULL ) {
+//    if(( error = ak_xtsmac_encryption_update( &ctx, encryptionKey, authenticationKey,
+//                                                               in, out, size )) != ak_error_ok ) {
+//      ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), &((ak_bckey)encryptionKey)->key.generator );
+//      return ak_error_message( error, __func__, "incorrect encryption of plain data" );
+//    }
+//  }
+//   else { /* если ключа шифрования нет, то вычисляем имитовставку от оставшизся данных,
+//             если длина обработанных ранее ассоциированных данных не кратна длине обрабатываемого блока,
+//             то следующий фрагмент приведет к ошибке */
+//    if(( error = ak_xtsmac_authentication_update( &ctx, authenticationKey,
+//                                                                    in, size )) != ak_error_ok ) {
+//      ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), generator );
+//      return ak_error_message( error, __func__, "incorrect authentication of plain data" );
+//    }
+//   }
+
+// /* в конце - вырабатываем имитовставку */
+//  if(( error = ak_xtsmac_authentication_finalize( &ctx,
+//                                         authenticationKey, icode, icode_size )) != ak_error_ok )
+//    ak_error_message( error, __func__, "incorrect finanlize of integrity code" );
+
+  ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), generator );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция реализует процедуру расшифрования с одновременной проверкой целостности зашифрованных
+    данных. На вход функции подаются как данные, подлежащие расшифрованию,
+    так и ассоциированные данные, которые не незашифровывавались - при этом имитовставка
+    проверяется ото всех переданных на вход функции данных. Требования к передаваемым параметрам
+    аналогичны требованиям, предъявляемым к параметрам функции ak_bckey_encrypt_xtsmac().
+
+    @param encryptionKey ключ шифрования, должен быть инициализирован перед вызовом функции;
+    @param authenticationKey ключ выработки кода аутентификации (имитовставки), должен быть инициализирован
+           перед вызовом функции;
+
+    @param adata указатель на ассоциированные (незашифровываемые) данные;
+    @param adata_size длина ассоциированных данных в байтах;
+    @param in указатель на расшифровываемые данные;
+    @param out указатель на область памяти, куда будут помещены расшифрованные данные;
+           данный указатель может совпадать с указателем in;
+    @param size размер зашифровываемых данных в байтах;
+    @param iv указатель на синхропосылку;
+    @param iv_size длина синхропосылки в байтах;
+    @param icode указатель на область памяти, в которой хранится значение имитовставки;
+    @param icode_size размер имитовставки в байтах; значение не должно превышать 16 октетов;
+
+    @return Функция возвращает \ref ak_error_ok, если значение имитовставки совпало с
+            вычисленным в ходе выполнения функции значением; если значения не совпадают,
+            или в ходе выполнения функции возникла ошибка, то возвращается код ошибки.             */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_bckey_decrypt_xtsmac( ak_pointer encryptionKey, ak_pointer authenticationKey,
+           const ak_pointer adata, const size_t adata_size, const ak_pointer in, ak_pointer out,
+                                     const size_t size, const ak_pointer iv, const size_t iv_size,
+                                                         ak_pointer icode, const size_t icode_size )
+{
+  ak_uint8 icode2[16];
+  int error = ak_error_ok;
+  struct xtsmac_ctx ctx; /* контекст структуры, в которой хранятся промежуточные данные */
+  ak_random generator = NULL;
+
+  printf("%s\n", __func__ );
+
+ /* проверки ключей */
+  if(( error = ak_xtsmac_authentication_clean( &ctx, authenticationKey, iv, iv_size ))
+                                                                              != ak_error_ok ) {
+    if( authenticationKey != NULL ) ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ),
+                                                   &((ak_bckey)authenticationKey)->key.generator );
+    return ak_error_message( error, __func__,
+                                           "incorrect initialization of internal xtsmac context" );
+  }
+  if( encryptionKey != NULL ) {
+    if( ((ak_bckey)encryptionKey)->bsize != ((ak_bckey)authenticationKey)->bsize )
+    return ak_error_message( ak_error_not_equal_data, __func__,
+                                                    "different block sizes for given secret keys");
+  }
+
+ /* в начале обрабатываем ассоциированные данные */
+  generator = &((ak_bckey)authenticationKey)->key.generator;
+  if(( error = ak_xtsmac_authentication_update( &ctx, authenticationKey, adata, adata_size ))
+                                                                              != ak_error_ok ) {
+    ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), generator );
+    return ak_error_message( error, __func__, "incorrect hashing of associated data" );
+  }
+
+ /* потом расшифровываем данные */
+  if( encryptionKey != NULL ) {
+    if(( error = ak_xtsmac_decryption_update( &ctx, encryptionKey, authenticationKey,
+                                                             in, out, size )) != ak_error_ok ) {
+      ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), &((ak_bckey)encryptionKey)->key.generator );
+      return ak_error_message( error, __func__, "incorrect encryption of plain data" );
+    }
+  }
+   else { /* если ключа шифрования нет, то вычисляем имитовставку от оставшизся данных,
+             если длина обработанных ранее ассоциированных данных не кратна длине обрабатываемого блока,
+             то следующий фрагмент приведет к ошибке */
+    if(( error = ak_xtsmac_authentication_update( &ctx, authenticationKey,
+                                                                    in, size )) != ak_error_ok ) {
+      ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), generator );
+      return ak_error_message( error, __func__, "incorrect authentication of encrypted data" );
+    }
+   }
+
+ /* в конце - вырабатываем имитовставку */
+  memset( icode2, 0, 16 );
+  if(( error = ak_xtsmac_authentication_finalize( &ctx,
+                                         authenticationKey, icode2, icode_size )) != ak_error_ok ) {
+    ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), generator );
+    return ak_error_message( error, __func__, "incorrect finanlize of integrity code" );
+  }
+
+  ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), generator );
+  if( ak_ptr_is_equal_with_log( icode2, icode, icode_size )) return ak_error_ok;
+
+ return ak_error_not_equal_data;
+}
+
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                       ak_xts.c  */

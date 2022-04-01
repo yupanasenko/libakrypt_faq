@@ -81,8 +81,10 @@
  @{ */
  #define ak_aead_assosiated_data_bit  (0x1)
  #define ak_aead_encrypted_data_bit   (0x2)
+ #define ak_aead_initialization_bit   (0x4)
 
  #define ak_aead_set_bit( x, n ) ( (x) = ((x)&(0xFFFFFFFF^(n)))^(n) )
+ #define ak_aead_unset_bit( x, n ) ( (x) &= ~(n) )
 /** @} */
 
 #endif

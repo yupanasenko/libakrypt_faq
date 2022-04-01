@@ -8,6 +8,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /** \addtogroup aead-doc Аутентифицированное шифрование данных
+@{
     \details Аутентифицированное шифрование (AEAD, Authenticated Ecncryption with Associated Data)
     представляет собой совокупность из одного или
     двух алгоритмов, позволяющих одновременно зашифровать данные и вычислить их имитовставку,
@@ -39,9 +40,8 @@
     Аутентифицированное шифрование может быть реализовано как одним алгоритмом, так и комбинацией
     двух независимых алгоритмов - шифрования и имитозащиты. Примером первого подхода служат:
     - режим `MGM`, регламентируемый  рекомендациями по стандартизации Р 1323565.1.026-2019,
-      см. функции ak_aead_create_mgm_magma(), ak_aead_create_mgm_kuznechik().
-    - режим `XTSMAC`, разработанный авторами библиотеки,
-      см. функции ak_aead_create_xtsmac_magma(), ak_aead_create_xtsmac_kuznechik().
+    - режим `XTSMAC`, предложенный в работе
+      A.Yu.Nesterenko, "Differential properties of authenticated encryption mode based on universal hash function (XTSMAC)".
 
     Примером второго подхода служат комбинации:
     - шифрование в режиме счетчика `CTR` с вычислением имитовставки по алгоритму `CMAC`,
@@ -49,8 +49,8 @@
     - шифрование в режиме счетчика `CTR` с вычислением имитовставки по алгоритму `HMAC` и т.д.
 
     \note Алгоритм аутентифицированного шифрования может не принимать на вход зашифровываемые
-    данные. В этом случае алгоритм должен действовать как обычный алгоритм имитозащиты.   */
-
+    данные. В этом случае алгоритм должен действовать как обычный алгоритм имитозащиты.
+@}                                                                                                 */
 /* ----------------------------------------------------------------------------------------------- */
 /*! \param ctx контекст aead алгоритма
     \param crf флаг необходимости создания ключа шифрования
@@ -347,6 +347,127 @@
 
  return error;
 }
+
+/* ----------------------------------------------------------------------------------------------- */
+ ssize_t ak_aead_get_tag_size( ak_aead ctx )
+{
+  if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to aead context" );
+ return ctx->tag_size;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ssize_t ak_aead_get_block_size( ak_aead ctx )
+{
+  if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to aead context" );
+ return ctx->block_size;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ ssize_t ak_aead_get_iv_size( ak_aead ctx )
+{
+  if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to aead context" );
+ return ctx->iv_size;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция реализует режим шифрования с одновременным вычислением имитовставки.
+    На вход функции подаются как данные, подлежащие зашифрованию,
+    так и ассоциированные данные, которые не зашифровываются. При этом имитовставка вычисляется
+    для всех переданных на вход функции данных.
+
+    Перед вызовом функции контекст алгоритма аутентифицированного шифрования должен быть создан
+    и содержать оба ключевых значения, как значение секретного ключа, так и значение ключа имитозащиты.
+    Если указатель на ключ шифрования равен `NULL`, то возбуждается ошибка.
+
+    @param ctx контекст алгоритма аутентифицированного шифрования
+    @param adata указатель на ассоциированные (незашифровываемые) данные
+    @param adata_size длина ассоциированных данных в октетах
+    @param in указатель на зашифровываеме данные
+    @param out указатель на зашифрованные данные
+    @param size размер зашифровываемых данных в октетах
+    @param iv указатель на синхропосылку;
+    @param iv_size длина синхропосылки в октетах
+    @param icode указатель на область памяти, куда будет помещено значение имитовставки
+           память должна быть выделена заранее
+    @param icode_size ожидаемый размер имитовставки в байтах
+
+   @return Функция возвращает \ref ak_error_ok в случае успешного завершения.
+   В противном случае, возвращается код ошибки.                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ dll_export int ak_aead_encrypt( ak_aead ctx,  const ak_pointer adata, const size_t adata_size,
+                    const ak_pointer in, ak_pointer out, const size_t size, const ak_pointer iv,
+                                 const size_t iv_size, ak_pointer icode, const size_t icode_size )
+{
+  if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to aead context" );
+  if( ctx->encryptionKey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                    "encryption key must be created before use of this function" );
+ return ctx->oid->func.direct(
+                    ctx->encryptionKey,
+                    ctx->authenticationKey,
+                    adata,
+                    adata_size,
+                    in,
+                    out,
+                    size,
+                    iv,
+                    iv_size,
+                    icode,
+                    icode_size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция реализует процедуру расшифрования данных с одновременной проверкой имитовставки.
+    На вход функции подаются как данные, подлежащие расзашифрованию,
+    так и ассоциированные (незашифрованные) данные.
+
+    Перед вызовом функции контекст алгоритма аутентифицированного шифрования должен быть создан
+    и содержать оба ключевых значения, как значение секретного ключа, так и значение ключа имитозащиты.
+    Если указатель на ключ шифрования равен `NULL`, то возбуждается ошибка.
+
+    @param ctx контекст алгоритма аутентифицированного шифрования
+    @param adata указатель на ассоциированные (незашифровываемые) данные
+    @param adata_size длина ассоциированных данных в байтах
+    @param in указатель на зашифрованные данные
+    @param out указатель на расшифровываемые данные
+    @param size размер зашифровыванных данных в байтах
+    @param iv указатель на синхропосылку
+    @param iv_size длина синхропосылки в октетах
+    @param icode указатель на область памяти, где находится проверяемое значение имитовставки
+    @param icode_size размер имитовставки в октетах
+
+   @return Функция возвращает \ref ak_error_ok в случае успешного завершения.
+   В противном случае, возвращается код ошибки.                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ dll_export int ak_aead_decrypt( ak_aead ctx,  const ak_pointer adata, const size_t adata_size,
+                    const ak_pointer in, ak_pointer out, const size_t size, const ak_pointer iv,
+                                 const size_t iv_size, ak_pointer icode, const size_t icode_size )
+{
+  if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to aead context" );
+  if( ctx->encryptionKey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                    "encryption key must be created before use of this function" );
+ return ctx->oid->func.invert(
+                    ctx->encryptionKey,
+                    ctx->authenticationKey,
+                    adata,
+                    adata_size,
+                    in,
+                    out,
+                    size,
+                    iv,
+                    iv_size,
+                    icode,
+                    icode_size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+// int ak_aead_mac( ak_aead ,  const ak_pointer , const size_t ,
+//                const ak_pointer , const size_t , const ak_pointer , const size_t ,
+//                                                                       ak_pointer , const size_t );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_aead.c  */
