@@ -54,7 +54,8 @@
     return ak_false;
   }
 
-  ak_error_message_fmt( ak_error_ok, __func__, "size of pointer is %d", sizeof( ak_pointer ));
+  if( ak_log_get_level() >= ak_log_standard )
+    ak_error_message_fmt( ak_error_ok, __func__, "size of pointer is %d", sizeof( ak_pointer ));
 
  /* определяем тип платформы: little-endian или big-endian */
   val.x[0] = 0; val.x[1] = 1; val.x[2] = 2; val.x[3] = 3;
@@ -64,29 +65,45 @@
      ak_error_message( ak_error_wrong_endian, __func__,
       "incorrect endian: library runs on big endian, but compiled for little endian platform");
      return ak_false;
-   } else ak_error_message( ak_error_ok, __func__ , "library runs on little endian platform" );
+   } else
+      if( ak_log_get_level() >= ak_log_standard ) {
+        ak_error_message( ak_error_ok, __func__ , "library runs on little endian platform" );
+      }
   #else
    if( val.z != 66051 ) {
      ak_error_message( ak_error_wrong_endian, __func__,
       "incorrect endian: library runs on little endian, but compiled for big endian platform");
      return ak_false;
-   } else ak_error_message( ak_error_ok, __func__ , "library runs on big endian platform" );
+   } else
+      if( ak_log_get_level() >= ak_log_standard ) {
+        ak_error_message( ak_error_ok, __func__ , "library runs on big endian platform" );
+      }
   #endif
 
   #ifdef AK_HAVE_BUILTIN_XOR_SI128
-   ak_error_message( ak_error_ok, __func__ , "library applies __m128i base type" );
+   if( ak_log_get_level() >= ak_log_standard ) {
+     ak_error_message( ak_error_ok, __func__ , "library applies __m128i base type" );
+   }
   #endif
   #ifdef AK_HAVE_BUILTIN_CLMULEPI64
-   ak_error_message( ak_error_ok, __func__ , "library applies clmulepi64 instruction" );
+   if( ak_log_get_level() >= ak_log_standard ) {
+     ak_error_message( ak_error_ok, __func__ , "library applies clmulepi64 instruction" );
+   }
   #endif
   #ifdef AK_HAVE_BUILTIN_MULQ_GCC
-   ak_error_message( ak_error_ok, __func__ , "library applies assembler code for mulq command" );
+   if( ak_log_get_level() >= ak_log_standard ) {
+     ak_error_message( ak_error_ok, __func__ , "library applies assembler code for mulq command" );
+   }
   #endif
   #ifdef AK_HAVE_PTHREAD_H
-   ak_error_message( ak_error_ok, __func__ , "library runs with pthreads support" );
+   if( ak_log_get_level() >= ak_log_standard ) {
+     ak_error_message( ak_error_ok, __func__ , "library runs with pthreads support" );
+   }
   #endif
   #ifdef AK_HAVE_GMP_H
-   ak_error_message( ak_error_ok, __func__ , "library runs with gmp support" );
+   if( ak_log_get_level() >= ak_log_standard ) {
+     ak_error_message( ak_error_ok, __func__ , "library runs with gmp support" );
+   }
   #endif
 
  return ak_true;
@@ -343,7 +360,7 @@
    ak_error_set_color_output( ak_false );
 #endif
  /* выводим значения установленных параметров библиотеки */
-   ak_libakrypt_log_options();
+   if( ak_log_get_level() >= ak_log_standard ) ak_libakrypt_log_options();
 
  /* проверяем длины фиксированных типов данных */
    if( ak_libakrypt_test_types() != ak_true ) {

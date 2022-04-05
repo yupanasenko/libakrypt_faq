@@ -2160,15 +2160,24 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_certificate_set_repository( const char *path )
 {
+  char str[FILENAME_MAX];
+
   if( path == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                     "using null pointer to CA repository's path" );
-  if( strlen( path ) > sizeof( ca_repository_path ) -1 )
-    return ak_error_message( ak_error_wrong_length, __func__, "CA repository's path is too long" );
-  if( ak_file_or_directory( path ) != DT_DIR )
+ /* обрабатываем символ ~ в начале строки */
+  if( strchr( path, '~' ) == path ) {
+    char home[FILENAME_MAX];
+    ak_libakrypt_get_home_path( home, sizeof( home ));
+    ak_snprintf( str, sizeof( str ), "%s%s", home, ++path );
+  }
+   else memcpy( str, path, strlen( path ));
+
+ /* проверяем существование заказанного каталога */
+  if( ak_file_or_directory( str ) != DT_DIR )
     return ak_error_message_fmt( ak_error_not_directory,
-                                                      __func__,  "directory %s not exists", path );
+                                                       __func__,  "directory %s not exists", str );
   memset( ca_repository_path, 0, sizeof( ca_repository_path ));
-  strncpy( ca_repository_path, path, sizeof( ca_repository_path ) -1);
+  strncpy( ca_repository_path, str, sizeof( ca_repository_path ));
 
  return ak_error_ok;
 }

@@ -6,7 +6,7 @@
 # -------------------------------------------------------------------------------------
 #
 # 1. Создаем ключи центра сертификации
-aktool k -nt sign512 --curve ec512b --ca -o ca.key --outpass z12Ajq --op ca.crt --to certificate --id "Root CA"
+aktool k -nt sign512 --curve ec512b --ca -o ca.key --outpass z12Ajq --op ca.crt --to certificate --id "Root CA" --days 1
 #
 # 2. Создаем ключевую пару для получателя сообщений
 aktool k -nt sign256 -o user.key --outpass 1Qlm21u --op user_request.csr --to pem --id "Local User"

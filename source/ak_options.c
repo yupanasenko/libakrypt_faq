@@ -159,6 +159,9 @@
                                           "option %s is %ld", options[i].name, options[i].value );
        }
     }
+ /* выводим сообщение об установленных каталогах доступа к криптографическим ключам */
+   ak_error_message_fmt( ak_error_ok, __func__,
+                          "certificate's repository path: %s", ak_certificate_get_repository( ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -344,6 +347,11 @@
      #endif
     }
   }
+
+  /* сохраняем каталог для хранения доверенных сертификатов открытых ключей */
+  ak_snprintf( hpath, sizeof( hpath )-1, "  %s = %s\n", "certificate_repository", ak_certificate_get_repository());
+  ak_file_write( &fd, hpath, strlen( hpath ));
+
   ak_file_close( &fd );
   if( error == ak_error_ok )
     ak_error_message_fmt( ak_error_ok, __func__, "all options stored in %s file", filename );
@@ -371,6 +379,10 @@
  /* проверки */
   if( user != NULL ) return 0;
   if( strncmp( section, "libakrypt", 9 ) != 0 ) return 0;
+  if( strncmp( name, "certificate_repository", 25 ) == 0 ) {
+    if( ak_certificate_set_repository( valstr ) != ak_error_ok ) return 0;
+     else return 1;
+  }
 
  /* теперь детальный разбор каждой опции */
   while( options[idx].name != NULL ) {
