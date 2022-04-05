@@ -320,7 +320,7 @@
   size_t b2 = 0;
   int error = ak_error_ok;
   ak_xtsmac_ctx ctx = actx;
-  ak_uint8 ivcbc[16], in[32];
+  ak_uint8 in[32];
   ak_bckey authenticationKey = akey;
 
   if( authenticationKey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
@@ -418,7 +418,8 @@
      return ak_error_message( error, __func__, "incorrect secret keys context creation" );
    }
 
-   ctx->tag_size = ctx->iv_size = ctx->block_size = 16; /* длина 2х блоков алгоритма Магма */
+   ctx->tag_size = ctx->block_size = 16; /* длина 2х блоков алгоритма Магма */
+   ctx->iv_size = 16;
    ctx->auth_clean = ak_xtsmac_authentication_clean;
    ctx->auth_update = ak_xtsmac_authentication_update;
    ctx->auth_finalize = ak_xtsmac_authentication_finalize;

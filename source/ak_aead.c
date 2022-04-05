@@ -221,7 +221,7 @@
     \return В случае успеха функция возвращает  ноль (\ref ak_error_ok). В случае возникновения
     ошибки возвращается ее код.                                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_aead_auth_finalize( ak_aead ctx, ak_pointer out, const size_t out_size )
+ int ak_aead_finalize( ak_aead ctx, ak_pointer out, const size_t out_size )
 {
   int error = ak_error_ok;
   if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -397,7 +397,7 @@
    @return Функция возвращает \ref ak_error_ok в случае успешного завершения.
    В противном случае, возвращается код ошибки.                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- dll_export int ak_aead_encrypt( ak_aead ctx,  const ak_pointer adata, const size_t adata_size,
+ int ak_aead_encrypt( ak_aead ctx,  const ak_pointer adata, const size_t adata_size,
                     const ak_pointer in, ak_pointer out, const size_t size, const ak_pointer iv,
                                  const size_t iv_size, ak_pointer icode, const size_t icode_size )
 {
@@ -421,7 +421,7 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция реализует процедуру расшифрования данных с одновременной проверкой имитовставки.
-    На вход функции подаются как данные, подлежащие расзашифрованию,
+    На вход функции подаются как данные, подлежащие расшифрованию,
     так и ассоциированные (незашифрованные) данные.
 
     Перед вызовом функции контекст алгоритма аутентифицированного шифрования должен быть создан
@@ -442,7 +442,7 @@
    @return Функция возвращает \ref ak_error_ok в случае успешного завершения.
    В противном случае, возвращается код ошибки.                                                    */
 /* ----------------------------------------------------------------------------------------------- */
- dll_export int ak_aead_decrypt( ak_aead ctx,  const ak_pointer adata, const size_t adata_size,
+ int ak_aead_decrypt( ak_aead ctx,  const ak_pointer adata, const size_t adata_size,
                     const ak_pointer in, ak_pointer out, const size_t size, const ak_pointer iv,
                                  const size_t iv_size, ak_pointer icode, const size_t icode_size )
 {
@@ -465,9 +465,42 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
-// int ak_aead_mac( ak_aead ,  const ak_pointer , const size_t ,
-//                const ak_pointer , const size_t , const ak_pointer , const size_t ,
-//                                                                       ak_pointer , const size_t );
+/*! Перед вызовом функции контекст алгоритма аутентифицированного шифрования должен быть создан
+    и содержать значение ключа имитозащиты.
+
+    @param ctx контекст алгоритма аутентифицированного шифрования
+    @param adata указатель на ассоциированные (незашифровываемые) данные
+    @param adata_size длина ассоциированных данных в байтах
+    @param iv указатель на синхропосылку (в режимах, где синхропосылка не используется
+    целесообразно использовать значение NULL)
+    @param iv_size длина синхропосылки в октетах (в режимах, где синхропосылка не используется
+    целесообразно использовать значение 0)
+    @param icode указатель на область памяти, куда помещается значение имитовставки
+    @param icode_size размер имитовставки в октетах
+
+   @return Функция возвращает \ref ak_error_ok в случае успешного завершения.
+   В противном случае, возвращается код ошибки.                                                    */
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_aead_mac( ak_aead ctx,  const ak_pointer adata, const size_t adata_size,
+             const ak_pointer iv, const size_t iv_size, ak_pointer icode, const size_t icode_size )
+{
+  if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to aead context" );
+  if( ctx->authenticationKey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                "authentication key must be created before use of this function" );
+ return ctx->oid->func.direct(
+                    ctx->encryptionKey,
+                    ctx->authenticationKey,
+                    adata,
+                    adata_size,
+                    NULL,
+                    NULL,
+                    0,
+                    iv,
+                    iv_size,
+                    icode,
+                    icode_size );
+}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                      ak_aead.c  */

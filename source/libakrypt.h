@@ -1197,17 +1197,16 @@ extern "C" {
 /*! \brief Функция возвращает ожидаемый размер синхропосылки (в октетах) */
  dll_export ssize_t ak_aead_get_iv_size( ak_aead );
 /*! \brief Функция реализует аутентифицируемое зашифрование данных */
- dll_export int ak_aead_encrypt( ak_aead ,  const ak_pointer , const size_t ,
+ dll_export int ak_aead_encrypt( ak_aead , const ak_pointer , const size_t ,
    const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
                                                                        ak_pointer , const size_t );
 /*! \brief Функция реализует аутентифицируемое расшифрование данных */
- dll_export int ak_aead_decrypt( ak_aead ,  const ak_pointer , const size_t ,
+ dll_export int ak_aead_decrypt( ak_aead , const ak_pointer , const size_t ,
    const ak_pointer , ak_pointer , const size_t , const ak_pointer , const size_t ,
                                                                        ak_pointer , const size_t );
 /*! \brief Функция реализует выработку имитовставки (кода аутентификации) */
- dll_export int ak_aead_mac( ak_aead ,  const ak_pointer , const size_t ,
-                const ak_pointer , const size_t , const ak_pointer , const size_t ,
-                                                                       ak_pointer , const size_t );
+ dll_export int ak_aead_mac( ak_aead , const ak_pointer , const size_t ,
+                                     const ak_pointer , const size_t , ak_pointer , const size_t );
 /*! \brief Первичная инициализация параметров контекста алгоритма аутентифицированного шифрования,
     отвеающих как за шифрование, так и за выработку кода атентификации (имитовставку) */
  dll_export int ak_aead_clean( ak_aead , const ak_pointer , const size_t );
@@ -1218,7 +1217,7 @@ extern "C" {
 /*! \brief Обновление контекста алгоритма аутентифицированного шифрования ассоциированными данными */
  dll_export int ak_aead_auth_update( ak_aead , const ak_pointer , const size_t );
 /*! \brief Закрытие контекста алгоритма аутентифицированного шифрования и вычисление кода аутентификации */
- dll_export int ak_aead_auth_finalize( ak_aead , ak_pointer out, const size_t out_size );
+ dll_export int ak_aead_finalize( ak_aead , ak_pointer out, const size_t out_size );
 /*! \brief Зашифрование данных и обновление контекста алгоритма аутентифицированного шифрования */
  dll_export int ak_aead_encrypt_update( ak_aead , const ak_pointer , ak_pointer , const size_t );
 /*! \brief Расшифрование данных и обновление контекста алгоритма аутентифицированного шифрования */

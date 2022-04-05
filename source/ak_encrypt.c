@@ -203,7 +203,7 @@
      }
     /* проверяем, что цикл завершен успешно */
      if( error != ak_error_ok ) break;
-     if(( error = ak_aead_auth_finalize( &ctx, im, ak_min( 16, ctx.tag_size ))) != ak_error_ok ) {
+     if(( error = ak_aead_finalize( &ctx, im, ak_min( 16, ctx.tag_size ))) != ak_error_ok ) {
        ak_error_message( error, __func__, "incorrect finalize of internal state" );
        break;
      }
@@ -691,7 +691,7 @@
 
    /* проверяем, что цикл завершен успешно */
     if( error != ak_error_ok ) break;
-    if(( error = ak_aead_auth_finalize( &ctx, im, ak_min( 16, ctx.tag_size ))) != ak_error_ok ) {
+    if(( error = ak_aead_finalize( &ctx, im, ak_min( 16, ctx.tag_size ))) != ak_error_ok ) {
       ak_error_message( error, __func__, "incorrect finalize of internal state" );
       break;
     }
