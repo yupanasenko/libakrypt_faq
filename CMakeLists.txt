@@ -376,9 +376,11 @@ if( CMAKE_HOST_UNIX )
   endif()
 
   if( GZIP )
+    install( CODE "execute_process( COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.1 ${CMAKE_CURRENT_BINARY_DIR} )" )
+    install( CODE "execute_process( COMMAND gzip --force ${CMAKE_CURRENT_BINARY_DIR}/aktool.1 )" )
     install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool.1.gz DESTINATION ${AK_MAN_PATH} )
   else()
-    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/aktool/aktool.1 DESTINATION ${AK_MAN_PATH} )
+    install( FILES ${CMAKE_CURRENT_SOURCE_DIR}/aktool/aktool.1 DESTINATION ${AK_MAN_PATH} )
   endif()
 
  # инсталлируем корневой сертификат библиотеки
@@ -411,7 +413,7 @@ set( CPACK_PACKAGE_VERSION_MINOR ${MAIN_VERSION} )
 set( CPACK_PACKAGE_VERSION_PATCH ${MINOR_VERSION} )
 
 set( CPACK_DEBIAN_PACKAGE_MAINTAINER "Axel Kenzo") #required
-set( CPACK_PACKAGE_VENDOR "Axel Kenzo & The Company Of Belles Lettres")
+set( CPACK_PACKAGE_VENDOR "Axel Kenzo и Компания изящной словесности")
 set( CPACK_PACKAGE_FILE_NAME ${CMAKE_PROJECT_NAME}-${FULL_VERSION}-${CMAKE_SYSTEM_PROCESSOR} )
 set( CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${FULL_VERSION}" )
 set( CPACK_STRIP_FILES TRUE )
