@@ -299,7 +299,7 @@
 
     Функция вычисляет начальное значение внутреннего состояния `gamma`
     из заданного значения синхропосылки с помощью равенства `gamma = CBC( K, iv, 0 )`,
-    т.е. зашифровывает синхропосылку, переданную в аргументах функции,
+    т.е. зашифровывает синхропосылку `iv`, переданную в аргументах функции,
     в режиме `cbc` с использованием нулевого вектора в качестве синхропосылки.
 
     \param actx контекст алгоритма xtsmac
@@ -320,7 +320,7 @@
   size_t b2 = 0;
   int error = ak_error_ok;
   ak_xtsmac_ctx ctx = actx;
-  ak_uint8 in[32];
+  ak_uint8 in[32], ivcbc[16];
   ak_bckey authenticationKey = akey;
 
   if( authenticationKey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
@@ -338,16 +338,10 @@
  /* формируем исходное значение gamma */
   memset( in, 0, sizeof( in ));
   memcpy( in, iv, ak_min( iv_size, b2 = ( authenticationKey->bsize << 1 )));
-
-  printf("in: %s\n", ak_ptr_to_hexstr( in, b2, ak_false ));
-
-
-//  memset( ivcbc, 0, authenticationKey->bsize );
-//  memset( ptcbc, 0, sizeof( ptcbc ));
-//  memcpy( ptcbc, iv, ak_min( iv_size, 2*authenticationKey->bsize )); /* переносим не более 2х блоков */
-//  if(( error = ak_bckey_encrypt_cbc( authenticationKey, ptcbc,
-//                 ctx->gamma, 2*authenticationKey->bsize, ivcbc, sizeof( ivcbc ))) != ak_error_ok )
-//    ak_error_message( error, __func__, "incorrect initialization of gamma values" );
+  memset( ivcbc, 0, authenticationKey->bsize );
+  if(( error = ak_bckey_encrypt_cbc( authenticationKey, in,
+                 ctx->gamma, 2*authenticationKey->bsize, ivcbc, sizeof( ivcbc ))) != ak_error_ok )
+    ak_error_message( error, __func__, "incorrect initialization of gamma values" );
 
   ak_aead_set_bit( ctx->flags, ak_aead_initialization_bit );
  return error;
@@ -372,6 +366,9 @@
  static int ak_xtsmac_authentication_update( ak_pointer actx,
                                  ak_pointer akey, const ak_pointer adata, const size_t adata_size )
 {
+
+
+
  return ak_error_ok;
 }
 

@@ -67,18 +67,18 @@ aktool e file -m ctr-cmac-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cer
 aktool e file03.bin -m ctr-cmac-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file04.bin --delete-source
 aktool e file04.bin -m mgm-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file05.bin --delete-source
 aktool e file05.bin -m mgm-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file06.bin --delete-source
-aktool e file06.bin -m xtsmac-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file07.bin --delete-source
-aktool e file07.bin -m xtsmac-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file08.bin --delete-source
+#aktool e file06.bin -m xtsmac-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file07.bin --delete-source
+#aktool e file07.bin -m xtsmac-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file08.bin --delete-source
 #
 echo; echo "Процесс зашифрования завершен."
-aktool i file08.bin
+aktool i file06.bin
 ls -la *.bin
 #
 # Поскольку мы знаем имена файлов, которые будут расшифрованы,
 # то указываем их в командной строке, несмотря на то, что они пока еще не существуют
 # опция --delete-source удалает файлы сразу после их расшифрования
 echo; echo "Расшифрование."
-aktool d file08.bin file07.bin file06.bin file05.bin file04.bin file03.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
+aktool d file06.bin file05.bin file04.bin file03.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
 aktool i file
 aktool i -c results.streebog --dont-show-stat
 #
