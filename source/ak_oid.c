@@ -216,6 +216,10 @@
                                            { "ctr-hmac-magma-streebog512", NULL };
  static const char *asn1_ctr_hmac_magma_streebog512_i[] =
                                            { "1.2.643.2.52.1.6.2.1.2", NULL };
+ static const char *asn1_ctr_nmac_magma_n[] =
+                                           { "ctr-nmac-magma", NULL };
+ static const char *asn1_ctr_nmac_magma_i[] =
+                                           { "1.2.643.2.52.1.6.2.1.3", NULL };
  static const char *asn1_ctr_hmac_kuznechik_streebog256_n[] =
                                            { "ctr-hmac-kuznechik-streebog256",
                                              "ctr-hmac-kuznyechik-streebog256", NULL };
@@ -226,6 +230,11 @@
                                              "ctr-hmac-kuznyechik-streebog512", NULL };
  static const char *asn1_ctr_hmac_kuznechik_streebog512_i[] =
                                            { "1.2.643.2.52.1.6.2.2.2", NULL };
+ static const char *asn1_ctr_nmac_kuznechik_n[] =
+                                           { "ctr-nmac-kuznechik",
+                                             "ctr-nmac-kuznyechik", NULL };
+ static const char *asn1_ctr_nmac_kuznechik_i[] =
+                                           { "1.2.643.2.52.1.6.2.2.3", NULL };
  static const char *asn1_xtsmac_magma_n[] =
                                            { "xtsmac-magma", NULL };
  static const char *asn1_xtsmac_magma_i[] =
@@ -692,7 +701,6 @@ static struct oid libakrypt_oids[] =
                                           ( ak_function_run_object *) ak_bckey_encrypt_ctr_cmac,
                                           ( ak_function_run_object *) ak_bckey_decrypt_ctr_cmac }},
 
-/*
  { block_cipher, aead, asn1_ctr_hmac_magma_streebog256_i, asn1_ctr_hmac_magma_streebog256_n, NULL,
   { ak_object_bckey_magma, ak_object_hmac_streebog256,
                                           ( ak_function_run_object *) ak_bckey_encrypt_ctr_hmac,
@@ -714,7 +722,17 @@ static struct oid libakrypt_oids[] =
   { ak_object_bckey_kuznechik, ak_object_hmac_streebog512,
                                           ( ak_function_run_object *) ak_bckey_encrypt_ctr_hmac,
                                           ( ak_function_run_object *) ak_bckey_decrypt_ctr_hmac }},
-*/
+
+ { block_cipher, aead, asn1_ctr_nmac_magma_i, asn1_ctr_nmac_magma_n, NULL,
+  { ak_object_bckey_magma, ak_object_nmac_streebog,
+                                          ( ak_function_run_object *) ak_bckey_encrypt_ctr_hmac,
+                                          ( ak_function_run_object *) ak_bckey_decrypt_ctr_hmac }},
+
+ { block_cipher, aead, asn1_ctr_nmac_kuznechik_i, asn1_ctr_nmac_kuznechik_n, NULL,
+  { ak_object_bckey_kuznechik, ak_object_nmac_streebog,
+                                          ( ak_function_run_object *) ak_bckey_encrypt_ctr_hmac,
+                                          ( ak_function_run_object *) ak_bckey_decrypt_ctr_hmac }},
+
  { block_cipher, aead, asn1_xtsmac_magma_i, asn1_xtsmac_magma_n, NULL,
   { ak_object_bckey_magma, ak_object_bckey_magma,
                                             ( ak_function_run_object *) ak_bckey_encrypt_xtsmac,

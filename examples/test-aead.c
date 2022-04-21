@@ -31,6 +31,118 @@
     0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11,
     0x59, 0x0a, 0x13, 0x3c, 0x6b, 0xf0, 0xde, 0x92, 0x21, 0x43, 0x65, 0x87, 0xa9, 0xcb, 0xed, 0x0f };
 
+
+/* ----------------------------------------------------------------------------------------------- */
+/* предварительное описание тестовых функций */
+ int testfunc_2key( ak_oid oid, ak_uint8 *icodetest, size_t icode_size );
+ int testfunc_1key( ak_oid oid, ak_uint8 *icodetest, size_t icode_size );
+ int testfunc( ak_oid oid, ak_uint8 *icodetest, size_t icode_size );
+
+/* ----------------------------------------------------------------------------------------------- */
+/*                                 основная тестовая программа                                     */
+/* ----------------------------------------------------------------------------------------------- */
+ int main( void )
+{
+  struct hmac hctx;
+  struct bckey bctx;
+  int exitcode = EXIT_FAILURE;
+
+  ak_uint8 icode_mgm_magma[8] = { 0xd6, 0xad, 0x80, 0x04, 0x60, 0x60, 0xbc, 0x36};
+  ak_uint8 icode_mgm_kuznechik[16] =
+   { 0xa6, 0xf2, 0xdc, 0x82, 0x76, 0x1e, 0x0a, 0xc2, 0x31, 0x7d, 0x19, 0x49, 0x2e, 0xf6, 0x93, 0xfa };
+  ak_uint8 icode_ctr_cmac_magma[8] = { 0x00 };
+  ak_uint8 icode_ctr_cmac_kuznechik[16] = { 0x00 };
+  ak_uint8 icode_hmac_streebog256[32] = { 0x00 };
+  ak_uint8 icode_hmac_streebog512[64] = { 0x00 };
+/*
+  ak_uint8 icode_xtsmac_magma[16] = { 0x00 };
+  ak_uint8 icode_xtsmac_kuznechik[16] = { 0x00 }; */
+
+ /* по-умолчанию сообщения об ошибках выволятся в журналы syslog
+    мы изменяем стандартный обработчик, на вывод сообщений в консоль */
+  ak_log_set_level( ak_log_maximum );
+  ak_libakrypt_create( ak_function_log_stderr );
+
+ /* тестируем режим работы ctr-cmac-magma */
+ /* - формируем контрольное значение имитовставки */
+  ak_bckey_create_magma( &bctx );
+  ak_bckey_set_key( &bctx, keyAnnexA, 32 );
+  ak_bckey_cmac( &bctx, apdata, 41+67, icode_ctr_cmac_magma, 8 );
+  ak_bckey_destroy( &bctx );
+ /* - проверяем корректность вычислений с aead контекстом */
+  exitcode = testfunc( ak_oid_find_by_name( "ctr-cmac-magma" ), icode_ctr_cmac_magma, 8 );
+  if( exitcode == EXIT_FAILURE ) goto exit;
+
+ /* тестируем режим работы ctr-cmac-kuznechik */
+ /* - формируем контрольное значение имитовставки */
+  ak_bckey_create_kuznechik( &bctx );
+  ak_bckey_set_key( &bctx, keyAnnexA, 32 );
+  ak_bckey_cmac( &bctx, apdata, 41+67, icode_ctr_cmac_kuznechik, 16 );
+  ak_bckey_destroy( &bctx );
+ /* - проверяем корректность вычислений с aead контекстом */
+  exitcode = testfunc( ak_oid_find_by_name( "ctr-cmac-kuznechik" ), icode_ctr_cmac_kuznechik, 16 );
+  if( exitcode == EXIT_FAILURE ) goto exit;
+
+ /* тестируем режим работы mgm-magma */
+  exitcode = testfunc( ak_oid_find_by_name( "mgm-magma" ), icode_mgm_magma, 8 );
+  if( exitcode == EXIT_FAILURE ) goto exit;
+
+ /* тестируем режим работы mgm-kuznechik */
+  exitcode = testfunc( ak_oid_find_by_name( "mgm-kuznechik" ), icode_mgm_kuznechik, 16 );
+  if( exitcode == EXIT_FAILURE ) goto exit;
+
+ /* тестируем режим работы ctr-hmac-magma-streebog256 */
+ /* - формируем контрольное значение имитовставки */
+  ak_hmac_create_streebog256( &hctx );
+  ak_hmac_set_key( &hctx, keyAnnexA, 32 );
+  ak_hmac_ptr( &hctx, apdata, 41+67, icode_hmac_streebog256, 16 ); /* мы берем только 16 */
+                              /* хотя можно использовать любое натуральное число до 32-х */
+  ak_hmac_destroy( &hctx );
+ /* - проверяем корректность вычислений с aead контекстом */
+  exitcode = testfunc( ak_oid_find_by_name( "ctr-hmac-magma-streebog256" ), icode_hmac_streebog256, 16 );
+  if( exitcode == EXIT_FAILURE ) goto exit;
+
+ /* тестируем режим работы ctr-hmac-magma-streebog512 */
+ /* - формируем контрольное значение имитовставки */
+  ak_hmac_create_streebog512( &hctx );
+  ak_hmac_set_key( &hctx, keyAnnexA, 32 );
+  ak_hmac_ptr( &hctx, apdata, 41+67, icode_hmac_streebog512, 16 ); /* мы берем только 16 */
+                               /* хотя можно использовать любое натуральное число до 64-х */
+  ak_hmac_destroy( &hctx );
+ /* - проверяем корректность вычислений с aead контекстом */
+  exitcode = testfunc( ak_oid_find_by_name( "ctr-hmac-magma-streebog512" ), icode_hmac_streebog512, 16 );
+  if( exitcode == EXIT_FAILURE ) goto exit;
+
+ /* тестируем режим работы ctr-hmac-kuznechik-streebog256 */
+  exitcode = testfunc( ak_oid_find_by_name( "ctr-hmac-kuznechik-streebog256" ), icode_hmac_streebog256, 16 );
+  if( exitcode == EXIT_FAILURE ) goto exit;
+ /* тестируем режим работы ctr-hmac-kuznechik-streebog512 */
+ /* - проверяем корректность вычислений с aead контекстом */
+  exitcode = testfunc( ak_oid_find_by_name( "ctr-hmac-kuznechik-streebog512" ), icode_hmac_streebog512, 16 );
+  if( exitcode == EXIT_FAILURE ) goto exit;
+
+ /* тестируем режим работы ctr-nmac-magma */
+ /* - формируем контрольное значение имитовставки */
+  ak_hmac_create_nmac( &hctx );
+  ak_hmac_set_key( &hctx, keyAnnexA, 32 );
+  ak_hmac_ptr( &hctx, apdata, 41+67, icode_hmac_streebog256, 16 );
+  ak_hmac_destroy( &hctx );
+ /* - проверяем корректность вычислений с aead контекстом */
+  exitcode = testfunc( ak_oid_find_by_name( "ctr-nmac-magma" ), icode_hmac_streebog256, 16 );
+  if( exitcode == EXIT_FAILURE ) goto exit;
+// /* - проверяем корректность вычислений с aead контекстом */
+//  exitcode = testfunc( ak_oid_find_by_name( "ctr-nmac-kuznechik" ), icode_hmac_streebog256, 32 );
+//  if( exitcode == EXIT_FAILURE ) goto exit;
+
+ /* завершаем выполнение теста */
+  exitcode = EXIT_SUCCESS;
+ exit:
+  ak_libakrypt_destroy();
+
+ return exitcode;
+}
+
+
 /* ----------------------------------------------------------------------------------------------- */
  int testfunc_2key( ak_oid oid, ak_uint8 *icodetest, size_t icode_size )
 {
@@ -47,6 +159,10 @@
     ak_error_message( error, __func__, "ошибка присвоения ключевых значений" );
     goto exlab;
   }
+
+ /* информация о созданных ключах */
+  printf( "[ключ шифрования:  %s, ключ имитозащиты: %s]\n",
+              ((ak_skey)ctx.encryptionKey)->oid->name[0], ((ak_skey)ctx.authenticationKey)->oid->name[0] );
 
  /* начинаем тестирование с того, что проверяем прямой вызов функций шифрования/расшифрования */
   memset( icode, 0, sizeof( icode ));
@@ -80,7 +196,7 @@
                     67,
                     iv,
                     ctx.iv_size,
-                    icode, /* сравниваем с вычисленным ранее значением */
+                    icodetest, /* сравниваем с вычисленным ранее значением */
                     icode_size )) != ak_error_ok ) {
     ak_error_message_fmt( ak_error_not_equal_data, __func__ , "ошибка при расшифровании" );
     goto exlab;
@@ -213,69 +329,6 @@
    if( testfunc_1key( oid, icodetest, icode_size ) != EXIT_SUCCESS ) return EXIT_FAILURE;
    printf("\n");
  return EXIT_SUCCESS;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
- int main( void )
-{
-  struct bckey bctx;
-  int exitcode = EXIT_FAILURE;
-
-  ak_uint8 icode_mgm_magma[8] = { 0xd6, 0xad, 0x80, 0x04, 0x60, 0x60, 0xbc, 0x36};
-  ak_uint8 icode_mgm_kuznechik[16] =
-   { 0xa6, 0xf2, 0xdc, 0x82, 0x76, 0x1e, 0x0a, 0xc2, 0x31, 0x7d, 0x19, 0x49, 0x2e, 0xf6, 0x93, 0xfa };
-  ak_uint8 icode_ctr_cmac_magma[8] = { 0x00 };
-  ak_uint8 icode_ctr_cmac_kuznechik[16] = { 0x00 };
-  ak_uint8 icode_xtsmac_magma[16] = { 0x00 };
-  ak_uint8 icode_xtsmac_kuznechik[16] = { 0x00 };
-
- /* по-умолчанию сообщения об ошибках выволятся в журналы syslog
-    мы изменяем стандартный обработчик, на вывод сообщений в консоль */
-  ak_log_set_level( ak_log_maximum );
-  ak_libakrypt_create( ak_function_log_stderr );
-
- /* тестируем режим работы ctr-cmac-magma */
- /* - формируем контрольное значение имитовставки */
-  ak_bckey_create_magma( &bctx );
-  ak_bckey_set_key( &bctx, keyAnnexA, 32 );
-  ak_bckey_cmac( &bctx, apdata, 41+67, icode_ctr_cmac_magma, 8 );
-  ak_bckey_destroy( &bctx );
-// /* - проверяем корректность вычислений с aead контекстом */
-  exitcode = testfunc( ak_oid_find_by_name( "ctr-cmac-magma" ), icode_ctr_cmac_magma, 8 );
-  if( exitcode == EXIT_FAILURE ) goto exit;
-
- /* тестируем режим работы ctr-cmac-kuznechik */
- /* - формируем контрольное значение имитовставки */
-  ak_bckey_create_kuznechik( &bctx );
-  ak_bckey_set_key( &bctx, keyAnnexA, 32 );
-  ak_bckey_cmac( &bctx, apdata, 41+67, icode_ctr_cmac_kuznechik, 16 );
-  ak_bckey_destroy( &bctx );
- /* - проверяем корректность вычислений с aead контекстом */
-  exitcode = testfunc( ak_oid_find_by_name( "ctr-cmac-kuznechik" ), icode_ctr_cmac_kuznechik, 16 );
-  if( exitcode == EXIT_FAILURE ) goto exit;
-
- /* тестируем режим работы mgm-magma */
-  exitcode = testfunc( ak_oid_find_by_name( "mgm-magma" ), icode_mgm_magma, 8 );
-  if( exitcode == EXIT_FAILURE ) goto exit;
-
- /* тестируем режим работы mgm-kuznechik */
-  exitcode = testfunc( ak_oid_find_by_name( "mgm-kuznechik" ), icode_mgm_kuznechik, 16 );
-  if( exitcode == EXIT_FAILURE ) goto exit;
-
-// /* тестируем режим работы xtsmac-magma */
-//  exitcode = testfunc( ak_oid_find_by_name( "xtsmac-magma" ), icode_xtsmac_magma, 16 );
-//  if( exitcode == EXIT_FAILURE ) goto exit;
-
-// /* тестируем режим работы xtsmac-magma */
-//  exitcode = testfunc( ak_oid_find_by_name( "xtsmac-kuznechik" ), icode_xtsmac_kuznechik, 16 );
-//  if( exitcode == EXIT_FAILURE ) goto exit;
-
- /* завершаем выполнение теста */
-  exitcode = EXIT_SUCCESS;
- exit:
-  ak_libakrypt_destroy();
-
- return exitcode;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

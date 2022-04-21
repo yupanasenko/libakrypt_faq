@@ -100,6 +100,19 @@
   if( strncmp( oid->name[0], "ctr-cmac-kuznechik", 18 ) == 0 )
     return ak_aead_create_ctr_cmac_kuznechik( ctx, crf );
 
+  if( strncmp( oid->name[0], "ctr-hmac-magma-streebog256", 26 ) == 0 )
+    return ak_aead_create_ctr_hmac_magma_streebog256( ctx, crf );
+  if( strncmp( oid->name[0], "ctr-hmac-magma-streebog512", 26 ) == 0 )
+    return ak_aead_create_ctr_hmac_magma_streebog512( ctx, crf );
+  if( strncmp( oid->name[0], "ctr-hmac-kuznechik-streebog256", 30 ) == 0 )
+    return ak_aead_create_ctr_hmac_kuznechik_streebog256( ctx, crf );
+  if( strncmp( oid->name[0], "ctr-hmac-kuznechik-streebog512", 30 ) == 0 )
+    return ak_aead_create_ctr_hmac_kuznechik_streebog512( ctx, crf );
+  if( strncmp( oid->name[0], "ctr-nmac-magma", 14 ) == 0 )
+    return ak_aead_create_ctr_nmac_magma( ctx, crf );
+  if( strncmp( oid->name[0], "ctr-nmac-kuznechik", 18 ) == 0 )
+    return ak_aead_create_ctr_nmac_kuznechik( ctx, crf );
+
  return ak_error_message( ak_error_wrong_oid, __func__, "using unsupported oid" );
 }
 

@@ -167,6 +167,11 @@
  /* последний update/finalize и возврат результата */
   error = ak_hash_finalize( &hctx->ctx, temporary, hctx->ctx.data.sctx.hsize, out, out_size );
 
+  if( hctx->nmac_second_hash_oid ) {
+    ak_hash_destroy( &hctx->ctx );
+    ak_hash_create_streebog512( &hctx->ctx );
+  }
+
  /* очищаем контекст функции хеширования, ключ не трогаем */
   ak_hash_clean( &hctx->ctx );
  return error;
@@ -587,6 +592,138 @@
 
   lab_exit: ak_hmac_destroy( &hctx );
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+                                      /* интерфейс к aead алгоритму */
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Очистка контекста перед вычислением имитовставки */
+/* ----------------------------------------------------------------------------------------------- */
+ static inline int ak_ctr_hmac_authentication_clean( ak_pointer actx,
+                                      ak_pointer akey, const ak_pointer iv, const size_t iv_size )
+{
+  return ak_hmac_clean( (ak_hmac) akey );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Очистка контекста перед шифрованием */
+/* ----------------------------------------------------------------------------------------------- */
+ static inline int ak_ctr_hmac_encryption_clean( ak_pointer ectx,
+                                      ak_pointer ekey, const ak_pointer iv, const size_t iv_size )
+{
+ /* в случае имитозащиты без шифрования ключ шифрования может быть не определен */
+  if( ekey != NULL ) return ak_bckey_ctr( ekey, NULL, NULL, 0, iv, iv_size );
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! \brief Обновление контекста в процессе вычисления имитовставки */
+/* ----------------------------------------------------------------------------------------------- */
+ static inline int ak_ctr_hmac_authentication_update( ak_pointer actx,
+                                  ak_pointer akey, const ak_pointer adata, const size_t adata_size )
+{
+  return ak_hmac_update(( ak_hmac )akey, adata, adata_size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static inline int ak_ctr_hmac_authentication_finalize( ak_pointer actx,
+                                  ak_pointer akey, ak_pointer out, const size_t out_size )
+{
+  return ak_hmac_finalize(( ak_hmac )akey, NULL, 0, out, out_size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_ctr_hmac_encryption_update( ak_pointer ectx, ak_pointer ekey,
+                           ak_pointer akey, const ak_pointer in, ak_pointer out, const size_t size )
+{
+  int error = ak_hmac_update( ( ak_hmac )akey, in, size );
+  if( error != ak_error_ok )
+    return ak_error_message( error, __func__, "incorrect updating an internal mac context" );
+
+  if( ekey != NULL ) return ak_bckey_ctr( ekey, in, out, size, NULL, 0 );
+
+  /* в случае имитозащиты без шифрования ключ шифрования может быть не определен */
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_ctr_hmac_decryption_update( ak_pointer ectx, ak_pointer ekey,
+                           ak_pointer akey, const ak_pointer in, ak_pointer out, const size_t size )
+{
+  int error = ak_error_ok;
+
+ /* в случае имитозащиты без шифрования ключ шифрования может быть не определен */
+  if( ekey != NULL ) {
+    if(( error = ak_bckey_ctr( ekey, in, out, size, NULL, 0 )) != ak_error_ok ) {
+      return ak_error_message( error, __func__, "incorrect decryption of input data" );
+    }
+  }
+ return ak_hmac_update(( ak_hmac )akey, out, size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_aead_create_ctr_hmac_cipher_hash( ak_aead ctx, bool_t crf , char *name )
+{
+   int error = ak_error_ok;
+
+   if( ctx == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
+                                                            "using null pointer to aead context" );
+   memset( ctx, 0, sizeof( struct aead ));
+   if(( error = ak_aead_create_keys( ctx, crf, name )) != ak_error_ok ) {
+     if( ctx->ictx != NULL ) free( ctx->ictx );
+     return ak_error_message( error, __func__, "incorrect secret keys context creation" );
+   }
+
+  /* контекст такой структуры создается внутри ключа алгоритма hmac */
+   ctx->ictx = NULL;
+ /* теперь контекст двойного алгоритма (шифрование + имитозащита) */
+   ctx->tag_size = ((ak_hmac)ctx->authenticationKey)->ctx.data.sctx.hsize; /* размер имитовставки */
+   ctx->block_size = ((ak_hmac)ctx->authenticationKey)->mctx.bsize; /* размер блока входных данных */
+   ctx->iv_size = ( crf == ak_true ) ? ((ak_bckey)ctx->encryptionKey)->bsize >> 1 : 0; /* размер синхропосылки */
+   ctx->auth_clean = ak_ctr_hmac_authentication_clean;
+   ctx->auth_update = ak_ctr_hmac_authentication_update;
+   ctx->auth_finalize = ak_ctr_hmac_authentication_finalize;
+   ctx->enc_clean = ak_ctr_hmac_encryption_clean;
+   ctx->enc_update = ak_ctr_hmac_encryption_update;
+   ctx->dec_update = ak_ctr_hmac_decryption_update;
+
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_aead_create_ctr_hmac_magma_streebog256( ak_aead ctx, bool_t crf )
+{
+ return ak_aead_create_ctr_hmac_cipher_hash( ctx, crf, "ctr-hmac-magma-streebog256" );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_aead_create_ctr_hmac_magma_streebog512( ak_aead ctx, bool_t crf )
+{
+ return ak_aead_create_ctr_hmac_cipher_hash( ctx, crf, "ctr-hmac-magma-streebog512" );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_aead_create_ctr_hmac_kuznechik_streebog256( ak_aead ctx, bool_t crf )
+{
+ return ak_aead_create_ctr_hmac_cipher_hash( ctx, crf, "ctr-hmac-kuznechik-streebog256" );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_aead_create_ctr_hmac_kuznechik_streebog512( ak_aead ctx, bool_t crf )
+{
+ return ak_aead_create_ctr_hmac_cipher_hash( ctx, crf, "ctr-hmac-kuznechik-streebog512" );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_aead_create_ctr_nmac_magma( ak_aead ctx, bool_t crf )
+{
+ return ak_aead_create_ctr_hmac_cipher_hash( ctx, crf, "ctr-nmac-magma" );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_aead_create_ctr_nmac_kuznechik( ak_aead ctx, bool_t crf )
+{
+ return ak_aead_create_ctr_hmac_cipher_hash( ctx, crf, "ctr-nmac-kuznechik" );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

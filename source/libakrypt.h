@@ -1171,14 +1171,36 @@ extern "C" {
 /*! \brief Создание контекста алгоритма аутентифицированного шифрования Р 1323565.1.024-2019
     для блочного шифра Кузнечик */
  dll_export int ak_aead_create_mgm_kuznechik( ak_aead , bool_t );
-/*! \brief Создание контекста алгоритма аутентифицированного шифрования xtsmac для блочного шифра Магма */
+/*! \brief Создание контекста алгоритма аутентифицированного шифрования xtsmac
+    для блочного шифра Магма */
  dll_export int ak_aead_create_xtsmac_magma( ak_aead , bool_t );
-/*! \brief Создание контекста алгоритма аутентифицированного шифрования xtsmac для блочного шифра Кузнечик */
+/*! \brief Создание контекста алгоритма аутентифицированного шифрования xtsmac
+    для блочного шифра Кузнечик */
  dll_export int ak_aead_create_xtsmac_kuznechik( ak_aead , bool_t );
-/*! \brief Создание контекста алгоритма аутентифицированного шифрования ctr-cmac для блочного шифра Магма */
+/*! \brief Создание контекста алгоритма аутентифицированного шифрования ctr-cmac
+    для блочного шифра Магма */
  dll_export int ak_aead_create_ctr_cmac_magma( ak_aead , bool_t );
-/*! \brief Создание контекста алгоритма аутентифицированного шифрования ctr-cmac для блочного шифра Кузнечик */
+/*! \brief Создание контекста алгоритма аутентифицированного шифрования ctr-cmac
+    для блочного шифра Кузнечик */
  dll_export int ak_aead_create_ctr_cmac_kuznechik( ak_aead , bool_t );
+/*! \brief Создание контекста алгоритма аутентифицированного шифрования ctr-nmac
+    для блочного шифра Магма */
+ dll_export int ak_aead_create_ctr_nmac_magma( ak_aead , bool_t );
+/*! \brief Создание контекста алгоритма аутентифицированного шифрования ctr-hmac
+    для блочного шифра Магма и функции хеширования Стрибог256 */
+ dll_export int ak_aead_create_ctr_hmac_magma_streebog256( ak_aead , bool_t );
+/*! \brief Создание контекста алгоритма аутентифицированного шифрования ctr-hmac
+    для блочного шифра Магма и функции хеширования Стрибог512 */
+ dll_export int ak_aead_create_ctr_hmac_magma_streebog512( ak_aead , bool_t );
+/*! \brief Создание контекста алгоритма аутентифицированного шифрования ctr-nmac
+    для блочного шифра Кузнечик */
+ dll_export int ak_aead_create_ctr_nmac_kuznechik( ak_aead , bool_t );
+/*! \brief Создание контекста алгоритма аутентифицированного шифрования ctr-hmac
+    для блочного шифра Кузнечик и функции хеширования Стрибог256 */
+ dll_export int ak_aead_create_ctr_hmac_kuznechik_streebog256( ak_aead , bool_t );
+/*! \brief Создание контекста алгоритма аутентифицированного шифрования ctr-hmac
+    для блочного шифра Кузнечик и функции хеширования Стрибог512 */
+ dll_export int ak_aead_create_ctr_hmac_kuznechik_streebog512( ak_aead , bool_t );
 /*! \brief Создание контекста алгоритма аутентифицированного шифрования по заданному oid  */
  dll_export int ak_aead_create_oid( ak_aead , bool_t, ak_oid );
 /*! \brief Удаление контекста алгоритма аутентифицированного шифрования */
