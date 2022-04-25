@@ -13,11 +13,10 @@
 import os
 import pathlib
 import sys
-#sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
+sys.path.insert(0, '../source');
 
 # -- Project information -----------------------------------------------------
-
 project = 'libakrypt'
 copyright = '2014 - 2022, Axel Kenzo и Компания изящной словесности'
 author = 'Axel Kenzo'
@@ -28,12 +27,7 @@ author = 'Axel Kenzo'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = [
-    'sphinx.ext.duration',
-    'sphinx.ext.doctest',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.viewcode'
-]
+extensions = [ 'sphinx.ext.todo' ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

@@ -17,6 +17,13 @@ else()
   message( "-- sphinx-build not found" )
 endif()
 
+find_program( DOXYGEN doxygen )
+if( DOXYGEN )
+  message( "-- doxygen found (${DOXYGEN})" )
+else()
+  message( "-- doxygen not found" )
+endif()
+
 find_program( LATEXMK latexmk )
 if( LATEXMK )
   message( "-- latexmk found (${LATEXMK})" )
@@ -29,6 +36,12 @@ if( QHELPGENERATOR )
   message( "-- qhelpgenerator found (${QHELPGENERATOR})" )
 else()
   message( "-- qhelpgenerator not found" )
+endif()
+
+# -------------------------------------------------------------------------------------------------- #
+if( DOXYGEN )
+  # doxygen найден и документация может быть сгенерирована
+  # configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
