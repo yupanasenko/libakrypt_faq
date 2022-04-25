@@ -22,7 +22,8 @@ project( libakrypt C )
 # Перечень доступных опций для сборки библиотеки
 option( AK_SHARED_LIB "Build the shared library" ON )
 option( AK_STATIC_LIB "Build the static library" OFF )
-option( AK_TESTS "Build test for libakrypt" OFF )
+option( AK_EXAMPLES "Build examples for libakrypt" OFF )
+option( AK_TESTS "Build tests for libakrypt" OFF )
 option( AK_TESTS_GMP "Build comparison tests for gmp and libakrypt" OFF )
 string( COMPARE EQUAL ${CMAKE_HOST_SYSTEM_NAME} "FreeBSD" AK_FREEBSD )
 
@@ -84,6 +85,7 @@ set( AKRYPT_SOURCES
    source/ak_mgm.c
    source/ak_aead.c
    source/ak_xts.c
+   source/ak_xtsmac.c
    source/ak_asn1.c
    source/ak_sign.c
    source/ak_asn1_keys.c
@@ -178,39 +180,65 @@ if( AK_STATIC_LIB )
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
-# Сборка примеров, иллюстрирующих работу базовой библиотеки
+# Сборка различных примеров и иллюстраций
 # -------------------------------------------------------------------------------------------------- #
-if( AK_TESTS_GMP )
-  set( AK_TESTS ON )
-endif()
-
-# -------------------------------------------------------------------------------------------------- #
-set( EXAMPLES_LIST
+# начинаем с примеров
+# определяем перечень примеров и тестов для akbase
+set( BASE_EXAMPLES_LIST
      log
      ini
      file
      mmap
    )
 
-# -------------------------------------------------------------------------------------------------- #
-if( AK_TESTS )
-  message("-- Added tests and examples (now \"make test\" enabled):" )
-  foreach( programm ${EXAMPLES_LIST} )
+# определяем перечень примеров из FAQ
+set( EXAMPLES_LIST
+     g01n01
+   )
+
+if( AK_EXAMPLES )
+  message("-- Akbase examples (now \"make test\" enabled):" )
+  enable_testing()
+  foreach( programm ${BASE_EXAMPLES_LIST} )
     if( AK_STATIC_LIB )
-      add_executable( example-${programm} examples/example-${programm}.c )
+      add_executable( example-${programm} examples/akbase/example-${programm}.c )
       target_link_libraries( example-${programm} akbase-static ${LIBAKRYPT_LIBS} )
       message("      example-${programm}" )
+      add_test( NAME example-${programm} COMMAND example-${programm} )
     endif()
     if( AK_SHARED_LIB )
-      add_executable( example-shared-${programm} examples/example-${programm}.c )
+      add_executable( example-shared-${programm} examples/akbase/example-${programm}.c )
       target_link_libraries( example-shared-${programm} akbase-shared ${LIBAKRYPT_LIBS} )
       message("      example-shared-${programm}" )
+      add_test( NAME example-shared-${programm} COMMAND example-shared-${programm} )
+    endif()
+  endforeach()
+
+ # теперь то же самое, но из другого каталога + дополнительные зависимости
+  message("-- FAQ examples:" )
+  enable_testing()
+  foreach( programm ${EXAMPLES_LIST} )
+    if( AK_STATIC_LIB )
+      add_executable( example-${programm} examples/faq/example-${programm}.c )
+      target_link_libraries( example-${programm} akbase-static akrypt-static ${LIBAKRYPT_LIBS} )
+      message("      example-${programm}" )
+      add_test( NAME example-static-${programm} COMMAND example-${programm} )
+    endif()
+    if( AK_SHARED_LIB )
+      add_executable( example-shared-${programm} examples/faq/example-${programm}.c )
+      target_link_libraries( example-shared-${programm} akbase-shared akrypt-shared ${LIBAKRYPT_LIBS} )
+      message("      example-shared-${programm}" )
+      add_test( NAME example-shared-${programm} COMMAND example-shared-${programm} )
     endif()
   endforeach()
 endif()
 
 # -------------------------------------------------------------------------------------------------- #
-# Сборка тестовых примеров, проверяющих корректность элементарных арифметических операций
+# теперь тесты (включа арифметические)
+if( AK_TESTS_GMP )
+  set( AK_TESTS ON )
+endif()
+
 set ( ARITHMETIC_TESTS_LIST
       random01
       gf2n
@@ -230,17 +258,18 @@ set ( ARITHMETIC_TESTS_LIST
 
 if( AK_TESTS_GMP )
   set( ARITHMETIC_TESTS_LIST ${ARITHMETIC_TESTS_LIST}
-       mpzn-arithmetic
-       mpzn-convert
-       mpzn-montgomery
-       mpzn-rem
+      mpzn-arithmetic
+      mpzn-convert
+      mpzn-montgomery
+      mpzn-rem
      )
 endif()
 
 if( AK_TESTS )
   enable_testing()
+  message("-- Internal tests (now \"make test\" enabled):" )
   foreach( programm ${ARITHMETIC_TESTS_LIST} )
-    add_executable( test-${programm} examples/test-${programm}.c )
+    add_executable( test-${programm} examples/tests/test-${programm}.c )
     if( AK_STATIC_LIB )
       target_link_libraries( test-${programm} akrypt-static akbase-static ${LIBAKRYPT_LIBS} )
     else()

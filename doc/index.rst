@@ -121,9 +121,9 @@ libakrypt
    :maxdepth: 4
 
    install-guide.rst
+   technical-reference.rst
+   faq.rst
    aktool.rst
    bibliography.rst
 
 * :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
