@@ -48,8 +48,8 @@
     return ak_aead_create_mgm_kuznechik( ctx, crf );
   if( strncmp( oid->name[0], "xtsmac-magma", 12 ) == 0 )
     return ak_aead_create_xtsmac_magma( ctx, crf );
-  if( strncmp( oid->name[0], "xtsmac-kuznechik", 16 ) == 0 )
-    return ak_aead_create_xtsmac_kuznechik( ctx, crf );
+/* if( strncmp( oid->name[0], "xtsmac-kuznechik", 16 ) == 0 )
+    return ak_aead_create_xtsmac_kuznechik( ctx, crf ); */
   if( strncmp( oid->name[0], "ctr-cmac-magma", 14 ) == 0 )
     return ak_aead_create_ctr_cmac_magma( ctx, crf );
   if( strncmp( oid->name[0], "ctr-cmac-kuznechik", 18 ) == 0 )

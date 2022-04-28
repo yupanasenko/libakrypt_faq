@@ -676,7 +676,7 @@ msgstr ""
 #: aktool_icode.c:420
 #, c-format
 msgid "%s is unsupported argument"
-msgstr "%s не поддерживается"
+msgstr "файл %s не является каталогом или регулярным файлом"
 
 #: aktool_icode.c:432
 #, fuzzy, c-format

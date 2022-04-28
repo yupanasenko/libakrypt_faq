@@ -1174,9 +1174,6 @@ extern "C" {
 /*! \brief Создание контекста алгоритма аутентифицированного шифрования xtsmac
     для блочного шифра Магма */
  dll_export int ak_aead_create_xtsmac_magma( ak_aead , bool_t );
-/*! \brief Создание контекста алгоритма аутентифицированного шифрования xtsmac
-    для блочного шифра Кузнечик */
- dll_export int ak_aead_create_xtsmac_kuznechik( ak_aead , bool_t );
 /*! \brief Создание контекста алгоритма аутентифицированного шифрования ctr-cmac
     для блочного шифра Магма */
  dll_export int ak_aead_create_ctr_cmac_magma( ak_aead , bool_t );

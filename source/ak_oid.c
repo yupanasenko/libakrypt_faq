@@ -175,10 +175,11 @@
                                            { "xtsmac-magma", NULL };
  static const char *asn1_xtsmac_magma_i[] =
                                            { "1.2.643.2.52.1.6.3.1", NULL };
+/*
  static const char *asn1_xtsmac_kuznechik_n[] =
                                            { "xtsmac-kuznechik", "xtsmac-kuznyechik", NULL };
  static const char *asn1_xtsmac_kuznechik_i[] =
-                                           { "1.2.643.2.52.1.6.3.2", NULL };
+                                           { "1.2.643.2.52.1.6.3.2", NULL }; */
 
  static const char *asn1_sign256_n[] =     { "id-tc26-signwithdigest-gost3410-12-256",
                                              "sign256", NULL };
@@ -673,11 +674,12 @@ static struct oid libakrypt_oids[] =
   { ak_object_bckey_magma, ak_object_bckey_magma,
                                             ( ak_function_run_object *) ak_bckey_encrypt_xtsmac,
                                             ( ak_function_run_object *) ak_bckey_decrypt_xtsmac }},
-
+/*
  { block_cipher, aead, asn1_xtsmac_kuznechik_i, asn1_xtsmac_kuznechik_n, NULL,
   { ak_object_bckey_kuznechik, ak_object_bckey_kuznechik,
                                             ( ak_function_run_object *) ak_bckey_encrypt_xtsmac,
-                                            ( ak_function_run_object *) ak_bckey_decrypt_xtsmac }},
+                                            ( ak_function_run_object *) ak_bckey_decrypt_xtsmac }},*/
+
  { sign_function, algorithm, asn1_sign256_i, asn1_sign256_n, NULL,
   { ak_object_signkey256, ak_object_undefined,
                                           ( ak_function_run_object *) ak_signkey_sign_ptr, NULL }},

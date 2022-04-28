@@ -100,25 +100,15 @@
    } while(0);
 
 /* ----------------------------------------------------------------------------------------------- */
- #define ak_xtsmac_authenticate_step64( inptr ) { \
-     t[0] = *(inptr)^ctx->gamma.u64[0]; (inptr)++; \
-     t[1] = *(inptr)^ctx->gamma.u64[1]; (inptr)++; \
+/* выработка имитовставки от блока ассоциированных данных                                          */
+/* inptr - указатель на массив байт                                                                */
+/* ----------------------------------------------------------------------------------------------- */
+ #define ak_xtsmac_authenticate_step64( inptr ) do { \
+     ak_uint64 *v = (ak_uint64 *)inptr; \
+     t[0] = v[0]^ctx->gamma.u64[0]; \
+     t[1] = v[1]^ctx->gamma.u64[1]; inptr += 16; \
      authenticationKey->encrypt( &authenticationKey->key, t, t ); \
      authenticationKey->encrypt( &authenticationKey->key, t +1, t +1 ); \
-    /* обновляем промежуточное состояние имитовставки */ \
-     ak_xtsmac_update_sum64; \
-    /* изменяем значение маскирующей гаммы */ \
-     ak_xtsmac_next_gamma64; \
-   }
-
-/* ----------------------------------------------------------------------------------------------- */
- #define ak_xtsmac_encrypt_step64( inptr, outptr ) do { \
-     t[0] = *(inptr)^ctx->gamma.u64[0]; (inptr)++; \
-     t[1] = *(inptr)^ctx->gamma.u64[1]; (inptr)++; \
-     encryptionKey->encrypt( &encryptionKey->key, t, t ); \
-     encryptionKey->encrypt( &encryptionKey->key, t +1, t +1 ); \
-     *(outptr) = t[0]^ctx->gamma.u64[0]; (outptr)++; \
-     *(outptr) = t[1]^ctx->gamma.u64[1]; (outptr)++; \
     /* обновляем промежуточное состояние имитовставки */ \
      ak_xtsmac_update_sum64; \
     /* изменяем значение маскирующей гаммы */ \
@@ -126,16 +116,40 @@
    } while(0);
 
 /* ----------------------------------------------------------------------------------------------- */
+/* шифрование одного блока с параллельным изменением значения имитовставки                         */
+/* inptr - указатель на входной массив байт                                                        */
+/* outptr - указатель на выходной массив байт                                                      */
+/* ----------------------------------------------------------------------------------------------- */
+ #define ak_xtsmac_encrypt_step64( inptr, outptr ) do { \
+     ak_uint64 *v = (ak_uint64 *)inptr; \
+     t[0] = v[0]^ctx->gamma.u64[0]; \
+     t[1] = v[1]^ctx->gamma.u64[1]; inptr += 16; \
+     encryptionKey->encrypt( &encryptionKey->key, t, t ); \
+     encryptionKey->encrypt( &encryptionKey->key, t +1, t +1 ); \
+     ((ak_uint64 *)outptr)[0] = t[0]^ctx->gamma.u64[0]; \
+     ((ak_uint64 *)outptr)[1] = t[1]^ctx->gamma.u64[1]; outptr += 16; \
+    /* обновляем промежуточное состояние имитовставки */ \
+     ak_xtsmac_update_sum64; \
+    /* изменяем значение маскирующей гаммы */ \
+     ak_xtsmac_next_gamma64; \
+   } while(0);
+
+/* ----------------------------------------------------------------------------------------------- */
+/* расшифрование одного блока с параллельным изменением значения имитовставки                      */
+/* inptr - указатель на входной массив байт                                                        */
+/* outptr - указатель на выходной массив байт                                                      */
+/* ----------------------------------------------------------------------------------------------- */
  #define ak_xtsmac_decrypt_step64( inptr, outptr ) do { \
-     t[0] = temp[0] = *(inptr)^ctx->gamma.u64[0]; (inptr)++; \
-     t[1] = temp[1] = *(inptr)^ctx->gamma.u64[1]; (inptr)++; \
+     ak_uint64 *v = (ak_uint64 *)inptr; \
+     t[0] = temp[0] = v[0]^ctx->gamma.u64[0]; \
+     t[1] = temp[1] = v[1]^ctx->gamma.u64[1]; inptr += 16; \
     /* обновляем промежуточное состояние имитовставки */ \
      ak_xtsmac_update_sum64; \
     /* расшифровываем данные */ \
      encryptionKey->decrypt( &encryptionKey->key, temp, t ); \
      encryptionKey->decrypt( &encryptionKey->key, temp +1, t +1 ); \
-     *(outptr) = t[0]^ctx->gamma.u64[0]; (outptr)++; \
-     *(outptr) = t[1]^ctx->gamma.u64[1]; (outptr)++; \
+     ((ak_uint64 *)outptr)[0] = t[0]^ctx->gamma.u64[0]; \
+     ((ak_uint64 *)outptr)[1] = t[1]^ctx->gamma.u64[1]; outptr += 16; \
     /* изменяем значение маскирующей гаммы */ \
      ak_xtsmac_next_gamma64; \
    } while(0);
@@ -189,14 +203,14 @@
  /* обнуляем необходимое */
   memset( ctx, 0, sizeof( struct xtsmac_ctx ));
 
- /* на старте имеем вектор длины 6 блоков, из которых
+ /* на старте имеем исходный вектор длины 6 блоков, из которых:
     - первые два блока содержат значение iv,
     - остальные четыре блока заполнены нулями.
 
     далее, формируется gamma и производные ключи k_0, k_1, k_2 и k_3,
-    путем зашифрования в режиме cbc исходного вектора с фиксированным значением синхропосылки ivcbc
-
+    путем зашифрования в режиме cbc исходного вектора с фиксированным значением синхропосылки ivcbc,
     в исходной статье вместо производного ключа используется исходный ключ имитозащиты */
+
   memcpy( ctx->gamma.u8, iv, ak_min( iv_size, 2*authenticationKey->bsize ));
   if(( error = ak_bckey_encrypt_cbc( authenticationKey, ctx->gamma.u8, ctx->gamma.u8,
                  6*authenticationKey->bsize, ivcbc, sizeof( ivcbc ))) != ak_error_ok )
@@ -235,18 +249,24 @@
   alignas(32)
 #endif
   ak_uint64 t[2], temp[2];
-  ak_uint8 *tb = (ak_uint8 *)&t;
-  ssize_t absize = (( ssize_t ) authenticationKey->bsize ) << 1;
-  ssize_t tail = ( ssize_t ) adata_size%absize,
-          blocks = ( ssize_t ) adata_size/absize;
-  const ak_uint64 *inptr = ( const ak_uint64 * )adata;
+  ssize_t absize, tail, blocks;
+  const ak_uint8 *inptr = adata;
+  ak_uint8 *tb = (ak_uint8 *)&t, *tptr = (ak_uint8 *)&temp;
 
+ /* проверяем, что ключ задан */
+  if( authenticationKey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                       "using null pointer to authentication key");
  /* проверка возможности обновления */
   if( ctx->flags&ak_aead_assosiated_data_bit )
     return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                               "attemp to update previously closed xtsmac context");
  /* ни чего не задано => ни чего не обрабатываем */
   if(( adata == NULL ) || ( adata_size == 0 )) return ak_error_ok;
+
+ /* получаем значения параметров алгоритма */
+  absize = (( ssize_t ) authenticationKey->bsize ) << 1;
+  tail = ( ssize_t ) adata_size%absize,
+  blocks = ( ssize_t ) adata_size/absize;
 
  /* теперь основной цикл */
   if( absize == 32 ) { /* обработка 128-битным шифром */
@@ -261,9 +281,8 @@
         ctx->abitlen += 128;
       }
       if( tail ) {
-        ak_uint64 *tptr = temp;
-        memset( temp, 0, sizeof( temp ));
-        memcpy( temp, inptr, tail ); /* копируем входные данные (здесь меньше одного 16-ти байтного блока) */
+        memcpy( tptr, inptr, tail ); /* копируем входные данные (здесь меньше одного 16-ти байтного блока) */
+        memset( tptr +tail, 0, 16 -tail ); /* зануляем остаток */
         ak_xtsmac_authenticate_step64( tptr );
        /* запрещаем добавление данных */
         ak_aead_set_bit( ctx->flags, ak_aead_assosiated_data_bit );
@@ -281,8 +300,8 @@
 #ifdef AK_HAVE_STDALIGN_H
   alignas(32)
 #endif
-  ak_uint64 t[2], temp[2], *tptr = temp;
-  ak_uint8 *tb = (ak_uint8 *)&t;
+  ak_uint64 t[2] = { 0, 0}, temp[2];
+  ak_uint8 *tb = (ak_uint8 *)&t, *tptr = (ak_uint8 *)&temp;
   ak_bckey authenticationKey = akey;
   ak_xtsmac_ctx ctx = actx;
   size_t b2 = ( authenticationKey->bsize << 1 );
@@ -339,11 +358,9 @@
 #endif
   ak_uint64 t[2];
   ak_uint8 *tb = (ak_uint8 *)&t;
-  ssize_t absize = (( ssize_t ) encryptionKey->bsize ) << 1;
-  ssize_t tail = ( ssize_t ) size%absize,
-          blocks = ( ssize_t ) size/absize;
-  const ak_uint64 *inptr = in;
-  ak_uint64 *outptr = out;
+  ssize_t absize, tail, blocks;
+  const ak_uint8 *inptr = in;
+  ak_uint8 *outptr = out, *loptr = NULL;
 
  /* проверка указателя */
   if( ekey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -352,75 +369,91 @@
   if( ctx->flags&ak_aead_encrypted_data_bit )
     return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                               "attemp to update previously closed xtsmac context");
- /* слишком короткие сообщения не умеем обрабатывать */
-  if( !blocks && ( tail < encryptionKey->bsize ))
-    return ak_error_message( ak_error_wrong_length, __func__ ,
-                                "xtsmac mode cannot encrypt short messages "
-                                                 "(length must be equal or more than block size)");
+ /* получаем значения используемых длин, после проверки того, что encryptionKey отлично от NULL */
+  absize = (( ssize_t ) encryptionKey->bsize ) << 1;
+  tail = ( ssize_t ) size%absize;
+  blocks = ( ssize_t ) size/absize;
 
- /* далее мы реализуем три пути развития событий:
-    - случай, когда данные выровнены по длине пары блоков, т.е. tail = 0
+ /* далее нам надо реализовать три пути развития событий:
+    - случай, когда данные выровнены по длине пары блоков, т.е. tail = 0,
     - случай, когда количество пар блоков больше нуля, вне зависимости от значения tail > 0
-    - случай, когда пар блоков нет, но tail не менее длины одного блока (и не более двух) */
+    - случай, когда пар блоков нет, но tail не менее длины одного блока (и не более двух).
+    начинаем "разбор полетов" с последнего случая */
 
- /* 1. случай данных, выровненных по длине пары блоков */
-  if( !tail ) {
+  if( blocks == 0 ) {
+   /* если данных нет совсем или их меньше одного блока, то инициируем ошибку */
+    if( tail < encryptionKey->bsize )
+      return ak_error_message( ak_error_wrong_length, __func__ ,
+                                "xtsmac mode cannot encrypt short messages "
+                                             "(length must be equal or more than one block size)");
     switch( encryptionKey->bsize ) {
-       case  8:
-         while( blocks-- > 0 ) {
-            ak_xtsmac_encrypt_step64( inptr, outptr );
-            ctx->pbitlen += 128;
-         }
-         break;
-
-       case  16:
-         return ak_error_message_fmt( ak_error_undefined_function, __func__,
-                      "unsupported block cipher: %s, sorry", encryptionKey->key.oid->name[0] );
-       break;
-    }
-    return ak_error_ok;
-  }
-
- /* 2. случай, когда пар блоков нет и tail не менее одного блока данных,
-    здесь реализуется скрадывание на первом полном блоке */
-  if( !blocks && ( tail >= encryptionKey->bsize )) {
-    if( encryptionKey->bsize == 16 ) {
-
-      return ak_error_message_fmt( ak_error_undefined_function, __func__,
-                      "unsupported block cipher: %s, sorry", encryptionKey->key.oid->name[0] );
-    }
-     else { /* реализация для 64-х битного шифра */
-      /* копируем входные данные */
-        memset( t, 0, sizeof( t ));
-        memcpy( t, inptr, tail );
-      /* шифруем левый блок */
-        t[0] ^= ctx->gamma.u64[0];
-        encryptionKey->encrypt( &encryptionKey->key, t, t );
-        t[0] ^= ctx->gamma.u64[0];
+      case  8:
+       /* копируем входные данные */
+         memset( t, 0, sizeof( t ));
+         memcpy( t, inptr, tail );
+       /* шифруем левый блок */
+         t[0] ^= ctx->gamma.u64[0];
+         encryptionKey->encrypt( &encryptionKey->key, t, t );
+         t[0] ^= ctx->gamma.u64[0];
        /* добавляем правый блок до полной длины, где
           число недостающих октов равно 16 -tail,
           длина данных, превышающая длину блока tail -8 */
-        memcpy( tb + tail, tb + tail - 8, 16 - tail );
+         memcpy( tb + tail, tb + tail - 8, 16 - tail );
        /* шифруем правый блок */
-        t[1] ^= ctx->gamma.u64[1];
-        encryptionKey->encrypt( &encryptionKey->key, t +1, t +1 );
-        t[1] ^= ctx->gamma.u64[1];
+         t[1] ^= ctx->gamma.u64[1];
+         encryptionKey->encrypt( &encryptionKey->key, t +1, t +1 );
+         t[1] ^= ctx->gamma.u64[1];
        /* копируем результат вычислений */
-        memcpy( (ak_uint8 *)out, tb +8, 8 );
-        memcpy( (ak_uint8 *)out +8, tb, tail - 8 );
+         memcpy( outptr, tb +8, 8 );
+         memcpy( outptr +8, tb, tail - 8 );
        /* обновляем промежуточное состояние имитовставки */
-        ak_xtsmac_update_sum64;
+         ak_xtsmac_update_sum64;
        /* изменяем значение маскирующей гаммы */
-        ak_xtsmac_next_gamma64;
-     }
-    /* закрываем возможность дальнейшего шифрования */
-     ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
-     return ak_error_ok;
+         ak_xtsmac_next_gamma64;
+       break;
+
+      case  16:
+        return ak_error_message_fmt( ak_error_undefined_function, __func__,
+                      "unsupported block cipher: %s, sorry", encryptionKey->key.oid->name[0] );
+    }
+   /* изменяем длину обработанных данных */
+    ctx->pbitlen += ( tail << 3 );
+   /* закрываем возможность дальнейшего шифрования */
+    ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
+    return ak_error_ok;
   }
 
- /* 3. случай, когда пары блоков несколько (не менее одной), а tail принимает любое возможное значение
-    здесь реализуется скрадывание на парах блоков */
+ /* конец случая, когда количество пар блоков равно нулю, */
+ /* теперь blocks отлично от нуля и можно выполнить общий цикл обработки данных */
+  switch( encryptionKey->bsize ) {
+    case  8:
+      while( blocks-- > 0 ) {
+         //printf("in:  %s\n", ak_ptr_to_hexstr( inptr, 16, ak_false ));
+         ak_xtsmac_encrypt_step64( inptr, outptr );
+         ctx->pbitlen += 128;
+         //printf("out: %s\n\n", ak_ptr_to_hexstr( outptr -16, 16, ak_false ));
+      }
+      if( tail ) {
+       /* копируем ту часть шифртекста, что не будет изменена */
+         outptr -= 16;
+         memcpy( outptr +16, outptr, tail );
+       /* формируем новый блок для шифрования */
+         loptr = outptr;
+         memcpy( outptr, inptr, tail );
+         ak_xtsmac_encrypt_step64( outptr, loptr );
+         ctx->pbitlen += ( tail << 3 );
+       /* закрываем возможность дальнейшего шифрования */
+         ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
+      }
+      return ak_error_ok;
 
+    case  16:
+      return ak_error_message_fmt( ak_error_undefined_function, __func__,
+                      "unsupported block cipher: %s, sorry", encryptionKey->key.oid->name[0] );
+      break;
+   }
+
+ /* выход с ошибкой, если реализовалась не предусмотренная ветка */
  return ak_error_undefined_function;
 }
 
@@ -435,11 +468,9 @@
 #endif
   ak_uint64 t[2], temp[2];
   ak_uint8 *tb = (ak_uint8 *)&t;
-  ssize_t absize = (( ssize_t ) encryptionKey->bsize ) << 1;
-  ssize_t tail = ( ssize_t ) size%absize,
-          blocks = ( ssize_t ) size/absize;
-  const ak_uint64 *inptr = in;
-  ak_uint64 *outptr = out;
+  ssize_t absize, blocks, tail;
+  const ak_uint8 *inptr = in;
+  ak_uint8 *outptr = out;
 
  /* проверка указателя */
   if( ekey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
@@ -448,71 +479,104 @@
   if( ctx->flags&ak_aead_encrypted_data_bit )
     return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,
                                               "attemp to update previously closed xtsmac context");
- /* слишком короткие сообщения не умеем обрабатывать */
-  if( !blocks && ( tail < encryptionKey->bsize ))
-    return ak_error_message( ak_error_wrong_length, __func__ ,
-                                "xtsmac mode cannot encrypt short messages "
-                                                 "(length must be equal or more than block size)");
+ /* получаем значения используемых длин, после проверки того, что encryptionKey отлично от NULL */
+  absize = (( ssize_t ) encryptionKey->bsize ) << 1;
+  tail = ( ssize_t ) size%absize;
+  blocks = ( ssize_t ) size/absize;
 
- /* далее, также как и при зашифровании, мы реализуем три пути развития событий:
-    - случай, когда данные выровнены по длине пары блоков, т.е. tail = 0
+ /* далее, как и при зашифровании, нам надо реализовать три пути развития событий:
+    - случай, когда данные выровнены по длине пары блоков, т.е. tail = 0,
     - случай, когда количество пар блоков больше нуля, вне зависимости от значения tail > 0
-    - случай, когда пар блоков нет, но tail не менее длины одного блока (и не более двух) */
+    - случай, когда пар блоков нет, но tail не менее длины одного блока (и не более двух).
+    начинаем "разбор полетов" с последнего случая */
 
- /* 1. случай данных, выровненных по длине пары блоков */
-  if( !tail ) {
+  if( blocks == 0 ) {
+    ak_uint64 buf[1];
+
+   /* если данных нет совсем или их меньше одного блока, то инициируем ошибку */
+    if( tail < encryptionKey->bsize )
+      return ak_error_message( ak_error_wrong_length, __func__ ,
+                                "xtsmac mode cannot decrypt short messages "
+                                             "(length must be equal or more than one block size)");
     switch( encryptionKey->bsize ) {
-       case  8:
-         while( blocks-- > 0 ) {
-            ak_xtsmac_decrypt_step64( inptr, outptr );
-            ctx->pbitlen += 128;
-         }
-         break;
-
-       case  16:
-         return ak_error_message_fmt( ak_error_undefined_function, __func__,
-                      "unsupported block cipher: %s, sorry", encryptionKey->key.oid->name[0] );
-       break;
-    }
-    return ak_error_ok;
-  }
-
- /* 2. случай, когда пар блоков нет и tail не менее одного блока данных,
-    здесь реализуется скрадывание на первом полном блоке */
-  if( !blocks && ( tail >= encryptionKey->bsize )) {
-    if( encryptionKey->bsize == 16 ) {
-
-      return ak_error_message_fmt( ak_error_undefined_function, __func__,
-                      "unsupported block cipher: %s, sorry", encryptionKey->key.oid->name[0] );
-    }
-     else { /* реализация для 64-х битного шифра */
-        ak_uint64 buf[1];
-
+      case  8:
        /* копируем входные данные */
-        memset( tb, 0, sizeof( t ));
+        memset( tb, 0, 16 );
         memcpy( tb, (ak_uint8 *)in +8, tail -8 );
         memcpy( tb +8, (ak_uint8 *)in, 8 );
-       /* расшифровываем левый блок во временную переменную */
+       /* расшифровываем старший блок во временную переменную */
         buf[0] = t[1]^ctx->gamma.u64[1];
         encryptionKey->decrypt( &encryptionKey->key, buf, buf );
         buf[0] ^= ctx->gamma.u64[1];
        /* копируем хвост расшифрованных даных для повторного расшифрования */
         memcpy( tb + tail - 8, (ak_uint8 *)buf + tail - 8, 16 - tail );
        /* расшифровываем правый блок и формируем открытый текст */
-        outptr[0] = t[0]^ctx->gamma.u64[0];
+        ((ak_uint64 *)outptr)[0] = t[0]^ctx->gamma.u64[0];
         encryptionKey->decrypt( &encryptionKey->key, outptr, outptr );
-        outptr[0] ^= ctx->gamma.u64[0];
+        ((ak_uint64 *)outptr)[0] ^= ctx->gamma.u64[0];
        /* обновляем промежуточное состояние имитовставки */
         ak_xtsmac_update_sum64;
        /* изменяем значение маскирующей гаммы */
         ak_xtsmac_next_gamma64;
-        memcpy( (ak_uint8 *)out +8, (ak_uint8 *)buf, tail -8 );
-     }
-    /* закрываем возможность дальнейшего расшифрования */
-     ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
-     return ak_error_ok;
+        memcpy( outptr +8, (ak_uint8 *)buf, tail -8 );
+        break;
+
+      case  16:
+        return ak_error_message_fmt( ak_error_undefined_function, __func__,
+                      "unsupported block cipher: %s, sorry", encryptionKey->key.oid->name[0] );
+    }
+   /* изменяем длину обработанных данных */
+    ctx->pbitlen += ( tail << 3 );
+   /* закрываем возможность дальнейшего расшифрования */
+    ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
+    return ak_error_ok;
   }
 
+ /* конец случая, когда количество пар блоков равно нулю, */
+ /* теперь blocks отлично от нуля и можно выполнить общий цикл обработки данных */
+  switch( encryptionKey->bsize ) {
+    case  8:
+      while( blocks-- > 1 ) {
+         ak_xtsmac_decrypt_step64( inptr, outptr );
+         ctx->pbitlen += 128;
+      }
+      if( tail ) {
+        ak_uint8 *loptr = NULL;
+        ak_uint64 tgamma[2] = { ctx->gamma.u64[0], ctx->gamma.u64[1] };
+       /* расшифровываем предпоследний блок */
+        ak_xtsmac_next_gamma64;
+        ak_xtsmac_decrypt_step64( inptr, outptr );
+        ctx->pbitlen += 128;
+       /* меняем возвращаем сохраненное ранее и меняем местами tgamma и ctx->gamma */
+        tgamma[0] ^= ctx->gamma.u64[0]; ctx->gamma.u64[0] ^= tgamma[0]; tgamma[0] ^= ctx->gamma.u64[0];
+        tgamma[1] ^= ctx->gamma.u64[1]; ctx->gamma.u64[1] ^= tgamma[1]; tgamma[1] ^= ctx->gamma.u64[1];
+
+       /* помещаем расшифрованный хвост на место и формируем последний блок */
+        outptr -= 16;
+        memcpy( outptr +16, outptr, tail );
+        memcpy( outptr, inptr, tail );
+       /* расшифровываем последний блок */
+        loptr = outptr;
+        ak_xtsmac_decrypt_step64( outptr, loptr );
+        ctx->gamma.u64[0] = tgamma[0];
+        ctx->gamma.u64[1] = tgamma[1];
+        ctx->pbitlen += ( tail << 3 );
+       /* закрываем возможность дальнейшего шифрования */
+        ak_aead_set_bit( ctx->flags, ak_aead_encrypted_data_bit );
+      }
+       else {
+         ak_xtsmac_decrypt_step64( inptr, outptr );
+         ctx->pbitlen += 128;
+       }
+      return ak_error_ok;
+
+    case  16:
+      return ak_error_message_fmt( ak_error_undefined_function, __func__,
+                      "unsupported block cipher: %s, sorry", encryptionKey->key.oid->name[0] );
+      break;
+   }
+
+ /* выход с ошибкой, если реализовалась не предумотренная ветка */
  return ak_error_undefined_function;
 }
 
@@ -559,8 +623,11 @@
                                    const size_t size, const ak_pointer iv, const size_t iv_size,
                                                        ak_pointer icode, const size_t icode_size )
 {
-  int error = ak_error_ok;
+ #ifdef AK_HAVE_STDALIGN_H
+  alignas(32)
+ #endif
   struct xtsmac_ctx ctx; /* контекст структуры, в которой хранятся промежуточные данные */
+  int error = ak_error_ok;
 
  /* первичная инициализация */
   if(( error = ak_xtsmac_authentication_clean( &ctx, authenticationKey, iv, iv_size ))
@@ -587,7 +654,7 @@
 
  /* потом зашифровываем данные */
   if( encryptionKey != NULL ) {
-    if(( error = ak_xtsmac_encryption_update( &ctx, encryptionKey, authenticationKey,
+    if(( error = ak_xtsmac_encryption_update( &ctx, encryptionKey, NULL,
                                                                in, out, size )) != ak_error_ok ) {
       ak_error_message( error, __func__, "incorrect encryption of plain data" );
       goto exlab;
@@ -635,9 +702,12 @@
                                      const size_t size, const ak_pointer iv, const size_t iv_size,
                                                          ak_pointer icode, const size_t icode_size )
 {
+ #ifdef AK_HAVE_STDALIGN_H
+  alignas(32)
+ #endif
+  struct xtsmac_ctx ctx; /* контекст структуры, в которой хранятся промежуточные данные */
   ak_uint8 ic[32];
   int error = ak_error_ok;
-  struct xtsmac_ctx ctx; /* контекст структуры, в которой хранятся промежуточные данные */
 
  /* первичная инициализация */
   if(( error = ak_xtsmac_authentication_clean( &ctx, authenticationKey, iv, iv_size ))
@@ -664,7 +734,7 @@
 
  /* потом зашифровываем данные */
   if( encryptionKey != NULL ) {
-    if(( error = ak_xtsmac_decryption_update( &ctx, encryptionKey, authenticationKey,
+    if(( error = ak_xtsmac_decryption_update( &ctx, encryptionKey, NULL,
                                                                in, out, size )) != ak_error_ok ) {
       ak_error_message( error, __func__, "incorrect decryption of plain data" );
       goto exlab;
@@ -680,10 +750,10 @@
   }
 
   if( ak_ptr_is_equal_with_log( ic, icode, ak_min( icode_size, sizeof( ic ))) != ak_true )
-    error = ak_error_not_equal_data;
-
+    error = ak_error_message( ak_error_not_equal_data, __func__,
+                                                             "incorrect value of integrity code" );
  exlab:
-  ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), &((ak_bckey)authenticationKey)->key.generator );
+   ak_ptr_wipe( &ctx, sizeof( struct xtsmac_ctx ), &((ak_bckey)authenticationKey)->key.generator );
  return error;
 }
 
@@ -716,17 +786,6 @@
    ctx->dec_update = ak_xtsmac_decryption_update;
 
  return error;
-}
-
-/* ----------------------------------------------------------------------------------------------- */
-/*! \param ctx контекст aead алгоритма
-    \param crf флаг необходимости создания ключа шифрования
-    \return В случае успеха функция возвращает ak_error_ok (ноль). В случае возникновения ошибки
-    возвращается ее код.                                                                           */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_aead_create_xtsmac_kuznechik( ak_aead ctx, bool_t crf )
-{
-  return ak_error_undefined_function;
 }
 
 /* ----------------------------------------------------------------------------------------------- */

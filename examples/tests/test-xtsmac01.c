@@ -51,10 +51,15 @@
 /* ----------------------------------------------------------------------------------------------- */
  int main( void )
 {
-  size_t len = 0;
+  size_t len = 0, off = 0;
   struct bckey ekey, ikey;
   int error, result = EXIT_FAILURE;
-  ak_uint8 out[ sizeof( plain )], out2[ sizeof( plain )], icode[16];
+ #ifdef AK_HAVE_STDALIGN_H
+  alignas(32)
+ #endif
+  ak_uint8 ina[32 +sizeof(associated)], inp[32 +sizeof(plain)], otp[32 + sizeof(plain)];
+  ak_uint8 out[32 +sizeof(plain)], icode[16];
+  struct random lcg;
 
  /* инициализируем библиотеку */
   if( !ak_libakrypt_create( ak_function_log_stderr )) return ak_libakrypt_destroy();
@@ -65,61 +70,87 @@
   ak_bckey_create_magma( &ikey );
   ak_bckey_set_key( &ikey, keyAnnexABlockReverse, sizeof( keyAnnexABlockReverse ));
 
-  printf("encryption cipher: %s (%s)\n", ekey.key.oid->name[0], ekey.key.oid->id[0] );
+ /* создаем генератор */
+  ak_random_create_lcg( &lcg );
 
- /* запускаем цикл по всем возможным длинам входных данных */
-  for( len = 8; len <= sizeof( plain ); len++ ) {
-    printf("plain: %s (%lu bytes)\n", ak_ptr_to_hexstr( plain, len, ak_false ), len );
+ /* проводим тестирование в двух циклах:
+    - внеший цикл тестирует смещение исходных данных от выравнивания по границе в 32 байта
+    - внутренний цикл тестирует длину зашифровываемых данных (для всех допустимых значений) */
 
-   /* зашифровываем данные и одновременно вычисляем имитовставку */
-    memset( out, 0, sizeof( out ));
-    if(( error = ak_bckey_encrypt_xtsmac(
-      &ekey,             /* ключ, используемый для шифрования данных */
-      &ikey,            /* ключ, используемый для имитозащиты данных */
-      associated,             /* указатель на ассоциированные данные */
-      sizeof( associated ),          /* длина ассоциированных данных */
-      plain,                  /* указатель на зашифровываемые данные */
-      out,                            /* указатель на область памяти,
-                           в которую помещаются зашифрованные данные */
-      len,                          /* размер зашифровываемых данных */
-      iv128,             /* синхропосылка (инициализационный вектор) */
-      sizeof( iv128 ),                       /* размер синхропосылки */
-      icode,                          /* указатель на область памяти,
-                                   в которую помещается имитовставка */
-      16                                      /* размер имитовставки */
-    )) != ak_error_ok ) {
-     ak_error_message( error, __func__, "ошибка зашифрования данных" );
-     goto exlab;
-    }
+  for( off = 0; off < 31; off++ ) { /* 0 .. 25 */
+     ak_uint32 roff = ak_random_value()%32;
+     ak_uint32 otff = ak_random_value()%32;
+     void *ina_ptr = ina +off;
+     void *inp_ptr = inp +roff;
+     void *otp_ptr = otp +otff;
 
-    printf("out:   %s\n", ak_ptr_to_hexstr( out, len, ak_false ));
+     printf("[associated offset = %2u, plain offset = %2u, output offset = %2u]\n",
+                                                (unsigned) off, (unsigned) roff, (unsigned) otff );
+     memcpy( ina_ptr, associated, sizeof( associated ));
+     memcpy( inp_ptr, plain, sizeof( plain ));
 
-   /* расшифровываем данные и одновременно проверяем имитовставку */
-    memset( out2, 0, sizeof( out2 ));
-    if(( error = ak_bckey_decrypt_xtsmac(
-      &ekey,             /* ключ, используемый для шифрования данных */
-      &ikey,            /* ключ, используемый для имитозащиты данных */
-      associated,             /* указатель на ассоциированные данные */
-      sizeof( associated ),          /* длина ассоциированных данных */
-      out,                    /* указатель на зашифровываемые данные */
-      out2,                            /* указатель на область памяти,
-                           в которую помещаются зашифрованные данные */
-      len,                          /* размер зашифровываемых данных */
-      iv128,             /* синхропосылка (инициализационный вектор) */
-      sizeof( iv128 ),                       /* размер синхропосылки */
-      icode,                          /* указатель на область памяти,
-                                   в которую помещается имитовставка */
-      16                                      /* размер имитовставки */
-    )) != ak_error_ok ) {
-     ak_error_message( error, __func__, "ошибка зашифрования данных" );
-     goto exlab;
-    }
-    printf("icode: %s\n\n", ak_ptr_to_hexstr( icode, sizeof( icode ), ak_false ));
-  } // конец цикла по всем длинам
+     for( len = 8; len <= sizeof( plain ); len++ ) {
+       /* память */
+        memset( icode, 0, 16 );
+       /* зашифровываем */
+        if(( error = ak_bckey_encrypt_xtsmac(
+          &ekey,              /* ключ, используемый для шифрования данных */
+          &ikey,            /* ключ, используемый для имитозащиты данных */
+          ina_ptr,                /* указатель на ассоциированные данные */
+          sizeof( associated ),          /* длина ассоциированных данных */
+          inp_ptr,                /* указатель на зашифровываемые данные */
+          otp_ptr,                        /* указатель на область памяти,
+                               в которую помещаются зашифрованные данные */
+          len,              /* размер зашифровываемых данных */
+          iv128,             /* синхропосылка (инициализационный вектор) */
+          sizeof( iv128 ),                       /* размер синхропосылки */
+          icode,                          /* указатель на область памяти,
+                                       в которую помещается имитовставка */
+          16                                      /* размер имитовставки */
+        )) != ak_error_ok ) {
+         ak_error_message( error, __func__, "ошибка зашифрования данных" );
+         goto exlab;
+        }
+
+       /* при желании, можно ознакомиться с шифртекстом и имитовставкой
+        printf(" mac: %s\n", ak_ptr_to_hexstr( icode, 16, ak_false ));
+        printf(" enc: %s [len: %u]\n", ak_ptr_to_hexstr( otp_ptr, len, ak_false ), (unsigned) len ); */
+
+       /* расшифровываем */
+        memset( out, 0, sizeof( plain ));
+        error = ak_bckey_decrypt_xtsmac(
+          &ekey,             /* ключ, используемый для шифрования данных */
+          &ikey,            /* ключ, используемый для имитозащиты данных */
+          ina_ptr,                /* указатель на ассоциированные данные */
+          sizeof( associated ),          /* длина ассоциированных данных */
+          otp_ptr,                /* указатель на зашифровываемые данные */
+          out,                            /* указатель на область памяти,
+                               в которую помещаются зашифрованные данные */
+          len,              /* размер зашифровываемых данных */
+          iv128,             /* синхропосылка (инициализационный вектор) */
+          sizeof( iv128 ),                       /* размер синхропосылки */
+          icode,                          /* указатель на область памяти,
+                    в которой хранится контрольное значение имитовставки */
+          16                                      /* размер имитовставки */
+        );
+        if( ak_ptr_is_equal( plain, out, len ) != ak_true ) {
+           printf(" шифртекст: %s Wrong\n\n", ak_ptr_to_hexstr( out, len, ak_false ));
+           error = ak_error_not_equal_data;
+         }
+        if( error != ak_error_ok ) {
+         ak_error_message( error, __func__, "ошибка расшифрования данных" );
+         goto exlab;
+        }
+        printf(".");
+     }
+
+     printf("\n");
+  }
 
  /* удаляем ключи и завершаем работу с библиотекой */
   result = EXIT_SUCCESS;
   exlab:
+   ak_random_destroy( &lcg );
    ak_bckey_destroy( &ekey );
    ak_bckey_destroy( &ikey );
    ak_libakrypt_destroy();

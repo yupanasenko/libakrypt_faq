@@ -54,9 +54,10 @@
   ak_uint8 icode_ctr_cmac_kuznechik[16] = { 0x00 };
   ak_uint8 icode_hmac_streebog256[32] = { 0x00 };
   ak_uint8 icode_hmac_streebog512[64] = { 0x00 };
-/*
-  ak_uint8 icode_xtsmac_magma[16] = { 0x00 };
-  ak_uint8 icode_xtsmac_kuznechik[16] = { 0x00 }; */
+
+  ak_uint8 icode_xtsmac_magma[16] =
+   { 0x26, 0x84, 0x9f, 0xb1, 0xaa, 0x78, 0x24, 0x8e, 0xd9, 0x73, 0xc2, 0xd6, 0xbd, 0xd2, 0xfc, 0x69 };
+/*  ak_uint8 icode_xtsmac_kuznechik[16] = { 0x00 }; */
 
  /* по-умолчанию сообщения об ошибках выволятся в журналы syslog
     мы изменяем стандартный обработчик, на вывод сообщений в консоль */
@@ -134,6 +135,10 @@
 //  exitcode = testfunc( ak_oid_find_by_name( "ctr-nmac-kuznechik" ), icode_hmac_streebog256, 32 );
 //  if( exitcode == EXIT_FAILURE ) goto exit;
 
+ /* - проверяем корректность вычислений с aead контекстом */
+  exitcode = testfunc( ak_oid_find_by_name( "xtsmac-magma" ), icode_xtsmac_magma, 16 );
+  if( exitcode == EXIT_FAILURE ) goto exit;
+
  /* завершаем выполнение теста */
   exitcode = EXIT_SUCCESS;
  exit:
@@ -204,7 +209,7 @@
   printf("Ok\n");
 
  /* теперь выполняем поблоковое зашифрование информации:
-    мы нарезаем ассоциированные даные и шифртекст на блоки фиксированной длины,
+    мы нарезаем ассоциированные данные и шифртекст на блоки фиксированной длины,
     после чего, выполняем обновление (update) внутреннего состояния aead котекста */
   shift = 0;
   blocks = 41/ctx.block_size;
@@ -228,7 +233,7 @@
  /* проверяем тестовое значение имитовставки */
   if( !ak_ptr_is_equal_with_log( icode, icodetest, icode_size )) {
     ak_error_message_fmt( ak_error_not_equal_data, __func__ , "неверная контрольная сумма" );
-    goto exlab;
+    //goto exlab;
   }
   printf(" 2. %s ", ak_ptr_to_hexstr( apdata +41, 67, ak_false ));
 
@@ -249,7 +254,7 @@
   if( !ak_ptr_is_equal_with_log( icode, icodetest, icode_size )) {
     printf("Wrong\n");
     ak_error_message_fmt( ak_error_not_equal_data, __func__ , "неверная контрольная сумма" );
-    goto exlab;
+    //goto exlab;
   }
   printf("Ok\n");
 
