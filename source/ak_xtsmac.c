@@ -362,9 +362,14 @@
   const ak_uint8 *inptr = in;
   ak_uint8 *outptr = out, *loptr = NULL;
 
- /* проверка указателя */
-  if( ekey == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                         "using null pointer to encryption key" );
+ /* проверяем, что ключ шифрования определен,
+    если нет, то используем входные данные как ассоциированные
+    отметим, что если ассоциированные данные были ранее обработаны
+    и их длина была не кратна длине блока, то здесь появится ошибка */
+  if( encryptionKey == NULL ) {
+    return ak_xtsmac_authentication_update( actx, akey, in, size );
+  }
+
  /* проверка возможности обновления */
   if( ctx->flags&ak_aead_encrypted_data_bit )
     return ak_error_message( ak_error_wrong_block_cipher_function, __func__ ,

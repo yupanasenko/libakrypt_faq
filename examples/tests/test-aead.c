@@ -6,16 +6,16 @@
  #include <libakrypt.h>
 
  /* константные значения ключей из ГОСТ Р 34.13-2015 */
-  ak_uint8 keyAnnexA[32] = {
+  ak_uint8 authenticationKey[32] = { /* ключ из приложения А */
      0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01, 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe,
      0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00, 0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x88 };
 
-  ak_uint8 keyAnnexB[32] = {
+  ak_uint8 encryptionKey[32] = { /* ключ из приложения Б */
      0xff, 0xfe, 0xfd, 0xfc, 0xfb, 0xfa, 0xf9, 0xf8, 0xf7, 0xf6, 0xf5, 0xf4, 0xf3, 0xf2, 0xf1, 0xf0,
      0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
 
  /* тестовые данные */
- ak_uint8 apdata[41 + 67] = {
+ ak_uint8 packet[41 + 67] = {
      0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02,
      0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
      0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0xEA,
@@ -31,309 +31,315 @@
     0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11,
     0x59, 0x0a, 0x13, 0x3c, 0x6b, 0xf0, 0xde, 0x92, 0x21, 0x43, 0x65, 0x87, 0xa9, 0xcb, 0xed, 0x0f };
 
+ /* глобальные контрольные суммы */
+  ak_uint8 packet_hmac256[32], packet_hmac512[64], packet_nmac256[32];
+ /* где-то в памяти */
+  ak_uint8 *header, *body;
+
 
 /* ----------------------------------------------------------------------------------------------- */
-/* предварительное описание тестовых функций */
- int testfunc_2key( ak_oid oid, ak_uint8 *icodetest, size_t icode_size );
- int testfunc_1key( ak_oid oid, ak_uint8 *icodetest, size_t icode_size );
- int testfunc( ak_oid oid, ak_uint8 *icodetest, size_t icode_size );
+ static void test_macs( void );
+ static int test_packet( ak_aead ctx, ak_pointer header, ak_pointer body );
+ static int test_file( ak_aead ctx, ak_pointer header, ak_pointer body );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                 основная тестовая программа                                     */
 /* ----------------------------------------------------------------------------------------------- */
  int main( void )
 {
-  struct hmac hctx;
-  struct bckey bctx;
-  int exitcode = EXIT_FAILURE;
+   ak_oid oid = NULL;
+   int exitcode = EXIT_FAILURE;
 
-  ak_uint8 icode_mgm_magma[8] = { 0xd6, 0xad, 0x80, 0x04, 0x60, 0x60, 0xbc, 0x36};
-  ak_uint8 icode_mgm_kuznechik[16] =
-   { 0xa6, 0xf2, 0xdc, 0x82, 0x76, 0x1e, 0x0a, 0xc2, 0x31, 0x7d, 0x19, 0x49, 0x2e, 0xf6, 0x93, 0xfa };
-  ak_uint8 icode_ctr_cmac_magma[8] = { 0x00 };
-  ak_uint8 icode_ctr_cmac_kuznechik[16] = { 0x00 };
-  ak_uint8 icode_hmac_streebog256[32] = { 0x00 };
-  ak_uint8 icode_hmac_streebog512[64] = { 0x00 };
+  /* по-умолчанию сообщения об ошибках выволятся в журналы syslog
+     мы изменяем стандартный обработчик, на вывод сообщений в консоль */
+   ak_log_set_level( ak_log_maximum );
+   ak_libakrypt_create( ak_function_log_stderr );
 
-  ak_uint8 icode_xtsmac_magma[16] =
-   { 0x26, 0x84, 0x9f, 0xb1, 0xaa, 0x78, 0x24, 0x8e, 0xd9, 0x73, 0xc2, 0xd6, 0xbd, 0xd2, 0xfc, 0x69 };
-/*  ak_uint8 icode_xtsmac_kuznechik[16] = { 0x00 }; */
+  /* выводим контрольные суммы от входных данных
+     такие же значения должны получаться в ряде алгоритмов аутентифицированного шифрования */
+   test_macs();
 
- /* по-умолчанию сообщения об ошибках выволятся в журналы syslog
-    мы изменяем стандартный обработчик, на вывод сообщений в консоль */
-  ak_log_set_level( ak_log_maximum );
-  ak_libakrypt_create( ak_function_log_stderr );
+  /* перебираем все реализованные в библиотеке алгоритмы аутентифицированного шифрования */
+   oid = ak_oid_find_by_mode( aead );
+   while( oid != NULL ) {
+     struct aead ctx;
 
- /* тестируем режим работы ctr-cmac-magma */
- /* - формируем контрольное значение имитовставки */
-  ak_bckey_create_magma( &bctx );
-  ak_bckey_set_key( &bctx, keyAnnexA, 32 );
-  ak_bckey_cmac( &bctx, apdata, 41+67, icode_ctr_cmac_magma, 8 );
-  ak_bckey_destroy( &bctx );
- /* - проверяем корректность вычислений с aead контекстом */
-  exitcode = testfunc( ak_oid_find_by_name( "ctr-cmac-magma" ), icode_ctr_cmac_magma, 8 );
-  if( exitcode == EXIT_FAILURE ) goto exit;
+    /* создаем контекст алгоритма */
+     if(( ak_aead_create_oid( &ctx,
+                             ak_true /* создаем два ключа: шифрования и имитозащиты */,
+                             oid )) == ak_error_ok )
+       printf("\nрежим: %s (%s) [контекст создан успешно]\n", oid->name[0], oid->id[0] );
+      else {
+        printf("режим: %s (%s) [ошибка создания контекста]\n", oid->name[0], oid->id[0] );
+        continue;
+      }
+     printf(" - размер входного блока: %d\n", (int)ak_aead_get_block_size( &ctx ));
+     printf(" - размер синхропосылки:  %d\n", (int)ak_aead_get_iv_size( &ctx ));
+     printf(" - размер имитовставки:   %d\n", (int)ak_aead_get_tag_size( &ctx ));
 
- /* тестируем режим работы ctr-cmac-kuznechik */
- /* - формируем контрольное значение имитовставки */
-  ak_bckey_create_kuznechik( &bctx );
-  ak_bckey_set_key( &bctx, keyAnnexA, 32 );
-  ak_bckey_cmac( &bctx, apdata, 41+67, icode_ctr_cmac_kuznechik, 16 );
-  ak_bckey_destroy( &bctx );
- /* - проверяем корректность вычислений с aead контекстом */
-  exitcode = testfunc( ak_oid_find_by_name( "ctr-cmac-kuznechik" ), icode_ctr_cmac_kuznechik, 16 );
-  if( exitcode == EXIT_FAILURE ) goto exit;
+    /* присваиваем ключевые значения */
+     if( ak_aead_set_keys( &ctx,
+                           encryptionKey, 32,     /* ключ шифрования и его длина */
+                           authenticationKey, 32 /* ключ имитозащиты и его длина */
+                         ) == ak_error_ok )
+       printf(" - ключевые значения успешно присвоены\n");
+      else {
+        printf(" - ошибка присвоения ключевых значений\n");
+        goto loopex;
+      }
 
- /* тестируем режим работы mgm-magma */
-  exitcode = testfunc( ak_oid_find_by_name( "mgm-magma" ), icode_mgm_magma, 8 );
-  if( exitcode == EXIT_FAILURE ) goto exit;
+    /* далее, мы демонстрируем несколько сценариев использование созданного контекста
 
- /* тестируем режим работы mgm-kuznechik */
-  exitcode = testfunc( ak_oid_find_by_name( "mgm-kuznechik" ), icode_mgm_kuznechik, 16 );
-  if( exitcode == EXIT_FAILURE ) goto exit;
+       1. вариант первый (шифрование сетевого трафика):
+          данные содержатся в одном буфере packet,
+          последовательно записаны сначала заголовок (41 байт), потом тело пакета (67) */
 
- /* тестируем режим работы ctr-hmac-magma-streebog256 */
- /* - формируем контрольное значение имитовставки */
-  ak_hmac_create_streebog256( &hctx );
-  ak_hmac_set_key( &hctx, keyAnnexA, 32 );
-  ak_hmac_ptr( &hctx, apdata, 41+67, icode_hmac_streebog256, 16 ); /* мы берем только 16 */
-                              /* хотя можно использовать любое натуральное число до 32-х */
-  ak_hmac_destroy( &hctx );
- /* - проверяем корректность вычислений с aead контекстом */
-  exitcode = testfunc( ak_oid_find_by_name( "ctr-hmac-magma-streebog256" ), icode_hmac_streebog256, 16 );
-  if( exitcode == EXIT_FAILURE ) goto exit;
+      if( test_packet( &ctx, packet, packet +41 ) != ak_error_ok ) {
+        printf(" - ошибка тестирования пакетных данных\n");
+        goto loopex;
+      }
 
- /* тестируем режим работы ctr-hmac-magma-streebog512 */
- /* - формируем контрольное значение имитовставки */
-  ak_hmac_create_streebog512( &hctx );
-  ak_hmac_set_key( &hctx, keyAnnexA, 32 );
-  ak_hmac_ptr( &hctx, apdata, 41+67, icode_hmac_streebog512, 16 ); /* мы берем только 16 */
-                               /* хотя можно использовать любое натуральное число до 64-х */
-  ak_hmac_destroy( &hctx );
- /* - проверяем корректность вычислений с aead контекстом */
-  exitcode = testfunc( ak_oid_find_by_name( "ctr-hmac-magma-streebog512" ), icode_hmac_streebog512, 16 );
-  if( exitcode == EXIT_FAILURE ) goto exit;
+    /* 2. вариант второй (шифрование областей в памяти):
+          ассоциированные данные и данные для шифрования содержатся в двух,
+          не последовательных областях памяти,
+          длины данных и их значения те же, что и в предыдущем примере */
 
- /* тестируем режим работы ctr-hmac-kuznechik-streebog256 */
-  exitcode = testfunc( ak_oid_find_by_name( "ctr-hmac-kuznechik-streebog256" ), icode_hmac_streebog256, 16 );
-  if( exitcode == EXIT_FAILURE ) goto exit;
- /* тестируем режим работы ctr-hmac-kuznechik-streebog512 */
- /* - проверяем корректность вычислений с aead контекстом */
-  exitcode = testfunc( ak_oid_find_by_name( "ctr-hmac-kuznechik-streebog512" ), icode_hmac_streebog512, 16 );
-  if( exitcode == EXIT_FAILURE ) goto exit;
+      memcpy(( header = malloc( 48 )) +3, packet, 41 );
+      memcpy(( body = malloc( 72 )) +5, packet + 41, 67 );
 
- /* тестируем режим работы ctr-nmac-magma */
- /* - формируем контрольное значение имитовставки */
-  ak_hmac_create_nmac( &hctx );
-  ak_hmac_set_key( &hctx, keyAnnexA, 32 );
-  ak_hmac_ptr( &hctx, apdata, 41+67, icode_hmac_streebog256, 16 );
-  ak_hmac_destroy( &hctx );
- /* - проверяем корректность вычислений с aead контекстом */
-  exitcode = testfunc( ak_oid_find_by_name( "ctr-nmac-magma" ), icode_hmac_streebog256, 16 );
-  if( exitcode == EXIT_FAILURE ) goto exit;
-// /* - проверяем корректность вычислений с aead контекстом */
-//  exitcode = testfunc( ak_oid_find_by_name( "ctr-nmac-kuznechik" ), icode_hmac_streebog256, 32 );
-//  if( exitcode == EXIT_FAILURE ) goto exit;
+      if( test_packet( &ctx, header +3, body +5 ) != ak_error_ok ) {
+        printf(" - вариант с раздельными областями памяти не поддерживается\n");
+      }
+      free( header ); free( body );
 
- /* - проверяем корректность вычислений с aead контекстом */
-  exitcode = testfunc( ak_oid_find_by_name( "xtsmac-magma" ), icode_xtsmac_magma, 16 );
-  if( exitcode == EXIT_FAILURE ) goto exit;
+    /* 3. вариант третий (шифрование файлов):
+          ассоциированные данные, а потом и данные для шифрования,
+          поступают последовательными фрагментами, длина которых кратна длине блока обрабатываемых данных
+          как и в предыдущем случае, данные могут располагаться в произвольных областях памяти */
 
- /* завершаем выполнение теста */
-  exitcode = EXIT_SUCCESS;
- exit:
-  ak_libakrypt_destroy();
+      memcpy(( header = malloc( 48 )) +1, packet, 41 );
+      memcpy(( body = malloc( 72 )) +2, packet + 41, 67 );
+
+      if( test_file( &ctx, header +1, body +2 ) != ak_error_ok ) {
+        printf(" - ошибка тестирования данных, поступающих фрагментами\n");
+        goto loopex;
+      }
+
+      free( header ); free( body );
+
+    /* уничтожаем контекст алгоритма */
+     loopex:
+       ak_aead_destroy( &ctx );
+    /* ищем следующий алгоритм */
+     oid = ak_oid_findnext_by_mode( oid, aead );
+   }
 
  return exitcode;
 }
 
-
 /* ----------------------------------------------------------------------------------------------- */
- int testfunc_2key( ak_oid oid, ak_uint8 *icodetest, size_t icode_size )
+/* простая проверка зашифрования/расшифрования данных, расположенных в памяти последовательно      */
+/* ----------------------------------------------------------------------------------------------- */
+ int test_packet( ak_aead ctx, ak_pointer header, ak_pointer body )
 {
-  struct aead ctx;
-  ak_uint8 icode[64];
-  size_t shift, tail, blocks;
-  int error, exitcode = EXIT_FAILURE;
+  int error = ak_error_ok;
+  ak_uint8 tag[64], *control = NULL;
 
- /* создаем контекст согласно поданному oid и присваиваем константные значения */
-  if( ak_aead_create_oid( &ctx, ak_true, oid ) != ak_error_ok ) return EXIT_FAILURE;
-
- /* присваиваем ключевые значения (тестируем все доступные функции) */
-  if(( error = ak_aead_set_keys( &ctx, keyAnnexB, 32, keyAnnexA, 32 )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "ошибка присвоения ключевых значений" );
-    goto exlab;
-  }
-
- /* информация о созданных ключах */
-  printf( "[ключ шифрования:  %s, ключ имитозащиты: %s]\n",
-              ((ak_skey)ctx.encryptionKey)->oid->name[0], ((ak_skey)ctx.authenticationKey)->oid->name[0] );
-
- /* начинаем тестирование с того, что проверяем прямой вызов функций шифрования/расшифрования */
-  memset( icode, 0, sizeof( icode ));
-  if(( error = ak_aead_encrypt( &ctx,
-                    apdata,
+  memset( tag, 0, sizeof( tag ));
+ /* шифруем данные */
+  if(( error = ak_aead_encrypt( ctx,
+                    header,
                     41,
-                    apdata +41,
-                    apdata +41,
+                    body,
+                    body,
                     67,
                     iv,
-                    ctx.iv_size,
-                    icode,
-                    icode_size )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "ошибка зашифрования данных" );
-    goto exlab;
+                    ctx->iv_size,
+                    tag,
+                    ctx->tag_size )) != ak_error_ok ) {
+    return ak_error_message( error, __func__, "ошибка зашифрования данных" );
   }
- /* проверяем тестовое значение имитовставки */
-  if( !ak_ptr_is_equal_with_log( icode, icodetest, icode_size )) {
-    ak_error_message_fmt( ak_error_not_equal_data, __func__ , "неверная контрольная сумма" );
-    goto exlab;
-  }
-  printf("%s (%s)\n", oid->name[0], ak_ptr_to_hexstr( icodetest, icode_size, ak_false ));
-  printf(" 1. %s ", ak_ptr_to_hexstr( apdata +41, 67, ak_false )); fflush( stdout );
+  printf(" - enc: %s ", ak_ptr_to_hexstr( body, 67, ak_false ));
 
  /* расшифровываем */
-  if(( error = ak_aead_decrypt( &ctx,
-                    apdata,
+  if(( error = ak_aead_decrypt( ctx,
+                    header,
                     41,
-                    apdata +41,
-                    apdata +41,
+                    body,
+                    body,
                     67,
                     iv,
-                    ctx.iv_size,
-                    icodetest, /* сравниваем с вычисленным ранее значением */
-                    icode_size )) != ak_error_ok ) {
-    ak_error_message_fmt( ak_error_not_equal_data, __func__ , "ошибка при расшифровании" );
-    goto exlab;
-  }
-  printf("Ok\n");
-
- /* теперь выполняем поблоковое зашифрование информации:
-    мы нарезаем ассоциированные данные и шифртекст на блоки фиксированной длины,
-    после чего, выполняем обновление (update) внутреннего состояния aead котекста */
-  shift = 0;
-  blocks = 41/ctx.block_size;
-  memset( icode, 0, sizeof( icode ));
-  ak_aead_auth_clean( &ctx, iv, ctx.iv_size );
-  for( size_t i = 0; i < blocks; i++, shift += ctx.block_size ) {
-    ak_aead_auth_update( &ctx, apdata +shift, ctx.block_size );
-  }
-  if(( tail = 41%ctx.block_size ) > 0 ) ak_aead_auth_update( &ctx, apdata +shift, tail );
-
-  shift = 0;
-  blocks = 67/ctx.block_size;
-  ak_aead_encrypt_clean( &ctx, iv, ctx.iv_size );
-  for( size_t i = 0; i < blocks; i++, shift += ctx.block_size ) {
-    ak_aead_encrypt_update( &ctx, apdata +41 +shift, apdata +41 +shift, ctx.block_size );
-  }
-  if(( tail = 67%ctx.block_size ) > 0 )
-    ak_aead_encrypt_update( &ctx, apdata +41 +shift, apdata +41 +shift, tail );
-  ak_aead_finalize( &ctx, icode, icode_size );
-
- /* проверяем тестовое значение имитовставки */
-  if( !ak_ptr_is_equal_with_log( icode, icodetest, icode_size )) {
-    ak_error_message_fmt( ak_error_not_equal_data, __func__ , "неверная контрольная сумма" );
-    //goto exlab;
-  }
-  printf(" 2. %s ", ak_ptr_to_hexstr( apdata +41, 67, ak_false ));
-
- /* расшифровываем данные,
-    используя минимально возможное количество вызовов функций обновления контента */
-  memset( icode, 0, sizeof( icode ));
-  ak_aead_clean( &ctx, iv, ak_aead_get_iv_size( &ctx )); // ctx.iv_size
-  tail = 41%ak_aead_get_block_size( &ctx );
-  if(( shift = 41 - tail ) > 0) ak_aead_auth_update( &ctx, apdata, shift );
-  if( tail ) ak_aead_auth_update( &ctx, apdata +shift, tail );
-
-  tail = 67%ak_aead_get_block_size( &ctx );;
-  if(( shift = 67 - tail ) > 0) ak_aead_decrypt_update( &ctx, apdata +41, apdata +41, shift );
-  if( tail ) ak_aead_decrypt_update( &ctx, apdata +41 +shift, apdata +41 +shift, tail );
-  ak_aead_finalize( &ctx, icode, icode_size );
-
- /* проверяем тестовое значение имитовставки */
-  if( !ak_ptr_is_equal_with_log( icode, icodetest, icode_size )) {
+                    ctx->iv_size,
+                    tag, /* сравниваем с вычисленным ранее значением */
+                    ctx->tag_size )) != ak_error_ok ) {
     printf("Wrong\n");
-    ak_error_message_fmt( ak_error_not_equal_data, __func__ , "неверная контрольная сумма" );
-    //goto exlab;
+    return ak_error_message_fmt( ak_error_not_equal_data, __func__ , "ошибка при расшифровании" );
   }
-  printf("Ok\n");
 
-  exitcode = EXIT_SUCCESS;
-  exlab:
-    ak_aead_destroy( &ctx );
+  printf("Ok\n - mac: %s ", ak_ptr_to_hexstr( tag, ctx->tag_size, ak_false )); fflush( stdout );
 
- return exitcode;
+ /* сверяем с константными значениями */
+  if( strstr( ((ak_skey)ctx->authenticationKey)->oid->name[0],
+                                                "streebog256" ) != NULL ) control = packet_hmac256;
+  if( strstr( ((ak_skey)ctx->authenticationKey)->oid->name[0],
+                                                "streebog512" ) != NULL ) control = packet_hmac512;
+  if( strstr( ((ak_skey)ctx->authenticationKey)->oid->name[0], "nmac" ) != NULL )
+                                                                          control = packet_nmac256;
+  if( control != NULL ) {
+    if( ak_ptr_is_equal_with_log( tag, control, ctx->tag_size ))
+      printf("[Ok]\n");
+     else {
+      printf(" - имитовставки не совпадает с вычисленным ранее константным значением\n");
+      error = ak_error_not_equal_data;
+     }
+    return error;
+  }
+  printf("[%s]\n", __func__ );
+  return ak_error_ok;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int testfunc_1key( ak_oid oid, ak_uint8 *icodetest, size_t icode_size )
+ int test_file( ak_aead ctx, ak_pointer header, ak_pointer body )
 {
-  size_t tail;
-  struct aead ctx;
-  ak_uint8 icode[64];
-  int error, exitcode = EXIT_FAILURE;
+  int error = ak_error_ok;
+  ak_uint8 icode[64], icode2[64], *control = NULL;
+  size_t blocks, tail;
+  ak_uint8 *ptr;
+  size_t shift;
 
- /* создаем контекст согласно поданному oid и присваиваем константные значения */
-  if( ak_aead_create_oid( &ctx, ak_false, oid ) != ak_error_ok ) return EXIT_FAILURE;
+/* 1. выполняем поблоковое зашифрование информации:
+   мы нарезаем ассоциированные даные и шифртекст на блоки фиксированной длины,
+   после чего, выполняем обновление (update) внутреннего состояния aead контекста */
+  ptr = header;
+  shift = 0;
+  blocks = 41/ctx->block_size;
+  tail = 41%ctx->block_size;
 
- /* присваиваем ключ атентификации */
-  if(( error = ak_aead_set_auth_key( &ctx, keyAnnexA, 32 )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "ошибка присвоения ключевого значения" );
-    goto exlab;
+ /* эта поправка на длину последнего блока нужна для корректной работы режима xtsmac */
+  if(( blocks > 0 ) && ( tail > 0 ) && ( tail < ( ctx->block_size >> 1 ))) {
+    blocks--; tail += ctx->block_size;
   }
 
- /* вычисление имитовставки (по частям) */
-  memset( icode, 0, icode_size );
-  ak_aead_auth_clean( &ctx, iv, ctx.iv_size );
-  tail = ak_max( 32, ctx.block_size );
-  ak_aead_auth_update( &ctx, apdata, tail );
-  ak_aead_encrypt_update( &ctx, apdata +tail, NULL, sizeof( apdata ) -tail );
-  ak_aead_finalize( &ctx, icode, icode_size );
-
-  if( !ak_ptr_is_equal_with_log( icode, icodetest, icode_size )) {
-    printf(" 3. divided mac not supported (%s, compare with next value)\n",
-                                                   ak_ptr_to_hexstr( icode, icode_size, ak_false));
-  }
-   else printf(" 3. divided mac is Ok (%s)\n", ak_ptr_to_hexstr( icode, icode_size, ak_false));
-
- /* вычисление имитовставки (за один вызов) */
   memset( icode, 0, sizeof( icode ));
-  if(( error = ak_aead_mac( &ctx,
-                    apdata,
-                    41 + 67,
-                    iv,
-                    ctx.iv_size,
-                    icode,
-                    icode_size )) != ak_error_ok ) {
-    ak_error_message( error, __func__, "ошибка зашифрования данных" );
-    goto exlab;
+  ak_aead_auth_clean( ctx, iv, ctx->iv_size );
+  for( size_t i = 0; i < blocks; i++, shift += ctx->block_size ) {
+    ak_aead_auth_update( ctx, ptr +shift, ctx->block_size );
   }
- /* проверяем тестовое значение имитовставки */
-  printf(" 4. mac (%s)\n", ak_ptr_to_hexstr( icode, icode_size, ak_false ));
+  if( tail > 0 ) ak_aead_auth_update( ctx, ptr +shift, tail );
 
- /* вычисление имитовставки (по частям) */
-  memset( icode, 0, icode_size );
-  ak_aead_auth_clean( &ctx, iv, ctx.iv_size );
-  ak_aead_auth_update( &ctx, apdata, sizeof( apdata ));
-  ak_aead_finalize( &ctx, icode, icode_size );
-  printf(" 4. mac (%s)\n", ak_ptr_to_hexstr( icode, icode_size, ak_false ));
+  ptr = body;
+  shift = 0;
+  blocks = 67/ctx->block_size;
+  tail = 67%ctx->block_size;
 
-  exitcode = EXIT_SUCCESS;
-  exlab:
-    ak_aead_destroy( &ctx );
+ /* эта поправка на длину последнего блока нужна для корректной работы режима xtsmac */
+  if(( blocks > 0 ) && ( tail > 0 ) && ( tail < ( ctx->block_size >> 1 ))) {
+    blocks--; tail += ctx->block_size;
+  }
 
- return exitcode;
+  ak_aead_encrypt_clean( ctx, iv, ctx->iv_size );
+  for( size_t i = 0; i < blocks; i++, shift += ctx->block_size ) {
+    ak_aead_encrypt_update( ctx, ptr +shift, ptr +shift, ctx->block_size );
+  }
+  if( tail > 0 )
+    ak_aead_encrypt_update( ctx, ptr +shift, ptr +shift, tail );
+  ak_aead_finalize( ctx, icode, ctx->tag_size );
+
+  printf(" - enc: %s ", ak_ptr_to_hexstr( body, 67, ak_false ));
+
+
+ /* 2. совершенно аналогично, также фрагментами, расшифровываем и
+    сравниваем значения имитовставок. */
+  ptr = header;
+  shift = 0;
+  blocks = 41/ctx->block_size;
+  tail = 41%ctx->block_size;
+
+ /* эта поправка на длину последнего блока нужна для корректной работы режима xtsmac */
+  if(( blocks > 0 ) && ( tail > 0 ) && ( tail < ( ctx->block_size >> 1 ))) {
+    blocks--; tail += ctx->block_size;
+  }
+
+  memset( icode2, 0, sizeof( icode2 ));
+  ak_aead_auth_clean( ctx, iv, ctx->iv_size );
+  for( size_t i = 0; i < blocks; i++, shift += ctx->block_size ) {
+    ak_aead_auth_update( ctx, ptr +shift, ctx->block_size );
+  }
+  if( tail > 0 ) ak_aead_auth_update( ctx, ptr +shift, tail );
+
+  ptr = body;
+  shift = 0;
+  blocks = 67/ctx->block_size;
+  tail = 67%ctx->block_size;
+
+ /* эта поправка на длину последнего блока нужна для корректной работы режима xtsmac */
+  if(( blocks > 0 ) && ( tail > 0 ) && ( tail < ( ctx->block_size >> 1 ))) {
+    blocks--; tail += ctx->block_size;
+  }
+
+  ak_aead_encrypt_clean( ctx, iv, ctx->iv_size );
+  for( size_t i = 0; i < blocks; i++, shift += ctx->block_size ) {
+    ak_aead_decrypt_update( ctx, ptr +shift, ptr +shift, ctx->block_size );
+  }
+  if( tail > 0 )
+    ak_aead_decrypt_update( ctx, ptr +shift, ptr +shift, tail );
+  ak_aead_finalize( ctx, icode2, ctx->tag_size );
+
+  if( ak_ptr_is_equal( icode2, icode, ctx->tag_size ) == ak_true ) {
+    printf("Ok\n - mac: %s ", ak_ptr_to_hexstr( icode2, ctx->tag_size, ak_false )); fflush( stdout );
+  } else {
+     printf("Wrong\n - mac: %s ", ak_ptr_to_hexstr( icode2, ctx->tag_size, ak_false )); fflush( stdout );
+     error = ak_error_not_equal_data;
+   }
+
+ /* сверяем с константными значениями */
+  if( strstr( ((ak_skey)ctx->authenticationKey)->oid->name[0],
+                                                "streebog256" ) != NULL ) control = packet_hmac256;
+  if( strstr( ((ak_skey)ctx->authenticationKey)->oid->name[0],
+                                                "streebog512" ) != NULL ) control = packet_hmac512;
+  if( strstr( ((ak_skey)ctx->authenticationKey)->oid->name[0], "nmac" ) != NULL )
+                                                                          control = packet_nmac256;
+  if( control != NULL ) {
+    if( ak_ptr_is_equal_with_log( icode, control, ctx->tag_size ))
+      printf("[Ok]\n");
+     else {
+      printf(" - имитовставки не совпадает с вычисленным ранее константным значением\n");
+      error = ak_error_not_equal_data;
+     }
+    return error;
+  }
+  printf("[%s]\n", __func__ );
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int testfunc( ak_oid oid, ak_uint8 *icodetest, size_t icode_size )
+ void test_macs( void )
 {
-   printf("aead: %s (%s)\n", oid->name[0], oid->id[0] );
+  struct hmac ctx;
 
-   if( testfunc_2key( oid, icodetest, icode_size ) != EXIT_SUCCESS ) return EXIT_FAILURE;
-   if( testfunc_1key( oid, icodetest, icode_size ) != EXIT_SUCCESS ) return EXIT_FAILURE;
-   printf("\n");
- return EXIT_SUCCESS;
+   printf("тестовые значения имитовставок\n");
+
+  /* hmac-streebog256 */
+   ak_hmac_create_streebog256( &ctx );
+   ak_hmac_set_key( &ctx, authenticationKey, 32 );
+   ak_hmac_ptr( &ctx, packet, 41+67, packet_hmac256, 32 );
+   ak_hmac_destroy( &ctx );
+
+  /* hmac-streebog512 */
+   ak_hmac_create_streebog512( &ctx );
+   ak_hmac_set_key( &ctx, authenticationKey, 32 );
+   ak_hmac_ptr( &ctx, packet, 41+67, packet_hmac512, 64 );
+   ak_hmac_destroy( &ctx );
+
+  /* nmac */
+   ak_hmac_create_nmac( &ctx );
+   ak_hmac_set_key( &ctx, authenticationKey, 32 );
+   ak_hmac_ptr( &ctx, packet, 41+67, packet_nmac256, 32 );
+   ak_hmac_destroy( &ctx );
+
+   printf(" - hmac-streebog256:\n    %s\n\n", ak_ptr_to_hexstr( packet_hmac256, 32, ak_false ));
+   printf(" - hmac-streebog512:\n    %s\n\n", ak_ptr_to_hexstr( packet_hmac512, 64, ak_false ));
+   printf(" - nmac-streebog:\n    %s\n", ak_ptr_to_hexstr( packet_nmac256, 32, ak_false ));
 }
 
 /* ----------------------------------------------------------------------------------------------- */

@@ -717,13 +717,17 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_aead_create_ctr_nmac_magma( ak_aead ctx, bool_t crf )
 {
- return ak_aead_create_ctr_hmac_cipher_hash( ctx, crf, "ctr-nmac-magma" );
+  int error = ak_aead_create_ctr_hmac_cipher_hash( ctx, crf, "ctr-nmac-magma" );
+  if( error == ak_error_ok ) ctx->tag_size = 32;
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
  int ak_aead_create_ctr_nmac_kuznechik( ak_aead ctx, bool_t crf )
 {
- return ak_aead_create_ctr_hmac_cipher_hash( ctx, crf, "ctr-nmac-kuznechik" );
+  int error = ak_aead_create_ctr_hmac_cipher_hash( ctx, crf, "ctr-nmac-kuznechik" );
+  if( error == ak_error_ok ) ctx->tag_size = 32;
+ return error;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
