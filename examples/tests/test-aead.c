@@ -41,6 +41,8 @@
  static void test_macs( void );
  static int test_packet( ak_aead ctx, ak_pointer header, ak_pointer body );
  static int test_file( ak_aead ctx, ak_pointer header, ak_pointer body );
+ static int test_packet_imito( ak_aead ctx, ak_pointer data );
+ static int test_file_imito( ak_aead ctx, ak_pointer data );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                 основная тестовая программа                                     */
@@ -90,19 +92,23 @@
 
     /* далее, мы демонстрируем несколько сценариев использование созданного контекста
 
-       1. вариант первый (шифрование сетевого трафика):
+       1. сценарий первый (шифрование сетевого трафика):
           данные содержатся в одном буфере packet,
-          последовательно записаны сначала заголовок (41 байт), потом тело пакета (67) */
+          последовательно записаны сначала заголовок (41 байт), потом тело пакета (67)
+
+          сценарий реализуется при помощи функции ak_aead_encrypt() */
 
       if( test_packet( &ctx, packet, packet +41 ) != ak_error_ok ) {
         printf(" - ошибка тестирования пакетных данных\n");
         goto loopex;
       }
 
-    /* 2. вариант второй (шифрование областей в памяти):
+    /* 2. сценарий второй (шифрование областей в памяти):
           ассоциированные данные и данные для шифрования содержатся в двух,
           не последовательных областях памяти,
-          длины данных и их значения те же, что и в предыдущем примере */
+          длины данных и их значения те же, что и в предыдущем примере
+
+          сценарий также реализуется при помощи функции ak_aead_encrypt() */
 
       memcpy(( header = malloc( 48 )) +3, packet, 41 );
       memcpy(( body = malloc( 72 )) +5, packet + 41, 67 );
@@ -110,12 +116,21 @@
       if( test_packet( &ctx, header +3, body +5 ) != ak_error_ok ) {
         printf(" - вариант с раздельными областями памяти не поддерживается\n");
       }
+
       free( header ); free( body );
 
-    /* 3. вариант третий (шифрование файлов):
+    /* 3. сценарий третий (шифрование файлов):
           ассоциированные данные, а потом и данные для шифрования,
-          поступают последовательными фрагментами, длина которых кратна длине блока обрабатываемых данных
-          как и в предыдущем случае, данные могут располагаться в произвольных областях памяти */
+          поступают последовательными фрагментами (считываются в буфер с диска или послупают сетевым потоком),
+          длина которых кратна длине блока обрабатываемых данных.
+          как и в предыдущем случае, данные могут располагаться в произвольных областях памяти
+
+          сценарий реализуется при помощи функций:
+           - ak_aead_auth_clean()
+           - ak_aead_auth_update()
+           - ak_aead_encrypt_clean()
+           - ak_aead_encrypt_update() / ak_aead_decrypt_update()
+           - ak_aead_auth_update()                                                                          */
 
       memcpy(( header = malloc( 48 )) +1, packet, 41 );
       memcpy(( body = malloc( 72 )) +2, packet + 41, 67 );
@@ -126,6 +141,34 @@
       }
 
       free( header ); free( body );
+
+     /* 4. Далее идут сценарии вычисления имитовставки, без шифрования данных.
+
+           сценарий четвертый - все данные для имитозащиты расположены в одной области памяти
+           и рассматриваются как ассоциированные данные AEAD алгоритма.
+           Данные для зашифрования на вход не подаются.
+
+           сценарий реализуется при помощи функции ak_aead_mac()
+           устанавливать значение ключа шифрования не обязательно */
+
+      if( test_packet_imito( &ctx, packet ) != ak_error_ok ) {
+        printf(" - ошибка вычисления имитовставки\n");
+        goto loopex;
+      }
+
+     /* 5. сценарий пятый - данные для имитозащиты поступают фрагментами,
+           длина которых кратна длине блока, обрабатываемого AEAD алгоритмом.
+           Данные для зашифрования на вход не подаются.
+
+           сценарий реализуется при помощи функций:
+            - ak_aead_auth_clean()
+            - ak_aead_auth_update()
+           - ak_aead_auth_update()                                           */
+
+      if( test_file_imito( &ctx, packet ) != ak_error_ok ) {
+        printf(" - ошибка пакетной обработки при вычислении имитовставки\n");
+        goto loopex;
+      }
 
     /* уничтожаем контекст алгоритма */
      loopex:
@@ -303,7 +346,109 @@
     if( ak_ptr_is_equal_with_log( icode, control, ctx->tag_size ))
       printf("[Ok]\n");
      else {
-      printf(" - имитовставки не совпадает с вычисленным ранее константным значением\n");
+      printf(" - имитовставка не совпадает с вычисленным ранее константным значением\n");
+      error = ak_error_not_equal_data;
+     }
+    return error;
+  }
+  printf("[%s]\n", __func__ );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int test_packet_imito( ak_aead ctx, ak_pointer adata )
+{
+  int error = ak_error_ok;
+  ak_uint8 tag[64], *control = NULL;
+
+  memset( tag, 0, sizeof( tag ));
+ /* шифруем данные */
+  if(( error = ak_aead_mac( ctx,
+                    adata,
+                    41+67,
+                    iv,
+                    ctx->iv_size,
+                    tag,
+                    ctx->tag_size )) != ak_error_ok ) {
+    return ak_error_message( error, __func__, "ошибка зашифрования данных" );
+  }
+
+  printf(" - имитовставка вычислена\n - mac: %s ", ak_ptr_to_hexstr( tag, ctx->tag_size, ak_false )); fflush( stdout );
+
+ /* сверяем с константными значениями */
+  if( strstr( ((ak_skey)ctx->authenticationKey)->oid->name[0],
+                                                "streebog256" ) != NULL ) control = packet_hmac256;
+  if( strstr( ((ak_skey)ctx->authenticationKey)->oid->name[0],
+                                                "streebog512" ) != NULL ) control = packet_hmac512;
+  if( strstr( ((ak_skey)ctx->authenticationKey)->oid->name[0], "nmac" ) != NULL )
+                                                                          control = packet_nmac256;
+  if( control != NULL ) {
+    if( ak_ptr_is_equal_with_log( tag, control, ctx->tag_size ))
+      printf("[Ok]\n");
+     else {
+      printf(" - имитовставка не совпадает с вычисленным ранее константным значением\n");
+      error = ak_error_not_equal_data;
+     }
+    return error;
+  }
+  printf("[%s]\n", __func__ );
+  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int test_file_imito( ak_aead ctx, ak_pointer adata )
+{
+  int error = ak_error_ok;
+  ak_uint8 tag[64], tag2[64], *control = NULL;
+  size_t blocks, tail;
+  ak_uint8 *ptr;
+  size_t shift;
+
+ /* вычисление имитовставки (по частям, без нарезки на короткие блоки) */
+  memset( tag, 0, ctx->tag_size );
+  ak_aead_auth_clean( ctx, iv, ctx->iv_size );
+  ak_aead_auth_update( ctx, adata, 41+67 );
+  ak_aead_finalize( ctx, tag, ctx->tag_size );
+  printf(" - имитовставка по частям вычислена\n - mac: %s ", ak_ptr_to_hexstr( tag, ctx->tag_size, ak_false )); fflush( stdout );
+
+ /* еще раз тоже самое, но теперь с нарезкой на маленькие блоки */
+  ptr = adata;
+  shift = 0;
+  blocks = (41 +67)/ctx->block_size;
+  tail = (41 +67)%ctx->block_size;
+
+ /* эта поправка на длину последнего блока нужна для корректной работы режима xtsmac */
+  if(( blocks > 0 ) && ( tail > 0 ) && ( tail < ( ctx->block_size >> 1 ))) {
+    blocks--; tail += ctx->block_size;
+  }
+
+  memset( tag2, 0, sizeof( tag2 ));
+  ak_aead_auth_clean( ctx, iv, ctx->iv_size );
+  for( size_t i = 0; i < blocks; i++, shift += ctx->block_size ) {
+    ak_aead_auth_update( ctx, ptr +shift, ctx->block_size );
+  }
+  if( tail > 0 ) ak_aead_auth_update( ctx, ptr +shift, tail );
+  ak_aead_finalize( ctx, tag2, ctx->tag_size );
+
+  if( ak_ptr_is_equal( tag2, tag, ctx->tag_size ) == ak_true ) {
+    printf("[Ok]\n - mac: %s ", ak_ptr_to_hexstr( tag2, ctx->tag_size, ak_false )); fflush( stdout );
+  } else {
+     printf("[Wrong]\n - mac:%s ", ak_ptr_to_hexstr( tag2, ctx->tag_size, ak_false )); fflush( stdout );
+     error = ak_error_not_equal_data;
+   }
+
+ /* сверяем с константными значениями */
+  if( strstr( ((ak_skey)ctx->authenticationKey)->oid->name[0],
+                                                "streebog256" ) != NULL ) control = packet_hmac256;
+  if( strstr( ((ak_skey)ctx->authenticationKey)->oid->name[0],
+                                                "streebog512" ) != NULL ) control = packet_hmac512;
+  if( strstr( ((ak_skey)ctx->authenticationKey)->oid->name[0], "nmac" ) != NULL )
+                                                                          control = packet_nmac256;
+  if( control != NULL ) {
+    if( ak_ptr_is_equal_with_log( tag, control, ctx->tag_size ))
+      printf("[Ok]\n");
+     else {
+      printf(" - имитовставка не совпадает с вычисленным ранее константным значением\n");
       error = ak_error_not_equal_data;
      }
     return error;

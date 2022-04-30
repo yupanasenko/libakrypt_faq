@@ -658,12 +658,12 @@
   }
 
  /* потом зашифровываем данные */
-  if( encryptionKey != NULL ) {
-    if(( error = ak_xtsmac_encryption_update( &ctx, encryptionKey, NULL,
+  if(( encryptionKey != NULL ) && ( size > 0 ) && ( in != NULL )) {
+      if(( error = ak_xtsmac_encryption_update( &ctx, encryptionKey, NULL,
                                                                in, out, size )) != ak_error_ok ) {
-      ak_error_message( error, __func__, "incorrect encryption of plain data" );
-      goto exlab;
-    }
+        ak_error_message( error, __func__, "incorrect encryption of plain data" );
+        goto exlab;
+      }
   }
 
  /* завершаем функцию вычислением имитовставки */
@@ -737,8 +737,8 @@
     goto exlab;
   }
 
- /* потом зашифровываем данные */
-  if( encryptionKey != NULL ) {
+ /* потом расшифровываем данные */
+  if(( encryptionKey != NULL ) && ( size > 0 ) && ( in != NULL )) {
     if(( error = ak_xtsmac_decryption_update( &ctx, encryptionKey, NULL,
                                                                in, out, size )) != ak_error_ok ) {
       ak_error_message( error, __func__, "incorrect decryption of plain data" );
