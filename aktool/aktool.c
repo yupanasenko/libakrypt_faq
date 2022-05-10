@@ -113,6 +113,7 @@
   if( aktool_check_command( "show", argv[1] )) return aktool_show( argc, argv );
   if( aktool_check_command( "a", argv[1] )) return aktool_asn1( argc, argv );
   if( aktool_check_command( "asn1parse", argv[1] )) return aktool_asn1( argc, argv );
+  if( aktool_check_command( "t", argv[1] )) return aktool_test( argc, argv );
   if( aktool_check_command( "test", argv[1] )) return aktool_test( argc, argv );
   if( aktool_check_command( "k", argv[1] )) return aktool_key( argc, argv );
   if( aktool_check_command( "key", argv[1] )) return aktool_key( argc, argv );
@@ -414,7 +415,7 @@
   printf(_("  i, icode      -  calculate or check integrity codes\n"));
   printf(_("  k, key        -  key generation and management functions\n"));
   printf(_("  s, show       -  show useful information\n"));
-  printf(_("     test       -  run performance and correct operation tests\n\n"));
+  printf(_("  t, test       -  run performance and correct operation tests\n\n"));
   printf(_("also try:\n"));
   printf(_("  \"aktool command --help\" to get information about command options\n"));
   printf(_("  \"aktool --version\" to get version of aktool\n"));

@@ -63,37 +63,38 @@ aktool i -c results.streebog --dont-show-stat
 # -------------------------------------------------------------------------------------
 echo; echo "Эксперимент N3. Многократное шифрование в следующих режимах:"
 aktool s --oid aead | grep aead
-aktool e file -m ctr-cmac-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file03.bin --delete-source
-#aktool e file03.bin -m ctr-cmac-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file04.bin --delete-source
-#aktool e file04.bin -m mgm-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file05.bin --delete-source
-#aktool e file05.bin -m mgm-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file06.bin --delete-source
-#aktool e file06.bin -m ctr-hmac-magma-streebog256 --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file07.bin --delete-source
-#aktool e file07.bin -m ctr-hmac-kuznechik-streebog256 --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file08.bin --delete-source
-#aktool e file08.bin -m ctr-hmac-magma-streebog512 --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file09.bin --delete-source
-#aktool e file09.bin -m ctr-hmac-kuznechik-streebog512 --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file10.bin --delete-source
-#aktool e file10.bin -m ctr-nmac-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file11.bin --delete-source
-#aktool e file11.bin -m ctr-nmac-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file12.bin --delete-source
-#aktool e file12.bin -m ctr-cmac-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file13.bin --delete-source
+#
+echo;echo "Зашифрование."
+aktool e file -m ctr-cmac-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file01.enc --delete-source
+aktool e file01.enc -m ctr-cmac-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file02.enc --delete-source
+aktool e file02.enc -m mgm-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file03.enc --delete-source
+aktool e file03.enc -m mgm-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file04.enc --delete-source
+aktool e file04.enc -m ctr-hmac-magma-streebog256 --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file05.enc --delete-source
+aktool e file05.enc -m ctr-hmac-kuznechik-streebog256 --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file06.enc --delete-source
+aktool e file06.enc -m ctr-hmac-magma-streebog512 --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file07.enc --delete-source
+aktool e file07.enc -m ctr-hmac-kuznechik-streebog512 --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file08.enc --delete-source
+aktool e file08.enc -m ctr-nmac-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file09.enc --delete-source
+aktool e file09.enc -m ctr-nmac-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file10.enc --delete-source
+aktool e file10.enc -m xtsmac-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file11.enc --audit 2 --audit-file stderr
 
-#aktool e file06.bin -m xtsmac-magma --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file07.bin --delete-source
-#aktool e file07.bin -m xtsmac-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file08.bin --delete-source
+#aktool e file11.enc -m xtsmac-kuznechik --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file12.enc --delete-source
 #
 echo; echo "Процесс зашифрования завершен."
-aktool i file3.bin --audit-file stderr --audit 2
-ls -la *.bin
-exit
+aktool i file10.enc
+ls -la *.enc
 #
 # Поскольку мы знаем имена файлов, которые будут расшифрованы,
 # то указываем их в командной строке, несмотря на то, что они пока еще не существуют
 # опция --delete-source удалает файлы сразу после их расшифрования
 echo; echo "Расшифрование."
-aktool d file03.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
+aktool d file10.enc file09.enc file08.enc file07.enc file06.enc file05.enc file04.enc file03.enc file02.enc file01.enc --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
 aktool i file
 ls -la file
+#
+# Проверка контрольной суммы расшифрованого файла
 aktool i -c results.streebog --dont-show-stat
-# file13.bin file12.bin file11.bin file10.bin file09.bin file08.bin file07.bin file06.bin file05.bin file04.bin
 #
 # -------------------------------------------------------------------------------------
 #  В завершение экспериментов, удаляем созданные временные файлы
 # -------------------------------------------------------------------------------------
-rm -f ca.key ca.crt user_request.csr user.key user.crt psk.512 file results.streebog
+#rm -f ca.key ca.crt user_request.csr user.key user.crt psk.512 file results.streebog

@@ -301,10 +301,10 @@ msgstr ""
 #: aktool.c:417
 #, c-format
 msgid ""
-"     test       -  run performance and correct operation tests\n"
+"  t, test       -  run performance and correct operation tests\n"
 "\n"
 msgstr ""
-"     test       -  запуск тестов на корректность и скорость работы\n"
+"  t, test       -  выполнение тестов на корректность и скорость работы криптоалгоритмов\n"
 "\n"
 
 #: aktool.c:418

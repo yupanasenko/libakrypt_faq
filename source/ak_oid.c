@@ -37,10 +37,10 @@
     "kbox params",
     "encrypt mode",
     "encrypt2k mode",
-    "acpkm",
-    "mac",
-    "aead",
-    "xcrypt",
+    "acpkm mode",
+    "mac mode",
+    "aead mode",
+    "xcrypt mode",
     "descriptor",
     "undefined mode"
 };
