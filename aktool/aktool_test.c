@@ -21,8 +21,14 @@
  int aktool_test_speed_oid( int , ak_oid );
 
 /* ----------------------------------------------------------------------------------------------- */
+ static int aktool_test_speed_block_cipher( int, ak_oid );
+
+/* ----------------------------------------------------------------------------------------------- */
  bool_t large_array_test = ak_true;
  bool_t packets_test = ak_true;
+ ak_uint32 min_length_mb = 16;
+ ak_uint32 max_length_mb = 128;
+
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_test( int argc, tchar *argv[] )
@@ -42,6 +48,8 @@
      { "list-engines",     0, NULL, 253 },
      { "no-large-arrays",  0, NULL, 249 },
      { "no-packets",       0, NULL, 248 },
+     { "min-length",       1, NULL, 239 },
+     { "max-length",       1, NULL, 238 },
 
      aktool_common_functions_definition,
      { NULL,               0, NULL,   0 }
@@ -76,6 +84,12 @@
                      break;
         case 248:    packets_test = ak_false;
                      break;
+
+        case 239:    if(( min_length_mb = atoi( optarg )) == 0 ) min_length_mb = 16;
+                     break;
+        case 238:    if(( max_length_mb = atoi( optarg )) == 0 ) max_length_mb = 128;
+                     break;
+
 
         default:   /* обрабатываем ошибочные параметры */
                      if( next_option != -1 ) work = do_nothing;
@@ -141,12 +155,14 @@
      " -e, --speed-of-engine   measuring the speed of the all crypto algorithms defined by given engine\n"
      "     --list-engines      output a list of all supported engines\n"
      "     --list-modes        output a list of all supported modes\n"
+     "     --max-length        maximal length (in megabytes) of encrypted data [ default: %uMb]\n"
+     "     --min-length        minimal length (in megabytes) of encrypted data [ default: %uMb]\n"
      " -n, --speed-by-name     measuring the speed of the given crypto algorithm\n"
      "                         a search is performed for all algorithms whose name contains the specified string\n"
      "     --no-large-arrays   do not run tests with large arrays of pseudorandom data\n"
      "     --no-packets        do not run tests with short network packets\n"
      " -m, --speed-of-mode     mesuaring the speed of the crypto algorithms with given mode\n"
-  ));
+  ), max_length_mb, min_length_mb );
   aktool_print_common_options();
 
   printf(_("for usage examples try \"man aktool\"\n" ));
@@ -192,24 +208,58 @@
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_test_speed_mode( char *value )
 {
+   ak_oid oid = NULL;
+   oid_modes_t mode = undefined_mode;
+   int exitcode = EXIT_FAILURE, fc = 0;
 
-  return EXIT_FAILURE;
+   if( strstr( "mac", value ) != NULL ) mode = mac;
+   if( strstr( "aead", value ) != NULL ) mode = aead;
+   if( strstr( "acpkm", value ) != NULL ) mode = acpkm;
+   if( strstr( "encrypt", value ) != NULL ) mode = encrypt_mode;
+   if( strstr( "encrypt2k", value ) != NULL ) mode = encrypt2k_mode;
+   if( strstr( "algorithm", value ) != NULL ) mode = algorithm;
+
+   if( mode != undefined_mode ) {
+     oid = ak_oid_find_by_mode( mode );
+     while( oid != NULL ) {
+       exitcode = aktool_test_speed_oid( ++fc, oid );
+       oid = ak_oid_findnext_by_mode( oid, mode );
+     }
+   }
+
+  if( exitcode == EXIT_FAILURE )
+    aktool_error(_("the string \"%s\" is not a supportable name of the crypto algorithm mode"), value );
+  return exitcode;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
  int aktool_test_speed_engine( char *value )
 {
+   ak_oid oid = NULL;
+   oid_engines_t engine = undefined_engine;
+   int exitcode = EXIT_FAILURE, fc = 0;
+
+   if( strstr( "block cipher", value ) != NULL ) engine = block_cipher;
+
+   if( engine != undefined_engine ) {
+     oid = ak_oid_find_by_engine( engine );
+     while( oid != NULL ) {
+       exitcode = aktool_test_speed_oid( ++fc, oid );
+       oid = ak_oid_findnext_by_engine( oid, engine );
+     }
+   }
+
+  if( exitcode == EXIT_FAILURE )
+    aktool_error(_("the string \"%s\" is unsupportable name of crypto engine, sorry ... "), value );
+  return exitcode;
 
   return EXIT_FAILURE;
 }
 
 /* ----------------------------------------------------------------------------------------------- */
- int aktool_test_speed_block_cipher( int, ak_oid );
-
-/* ----------------------------------------------------------------------------------------------- */
  int aktool_test_speed_oid( int index, ak_oid oid )
 {
-  int exit_status = EXIT_SUCCESS;
+  int exit_status = EXIT_FAILURE;
 
   switch( oid->engine ) {
     case block_cipher:
@@ -220,17 +270,18 @@
          case acpkm:
          case mac:
          case aead:
-            exit_status = aktool_test_speed_block_cipher( index, oid );
-            break;
+           exit_status = aktool_test_speed_block_cipher( index, oid );
+           break;
 
          default:
-           printf(_("%3d: block cipher %s, unsupported %s\n"), index, oid->name[0],
+           aktool_error(_("used unsupported block cipher mode %s (%s)"), oid->name[0],
                                                           ak_libakrypt_get_mode_name( oid->mode ));
       }
       break;
 
     default:
-      printf(_("identifier %s (%s) is unsupported\n"), oid->name[0], oid->id[0] );
+      aktool_error(_("testing of identifier %s (%s) is unsupported now, sorry ... "),
+                                                                        oid->name[0], oid->id[0] );
   }
 
   return exit_status;
@@ -253,17 +304,17 @@
   clock_t timea = 1;
   double iter = 0, avg = 0;
   int i, j, error = ak_error_ok;
-  size_t size = 0, sum = 0, isum = 0;
+  size_t size = 0, sum = 0, isum = 0, secbytes = 0;
   int exit_status = EXIT_FAILURE;
-  ak_pointer encryptionKey = NULL;
+  ak_pointer encryptionKey = NULL, authenticationKey = NULL;
   const size_t pcount = 96000;
-  ak_uint8 *packet, out[1500];
+  ak_uint8 *packet, out[1500], icode[128];
 
   size_t *lens = NULL;
  /* в режиме ecb все длины должны делиться на длину блока, т.е. 16 */
   size_t blens[12] = { 64, 128, 256, 384, 512, 640, 768, 832, 1024, 1040, 1280, 1488 };
  /* в остальных режимах допускаются произвольные размеры */
-  size_t rlens[12] = { 64, 127, 128, 253, 460, 512, 731, 860, 1024, 1025, 1280, 1500 };
+  size_t rlens[12] = { 72, 103, 128, 253, 460, 512, 731, 860, 1024, 1025, 1280, 1500 };
 
  /* 1. Создаем ключи */
   if(( encryptionKey = ak_oid_new_object( oid )) == NULL ) {
@@ -275,11 +326,28 @@
     goto exit;
   }
 
+  switch( oid->mode ) {
+    case encrypt2k_mode: /* схемы с двумя ключами */
+    case aead:
+
+      if(( authenticationKey = ak_oid_new_second_object( oid )) == NULL ) {
+        aktool_error( _("incorrect creation of authentication key (code: %d)" ),
+                                                                            ak_error_get_value( ));
+        goto exit;
+      }
+      if(( error = oid->func.second.set_key( authenticationKey, iv, 32 )) != ak_error_ok ) {
+        aktool_error( _("incorrect assigning authentication key value (code: %d)" ), error );
+        goto exit;
+      }
+      break;
+    default: break;
+  }
+
  /* 1. выполняем тестирование больших данных */
-  printf(_("%3d: block cipher %s, %s\n"), index, oid->name[0],
-                    oid->mode == algorithm ? "ecb mode" : ak_libakrypt_get_mode_name( oid->mode ));
+  printf("%3d: %s, %s\n", index, oid->name[0],
+         ( oid->mode == algorithm ) ? _("ecb mode") : _( ak_libakrypt_get_mode_name( oid->mode )));
   if( large_array_test ) {
-    for( i = 16; i < 129; i += 8 ) {
+    for( i = min_length_mb; i <= max_length_mb; i += 8 ) {
        ak_uint8 *data = malloc( size = ( size_t ) i*1024*1024 );
        memset( data, (ak_uint8)i+13, size );
 
@@ -287,6 +355,8 @@
      /* далее - не очень хороший стиль, мы пользуемся тем,
         что все ключевые структуры содержат ключ первым элементом структуры */
        ((ak_skey)encryptionKey)->resource.value.counter = size;
+       if( authenticationKey != NULL )
+         ((ak_skey)authenticationKey)->resource.value.counter = size;
 
      /* выводим информацию */
        if( !ki.quiet ) { printf(_("%s %3d Mb%s"), _(large), i, "\r" ); fflush( stdout ); }
@@ -297,9 +367,86 @@
             timea = clock();
             error = ak_bckey_encrypt_ecb( encryptionKey, data, data, size );
             timea = clock() - timea;
-            break;
+          break;
+
+          case encrypt_mode: /* базовый режим с одним ключом и синхропосылкой */
+            timea = clock();
+            error = oid->func.direct(
+               encryptionKey,     /* ключ шифрования */
+               data,              /* указатель на зашифровываемые данные */
+               data,              /* указатель на зашифрованные данные */
+               size,              /* размер шифруемых данных */
+               iv,                /* синхропосылка для режима шифрования */
+               sizeof( iv )       /* доступный размер синхропосылки */
+            );
+            timea = clock() - timea;
+          break;
+
+          case mac: /* имитовставка */
+             timea = clock();
+             error = oid->func.direct(
+               encryptionKey,     /* ключ шифрования */
+               data,              /* указатель на данные для которых вычисляется имитовставка */
+               size,              /* размер данных */
+               icode,             /* имитовставка */
+               sizeof( icode )    /* доступный размер памяти для имитовставки */
+             );
+             timea = clock() - timea;
+          break;
+
+          case acpkm:
+           /* определяем максимальный размер секции */
+            if( ((ak_bckey)encryptionKey)->bsize == 8 )
+              secbytes = 8*ak_libakrypt_get_option_by_name( "acpkm_section_magma_block_count" );
+             else secbytes = 16*ak_libakrypt_get_option_by_name( "acpkm_section_kuznechik_block_count" );
+
+            timea = clock();
+            error = oid->func.direct(
+              encryptionKey,     /* ключ шифрования */
+              data,              /* указатель на зашифровываемые данные */
+              data,              /* указатель на зашифрованные данные */
+              size,              /* размер шифруемых данных */
+              secbytes,          /* размер одной секции в байтах */
+              iv,                /* синхропосылка для режима гаммирования */
+              sizeof( iv )       /* доступный размер синхропосылки */
+            );
+            timea = clock() - timea;
+          break;
+
+          case encrypt2k_mode: /* шифрование с двумя ключами */
+            timea = clock();
+            error = oid->func.direct(
+              encryptionKey,     /* ключ шифрования */
+              authenticationKey, /* ключ имитозащиты */
+              data,              /* указатель на зашифровываемые данные */
+              data,              /* указатель на зашифрованные данные */
+              size,              /* размер шифруемых данных */
+              iv,                /* синхропосылка для режима гаммирования */
+              sizeof( iv )       /* доступный размер синхропосылки */
+            );
+            timea = clock() - timea;
+          break;
+
+          case aead: /* двухключевое шифрование и имитозащита */
+            timea = clock();
+            error = oid->func.direct(
+              encryptionKey,     /* ключ шифрования */
+              authenticationKey, /* ключ имитозащиты */
+              data,              /* ассоциированные данные */
+              128,               /* размер ассоциированных данных */
+              data+128,          /* указатель на зашифровываемые данные */
+              data+128,          /* указатель на зашифрованные данные */
+              size-128,          /* размер шифруемых данных */
+              iv,                /* синхропосылка для режима гаммирования */
+              sizeof( iv ),      /* доступный размер синхропосылки */
+              icode,             /* имитовставка */
+              sizeof( icode )    /* доступный размер памяти для имитовставки */
+            );
+            timea = clock() - timea;
+          break;
 
           default:
+            error = ak_error_undefined_function;
             printf(_("%3d: block cipher %s, %s\n"), index, oid->name[0],
                                                           ak_libakrypt_get_mode_name( oid->mode ));
        }
@@ -325,46 +472,159 @@
        free(data);
     }
     if( !ki.quiet )
-      printf(_("   - average speed: %10f MBs\t\t\t\t\t\n"), avg/iter );
+      printf(_("   - average speed: %10f MBs.                              \n"), avg/iter );
+  } /* конец large_array_test */
+
+
+ /* 2. выполняем тестирование пакетных данных */
+  if( packets_test ) {
+    switch( oid->mode ) {
+      case algorithm:
+        lens = blens;
+        break;
+
+      default:
+        lens = rlens;
+        break;
+    }
+
+    sum = isum = 0;
+    packet = malloc( 1500*(pcount+10) );
+    for( i = 0; i < 1500*(pcount+10); i++ ) packet[i] = (ak_uint8)((1+i)*(i+2));
+
+    size_t epacketlen = 0;
+    size_t rlen = sizeof(rlens)/sizeof( size_t);
+    size_t headlen = 8;
+
+    for( j = 0; j < rlen; j++ ) {
+       printf("%s %s", _(packets), "\r" ); fflush( stdout );
+
+       size = 0;
+       ((ak_skey)encryptionKey)->resource.value.counter = pcount*1500;
+       if( authenticationKey != NULL )
+         ((ak_skey)authenticationKey)->resource.value.counter = pcount*1500;
+
+     /* выполняем алгоритм */
+       switch( oid->mode ) {
+          case algorithm:
+            timea = clock();
+            for( i = 0; i < pcount; i++, size += lens[j] ) {
+              ak_bckey_encrypt_ecb( encryptionKey, packet+size, out, lens[j] );
+            }
+            timea = clock() - timea;
+          break;
+
+          case encrypt_mode: /* базовый режим с одним ключом и синхропосылкой */
+            timea = clock();
+            for( i = 0; i < pcount; i++, size += lens[j] ) {
+               error = oid->func.direct(
+                 encryptionKey,     /* ключ шифрования */
+                 packet+size,       /* указатель на зашифровываемые данные */
+                 out,               /* указатель на зашифрованные данные */
+                 lens[j],           /* размер шифруемых данных */
+                 iv,                /* синхропосылка для режима шифрования */
+                 sizeof( iv )       /* доступный размер синхропосылки */
+               );
+            }
+            timea = clock() - timea;
+          break;
+
+          case mac: /* имитовставка */
+            timea = clock();
+            for( i = 0; i < pcount; i++, size += lens[j] ) {
+               error = oid->func.direct(
+                 encryptionKey,     /* ключ шифрования */
+                 packet+size,       /* указатель на данные для которых вычисляется имитовставка */
+                 lens[j],           /* размер данных */
+                 icode,             /* имитовставка */
+                 sizeof( icode )    /* доступный размер памяти для имитовставки */
+               );
+            }
+            timea = clock() - timea;
+          break;
+
+          case acpkm:
+           /* определяем максимальный размер секции */
+            if( ((ak_bckey)encryptionKey)->bsize == 8 )
+              secbytes = 8*ak_libakrypt_get_option_by_name( "acpkm_section_magma_block_count" );
+             else secbytes = 16*ak_libakrypt_get_option_by_name( "acpkm_section_kuznechik_block_count" );
+
+            timea = clock();
+            for( i = 0; i < pcount; i++, size += lens[j] ) {
+               error = oid->func.direct(
+                 encryptionKey,     /* ключ шифрования */
+                 packet+size,              /* указатель на зашифровываемые данные */
+                 out,            /* указатель на зашифрованные данные */
+                 lens[j],              /* размер шифруемых данных */
+                 secbytes,          /* размер одной секции в байтах */
+                 iv,                /* синхропосылка для режима гаммирования */
+                 sizeof( iv )       /* доступный размер синхропосылки */
+               );
+            }
+            timea = clock() - timea;
+          break;
+
+          case encrypt2k_mode: /* шифрование с двумя ключами */
+            timea = clock();
+            for( i = 0; i < pcount; i++, size += lens[j] ) {
+               error = oid->func.direct(
+                 encryptionKey,     /* ключ шифрования */
+                 authenticationKey, /* ключ имитозащиты */
+                 packet+size,       /* указатель на зашифровываемые данные */
+                 out,               /* указатель на зашифрованные данные */
+                 lens[j],           /* размер шифруемых данных */
+                 iv,                /* синхропосылка для режима гаммирования */
+                 sizeof( iv )       /* доступный размер синхропосылки */
+               );
+            }
+            timea = clock() - timea;
+          break;
+
+          case aead: /* двухключевое шифрование и имитозащита */
+            timea = clock();
+            for( i = 0; i < pcount; i++, size += lens[j] ) {
+               error = oid->func.direct(
+                 encryptionKey,       /* ключ шифрования */
+                 authenticationKey,   /* ключ имитозащиты */
+                 packet+size,         /* ассоциированные данные */
+                 headlen,             /* размер ассоциированных данных */
+                 packet+size+headlen, /* указатель на зашифровываемые данные */
+                 out,                 /* указатель на зашифрованные данные */
+                 lens[j]-headlen,     /* размер шифруемых данных */
+                 iv,                  /* синхропосылка для режима гаммирования */
+                 sizeof( iv ),        /* доступный размер синхропосылки */
+                 icode,               /* имитовставка */
+                 sizeof( icode )      /* доступный размер памяти для имитовставки */
+               );
+            }
+            timea = clock() - timea;
+          break;
+
+          default:
+          break;
+       }
+
+       double sec = (double) timea / (double) CLOCKS_PER_SEC;
+       size_t persec = (size_t) ((double)pcount / sec );
+
+       if( !ki.quiet ) {
+         if( ki.verbose )
+           printf(_("%s %4lu bytes, time: %f sec., packet per sec.: %lu\n"),
+                                                               _(packets), lens[j], sec, persec );
+          else printf(_("%s %4lu bytes, time: %f sec., packet per sec.: %7lu%s"),
+                                                         _(packets), lens[j], sec, persec, "\r" );
+       }
+       sum += persec;
+       isum += ( lens[j]*persec );
+       epacketlen += lens[j];
+    }
+    free( packet );
+    if( !ki.quiet ) {
+      printf(_("   - average packets:                                                              \n"
+      "\t - %6lu per sec. (mean value)\n\t - %6lu per sec. (integral value)\n"),
+                                                                     sum/12, isum/epacketlen );
+    }
   }
-
-// /* 2. выполняем тестирование пакетных данных */
-//  if( packets_test ) {
-//    sum = isum = 0;
-//    packet = malloc( 1500*pcount );
-//    for( i = 0; i < 1500*pcount; i++ ) packet[i] = (ak_uint8)i;
-
-//    for( j = 0; j < 12; j++ ) {
-//       printf("%s %s", _(packets), "\r" ); fflush( stdout );
-
-//       ((ak_skey)encryptionKey)->resource.value.counter = pcount*1500;
-//       size = 0;
-//       timea = clock();
-//       for( i = 0; i < pcount; i++, size += lens[j] ) {
-//          ak_bckey_encrypt_ecb( encryptionKey, packet+size, out, lens[j] );
-//       }
-//       timea = clock() - timea;
-
-//       double sec = (double) timea / (double) CLOCKS_PER_SEC;
-//       size_t persec = (size_t) ((double)pcount / sec );
-
-//       if( !ki.quiet ) {
-//         if( ki.verbose )
-//           printf("%s %4lu bytes, time: %f sec., packet per sec.: %lu\n",
-//                                                               _(packets), lens[j], sec, persec );
-//          else printf(_("%s %4lu bytes, time: %f sec., packet per sec.: %7lu%s"),
-//                                                         _(packets), lens[j], sec, persec, "\r" );
-//       }
-//       sum += persec;
-//       isum += ( lens[j]*persec );
-//    }
-//    free( packet );
-//    if( !ki.quiet ) {
-//      printf(_("   - average packets:                                                              \n"
-//      "\t - %6lu per sec. (mean value)\n\t - %6lu per sec. (integral value)\n"),
-//                                                                           sum/12, isum/(12*750 ));
-//    }
-//  }
 
   exit_status = EXIT_SUCCESS;
   exit:
@@ -372,19 +632,6 @@
 
  return exit_status;
 }
-
-/* ----------------------------------------------------------------------------------------------- */
- int aktool_test_speed_block_cipher_encrypt( ak_oid );
-
-/* ----------------------------------------------------------------------------------------------- */
- int aktool_test_speed_block_cipher_encrypt2k( ak_oid );
-
-/* ----------------------------------------------------------------------------------------------- */
- int aktool_test_speed_block_cipher_mac( ak_oid );
-
-/* ----------------------------------------------------------------------------------------------- */
- int aktool_test_speed_block_cipher_aead( ak_oid );
-
 
 /* ----------------------------------------------------------------------------------------------- */
 /*                                                                                  aktool_test.c  */
