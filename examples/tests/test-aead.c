@@ -65,6 +65,7 @@
    oid = ak_oid_find_by_mode( aead );
    while( oid != NULL ) {
      struct aead ctx;
+     exitcode = EXIT_FAILURE;
 
     /* создаем контекст алгоритма */
      if(( ak_aead_create_oid( &ctx,
@@ -171,8 +172,11 @@
       }
 
     /* уничтожаем контекст алгоритма */
+     exitcode = EXIT_SUCCESS;
      loopex:
        ak_aead_destroy( &ctx );
+       if( exitcode != EXIT_SUCCESS ) return EXIT_FAILURE;
+
     /* ищем следующий алгоритм */
      oid = ak_oid_findnext_by_mode( oid, aead );
    }

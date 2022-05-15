@@ -11,7 +11,7 @@
 
   if( argc <= 1 ) {
     printf( "usage: example-mmap file\n");
-    return EXIT_FAILURE;
+    return EXIT_SUCCESS;
   }
   ak_log_set_level( ak_log_maximum );
   ak_log_set_function( ak_function_log_stderr );
