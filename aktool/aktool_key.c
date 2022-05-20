@@ -55,6 +55,7 @@
  /* параметры, которые устанавливаются по умолчанию */
   ki.format = asn1_der_format;
   ki.oid_of_generator = ak_oid_find_by_name( aktool_default_generator );
+  ki.no_outpass = ak_false;
   ak_certificate_opts_create( &ki.cert.opts );
 
  /* параметры, запрашиваемые пользователем */
@@ -72,6 +73,7 @@
      { "outpass",             1, NULL,  248 },
      { "inpass-hex",          1, NULL,  251 },
      { "inpass",              1, NULL,  252 },
+     { "no-outpass",          0, NULL,  253 },
      { "curve",               1, NULL,  247 },
      { "days",                1, NULL,  246 },
      { "target",              1, NULL,  't' },
@@ -324,6 +326,10 @@
                      aktool_error(_("the password cannot be zero length"));
                      return EXIT_FAILURE;
                    }
+                   break;
+
+        case 253: /* --no-outpass */
+                   ki.no_outpass = ak_true;
                    break;
 
         case 252: /* --inpass */
@@ -1118,13 +1124,19 @@
   if( ki.format == aktool_magic_number ) ki.format = asn1_pem_format;
 
  /* 7. мастерим пароль для сохранения секретного ключа */
-  if( ki.lenoutpass == 0 ) {
-    if(( ki.lenoutpass =
-                       aktool_load_user_password_twice( ki.outpass, sizeof( ki.outpass ))) < 1 ) {
-      exitcode = EXIT_FAILURE;
-      goto labex2;
-    }
+  if( ki.no_outpass ) {
+    ki.lenoutpass = 0;
+    memset( ki.outpass, 0, aktool_password_max_length );
   }
+   else { /* если пароль не задан, то считываем его с консоли */
+    if( ki.lenoutpass == 0 ) {
+      if(( ki.lenoutpass =
+                       aktool_load_user_password_twice( ki.outpass, sizeof( ki.outpass ))) < 1 ) {
+        exitcode = EXIT_FAILURE;
+        goto labex2;
+      }
+    }
+   }
 
  /* 8. сохраняем созданный ключ в файле */
   if( ak_skey_export_to_file_with_password(
@@ -2433,6 +2445,7 @@
   ));
   printf(
    _(" -n, --new               generate a new key or key pair for specified target\n"
+     "     --no-outpass        do not use a password to access the secret key\n"
      "     --op                short form of --output-public-key option\n"
      "     --outpass           set the password for the secret key to be stored directly on the command line\n"
      "     --outpass-hex       set the password for the secret key to be stored directly on the command line as hexademal string\n"

@@ -94,7 +94,8 @@
    char inpass[aktool_password_max_length];
   /* пароль для создаваемого файла */
    char outpass[aktool_password_max_length];
-
+  /* не использовать пароль для выходного файла */
+   bool_t no_outpass;
   /* длина пароля для ввода дополнительного секретного ключа */
    ssize_t lenckpass;
   /* пароль для ввода дополнительного пароля доступа к ключу */
