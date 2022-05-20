@@ -303,6 +303,68 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+ static int ak_asn1_add_derived_keys_unencrypted( ak_asn1 root, ak_bckey ekey, ak_bckey ikey )
+{
+  struct hash ctx;
+  ak_uint8 salt[64];
+  ak_asn1 asn1 = NULL;
+  int error = ak_error_ok;
+
+    /* формируем необходимую информацию */
+     ak_hash_create_streebog512( &ctx );
+     ak_hash_ptr( &ctx, "libakrypt-container", 19, salt, 64 );
+     ak_hash_destroy( &ctx );
+
+    /* вырабатываем ключи */
+     salt[40] = 0;
+     if(( error = ak_bckey_create_key_pair_from_password( ekey, ikey,
+                     ak_oid_find_by_name( "kuznechik" ), (const char *)salt, 40,
+                                                          salt +42, 16, 2000 )) != ak_error_ok ) {
+       return ak_error_message( error, __func__, "incorrect creation of derived key pairs");
+     }
+
+    /* помещаем в основное ASN.1 дерево структуру BasicKeyMetaData */
+     ak_asn1_add_oid( asn1 = ak_asn1_new(), ak_oid_find_by_name( "no-basic-key" )->id[0] );
+
+ return ak_asn1_add_asn1( root, TSEQUENCE, asn1 );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int ak_asn1_get_derived_keys_unencrypted( ak_asn1 akey, ak_bckey ekey, ak_bckey ikey )
+{
+   struct hash ctx;
+   ak_uint8 salt[64];
+   ak_oid oid = NULL;
+   ak_pointer ptr = NULL;
+   int error = ak_error_ok;
+
+  /* проверяем параметры */
+   if(( DATA_STRUCTURE( akey->current->tag ) != PRIMITIVE ) ||
+      ( TAG_NUMBER( akey->current->tag ) != TOBJECT_IDENTIFIER ))
+     return ak_error_message( ak_error_invalid_asn1_tag, __func__, "odject identifier not found" );
+   ak_tlv_get_oid( akey->current, &ptr );
+
+   oid = ak_oid_find_by_name( "no-basic-key" );
+   if( strncmp( oid->id[0], ptr, strlen( oid->id[0] )) != 0 )
+     return ak_error_message( ak_error_invalid_asn1_content, __func__,
+                                                         "unexpected value of odject identifier" );
+  /* формируем необходимую информацию */
+   ak_hash_create_streebog512( &ctx );
+   ak_hash_ptr( &ctx, "libakrypt-container", 19, salt, 64 );
+   ak_hash_destroy( &ctx );
+
+  /* вырабатываем ключи */
+   salt[40] = 0;
+   if(( error = ak_bckey_create_key_pair_from_password( ekey, ikey,
+                     ak_oid_find_by_name( "kuznechik" ), (const char *)salt, 40,
+                                                          salt +42, 16, 2000 )) != ak_error_ok ) {
+     return ak_error_message( error, __func__, "incorrect creation of derived key pairs");
+   }
+
+  return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*! Для ввода пароля используется функция, на которую указывает ak_function_defaut_password_read.
     Если этот указатель не установлен (то есть равен NULL), то выполняется чтение пароля
     из терминала, владеющего текущим процессом, с помощью функции ak_password_read().
@@ -329,6 +391,7 @@
 
  /* получаем структуру с параметрами, необходимыми для восстановления ключа */
   ak_asn1_first( akey );
+  if( akey->count == 1 ) return ak_asn1_get_derived_keys_unencrypted( akey, ekey, ikey );
   if( akey->count != 2 ) return ak_error_invalid_asn1_count;
 
  /* проверяем параметры */
@@ -843,8 +906,11 @@
 
  \param key секретный ключ криптографического преобразования
  \param root  уровень ASN.1 дерева, в который помещаются экспортируемые данные
- \param password пароль пользователя
- \param pass_size длина пользовательского пароля в октетах
+ \param password пароль пользователя, может быть NULL
+ \param pass_size длина пользовательского пароля в октетах, может равняться нулю
+
+ \note Если пароль не определен или длина пароля равна нулю,
+ то данные помещаются в контейнер незашифрованными, а точнее, зашифрованными на константном пароле.
 
  \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха, в случае неудачи
     возвращается код ошибки.                                                                       */
@@ -856,27 +922,30 @@
   struct bckey ekey, ikey; /* производные ключи шифрования и имитозащиты */
   ak_asn1 asn = NULL, content = NULL;
 
-
   /* выполняем проверки */
    if( key == NULL )  return ak_error_message( ak_error_null_pointer, __func__,
                                                     "using null pointer to block cipher context" );
    if( root == NULL )  return ak_error_message( ak_error_null_pointer, __func__,
                                                        "using null pointer to root asn1 context" );
-   if(( password == NULL ) || ( !pass_size ))
-     return ak_error_message( ak_error_invalid_value, __func__, "using incorrect password value" );
-
  /* 1. помечаем контейнер */
    if(( error = ak_asn1_add_oid( asn = ak_asn1_new(),
                            ak_oid_find_by_name( "libakrypt-container" )->id[0] )) != ak_error_ok )
      return ak_error_message( error, __func__, "incorrect creation of asn1 context" );
 
- /* 2. добавляем структуру для восстановления информации и вырабатываем два производных ключа,
-       в данном случае производные ключи вырабатываются из пароля */
-   if(( error = ak_asn1_add_derived_keys_from_password( asn,
-        &ekey, &ikey, ak_oid_find_by_name( "kuznechik" ), password, pass_size )) != ak_error_ok ) {
-     ak_asn1_delete( asn );
-     return ak_error_message( error, __func__, "incorrect creation of derived secret keys" );
+ /* 2. Проверяем, что пароль определен.
+       В противном случае, сохраняем ключ в незашифрованном виде, а более точно,
+       защифровываем на константном пароле. */
+   if(( password == NULL ) || ( !pass_size )) {
+      error = ak_asn1_add_derived_keys_unencrypted( asn, &ekey, &ikey );
    }
+    else { /* полноценное шифрование данных */
+      error = ak_asn1_add_derived_keys_from_password( asn, &ekey, &ikey,
+                                         ak_oid_find_by_name( "kuznechik" ), password, pass_size );
+    }
+  if( error != ak_error_ok ) {
+    ak_asn1_delete( asn );
+    return ak_error_message( error, __func__, "incorrect creation of derived secret keys" );
+  }
 
  /* 3. добавляем соответствующую структуру с данными */
    if(( error = ak_asn1_add_asn1( asn, TSEQUENCE, content = ak_asn1_new( ))) != ak_error_ok ) {
@@ -952,11 +1021,11 @@
       // сохранение ключа в файле, имя которого возвращается в переменной filename
        char filemane[256];
        ak_skey_export_to_file_with_password( key,
-             "password", 8, "keylabel", filename, sizeof( filename ), asn1_der_format );
+             "password", 8, filename, sizeof( filename ), asn1_der_format );
 
       // сохранение ключа в файле с заданным именем
        ak_skey_export_to_file_with_password( key,
-                            "password", 8, "keyname", "name.key", 0, asn1_pem_format );
+                            "password", 8, "name.key", 0, asn1_pem_format );
     \endcode
 
     \param key контекст экспортируемого секретного ключа криптографического преобразования;
@@ -1025,6 +1094,13 @@
 
   lab1: if( asn != NULL ) ak_asn1_delete( asn );
  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_export_to_file_unencrypted( ak_pointer key,
+                                       char *filename, const size_t fsize, export_format_t format )
+{
+  return ak_skey_export_to_file_with_password( key, NULL, 0, filename, fsize, format );
 }
 
 /* ----------------------------------------------------------------------------------------------- */
@@ -1564,6 +1640,26 @@
    }
 
    lab1: if( asn != NULL ) ak_asn1_delete( asn );
+ return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int ak_skey_delete_after_load( ak_pointer ctx )
+{
+   ak_oid oid = NULL;
+   int error = ak_error_ok;
+
+   if( ctx == NULL )
+     return ak_error_message( ak_error_null_pointer, __func__, "deleting null pointer" );
+
+  /* пользуемся тем, что ключ содержит oid, а тот, в свою очередь, ссылку на деструктор */
+   oid = (( ak_skey )ctx)->oid;
+   if( !ak_oid_check( oid ))
+     return ak_error_message( ak_error_wrong_oid, __func__,
+                                   "deleting incorrect pointer with undefined object identifier" );
+   error = oid->func.first.destroy( ctx );
+   free( ctx );
+
  return error;
 }
 

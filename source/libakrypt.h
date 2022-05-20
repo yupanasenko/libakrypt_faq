@@ -2226,7 +2226,8 @@ extern "C" {
  typedef ssize_t ( ak_function_password_read ) ( const char *, char *, const size_t , password_t );
 
 /*! \brief Чтение пароля из консоли с выводом уведомления (устанавливается по-умолчанию) */
- dll_export ssize_t ak_password_read_from_terminal( const char * , char * , const size_t , password_t );
+ dll_export ssize_t ak_password_read_from_terminal( const char * , char * ,
+                                                                       const size_t , password_t );
 /*! \brief Функция устанавливает обработчик - функцию чтения пользовательского пароля. */
  dll_export int ak_libakrypt_set_password_read_function( ak_function_password_read * );
 /*! \brief Функция устанавливает приглашение к вводу пароля. */
@@ -2237,18 +2238,20 @@ extern "C" {
 /*! \brief Функция экспортирует секретный ключ в указанный файл. */
  dll_export int ak_skey_export_to_file_with_password( ak_pointer ,
                             const char *, const size_t , char * , const size_t , export_format_t );
-/*! \brief Функция инициализирует контекст секретного ключа и импортирует параметры ключа
-    из указанного файла. */
- dll_export int ak_skey_create_from_file( ak_pointer , oid_engines_t , const char * );
+/*! \brief Функция экспортирует секретный ключ в указанный файл в незашифрованном виде */
+ dll_export int ak_skey_export_to_file_unencrypted( ak_pointer ,
+                                                         char * , const size_t , export_format_t );
 /*! \brief Функция инициализирует контекст секретного ключа, импортирует параметры ключа
     из указанного файла, а также присваивает значение секретного ключа. */
  dll_export int ak_skey_import_from_file( ak_pointer , oid_engines_t , const char * );
-/*! \brief Функция создает и инициализирует контекст секретного ключа, после чего импортирует параметры
-    ключа из указанного файла. */
+/*! \brief Функция создает и инициализирует контекст секретного ключа,
+    после чего импортирует параметры ключа из указанного файла. */
  dll_export ak_pointer ak_skey_new_from_file( const char * );
 /*! \brief Функция создает и инициализирует контекст секретного ключа, после чего импортирует
     значение секретного ключа и его параметры из указанного файла. */
  dll_export ak_pointer ak_skey_load_from_file( const char * );
+/*! \brief Функция удаляет считаный ранее контекст секретного ключа */
+ dll_export int ak_skey_delete_after_load( ak_pointer );
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
