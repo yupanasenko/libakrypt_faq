@@ -22,6 +22,9 @@
 
 /* ----------------------------------------------------------------------------------------------- */
  static int aktool_test_speed_block_cipher( int, ak_oid );
+ static int aktool_test_speed_hash_function( int, ak_oid );
+ static int aktool_test_speed_hmac_function( int, ak_oid );
+ static int aktool_test_speed_sign_function( int, ak_oid );
 
 /* ----------------------------------------------------------------------------------------------- */
  bool_t large_array_test = ak_true;
@@ -155,13 +158,13 @@
      " -e, --speed-by-engine   measuring the speed of the all crypto algorithms defined by given engine\n"
      "     --list-engines      output a list of all supported engines\n"
      "     --list-modes        output a list of all supported modes\n"
+     " -m, --speed-by-mode     mesuaring the speed of the crypto algorithms with given mode\n"
      "     --max-length        set the maximal length (in megabytes) of encrypted data [ default: %uMb]\n"
      "     --min-length        set the minimal length (in megabytes) of encrypted data [ default: %uMb]\n"
      " -n, --speed-by-name     measuring the speed of the given crypto algorithm\n"
      "                         a search is performed for all algorithms whose name contains the specified string\n"
      "     --no-large-arrays   do not run tests with large arrays of pseudorandom data\n"
      "     --no-packets        do not run tests with short network packets\n"
-     " -m, --speed-by-mode     mesuaring the speed of the crypto algorithms with given mode\n"
   ), max_length_mb, min_length_mb );
   aktool_print_common_options();
 
@@ -282,10 +285,15 @@
       break;
 
       case hash_function:
+        exit_status = aktool_test_speed_hash_function( index, oid );
+      break;
+
       case hmac_function:
+        exit_status = aktool_test_speed_hmac_function( index, oid );
+      break;
+
       case sign_function:
-        aktool_error(_("something wrong, sorry ... %s (%s)"), oid->name[0],
-                                                          ak_libakrypt_get_mode_name( oid->mode ));
+        exit_status = aktool_test_speed_sign_function( index, oid );
       break;
 
     default:
@@ -353,7 +361,7 @@
   }
 
  /* 1. выполняем тестирование больших данных */
-  printf("%3d: %s, %s\n", index, oid->name[0],
+  printf("%3d. %s, %s\n", index, oid->name[0],
          ( oid->mode == algorithm ) ? _("ecb mode") : _( ak_libakrypt_get_mode_name( oid->mode )));
   if( large_array_test ) {
     for( i = min_length_mb; i <= max_length_mb; i += 8 ) {
@@ -639,6 +647,215 @@
   exit:
    ak_oid_delete_object( oid, encryptionKey );
 
+ return exit_status;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_test_speed_hash_function( int index, ak_oid oid )
+{
+  size_t size = 0;
+  clock_t timea = 1;
+  double iter = 0, avg = 0;
+  ak_uint8 *data, icode[64];
+  int i, error = ak_error_ok, exit_status = EXIT_FAILURE;
+  ak_pointer ctx;
+
+  if( oid->mode != algorithm ) {
+    printf(_("hash function's mode \"%s\" is not supported yet for testing, sorry ... \n"),
+                                                           ak_libakrypt_get_mode_name( oid->mode ));
+    return EXIT_SUCCESS;
+  }
+
+  if(( ctx = ak_oid_new_object( oid )) == NULL ) {
+    aktool_error( _("incorrect creation of hash function context (code: %d)" ), ak_error_get_value());
+    return exit_status;
+  }
+
+  printf(_("%3d. [%s:"), index, oid->name[0] );
+  if( !ki.verbose ) printf(_(" %uMB "), min_length_mb );
+   else printf("\n");
+  fflush( stdout );
+
+ /* теперь собственно тестирование скорости реализации */
+  for( i = min_length_mb; i <= max_length_mb; i += 8 ) {
+    data = malloc( size = ( size_t ) i*1024*1024 );
+    memset( data, (ak_uint8)i+13, size );
+
+    timea = clock();
+    error = ak_hash_ptr( ctx, data, size, icode, sizeof( icode ));
+    timea = clock() - timea;
+
+    free( data );
+    if( error != ak_error_ok ) {
+      aktool_error(_("computational error (%d)"), error );
+      goto exit;
+    }
+    if( ki.verbose )
+      printf(_(" %3uMB: %s time = %fs, per 1MB = %fs, speed = %f MBs\n"), (unsigned int)i,
+               oid->name[0],
+               (double) timea / (double) CLOCKS_PER_SEC,
+               (double) timea / ( (double) CLOCKS_PER_SEC*i ),
+               (double) CLOCKS_PER_SEC*i / (double) timea );
+     else { printf("."); fflush( stdout ); }
+
+     iter += 1;
+     avg += (double) CLOCKS_PER_SEC*i / (double) timea;
+  }
+  if( !ki.verbose ) printf(_(" %uMB"), max_length_mb );
+  printf(_("], average speed: %10f MBs\n"), avg/iter );
+
+  exit_status = EXIT_SUCCESS;
+  exit:
+   ak_oid_delete_object( oid, ctx );
+
+ return exit_status;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_test_speed_hmac_function( int index, ak_oid oid )
+{
+  size_t size = 0;
+  clock_t timea = 1;
+  double iter = 0, avg = 0;
+  ak_uint8 *data, icode[64];
+  int i, error = ak_error_ok, exit_status = EXIT_FAILURE;
+  ak_pointer authenticationKey = NULL;
+
+  if( oid->mode != algorithm ) {
+    printf(_("hmac function's mode \"%s\" is not supported yet for testing, sorry ... \n"),
+                                                           ak_libakrypt_get_mode_name( oid->mode ));
+    return EXIT_SUCCESS;
+  }
+
+ /* 1. Создаем ключи */
+  if(( authenticationKey = ak_oid_new_object( oid )) == NULL ) {
+    aktool_error( _("incorrect creation of authentication key (code: %d)" ), ak_error_get_value( ));
+    return exit_status;
+  }
+  if(( error = oid->func.first.set_key( authenticationKey, iv, 32 )) != ak_error_ok ) {
+    aktool_error( _("incorrect assigning authentication key value (code: %d)" ), error );
+    goto exit;
+  }
+
+  printf(_("%3d. [%s:"), index, oid->name[0] );
+  if( !ki.verbose ) printf(_(" %uMB "), min_length_mb );
+   else printf("\n");
+  fflush( stdout );
+
+ /* теперь собственно тестирование скорости реализации */
+  for( i = min_length_mb; i <= max_length_mb; i += 8 ) {
+    data = malloc( size = ( size_t ) i*1024*1024 );
+    memset( data, (ak_uint8)i+13, size );
+
+    timea = clock();
+    error = ak_hmac_ptr( authenticationKey, data, size, icode, sizeof( icode ));
+    timea = clock() - timea;
+
+    free( data );
+    if( error != ak_error_ok ) {
+      aktool_error(_("computational error (%d)"), error );
+      goto exit;
+    }
+    if( ki.verbose )
+      printf(_(" %3uMB: %s time = %fs, per 1MB = %fs, speed = %f MBs\n"), (unsigned int)i,
+               oid->name[0],
+               (double) timea / (double) CLOCKS_PER_SEC,
+               (double) timea / ( (double) CLOCKS_PER_SEC*i ),
+               (double) CLOCKS_PER_SEC*i / (double) timea );
+     else { printf("."); fflush( stdout ); }
+
+     iter += 1;
+     avg += (double) CLOCKS_PER_SEC*i / (double) timea;
+  }
+  if( !ki.verbose ) printf(_(" %uMB"), max_length_mb );
+  printf(_("], average speed: %10f MBs\n"), avg/iter );
+
+  exit_status = EXIT_SUCCESS;
+  exit:
+   ak_oid_delete_object( oid, authenticationKey );
+
+ return exit_status;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ static int aktool_test_sign_function_for_one_curve( ak_signkey ctx, ak_oid curve )
+{
+  clock_t timea = 1;
+  ak_uint8 *out[64];
+  struct random generator;
+  size_t j, i = 0, cnt = 0;
+  double iter = 0, avg = 0, val = 0;
+  ak_uint64 e[8], k[8];
+
+  if( ak_random_create_lcg( &generator ) != ak_error_ok ) return EXIT_FAILURE;
+
+  printf(_("curve: %s (%s) "), curve->name[0], curve->id[0] );
+  if( ki.verbose ) printf("\n");
+
+  for( j = 1; j < 9; j++ ) {
+     i = cnt = j*250;
+     ak_random_ptr( &generator, e, 64 );
+     ak_random_ptr( &generator, k, 64 );
+
+     timea = clock();
+     while( i ) {
+        ak_signkey_sign_const_values( ctx, k, e, out );
+        i--;
+     }
+     timea = clock() - timea;
+     val = (cnt *(double) CLOCKS_PER_SEC )/(double) timea;
+     if( ki.verbose ) {
+       printf(_("[count: %3lu, time = %fs, speed: %f sec., count: %f]\n"),
+       (long unsigned int)cnt,
+       (double) timea / (double) CLOCKS_PER_SEC,
+       (double) timea / (cnt *(double) CLOCKS_PER_SEC ),
+       val );
+     } else { printf("."); fflush( stdout ); }
+
+     if( j > 1 ) { iter += 1; avg += val; }
+  }
+  printf(_(" average speed: %10f sgn/sec.\n"), avg/iter );
+  ak_random_destroy( &generator );
+
+ return EXIT_SUCCESS;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ int aktool_test_speed_sign_function( int index, ak_oid oid )
+{
+  int exit_status = EXIT_FAILURE;
+  ak_oid curve = NULL;
+  ak_signkey ctx = NULL;
+  struct random generator;
+
+  if( oid->mode != algorithm ) {
+    printf(_("using unsupported mode %s"), ak_libakrypt_get_mode_name( oid->mode ));
+    return EXIT_SUCCESS;
+  }
+
+  if( ak_random_create_lcg( &generator ) != ak_error_ok ) return EXIT_FAILURE;
+  if(( ctx = ak_oid_new_object( oid )) == NULL ) {
+    aktool_error( "incorrect creation of secret key context");
+    return EXIT_FAILURE;
+  }
+
+ /* первый тест - скорость вычислений, без учета генерации */
+  curve = ak_oid_find_by_mode( wcurve_params );
+  while( curve != NULL ) {
+    ak_wcurve wc = ( ak_wcurve )curve->data;
+    if(( ctx->ctx.data.sctx.hsize >> 3 ) == wc->size ) {
+      ak_signkey_set_curve( ctx, wc );
+      ak_signkey_set_key_random( ctx, &generator );
+      /* здесь начинаем тестирование */
+      if(( exit_status =
+               aktool_test_sign_function_for_one_curve( ctx, curve )) == EXIT_FAILURE ) goto labex;
+    }
+    curve = ak_oid_findnext_by_mode( curve, wcurve_params );
+  }
+
+  labex:
+    ak_random_destroy( &generator );
+    ak_oid_delete_object( oid, ctx );
  return exit_status;
 }
 
