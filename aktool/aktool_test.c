@@ -152,16 +152,16 @@
      "available options:\n"
      "     --crypto            complete test of cryptographic algorithms\n"
      "                         run all available algorithms on test values taken from standards and recommendations\n"
-     " -e, --speed-of-engine   measuring the speed of the all crypto algorithms defined by given engine\n"
+     " -e, --speed-by-engine   measuring the speed of the all crypto algorithms defined by given engine\n"
      "     --list-engines      output a list of all supported engines\n"
      "     --list-modes        output a list of all supported modes\n"
-     "     --max-length        maximal length (in megabytes) of encrypted data [ default: %uMb]\n"
-     "     --min-length        minimal length (in megabytes) of encrypted data [ default: %uMb]\n"
+     "     --max-length        set the maximal length (in megabytes) of encrypted data [ default: %uMb]\n"
+     "     --min-length        set the minimal length (in megabytes) of encrypted data [ default: %uMb]\n"
      " -n, --speed-by-name     measuring the speed of the given crypto algorithm\n"
      "                         a search is performed for all algorithms whose name contains the specified string\n"
      "     --no-large-arrays   do not run tests with large arrays of pseudorandom data\n"
      "     --no-packets        do not run tests with short network packets\n"
-     " -m, --speed-of-mode     mesuaring the speed of the crypto algorithms with given mode\n"
+     " -m, --speed-by-mode     mesuaring the speed of the crypto algorithms with given mode\n"
   ), max_length_mb, min_length_mb );
   aktool_print_common_options();
 
@@ -240,6 +240,9 @@
    int exitcode = EXIT_FAILURE, fc = 0;
 
    if( strstr( "block cipher", value ) != NULL ) engine = block_cipher;
+   if( strstr( "hash function", value ) != NULL ) engine = hash_function;
+   if( strstr( "hmac function", value ) != NULL ) engine = hmac_function;
+   if( strstr( "sign", value ) != NULL ) engine = sign_function;
 
    if( engine != undefined_engine ) {
      oid = ak_oid_find_by_engine( engine );
@@ -272,11 +275,17 @@
          case aead:
            exit_status = aktool_test_speed_block_cipher( index, oid );
            break;
-
          default:
            aktool_error(_("used unsupported block cipher mode %s (%s)"), oid->name[0],
                                                           ak_libakrypt_get_mode_name( oid->mode ));
       }
+      break;
+
+      case hash_function:
+      case hmac_function:
+      case sign_function:
+        aktool_error(_("something wrong, sorry ... %s (%s)"), oid->name[0],
+                                                          ak_libakrypt_get_mode_name( oid->mode ));
       break;
 
     default:

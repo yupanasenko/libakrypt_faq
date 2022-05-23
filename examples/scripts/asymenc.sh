@@ -19,7 +19,7 @@ aktool k -c user_request.csr --key-encipherment --secret-key-number `aktool k --
 aktool k -v user.crt --ca-cert ca.crt --verbose
 #
 # 4. Вырабатываем данные для тестирования
-dd if=/dev/zero of=file bs=1M count=32
+dd if=/dev/zero of=file bs=1K count=16
 aktool i file -o results.streebog
 #
 # -------------------------------------------------------------------------------------
@@ -27,8 +27,9 @@ aktool i file -o results.streebog
 # разбиение на случайные фрагменты,
 # алгоритм шифрования Кузнечик в режиме MGM (по-умолчанию)
 # -------------------------------------------------------------------------------------
-echo; echo "Эксперимент N1. Простое шифрование."
-aktool e file --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file01.bin --delete-source
+echo; echo "Эксперимент N1. Простое шифрование с помощью режима mgm-kuznechik (по-умолчанию)"
+cp file file.old
+aktool e file --outpass jQa6 --fr --cert user.crt --ca-cert ca.crt -o file01.bin --delete-source -m xtsmac-magma
 #
 # выводим информацию о зашифрованном файле
 echo; echo "Значение хешкода для зашифрованного файла"
@@ -38,6 +39,8 @@ ls -la file01.bin
 # Расшифрование исходных данных
 aktool d file01.bin --inpass jQa6 --key user.key --keypass 1Qlm21u --delete-source
 aktool i -c results.streebog --dont-show-stat
+
+exit
 #
 # -------------------------------------------------------------------------------------
 # Второй эксперимент, используется предварительное сжатие данных,
