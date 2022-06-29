@@ -527,5 +527,208 @@
 }
 
 /* ----------------------------------------------------------------------------------------------- */
+/*                           реализация одиночного nlfsr генератора                                */
+/* ----------------------------------------------------------------------------------------------- */
+/** @brief Класс с параметрами для NLFSR генератора с квадратичной обратной связью */
+ typedef struct nlfsr_register{
+     /** @brief Внутреннее состояние генератора. */
+     ak_uint32 state;
+     /** @brief Цифровой код линейной функции обратной связи. */
+     ak_uint32 linear_part;
+     /** @brief Представление нелинейной функции обратной связи специального вида. */
+     ak_uint32 nonlinear_part;
+     /** @brief Длина регистра в данном генераторе. n<=32. */
+     size_t n;
+ } nlfsr_register;
+
+/* ----------------------------------------------------------------------------------------------- */
+/**
+ * @brief Инициализирует цифровое представление нелинейной функции обратной связи для NLFSR генератора специального
+ * вида.
+ * @param rnd NLFSR генератор.
+ */
+ static void initialize_nonlinear_part(ak_random rnd)
+{
+    unsigned non_linear = 1;
+    for (size_t i = 0; i < ((nlfsr_register*)(rnd->data.ctx))->n - 3; i++)
+        non_linear = (non_linear << 1) ^ non_linear;
+
+    ((nlfsr_register*)(rnd->data.ctx))->nonlinear_part = non_linear;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ /**
+  * @brief  Инициализирует NLFSR генератор специального вида переданными параметрами.
+  *
+  * @param rnd NLFSR генератор.
+  * @param ptr Указатель на данные для инициализации NLFSR генератора.
+  * @param size Количество параметров для инициализации.
+  * @return int В случае успеха, функция возвращает \ref ak_error_ok. В противном случае
+            возвращается код ошибки.
+  */
+ static int ak_random_nlfsr_randomize_ptr( ak_random rnd, const ak_pointer ptr, const ssize_t size )
+{
+  nlfsr_register *ctx = NULL;
+  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                      "use a null pointer to a random generator" );
+  if( ptr == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                          "use a null pointer to initial vector" );
+  if( size <= 0 ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                          "use initial vector with wrong length" );
+
+ /* текущая реализация ограничена 32-мя битами, поэтому больше 4х октетов не копируем */
+  ctx = rnd->data.ctx;
+  ctx->state = ((ak_uint8 *)ptr)[0];
+  if( size > 1 ) { ctx->state <<= 8; ctx->state += ((ak_uint8 *)ptr)[1]; }
+  if( size > 2 ) { ctx->state <<= 8; ctx->state += ((ak_uint8 *)ptr)[2]; }
+  if( size > 3 ) { ctx->state <<= 8; ctx->state += ((ak_uint8 *)ptr)[3]; }
+
+  ((nlfsr_register*)(rnd->data.ctx))->state <<= 64-((nlfsr_register*)(rnd->data.ctx))->n;
+  ((nlfsr_register*)(rnd->data.ctx))->state >>= 64-((nlfsr_register*)(rnd->data.ctx))->n;
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/**
+ * @brief Функция вычисления веса Хэмминга
+ *
+ * @param number Число для рассчёта веса.
+ * @return size_t Как бы вес.
+ */
+ static inline size_t hamming_weight( ak_uint32 number )
+{
+    number = number - ((number >> 1) & 0x55555555);
+    number = (number & 0x33333333) + ((number >> 2) & 0x33333333);
+    number = (number + (number >> 4)) & 0x0F0F0F0F;
+    return (( number * 0x01010101 ) >> 24 ) &1;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+ #define ak_random_nlfsr_next_bit2 do{ \
+    state = ctx->state >> 1; \
+    linear = ctx->linear_part & state; \
+    non_linear = linear^( ctx->nonlinear_part & ( state ) & ( state >> 1 )); \
+    hweight = hamming_weight( non_linear ); \
+    new_bit = lsb ^ hweight; \
+    moved = new_bit << n1; \
+    ctx->state = state ^ moved; \
+    lsb = ctx->state & 1; \
+  } while( 0 );
+
+/* ----------------------------------------------------------------------------------------------- */
+/**
+ * @brief Генерирует новый байт с помощью NLFSR генератора специального вида.
+ * @param rnd NLFSR генератор.
+ * @return char Новый байт.
+ */
+ static inline ak_uint8 ak_random_nlfsr_next_byte( ak_random rnd )
+{
+  ak_uint8 byte;
+  nlfsr_register *ctx = rnd->data.ctx;
+  ak_uint32 lsb = ctx->state & 1;
+  ak_uint32 n1 = ctx->n -1;
+  ak_uint32 state, linear, non_linear, hweight, new_bit, moved;
+
+  ak_random_nlfsr_next_bit2; byte = lsb;
+
+  byte <<= 1; ak_random_nlfsr_next_bit2; byte |= lsb;
+  byte <<= 1; ak_random_nlfsr_next_bit2; byte |= lsb;
+  byte <<= 1; ak_random_nlfsr_next_bit2; byte |= lsb;
+  byte <<= 1; ak_random_nlfsr_next_bit2; byte |= lsb;
+  byte <<= 1; ak_random_nlfsr_next_bit2; byte |= lsb;
+  byte <<= 1; ak_random_nlfsr_next_bit2; byte |= lsb;
+  byte <<= 1; ak_random_nlfsr_next_bit2; byte |= lsb;
+
+  return byte;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/**
+ * @brief Функция выработки последователности псевдо-случайных байт NLFSR генератором.
+ *
+ * @param rnd NLFSR генератор.
+ * @param buffer Указатель на вырабатываемую последовательность.
+ * @param size Размер после5довательности в байтах.
+ * @return int В случае успеха, функция возвращает \ref ak_error_ok. В противном случае
+            возвращается код ошибки.
+ */
+ static int ak_random_nlfsr_random( ak_random rnd, const ak_pointer buffer, ssize_t size )
+{
+  ak_uint8 *value = buffer;
+
+  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                      "use a null pointer to a random generator" );
+  if( buffer == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                                    "use a null pointer to data" );
+  if( size <= 0 ) return ak_error_message( ak_error_wrong_length, __func__ ,
+                                                           "use a data vector with wrong length" );
+  while( size-- > 0 )
+     *value++ = ak_random_nlfsr_next_byte( rnd );
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/**
+ * @brief Функция освобождения внутреннего состояния NLFSR генератора Рожкова.
+ *
+ * @param rnd Контекст создаваемого генератора.
+ * @return int В случае успеха, функция возвращает \ref ak_error_ok. В противном случае
+            возвращается код ошибки.
+ */
+ static int ak_random_nlfsr_free( ak_random rnd )
+{
+  if( rnd == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
+                                                     "use a null pointer to a random generator" );
+  if( rnd->data.ctx != NULL)
+    free(rnd->data.ctx);
+
+ return ak_error_ok;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/**
+ * @param generator NLFSR генератор
+   @param size размер нелинейного регистра, не должен быть более 32-х
+   @param linear_part код линейной части обратной связи
+   @return int В случае успеха, функция возвращает \ref ak_error_ok. В противном случае
+            возвращается код ошибки.                                                              */
+ int ak_random_create_nlfsr_with_params( ak_random generator, size_t size, ak_uint64 linear_part )
+{
+  int error = ak_error_ok;
+
+  if(( error = ak_random_create( generator )) != ak_error_ok )
+    return ak_error_message( error, __func__ , "wrong initialization of random generator" );
+
+  generator->oid = ak_oid_find_by_name("nlfsr");
+  generator->next = NULL; // внутреннее состояние изменяется в функции ak_random_nlfsr_next_bit
+  generator->randomize_ptr = ak_random_nlfsr_randomize_ptr;
+  generator->random = ak_random_nlfsr_random;
+  generator->free = ak_random_nlfsr_free;
+
+  generator->data.ctx = ( struct nlfsr_generator* ) malloc(sizeof( nlfsr_register ));
+  ((nlfsr_register*)(generator->data.ctx))->n = size;
+  ((nlfsr_register*)(generator->data.ctx))->state = ak_random_value();
+  ((nlfsr_register*)(generator->data.ctx))->state <<= 64-size;
+  ((nlfsr_register*)(generator->data.ctx))->state >>= 64-size;
+  ((nlfsr_register*)(generator->data.ctx))->linear_part = linear_part;
+  initialize_nonlinear_part(generator);
+
+  return error;
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/**
+ * @param generator NLFSR генератор.
+ * @return int В случае успеха, функция возвращает \ref ak_error_ok. В противном случае
+            возвращается код ошибки.
+ */
+ int ak_random_create_nlfsr( ak_random generator )
+{
+   return ak_random_create_nlfsr_with_params( generator, 21, 849314 );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
 /*                                                                                    ak_random.c  */
 /* ----------------------------------------------------------------------------------------------- */

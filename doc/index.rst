@@ -50,9 +50,10 @@ libakrypt
  8. Программные и биологические генераторы псевдо-случайных чисел:
 
     * линейный конгруэнтный генератор (используется для генерации уникальных номеров ключей),
-    * генератор-интерфейс, использующий чтение из произвольных файлов, в частности, файловых устройств `/dev/random` и `/dev/urandom`;
-    * генератор-интерфейс к системному генератору псевдо-случайных значений, реализованному в ОС `Windows`.
-    * семейство генераторов, построенных с использованием функций хеширования согласно рекомендациям по стандартизации `Р 1323565.1.006-2017 <https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-006-2017-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-mekhanizmy-vyrabotki-psevdosluchaynykh-posledovatelnostey.html>`__.
+    * генератор-интерфейс, использующий чтение из произвольных файлов, в частности, файловых устройств `/dev/random` и `/dev/urandom`,
+    * генератор-интерфейс к системному генератору псевдо-случайных значений, реализованному в ОС `Windows`,
+    * нелинейный конгруэнтый генератор с обратной квадратичной связью,
+    * генератор, использующий функции хеширования согласно рекомендациям по стандартизации `Р 1323565.1.006-2017 <https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-006-2017-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-mekhanizmy-vyrabotki-psevdosluchaynykh-posledovatelnostey.html>`__.
 
  9. Процедуры выработки производной ключевой информации согласно `Р 50.1.113-2016 <https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-50-1-113-2016-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-kriptograficheskie-algoritmy-soputstvuyushchie-primeneniyu-algoritmov-elektronnoy-tsifrovoy-podpisi-i-funktsii-kheshirovaniya.html>`__, раздел 4.4 и `Р 1323565.1.022-2018 <https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-022-2018-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-funktsii-vyrabotki-proizvodnogo-klyucha-.html>`__, раздел 5.
 

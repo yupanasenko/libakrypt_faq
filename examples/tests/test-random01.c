@@ -24,12 +24,16 @@
  /* создаем генератор */
   create( &generator );
   printf( "%s: ", generator.oid->name[0] ); fflush( stdout );
+  memset( buffer, 0, sizeof( buffer ));
 
  /* инициализируем константным значением */
   if( generator.randomize_ptr != NULL )
-    ak_random_randomize( &generator, &seed, sizeof( seed ));
+    ak_random_randomize( &generator, seed, sizeof( seed ));
 
  /* теперь вырабатываем необходимый тестовый объем данных */
+
+//  ak_random_ptr( &generator, buffer, 16 );
+
   time = clock();
   for( i = 0; i < 1024*4; i++ ) ak_random_ptr( &generator, buffer, 1024 );
   time = clock() - time;
@@ -57,6 +61,10 @@
  /* последовательно запускаем генераторы на тестирование */
    if( test_function( ak_random_create_lcg,
       "47b7ef2b729133a3e9853e0f4ffe040154a7622b7827e71bc6e48dff98c27f61" ) != ak_true )
+     error = EXIT_FAILURE;
+
+   if( test_function( ak_random_create_nlfsr,
+      "578e3e9c0e85850e8037d519a05f8c1d4e88ed3393c869ccded3000d68d524cb" ) != ak_true )
      error = EXIT_FAILURE;
 
 #ifdef _WIN32

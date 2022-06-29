@@ -59,6 +59,12 @@
  static const char *asn1_winrtl_n[] =       { "winrtl", NULL };
  static const char *asn1_winrtl_i[] =       { "1.2.643.2.52.1.1.4", NULL };
 #endif
+/* генератор, исопльзующий функцию хеширования
+ static const char *asn1_hrng_n[] =     { "hrng", NULL };
+ static const char *asn1_hrng_i[] =     { "1.2.643.2.52.1.1.5", NULL };
+*/
+ static const char *asn1_nlfsr_n[] =     { "nlfsr", NULL };
+ static const char *asn1_nlfsr_i[] =     { "1.2.643.2.52.1.1.6", NULL };
 
  static const char *asn1_streebog256_n[] = { "streebog256", "md_gost12_256", NULL };
  static const char *asn1_streebog256_i[] = { "1.2.643.7.1.1.2.2", NULL };
@@ -526,6 +532,11 @@ static struct oid libakrypt_oids[] =
                               (ak_function_destroy_object *)ak_random_destroy, NULL, NULL, NULL },
                                                                 ak_object_undefined, NULL, NULL }},
 #endif
+
+ { random_generator, algorithm, asn1_nlfsr_i, asn1_nlfsr_n, NULL,
+  {{ sizeof( struct random ), (ak_function_create_object *)ak_random_create_nlfsr,
+                              (ak_function_destroy_object *)ak_random_destroy, NULL, NULL, NULL },
+                                                                ak_object_undefined, NULL, NULL }},
 
 /* добавляем идентификаторы алгоритмов */
  { hash_function, algorithm, asn1_streebog256_i, asn1_streebog256_n, NULL,

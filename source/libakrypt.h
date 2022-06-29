@@ -7,6 +7,7 @@
 /*  Copyright (c) 2019 by Diffractee                                                               */
 /*  Copyright (c) 2019 by kirlit26                                                                 */
 /*  Copyright (c) 2019 by Anton Sakharov                                                           */
+/*  Copyright (c) 2022 by Yasmin Yurovskikh, yaeyurovskikh@edu.hse.ru                              */
 /*                                                                                                 */
 /* ----------------------------------------------------------------------------------------------- */
 /*  Файл libakrypt.h                                                                               */
@@ -454,6 +455,11 @@ extern "C" {
 /*! \brief Инициализация контекста, реализующего интерфейс доступа к генератору псевдо-случайных чисел, предоставляемому ОС Windows. */
  dll_export int ak_random_create_winrtl( ak_random );
 #endif
+/*! \brief Инициализация контекста нелинейного конгруэнтного генератора с обратной квадратичной связью. */
+ dll_export int ak_random_create_nlfsr( ak_random );
+/*! \brief Инициализация контекста нелинейного конгруэнтного генератора с обратной квадратичной связью
+    с явным указанием параметров генератора. */
+ dll_export int ak_random_create_nlfsr_with_params( ak_random , size_t , ak_uint64 );
 /*! \brief Инициализация контекста генератора по заданному OID алгоритма генерации псевдо-случайных чисел. */
  dll_export int ak_random_create_oid( ak_random, ak_oid );
 /*! \brief Установка внутреннего состояния генератора псевдо-случайных чисел. */
