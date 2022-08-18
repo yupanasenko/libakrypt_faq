@@ -1,6 +1,5 @@
 /* Тестовый пример для оценки скорости реализации некоторых
    генераторов псевдо-случайных чисел.
-   Пример использует неэкспортируемые функции.
 
    test-random01.c
 */
@@ -23,7 +22,7 @@
 
  /* создаем генератор */
   create( &generator );
-  printf( "%s: ", generator.oid->name[0] ); fflush( stdout );
+  printf( "%13s: ", generator.oid->name[0] ); fflush( stdout );
   memset( buffer, 0, sizeof( buffer ));
 
  /* инициализируем константным значением */
@@ -31,9 +30,6 @@
     ak_random_randomize( &generator, seed, sizeof( seed ));
 
  /* теперь вырабатываем необходимый тестовый объем данных */
-
-//  ak_random_ptr( &generator, buffer, 16 );
-
   time = clock();
   for( i = 0; i < 1024*4; i++ ) ak_random_ptr( &generator, buffer, 1024 );
   time = clock() - time;
@@ -55,7 +51,7 @@
 {
  int error = EXIT_SUCCESS;
 
- printf("random generators speed test for libakrypt, version %s\n", ak_libakrypt_version( ));
+ printf(" random number generators speed test for libakrypt, version %s\n\n", ak_libakrypt_version( ));
  if( !ak_libakrypt_create( NULL )) return ak_libakrypt_destroy();
 
  /* последовательно запускаем генераторы на тестирование */
@@ -67,15 +63,16 @@
       "578e3e9c0e85850e8037d519a05f8c1d4e88ed3393c869ccded3000d68d524cb" ) != ak_true )
      error = EXIT_FAILURE;
 
-#ifdef _WIN32
- if( test_function( ak_random_create_winrtl, NULL ) != ak_true ) error = EXIT_FAILURE;
-#endif
-#if defined(__unix__) || defined(__APPLE__)
- printf("using /dev/random, wait please ...\n");
- if( test_function( ak_random_create_random, NULL ) != ak_true ) error = EXIT_FAILURE;
- if( test_function( ak_random_create_urandom, NULL ) != ak_true ) error = EXIT_FAILURE;
-#endif
+  #ifdef _WIN32
+   if( test_function( ak_random_create_winrtl, NULL ) != ak_true ) error = EXIT_FAILURE;
+  #endif
 
- ak_libakrypt_destroy();
+  #if defined(__unix__) || defined(__APPLE__)
+   if( test_function( ak_random_create_random, NULL ) != ak_true ) error = EXIT_FAILURE;
+   if( test_function( ak_random_create_urandom, NULL ) != ak_true ) error = EXIT_FAILURE;
+  #endif
+
+   printf("\n");
+   ak_libakrypt_destroy();
  return error;
 }
