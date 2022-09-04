@@ -39,7 +39,3 @@ Also we have positive runs on [ReactOS](https://reactos.org) and mobile devices 
 
 We support various architectures such as `x86`, `x64`, `arm32v7`, `arm32v7eb`, `mips32r2` and `mips64r2`.
 
-## Attention
-
-Since this version still under development we don't recomended to use it
-in real security applications.
