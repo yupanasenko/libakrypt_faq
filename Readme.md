@@ -11,7 +11,7 @@ in accordance with R 1323565.1.012-2017
 We have implementation of:
 
  1. GOST R 34.12-2015 block ciphers "Magma" & "Kuznechik" with 64 bit and 128 bit block sizes respectively,
-  see [here](https://datatracker.ietf.org/doc/draft-dolmatov-magma/) and [RFC 7801](https://tools.ietf.org/html/rfc7801);
+  see [RFC 8891](https://tools.ietf.org/html/rfc8891) and [RFC 7801](https://tools.ietf.org/html/rfc7801);
  2. GOST R 34.13-2015 modes for block ciphers including CMAC algorithm;
  3. ACPKM encryption mode described by R 1323565.1.017-2018 and [RFC 8645](https://tools.ietf.org/html/rfc8645);
  4. XTS mode described by [IEEE 1619-2007](https://standards.ieee.org/standard/1619-2007.html);
