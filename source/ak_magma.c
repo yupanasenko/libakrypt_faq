@@ -1347,7 +1347,15 @@
     result = ak_false;
     goto exit;
   }
-  for( idx = 1; idx < sizeof( myout ) - mkey.bsize; idx++ ) {
+
+  /* Далее, мы тестируем данные, сдвигая их на 8 байт.
+     При сдвиге на меньшее значение, например 1 байт,
+     эмулятор qemu не может обработать не выровненные данные.
+     Для исправления этой ошибки необходима реализация
+     копирования данных в промежуточный, выровненный буффер,
+     что для большинства компиляторов только замедляет работу */
+
+  for( idx = 0; idx < sizeof( myout ) - mkey.bsize; idx += 8 ) {
    /* зашифровываем и вычисляем имитовставку */
      ak_bckey_encrypt_ctr_cmac( &mkey, &mkey,
         myout, idx,
@@ -1356,10 +1364,11 @@
     /* сравниваем имитовставку с вычисленным ранее значением */
      if( !ak_ptr_is_equal_with_log( icode, myout + (sizeof( myout ) - mkey.bsize), 8 )) {
        ak_error_message_fmt( error, __func__ ,
-                               "incorrect checking precalculated integrity code on round %u", idx );
+                           "incorrect checking of precalculated integrity code on round %u", idx );
        result = ak_false;
        goto exit;
      }
+
     /* расшифровываем и снова проверяем имитовставку */
      if(( error = ak_bckey_decrypt_ctr_cmac( &mkey, &mkey,
         myout, idx,
@@ -1393,7 +1402,7 @@
     goto exit;
   }
 
-  for( idx = 1; idx < sizeof( myout ) - sizeof( icode ); idx++ ) {
+  for( idx = 0; idx < sizeof( myout ) - sizeof( icode ); idx += 8 ) {
    /* зашифровываем и вычисляем имитовставку */
      ak_bckey_encrypt_ctr_hmac( &mkey, &hkey,
         myout, idx,

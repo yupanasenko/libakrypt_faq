@@ -89,8 +89,12 @@
 
           /* теперь шифруем последний блок */
             if( oc ) {
-               yaout[0] ^= bswap_64( akey[0] );
-               for( i = 0; i < tail; i++ ) ((ak_uint8 *)yaout)[7-i] ^= ((ak_uint8 *)inptr)[tail-1-i];
+              ak_int64 xlen = (8 - tail) << 3;
+              yaout[0] ^= bswap_64( akey[0] );
+             /* мы заменяем цикл
+                    for( i = 0; i < tail; i++ ) ((ak_uint8 *)yaout)[7-i] ^= ((ak_uint8 *)inptr)[tail-1-i];
+                на двоичный сдвиг */
+              yaout[0] ^= (((*inptr) >> xlen) << xlen );
             }
               else {
                yaout[0] ^= akey[0];
@@ -596,7 +600,7 @@
      ptr = adata;
      sizeptr = adata_size + size;
   } else {
-      ptr = iv;
+      ptr = in;
       sizeptr = size;
     }
 
@@ -611,6 +615,7 @@
     if(( error = ak_bckey_ctr( encryptionKey, in, out, size, iv, iv_size )) != ak_error_ok )
      return ak_error_message( error, __func__, "incorrect data encryption" );
   }
+
  return ak_error_ok;
 }
 
@@ -672,7 +677,7 @@
      ptr = adata;
      sizeptr = adata_size + size;
   } else {
-      ptr = iv;
+      ptr = in;
       sizeptr = size;
     }
 
