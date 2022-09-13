@@ -509,7 +509,7 @@
            goto read_label;
          }
   labex:
-   if( localbuffer != NULL ) free( localbuffer );
+   if( localbuffer != NULL ) ak_aligned_free( localbuffer );
    ak_file_close( &file );
  return error;
 }

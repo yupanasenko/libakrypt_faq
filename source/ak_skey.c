@@ -151,9 +151,6 @@
 /* ----------------------------------------------------------------------------------------------- */
  int ak_skey_alloc_memory( ak_skey skey, size_t size, memory_allocation_policy_t policy )
 {
-#ifdef AK_HAVE_STDALIGN_H
-  alignas(16)
-#endif
   ak_uint8 *ptr = NULL;
   if( skey == NULL ) return ak_error_message( ak_error_null_pointer, __func__ ,
                                                     "using a null pointer to secret key context" );
@@ -208,7 +205,7 @@
   switch( skey->policy ) {
     case malloc_policy:
       skey->policy = undefined_policy;
-      free( skey->key );
+      ak_aligned_free( skey->key );
       break;
 
     default:

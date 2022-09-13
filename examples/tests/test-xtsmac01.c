@@ -55,7 +55,9 @@
   struct bckey ekey, ikey;
   int error, result = EXIT_FAILURE;
  #ifdef AK_HAVE_STDALIGN_H
-  alignas(32)
+  #ifndef AK_HAVE_WINDOWS_H
+   alignas(32)
+  #endif
  #endif
   ak_uint8 ina[32 +sizeof(associated)], inp[32 +sizeof(plain)], otp[32 + sizeof(plain)];
   ak_uint8 out[32 +sizeof(plain)], icode[16];

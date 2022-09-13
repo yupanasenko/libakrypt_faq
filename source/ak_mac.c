@@ -249,7 +249,7 @@
   ak_mac_clean( mctx );
  /* закрываем данные */
   ak_file_close( &file );
-  free( localbuffer );
+  ak_aligned_free( localbuffer );
  return error;
 }
 

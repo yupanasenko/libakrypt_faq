@@ -8,6 +8,7 @@
 /*  Copyright (c) 2019 by kirlit26                                                                 */
 /*  Copyright (c) 2019 by Anton Sakharov                                                           */
 /*  Copyright (c) 2022 by Yasmin Yurovskikh, yaeyurovskikh@edu.hse.ru                              */
+/*  Copyright (c) 2022 by AlexVCh66                                                                */
 /*                                                                                                 */
 /* ----------------------------------------------------------------------------------------------- */
 /*  Файл libakrypt.h                                                                               */
@@ -585,7 +586,9 @@ extern "C" {
  struct skey {
   /*! \brief ключ */
 #ifdef AK_HAVE_STDALIGN_H
+ #ifndef AK_HAVE_WINDOWS_H
    alignas(32)
+ #endif
 #endif
    ak_uint8 *key;
   /*! \brief размер ключа (в октетах) */

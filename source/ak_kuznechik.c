@@ -295,7 +295,7 @@
       ak_error_message( error, __func__, "incorrect wiping an internal data" );
       memset( skey->data, 0, sizeof( ak_kuznechik_expanded_keys ));
     }
-    free( skey->data );
+    ak_aligned_free( skey->data );
     skey->data = NULL;
   }
  return error;

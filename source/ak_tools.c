@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2014 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2014 - 2022 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Файл ak_tools.с                                                                                */
 /* ----------------------------------------------------------------------------------------------- */
@@ -1037,14 +1037,39 @@
  return
 #ifndef __MINGW32__
  #ifdef AK_HAVE_STDALIGN_H
-  aligned_alloc( 16,
+  #ifdef AK_HAVE_WINDOWS_H
+   _aligned_malloc( size, 16 );
+  #else
+   aligned_alloc( 16, size );
+  #endif
  #else
-  malloc(
+  malloc( size );
  #endif
 #else
-  malloc(
+ malloc( size );
 #endif
-  size );
+}
+
+/* ----------------------------------------------------------------------------------------------- */
+/*! Функция освобождает память, выделенную функцией ak_aligned_malloc
+    @param size Размер выделяемой памяти в байтах.
+    @return Указатель на выделенную память.                                                        */
+/* ----------------------------------------------------------------------------------------------- */
+ void ak_aligned_free( ak_pointer ptr )
+{
+#ifndef __MINGW32__
+ #ifdef AK_HAVE_STDALIGN_H
+  #ifdef AK_HAVE_WINDOWS_H
+   _aligned_free( ptr );
+  #else
+   free( ptr );
+  #endif
+ #else
+  free( ptr );
+ #endif
+#else
+ free( ptr );
+#endif
 }
 
 /* ----------------------------------------------------------------------------------------------- */

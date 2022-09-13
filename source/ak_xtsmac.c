@@ -246,7 +246,9 @@
   ak_xtsmac_ctx ctx = actx;
   ak_bckey authenticationKey = akey;
 #ifdef AK_HAVE_STDALIGN_H
+ #ifndef AK_HAVE_WINDOWS_H
   alignas(32)
+ #endif
 #endif
   ak_uint64 t[2], temp[2];
   ssize_t absize, tail, blocks;
@@ -298,7 +300,9 @@
                                            ak_pointer akey, ak_pointer out, const size_t out_size )
 {
 #ifdef AK_HAVE_STDALIGN_H
+ #ifndef AK_HAVE_WINDOWS_H
   alignas(32)
+ #endif
 #endif
   ak_uint64 t[2] = { 0, 0}, temp[2];
   ak_uint8 *tb = (ak_uint8 *)&t, *tptr = (ak_uint8 *)&temp;
@@ -354,7 +358,9 @@
   ak_xtsmac_ctx ctx = actx;
   ak_bckey encryptionKey = ekey;
 #ifdef AK_HAVE_STDALIGN_H
+ #ifndef AK_HAVE_WINDOWS_H
   alignas(32)
+ #endif
 #endif
   ak_uint64 t[2];
   ak_uint8 *tb = (ak_uint8 *)&t;
@@ -469,7 +475,9 @@
   ak_xtsmac_ctx ctx = actx;
   ak_bckey encryptionKey = ekey;
 #ifdef AK_HAVE_STDALIGN_H
+ #ifndef AK_HAVE_WINDOWS_H
   alignas(32)
+ #endif
 #endif
   ak_uint64 t[2], temp[2];
   ak_uint8 *tb = (ak_uint8 *)&t;
@@ -629,7 +637,9 @@
                                                        ak_pointer icode, const size_t icode_size )
 {
  #ifdef AK_HAVE_STDALIGN_H
-  alignas(32)
+  #ifndef AK_HAVE_WINDOWS_H
+   alignas(32)
+  #endif
  #endif
   struct xtsmac_ctx ctx; /* контекст структуры, в которой хранятся промежуточные данные */
   int error = ak_error_ok;
@@ -708,7 +718,9 @@
                                                          ak_pointer icode, const size_t icode_size )
 {
  #ifdef AK_HAVE_STDALIGN_H
-  alignas(32)
+  #ifndef AK_HAVE_WINDOWS_H
+   alignas(32)
+  #endif
  #endif
   struct xtsmac_ctx ctx; /* контекст структуры, в которой хранятся промежуточные данные */
   ak_uint8 ic[32];

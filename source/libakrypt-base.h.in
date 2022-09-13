@@ -514,6 +514,8 @@ extern "C" {
  dll_export ak_uint8 *ak_ptr_load_from_base64_file( ak_pointer , size_t * , const char * );
 /*! \brief Выделение выравненной памяти. */
  dll_export ak_pointer ak_aligned_malloc( size_t );
+/*! \brief Освобождение выравненной памяти. */
+ dll_export void ak_aligned_free( ak_pointer );
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция кодирует три байта информации в формат base64.  */

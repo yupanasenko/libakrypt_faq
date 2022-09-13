@@ -40,7 +40,9 @@
   ak_int64 jcnt = 0, blocks = 0;
   ak_uint64 *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
 #ifdef AK_HAVE_STDALIGN_H
+ #ifndef AK_HAVE_WINDOWS_H
   alignas(16)
+ #endif
 #endif
   ak_uint64 tweak[2], t[2], *tptr = t;
 
@@ -175,7 +177,9 @@
   ak_int64 jcnt = 0, blocks = 0;
   ak_uint64 *inptr = (ak_uint64 *)in, *outptr = (ak_uint64 *)out;
 #ifdef AK_HAVE_STDALIGN_H
+ #ifndef AK_HAVE_WINDOWS_H
   alignas(16)
+ #endif
 #endif
   ak_uint64 tweak[2], t[2], *tptr = t;
 

@@ -657,7 +657,7 @@
  /* если ключ был создан, но ему не было присвоено значение, здесь возникнет ошибка */
   if( skey->data != NULL ) {
     ak_ptr_wipe( skey->data, sizeof( struct magma_encrypted_keys ), &skey->generator );
-    free( skey->data );
+    ak_aligned_free( skey->data );
     skey->data = NULL;
   }
  return ak_error_ok;
