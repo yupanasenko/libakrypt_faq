@@ -13,8 +13,11 @@
 {
  const char *string =
    "[example-ini]\n"
-   "  file-name = example-ini.c\n"
-   "  description = used as example for reading ini files\n"; 
+   "  file-name = example-ini.file.c\n"
+   "  description = used as example for reading ini files\n"
+   "  ip-address: 192.168.21.13\n"
+   "  ip6: fe80::a0:2101\n"
+   "  port: 5176\n";
 
  /* устанавливаем стандартную функцию аудита */
    ak_log_set_function( ak_function_log_stderr );
