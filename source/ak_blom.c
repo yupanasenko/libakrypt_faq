@@ -103,9 +103,9 @@
     принимать значение 32.
 
     \param bkey указатель на контекст мастер-ключа
-    \param size размер матрицы
-    \param count количество октетов, определяющих размер конечного поля;
-    допустимыми значениями являются \ref ak_galois256_size и \ref ak_galois512_size.
+    \param size размер матриц
+    \param count количество октетов (!), определяющих размер конечного поля;
+    допустимыми значениями являются \ref ak_galois256_size = 32 и \ref ak_galois512_size = 64.
     \param generator указатель на контекст генератора случайных значений.
     \return Функция возвращает \ref ak_error_ok (ноль) в случае успеха,
     в противном случае возвращается код ошибки.                                                    */
@@ -123,8 +123,8 @@
                                                         "using very huge size for secret matrix" );
   if( !size ) return ak_error_message( ak_error_zero_length, __func__, "using zero field size" );
   if(( count != ak_galois256_size ) && ( count != ak_galois512_size ))
-   return ak_error_message( ak_error_undefined_value, __func__,
-                                       "this function accepts only 256 or 512 bit galois fields" );
+   return ak_error_message_fmt( ak_error_undefined_value, __func__,
+            "this function accepts only 32 or 64 octets galois fields, but requested: %u", count );
   bkey->type = blom_matrix_key;
   bkey->count = count;
   bkey->size = size;
