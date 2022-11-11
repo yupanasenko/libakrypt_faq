@@ -312,9 +312,13 @@ endforeach()
 # -------------------------------------------------------------------------------------------------- #
 # дополнительный (опциональный) функционал утилиты aktool
 # libbz2
-find_library( LIBBZ2_LIB bz2 )
+if( AK_STATIC_LIB )
+  find_library( LIBBZ2_LIB libbz2.a )
+else()
+  find_library( LIBBZ2_LIB libbz2.so )
+endif()
 if( LIBBZ2_LIB )
-  message("-- libbz2 found" )
+  message("-- libbz2 found (${LIBBZ2_LIB})" )
   find_file( AK_HAVE_LIBBZ2_H bzlib.h )
   if( AK_HAVE_LIBBZ2_H )
     message("-- bzlib.h found")
@@ -324,9 +328,13 @@ if( LIBBZ2_LIB )
 endif()
 
 # libintl
-find_library( LIBINTL_LIB intl )
+if( AK_STATIC_LIB )
+  find_library( LIBINTL_LIB libintl.a )
+else()
+  find_library( LIBINTL_LIB libintl.so )
+endif()
 if( LIBINTL_LIB )
-  message("-- libintl found")
+  message("-- libintl found (${LIBINTL_LIB})")
   set( LIBAKRYPT_LIBS ${LIBAKRYPT_LIBS} ${LIBINTL_LIB} )
 endif()
 
@@ -337,9 +345,13 @@ if( AK_HAVE_LIBINTL_H )
 endif()
 
 # libiconv
-find_library( LIBICONV_LIB iconv )
+if( AK_STATIC_LIB )
+  find_library( LIBICONV_LIB libiconv.a )
+else()
+  find_library( LIBICONV_LIB libiconv.so )
+endif()
 if( LIBICONV_LIB )
-  message("-- libiconv found")
+  message("-- libiconv found (${LIBICONV_LIB})")
   set( LIBAKRYPT_LIBS ${LIBAKRYPT_LIBS} ${LIBICONV_LIB} )
 endif()
 
