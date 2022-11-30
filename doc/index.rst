@@ -4,24 +4,26 @@
 libakrypt
 =========
 
-Библиотека `libakrypt` реализует российские криптографические механизмы в пространстве пользователя.
-Цель разработки библиотеки заключается в создании СКЗИ с открытым исходным кодом,
-удовлетворяющего рекомендациям по стандартизации Р 1323565.1.012-2017
+Библиотека `libakrypt` написана на языке Си и реализует механизмы генерации, хранения, экспорта и импорта
+ключевой информации, а также основные отечественные криптографические механизмы, регламентированные национальными
+стандартами и рекомендациями по стандартизации.
+
+Цель разработки библиотеки заключается в создании СКЗИ с
+открытым исходным кодом, удовлетворяющего рекомендациям по стандартизации Р 1323565.1.012-2017
 «`Принципы разработки и модернизации шифровальных (криптографических) средств защиты
 информации <https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-012-2017-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-printsipy-razrabotki-i-modernizatsii-shifrovalnykh-kriptograficheskikh-sredstv-zashchity-informatsii.html>`__» по классу КС3.
 
-Возможности
------------
 
-Библиотека `libakrypt` написана на языке C и реализует механизмы генерации, хранения, экспорта и импорта ключей, а также
-основные отечественные криптографические механизмы, регламентированные национальными стандартами
-и рекомендациями по стандартизации.
+В библиотеке реализованы следующие криптографические преобразования.
 
- 1. Бесключевые функции хеширования «Стрибог-256» и «Стрибог-512», регламентируемые стандартом `ГОСТ Р 34.11-2012 <https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-11-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-funktsiya-kheshirovaniya.html>`__.
+ 1. Бесключевые функции хеширования «Стрибог-256» и «Стрибог-512»,
+    регламентируемые стандартом `ГОСТ Р 34.11-2012 <https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-11-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-funktsiya-kheshirovaniya.html>`__.
 
- 2. Алгоритмы блочного шифрования данных «Магма» и «Кузнечик», регламентируемые стандартом `ГОСТ Р 34.12-2015 <https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-12-2015-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-blochnye-shifry.html>`__.
+ 2. Алгоритмы блочного шифрования данных «Магма» и «Кузнечик»,
+    регламентируемые стандартом `ГОСТ Р 34.12-2015 <https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-12-2015-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-blochnye-shifry.html>`__.
 
- 3. Процедуры зашифрования/расшифрования данных c помощью алгоритмов блочного шифрования в следующих режимах (согласно `ГОСТ Р 34.13-2015 <https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-13-2015-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-rezhimy-raboty-blochnykh-shifrov.html>`__):
+ 3. Процедуры зашифрования/расшифрования данных c помощью алгоритмов блочного шифрования
+    в следующих режимах (согласно `ГОСТ Р 34.13-2015 <https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-13-2015-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-rezhimy-raboty-blochnykh-shifrov.html>`__):
 
     * режим простой замены (`ECB`, `electronic codebook mode`),
     * режим гаммирования (`CTR`, `counter mode`),
@@ -63,22 +65,20 @@ libakrypt
 
  12. Процедуры выработки и проверки электронной подписи, регламентированные стандартом на электронную подпись `ГОСТ Р 34.10-2012 <https://tc26.ru/standarts/natsionalnye-standarty/gost-r-34-10-2012-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-protsessy-formirovaniya-i-proverki-elektronnoy-tsifrovoy-podpisi.html>`__. Используется формат подписи, определяемый рекомендациями по стандартизации `Р 1323565.1.023-2018 <https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-023-2018-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-ispolzovanie-algoritmov-gost-r-34-10-2012-gost-r-34-11-2012-v-sertifikate-spiske-annulirovannykh-sertifikatov-crl-i-zaprose-na-sertifikat-pkcs-10-infrastruktury-o.html>`__.
 
- 13. Процедуры низкого уровня для кодирования и декодирования данных в формате ASN.1 с поддержкой DER и PEM кодировок;
+ 13. Процедуры низкого уровня для кодирования и декодирования данных в формате ASN.1
+     с поддержкой DER и PEM кодировок;
 
- 14. Алгоритмы генерации запросов на сертификат открытого ключа, а также алгоритмы генерации сертификатов открытых ключей в формате рекомендаций `ITU X.509 <https://www.itu.int/rec/T-REC-X.509/en>`__ с поддержкой дополнительных указаний, содержащихся в рекомендациях по стандартизации `Р 1323565.1.023-2018 <https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-023-2018-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-ispolzovanie-algoritmov-gost-r-34-10-2012-gost-r-34-11-2012-v-sertifikate-spiske-annulirovannykh-sertifikatov-crl-i-zaprose-na-sertifikat-pkcs-10-infrastruktury-o.html>`__.
+ 14. Алгоритмы генерации запросов на сертификат открытого ключа, а также алгоритмы генерации
+     сертификатов открытых ключей в формате рекомендаций `ITU X.509 <https://www.itu.int/rec/T-REC-X.509/en>`__ с поддержкой дополнительных указаний, содержащихся в рекомендациях по стандартизации `Р 1323565.1.023-2018 <https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-023-2018-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-ispolzovanie-algoritmov-gost-r-34-10-2012-gost-r-34-11-2012-v-sertifikate-spiske-annulirovannykh-sertifikatov-crl-i-zaprose-na-sertifikat-pkcs-10-infrastruktury-o.html>`__.
 
- 15. Схему Блома распределения ключевой информации и выработки ключей парной связи (общих симметричных ключей) в соответствии с рекомендациями по стандартизации `Р 1323565.1.028-2019 <https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-028-2019-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-kriptograficheskie-mekhanizmy-zashchishchennogo-vzaimodeystviya-kontrolnykh-i-izmeritelnykh-ustroystv.html>`__.
+ 15. Схема Блома для распределения ключевой информации и выработки ключей парной связи (общих симметричных ключей)
+     в соответствии с рекомендациями по стандартизации `Р 1323565.1.028-2019 <https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-028-2019-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-kriptograficheskie-mekhanizmy-zashchishchennogo-vzaimodeystviya-kontrolnykh-i-izmeritelnykh-ustroystv.html>`__.
 
-Утилита aktool
---------------
 
 Вместе с библиотекой собирается и инсталлируется консольная утилита `aktool <aktool.html>`__,
 предоставляющая пользователю возможности по управлению криптографическими ключами и их сертификатами,
 шифрованию и имитозащите данных, а также вычислению и проверке электронной подписи.
 
-
-Платформы и компиляторы
------------------------
 
 Поддерживается работа библиотеки на следующих аппаратных платформах:
 
@@ -113,12 +113,8 @@ libakrypt
 
    * `Intel C Compiler`.
 
-
-Подробная информация
---------------------
-
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
    install-guide.rst
    technical-reference.rst
