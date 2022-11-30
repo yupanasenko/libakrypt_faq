@@ -117,7 +117,6 @@ libakrypt
    :maxdepth: 1
 
    install-guide.rst
-   technical-reference.rst
    faq.rst
    aktool.rst
    bibliography.rst

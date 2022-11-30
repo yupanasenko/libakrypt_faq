@@ -16,6 +16,9 @@
  #ifdef AK_HAVE_SYSSTAT_H
   #include <sys/stat.h>
  #endif
+ #ifdef AK_HAVE_UNISTD_H
+  #include <unistd.h>
+ #endif
 
 /* ----------------------------------------------------------------------------------------------- */
  typedef enum {

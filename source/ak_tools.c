@@ -829,7 +829,11 @@
    }
 
    memset( pass, 0, psize );
-   fgets( pass, psize, stdin );
+   if( fgets( pass, psize, stdin ) == NULL ) {
+     ak_error_message( error = ak_error_null_pointer, __func__ , "input a null password");
+     goto lab_exit;
+   }
+   pass[psize-1] = 0;
    if(( len = strlen( pass )) < 2 ) {
      ak_error_message( error = ak_error_zero_length, __func__ , "input a very short password");
      goto lab_exit;

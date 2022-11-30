@@ -351,7 +351,7 @@
   if( ki.confirm ) { /* пользователь хочет подтверждать удаление файла */
     printf(_("Remove the file %s? [y/n]"), filename ); fflush( stdout );
     memset( ch, 0, sizeof( ch ));
-    fgets( ch, sizeof( ch ) -1, stdin );
+    if( fgets( ch, sizeof( ch ) -1, stdin ) == NULL ) return ak_error_null_pointer;
 
     if( ch[0] == 'y' || ch[0] == 'Y' ) {
       if( remove( filename ) < 0 ) return ak_error_access_file;
