@@ -37,18 +37,18 @@ else()
   try_append_c_flag( "-Wall" CMAKE_C_FLAGS )
   try_append_c_flag( "-pedantic-errors" CMAKE_C_FLAGS )
   try_append_c_flag( "-O3" CMAKE_C_FLAGS )
+  try_append_c_flag( "-pipe" CMAKE_C_FLAGS )
   try_append_c_flag( "-funroll-loops" CMAKE_C_FLAGS )
 #  try_append_c_flag( "-fomit-frame-pointer" CMAKE_C_FLAGS )
-  try_append_c_flag( "-pipe" CMAKE_C_FLAGS )
-  try_append_c_flag( "-mpclmul" CMAKE_C_FLAGS )
-  try_append_c_flag( "-msse" CMAKE_C_FLAGS )
-  try_append_c_flag( "-msse2" CMAKE_C_FLAGS )
-  try_append_c_flag( "-mavx" CMAKE_C_FLAGS )
-  try_append_c_flag( "-mavx2" CMAKE_C_FLAGS )
+#  try_append_c_flag( "-mpclmul" CMAKE_C_FLAGS )
+#  try_append_c_flag( "-msse" CMAKE_C_FLAGS )
+#  try_append_c_flag( "-msse2" CMAKE_C_FLAGS )
+#  try_append_c_flag( "-mavx" CMAKE_C_FLAGS )
+#  try_append_c_flag( "-mavx2" CMAKE_C_FLAGS )
 
-#  флаг -march-native позволяет получить доступ к регистам sse, mmx и т.п.
-#  но приводит к ошибке при кросс-платформенной компиляции.
-#  правильно указывать архитектуру при певом вызове cmake
+#  явно заданный флаг -march-native позволяет получить доступ к регистам sse, mmx и т.п.
+#  но может приводить к ошибке при кросс-платформенной компиляции.
+#  правильно указывать архитектуру при первом вызове cmake
 #  try_append_c_flag( "-march=native" CMAKE_C_FLAGS )
 #  try_append_c_flag( "-std=c11" CMAKE_C_FLAGS )
 endif()
