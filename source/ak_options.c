@@ -403,9 +403,9 @@
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! Функция последовательно ищет файл `libakrypt.conf` сначала в домашнем каталоге пользователя,
-    потом в каталоге, указанном при сборке библиотеки с помощью флага `LIBAKRYPT_CONF`. В случае,
-    если ни в одном из указанных мест файл не найден, то функция создает файл `libakrypt.conf`
-    в домашнем каталоге пользователя со значениями по-умолчанию.                                   */
+    потом в каталоге, указанном при сборке библиотеки с помощью флага `LIBAKRYPT_OPTIONS_PATH`.
+    В случае, если ни в одном из указанных мест файл не найден, то функция создает
+    файл `libakrypt.conf` в домашнем каталоге пользователя со значениями по-умолчанию.             */
 /* ----------------------------------------------------------------------------------------------- */
  bool_t ak_libakrypt_load_options( void )
 {
@@ -423,8 +423,9 @@
  if( ak_file_open_to_read( &fd, name ) == ak_error_ok ) {
    ak_file_close( &fd );
    if(( error = ak_ini_parse( name, ak_libakrypt_load_option_from_file, NULL )) == ak_error_ok ) {
-     if( ak_libakrypt_get_option_by_name( "log_level" ) > ak_log_standard )
-       ak_error_message_fmt( ak_error_ok, __func__, "all options was read from %s file", name );
+     if( ak_libakrypt_get_option_by_name( "log_level" ) > ak_log_none )
+       ak_error_message_fmt( ak_error_ok, "ak_libakrypt_log_options",
+                                            "all options have been read from the %s file", name );
      return ak_true;
    } else {
        ak_error_message_fmt( error, __func__, "file %s exists, but contains invalid data", name );
@@ -442,8 +443,9 @@
  if( ak_file_open_to_read( &fd, name ) == ak_error_ok ) {
    ak_file_close( &fd );
    if(( error = ak_ini_parse( name, ak_libakrypt_load_option_from_file, NULL )) == ak_error_ok ) {
-     if( ak_libakrypt_get_option_by_name( "log_level" ) > ak_log_standard )
-       ak_error_message_fmt( ak_error_ok, __func__, "all options was read from %s file", name );
+     if( ak_libakrypt_get_option_by_name( "log_level" ) > ak_log_none )
+       ak_error_message_fmt( ak_error_ok, "ak_libakrypt_log_options",
+                                             "all options have been read from the %s file", name );
      return ak_true;
    } else {
        ak_error_message_fmt( error, __func__, "wrong options reading from %s file", name );
