@@ -44,7 +44,7 @@
  typedef struct {
   /* уровень аудита */
    int aktool_log_level;
-  /* флаг совместимости с форматамаи библиотеки openssl */
+  /* флаг совместимости с форматами библиотеки openssl */
    bool_t aktool_openssl_compability;
   /* флаг ввода пароля в шестнадцатеричной системе счисления */
    bool_t aktool_hex_password_input;

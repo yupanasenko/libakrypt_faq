@@ -154,7 +154,7 @@
                   #ifdef _WIN32
                    GetFullPathName( optarg, FILENAME_MAX, ki.os_file, NULL );
                   #else
-                   realpath( optarg , ki.os_file );
+                   strncpy( ki.os_file, optarg, sizeof( ki.os_file ) -1 );
                   #endif
                    break;
 
@@ -184,14 +184,15 @@
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.capubkey_file, NULL );
                   #else
-                    realpath( optarg , ki.capubkey_file );
+                    strncpy( ki.capubkey_file, optarg, sizeof( ki.capubkey_file ) -1 );
                   #endif
                     break;
+
         case 'c': /* -c --cert */
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.pubkey_file, NULL );
                   #else
-                    realpath( optarg , ki.pubkey_file );
+                    strncpy( ki.pubkey_file, optarg, sizeof( ki.pubkey_file ) -1 );
                   #endif
                     break;
 
@@ -300,7 +301,7 @@
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                   #else
-                    realpath( optarg , ki.key_file );
+                    strncpy( ki.key_file, optarg, sizeof( ki.key_file ) -1 );
                   #endif
                    break;
 
@@ -308,7 +309,7 @@
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.op_file, NULL );
                   #else
-                    realpath( optarg , ki.op_file );
+                    strncpy( ki.op_file, optarg, sizeof( ki.op_file ) -1 );
                   #endif
                    break;
 

@@ -56,6 +56,7 @@
              do_repo_check, do_repo_ls, do_p7b_create, do_p7b_ls, do_p7b_split } work = do_nothing;
 
  /* параметры, которые устанавливаются по умолчанию */
+  bzero( &ki, sizeof( aktool_ki_t ));
   ki.format = asn1_der_format;
   ki.oid_of_generator = ak_oid_find_by_name( aktool_default_generator );
   ki.no_outpass = ak_false;
@@ -160,7 +161,7 @@
                    #ifdef _WIN32
                      GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                    #else
-                     realpath( optarg , ki.key_file );
+                     strncpy( ki.key_file, optarg, sizeof( ki.key_file ) -1 );
                    #endif
                    break;
         case 164: /* --show-label */
@@ -169,7 +170,7 @@
                    #ifdef _WIN32
                      GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                    #else
-                     realpath( optarg , ki.key_file );
+                     strncpy( ki.key_file, optarg, sizeof( ki.key_file ) -1 );
                    #endif
                    break;
         case 165: /* --show-algorithm */
@@ -178,7 +179,7 @@
                    #ifdef _WIN32
                      GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                    #else
-                     realpath( optarg , ki.key_file );
+                     strncpy( ki.key_file, optarg, sizeof( ki.key_file ) -1 );
                    #endif
                    break;
         case 166: /* --show-curve */
@@ -187,7 +188,7 @@
                    #ifdef _WIN32
                      GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                    #else
-                     realpath( optarg , ki.key_file );
+                     strncpy( ki.key_file, optarg, sizeof( ki.key_file ) -1 );
                    #endif
                    break;
         case 167: /* --show-number */
@@ -196,7 +197,7 @@
                    #ifdef _WIN32
                      GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                    #else
-                     realpath( optarg , ki.key_file );
+                     strncpy( ki.key_file, optarg, sizeof( ki.key_file ) -1 );
                    #endif
                    break;
         case 168: /* --show-public-key */
@@ -205,7 +206,7 @@
                    #ifdef _WIN32
                      GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                    #else
-                     realpath( optarg , ki.key_file );
+                     strncpy( ki.key_file, optarg, sizeof( ki.key_file ) -1 );
                    #endif
                    break;
         case 169: /* --show-resource */
@@ -214,7 +215,7 @@
                    #ifdef _WIN32
                      GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                    #else
-                     realpath( optarg , ki.key_file );
+                     strncpy( ki.key_file, optarg, sizeof( ki.key_file ) -1 );
                    #endif
                    break;
 
@@ -411,7 +412,7 @@
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.os_file, NULL );
                   #else
-                    realpath( optarg , ki.os_file );
+                    strncpy( ki.os_file, optarg, sizeof( ki.os_file ) -1 );
                   #endif
                     break;
 
@@ -419,7 +420,7 @@
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.op_file, NULL );
                   #else
-                    realpath( optarg , ki.op_file );
+                    strncpy( ki.op_file, optarg, sizeof( ki.op_file ) -1 );
                   #endif
                     break;
 
@@ -427,7 +428,7 @@
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                   #else
-                    realpath( optarg , ki.key_file );
+                    strncpy( ki.key_file, optarg, sizeof( ki.key_file ) -1 );
                   #endif
                     break;
 
@@ -435,7 +436,7 @@
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.capubkey_file, NULL );
                   #else
-                    realpath( optarg , ki.capubkey_file );
+                    strncpy( ki.capubkey_file, optarg, sizeof( ki.capubkey_file ) -1 );
                   #endif
                     break;
 
@@ -1775,7 +1776,7 @@
           #ifdef _WIN32
             GetFullPathName( value, FILENAME_MAX, ki.pubkey_file, NULL );
           #else
-            realpath( value , ki.pubkey_file );
+            strncpy( ki.pubkey_file, value, sizeof( ki.pubkey_file ) -1 );
           #endif
 
          /* считываем asn1 дерево из файла */

@@ -106,7 +106,7 @@
                  #ifdef _WIN32
                    GetFullPathName( optarg, FILENAME_MAX, ki.op_file, NULL );
                  #else
-                   realpath( optarg , ki.op_file );
+                   strncpy( ki.op_file, optarg, sizeof( ki.op_file ) -1 );
                  #endif
                    if(( ki.outfp = fopen( optarg, "w" )) == NULL ) {
                      aktool_error(_("checksum file \"%s\" cannot be created"), optarg );
@@ -119,7 +119,7 @@
                  #ifdef _WIN32
                    GetFullPathName( optarg, FILENAME_MAX, ki.os_file, NULL );
                  #else
-                   realpath( optarg , ki.os_file );
+                   strncpy( ki.os_file, optarg, sizeof( ki.os_file ) -1 );
                  #endif
                    break;
 
@@ -184,7 +184,7 @@
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                   #else
-                    realpath( optarg , ki.key_file );
+                    strncpy( ki.key_file, optarg, sizeof( ki.key_file ) -1 );
                   #endif
                     break;
 
@@ -254,11 +254,10 @@
    #ifdef _WIN32
     GetFullPathName( filename, FILENAME_MAX, flongname, NULL );
    #else
-    realpath( filename, flongname );
+    strncpy( flongname, filename, sizeof( flongname ) -1 );
    #endif
     if( !strncmp( flongname, ki.op_file, FILENAME_MAX -2 )) return ak_error_ok;
-    if( !strncmp( flongname, ki.audit_filename,
-                                              sizeof( ki.audit_filename ) -2 )) return ak_error_ok;
+    if( !strncmp( flongname, ki.audit_filename, sizeof( ki.audit_filename ) -2 )) return ak_error_ok;
   }
 
  /* вырабатываем производный ключ (если пользователь не запретил) */
