@@ -59,7 +59,7 @@
  static const char *asn1_winrtl_n[] =       { "winrtl", NULL };
  static const char *asn1_winrtl_i[] =       { "1.2.643.2.52.1.1.4", NULL };
 #endif
-/* генератор, исопльзующий функцию хеширования
+/* генератор, использующий функцию хеширования
  static const char *asn1_hrng_n[] =     { "hrng", NULL };
  static const char *asn1_hrng_i[] =     { "1.2.643.2.52.1.1.5", NULL };
 */
@@ -177,11 +177,11 @@
                                              "ctr-nmac-kuznyechik", NULL };
  static const char *asn1_ctr_nmac_kuznechik_i[] =
                                            { "1.2.643.2.52.1.6.2.2.3", NULL };
+/*
  static const char *asn1_xtsmac_magma_n[] =
                                            { "xtsmac-magma", NULL };
  static const char *asn1_xtsmac_magma_i[] =
                                            { "1.2.643.2.52.1.6.3.1", NULL };
-/*
  static const char *asn1_xtsmac_kuznechik_n[] =
                                            { "xtsmac-kuznechik", "xtsmac-kuznyechik", NULL };
  static const char *asn1_xtsmac_kuznechik_i[] =
@@ -681,11 +681,11 @@ static struct oid libakrypt_oids[] =
                                           ( ak_function_run_object *) ak_bckey_encrypt_ctr_hmac,
                                           ( ak_function_run_object *) ak_bckey_decrypt_ctr_hmac }},
 
+/*
  { block_cipher, aead, asn1_xtsmac_magma_i, asn1_xtsmac_magma_n, NULL,
   { ak_object_bckey_magma, ak_object_bckey_magma,
                                             ( ak_function_run_object *) ak_bckey_encrypt_xtsmac,
                                             ( ak_function_run_object *) ak_bckey_decrypt_xtsmac }},
-/*
  { block_cipher, aead, asn1_xtsmac_kuznechik_i, asn1_xtsmac_kuznechik_n, NULL,
   { ak_object_bckey_kuznechik, ak_object_bckey_kuznechik,
                                             ( ak_function_run_object *) ak_bckey_encrypt_xtsmac,

@@ -44,8 +44,7 @@ libakrypt
 
  6. Режимы работы блочных шифров, реализующие аутентифицированное шифрование, т.е. шифрование с одновременным вычислением имитовставки:
 
-    * режим `MGM (Multilinear Galois Mode)`, регламентируемый рекомендациями по стандартизации `Р 1323565.1.026-2019 <https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-026-2019-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-rezhimy-raboty-blochnykh-shifrov-realizuyushchie-autentifitsirovannoe-shifrovanie.html>`__;
-    * режим `XTSMAC`, разработанный авторами библиотеки.
+    * режим `MGM (Multilinear Galois Mode)`, регламентируемый рекомендациями по стандартизации `Р 1323565.1.026-2019 <https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-1323565-1-026-2019-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-rezhimy-raboty-blochnykh-shifrov-realizuyushchie-autentifitsirovannoe-shifrovanie.html>`__.
 
  7. Алгоритм развертки ключа из пароля `PBKDF2`, регламентированный рекомендациями по стандартизации `Р 50.1.111-2016 <https://tc26.ru/standarts/rekomendatsii-po-standartizatsii/r-50-1-111-2016-informatsionnaya-tekhnologiya-kriptograficheskaya-zashchita-informatsii-parolnaya-zashchita-klyuchevoy-informatsii.html>`__.
 
