@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2018 - 2021 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2018 - 2022 by Axel Kenzo, axelkenzo@mail.ru                                     */
 /*                                                                                                 */
 /*  Прикладной модуль, реализующий процедуры выработки ключевой информации,                        */
 /*  используемой криптографическими алгоритмами библиотеки libakrypt                               */
@@ -60,6 +60,7 @@
   ki.format = asn1_der_format;
   ki.oid_of_generator = ak_oid_find_by_name( aktool_default_generator );
   ki.no_outpass = ak_false;
+  ki.days = 365;
   ak_certificate_opts_create( &ki.cert.opts );
 
  /* параметры, запрашиваемые пользователем */

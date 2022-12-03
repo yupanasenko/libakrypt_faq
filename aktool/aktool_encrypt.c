@@ -67,6 +67,7 @@
   };
 
  /* устанавливаем параметры программы в значения по-умолчанию */
+  bzero( &ki, sizeof( aktool_ki_t ));
   ki.method = ak_oid_find_by_name( "ecies-scheme-key" );
   ki.pattern =
  #ifdef _WIN32
@@ -154,7 +155,7 @@
                   #ifdef _WIN32
                    GetFullPathName( optarg, FILENAME_MAX, ki.os_file, NULL );
                   #else
-                   strncpy( ki.os_file, optarg, sizeof( ki.os_file ) -1 );
+                   realpath( optarg, ki.os_file );
                   #endif
                    break;
 
@@ -184,7 +185,7 @@
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.capubkey_file, NULL );
                   #else
-                    strncpy( ki.capubkey_file, optarg, sizeof( ki.capubkey_file ) -1 );
+                    realpath( optarg, ki.capubkey_file );
                   #endif
                     break;
 
@@ -192,7 +193,7 @@
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.pubkey_file, NULL );
                   #else
-                    strncpy( ki.pubkey_file, optarg, sizeof( ki.pubkey_file ) -1 );
+                    realpath( optarg, ki.pubkey_file );
                   #endif
                     break;
 
@@ -301,7 +302,7 @@
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                   #else
-                    strncpy( ki.key_file, optarg, sizeof( ki.key_file ) -1 );
+                    realpath( optarg, ki.key_file );
                   #endif
                    break;
 
@@ -309,7 +310,7 @@
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.op_file, NULL );
                   #else
-                    strncpy( ki.op_file, optarg, sizeof( ki.op_file ) -1 );
+                    realpath( optarg, ki.op_file );
                   #endif
                    break;
 
