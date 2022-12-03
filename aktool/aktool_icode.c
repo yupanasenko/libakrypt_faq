@@ -51,6 +51,7 @@
   };
 
  /* устанавливаем значения по-умолчанию */
+  bzero( &ki, sizeof( aktool_ki_t ));
   ki.method = ak_oid_find_by_name( "streebog256" );
   ki.mode = NULL;
   ki.outfp = NULL;
@@ -103,15 +104,15 @@
                    break;
 
         case 'o' : /* устанавливаем имя файла для вывода результатов */
-                 #ifdef _WIN32
-                   GetFullPathName( optarg, FILENAME_MAX, ki.op_file, NULL );
-                 #else
-                   strncpy( ki.op_file, optarg, sizeof( ki.op_file ) -1 );
-                 #endif
                    if(( ki.outfp = fopen( optarg, "w" )) == NULL ) {
                      aktool_error(_("checksum file \"%s\" cannot be created"), optarg );
                      return EXIT_FAILURE;
                    }
+                 #ifdef _WIN32
+                   GetFullPathName( optarg, FILENAME_MAX, ki.op_file, NULL );
+                 #else
+                   realpath( optarg, ki.op_file );
+                 #endif
                    break;
 
         case 'c' : /* выполняем проверку контрольных сумм */
@@ -254,7 +255,7 @@
    #ifdef _WIN32
     GetFullPathName( filename, FILENAME_MAX, flongname, NULL );
    #else
-    strncpy( flongname, filename, sizeof( flongname ) -1 );
+    if( realpath( filename, flongname ) == NULL ) return ak_error_null_pointer;
    #endif
     if( !strncmp( flongname, ki.op_file, FILENAME_MAX -2 )) return ak_error_ok;
     if( !strncmp( flongname, ki.audit_filename, sizeof( ki.audit_filename ) -2 )) return ak_error_ok;
