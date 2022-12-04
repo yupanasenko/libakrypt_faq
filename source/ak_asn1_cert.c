@@ -2167,7 +2167,7 @@
  /* обрабатываем символ ~ в начале строки */
   if( strchr( path, '~' ) == path ) {
     char home[FILENAME_MAX];
-    ak_libakrypt_get_home_path( home, sizeof( home ));
+    ak_get_home_path( home, sizeof( home ));
     ak_snprintf( str, sizeof( str ), "%s%s", home, ++path );
   }
    else memcpy( str, path, strlen( path ));

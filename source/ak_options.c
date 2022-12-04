@@ -164,36 +164,6 @@
                           "certificate's repository path: %s", ak_certificate_get_repository( ));
 }
 
-/* ----------------------------------------------------------------------------------------------- */
-/*! @param hpath Буффер в который будет помещено имя домашнего каталога пользователя.
-    @param size Размер буффера в байтах.
-
-    @return В случае возникновения ошибки возвращается ее код. В случае успеха
-    возвращается \ref ak_error_ok.                                                                 */
-/* ----------------------------------------------------------------------------------------------- */
- int ak_libakrypt_get_home_path( char *hpath, const size_t size )
-{
- if( hpath == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
-                                                         "using null pointer to filename buffer" );
- if( !size ) return ak_error_message( ak_error_zero_length, __func__,
-                                                               "using a buffer with zero length" );
- memset( hpath, 0, size );
-
- #ifdef _WIN32
-  /* в начале определяем, находимся ли мы в консоли MSys */
-   GetEnvironmentVariableA( "HOME", hpath, ( DWORD )size );
-  /* если мы находимся не в консоли, то строка hpath должна быть пустой */
-   if( strlen( hpath ) == 0 ) {
-     GetEnvironmentVariableA( "USERPROFILE", hpath, ( DWORD )size );
-   }
- #else
-   ak_snprintf( hpath, size, "%s", getenv( "HOME" ));
- #endif
-
- if( strlen( hpath ) == 0 ) return ak_error_message( ak_error_undefined_value, __func__,
-                                                                           "wrong user home path");
- return ak_error_ok;
-}
 
 /* ----------------------------------------------------------------------------------------------- */
 /*! @param filename Массив, куда помещается имя файла. Память под массив
@@ -217,7 +187,7 @@
   switch( where )
  {
    case 0  : /* имя файла помещается в домашний каталог пользователя */
-             if(( error = ak_libakrypt_get_home_path( hpath, FILENAME_MAX )) != ak_error_ok )
+             if(( error = ak_get_home_path( hpath, FILENAME_MAX )) != ak_error_ok )
                return ak_error_message_fmt( error, __func__, "wrong %s name creation", lastname );
              #ifdef _WIN32
               ak_snprintf( filename, size, "%s\\.config\\libakrypt\\%s", hpath, lastname );
@@ -258,7 +228,7 @@
   memset( filename, 9, FILENAME_MAX );
 
  /* начинаем последовательно создавать подкаталоги */
-  if(( error = ak_libakrypt_get_home_path( hpath, FILENAME_MAX )) != ak_error_ok )
+  if(( error = ak_get_home_path( hpath, FILENAME_MAX )) != ak_error_ok )
     return ak_error_message( error, __func__, "wrong libakrypt.conf name creation" );
 
  /* создаем .config */

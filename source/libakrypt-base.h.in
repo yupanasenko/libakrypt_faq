@@ -255,6 +255,8 @@ extern "C" {
  #define ak_error_wrong_endian                (-31)
 /*! \brief Ошибка чтения из терминала. */
  #define ak_error_terminal                    (-32)
+/*! \brief Ошибка получения имени текущего каталога. */
+ #define ak_error_getcwd                      (-33)
 
 /* ----------------------------------------------------------------------------------------------- */
  #define ak_null_string                  ("(null)")
@@ -448,6 +450,10 @@ extern "C" {
  dll_export int ak_file_find( const tchar *, const tchar *, ak_function_find *, ak_pointer , bool_t );
 /*! \brief Функция построчного чтения заданного файла */
  dll_export int ak_file_read_by_lines( const tchar *, ak_file_read_function * , ak_pointer );
+/*! \brief Функция вырабатывает полное имя файла */
+ dll_export int ak_realpath( const char * , char * , size_t );
+/*! \brief Функция получает домашний каталог пользователя. */
+ dll_export int ak_get_home_path( char * , const size_t );
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */

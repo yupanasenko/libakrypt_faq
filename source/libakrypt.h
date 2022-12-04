@@ -157,8 +157,6 @@ extern "C" {
 /* ----------------------------------------------------------------------------------------------- */
 /*! \brief Функция устанавливает режим совместимости криптографических преобразований с библиотекой openssl. */
  dll_export int ak_libakrypt_set_openssl_compability( bool_t );
-/*! \brief Функция получает домашний каталог библиотеки. */
- dll_export int ak_libakrypt_get_home_path( char * , const size_t );
 /*! \brief Функция создает полное имя файла в домашем каталоге библиотеки. */
  dll_export int ak_libakrypt_create_home_filename( char * , const size_t , char * , const int );
 /*! \brief Функция выводит в заданный файл параметры эллиптической кривой. */

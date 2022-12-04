@@ -189,6 +189,7 @@ set( BASE_EXAMPLES_LIST
      ini
      file
      mmap
+     realpath
    )
 
 # определяем перечень примеров из FAQ
