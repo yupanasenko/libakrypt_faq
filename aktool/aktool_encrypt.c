@@ -155,7 +155,10 @@
                   #ifdef _WIN32
                    GetFullPathName( optarg, FILENAME_MAX, ki.os_file, NULL );
                   #else
-                   realpath( optarg, ki.os_file );
+                   if( ak_realpath( optarg, ki.os_file, sizeof( ki.os_file ) -1 ) != ak_error_ok ) {
+                     aktool_error(_("incorrect creation a full name for %s file"), optarg );
+                     return EXIT_FAILURE;
+                   }
                   #endif
                    break;
 
@@ -185,7 +188,11 @@
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.capubkey_file, NULL );
                   #else
-                    realpath( optarg, ki.capubkey_file );
+                   if( ak_realpath( optarg, ki.capubkey_file, sizeof( ki.capubkey_file ) -1 )
+                                                                                   != ak_error_ok ) {
+                     aktool_error(_("incorrect creation a full name for %s file"), optarg );
+                     return EXIT_FAILURE;
+                   }
                   #endif
                     break;
 
@@ -193,7 +200,10 @@
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.pubkey_file, NULL );
                   #else
-                    realpath( optarg, ki.pubkey_file );
+                   if( ak_realpath( optarg, ki.pubkey_file, sizeof( ki.pubkey_file ) -1 ) != ak_error_ok ) {
+                     aktool_error(_("incorrect creation a full name for %s file"), optarg );
+                     return EXIT_FAILURE;
+                   }
                   #endif
                     break;
 
@@ -302,7 +312,10 @@
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                   #else
-                    realpath( optarg, ki.key_file );
+                   if( ak_realpath( optarg, ki.key_file, sizeof( ki.key_file ) -1 ) != ak_error_ok ) {
+                     aktool_error(_("incorrect creation a full name for %s file"), optarg );
+                     return EXIT_FAILURE;
+                   }
                   #endif
                    break;
 
@@ -310,7 +323,10 @@
                   #ifdef _WIN32
                     GetFullPathName( optarg, FILENAME_MAX, ki.op_file, NULL );
                   #else
-                    realpath( optarg, ki.op_file );
+                   if( ak_realpath( optarg, ki.op_file, sizeof( ki.op_file ) -1 ) != ak_error_ok ) {
+                     aktool_error(_("incorrect creation a full name for %s file"), optarg );
+                     return EXIT_FAILURE;
+                   }
                   #endif
                    break;
 

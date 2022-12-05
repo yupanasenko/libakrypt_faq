@@ -104,15 +104,18 @@
                    break;
 
         case 'o' : /* устанавливаем имя файла для вывода результатов */
+                 #ifdef _WIN32
+                   GetFullPathName( optarg, FILENAME_MAX, ki.op_file, NULL );
+                 #else
+                   if( ak_realpath( optarg, ki.op_file, sizeof( ki.op_file ) -1 ) != ak_error_ok ) {
+                     aktool_error(_("the full name of checksum file \"%s\" cannot be created"), optarg );
+                     return EXIT_FAILURE;
+                   }
+                 #endif
                    if(( ki.outfp = fopen( optarg, "w" )) == NULL ) {
                      aktool_error(_("checksum file \"%s\" cannot be created"), optarg );
                      return EXIT_FAILURE;
                    }
-                 #ifdef _WIN32
-                   GetFullPathName( optarg, FILENAME_MAX, ki.op_file, NULL );
-                 #else
-                   realpath( optarg, ki.op_file );
-                 #endif
                    break;
 
         case 'c' : /* выполняем проверку контрольных сумм */
@@ -120,7 +123,10 @@
                  #ifdef _WIN32
                    GetFullPathName( optarg, FILENAME_MAX, ki.os_file, NULL );
                  #else
-                   strncpy( ki.os_file, optarg, sizeof( ki.os_file ) -1 );
+                   if( ak_realpath( optarg, ki.os_file, sizeof( ki.os_file ) -1 ) != ak_error_ok ) {
+                     aktool_error(_("the full name of checksum file \"%s\" cannot be created"), optarg );
+                     return EXIT_FAILURE;
+                   }
                  #endif
                    break;
 
@@ -178,16 +184,19 @@
                                                     "maybe input error, see --inpass-hex %s%s%s"),
                                   ak_error_get_start_string(), optarg, ak_error_get_end_string( ));
                        return EXIT_FAILURE;
-                     }
+                   }
                    break;
 
         case 203: /* --key, --ca-key */
                   #ifdef _WIN32
-                    GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
+                   GetFullPathName( optarg, FILENAME_MAX, ki.key_file, NULL );
                   #else
-                    strncpy( ki.key_file, optarg, sizeof( ki.key_file ) -1 );
+                   if( ak_realpath( optarg, ki.key_file, sizeof( ki.key_file ) -1 ) != ak_error_ok ) {
+                     aktool_error(_("the full name of key file \"%s\" cannot be created"), optarg );
+                     return EXIT_FAILURE;
+                   }
                   #endif
-                    break;
+                   break;
 
         default:  /* обрабатываем ошибочные параметры */
                    if( next_option != -1 ) work = do_nothing;
@@ -255,7 +264,8 @@
    #ifdef _WIN32
     GetFullPathName( filename, FILENAME_MAX, flongname, NULL );
    #else
-    if( realpath( filename, flongname ) == NULL ) return ak_error_null_pointer;
+    if( ak_realpath( filename, flongname, sizeof( flongname ) -1 ) != ak_error_ok )
+      return ak_error_null_pointer;
    #endif
     if( !strncmp( flongname, ki.op_file, FILENAME_MAX -2 )) return ak_error_ok;
     if( !strncmp( flongname, ki.audit_filename, sizeof( ki.audit_filename ) -2 )) return ak_error_ok;
