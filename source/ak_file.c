@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------------------------- */
-/*  Copyright (c) 2004 - 2020 by Axel Kenzo, axelkenzo@mail.ru                                     */
+/*  Copyright (c) 2004 - 2020, 2022 by Axel Kenzo, axelkenzo@mail.ru                               */
 /*                                                                                                 */
 /*  Файл ak_file.с                                                                                 */
 /* ----------------------------------------------------------------------------------------------- */
@@ -498,7 +498,7 @@
       }
     }
     if( path[0] == '~' ) {
-      ak_get_home_path( prefix, FILENAME_MAX -1 );
+      ak_homepath( prefix, FILENAME_MAX -1 );
       ak_snprintf( resolved_path, maxsize, "%s%s", prefix, path +1 );
       goto exlab;
     }
@@ -517,7 +517,7 @@
     @return В случае возникновения ошибки возвращается ее код. В случае успеха
     возвращается \ref ak_error_ok.                                                                 */
 /* ----------------------------------------------------------------------------------------------- */
- int ak_get_home_path( char *hpath, const size_t size )
+ int ak_homepath( char *hpath, const size_t size )
 {
  if( hpath == NULL ) return ak_error_message( ak_error_null_pointer, __func__,
                                                          "using null pointer to filename buffer" );

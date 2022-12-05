@@ -187,7 +187,7 @@
   switch( where )
  {
    case 0  : /* имя файла помещается в домашний каталог пользователя */
-             if(( error = ak_get_home_path( hpath, FILENAME_MAX )) != ak_error_ok )
+             if(( error = ak_homepath( hpath, FILENAME_MAX )) != ak_error_ok )
                return ak_error_message_fmt( error, __func__, "wrong %s name creation", lastname );
              #ifdef _WIN32
               ak_snprintf( filename, size, "%s\\.config\\libakrypt\\%s", hpath, lastname );
@@ -228,7 +228,7 @@
   memset( filename, 9, FILENAME_MAX );
 
  /* начинаем последовательно создавать подкаталоги */
-  if(( error = ak_get_home_path( hpath, FILENAME_MAX )) != ak_error_ok )
+  if(( error = ak_homepath( hpath, FILENAME_MAX )) != ak_error_ok )
     return ak_error_message( error, __func__, "wrong libakrypt.conf name creation" );
 
  /* создаем .config */

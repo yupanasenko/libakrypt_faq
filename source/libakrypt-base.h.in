@@ -453,7 +453,7 @@ extern "C" {
 /*! \brief Функция вырабатывает полное имя файла */
  dll_export int ak_realpath( const char * , char * , size_t );
 /*! \brief Функция получает домашний каталог пользователя. */
- dll_export int ak_get_home_path( char * , const size_t );
+ dll_export int ak_homepath( char * , const size_t );
 /** @} */
 
 /* ----------------------------------------------------------------------------------------------- */
