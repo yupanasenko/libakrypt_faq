@@ -56,7 +56,7 @@
              do_repo_check, do_repo_ls, do_p7b_create, do_p7b_ls, do_p7b_split } work = do_nothing;
 
  /* параметры, которые устанавливаются по умолчанию */
-  bzero( &ki, sizeof( aktool_ki_t ));
+  memset( &ki, 0, sizeof( aktool_ki_t ));
   ki.format = asn1_der_format;
   ki.oid_of_generator = ak_oid_find_by_name( aktool_default_generator );
   ki.no_outpass = ak_false;

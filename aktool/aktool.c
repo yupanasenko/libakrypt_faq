@@ -90,7 +90,7 @@
   if( aktool_check_command( "--version", argv[1] )) return aktool_version();
 
  #ifdef _WIN32
-  if( ak_libakrypt_get_home_path( homepath, FILENAME_MAX ) == ak_error_ok ) {
+  if( ak_homepath( homepath, FILENAME_MAX ) == ak_error_ok ) {
     ak_snprintf( ki.audit_filename, sizeof( ki.audit_filename ),
                                                   "%s\\.config\\libakrypt\\aktool.log", homepath );
     remove( ki.audit_filename );

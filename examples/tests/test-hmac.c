@@ -14,7 +14,7 @@
    ak_hmac_ptr( ctx, "data", 4, buffer, sizeof( buffer ));
    printf("%s (%lu bytes: %s, %s)\n",
                                  ak_ptr_to_hexstr( buffer, ak_hmac_get_tag_size( ctx ), ak_false ),
-                         ak_hmac_get_tag_size( ctx ), ctx->key.oid->name[0], ctx->key.oid->id[0] );
+      (unsigned long int)ak_hmac_get_tag_size( ctx ), ctx->key.oid->name[0], ctx->key.oid->id[0] );
 }
 
 /* ----------------------------------------------------------------------------------------------- */

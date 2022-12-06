@@ -51,7 +51,7 @@
   };
 
  /* устанавливаем значения по-умолчанию */
-  bzero( &ki, sizeof( aktool_ki_t ));
+  memset( &ki, 0, sizeof( aktool_ki_t ));
   ki.method = ak_oid_find_by_name( "streebog256" );
   ki.mode = NULL;
   ki.outfp = NULL;
