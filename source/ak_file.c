@@ -486,7 +486,7 @@
           return ak_error_message( ak_error_undefined_file, __func__, "unsupported name of file");
         if( path[2] == '/' ) {
           /* имеем файл вида ../имя файла */
-          char *ptr = rindex( prefix, '/' );
+          char *ptr = strrchr( prefix, '/' );
           if( ptr == NULL )
             return ak_error_message( ak_error_undefined_file, __func__, "unsupported prefix");
           if( ptr == prefix )
