@@ -34,7 +34,7 @@ The library can be compiled with many compilers,
 such as `gcc`, `clang`, `Microsoft Visual C`, `TinyCC` and `icc`.
 The build system is [cmake](https://cmake.org/).
 
-Library can be used successfully under `Linux`, `Windows`, `FreeBSD` and `MacOS` operation systems.
+Library can be used successfully under `Linux`, `Windows` and `FreeBSD` operation systems.
 Also we have positive runs on [ReactOS](https://reactos.org) and mobile devices under [Sailfish OS](https://sailfishos.org/).
 
 We support various architectures such as `x86`, `x64`, `arm32v7`, `arm32v7eb`, `mips32r2` and `mips64r2`.
