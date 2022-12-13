@@ -496,6 +496,7 @@
     ak_error_message( ak_error_null_pointer, __func__, "using null pointer to hash context" );
     return 0;
   }
+  if( hctx->nmac_second_hash_oid != NULL ) return 32;
 
  return hctx->ctx.data.sctx.hsize;
 }
