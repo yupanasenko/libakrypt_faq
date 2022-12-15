@@ -187,6 +187,7 @@ endif()
 set( BASE_EXAMPLES_LIST
      log
      ini
+     ini-file
      file
      mmap
      realpath
