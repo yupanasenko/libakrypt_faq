@@ -17,7 +17,7 @@ int main() {
     if (ak_random_create_lcg(&generator) != ak_error_ok)
         return ak_error_get_value();
 
-    if (ak_error_ok != ak_random_create_oid(&rand, ak_oid_find_by_name("lcg")))
+    if (ak_error_ok != ak_random_create_oid(&generator, ak_oid_find_by_name("lcg")))
         return ak_error_get_value();
 	
 		/* Возможные значения OID для aead шифрования:
