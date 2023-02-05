@@ -57,15 +57,15 @@ int main() {
     if(ak_error_ok != ak_bckey_set_key(&key, skey, sizeof(skey)))
         return ak_error_get_value();
    
-    // шифруем
+    // Шифруем
     if(ak_error_ok != ak_bckey_ctr_acpkm(&key, in2, out2, sizeof(in2), 16, tag, sizeof(tag)))
         return ak_error_get_value();
 
-    // расшифровываем
+    // Расшифровываем
     if (ak_error_ok != ak_bckey_ctr_acpkm(&key, out2, out, sizeof(in2), 16, tag, sizeof(tag)))
         return ak_error_get_value();   
 
-    // проверяем расшифрование
+    // Проверяем расшифрование
     if (memcmp(out, in2, sizeof(in2)) != 0) {
         ak_error_message(error = ak_error_not_equal_data, __func__, "incorrect data comparizon after acpkm decryption with magma cipher");
         return ak_error_not_equal_data;
