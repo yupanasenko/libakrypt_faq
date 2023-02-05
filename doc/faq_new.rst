@@ -157,7 +157,8 @@ FAQ по библиотеке libakrypt
 
 	тут ссылка на код из 2
 
-*Использование функций можно увидеть в следующих примере `example-2.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-2.c>`
+Использование функций можно увидеть в следующих примере `example-2.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-2.c>`_
+
 
 
 Как зашифровать/расшифровать данные в режиме гаммирования с обратной связью по выходу (output feedback, ofb)?
