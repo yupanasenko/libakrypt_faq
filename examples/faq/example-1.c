@@ -52,9 +52,9 @@ int main() {
 	return ak_error_get_value();
 
     if(!memcmp(data, decrypt, sizeof(data)))
-	    return 0;
+	    return -1;
 
-	return -1;
+	return 0;
 }
 
 
