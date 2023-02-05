@@ -1,5 +1,6 @@
-
-
+.. contents:: Оглавление
+   :depth: 3 
+   
 FAQ по библиотеке libakrypt
 ====================================================
 
@@ -47,9 +48,9 @@ FAQ по библиотеке libakrypt
 		strlen(s) /*Длина случайного вектора в байтах*/
 		);
 
-*Использование функции можно увидеть в следующих примерах:*
+*Использование функции можно увидеть в следующих примерах:* `example-1 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-1.c>`_, `example-2 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-2.c>`_.
 
-*Пример 1,2,3,4 - 	ДОБАВИТЬ*
+
 
 	2. Инициализация контекста ключа случайным (псевдо-случайным) значением, выработанным генератором псевдо-случайных чисел:
 
@@ -61,14 +62,19 @@ FAQ по библиотеке libakrypt
 		);
 
 
-*Использование функции можно увидеть в следующих примерах:*
-*Пример 6,8,9 - 	ДОБАВИТЬ*
+*Использование функции можно увидеть в следующих примерах:* `example-3 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-3.c>`_, `example-4 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-4.c>`_.
 
-	3. Инициализация контекста ключа значением, содержащимся в области памяти: ОПИСАТЬ АРГУМЕНТЫ
 
+	3. Инициализация контекста ключа значением, содержащимся в области памяти: 
 ::
 
-	ak_bckey_set_key(&key, skey, sizeof(skey))
+	ak_bckey_set_key(
+			&key, /*Контекст ключа алгоритма блочного шифрования*/
+			skey, /*Строка содержащая значение ключа*/
+			sizeof(skey) /*Размер строки со значением ключа*/
+			)
+			
+*Использование функции можно увидеть в следующих примерах:* `example-5 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-5.c>`_, `example-6 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-6.c>`_.
 
 Как создать секретный ключ алгоритма блочного шифрования?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -80,18 +86,14 @@ FAQ по библиотеке libakrypt
 
 	ak_bckey_create_magma(&key);
 
-*Использование функции можно увидеть в следующих примерах*
-
-*Пример 2 –* 
+*Использование функции можно увидеть в следующих примерах:* `example-5 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-5.c>`_, `example-6 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-6.c>`_, `example-7 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-7.c>`_.
 
 	2. С помощью функции алгоритма Кузнечик:
 :: 
 	
 	ak_bckey_create_kuznechik(&key);
 
-*Использование функции можно увидеть в следующих примерах:*
-
-*Пример  4 - ини*
+*Использование функции можно увидеть в следующих примерах:* `example-3 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-5.c>`_, `example-7 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-6.c>`_.
 
 
 	3. По OID алгоритма:
@@ -107,9 +109,7 @@ FAQ по библиотеке libakrypt
         Все OID аналогичны заданию функции напрямую */  
 
 
-*Примеры использования функции можно посмотреть в следующих примерах:*
-
-*Пример 1 - 	ДОБАВИТЬ*
+*Использование функции можно увидеть в следующих примерах:* `example-1 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-1.c>`_, `example-2 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-2.c>`_.
 
 
 
