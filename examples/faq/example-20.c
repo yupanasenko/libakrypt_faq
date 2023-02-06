@@ -76,8 +76,8 @@ int main( void )
     /* Подробнее про математическую составляющую данной процедуры можно почиать в папке source в файле ak_sign.c */
 
     ak_signkey_destroy(&sk);
-	ak_random_generator(&generator);
-	ak_libakrypt_destroy();
+    ak_random_generator(&generator);
+    ak_libakrypt_destroy();
 
     return EXIT_SUCCESS;
 }
