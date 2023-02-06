@@ -1,8 +1,16 @@
+/* ----------------------------------------------------------------------------------- */
+/* Пример example-2.c                                                             */
+/* ----------------------------------------------------------------------------------- */
 #include <stdio.h>
 #include <libakrypt.h>
 #include <libakrypt-base.h>
 
 int main() {
+	if( ak_libakrypt_create( NULL ) != ak_true ) {
+		/* инициализация выполнена не успешно, следовательно, выходим из программы */
+		ak_libakrypt_destroy();
+		return EXIT_FAILURE;
+  }
     /*Структура для хранения контекста ключа*/
     struct bckey key;
 
@@ -53,24 +61,7 @@ int main() {
         	))
         return ak_error_get_value();
 
-    ak_uint8 decrypt[31];
-    if (ak_error_ok != ak_bckey_ctr(
-    		&key, 	        /*Контекст ключа алгоритма блочного шифрования, на котором происходит 
-        				зашифрование или расшифрование информации*/
-    		out, 	        /*Указатель на область памяти, где хранятся входные (открытые) данные*/
-    		decrypt,        /*Указатель на область памяти, куда помещаются зашифрованные данные 
-        				(может быть тем же указателем, что и указатель на открытые данные )*/
-    		sizeof(out),    /*Размер зашировываемых данных (в байтах)*/ 
-    		testkey,        /*Указатель на произвольную область памяти - синхропосылку. 
-        				Область памяти не изменяется*/
-    		sizeof(testkey) /*Длина синхропосылки в байтах*/
-    		))
-        return ak_error_get_value();
-
-    if (!memcmp(testdata, decrypt, sizeof(decrypt))) {
-        printf("Data sucessfully encrypt and decrypt\n");
-        return 0;
-    }
-
-    return ak_error_not_equal_data;
+		ak_bckey_destroy(&key);
+		ak_libakrypt_destroy();
+		return EXIT_SUCCESS;
 }
