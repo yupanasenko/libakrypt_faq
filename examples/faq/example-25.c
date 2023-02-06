@@ -9,38 +9,39 @@ int main( void )
         ak_libakrypt_destroy();
         return EXIT_FAILURE;
     }
-            char data[128] = "test data for hash";
 
-            struct hash ctx; /* контекст функции хеширования */
+    char data[128] = "test data for hash";
 
-            int error = ak_error_ok;
-            bool_t result = ak_true;
-            int audit = ak_log_get_level();
+    struct hash ctx; /* контекст функции хеширования */
 
-            /* буффер длиной 64 байта (512 бит) для получения результата */
-            ak_uint8 buffer[512], out[64], *ptr = buffer;
+    int error = ak_error_ok;
+    bool_t result = ak_true;
+    int audit = ak_log_get_level();
 
-            /* инициализируем контекст функции хешиирования */
-            if(( error = ak_hash_create_streebog512( &ctx )) != ak_error_ok ) {
-                ak_error_message( error, __func__ , "wrong initialization of streenbog512 context" );
-                return ak_false;
-            }
+    /* буффер длиной 64 байта (512 бит) для получения результата */
+    ak_uint8 buffer[512], out[64], *ptr = buffer;
 
-            /* берем хеш от строки data */
-            ak_hash_ptr( &ctx, data, sizeof(data), out, sizeof( out ));
+    /* инициализируем контекст функции хешиирования */
+    if(( error = ak_hash_create_streebog512( &ctx )) != ak_error_ok ) {
+        ak_error_message( error, __func__ , "wrong initialization of streenbog512 context" );
+        return ak_false;
+    }
 
-            if(( error = ak_error_get_value()) != ak_error_ok ) {
-                ak_error_message( error, __func__ , "invalid calculation of streebog512 code" );
-                result = ak_false;
-            }
+    /* берем хеш от строки data */
+    ak_hash_ptr( &ctx, data, sizeof(data), out, sizeof( out ));
 
-            //выводим
-            for (int i=0;i<sizeof(out);i++){
-                printf("%c", out[i]);
-            }
+    if(( error = ak_error_get_value()) != ak_error_ok ) {
+        ak_error_message( error, __func__ , "invalid calculation of streebog512 code" );
+        result = ak_false;
+    }
 
-            printf("\n");
- 
+    //выводим
+    for (int i=0;i<sizeof(out);i++){
+        printf("%c", out[i]);
+    }
+
+    printf("\n");
+
     ak_hash_destroy(&ctx);
     ak_libakrypt_destroy();
     return EXIT_SUCCESS;
