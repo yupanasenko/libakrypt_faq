@@ -126,14 +126,14 @@ char *encrypt_string(char* str) {
 
 // для английских букв работает
 // для русских и тд не особо понятно как оно должно работать, если надо - сделаем
-int main(int argc, char *argv[]) {
-	
+int main(int argc, char *argv[]) 
+{
 	if( ak_libakrypt_create( NULL ) != ak_true ) {
-   		/* инициализация выполнена не успешно, следовательно, выходим из программы */
-    		ak_libakrypt_destroy();
-    		return EXIT_FAILURE;
-  	}
-	
+		/* инициализация выполнена не успешно, следовательно, выходим из программы */
+		ak_libakrypt_destroy();
+		return EXIT_FAILURE;
+	}
+
 	// если нам не дали входных аргументов то просто выходим и печатаем no input data
 	if (argc < 1) {
 		printf("No input data");
@@ -149,6 +149,6 @@ int main(int argc, char *argv[]) {
 		free(ret);
 	}
 	
- ak_libakrypt_destroy();
- return EXIT_SUCCESS;
+ 	ak_libakrypt_destroy();
+ 	return EXIT_SUCCESS;
 }
