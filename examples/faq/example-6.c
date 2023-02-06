@@ -1,8 +1,16 @@
+/* ----------------------------------------------------------------------------------- */
+/* Пример example-6.c                                                             */
+/* ----------------------------------------------------------------------------------- */
 #include <stdio.h>
 #include <libakrypt.h>
 #include <libakrypt-base.h>
 
-int main() {
+int main(void) {
+    if( ak_libakrypt_create( NULL ) != ak_true ) {
+   /* инициализация выполнена не успешно, следовательно, выходим из программы */
+        ak_libakrypt_destroy();
+        return EXIT_FAILURE;
+  }
     /*Структура для хранения контекста ключа*/
     struct bckey ekey, ikey;
 
@@ -75,6 +83,8 @@ int main() {
                     16                   /*Ожидаемый размер имитовставки в байтах; значение не должно превышать 16 октетов;*/
                     ))
         return ak_error_get_value();     
-    
-    return 0;
+    ak_bckey_destroy(&ekey);
+    ak_bckey_destroy(&ikey);
+    ak_libakrypt_destroy();
+    return EXIT_SUCCESS;
 }
