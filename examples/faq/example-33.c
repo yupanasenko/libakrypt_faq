@@ -2,7 +2,7 @@
 #include <libakrypt.h>
 #include <libakrypt-base.h>
 
-int main( void )
+int main()
 {
   if( ak_libakrypt_create( NULL ) != ak_true ) {
    /* инициализация выполнена не успешно, следовательно, выходим из программы */
