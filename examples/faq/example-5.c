@@ -1,10 +1,17 @@
+/* ----------------------------------------------------------------------------------- */
+/* Пример example-5.c                                                             */
+/* ----------------------------------------------------------------------------------- */
 #include <stdio.h>
 #include <libakrypt.h>
 #include <libakrypt-base.h>
 
-int main() {
-    struct bckey key;
-    int error = ak_error_ok, audit = ak_log_get_level();
+int main(void) {
+	if( ak_libakrypt_create( NULL ) != ak_true ) {
+   /* инициализация выполнена не успешно, следовательно, выходим из программы */
+    ak_libakrypt_destroy();
+    return EXIT_FAILURE;
+  }
+    struct bckey key; 
     /*значение ключа*/
     ak_uint8 skey[32] = {
       0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01, 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe,
@@ -47,6 +54,7 @@ int main() {
                     sizeof(iv2)   /*Длина имитовставки в байтах*/
                     ))
       return ak_error_get_value();
-
-    return 0;
+	ak_bckey_destroy(&key);
+	ak_libakrypt_destroy();
+	return EXIT_SUCCESS;
 }
