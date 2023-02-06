@@ -1,10 +1,6 @@
-/* ----------------------------------------------------------------------------------- */
 
 /* Пример example-1.c                                                             */
-
 /* ----------------------------------------------------------------------------------- */
-
-
 
 #include <stdio.h>
 
@@ -13,22 +9,13 @@
 #include <libakrypt-base.h>
 
 
-
  int main( void )
-
 {
-
   if( ak_libakrypt_create( NULL ) != ak_true ) {
-
    /* инициализация выполнена не успешно, следовательно, выходим из программы */
-
     ak_libakrypt_destroy();
-
     return EXIT_FAILURE;
-
   }
-
-
 
     /*Структура для хранения контекста ключа*/
 
@@ -131,11 +118,11 @@
 	    return -1;
 
 
-
+ak_bckey_destroy(&key);
+    
 ak_libakrypt_destroy();
 
-ak_bckey_destroy(&key);
-
 return EXIT_SUCCESS;
-
 }
+
+
