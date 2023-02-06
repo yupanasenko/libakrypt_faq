@@ -42,12 +42,12 @@ FAQ по библиотеке libakrypt
 
 :: 
 
-	ak_bckey_set_key_from_password(
-		&key, /*Контекст ключа алгоритма блочного шифрования*/
-		password, /*Пароль, представленный в виде строки символов*/
-		strlen(password), /*Длина пароля в байтах*/
-		s, /*Случайный вектор, представленный в виде строки символов.*/
-		strlen(s) /*Длина случайного вектора в байтах*/
+	int ak_bckey_set_key_from_password(
+		ak_bckey bkey, /*Контекст ключа алгоритма блочного шифрования*/
+		const ak_pointer pass, /*Пароль, представленный в виде строки символов*/
+		const size_t pass_size, /*Длина пароля в байтах*/
+		const ak_pointer salt, /*Случайный вектор, представленный в виде строки символов.*/
+		const size_t salt_size /*Длина случайного вектора в байтах*/
 		)
 
 *Использование функции можно увидеть в следующих примерах:* `example-1 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-1.c>`_, `example-2 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-2.c>`_.
@@ -58,9 +58,9 @@ FAQ по библиотеке libakrypt
 
 ::
 
-	ak_bckey_set_key_random(
-		&key, /*Контекст ключа алгоритма блочного шифрования*/
-		&rand /*Контекст генератора случайных (псевдослучайных) чисел*/
+	int ak_bckey_set_key_random(
+		ak_bckey bkey, /*Контекст ключа алгоритма блочного шифрования*/
+		ak_random generator /*Контекст генератора случайных (псевдослучайных) чисел*/
 		)
 
 
@@ -70,10 +70,10 @@ FAQ по библиотеке libakrypt
 	3. Инициализация контекста ключа значением, содержащимся в области памяти: 
 ::
 
-	ak_bckey_set_key(
-			&key, /*Контекст ключа алгоритма блочного шифрования*/
-			skey, /*Строка содержащая значение ключа*/
-			sizeof(skey) /*Размер строки со значением ключа*/
+	int ak_bckey_set_key(
+			ak_bckey bkey, /*Контекст ключа алгоритма блочного шифрования*/
+			const ak_pointer keyptr, /*Строка содержащая значение ключа*/
+			const size_t size /*Размер строки со значением ключа*/
 			)
 			
 *Использование функции можно увидеть в следующих примерах:* `example-5 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-5.c>`_, `example-6 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-6.c>`_.
@@ -86,14 +86,14 @@ FAQ по библиотеке libakrypt
 	1. С помощью функции алгоритма Магма:
 :: 
 
-	ak_bckey_create_magma(&key);
+	int ak_bckey_create_magma(ak_bckey bkey);
 
 *Использование функции можно увидеть в следующих примерах:* `example-5 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-5.c>`_, `example-6 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-6.c>`_, `example-7 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-7.c>`_.
 
 	2. С помощью функции алгоритма Кузнечик:
 :: 
 	
-	ak_bckey_create_kuznechik(&key);
+	int ak_bckey_create_kuznechik(ak_bckey bkey);
 
 *Использование функции можно увидеть в следующих примерах:* `example-3 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-5.c>`_, `example-7 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-6.c>`_.
 
@@ -101,9 +101,9 @@ FAQ по библиотеке libakrypt
 	3. По OID алгоритма:
 ::
 	
-	ak_bckey_create_oid(&key, ak_oid_find_by_name("magma"));
+	int ak_bckey_create_oid(ak_bckey bkey, ak_oid oid);
 	
-	/* Возможные значения OID для aead шифрования:
+	/* Возможные значения OID для шифрования:
     
    	"magma"
 	"kuznechik"
@@ -121,11 +121,11 @@ FAQ по библиотеке libakrypt
 
 ::
 
-	ak_bckey_encrypt_ecb(
-		&key, /*Контекст ключа алгоритма блочного шифрования*/
-		data, /*Указатель на область памяти, где хранятся данные для зашифрования */
-		out,  /*Указатель на область памяти, куда помещаются зашифрованные данные*/
-		128   /* Размер зашифровываемых данных (в байтах)*/
+	int ak_bckey_encrypt_ecb(
+		ak_bckey bkey, /*Контекст ключа алгоритма блочного шифрования*/
+		ak_pointer in, /*Указатель на область памяти, где хранятся данные для зашифрования */
+		ak_pointer out,  /*Указатель на область памяти, куда помещаются зашифрованные данные*/
+		size_t size   /* Размер зашифровываемых данных (в байтах)*/
 		)
 
 
@@ -133,11 +133,11 @@ FAQ по библиотеке libakrypt
 
 :: 
 
-	ak_bckey_decrypt_ecb(
-		&key, /*Контекст ключа алгоритма блочного шифрования*/
-		data, /*Указатель на область памяти, где хранятся данные для зашифрования */
-		out,  /*Указатель на область памяти, куда помещаются зашифрованные данные*/
-		128   /* Размер зашифровываемых данных (в байтах)*/
+	int ak_bckey_decrypt_ecb(
+		ak_bckey bkey, /*Контекст ключа алгоритма блочного шифрования*/
+		ak_pointer in, /*Указатель на область памяти, где хранятся данные для зашифрования */
+		ak_pointer out,  /*Указатель на область памяти, куда помещаются зашифрованные данные*/
+		size_t size   /* Размер зашифровываемых данных (в байтах)*/
 		)
 
 *Использование функций можно увидеть в следующем примере:* `example-1 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-1.c>`_.
@@ -148,16 +148,16 @@ FAQ по библиотеке libakrypt
 Зашифровать и расшифровать текст в режиме гаммирования (ctr) можно с помощью следующей функции (она выполняет оба действия):
 ::
 
-	ak_bckey_ctr(
-        	&key, /*Контекст ключа алгоритма блочного шифрования, на котором происходит 
+	int ak_bckey_ctr(
+        	ak_bckey bkey, /*Контекст ключа алгоритма блочного шифрования, на котором происходит 
         	зашифрование или расшифрование информации*/
-        	testdata, /*Указатель на область памяти, где хранятся входные (зашифрованные) данные*/
-        	out, /*Указатель на область памяти, куда помещаются зашифрованные(расшифрованные) данные 
+        	ak_pointer in, /*Указатель на область памяти, где хранятся входные (зашифрованные) данные*/
+        	ak_pointer out, /*Указатель на область памяти, куда помещаются зашифрованные(расшифрованные) данные 
         	(может быть тем же указателем, что и указатель на открытые данные )*/
-        	sizeof(testdata), /*Размер зашировываемых (расшифровываемых) данных (в байтах)*/
-        	testkey, /*Указатель на произвольную область памяти - синхропосылку. 
+        	size_t size, /*Размер зашировываемых (расшифровываемых) данных (в байтах)*/
+        	ak_pointer iv, /*Указатель на произвольную область памяти - синхропосылку. 
         	Область памяти не изменяется*/
-        	sizeof(testkey) /*Длина синхропосылки в байтах*/
+        	size_t iv_size /*Длина синхропосылки в байтах*/
         	)
 
 
@@ -170,16 +170,16 @@ FAQ по библиотеке libakrypt
 Зашифровать и расшифровать текст в режиме гаммирования с обратной связью по выходу (ofb) можно с помощью следующей функции:
 ::
 
-	ak_bckey_ofb(
-    		&key, /*Контекст ключа алгоритма блочного шифрования, на котором происходит 
+	int ak_bckey_ofb(
+    		ak_bckey bkey, /*Контекст ключа алгоритма блочного шифрования, на котором происходит 
         	зашифрование или расшифрование информации*/
-        	testdata, /*Указатель на область памяти, где хранятся входные (зашифрованные) данные*/
-        	out, /*Указатель на область памяти, куда помещаются зашифрованные(расшифрованные) данные 
+        	ak_pointer in, /*Указатель на область памяти, где хранятся входные (зашифрованные) данные*/
+        	ak_pointer out, /*Указатель на область памяти, куда помещаются зашифрованные(расшифрованные) данные 
         	(может быть тем же указателем, что и указатель на открытые данные )*/
-        	sizeof(testdata), /*Размер зашировываемых (расшифровываемых) данных (в байтах)*/
-        	testkey, /*Указатель на произвольную область памяти - синхропосылку. 
+        	size_t size, /*Размер зашировываемых (расшифровываемых) данных (в байтах)*/
+        	ak_pointer iv, /*Указатель на произвольную область памяти - синхропосылку. 
         	Область памяти не изменяется*/
-        	sizeof(testkey) /*Длина синхропосылки в байтах*/
+        	size_t iv_size /*Длина синхропосылки в байтах*/
     		)
 		
 *Использование функции можно увидеть в следующем примере:* `example-3.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-3.c>`_
@@ -190,16 +190,16 @@ FAQ по библиотеке libakrypt
 Зашифровать и расшифровать текст в режиме гаммирования с обратной связью по шифртексту (cfb) можно с помощью следующей функции:
 ::
 
-	ak_bckey_encrypt_cfb(
-    		&key, /*Контекст ключа алгоритма блочного шифрования, на котором происходит 
+	int ak_bckey_encrypt_cfb(
+    		ak_bckey bkey, /*Контекст ключа алгоритма блочного шифрования, на котором происходит 
         	зашифрование или расшифрование информации*/
-        	testdata, /*Указатель на область памяти, где хранятся входные (зашифрованные) данные*/
-        	out, /*Указатель на область памяти, куда помещаются зашифрованные(расшифрованные) данные 
+        	ak_pointer in, /*Указатель на область памяти, где хранятся входные (зашифрованные) данные*/
+        	ak_pointer out, /*Указатель на область памяти, куда помещаются зашифрованные(расшифрованные) данные 
         	(может быть тем же указателем, что и указатель на открытые данные )*/
-        	sizeof(testdata), /*Размер зашировываемых (расшифровываемых) данных (в байтах)*/
-        	testkey, /*Указатель на произвольную область памяти - синхропосылку. 
+        	size_t size, /*Размер зашировываемых (расшифровываемых) данных (в байтах)*/
+        	ak_pointer iv, /*Указатель на произвольную область памяти - синхропосылку. 
         	Область памяти не изменяется*/
-        	sizeof(testkey) /*Длина синхропосылки в байтах*/
+        	size_t iv_size /*Длина синхропосылки в байтах*/
     		)
 
 
@@ -211,17 +211,17 @@ FAQ по библиотеке libakrypt
 Зашифровать и расшифровать текст в режиме «CTR-ACPKM» (acpkm) можно с помощью следующей функции:
 ::
 
-	ak_bckey_ctr_acpkm(
-    		&key, /*Контекст ключа алгоритма блочного шифрования,
+	int ak_bckey_ctr_acpkm(
+    		ak_bckey bkey, /*Контекст ключа алгоритма блочного шифрования,
     		используемый для шифрования и порождения цепочки производных ключей.*/
-    		in2, /*Указатель на область памяти, где хранятся входные
+    		ak_pointer in, /*Указатель на область памяти, где хранятся входные
     		зашифровываемые (расшифровываемые) данные*/
-    		out, /*Указатель на область памяти, куда помещаются выходные данные*/
-    		sizeof(in2), /*размер зашировываемых (расшифровываемых) данных (в байтах)*/
-    		16, /*Размер одной секции в байтах. Данная величина должна быть кратна длине блока
+    		ak_pointer out, /*Указатель на область памяти, куда помещаются выходные данные*/
+    		size_t size, /*размер зашировываемых (расшифровываемых) данных (в байтах)*/
+    		size_t section_size, /*Размер одной секции в байтах. Данная величина должна быть кратна длине блока
     		используемого алгоритма шифрования.*/
-    		iv2, /*имитовставка*/
-    		sizeof(iv2) /*длина имитовставки в байтах*/
+    		ak_pointer iv, /*имитовставка*/
+    		size_t iv_size /*длина имитовставки в байтах*/
     		)
 
 *Использование функции можно увидеть в следующем примере:* `example-5.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-5.c>`_
@@ -233,35 +233,35 @@ FAQ по библиотеке libakrypt
 Зашифровать текст в режиме «XTS» (xtsmac) можно с помощью следующей функции:
 ::
 
-	ak_bckey_encrypt_xtsmac(
-		&ekey,/*ключ шифрования*/
-     		&ikey, /*ключ выработки кода аутентификации (имитовставки)*/
-     		ina_ptr, /*указатель на ассоциируемые данные*/
-     		sizeof(associated), /*размер ассоциируемых данных в байтах*/
-     		inp_ptr, /*указатель на зашифровываемые данные*/
-     		otp_ptr, /*указатель на зашифрованные данные*/
-     		len, /*размер зашифровываемых данных в байтах, должен быть не менее 16 октетов*/
-     		iv128, /*указатель на синхропосылку*/
-     		sizeof(iv128), /*длина синхропосылки в байтах*/
-     		icode, /*указатель на область памяти, куда будет помещено значение имитовставки*/
-     		16/*ожидаемый размер имитовставки в байтах; значение не должно превышать 16 октетов;*/
+	int ak_bckey_encrypt_xtsmac(
+		ak_pointer encryptionKey,/*ключ шифрования*/
+     		ak_pointer authenticationKey, /*ключ выработки кода аутентификации (имитовставки)*/
+     		const ak_pointer adata, /*указатель на ассоциируемые данные*/
+     		const size_t adata_size, /*размер ассоциируемых данных в байтах*/
+     		const ak_pointer in, /*указатель на зашифровываемые данные*/
+     		ak_pointer out, /*указатель на зашифрованные данные*/
+     		const size_t size, /*размер зашифровываемых данных в байтах, должен быть не менее 16 октетов*/
+     		const ak_pointer iv, /*указатель на синхропосылку*/
+     		const size_t iv_size, /*длина синхропосылки в байтах*/
+     		ak_pointer icode, /*указатель на область памяти, куда будет помещено значение имитовставки*/
+     		const size_t icode_size /*ожидаемый размер имитовставки в байтах; значение не должно превышать 16 октетов*/
      		)
 
 Расшифровать текст в режиме «XTS» (xtsmac) можно с помощью функции, аналогичной зашифрованию:
 ::
 
-	ak_bckey_decrypt_xtsmac(
-		&ekey,/*ключ шифрования*/
-     		&ikey, /*ключ выработки кода аутентификации (имитовставки)*/
-     		ina_ptr, /*указатель на ассоциируемые данные*/
-     		sizeof(associated), /*размер ассоциируемых данных в байтах*/
-     		inp_ptr, /*указатель на расшифровываемые данные*/
-     		otp_ptr, /*указатель на область памяти куда будут помещены расшифрованные данные*/
-     		len, /*размер расшифровываемых данных в байтах, должен быть не менее 16 октетов*/
-     		iv128, /*указатель на синхропосылку*/
-     		sizeof(iv128), /*длина синхропосылки в байтах*/
-     		icode, /*указатель на область памяти, куда будет помещено значение имитовставки*/
-     		16/*ожидаемый размер имитовставки в байтах; значение не должно превышать 16 октетов;*/
+	int ak_bckey_decrypt_xtsmac(
+		ak_pointer encryptionKey,/*ключ шифрования*/
+     		ak_pointer authenticationKey, /*ключ выработки кода аутентификации (имитовставки)*/
+     		const ak_pointer adata, /*указатель на ассоциируемые данные*/
+     		const size_t adata_size, /*размер ассоциируемых данных в байтах*/
+     		const ak_pointer in, /*указатель на расшифровываемые данные*/
+     		ak_pointer out, /*указатель на область памяти куда будут помещены расшифрованные данные*/
+     		const size_t size, /*размер расшифровываемых данных в байтах, должен быть не менее 16 октетов*/
+     		const ak_pointer iv, /*указатель на синхропосылку*/
+     		const size_t iv_size, /*длина синхропосылки в байтах*/
+     		ak_pointer icode, /*указатель на область памяти, куда будет помещено значение имитовставки*/
+     		const size_t icode_size /*ожидаемый размер имитовставки в байтах; значение не должно превышать 16 октетов;*/
 		)
 
 *Использование функций можно увидеть в следующем примере:* `example-6.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-6.c>`_
@@ -275,13 +275,13 @@ FAQ по библиотеке libakrypt
 
 ::
 
-	ak_bckey_encrypt_cbc(
-		&key, /* Контекст ключа алгоритма блочного шифрования */
-		data, /* Указатель на область памяти, где хранятся данные для зашифрования */
-		out,  /* Указатель на область памяти, куда помещаются зашифрованные данные */
-		128,  /* Размер зашифровываемых данных (в байтах) */
-		openssl_ivcbc, /* Указатель на произвольную область памяти - синхропосылку */
-		sizeof(openssl_ivcbc) /* Длина синхропосылки в байтах. Согласно  стандарту ГОСТ Р 34.13-2015 длина
+	int ak_bckey_encrypt_cbc(
+		ak_bckey bkey, /* Контекст ключа алгоритма блочного шифрования */
+		ak_pointer in, /* Указатель на область памяти, где хранятся данные для зашифрования */
+		ak_pointer out,  /* Указатель на область памяти, куда помещаются зашифрованные данные */
+		size_t size,  /* Размер зашифровываемых данных (в байтах) */
+		ak_pointer iv, /* Указатель на произвольную область памяти - синхропосылку */
+		size_t iv_size /* Длина синхропосылки в байтах. Согласно  стандарту ГОСТ Р 34.13-2015 длина
 		синхропосылки должна быть ровно в два раза меньше, чем длина блока, 
 		то есть 4 байта для Магмы и 8 байт для Кузнечика.*/
 		);
@@ -303,13 +303,13 @@ FAQ по библиотеке libakrypt
 
 ::
 
-	ak_bckey_decrypt_cbc(
-		&key, /* Контекст ключа алгоритма блочного шифрования*/
-		data, /* Указатель на область памяти, где хранятся данные для зашифрования */
-		out, /* Указатель на область памяти, куда помещаются зашифрованные данные */
-		128 /* Размер зашифровываемых данных (в байтах) */
-		openssl_ivcbc, /* Указатель на произвольную область памяти - синхропосылку */
-		sizeof(openssl_ivcbc) /*Длина синхропосылки в байтах. Согласно  стандарту ГОСТ Р 34.13-2015 длина 
+	int ak_bckey_decrypt_cbc(
+		ak_bckey bkey, /* Контекст ключа алгоритма блочного шифрования*/
+		ak_pointer in, /* Указатель на область памяти, где хранятся данные для зашифрования */
+		ak_pointer out, /* Указатель на область памяти, куда помещаются зашифрованные данные */
+		size_t size /* Размер зашифровываемых данных (в байтах) */
+		ak_pointer iv, /* Указатель на произвольную область памяти - синхропосылку */
+		size_t iv_size /*Длина синхропосылки в байтах. Согласно  стандарту ГОСТ Р 34.13-2015 длина 
 		синхропосылки должна быть ровно в два раза меньше, чем длина блока, 
 		то есть 4 байта для Магмы и 8 байт для Кузнечика */
 		);
@@ -343,84 +343,84 @@ FAQ по библиотеке libakrypt
 	1. Создание контекста алгоритма аутентифицированного шифрования Р 1323565.1.024-2019 для блочного шифра Магма
 ::
 
-	ak_aead_create_mgm_magma(&a, ak_true)
+	int ak_aead_create_mgm_magma(ak_aead ctx, bool_t crf)
 
 *Использование функции можно увидеть в следующем примере:* `example-8.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-8.c>`_
 
 	2. Создание контекста алгоритма аутентифицированного шифрования Р 1323565.1.024-2019 для блочного шифра Кузнечик
 ::
 
-	ak_aead_create_mgm_kuznechik(&a, ak_true)
+	int ak_aead_create_mgm_kuznechik(ak_aead ctx, bool_t crf)
 	
 *Использование функции можно увидеть в следующем примере:* `example-9.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-9.c>`_	
 	
 	3. Создание контекста алгоритма аутентифицированного шифрования xtsmac для блочного шифра Магма
 ::
 
-	ak_aead_create_xtsmac_magma(&a, ak_true)
+	int ak_aead_create_xtsmac_magma(ak_aead ctx, bool_t crf)
 	
 *Использование функции можно увидеть в следующем примере:* `example-10.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-10.c>`_
 
 	4. Создание контекста алгоритма аутентифицированного шифрования ctr-cmac для блочного шифра Магма
 :: 
 
-	ak_aead_create_ctr_cmac_magma(&a, ak_true)
+	int ak_aead_create_ctr_cmac_magma(ak_aead ctx, bool_t crf)
 	
 *Использование функции можно увидеть в следующем примере:* `example-11.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-11.c>`_	
 	
 	5. Создание контекста алгоритма аутентифицированного шифрования ctr-cmac для блочного шифра Кузнечик
 ::
 
-	ak_aead_create_ctr_cmac_kuznechik(&a, ak_true)
+	int ak_aead_create_ctr_cmac_kuznechik(ak_aead ctx, bool_t crf)
 	
 *Использование функции можно увидеть в следующем примере:* `example-12.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-12.c>`_
 
 	6. Создание контекста алгоритма аутентифицированного шифрования ctr-nmac для блочного шифра Магма
 :: 
 
-	ak_aead_create_ctr_nmac_magma(&a, ak_true)
+	int ak_aead_create_ctr_nmac_magma(ak_aead ctx, bool_t crf)
 
 *Использование функции можно увидеть в следующем примере:* `example-13.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-13.c>`_
 
 	7. Создание контекста алгоритма аутентифицированного шифрования ctr-nmac для блочного шифра Кузнечик
 ::
 
-	ak_aead_create_ctr_nmac_kuznechik(&a, ak_true)
+	int ak_aead_create_ctr_nmac_kuznechik(ak_aead ctx, bool_t crf)
 
 *Использование функции можно увидеть в следующем примере:* `example-14.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-14.c>`_
 
 	8. Создание контекста алгоритма аутентифицированного шифрования ctr-hmac для блочного шифра Магма и функции хеширования Стрибог256
 ::
 
-	ak_aead_create_ctr_hmac_magma_streebog256(&a, ak_true)
+	int ak_aead_create_ctr_hmac_magma_streebog256(ak_aead ctx, bool_t crf)
 	
 *Использование функции можно увидеть в следующем примере:* `example-15.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-15.c>`_	
 	
 	9. Создание контекста алгоритма аутентифицированного шифрования ctr-hmac для блочного шифра Кузнечик и функции хеширования Стрибог256
 ::
 
-	ak_aead_create_ctr_hmac_kuznechik_streebog256(&a, ak_true)
+	int ak_aead_create_ctr_hmac_kuznechik_streebog256(ak_aead ctx, bool_t crf)
 
 *Использование функции можно увидеть в следующем примере:* `example-16.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-16.c>`_
 
 	10. Создание контекста алгоритма аутентифицированного шифрования ctr-hmac для блочного шифра Магма и функции хеширования Стрибог512
 ::
 	
-	ak_aead_create_ctr_hmac_magma_streebog512(&a, ak_true)
+	int ak_aead_create_ctr_hmac_magma_streebog512(ak_aead ctx, bool_t crf)
 	
 *Использование функции можно увидеть в следующем примере:* `example-17.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-17.c>`_
 
 	11. Создание контекста алгоритма аутентифицированного шифрования ctr-hmac для блочного шифра Кузнечик и функции хеширования Стрибог512
 ::
 
-	ak_aead_create_ctr_hmac_kuznechik_streebog512(&a, ak_true)
+	int ak_aead_create_ctr_hmac_kuznechik_streebog512(ak_aead ctx, bool_t crf)
 	
 *Использование функции можно увидеть в следующем примере:* `example-18.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-18.c>`_
 
 	12. Создание контекста алгоритма аутентифицированного шифрования по заданному oid
 ::
 
-	ak_aead_create_oid(&a, ak_true, ak_oid_find_by_name("mgm-magma"))
+	int ak_aead_create_oid(ak_aead ctx, bool_t crf, ak_oid oid)
 	
 	/* Возможные значения OID для aead шифрования:
     
@@ -447,33 +447,33 @@ FAQ по библиотеке libakrypt
 Зашифровать текст аутентифицируемым шифрованием можно с помощью следующей функции
 ::
 
-	ak_aead_encrypt(
-    			&a, /* контекст алгоритма аутентифицированного шифрования */
-    			packet,      /* указатель на ассоциированные (незашифровываемые) данные */
-    			41,          /* длина ассоциированных данных в октетах */
-    			packet + 41, /* указатель на зашифровываемые данные */
-    			packet + 41, /* указатель на зашифрованные данные */
-    			67,          /* размер зашифровываемых данных в октетах */
-    			iv,          /* указатель на синхропосылку */
-    			a.iv_size,   /* длина синхропосылки в октетах */
-    			tag,         /* указатель на область памяти, куда будет помещено значение имитовставки */
-    			a.tag_size   /* ожидаемый размер имитовставки в байтах */
+	int ak_aead_encrypt(
+    			ak_aead ctx, /* контекст алгоритма аутентифицированного шифрования */
+    			const ak_pointer adata,      /* указатель на ассоциированные (незашифровываемые) данные */
+    			const size_t adata_size,          /* длина ассоциированных данных в октетах */
+    			const ak_pointer in, /* указатель на зашифровываемые данные */
+    			ak_pointer out, /* указатель на зашифрованные данные */
+    			const size_t size,          /* размер зашифровываемых данных в октетах */
+    			const ak_pointer iv,          /* указатель на синхропосылку */
+    			const size_t iv_size,   /* длина синхропосылки в октетах */
+    			ak_pointer icode,         /* указатель на область памяти, куда будет помещено значение имитовставки */
+    			const size_t icode_size   /* ожидаемый размер имитовставки в байтах */
     			))
 			
 Расшифровать текст аутентифицируемым шифрованием можно с помощью функции, аналогичной зашифрованию:
 :: 
 
-	ak_aead_encrypt(
-    			&a, /* контекст алгоритма аутентифицированного шифрования */
-    			packet,      /* указатель на ассоциированные (незашифровываемые) данные */
-    			41,          /* длина ассоциированных данных в октетах */
-    			packet + 41, /* указатель на расшифровываемые данные */
-    			packet + 41, /* указатель на расшифрованные данные */
-    			67,          /* размер зашифровываемых данных в октетах */
-    			iv,          /* указатель на синхропосылку */
-    			a.iv_size,   /* длина синхропосылки в октетах */
-    			tag,         /* указатель на область памяти, где расположена проверяемая имитовставки */
-    			a.tag_size   /* ожидаемый размер имитовставки в байтах */
+	int ak_aead_decrypt(
+    			ak_aead ctx, /* контекст алгоритма аутентифицированного шифрования */
+    			const ak_pointer adata,      /* указатель на ассоциированные (незашифровываемые) данные */
+    			const size_t adata_size,          /* длина ассоциированных данных в октетах */
+    			const ak_pointer in, /* указатель на расшифровываемые данные */
+    			ak_pointer out, /* указатель на расшифрованные данные */
+    			const size_t size,          /* размер зашифровываемых данных в октетах */
+    			const ak_pointer iv,          /* указатель на синхропосылку */
+    			const size_t iv_size,   /* длина синхропосылки в октетах */
+    			ak_pointer icode,         /* указатель на область памяти, где расположена проверяемая имитовставки */
+    			const size_t icode_size   /* ожидаемый размер имитовставки в байтах */
     			))
 
 *Использование функций можно увидеть в следующих примерах:* `example-8.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-8.c>`_, `example-9.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-9.c>`_, `example-10.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-10.c>`_, `example-11.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-11.c>`_, `example-12.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-12.c>`_, `example-13.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-13.c>`_, `example-14.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-14.c>`_, `example-15.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-15.c>`_, `example-16.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-16.c>`_, `example-17.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-17.c>`_, `example-18.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-18.c>`_, `example-19.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-19.c>`_.
@@ -501,37 +501,40 @@ FAQ по библиотеке libakrypt
 Создание структуры контекста секретного ключа ЭП возможно с помощью функции:
 ::
 
-	ak_signkey_create_str(&sk, 
-			"cspa" /* строка, содержащая имя или идентификатор 
+	int ak_signkey_create_str(
+			ak_signkey sk,
+			const char *ni /* строка, содержащая имя или идентификатор 
     			эллиптической кривой, на которой будет реализован криптографический алгоритм */
      			)
 			
 *Использование функции можно увидеть в следующих примерах:* `example-20 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-20.c>`_, `example-21 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-21.c>`_, `example-22 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-22.c>`_.
 
 
----Как создать секретный ключ электронной подписи?
+Как создать секретный ключ электронной подписи?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Создать секретный ключ электронной подписи можно несколькими способами:
 
+	1. Инициализировать секретный ключ случайчайным (псевдо-случайным) значением:
 ::
 
-	ak_signkey_set_key_random(
-    			&sk, /* контекст секретного ключа алгоритма электронной подписи */
-    			&generator /*контекст генератора случайных чисел*/
- 				   )
-				   
+	int ak_signkey_set_key_random(
+    			ak_signkey sctx, /* контекст секретного ключа алгоритма электронной подписи */
+    			ak_random generator /*контекст генератора случайных чисел*/
+ 			)
+			
+*Использование функции можно увидеть в следующем примере:* `example-20 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-20.c>`_.
+				
+	2. Инициализировать секретный ключ константным значением:
 ::
 
-	ak_signkey_set_key(
-    			&sk, /* контекст секретного ключа алгоритма электронной подписи */
-    			testkey, /* указатель на область памяти, содержащей значение 
+	int ak_signkey_set_key(
+    			ak_signkey sctx, /* контекст секретного ключа алгоритма электронной подписи */
+    			const ak_pointer ptr, /* указатель на область памяти, содержащей значение 
     			секретного ключа */
-    			sizeof(testkey) /* размер ключа в байтах */
-    					)
+    			const size_t size /* размер ключа в байтах */
+    			)
 
-
-
-
-	
+*Использование функции можно увидеть в следующих примерах:* `example-21 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-21.c>`_, `example-22 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-22.c>`_.
 	
 
 Как создать открытый ключ электронной подписи?
@@ -541,22 +544,101 @@ FAQ по библиотеке libakrypt
 После этого необходимо инициализировать открытый ключ ЭП с помощью функции:
 ::
 
-	ak_verifykey_create_from_signkey(
-		&pk, /* контекст открытого ключа ЭП */
-		&sk /* контекст секретного ключа ЭП */
+	int ak_verifykey_create_from_signkey(
+		ak_verifykey pctx, /* контекст открытого ключа ЭП */
+		ak_signkey sctx /* контекст секретного ключа ЭП */
 		)
 
 *Использование функции можно увидеть в следующих примерах:* `example-21 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-21.c>`_, `example-22 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-22.c>`_.
 	
 
----Как подписать данные электронной подписью?
+Как подписать данные электронной подписью?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+В зависимости от типа подписываемых даннных необходимо использовать различные функции.
+
+	1. Подпись данных с помощью вычисленного хеш-кода подписываемого сообщения:
+::
+
+	void ak_signkey_sign_const_values(
+    			ak_signkey sctx, /* контекст секретного ключа алгоритма электронной подписи */
+    			ak_uint64 *k, /* степень кратности точки \f$ P \f$ */
+    			ak_uint64 *e, /* целое число, соотвествующее хеш-коду подписываемого сообщения */
+    			ak_pointer out /* массив, куда помещается результат */
+    			)
+			
+
+*Использование функции можно увидеть в следующем примере:* `example-20 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-20.c>`_.
+
+	2. Подпись строки данных:
+::
+
+	int ak_signkey_sign_ptr(
+    			ak_signkey sctx, /* контекст секретного ключа алгоритма электронной подписи */
+    			ak_random generator, /* генератор случайной последовательности,
+    			используемой в алгоритме подписи */
+    			const ak_pointer in, /* указатель на входные данные которые подписываются */
+    			const size_t size, /* размер входных данных в байтах */
+    			ak_pointer out, /* область памяти, куда будет помещена ЭП */
+    			size_t out_size /* размер выделенной под выработанную ЭП памяти */
+    			)
+			
+
+*Использование функции можно увидеть в следующем примере:* `example-21 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-21.c>`_.
+
+	3. Подпись файла:
+::
+
+	int ak_signkey_sign_file(
+    			ak_signkey sctx, /* контекст секретного ключа алгоритма электронной подписи */
+    			ak_random generator, /* генератор случайной последовательности,
+    			используемой в алгоритме подписи */
+    			const char *filename, /* строка с именем файла для которого вычисляется 
+    			электронная подпись */
+    			ak_pointer out, /* область памяти, куда будет помещена ЭП */
+    			size_t out_size /* размер выделенной под выработанную ЭП памяти */
+    			)
+			
+
+*Использование функции можно увидеть в следующем примере:* `example-22 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-22.c>`_.
 
 
----Как проверить электронную подпись?
+Как проверить электронную подпись?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Аналогично самой подписи, для проверки ЭП необходимо использовать различные функции в зависимости от типа подписываемых даннных.
 
+	1. Строка в качестве подписанных данных: 
+::
 
+	bool_t ak_verifykey_verify_ptr(
+    			ak_verifykey pctx, /* контекст открытого ключа */
+    			const ak_pointer in, /* область памяти для которой проверяется электронная подпись */
+    			const size_t size, /* размер области памяти в байтах */
+    			ak_pointer sign /* электронная подпись, для которой выполняется проверка */
+    		 	)
+
+*Использование функции можно увидеть в следующем примере:* `example-21 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-21.c>`_.
+
+	2. Файл в качестве подписанных данных:
+:: 
+
+	bool_t ak_verifykey_verify_file(
+    			ak_verifykey pctx, /* контекст открытого ключа */
+    			const char *filename, /* имя файла, для которого проверяется подпись */
+    			ak_pointer sign /* электронная подпись, для которой выполняется проверка */
+    			)
+			
+*Использование функции можно увидеть в следующем примере:* `example-22 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-22.c>`_.
+
+	3. Хеш-код сообщения в качестве подписанных данных:
+::
+
+	bool_t ak_verifykey_verify_hash( 
+			ak_verifykey pctx, /* контекст открытого ключа */
+                        const ak_pointer hash, /* хеш-код сообщения (последовательность байт), 
+			для которого проверяется электронная подпись */
+			const size_t hsize, /* размер хеш-кода, в байтах */
+			ak_pointer sign /* электронная подпись, для которой выполняется проверка */
+			)
 
 
 ДРУГИЕ АЛГОРИТМЫ
@@ -574,7 +656,24 @@ FAQ по библиотеке libakrypt
 
 Как вычислить контрольную сумму?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Вычисление 32-битной контрольной суммы возможно с помощью функции ``ak_ptr_fletcher32``, которая вычисляет КС по алгоритму Флетчера, или с помощью ``ak_ptr_fletcher32_xor``, работающей по модифицированному алгоритму Флетчера, заменяющему обычное модульное сложение на операцию поразрядного сложения по модулю 2.
+Вычисление 32-битной контрольной суммы возможно с помощью функции которая вычисляет КС по алгоритму Флетчера:
+::
+
+	int ak_ptr_fletcher32( 
+			ak_const_pointer data, /* Указатель на область пямяти, для которой вычисляется контрольная сумма */
+			const size_t size, /* Размер области (в октетах) */
+			ak_uint32 *out /* Область памяти куда помещается результат */
+			)
+	
+	
+Или с помощью функции, работающей по модифицированному алгоритму Флетчера, заменяющему обычное модульное сложение на операцию поразрядного сложения по модулю 2:
+::
+
+	int ak_ptr_fletcher32_xor( 
+			ak_const_pointer data, /* Указатель на область пямяти, для которой вычисляется контрольная сумма */
+			const size_t size, /* Размер области (в октетах) */
+			ak_uint32 *out /* Область памяти куда помещается результат */
+			)
 
 *Использование функций можно увидеть в следующих примерах:* `example-31.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-31.c>`_ и `example-30.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-30.c>`_ соответственно.
 
@@ -588,31 +687,51 @@ FAQ по библиотеке libakrypt
 
 Несколько вариантов:
 
-1)	Линейный конгруэнтный генератор (Linear congruential generator, lcg):
+	1. Линейный конгруэнтный генератор (Linear congruential generator, lcg):
 ::
 
-	ak_random_create_lcg(&rand);
+	int ak_random_create_lcg(ak_random generator)
 
 *Использование функции можно увидеть в следующем примере:* `example-3.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-3.c>`_.
 
-2)	Нелинейный конгруэнтный генератор с обратной квадратичной связью (Nonlinear-feedback shift register, nlfsr)
+	2. Нелинейный конгруэнтный генератор с обратной квадратичной связью (Nonlinear-feedback shift register, nlfsr) без параметров:
 ::
 	
-	ak_random_create_nlfsr(&rand);
+	int ak_random_create_nlfsr(ak_random generator)
 	
-*Использование функции можно увидеть в следующих примерах:* `example-4.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-4.c>`_, `example-7.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-7.c>`_.	
+	/* На самом деле данная функция вызывает другую с константными параметрами:
 	
-3) 	Генератор по заданному OID алгоритма генерации псевдо-случайных чисе
+	ak_random_create_nlfsr_with_params( generator, 21, 849314 );
+	
+	*/
+	
+*Использование функции можно увидеть в следующих примерах:* `example-4.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-4.c>`_, `example-7.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-7.c>`_.
+	
+	3. Нелинейный конгруэнтный генератор с обратной квадратичной связью (Nonlinear-feedback shift register, nlfsr) с параметрами:
+::
+	
+	 int ak_random_create_nlfsr_with_params( ak_random generator,
+			size_t size, /* размер нелинейного регистра, не должен быть более 32-х */
+			ak_uint64 linear_part /* код линейной части обратной связи */
+			)
+	
+
+	
+	4. Генератор по заданному OID алгоритма генерации псевдо-случайных чисел:
 :: 
 
-	ak_random_create_oid(&rand, ak_oid_find_by_name( /* Нужный алгоритм */ ));
+	int ak_random_create_oid( ak_random rnd, 
+			ak_oid oid /* OID генератора */
+			
 
 *Использование функции можно увидеть в следующем примере:* `example-20.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-20.c>`_
 
 
 Как сравнить две области памяти одинакового размера?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Произвести сравнение двух областей памяти одинакового размера можно с помощью встроенной функции библиотеки ``ak_ptr_is_equal``.
+Произвести сравнение двух областей памяти одинакового размера можно с помощью встроенной функции библиотеки 
+
+``bool_t ak_ptr_is_equal( ak_const_pointer left, ak_const_pointer right, const size_t size )``.
 
 *Пример использования можно найти в файле ak_tools.c на строке 633:* `ak_tools.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/source/ak_tools.c>`_
 	
@@ -620,17 +739,27 @@ FAQ по библиотеке libakrypt
 Как открыть файл на чтение?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Файл на чтение можно открыть с помощью функции ``ak_file_open_to_read``.
+Файл на чтение можно открыть с помощью функции 
 
-Чтобы прочитать из файла необходимо использовать функцию ``ak_file_read``.
+``int ak_file_open_to_read( ak_file file, const char *filename )``.
 
-*Использование функции можно увидеть в следующем примере:* `example-23.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-23.c>`_
+Чтобы прочитать из файла необходимо использовать функцию 
+
+``ssize_t ak_file_read( ak_file file, ak_pointer buffer, size_t size )``.
+
+*Использование функций можно увидеть в следующем примере:* `example-23.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-23.c>`_
 
 
 Как прочитать пароль из консоли?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Чтение пароля из консоли реализовано в библиотеке с помощью фукнции  ``ak_password_read``. 
+Чтение пароля из консоли реализовано в библиотеке с помощью фукнции: 
+::
+
+	ssize_t ak_password_read( 
+			char *pass, /* Строка, в которую будет помещен пароль */
+			const size_t psize /* Максимально возможная длина пароля */
+			)
 
 *Использование функции можно увидеть в следующем примере:* `example-28.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-28.c>`_
 
@@ -638,7 +767,14 @@ FAQ по библиотеке libakrypt
 Как прочитать строку из консоли?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Чтение строки из консоли реализовано в библиотеке с помощью фукнции  ``ak_string_read``. 
+Чтение строки из консоли реализовано в библиотеке с помощью фукнции:
+::
+
+	 int ak_string_read( 
+	 		const char *message, /* предложение, которое печатается перед вводом строки */
+			char *string, /* буффер, в который помещается введенное значение */
+			size_t *size /* переменная, в которой возвращается размер введенной строки */
+			)
 
 *Использование функции можно увидеть в следующем примере:* `example-29.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-29.c>`_
 
@@ -646,7 +782,7 @@ FAQ по библиотеке libakrypt
 Как установить уровень аудита в коде?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Выставить уровень аудита можно с помощью функции ``ak_log_set_level``. В качестве аргумента в данную фунцию передается один из трех уровней:
+Выставить уровень аудита можно с помощью функции ``int ak_log_set_level( int level )``. В качестве аргумента в данную фунцию передается один из трех уровней:
 
 	* Первый уровень аудита - ``ak_log_none`` - выводятся олько сообщения об ошибках;
 	* Второй уровень аудита - ``ak_log_standard`` - выводятся все сообщения из первого уровня, а также сообщения, регламентируемые существующей 		нормативной базой;
@@ -657,7 +793,15 @@ FAQ по библиотеке libakrypt
 
 Как преобразовать строку шестнадцатиричных символов в массив данных?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Для преобразования необходимо использовать библиотечную функцию ``ak_hexstr_to_ptr``.
+Для преобразования необходимо использовать библиотечную функцию:
+::
+
+	int ak_hexstr_to_ptr( 
+			const char *hexstr, /* Строка символов */
+			ak_pointer ptr, /* Указатель на область памяти (массив), в которую будут размещаться данные */
+			const size_t size, /* Максимальный размер памяти (в байтах), которая может быть помещена в массив */
+			const bool_t reverse /* Последовательность считывания байт в память */
+			)
 
 *Использование функции можно увидеть в следующем примере:* `example-27.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-27.c>`_
 
