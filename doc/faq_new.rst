@@ -974,7 +974,7 @@ FAQ по библиотеке libakrypt
 			const char *message /* Имя функции, вызвавшей ошибку */
 			)
 		
-
+*Использование функции можно увидеть в следующем примере:* `example-26.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-26.c>`_.
 
 Низкоуровневая функция вывода строк в устройство аудита может быть установлена
 с помощью ``ak_log_set_function()``. Примерами устанавливаемых функций являются:
