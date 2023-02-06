@@ -5,7 +5,14 @@
 /* Пример использования электронной подписи на основе вычисленного хеш-кода 
 			подписываемого сообщения */
 
-int main() {
+int main( void ) 
+{
+	if( ak_libakrypt_create( NULL ) != ak_true ) {
+		/* инициализация выполнена не успешно, следовательно, выходим из программы */
+		ak_libakrypt_destroy();
+		return EXIT_FAILURE;
+  	}
+	
     /* контекст секретного ключа электронной подписи */
     struct signkey sk;
     struct random generator;
@@ -69,6 +76,8 @@ int main() {
     /* Подробнее про математическую составляющую данной процедуры можно почиать в папке source в файле ak_sign.c */
 
     ak_signkey_destroy(&sk);
+	ak_random_generator(&generator);
+	ak_libakrypt_destroy();
 
     return EXIT_SUCCESS;
 }
