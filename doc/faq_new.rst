@@ -873,7 +873,7 @@ FAQ по библиотеке libakrypt
 			ak_uint64 linear_part /* код линейной части обратной связи */
 			)
 	
-
+*Описание функции можно найти в файле* `ak_random.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/source/ak_random.c>`_ *на строке 697*.
 	
 	4. Генератор по заданному OID алгоритма генерации псевдо-случайных чисел:
 :: 
