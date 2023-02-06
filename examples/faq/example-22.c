@@ -4,7 +4,14 @@
 
 /*Пример использования электронной подписи для  исполняемых файлов*/
 
-int main(int argc, char ** argv) {
+int main(int argc, char ** argv) 
+{
+    if( ak_libakrypt_create( NULL ) != ak_true ) {
+        /* инициализация выполнена не успешно, следовательно, выходим из программы */
+        ak_libakrypt_destroy();
+        return EXIT_FAILURE;
+    }
+    
     /*контекст секретного ключа электронной подписи*/
     struct signkey sk;
     
@@ -78,6 +85,7 @@ int main(int argc, char ** argv) {
 
     ak_signkey_destroy(&sk);
     ak_verifykey_destroy(&pk);
-
+    ak_random_destroy(&generator);
+    ak_libakrypt_destroy();
     return EXIT_SUCCESS;
 }
