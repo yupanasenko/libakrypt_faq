@@ -1,8 +1,19 @@
+/* ----------------------------------------------------------------------------------- */
+/* Пример example-1.c                                                             */
+/* ----------------------------------------------------------------------------------- */
+
 #include <stdio.h>
 #include <libakrypt.h>
 #include <libakrypt-base.h>
 
-int main() {
+ int main( void )
+{
+  if( ak_libakrypt_create( NULL ) != ak_true ) {
+   /* инициализация выполнена не успешно, следовательно, выходим из программы */
+    ak_libakrypt_destroy();
+    return EXIT_FAILURE;
+  }
+
     /*Структура для хранения контекста ключа*/
     struct bckey key;
     
@@ -54,7 +65,10 @@ int main() {
     if(!memcmp(data, decrypt, sizeof(data)))
 	    return -1;
 
-	return 0;
+ak_bckey_destroy(&key);
+ak_libakrypt_destroy();
+
+return EXIT_SUCCESS;
 }
 
 
