@@ -2,7 +2,14 @@
 #include <libakrypt.h>
 #include <libakrypt-base.h>
 
-int main() {
+int main( void ) 
+{
+    if( ak_libakrypt_create( NULL ) != ak_true ) {
+        /* инициализация выполнена не успешно, следовательно, выходим из программы */
+        ak_libakrypt_destroy();
+        return EXIT_FAILURE;
+    }
+    
     /* контекст алгоритма аутентифицированного шифрования */
     struct aead a;
 
@@ -81,6 +88,8 @@ int main() {
     			a.tag_size   /* ожидаемый размер имитовставки в байтах */
     			)) 
         return ak_error_get_value();
-       
-    return 0;
+    
+    ak_aead_destroy(&a);
+    ak_libakrypt_destroy();
+    return EXIT_SUCCESS;
 }
