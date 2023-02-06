@@ -6,19 +6,20 @@
 #include <libakrypt.h>
 #include <libakrypt-base.h>
 
- int main( void )
+int main( void )
 {
-  if( ak_libakrypt_create( NULL ) != ak_true ) {
+  if( ak_libakrypt_create( NULL ) != ak_true ) 
+  {
    /* инициализация выполнена не успешно, следовательно, выходим из программы */
-    ak_libakrypt_destroy();
-    return EXIT_FAILURE;
+	  ak_libakrypt_destroy();
+	  return EXIT_FAILURE;
   }
 
-    /*Структура для хранения контекста ключа*/
+	/*Структура для хранения контекста ключа*/
     struct bckey key;
     
     /*Значение контекстного ключа вырабатывается из данного пароля*/ 
-    char password[128] = "password";
+	char password[128] = "password";
     /*Случайный вектор в виде строки символов*/
     char s[128] = "sugar";
 
