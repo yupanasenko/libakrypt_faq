@@ -2,7 +2,14 @@
 #include <libakrypt.h>
 #include <libakrypt-base.h>
 
-int main(){
+int main( void )
+{
+    if( ak_libakrypt_create( NULL ) != ak_true ) {
+        /* инициализация выполнена не успешно, следовательно, выходим из программы */
+        ak_libakrypt_destroy();
+        return EXIT_FAILURE;
+    }
+    
     char data[128] = "test data for hash";
   
     struct hash ctx; /* контекст функции хеширования */
@@ -34,5 +41,10 @@ int main(){
     }
     
     printf("\n");
+    
+    ak_hash_destroy(&ctx);
+    ak_libakrypt_destroy();
+    return EXIT_SUCCESS;
+    
 } 
   
