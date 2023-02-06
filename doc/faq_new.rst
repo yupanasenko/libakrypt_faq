@@ -54,6 +54,9 @@ FAQ по библиотеке libakrypt
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Контекст ключа ``ak_bckey`` – основная структура данных в разделе блочного шифрования.
 
+После завершения работы с данной структурой - ее **необходимо уничтожить** функцией ``int ak_bckey_destroy( ak_bckey bkey )``!
+
+
 Создать ее можно несколькими способами:
 
 	1. Инициализация контекста ключа значением, выработанным из заданного значения пароля при помощи алгоритма PBKDF2, описанного  в рекомендациях по стандартизации Р 50.1.111-2016 (Пароль должен быть непустой строкой символов в формате utf8):
@@ -69,7 +72,6 @@ FAQ по библиотеке libakrypt
 		)
 
 *Использование функции можно увидеть в следующих примерах:* `example-1 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-1.c>`_, `example-2 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-2.c>`_.
-
 
 
 	2. Инициализация контекста ключа случайным (псевдо-случайным) значением, выработанным генератором псевдо-случайных чисел:
@@ -95,6 +97,9 @@ FAQ по библиотеке libakrypt
 			)
 			
 *Использование функции можно увидеть в следующих примерах:* `example-5 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-5.c>`_, `example-6 <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-6.c>`_.
+
+
+
 
 Как создать секретный ключ алгоритма блочного шифрования?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -179,7 +184,7 @@ FAQ по библиотеке libakrypt
         	)
 
 
-*Использование функции можно увидеть в следующем примере:* `example-2.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-2.c>`_
+*Использование функции можно увидеть в следующем примере:* `example-2.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-2.c>`_.
 
 
 
@@ -200,7 +205,7 @@ FAQ по библиотеке libakrypt
         	size_t iv_size /*Длина синхропосылки в байтах*/
     		)
 		
-*Использование функции можно увидеть в следующем примере:* `example-3.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-3.c>`_
+*Использование функции можно увидеть в следующем примере:* `example-3.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-3.c>`_.
 
 
 Как зашифровать/расшифровать данные в режиме гаммирования с обратной связью по шифртексту из ГОСТ Р 34.13-2015 (cipher feedback, cfb)?
@@ -221,7 +226,7 @@ FAQ по библиотеке libakrypt
     		)
 
 
-*Использование функции можно увидеть в следующем примере:* `example-4.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-4.c>`_
+*Использование функции можно увидеть в следующем примере:* `example-4.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-4.c>`_.
 
 
 Как зашифровать/расшифровать данные в режиме «CTR-ACPKM» из Р1323565.1.017—2018?
@@ -242,7 +247,7 @@ FAQ по библиотеке libakrypt
     		size_t iv_size /*длина имитовставки в байтах*/
     		)
 
-*Использование функции можно увидеть в следующем примере:* `example-5.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-5.c>`_
+*Использование функции можно увидеть в следующем примере:* `example-5.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-5.c>`_.
 
 
 
@@ -282,7 +287,7 @@ FAQ по библиотеке libakrypt
      		const size_t icode_size /*ожидаемый размер имитовставки в байтах; значение не должно превышать 16 октетов;*/
 		)
 
-*Использование функций можно увидеть в следующем примере:* `example-6.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-6.c>`_
+*Использование функций можно увидеть в следующем примере:* `example-6.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-6.c>`_.
 
 
 
@@ -332,7 +337,7 @@ FAQ по библиотеке libakrypt
 		то есть 4 байта для Магмы и 8 байт для Кузнечика */
 		);
 
-*Использование функций можно увидеть в следующем примере:* `example-7.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-7.c>`_
+*Использование функций можно увидеть в следующем примере:* `example-7.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-7.c>`_.
 
 
 
@@ -356,6 +361,8 @@ FAQ по библиотеке libakrypt
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Контекст ключа ``ak_aead`` – основная структура данных в разделе аутентифицированного шифрования.
 
+После завершения работы с данной структурой - ее **необходимо уничтожить** функцией ``int ak_aead_destroy( ak_aead ctx )``!
+
 В данной библиотеке описано 12 функций для создания контекста алгоритма аутентифицированного шифрования. Коротко рассмотрим каждую из них здесь.
 
 	1. Создание контекста алгоритма аутентифицированного шифрования Р 1323565.1.024-2019 для блочного шифра Магма
@@ -363,42 +370,42 @@ FAQ по библиотеке libakrypt
 
 	int ak_aead_create_mgm_magma(ak_aead ctx, bool_t crf)
 
-*Использование функции можно увидеть в следующем примере:* `example-8.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-8.c>`_
+*Использование функции можно увидеть в следующем примере:* `example-8.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-8.c>`_.
 
 	2. Создание контекста алгоритма аутентифицированного шифрования Р 1323565.1.024-2019 для блочного шифра Кузнечик
 ::
 
 	int ak_aead_create_mgm_kuznechik(ak_aead ctx, bool_t crf)
 	
-*Использование функции можно увидеть в следующем примере:* `example-9.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-9.c>`_	
+*Использование функции можно увидеть в следующем примере:* `example-9.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-9.c>`_.
 	
 	3. Создание контекста алгоритма аутентифицированного шифрования xtsmac для блочного шифра Магма
 ::
 
 	int ak_aead_create_xtsmac_magma(ak_aead ctx, bool_t crf)
 	
-*Использование функции можно увидеть в следующем примере:* `example-10.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-10.c>`_
+*Использование функции можно увидеть в следующем примере:* `example-10.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-10.c>`_.
 
 	4. Создание контекста алгоритма аутентифицированного шифрования ctr-cmac для блочного шифра Магма
 :: 
 
 	int ak_aead_create_ctr_cmac_magma(ak_aead ctx, bool_t crf)
 	
-*Использование функции можно увидеть в следующем примере:* `example-11.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-11.c>`_	
+*Использование функции можно увидеть в следующем примере:* `example-11.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-11.c>`_	.
 	
 	5. Создание контекста алгоритма аутентифицированного шифрования ctr-cmac для блочного шифра Кузнечик
 ::
 
 	int ak_aead_create_ctr_cmac_kuznechik(ak_aead ctx, bool_t crf)
 	
-*Использование функции можно увидеть в следующем примере:* `example-12.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-12.c>`_
+*Использование функции можно увидеть в следующем примере:* `example-12.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-12.c>`_.
 
 	6. Создание контекста алгоритма аутентифицированного шифрования ctr-nmac для блочного шифра Магма
 :: 
 
 	int ak_aead_create_ctr_nmac_magma(ak_aead ctx, bool_t crf)
 
-*Использование функции можно увидеть в следующем примере:* `example-13.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-13.c>`_
+*Использование функции можно увидеть в следующем примере:* `example-13.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-13.c>`_.
 
 	7. Создание контекста алгоритма аутентифицированного шифрования ctr-nmac для блочного шифра Кузнечик
 ::
@@ -412,28 +419,28 @@ FAQ по библиотеке libakrypt
 
 	int ak_aead_create_ctr_hmac_magma_streebog256(ak_aead ctx, bool_t crf)
 	
-*Использование функции можно увидеть в следующем примере:* `example-15.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-15.c>`_	
+*Использование функции можно увидеть в следующем примере:* `example-15.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-15.c>`_	.
 	
 	9. Создание контекста алгоритма аутентифицированного шифрования ctr-hmac для блочного шифра Кузнечик и функции хеширования Стрибог256
 ::
 
 	int ak_aead_create_ctr_hmac_kuznechik_streebog256(ak_aead ctx, bool_t crf)
 
-*Использование функции можно увидеть в следующем примере:* `example-16.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-16.c>`_
+*Использование функции можно увидеть в следующем примере:* `example-16.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-16.c>`_.
 
 	10. Создание контекста алгоритма аутентифицированного шифрования ctr-hmac для блочного шифра Магма и функции хеширования Стрибог512
 ::
 	
 	int ak_aead_create_ctr_hmac_magma_streebog512(ak_aead ctx, bool_t crf)
 	
-*Использование функции можно увидеть в следующем примере:* `example-17.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-17.c>`_
+*Использование функции можно увидеть в следующем примере:* `example-17.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-17.c>`_.
 
 	11. Создание контекста алгоритма аутентифицированного шифрования ctr-hmac для блочного шифра Кузнечик и функции хеширования Стрибог512
 ::
 
 	int ak_aead_create_ctr_hmac_kuznechik_streebog512(ak_aead ctx, bool_t crf)
 	
-*Использование функции можно увидеть в следующем примере:* `example-18.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-18.c>`_
+*Использование функции можно увидеть в следующем примере:* `example-18.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-18.c>`_.
 
 	12. Создание контекста алгоритма аутентифицированного шифрования по заданному oid
 ::
@@ -456,12 +463,46 @@ FAQ по библиотеке libakrypt
     
     	Все OID аналогичны заданию функции напрямую */
 
-*Использование функции можно увидеть в следующем примере:* `example-19.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-19.c>`_
+*Использование функции можно увидеть в следующем примере:* `example-19.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-19.c>`_.
+
+
+Как инициализировать ключи аутентификации и шифрования?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Инициалиировать ключи шифрования и аутентификации можно либо двумя отдельными функциями, либо одной общей функцией.
+
+	1. Инициализация отдельными функциями:
+::
+
+	int ak_aead_set_encrypt_key(
+               		ak_aead ctx,           /* Контекст алгоритма аутентифицированного шифрования */
+    			const ak_pointer key,  /* Область памяти, в которой хранится значение ключа шифрования */
+    			const size_t size      /* Размер ключа шифрования (в октетах) */
+    			)
+			
+	ak_aead_set_auth_key(
+                	ak_aead ctx,           /* Контекст алгоритма аутентифицированного шифрования */
+    			const ak_pointer key,  /* Область памяти, в которой хранится значение ключа аутентификации (имитозащиты) */
+    			const size_t size      /* Размер ключа аутентификации (в октетах) */
+    			)
+			
+*Использование функции можно увидеть в следующем примере:* `example-8.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-8.c>`_.
+
+	2. Инициализация общей функцией:
+::
+
+	int ak_aead_set_keys(
+                	ak_aead ctx,            /* Контекст алгоритма аутентифицированного шифрования */
+    			const ak_pointer key,   /* Область памяти, в которой хранится значение ключа шифрования */
+    			const size_t size,      /* Размер ключа шифрования (в октетах) */
+    			const ak_pointer key,   /* Область памяти, в которой хранится значение ключа аутентификации (имитозащиты) */
+    			const size_t size       /* Размер ключа аутентификации (в октетах) */
+    			)
+			
+*Использование функций можно увидеть в следующих примерах:* `example-9.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-9.c>`_, `example-10.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-10.c>`_, `example-11.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-11.c>`_, `example-12.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-12.c>`_, `example-13.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-13.c>`_, `example-14.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-14.c>`_, `example-15.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-15.c>`_, `example-16.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-16.c>`_, `example-17.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-17.c>`_, `example-18.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-18.c>`_, `example-19.c <https://github.com/yupanasenko/libakrypt_faq/blob/master/examples/faq/example-19.c>`_.
 
 
 Как зашифровать/расшифровать данные с помощью аутентифицируемого шифрования с одновременным вычислением/проверки имитовставки?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 Зашифровать текст аутентифицируемым шифрованием можно с помощью следующей функции
 ::
 
@@ -516,6 +557,10 @@ FAQ по библиотеке libakrypt
 
 Как создать контекст секретного ключа электронной подписи?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Контекст секретного ключа электронной подписи хранится с помощью структуры ``ak_signkey``.
+
+После завершения работы с данной структурой - ее **необходимо уничтожить** функцией ``int ak_signkey_destroy( ak_signkey sctx )``!
+
 Создание структуры контекста секретного ключа ЭП возможно с помощью функции:
 ::
 
@@ -558,6 +603,8 @@ FAQ по библиотеке libakrypt
 Как создать открытый ключ электронной подписи?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Для начала необходимо создать структуру ``ak_verifykey`` для хранения открытого ключа ЭП.
+
+После завершения работы с данной структурой - ее **необходимо уничтожить** функцией ``int ak_verifykey_destroy( ak_verifykey pctx )``!
 
 После этого необходимо инициализировать открытый ключ ЭП с помощью функции:
 ::
