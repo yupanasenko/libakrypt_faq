@@ -195,7 +195,8 @@ set( BASE_EXAMPLES_LIST
 
 # определяем перечень примеров из FAQ
 set( EXAMPLES_LIST
-     1
+0
+1
 2
 3
 4
