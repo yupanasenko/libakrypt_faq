@@ -4,7 +4,14 @@
 
 /*Пример проверки электронной подписи*/
 
-int main() {
+int main( void ) 
+{
+    if( ak_libakrypt_create( NULL ) != ak_true ) {
+        /* инициализация выполнена не успешно, следовательно, выходим из программы */
+        ak_libakrypt_destroy();
+        return EXIT_FAILURE;
+    }
+    
     /*контекст секретного ключа электронной подписи*/
     struct signkey sk;
     
@@ -84,6 +91,7 @@ int main() {
 
     ak_signkey_destroy(&sk);
     ak_verifykey_destroy(&pk);
-    
+    ak_random_destroy(&generator);
+    ak_libakrypt_destroy();
     return EXIT_SUCCESS;
 }
